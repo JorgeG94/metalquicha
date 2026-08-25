@@ -1,0 +1,839 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>read_frozen_atoms &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>read_frozen_atoms
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.1% of total for procedures.">19 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_json_config_reader.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_json_config_reader.f90.html'>mqc_json_config_reader.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></li>
+            <li class="breadcrumb-item active" aria-current="page">read_frozen_atoms</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/read_frozen_atoms.html#variable-atom~5">atom</a>
+            <a class="list-group-item" href="../proc/read_frozen_atoms.html#variable-found~31">found</a>
+            <a class="list-group-item" href="../proc/read_frozen_atoms.html#variable-i~113">i</a>
+            <a class="list-group-item" href="../proc/read_frozen_atoms.html#variable-n_frozen~4">n_frozen</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/read_frozen_atoms.html#src">read_frozen_atoms</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine read_frozen_atoms(json, config, error)  
+</h2>
+    
+
+    <p><code>keywords.optimization.frozen_atoms</code>, a flat list of atom indices</p>
+<p>Zero-based in the deck, as every atom index in this format is, and
+stored one-based because that is what Fortran indexes <code>spec</code> with. The
+conversion happens once, here, rather than at the point of use where
+it would have to be remembered.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~31"></span>
+              type(json_file),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~34"></span>
+              type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~109"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~read_frozen_atoms~~CallsGraph Pages: 1 -->
+<svg id="procread_frozen_atomsCallsGraph" width="352pt" height="200pt"
+ viewBox="0.00 0.00 352.00 200.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~read_frozen_atoms~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 196)">
+<title>proc~~read_frozen_atoms~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-196 348,-196 348,4 -4,4"/>
+<!-- proc~read_frozen_atoms -->
+<g id="proc~~read_frozen_atoms~~CallsGraph_node1" class="node">
+<title>proc~read_frozen_atoms</title>
+<polygon fill="none" stroke="black" points="113,-108 0,-108 0,-84 113,-84 113,-108"/>
+<text text-anchor="middle" x="56.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50">read_frozen_atoms</text>
+</g>
+<!-- info -->
+<g id="proc~~read_frozen_atoms~~CallsGraph_node2" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="228.5,-192 174.5,-192 174.5,-168 228.5,-168 228.5,-192"/>
+<text text-anchor="middle" x="201.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~read_frozen_atoms&#45;&gt;info -->
+<g id="proc~~read_frozen_atoms~~CallsGraph_edge1" class="edge">
+<title>proc~read_frozen_atoms&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M72.71,-108C90.36,-121.55 120.66,-143.7 149,-159 153.99,-161.7 159.4,-164.26 164.78,-166.61"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="163.75,-169.97 174.33,-170.6 166.45,-163.51 163.75,-169.97"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~read_frozen_atoms~~CallsGraph_node3" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~read_frozen_atoms~~CallsGraph_node3"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="254,-150 149,-150 149,-126 254,-126 254,-150"/>
+<text text-anchor="middle" x="201.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~read_frozen_atoms&#45;&gt;proc~error_set -->
+<g id="proc~~read_frozen_atoms~~CallsGraph_edge2" class="edge">
+<title>proc~read_frozen_atoms&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff0000" d="M98.48,-108.04C114.48,-112.74 133,-118.18 149.83,-123.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="148.93,-126.5 159.52,-125.96 150.91,-119.79 148.93,-126.5"/>
+</g>
+<!-- proc~int_to_key -->
+<g id="proc~~read_frozen_atoms~~CallsGraph_node4" class="node">
+<title>proc~int_to_key</title>
+<g id="a_proc~~read_frozen_atoms~~CallsGraph_node4"><a xlink:href="../proc/int_to_key.html" xlink:title="int_to_key">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="234.5,-108 168.5,-108 168.5,-84 234.5,-84 234.5,-108"/>
+<text text-anchor="middle" x="201.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">int_to_key</text>
+</a>
+</g>
+</g>
+<!-- proc~read_frozen_atoms&#45;&gt;proc~int_to_key -->
+<g id="proc~~read_frozen_atoms~~CallsGraph_edge3" class="edge">
+<title>proc~read_frozen_atoms&#45;&gt;proc~int_to_key</title>
+<path fill="none" stroke="#ff0000" d="M113.2,-96C128.07,-96 143.9,-96 157.95,-96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="158.29,-99.5 168.29,-96 158.29,-92.5 158.29,-99.5"/>
+</g>
+<!-- proc~optional_int -->
+<g id="proc~~read_frozen_atoms~~CallsGraph_node5" class="node">
+<title>proc~optional_int</title>
+<g id="a_proc~~read_frozen_atoms~~CallsGraph_node5"><a xlink:href="../proc/optional_int.html" xlink:title="optional_int">
+<polygon fill="#d9534f" stroke="#d9534f" points="239,-66 164,-66 164,-42 239,-42 239,-66"/>
+<text text-anchor="middle" x="201.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optional_int</text>
+</a>
+</g>
+</g>
+<!-- proc~read_frozen_atoms&#45;&gt;proc~optional_int -->
+<g id="proc~~read_frozen_atoms~~CallsGraph_edge4" class="edge">
+<title>proc~read_frozen_atoms&#45;&gt;proc~optional_int</title>
+<path fill="none" stroke="#ff0000" d="M98.48,-83.96C115.89,-78.85 136.27,-72.87 154.22,-67.59"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="155.3,-70.92 163.9,-64.75 153.32,-64.21 155.3,-70.92"/>
+</g>
+<!-- to_char -->
+<g id="proc~~read_frozen_atoms~~CallsGraph_node6" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="228.5,-24 174.5,-24 174.5,0 228.5,0 228.5,-24"/>
+<text text-anchor="middle" x="201.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~read_frozen_atoms&#45;&gt;to_char -->
+<g id="proc~~read_frozen_atoms~~CallsGraph_edge5" class="edge">
+<title>proc~read_frozen_atoms&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M72.71,-84C90.36,-70.45 120.66,-48.3 149,-33 153.99,-30.3 159.4,-27.74 164.78,-25.39"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="166.45,-28.49 174.33,-21.4 163.75,-22.03 166.45,-28.49"/>
+</g>
+<!-- get -->
+<g id="proc~~read_frozen_atoms~~CallsGraph_node7" class="node">
+<title>get</title>
+<polygon fill="#777777" stroke="#777777" points="344,-66 290,-66 290,-42 344,-42 344,-66"/>
+<text text-anchor="middle" x="317" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get</text>
+</g>
+<!-- proc~optional_int&#45;&gt;get -->
+<g id="proc~~read_frozen_atoms~~CallsGraph_edge6" class="edge">
+<title>proc~optional_int&#45;&gt;get</title>
+<path fill="none" stroke="#0066ff" d="M239.04,-54C252.13,-54 266.87,-54 279.92,-54"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="279.96,-57.5 289.96,-54 279.96,-50.5 279.96,-57.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~read_frozen_atoms~~CalledByGraph Pages: 1 -->
+<svg id="procread_frozen_atomsCalledByGraph" width="641pt" height="79pt"
+ viewBox="0.00 0.00 641.00 79.27" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~read_frozen_atoms~~CalledByGraph" class="graph" transform="scale(0.68 0.68) rotate(0) translate(4 112)">
+<title>proc~~read_frozen_atoms~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 934,-112 934,4 -4,4"/>
+<!-- proc~read_frozen_atoms -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_node1" class="node">
+<title>proc~read_frozen_atoms</title>
+<polygon fill="none" stroke="black" points="930,-87 817,-87 817,-63 930,-63 930,-87"/>
+<text text-anchor="middle" x="873.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">read_frozen_atoms</text>
+</g>
+<!-- proc~populate_config -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_node2" class="node">
+<title>proc~populate_config</title>
+<g id="a_proc~~read_frozen_atoms~~CalledByGraph_node2"><a xlink:href="../proc/populate_config.html" xlink:title="populate_config">
+<polygon fill="#d9534f" stroke="#d9534f" points="781,-87 683,-87 683,-63 781,-63 781,-87"/>
+<text text-anchor="middle" x="732" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">populate_config</text>
+</a>
+</g>
+</g>
+<!-- proc~populate_config&#45;&gt;proc~read_frozen_atoms -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_edge1" class="edge">
+<title>proc~populate_config&#45;&gt;proc~read_frozen_atoms</title>
+<path fill="none" stroke="#ff0000" d="M781.01,-75C789.28,-75 798,-75 806.65,-75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="806.72,-78.5 816.72,-75 806.72,-71.5 806.72,-78.5"/>
+</g>
+<!-- proc~read_json_config_file -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_node3" class="node">
+<title>proc~read_json_config_file</title>
+<g id="a_proc~~read_frozen_atoms~~CalledByGraph_node3"><a xlink:href="../proc/read_json_config_file.html" xlink:title="read_json_config_file">
+<polygon fill="#d9534f" stroke="#d9534f" points="645.5,-108 521.5,-108 521.5,-84 645.5,-84 645.5,-108"/>
+<text text-anchor="middle" x="583.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_json_config_file</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_config_file&#45;&gt;proc~populate_config -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_edge2" class="edge">
+<title>proc~read_json_config_file&#45;&gt;proc~populate_config</title>
+<path fill="none" stroke="#ff0000" d="M645.78,-87.22C654.78,-85.93 664.03,-84.6 672.96,-83.32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="673.48,-86.78 682.88,-81.9 672.49,-79.85 673.48,-86.78"/>
+</g>
+<!-- proc~read_json_config_text -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_node4" class="node">
+<title>proc~read_json_config_text</title>
+<g id="a_proc~~read_frozen_atoms~~CalledByGraph_node4"><a xlink:href="../proc/read_json_config_text.html" xlink:title="read_json_config_text">
+<polygon fill="#d9534f" stroke="#d9534f" points="647,-66 520,-66 520,-42 647,-42 647,-66"/>
+<text text-anchor="middle" x="583.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_json_config_text</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_config_text&#45;&gt;proc~populate_config -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_edge3" class="edge">
+<title>proc~read_json_config_text&#45;&gt;proc~populate_config</title>
+<path fill="none" stroke="#ff0000" d="M647.05,-62.97C655.57,-64.19 664.28,-65.44 672.72,-66.65"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="672.44,-70.14 682.84,-68.1 673.43,-63.21 672.44,-70.14"/>
+</g>
+<!-- proc~session_run -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_node5" class="node">
+<title>proc~session_run</title>
+<g id="a_proc~~read_frozen_atoms~~CalledByGraph_node5"><a xlink:href="../proc/session_run.html" xlink:title="mqc_session_t%session_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="484,-66 323,-66 323,-42 484,-42 484,-66"/>
+<text text-anchor="middle" x="403.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_run</text>
+</a>
+</g>
+</g>
+<!-- proc~session_run&#45;&gt;proc~read_json_config_text -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_edge5" class="edge">
+<title>proc~session_run&#45;&gt;proc~read_json_config_text</title>
+<path fill="none" stroke="#00ffff" d="M484.13,-54C492.62,-54 501.22,-54 509.63,-54"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="509.76,-57.5 519.76,-54 509.76,-50.5 509.76,-57.5"/>
+</g>
+<!-- proc~worker_run -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_node6" class="node">
+<title>proc~worker_run</title>
+<g id="a_proc~~read_frozen_atoms~~CalledByGraph_node6"><a xlink:href="../proc/worker_run.html" xlink:title="worker_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="440,-24 367,-24 367,0 440,0 440,-24"/>
+<text text-anchor="middle" x="403.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_run</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_run&#45;&gt;proc~read_json_config_text -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_edge6" class="edge">
+<title>proc~worker_run&#45;&gt;proc~read_json_config_text</title>
+<path fill="none" stroke="#00ffff" d="M440.09,-20.4C463.41,-25.9 494.48,-33.23 521.65,-39.64"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="520.92,-43.07 531.46,-41.96 522.53,-36.25 520.92,-43.07"/>
+</g>
+<!-- program~main -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_node7" class="node">
+<title>program~main</title>
+<g id="a_proc~~read_frozen_atoms~~CalledByGraph_node7"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="430.5,-108 376.5,-108 376.5,-84 430.5,-84 430.5,-108"/>
+<text text-anchor="middle" x="403.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~read_json_config_file -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_edge4" class="edge">
+<title>program~main&#45;&gt;proc~read_json_config_file</title>
+<path fill="none" stroke="#ff0000" d="M430.76,-96C451.95,-96 482.79,-96 511.14,-96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="511.45,-99.5 521.45,-96 511.45,-92.5 511.45,-99.5"/>
+</g>
+<!-- proc~mqc_run -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_node8" class="node">
+<title>proc~mqc_run</title>
+<g id="a_proc~~read_frozen_atoms~~CalledByGraph_node8"><a xlink:href="../proc/mqc_run.html" xlink:title="mqc_run">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="277.5,-66 218.5,-66 218.5,-42 277.5,-42 277.5,-66"/>
+<text text-anchor="middle" x="248" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_run</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_run&#45;&gt;proc~session_run -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_edge7" class="edge">
+<title>proc~mqc_run&#45;&gt;proc~session_run</title>
+<path fill="none" stroke="#ff0000" d="M277.51,-54C287.77,-54 299.97,-54 312.66,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="312.91,-57.5 322.91,-54 312.91,-50.5 312.91,-57.5"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_node9" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~read_frozen_atoms~~CalledByGraph_node9"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="287,-24 209,-24 209,0 287,0 287,-24"/>
+<text text-anchor="middle" x="248" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_edge8" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#00ff00" d="M287.34,-12C308.34,-12 334.52,-12 356.61,-12"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="356.75,-15.5 366.75,-12 356.75,-8.5 356.75,-15.5"/>
+</g>
+<!-- proc~session_begin -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_node10" class="node">
+<title>proc~session_begin</title>
+<g id="a_proc~~read_frozen_atoms~~CalledByGraph_node10"><a xlink:href="../proc/session_begin.html" xlink:title="mqc_session_t%session_begin">
+<polygon fill="#d9534f" stroke="#d9534f" points="173,-24 0,-24 0,0 173,0 173,-24"/>
+<text text-anchor="middle" x="86.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_begin</text>
+</a>
+</g>
+</g>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~read_frozen_atoms~~CalledByGraph_edge9" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#00ffff" d="M173.32,-12C181.93,-12 190.45,-12 198.47,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="198.69,-15.5 208.69,-12 198.69,-8.5 198.69,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocread_frozen_atomsCalledByGraph = svgPanZoom('#procread_frozen_atomsCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom~5"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-found~31"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>found</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~113"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_frozen~4"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_frozen</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">read_frozen_atoms</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! `keywords.optimization.frozen_atoms`, a flat list of atom indices</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Zero-based in the deck, as every atom index in this format is, and</span>
+<span class="w">      </span><span class="c">!! stored one-based because that is what Fortran indexes `spec` with. The</span>
+<span class="w">      </span><span class="c">!! conversion happens once, here, rather than at the point of use where</span>
+<span class="w">      </span><span class="c">!! it would have to be remembered.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mqc_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_frozen</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">atom</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">found</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"keywords.optimization.frozen_atoms"</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">found</span><span class="p">,</span><span class="w"> </span><span class="n">n_children</span><span class="o">=</span><span class="n">n_frozen</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">n_frozen</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      allocate</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">opt_frozen_atoms</span><span class="p">(</span><span class="n">n_frozen</span><span class="p">))</span>
+<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_frozen</span>
+<span class="w">         </span><span class="n">atom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span>
+<span class="w">         </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.optimization.frozen_atoms("</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="n">int_to_key</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">//</span><span class="s2">")"</span><span class="p">,</span><span class="w"> </span><span class="n">atom</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">atom</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"keywords.optimization.frozen_atoms entry "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">to_char</span><span class="p">(</span><span class="n">i</span><span class="p">))</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">" is not an atom index. Indices are 0-based."</span><span class="p">)</span>
+<span class="w">            </span><span class="k">return</span>
+<span class="k">         end if</span>
+<span class="k">         </span><span class="n">config</span><span class="p">%</span><span class="n">opt_frozen_atoms</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">atom</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">      </span><span class="k">end do</span>
+<span class="k">   end subroutine </span><span class="n">read_frozen_atoms</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-25 13:55 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,2702 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>evaluate_hessian &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>evaluate_hessian
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.1% of total for procedures.">26 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_geometry_optimizer.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_geometry_optimizer.f90.html'>mqc_geometry_optimizer.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></li>
+            <li class="breadcrumb-item active" aria-current="page">evaluate_hessian</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/evaluate_hessian.html#variable-command">command</a>
+            <a class="list-group-item" href="../proc/evaluate_hessian.html#variable-hess_config">hess_config</a>
+            <a class="list-group-item" href="../proc/evaluate_hessian.html#variable-result~11">result</a>
+            <a class="list-group-item" href="../proc/evaluate_hessian.html#variable-saved_level~2">saved_level</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/evaluate_hessian.html#src">evaluate_hessian</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine evaluate_hessian(n_atoms, coords, hessian, status)  
+</h2>
+    
+
+    <p>Second derivatives at a geometry, for an engine that climbs</p>
+<p>The mirror of <code>evaluate_energy_gradient</code> for the algorithms that need
+curvature rather than slope &ndash; P-RFO and Newton-Raphson. Same MPI
+shape: the command goes out, the geometry follows, and every rank runs
+the same calculation type, which for a finite-difference Hessian is
+what distributes the displacements across them.</p>
+<p><strong>A failure here is reported and not raised.</strong> <code>status</code> non-zero sends
+DL-FIND to its own two-point finite differences, which reaches the
+same matrix by a slower route. Killing the optimization instead would
+trade a correct answer for no answer.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms~11"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coords~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coords</strong>(3,n_atoms)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hessian~4"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>hessian</strong>(3*n_atoms,3*n_atoms)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-status~7"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>status</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~evaluate_hessian~~CallsGraph Pages: 1 -->
+<svg id="procevaluate_hessianCallsGraph" width="641pt" height="1086pt"
+ viewBox="0.00 0.00 641.00 1086.12" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~evaluate_hessian~~CallsGraph" class="graph" transform="scale(0.4 0.4) rotate(0) translate(4 2724)">
+<title>proc~~evaluate_hessian~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-2724 1606,-2724 1606,4 -4,4"/>
+<!-- proc~evaluate_hessian -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node1" class="node">
+<title>proc~evaluate_hessian</title>
+<polygon fill="none" stroke="black" points="105,-214 0,-214 0,-190 105,-190 105,-214"/>
+<text text-anchor="middle" x="52.5" y="-199.6" font-family="Helvetica,sans-Serif" font-size="10.50">evaluate_hessian</text>
+</g>
+<!-- bcast -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node2" class="node">
+<title>bcast</title>
+<polygon fill="#777777" stroke="#777777" points="754.5,-154 700.5,-154 700.5,-130 754.5,-130 754.5,-154"/>
+<text text-anchor="middle" x="727.5" y="-139.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bcast</text>
+</g>
+<!-- proc~evaluate_hessian&#45;&gt;bcast -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge1" class="edge">
+<title>proc~evaluate_hessian&#45;&gt;bcast</title>
+<path fill="none" stroke="#ff0000" d="M105.19,-197.39C236.09,-185.72 578.2,-155.22 690.33,-145.22"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="690.8,-148.7 700.45,-144.32 690.18,-141.72 690.8,-148.7"/>
+</g>
+<!-- configure -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node3" class="node">
+<title>configure</title>
+<polygon fill="#777777" stroke="#777777" points="204,-234 141,-234 141,-210 204,-210 204,-234"/>
+<text text-anchor="middle" x="172.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configure</text>
+</g>
+<!-- proc~evaluate_hessian&#45;&gt;configure -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge2" class="edge">
+<title>proc~evaluate_hessian&#45;&gt;configure</title>
+<path fill="none" stroke="#ff0000" d="M105.26,-210.77C113.79,-212.22 122.53,-213.7 130.75,-215.09"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="130.37,-218.58 140.82,-216.8 131.54,-211.68 130.37,-218.58"/>
+</g>
+<!-- proc~run_step -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node4" class="node">
+<title>proc~run_step</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node4"><a xlink:href="../proc/run_step.html" xlink:title="run_step">
+<polygon fill="#d9534f" stroke="#d9534f" points="201.5,-616 143.5,-616 143.5,-592 201.5,-592 201.5,-616"/>
+<text text-anchor="middle" x="172.5" y="-601.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_step</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_hessian&#45;&gt;proc~run_step -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge3" class="edge">
+<title>proc~evaluate_hessian&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#ff0000" d="M57.03,-214.03C73.55,-270.31 143.32,-507.98 165.02,-581.94"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="161.69,-583.01 167.87,-591.62 168.41,-581.04 161.69,-583.01"/>
+</g>
+<!-- proc~send_final_geometry -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node5" class="node">
+<title>proc~send_final_geometry</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node5"><a xlink:href="../proc/send_final_geometry.html" xlink:title="send_final_geometry">
+<polygon fill="#d9534f" stroke="#d9534f" points="364,-154 240,-154 240,-130 364,-130 364,-154"/>
+<text text-anchor="middle" x="302" y="-139.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_final_geometry</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_hessian&#45;&gt;proc~send_final_geometry -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge4" class="edge">
+<title>proc~evaluate_hessian&#45;&gt;proc~send_final_geometry</title>
+<path fill="none" stroke="#ff0000" d="M80.2,-189.94C97.29,-182.65 120.09,-173.69 141,-168 169.66,-160.2 201.88,-154.41 229.86,-150.3"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="230.55,-153.74 239.96,-148.86 229.56,-146.81 230.55,-153.74"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node6" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node6"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="349,-956 255,-956 255,-932 349,-932 349,-956"/>
+<text text-anchor="middle" x="302" y="-941.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_step&#45;&gt;proc~run_calculation -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge5" class="edge">
+<title>proc~run_step&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00ffff" d="M178.04,-616.1C196.78,-666.08 268.31,-856.84 292.76,-922.02"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="289.59,-923.55 296.38,-931.69 296.15,-921.1 289.59,-923.55"/>
+</g>
+<!-- proc~send_final_geometry&#45;&gt;bcast -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge6" class="edge">
+<title>proc~send_final_geometry&#45;&gt;bcast</title>
+<path fill="none" stroke="#7f00ff" d="M364.13,-142C453.64,-142 617.61,-142 690.23,-142"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="690.27,-145.5 700.27,-142 690.27,-138.5 690.27,-145.5"/>
+</g>
+<!-- abort_comm -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node7" class="node">
+<title>abort_comm</title>
+<polygon fill="#777777" stroke="#777777" points="767.5,-996 687.5,-996 687.5,-972 767.5,-972 767.5,-996"/>
+<text text-anchor="middle" x="727.5" y="-981.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">abort_comm</text>
+</g>
+<!-- proc~run_calculation&#45;&gt;abort_comm -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge7" class="edge">
+<title>proc~run_calculation&#45;&gt;abort_comm</title>
+<path fill="none" stroke="#ff0000" d="M349.3,-951.3C365.33,-953.66 383.43,-956.15 400,-958 498.1,-968.97 613.28,-977.02 677.27,-981.06"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="677.27,-984.57 687.47,-981.7 677.71,-977.58 677.27,-984.57"/>
+</g>
+<!-- error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node8" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="1297.5,-612 1243.5,-612 1243.5,-588 1297.5,-588 1297.5,-612"/>
+<text text-anchor="middle" x="1270.5" y="-597.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~run_calculation&#45;&gt;error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge8" class="edge">
+<title>proc~run_calculation&#45;&gt;error</title>
+<path fill="none" stroke="#ff0000" d="M304.12,-931.59C310.41,-863.73 343.26,-537.77 400,-457 459.37,-372.49 499.5,-364.68 599,-337 709.04,-306.39 757.96,-278.38 856,-337 885.01,-354.35 866.05,-382.34 892,-404 979.52,-477.03 1053.58,-404.26 1136,-483 1168.95,-514.48 1137.5,-549.23 1172,-579 1188.74,-593.45 1213.05,-598.71 1233.21,-600.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1233.13,-603.85 1243.31,-600.91 1233.52,-596.86 1233.13,-603.85"/>
+</g>
+<!-- info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node9" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="1297.5,-918 1243.5,-918 1243.5,-894 1297.5,-894 1297.5,-918"/>
+<text text-anchor="middle" x="1270.5" y="-903.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~run_calculation&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge9" class="edge">
+<title>proc~run_calculation&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M349.2,-945.82C475.55,-950.25 837.3,-959.17 1136,-930 1169.1,-926.77 1206.32,-919.8 1233.03,-914.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1234.03,-917.56 1243.08,-912.05 1232.57,-910.71 1234.03,-917.56"/>
+</g>
+<!-- omp_set_num_threads -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node10" class="node">
+<title>omp_set_num_threads</title>
+<polygon fill="#777777" stroke="#777777" points="547.5,-516 415.5,-516 415.5,-492 547.5,-492 547.5,-516"/>
+<text text-anchor="middle" x="481.5" y="-501.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">omp_set_num_threads</text>
+</g>
+<!-- proc~run_calculation&#45;&gt;omp_set_num_threads -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge10" class="edge">
+<title>proc~run_calculation&#45;&gt;omp_set_num_threads</title>
+<path fill="none" stroke="#ff0000" d="M304.14,-931.84C310.21,-869.46 340.78,-585.88 400,-525 402.08,-522.86 404.34,-520.94 406.75,-519.2"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="408.66,-522.13 415.43,-513.98 405.06,-516.13 408.66,-522.13"/>
+</g>
+<!-- proc~calculation_fingerprint -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node11" class="node">
+<title>proc~calculation_fingerprint</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node11"><a xlink:href="../proc/calculation_fingerprint.html" xlink:title="calculation_fingerprint">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="794,-2451 661,-2451 661,-2427 794,-2427 794,-2451"/>
+<text text-anchor="middle" x="727.5" y="-2436.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_fingerprint</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~calculation_fingerprint -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge11" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~calculation_fingerprint</title>
+<path fill="none" stroke="#ff0000" d="M302.9,-956.34C301.96,-1090.75 296.61,-2280.42 400,-2392 462.83,-2459.8 576.22,-2460.79 651.45,-2452.26"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="652.29,-2455.68 661.8,-2451 651.45,-2448.74 652.29,-2455.68"/>
+</g>
+<!-- proc~check_system_geometry -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node12" class="node">
+<title>proc~check_system_geometry</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node12"><a xlink:href="../proc/check_system_geometry.html" xlink:title="check_system_geometry">
+<polygon fill="#d9534f" stroke="#d9534f" points="799.5,-1918 655.5,-1918 655.5,-1894 799.5,-1894 799.5,-1918"/>
+<text text-anchor="middle" x="727.5" y="-1903.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_system_geometry</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~check_system_geometry -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge12" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~check_system_geometry</title>
+<path fill="none" stroke="#ff0000" d="M303.34,-956.22C306.38,-1061.45 330.45,-1812.09 400,-1880 433.62,-1912.83 559.93,-1914.11 645.22,-1910.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="645.56,-1914.38 655.41,-1910.47 645.28,-1907.38 645.56,-1914.38"/>
+</g>
+<!-- proc~config_log_settings -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node13" class="node">
+<title>proc~config_log_settings</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node13"><a xlink:href="../proc/config_log_settings.html" xlink:title="method_config_t%config_log_settings">
+<polygon fill="#d9534f" stroke="#d9534f" points="833.5,-1156 621.5,-1156 621.5,-1132 833.5,-1132 833.5,-1156"/>
+<text text-anchor="middle" x="727.5" y="-1141.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_config_t%config_log_settings</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~config_log_settings -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge13" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~config_log_settings</title>
+<path fill="none" stroke="#ff0000" d="M318.26,-956.19C360.24,-989.05 482.09,-1079.85 599,-1123 605.43,-1125.37 612.15,-1127.48 618.99,-1129.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="618.52,-1132.84 629.07,-1131.92 620.25,-1126.06 618.52,-1132.84"/>
+</g>
+<!-- proc~error_get_message -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node14" class="node">
+<title>proc~error_get_message</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node14"><a xlink:href="../proc/error_get_message.html" xlink:title="error_t%error_get_message">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="807.5,-798 647.5,-798 647.5,-774 807.5,-774 807.5,-798"/>
+<text text-anchor="middle" x="727.5" y="-783.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_message</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~error_get_message -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge14" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#ff0000" d="M307.2,-931.93C317.72,-903.78 348.12,-834.01 400,-805 477.47,-761.69 582.06,-764.18 651.77,-772.7"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="651.43,-776.18 661.8,-773.99 652.33,-769.24 651.43,-776.18"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node15" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node15"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1083.5,-820 944.5,-820 944.5,-796 1083.5,-796 1083.5,-820"/>
+<text text-anchor="middle" x="1014" y="-805.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~error_has_error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge15" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M305.67,-931.96C313.64,-899.06 340.46,-807.2 400,-763 472.44,-709.23 509.23,-731.93 599,-723 712.66,-711.69 747.64,-686.88 856,-723 874.97,-729.32 874.9,-739.63 892,-750 918.55,-766.11 950.26,-781.16 974.56,-791.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="973.24,-795.15 983.81,-795.94 976.04,-788.73 973.24,-795.15"/>
+</g>
+<!-- proc~json_output_data_destroy -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node16" class="node">
+<title>proc~json_output_data_destroy</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node16"><a xlink:href="../proc/json_output_data_destroy.html" xlink:title="json_output_data_t%json_output_data_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="856,-516 599,-516 599,-492 856,-492 856,-516"/>
+<text text-anchor="middle" x="727.5" y="-501.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">json_output_data_t%json_output_data_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~json_output_data_destroy -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge16" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~json_output_data_destroy</title>
+<path fill="none" stroke="#ff0000" d="M303.58,-931.67C307.04,-864.33 327.28,-542.01 400,-483 456.25,-437.35 490.7,-478.38 563,-483 587.73,-484.58 614.43,-487.49 638.94,-490.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="638.56,-494.14 648.93,-491.98 639.48,-487.2 638.56,-494.14"/>
+</g>
+<!-- proc~needs_serial_execution -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node17" class="node">
+<title>proc~needs_serial_execution</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node17"><a xlink:href="../proc/needs_serial_execution.html" xlink:title="needs_serial_execution">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="549.5,-1998 413.5,-1998 413.5,-1974 549.5,-1974 549.5,-1998"/>
+<text text-anchor="middle" x="481.5" y="-1983.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">needs_serial_execution</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~needs_serial_execution -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge17" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~needs_serial_execution</title>
+<path fill="none" stroke="#ff0000" d="M303.32,-956.18C306.35,-1066.05 331.12,-1884.07 400,-1965 401.52,-1966.79 403.17,-1968.43 404.93,-1969.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="403.08,-1972.92 413.28,-1975.77 407.09,-1967.18 403.08,-1972.92"/>
+</g>
+<!-- proc~result_from_json -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node18" class="node">
+<title>proc~result_from_json</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node18"><a xlink:href="../proc/result_from_json.html" xlink:title="result_from_json">
+<polygon fill="#d9534f" stroke="#d9534f" points="531,-1956 432,-1956 432,-1932 531,-1932 531,-1956"/>
+<text text-anchor="middle" x="481.5" y="-1941.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">result_from_json</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~result_from_json -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge18" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~result_from_json</title>
+<path fill="none" stroke="#ff0000" d="M303.42,-956.26C307.17,-1063.46 336.45,-1839.22 400,-1918 405.82,-1925.22 413.67,-1930.46 422.2,-1934.26"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="421.05,-1937.57 431.64,-1937.84 423.53,-1931.02 421.05,-1937.57"/>
+</g>
+<!-- proc~run_efp -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node19" class="node">
+<title>proc~run_efp</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node19"><a xlink:href="../proc/run_efp.html" xlink:title="run_efp">
+<polygon fill="#d9534f" stroke="#d9534f" points="508.5,-838 454.5,-838 454.5,-814 508.5,-814 508.5,-838"/>
+<text text-anchor="middle" x="481.5" y="-823.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_efp</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_efp -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge19" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_efp</title>
+<path fill="none" stroke="#ff0000" d="M321.33,-931.82C352.76,-910.92 417.11,-868.14 453.62,-843.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="455.88,-846.57 462.27,-838.12 452.01,-840.74 455.88,-846.57"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node20" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node20"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="563,-1543 400,-1543 400,-1519 563,-1519 563,-1543"/>
+<text text-anchor="middle" x="481.5" y="-1528.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge20" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#ff0000" d="M306.71,-956.26C328.95,-1029.82 444.71,-1412.64 473.84,-1508.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="470.57,-1510.25 476.81,-1518.81 477.27,-1508.22 470.57,-1510.25"/>
+</g>
+<!-- proc~run_makefp -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node21" class="node">
+<title>proc~run_makefp</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node21"><a xlink:href="../proc/run_makefp.html" xlink:title="run_makefp">
+<polygon fill="#d9534f" stroke="#d9534f" points="519.5,-558 443.5,-558 443.5,-534 519.5,-534 519.5,-558"/>
+<text text-anchor="middle" x="481.5" y="-543.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_makefp</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_makefp -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge21" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_makefp</title>
+<path fill="none" stroke="#ff0000" d="M303.59,-931.91C306.43,-885.14 321.95,-713.28 400,-603 411.85,-586.25 430.24,-572.7 446.46,-563.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="448.23,-566.03 455.18,-558.03 444.76,-559.95 448.23,-566.03"/>
+</g>
+<!-- proc~run_sapt -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node22" class="node">
+<title>proc~run_sapt</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node22"><a xlink:href="../proc/run_sapt.html" xlink:title="run_sapt">
+<polygon fill="#d9534f" stroke="#d9534f" points="510.5,-636 452.5,-636 452.5,-612 510.5,-612 510.5,-636"/>
+<text text-anchor="middle" x="481.5" y="-621.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_sapt</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_sapt -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge22" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_sapt</title>
+<path fill="none" stroke="#ff0000" d="M305.32,-931.81C313.1,-893.24 341.22,-771.57 400,-690 413.95,-670.65 434.91,-653.71 451.95,-641.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="454.11,-644.6 460.44,-636.1 450.2,-638.79 454.11,-644.6"/>
+</g>
+<!-- proc~run_unfragmented_calculation -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node23" class="node">
+<title>proc~run_unfragmented_calculation</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node23"><a xlink:href="../proc/run_unfragmented_calculation.html" xlink:title="run_unfragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="1102,-2594 926,-2594 926,-2570 1102,-2570 1102,-2594"/>
+<text text-anchor="middle" x="1014" y="-2579.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_unfragmented_calculation -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge23" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_unfragmented_calculation</title>
+<path fill="none" stroke="#ff0000" d="M302.93,-956.24C302.31,-1092.16 299.54,-2316.37 400,-2437 525.79,-2588.06 777.16,-2598.47 915.73,-2591.27"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="916.13,-2594.76 925.92,-2590.7 915.74,-2587.77 916.13,-2594.76"/>
+</g>
+<!-- proc~write_json_output -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node24" class="node">
+<title>proc~write_json_output</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node24"><a xlink:href="../proc/write_json_output.html" xlink:title="write_json_output">
+<polygon fill="#d9534f" stroke="#d9534f" points="780.5,-276 674.5,-276 674.5,-252 780.5,-252 780.5,-276"/>
+<text text-anchor="middle" x="727.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_json_output</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~write_json_output -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge24" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~write_json_output</title>
+<path fill="none" stroke="#ff0000" d="M302.85,-931.85C302.09,-850.17 302.08,-381.49 400,-290 472.91,-221.87 599.3,-234.93 671.57,-249.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="670.89,-253.32 681.4,-252 672.36,-246.47 670.89,-253.32"/>
+</g>
+<!-- to_char -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node25" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="1297.5,-1634 1243.5,-1634 1243.5,-1610 1297.5,-1610 1297.5,-1634"/>
+<text text-anchor="middle" x="1270.5" y="-1619.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~run_calculation&#45;&gt;to_char -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge25" class="edge">
+<title>proc~run_calculation&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M302.82,-956.17C302.29,-1020.63 305.04,-1327.55 400,-1552 457.53,-1687.98 468.25,-1749.43 599,-1818 651.85,-1845.72 1086.18,-1861.85 1136,-1829 1169.91,-1806.64 1151.2,-1779.89 1172,-1745 1195.47,-1705.64 1230.18,-1664.91 1251.23,-1641.6"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1253.91,-1643.86 1258.07,-1634.11 1248.74,-1639.14 1253.91,-1643.86"/>
+</g>
+<!-- warning -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node26" class="node">
+<title>warning</title>
+<polygon fill="#777777" stroke="#777777" points="1298,-2352 1243,-2352 1243,-2328 1298,-2328 1298,-2352"/>
+<text text-anchor="middle" x="1270.5" y="-2337.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+</g>
+<!-- proc~run_calculation&#45;&gt;warning -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge26" class="edge">
+<title>proc~run_calculation&#45;&gt;warning</title>
+<path fill="none" stroke="#ff0000" d="M303.34,-956.25C306.33,-1060.39 329.79,-1798.19 400,-2007 453.26,-2165.39 458.1,-2236.16 599,-2326 800.69,-2454.61 897.59,-2381.51 1136,-2362 1168.97,-2359.3 1206.06,-2352.92 1232.76,-2347.72"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1233.68,-2351.1 1242.81,-2345.72 1232.32,-2344.23 1233.68,-2351.1"/>
+</g>
+<!-- proc~add_method -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node32" class="node">
+<title>proc~add_method</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node32"><a xlink:href="../proc/add_method.html" xlink:title="add_method">
+<polygon fill="#d9534f" stroke="#d9534f" points="1053.5,-2552 974.5,-2552 974.5,-2528 1053.5,-2528 1053.5,-2552"/>
+<text text-anchor="middle" x="1014" y="-2537.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_method</text>
+</a>
+</g>
+</g>
+<!-- proc~calculation_fingerprint&#45;&gt;proc~add_method -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge27" class="edge">
+<title>proc~calculation_fingerprint&#45;&gt;proc~add_method</title>
+<path fill="none" stroke="#cbff00" d="M750.61,-2451.04C781.47,-2467.39 839.55,-2496.57 892,-2514 915.34,-2521.76 942,-2527.78 964.34,-2532.06"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="963.81,-2535.52 974.28,-2533.91 965.09,-2528.64 963.81,-2535.52"/>
+</g>
+<!-- proc~add_system -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node33" class="node">
+<title>proc~add_system</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node33"><a xlink:href="../proc/add_system.html" xlink:title="add_system">
+<polygon fill="#d9534f" stroke="#d9534f" points="1052,-2472 976,-2472 976,-2448 1052,-2448 1052,-2472"/>
+<text text-anchor="middle" x="1014" y="-2457.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_system</text>
+</a>
+</g>
+</g>
+<!-- proc~calculation_fingerprint&#45;&gt;proc~add_system -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge28" class="edge">
+<title>proc~calculation_fingerprint&#45;&gt;proc~add_system</title>
+<path fill="none" stroke="#cbff00" d="M794.13,-2443.84C846.46,-2447.71 918.5,-2453.02 965.41,-2456.49"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="965.37,-2459.99 975.6,-2457.24 965.89,-2453.01 965.37,-2459.99"/>
+</g>
+<!-- proc~hash_hex -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node48" class="node">
+<title>proc~hash_hex</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node48"><a xlink:href="../proc/hash_hex.html" xlink:title="hasher_t%hash_hex">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1073,-2430 955,-2430 955,-2406 1073,-2406 1073,-2430"/>
+<text text-anchor="middle" x="1014" y="-2415.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hasher_t%hash_hex</text>
+</a>
+</g>
+</g>
+<!-- proc~calculation_fingerprint&#45;&gt;proc~hash_hex -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge29" class="edge">
+<title>proc~calculation_fingerprint&#45;&gt;proc~hash_hex</title>
+<path fill="none" stroke="#cbff00" d="M794.13,-2434.16C839.29,-2430.82 899.13,-2426.41 944.83,-2423.03"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="945.22,-2426.51 954.94,-2422.29 944.71,-2419.53 945.22,-2426.51"/>
+</g>
+<!-- proc~hash_text -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node49" class="node">
+<title>proc~hash_text</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node49"><a xlink:href="../proc/hash_text.html" xlink:title="hasher_t%hash_text">
+<polygon fill="#d9534f" stroke="#d9534f" points="1329.5,-2510 1211.5,-2510 1211.5,-2486 1329.5,-2486 1329.5,-2510"/>
+<text text-anchor="middle" x="1270.5" y="-2495.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hasher_t%hash_text</text>
+</a>
+</g>
+</g>
+<!-- proc~calculation_fingerprint&#45;&gt;proc~hash_text -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge30" class="edge">
+<title>proc~calculation_fingerprint&#45;&gt;proc~hash_text</title>
+<path fill="none" stroke="#cbff00" d="M766.04,-2451C798.89,-2460.94 848.09,-2474.44 892,-2481 999.05,-2496.99 1124.92,-2499.43 1200.88,-2499.14"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="1201.28,-2502.64 1211.26,-2499.09 1201.24,-2495.64 1201.28,-2502.64"/>
+</g>
+<!-- proc~check_system_geometry&#45;&gt;to_char -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge33" class="edge">
+<title>proc~check_system_geometry&#45;&gt;to_char</title>
+<path fill="none" stroke="#7fff00" d="M799.74,-1902.53C909.65,-1896.56 1110.65,-1882.92 1136,-1862 1177.96,-1827.37 1146.67,-1793.15 1172,-1745 1193.23,-1704.66 1228.34,-1664.52 1250.13,-1641.55"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="1252.83,-1643.79 1257.24,-1634.16 1247.78,-1638.94 1252.83,-1643.79"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node41" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node41"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="1066.5,-878 961.5,-878 961.5,-854 1066.5,-854 1066.5,-878"/>
+<text text-anchor="middle" x="1014" y="-863.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~check_system_geometry&#45;&gt;proc~error_set -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge31" class="edge">
+<title>proc~check_system_geometry&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#7fff00" d="M741.76,-1893.7C769.13,-1867.36 831.33,-1802.24 856,-1733 910.36,-1580.42 831.49,-1155.25 892,-1005 912.56,-953.95 960.12,-908.74 989.12,-884.58"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="991.58,-887.09 997.12,-878.05 987.15,-881.66 991.58,-887.09"/>
+</g>
+<!-- sort_index -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node68" class="node">
+<title>sort_index</title>
+<polygon fill="#777777" stroke="#777777" points="1304,-1899 1237,-1899 1237,-1875 1304,-1875 1304,-1899"/>
+<text text-anchor="middle" x="1270.5" y="-1884.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sort_index</text>
+</g>
+<!-- proc~check_system_geometry&#45;&gt;sort_index -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge32" class="edge">
+<title>proc~check_system_geometry&#45;&gt;sort_index</title>
+<path fill="none" stroke="#7fff00" d="M799.6,-1906.72C880.97,-1907.14 1018.2,-1906.59 1136,-1900 1166.48,-1898.29 1200.75,-1894.93 1226.94,-1892.05"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="1227.36,-1895.52 1236.91,-1890.93 1226.59,-1888.56 1227.36,-1895.52"/>
+</g>
+<!-- proc~config_log_settings&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge34" class="edge">
+<title>proc~config_log_settings&#45;&gt;info</title>
+<path fill="none" stroke="#33ff00" d="M833.52,-1136.87C841.69,-1133.37 849.33,-1128.84 856,-1123 897.26,-1086.89 851.23,-1041.67 892,-1005 974.11,-931.15 1029.89,-988.61 1136,-958 1170.06,-948.18 1207.56,-933.18 1234.13,-921.81"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="1235.6,-924.98 1243.39,-917.8 1232.82,-918.56 1235.6,-924.98"/>
+</g>
+<!-- proc~method_type_to_string -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node51" class="node">
+<title>proc~method_type_to_string</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node51"><a xlink:href="../proc/method_type_to_string.html" xlink:title="method_type_to_string">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1080.5,-1038 947.5,-1038 947.5,-1014 1080.5,-1014 1080.5,-1038"/>
+<text text-anchor="middle" x="1014" y="-1023.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_type_to_string</text>
+</a>
+</g>
+</g>
+<!-- proc~config_log_settings&#45;&gt;proc~method_type_to_string -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge35" class="edge">
+<title>proc~config_log_settings&#45;&gt;proc~method_type_to_string</title>
+<path fill="none" stroke="#33ff00" d="M833.76,-1135.09C841.68,-1131.94 849.21,-1127.97 856,-1123 884.54,-1102.09 863.98,-1073.6 892,-1052 905.04,-1041.95 921.11,-1035.59 937.22,-1031.61"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="938.22,-1034.97 947.24,-1029.42 936.72,-1028.13 938.22,-1034.97"/>
+</g>
+<!-- proc~xtb_get_solvation_info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node65" class="node">
+<title>proc~xtb_get_solvation_info</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node65"><a xlink:href="../proc/xtb_get_solvation_info.html" xlink:title="xtb_config_t%xtb_get_solvation_info">
+<polygon fill="#d9534f" stroke="#d9534f" points="1116,-1156 912,-1156 912,-1132 1116,-1132 1116,-1156"/>
+<text text-anchor="middle" x="1014" y="-1141.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_config_t%xtb_get_solvation_info</text>
+</a>
+</g>
+</g>
+<!-- proc~config_log_settings&#45;&gt;proc~xtb_get_solvation_info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge36" class="edge">
+<title>proc~config_log_settings&#45;&gt;proc~xtb_get_solvation_info</title>
+<path fill="none" stroke="#33ff00" d="M833.63,-1144C855.73,-1144 879.11,-1144 901.44,-1144"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="901.61,-1147.5 911.61,-1144 901.61,-1140.5 901.61,-1147.5"/>
+</g>
+<!-- proc~json_output_data_reset -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node50" class="node">
+<title>proc~json_output_data_reset</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node50"><a xlink:href="../proc/json_output_data_reset.html" xlink:title="json_output_data_t%json_output_data_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="1136,-516 892,-516 892,-492 1136,-492 1136,-516"/>
+<text text-anchor="middle" x="1014" y="-501.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">json_output_data_t%json_output_data_reset</text>
+</a>
+</g>
+</g>
+<!-- proc~json_output_data_destroy&#45;&gt;proc~json_output_data_reset -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge37" class="edge">
+<title>proc~json_output_data_destroy&#45;&gt;proc~json_output_data_reset</title>
+<path fill="none" stroke="#00ffb2" d="M856.19,-504C864.59,-504 873.06,-504 881.48,-504"/>
+<polygon fill="#00ffb2" stroke="#00ffb2" points="881.71,-507.5 891.71,-504 881.71,-500.5 881.71,-507.5"/>
+</g>
+<!-- proc~run_efp&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge38" class="edge">
+<title>proc~run_efp&#45;&gt;info</title>
+<path fill="none" stroke="#0066ff" d="M499.63,-838.19C521.48,-852.95 561,-877.08 599,-887 834.06,-948.36 1131.28,-922.33 1233.25,-910.59"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1233.81,-914.05 1243.33,-909.41 1232.99,-907.1 1233.81,-914.05"/>
+</g>
+<!-- proc~run_efp&#45;&gt;proc~error_get_message -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge39" class="edge">
+<title>proc~run_efp&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#0066ff" d="M508.61,-821.72C540.58,-816.48 596.27,-807.35 643.34,-799.63"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="643.94,-803.08 653.25,-798.01 642.81,-796.17 643.94,-803.08"/>
+</g>
+<!-- proc~run_efp&#45;&gt;proc~error_has_error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge40" class="edge">
+<title>proc~run_efp&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#0066ff" d="M508.81,-825.11C585.7,-822.5 812.28,-814.81 933.83,-810.69"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="934.31,-814.17 944.18,-810.34 934.07,-807.18 934.31,-814.17"/>
+</g>
+<!-- proc~run_efp&#45;&gt;proc~json_output_data_destroy -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge41" class="edge">
+<title>proc~run_efp&#45;&gt;proc~json_output_data_destroy</title>
+<path fill="none" stroke="#0066ff" d="M488.51,-813.93C502.69,-785.17 538.85,-710.14 563,-645 582.35,-592.79 557.19,-561.77 599,-525 600.33,-523.83 601.7,-522.71 603.11,-521.64"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="605.13,-524.5 611.53,-516.05 601.26,-518.67 605.13,-524.5"/>
+</g>
+<!-- proc~run_efp&#45;&gt;proc~write_json_output -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge44" class="edge">
+<title>proc~run_efp&#45;&gt;proc~write_json_output</title>
+<path fill="none" stroke="#0066ff" d="M489.39,-813.72C505.11,-785.11 543.77,-711.4 563,-645 593.74,-538.86 550.83,-498.45 599,-399 622.92,-349.62 671.39,-306.23 701.19,-282.69"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="703.67,-285.2 709.43,-276.31 699.38,-279.66 703.67,-285.2"/>
+</g>
+<!-- proc~run_efp&#45;&gt;to_char -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge45" class="edge">
+<title>proc~run_efp&#45;&gt;to_char</title>
+<path fill="none" stroke="#0066ff" d="M482.25,-838.22C481.92,-890.39 487.89,-1096.36 599,-1198 779.23,-1362.87 947.23,-1159.97 1136,-1315 1228.43,-1390.91 1258.52,-1543.15 1266.77,-1599.96"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1263.32,-1600.56 1268.14,-1609.99 1270.26,-1599.61 1263.32,-1600.56"/>
+</g>
+<!-- proc~refuse -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node52" class="node">
+<title>proc~refuse</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node52"><a xlink:href="../proc/refuse.html" xlink:title="refuse">
+<polygon fill="#d9534f" stroke="#d9534f" points="754.5,-558 700.5,-558 700.5,-534 754.5,-534 754.5,-558"/>
+<text text-anchor="middle" x="727.5" y="-543.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">refuse</text>
+</a>
+</g>
+</g>
+<!-- proc~run_efp&#45;&gt;proc~refuse -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge42" class="edge">
+<title>proc~run_efp&#45;&gt;proc~refuse</title>
+<path fill="none" stroke="#0066ff" d="M488.31,-813.87C503.47,-782.99 546.73,-699.82 599,-643 628.6,-610.82 669.94,-581.58 697.43,-563.8"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="699.63,-566.55 706.18,-558.23 695.87,-560.65 699.63,-566.55"/>
+</g>
+<!-- proc~run_libcint_efp -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node53" class="node">
+<title>proc~run_libcint_efp</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node53"><a xlink:href="../proc/run_libcint_efp.html" xlink:title="run_libcint_efp">
+<polygon fill="#d9534f" stroke="#d9534f" points="773,-878 682,-878 682,-854 773,-854 773,-878"/>
+<text text-anchor="middle" x="727.5" y="-863.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_efp</text>
+</a>
+</g>
+</g>
+<!-- proc~run_efp&#45;&gt;proc~run_libcint_efp -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge43" class="edge">
+<title>proc~run_efp&#45;&gt;proc~run_libcint_efp</title>
+<path fill="none" stroke="#0066ff" d="M508.61,-830.28C547.26,-836.62 620.58,-848.64 671.43,-856.97"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="671.17,-860.48 681.6,-858.64 672.3,-853.57 671.17,-860.48"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;bcast -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge48" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;bcast</title>
+<path fill="none" stroke="#0019ff" d="M484.19,-1518.88C493.49,-1451.86 538.84,-1119.75 563,-847 568.93,-780.03 567.94,-302.63 599,-243 619.1,-204.41 661.18,-175.69 691.51,-158.94"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="693.34,-161.93 700.51,-154.12 690.04,-155.75 693.34,-161.93"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;abort_comm -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge46" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;abort_comm</title>
+<path fill="none" stroke="#0019ff" d="M483.47,-1518.75C489.36,-1447.28 522.76,-1084.82 599,-1010 619.36,-990.02 650.64,-983.43 677.13,-981.87"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="677.52,-985.36 687.38,-981.5 677.26,-978.36 677.52,-985.36"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge49" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;error</title>
+<path fill="none" stroke="#0019ff" d="M483.54,-1518.87C489.7,-1449.69 523.85,-1105.69 599,-1038 684.57,-960.93 775.81,-1087.65 856,-1005 913.22,-946.03 833.9,-695.11 892,-637 939.16,-589.83 1148.08,-594.14 1233.21,-598"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="1233.28,-601.51 1243.44,-598.49 1233.61,-594.51 1233.28,-601.51"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge50" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;info</title>
+<path fill="none" stroke="#0019ff" d="M484.88,-1519C493.32,-1479.44 525.33,-1351.54 599,-1279 688.04,-1191.33 768.39,-1254.1 856,-1165 884.76,-1135.75 859.4,-1104.9 892,-1080 978.96,-1013.57 1038.61,-1096.91 1136,-1047 1191.16,-1018.73 1235.94,-958.34 1256.81,-926.55"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="1259.82,-928.34 1262.28,-918.03 1253.93,-924.56 1259.82,-928.34"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~calculation_fingerprint -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge54" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~calculation_fingerprint</title>
+<path fill="none" stroke="#0019ff" d="M485.54,-1543.1C497.43,-1590.95 541.23,-1771.71 563,-1923 576.69,-2018.13 550.16,-2271.22 599,-2354 618.21,-2386.56 655.39,-2409.17 684.66,-2422.83"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="683.3,-2426.06 693.86,-2426.96 686.16,-2419.67 683.3,-2426.06"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~error_get_message -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge59" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#0019ff" d="M483.04,-1518.9C486.96,-1436.43 513.24,-957.16 599,-845 614.95,-824.14 640.04,-810.39 663.75,-801.46"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="665.19,-804.67 673.45,-798.04 662.86,-798.06 665.19,-804.67"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~error_has_error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge60" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#0019ff" d="M483.89,-1518.69C491.58,-1452.89 531.01,-1143.28 599,-1081 684.4,-1002.77 773.35,-1119.12 856,-1038 918.27,-976.88 833.86,-910.07 892,-845 903.15,-832.52 918.38,-824.19 934.28,-818.65"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="935.72,-821.86 944.23,-815.54 933.64,-815.18 935.72,-821.86"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;to_char -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge71" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;to_char</title>
+<path fill="none" stroke="#0019ff" d="M485.06,-1543.05C493.56,-1579.71 524.68,-1690.07 599,-1733 650.73,-1762.88 1079.48,-1726.34 1136,-1707 1179.21,-1692.21 1222.58,-1660.79 1247.7,-1640.58"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="1249.97,-1643.24 1255.49,-1634.19 1245.54,-1637.82 1249.97,-1643.24"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;warning -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge72" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;warning</title>
+<path fill="none" stroke="#0019ff" d="M485.46,-1543.11C497.05,-1591 539.91,-1771.91 563,-1923 575.01,-2001.6 543.96,-2221.62 599,-2279 686.56,-2370.28 1105.26,-2350.82 1232.64,-2342.62"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="1232.94,-2346.11 1242.68,-2341.96 1232.48,-2339.13 1232.94,-2346.11"/>
+</g>
+<!-- allgather -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node27" class="node">
+<title>allgather</title>
+<polygon fill="#777777" stroke="#777777" points="758,-1480 697,-1480 697,-1456 758,-1456 758,-1480"/>
+<text text-anchor="middle" x="727.5" y="-1465.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">allgather</text>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;allgather -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge47" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;allgather</title>
+<path fill="none" stroke="#0019ff" d="M511.24,-1518.97C534.54,-1509.63 568.41,-1496.96 599,-1489 628,-1481.45 661.46,-1476.06 686.82,-1472.63"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="687.35,-1476.1 696.81,-1471.33 686.44,-1469.15 687.35,-1476.1"/>
+</g>
+<!-- init -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node28" class="node">
+<title>init</title>
+<polygon fill="#777777" stroke="#777777" points="754.5,-1438 700.5,-1438 700.5,-1414 754.5,-1414 754.5,-1438"/>
+<text text-anchor="middle" x="727.5" y="-1423.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">init</text>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;init -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge51" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;init</title>
+<path fill="none" stroke="#0019ff" d="M494.91,-1518.98C514.99,-1500.3 556.63,-1464.61 599,-1447 628.13,-1434.89 663.73,-1429.75 689.9,-1427.57"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="690.42,-1431.04 700.14,-1426.83 689.91,-1424.06 690.42,-1431.04"/>
+</g>
+<!-- interface~binomial -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node29" class="node">
+<title>interface~binomial</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node29"><a xlink:href="../interface/binomial.html" xlink:title="binomial">
+<polygon fill="#a7506f" stroke="#a7506f" points="757,-2270 698,-2270 698,-2246 757,-2246 757,-2270"/>
+<text text-anchor="middle" x="727.5" y="-2255.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">binomial</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;interface~binomial -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge52" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;interface~binomial</title>
+<path fill="none" stroke="#0019ff" d="M485.3,-1543.14C496.3,-1591.13 537.21,-1772.34 563,-1923 582.83,-2038.85 533.25,-2087.57 599,-2185 619.96,-2216.06 658.85,-2235.51 688.18,-2246.45"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="687.13,-2249.79 697.73,-2249.83 689.48,-2243.19 687.13,-2249.79"/>
+</g>
+<!-- proc~apply_distance_screening -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node34" class="node">
+<title>proc~apply_distance_screening</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node34"><a xlink:href="../proc/apply_distance_screening.html" xlink:title="apply_distance_screening">
+<polygon fill="#d9534f" stroke="#d9534f" points="1088.5,-1778 939.5,-1778 939.5,-1754 1088.5,-1754 1088.5,-1778"/>
+<text text-anchor="middle" x="1014" y="-1763.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">apply_distance_screening</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~apply_distance_screening -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge53" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~apply_distance_screening</title>
+<path fill="none" stroke="#0019ff" d="M484.11,-1543.18C490.18,-1583.71 515.81,-1714.39 599,-1766 652.12,-1798.96 824.21,-1787.12 929.06,-1776.15"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="929.73,-1779.6 939.3,-1775.06 928.99,-1772.64 929.73,-1779.6"/>
+</g>
+<!-- proc~check_counterpoise_support -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node36" class="node">
+<title>proc~check_counterpoise_support</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node36"><a xlink:href="../proc/check_counterpoise_support.html" xlink:title="check_counterpoise_support">
+<polygon fill="#d9534f" stroke="#d9534f" points="810,-1114 645,-1114 645,-1090 810,-1090 810,-1114"/>
+<text text-anchor="middle" x="727.5" y="-1099.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_counterpoise_support</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~check_counterpoise_support -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge55" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~check_counterpoise_support</title>
+<path fill="none" stroke="#0019ff" d="M484.24,-1518.62C493.26,-1456.4 536.58,-1178.63 599,-1123 609.24,-1113.87 621.87,-1107.91 635.15,-1104.11"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="636.04,-1107.5 644.92,-1101.72 634.37,-1100.7 636.04,-1107.5"/>
+</g>
+<!-- proc~combine -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node37" class="node">
+<title>proc~combine</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node37"><a xlink:href="../proc/combine.html" xlink:title="combine">
+<polygon fill="#d9534f" stroke="#d9534f" points="757,-2176 698,-2176 698,-2152 757,-2152 757,-2176"/>
+<text text-anchor="middle" x="727.5" y="-2161.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">combine</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~combine -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge56" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~combine</title>
+<path fill="none" stroke="#0019ff" d="M484.99,-1543.13C501.71,-1624.43 596.88,-2087.07 599,-2090 620.94,-2120.39 659.5,-2140.23 688.49,-2151.64"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="687.32,-2154.94 697.91,-2155.19 689.79,-2148.39 687.32,-2154.94"/>
+</g>
+<!-- proc~create_monomer_list -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node38" class="node">
+<title>proc~create_monomer_list</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node38"><a xlink:href="../proc/create_monomer_list.html" xlink:title="create_monomer_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="1076,-1572 952,-1572 952,-1548 1076,-1548 1076,-1572"/>
+<text text-anchor="middle" x="1014" y="-1557.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_monomer_list</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~create_monomer_list -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge57" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~create_monomer_list</title>
+<path fill="none" stroke="#0019ff" d="M489.29,-1543.04C504.74,-1569.07 545.42,-1630.08 599,-1653 651.51,-1675.46 807.42,-1683.03 856,-1653 886.43,-1634.19 863.29,-1602.35 892,-1581 906.23,-1570.42 923.99,-1564.49 941.47,-1561.32"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="942.36,-1564.73 951.71,-1559.75 941.3,-1557.81 942.36,-1564.73"/>
+</g>
+<!-- proc~error_clear -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node40" class="node">
+<title>proc~error_clear</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node40"><a xlink:href="../proc/error_clear.html" xlink:title="error_t%error_clear">
+<polygon fill="#d9534f" stroke="#d9534f" points="785.5,-1396 669.5,-1396 669.5,-1372 785.5,-1372 785.5,-1396"/>
+<text text-anchor="middle" x="727.5" y="-1381.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_clear</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~error_clear -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge58" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~error_clear</title>
+<path fill="none" stroke="#0019ff" d="M489.73,-1518.83C505.77,-1493.05 547.06,-1432.96 599,-1405 617.25,-1395.17 638.93,-1389.71 659.2,-1386.73"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="659.85,-1390.17 669.32,-1385.42 658.96,-1383.23 659.85,-1390.17"/>
+</g>
+<!-- proc~fraglist_destroy -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node42" class="node">
+<title>proc~fraglist_destroy</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node42"><a xlink:href="../proc/fraglist_destroy.html" xlink:title="fraglist_t%fraglist_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1088.5,-1348 939.5,-1348 939.5,-1324 1088.5,-1324 1088.5,-1348"/>
+<text text-anchor="middle" x="1014" y="-1333.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fraglist_t%fraglist_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~fraglist_destroy -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge61" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~fraglist_destroy</title>
+<path fill="none" stroke="#0019ff" d="M508.16,-1543.18C531.31,-1553.44 566.6,-1567.34 599,-1573 711.52,-1592.66 768.31,-1646.19 856,-1573 924.67,-1515.69 833.06,-1442.28 892,-1375 902.08,-1363.49 915.57,-1355.36 929.89,-1349.61"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="931.18,-1352.87 939.39,-1346.17 928.8,-1346.29 931.18,-1352.87"/>
+</g>
+<!-- proc~fraglist_replace -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node43" class="node">
+<title>proc~fraglist_replace</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node43"><a xlink:href="../proc/fraglist_replace.html" xlink:title="fraglist_t%fraglist_replace">
+<polygon fill="#d9534f" stroke="#d9534f" points="802.5,-1312 652.5,-1312 652.5,-1288 802.5,-1288 802.5,-1312"/>
+<text text-anchor="middle" x="727.5" y="-1297.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fraglist_t%fraglist_replace</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~fraglist_replace -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge62" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~fraglist_replace</title>
+<path fill="none" stroke="#0019ff" d="M485.3,-1518.77C494.42,-1481.99 526.91,-1371.79 599,-1321 611.71,-1312.04 626.89,-1306.4 642.26,-1302.93"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="643.23,-1306.3 652.37,-1300.95 641.88,-1299.43 643.23,-1306.3"/>
+</g>
+<!-- proc~fragment_owner_map -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node44" class="node">
+<title>proc~fragment_owner_map</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node44"><a xlink:href="../proc/fragment_owner_map.html" xlink:title="fragment_owner_map">
+<polygon fill="#d9534f" stroke="#d9534f" points="792.5,-1354 662.5,-1354 662.5,-1330 792.5,-1330 792.5,-1354"/>
+<text text-anchor="middle" x="727.5" y="-1339.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_owner_map</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~fragment_owner_map -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge63" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~fragment_owner_map</title>
+<path fill="none" stroke="#0019ff" d="M487.02,-1518.75C499.42,-1487.05 537.2,-1402.08 599,-1363 614.83,-1352.99 633.9,-1347.27 652.41,-1344.12"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="652.93,-1347.58 662.31,-1342.66 651.91,-1340.65 652.93,-1347.58"/>
+</g>
+<!-- proc~generate_mbe_term_list -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node45" class="node">
+<title>proc~generate_mbe_term_list</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node45"><a xlink:href="../proc/generate_mbe_term_list.html" xlink:title="generate_mbe_term_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="798.5,-1724 656.5,-1724 656.5,-1700 798.5,-1700 798.5,-1724"/>
+<text text-anchor="middle" x="727.5" y="-1709.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_mbe_term_list</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~generate_mbe_term_list -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge64" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~generate_mbe_term_list</title>
+<path fill="none" stroke="#0019ff" d="M487.78,-1543.05C501.44,-1572.67 540.95,-1649.31 599,-1686 613.07,-1694.9 629.61,-1700.83 646.03,-1704.76"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="645.7,-1708.27 656.21,-1706.96 647.18,-1701.43 645.7,-1708.27"/>
+</g>
+<!-- proc~gmbe_enumerate_pie_terms -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node47" class="node">
+<title>proc~gmbe_enumerate_pie_terms</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node47"><a xlink:href="../proc/gmbe_enumerate_pie_terms.html" xlink:title="gmbe_enumerate_pie_terms">
+<polygon fill="#d9534f" stroke="#d9534f" points="810.5,-1644 644.5,-1644 644.5,-1620 810.5,-1620 810.5,-1644"/>
+<text text-anchor="middle" x="727.5" y="-1629.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_enumerate_pie_terms</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~gmbe_enumerate_pie_terms -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge65" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~gmbe_enumerate_pie_terms</title>
+<path fill="none" stroke="#0019ff" d="M497.31,-1543.15C518.51,-1559.9 559.34,-1589.86 599,-1606 610.31,-1610.6 622.53,-1614.42 634.77,-1617.58"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="634.02,-1621 644.57,-1619.98 635.68,-1614.2 634.02,-1621"/>
+</g>
+<!-- proc~sort_fragments_by_size -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node57" class="node">
+<title>proc~sort_fragments_by_size</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node57"><a xlink:href="../proc/sort_fragments_by_size.html" xlink:title="sort_fragments_by_size">
+<polygon fill="#d9534f" stroke="#d9534f" points="1082,-1820 946,-1820 946,-1796 1082,-1796 1082,-1820"/>
+<text text-anchor="middle" x="1014" y="-1805.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sort_fragments_by_size</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~sort_fragments_by_size -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge66" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~sort_fragments_by_size</title>
+<path fill="none" stroke="#0019ff" d="M483.62,-1543.02C488.31,-1585.61 510.44,-1729.96 599,-1790 651.95,-1825.9 831.1,-1820.61 935.58,-1814.03"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="936.01,-1817.51 945.76,-1813.37 935.55,-1810.53 936.01,-1817.51"/>
+</g>
+<!-- proc~validate_system -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node58" class="node">
+<title>proc~validate_system</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node58"><a xlink:href="../proc/validate_system.html" xlink:title="validate_system">
+<polygon fill="#d9534f" stroke="#d9534f" points="776.5,-1997 678.5,-1997 678.5,-1973 776.5,-1973 776.5,-1997"/>
+<text text-anchor="middle" x="727.5" y="-1982.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">validate_system</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~validate_system -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge67" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~validate_system</title>
+<path fill="none" stroke="#0019ff" d="M482.59,-1543.03C483.59,-1595.4 494.23,-1806.33 599,-1927 617.09,-1947.83 644.18,-1961.59 668.75,-1970.45"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="667.77,-1973.82 678.37,-1973.73 670.03,-1967.19 667.77,-1973.82"/>
+</g>
+<!-- proc~validate_terms -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node59" class="node">
+<title>proc~validate_terms</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node59"><a xlink:href="../proc/validate_terms.html" xlink:title="validate_terms">
+<polygon fill="#d9534f" stroke="#d9534f" points="773,-2081 682,-2081 682,-2057 773,-2057 773,-2081"/>
+<text text-anchor="middle" x="727.5" y="-2066.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">validate_terms</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~validate_terms -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge68" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~validate_terms</title>
+<path fill="none" stroke="#0019ff" d="M484.83,-1543.06C498.45,-1613.31 568.38,-1967.84 599,-2006 617.5,-2029.05 646.57,-2044.32 672.29,-2054.05"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="671.36,-2057.43 681.95,-2057.51 673.72,-2050.84 671.36,-2057.43"/>
+</g>
+<!-- run_distributed -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node66" class="node">
+<title>run_distributed</title>
+<polygon fill="#777777" stroke="#777777" points="774,-1564 681,-1564 681,-1540 774,-1540 774,-1564"/>
+<text text-anchor="middle" x="727.5" y="-1549.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_distributed</text>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;run_distributed -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge69" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;run_distributed</title>
+<path fill="none" stroke="#0019ff" d="M563.07,-1537.93C598.39,-1540.97 638.97,-1544.47 670.86,-1547.21"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="670.63,-1550.7 680.89,-1548.07 671.23,-1543.73 670.63,-1550.7"/>
+</g>
+<!-- run_serial -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node67" class="node">
+<title>run_serial</title>
+<polygon fill="#777777" stroke="#777777" points="760,-1522 695,-1522 695,-1498 760,-1498 760,-1522"/>
+<text text-anchor="middle" x="727.5" y="-1507.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_serial</text>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;run_serial -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge70" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;run_serial</title>
+<path fill="none" stroke="#0019ff" d="M563.07,-1524.07C603.65,-1520.57 651.18,-1516.48 684.48,-1513.62"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="685.11,-1517.08 694.77,-1512.73 684.51,-1510.1 685.11,-1517.08"/>
+</g>
+<!-- proc~run_makefp&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge73" class="edge">
+<title>proc~run_makefp&#45;&gt;info</title>
+<path fill="none" stroke="#3200ff" d="M519.56,-544.56C534.92,-542.08 551.73,-536.61 563,-525 612.86,-473.63 543.01,-412.61 599,-368 643.67,-332.41 813.36,-330.01 856,-368 959.89,-460.56 794.56,-579.67 892,-679 968.63,-757.12 1052.71,-641.02 1136,-712 1178.06,-747.84 1140.6,-785.53 1172,-831 1188.88,-855.45 1216.21,-875.47 1237.65,-888.66"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="1236.04,-891.78 1246.43,-893.89 1239.62,-885.77 1236.04,-891.78"/>
+</g>
+<!-- proc~run_makefp&#45;&gt;proc~error_get_message -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge75" class="edge">
+<title>proc~run_makefp&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#3200ff" d="M508.93,-558.21C526.9,-567.86 549.73,-583.03 563,-603 603.83,-664.42 545.42,-714.31 599,-765 609.66,-775.08 623.19,-781.39 637.44,-785.18"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="636.86,-788.64 647.39,-787.42 638.4,-781.81 636.86,-788.64"/>
+</g>
+<!-- proc~run_makefp&#45;&gt;proc~error_has_error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge76" class="edge">
+<title>proc~run_makefp&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#3200ff" d="M519.69,-544.2C534.88,-541.64 551.53,-536.2 563,-525 604.66,-484.3 552.5,-434.07 599,-399 644.59,-364.61 813.37,-360.99 856,-399 908.26,-445.59 857.99,-650.8 892,-712 911.87,-747.74 951,-774.97 979.4,-791.14"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="977.76,-794.23 988.2,-796 981.14,-788.1 977.76,-794.23"/>
+</g>
+<!-- proc~element_number_to_symbol -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node39" class="node">
+<title>proc~element_number_to_symbol</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node39"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="809,-474 646,-474 646,-450 809,-450 809,-474"/>
+<text text-anchor="middle" x="727.5" y="-459.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+</a>
+</g>
+</g>
+<!-- proc~run_makefp&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge74" class="edge">
+<title>proc~run_makefp&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#3200ff" d="M519.65,-541.18C533.98,-538.11 550.02,-533.12 563,-525 583.85,-511.97 577.58,-495.06 599,-483 610.29,-476.64 622.98,-472.08 635.87,-468.84"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="636.75,-472.23 645.73,-466.6 635.21,-465.4 636.75,-472.23"/>
+</g>
+<!-- proc~get_basename -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node46" class="node">
+<title>proc~get_basename</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node46"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1316,-150 1225,-150 1225,-126 1316,-126 1316,-150"/>
+<text text-anchor="middle" x="1270.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
+</a>
+</g>
+</g>
+<!-- proc~run_makefp&#45;&gt;proc~get_basename -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge77" class="edge">
+<title>proc~run_makefp&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#3200ff" d="M519.7,-545.14C535.27,-542.78 552.22,-537.26 563,-525 646.44,-430.12 510.93,-333.6 599,-243 641.95,-198.81 1062.43,-156.73 1214.76,-142.82"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="1215.18,-146.29 1224.83,-141.9 1214.55,-139.32 1215.18,-146.29"/>
+</g>
+<!-- proc~run_makefp&#45;&gt;proc~refuse -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge78" class="edge">
+<title>proc~run_makefp&#45;&gt;proc~refuse</title>
+<path fill="none" stroke="#3200ff" d="M519.56,-546C565.82,-546 644.42,-546 690.28,-546"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="690.37,-549.5 700.37,-546 690.37,-542.5 690.37,-549.5"/>
+</g>
+<!-- proc~run_libcint_makefp -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node54" class="node">
+<title>proc~run_libcint_makefp</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node54"><a xlink:href="../proc/run_libcint_makefp.html" xlink:title="run_libcint_makefp">
+<polygon fill="#d9534f" stroke="#d9534f" points="784.5,-432 670.5,-432 670.5,-408 784.5,-408 784.5,-432"/>
+<text text-anchor="middle" x="727.5" y="-417.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_makefp</text>
+</a>
+</g>
+</g>
+<!-- proc~run_makefp&#45;&gt;proc~run_libcint_makefp -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge79" class="edge">
+<title>proc~run_makefp&#45;&gt;proc~run_libcint_makefp</title>
+<path fill="none" stroke="#3200ff" d="M519.84,-543.34C534.7,-540.6 551.07,-535.27 563,-525 593.79,-498.51 567.03,-466.05 599,-441 616.23,-427.5 638.84,-421.24 660.23,-418.66"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="660.65,-422.14 670.27,-417.7 659.99,-415.17 660.65,-422.14"/>
+</g>
+<!-- proc~run_sapt&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge80" class="edge">
+<title>proc~run_sapt&#45;&gt;info</title>
+<path fill="none" stroke="#7f00ff" d="M510.56,-612.48C577.46,-587.04 748.73,-534.11 856,-610 895.24,-637.77 857.32,-678.71 892,-712 973.85,-790.56 1041.83,-723.73 1136,-787 1156.97,-801.09 1153.87,-813.4 1172,-831 1194.16,-852.51 1222.39,-873.65 1242.77,-887.97"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="1241.04,-891.03 1251.25,-893.86 1245.04,-885.28 1241.04,-891.03"/>
+</g>
+<!-- proc~run_sapt&#45;&gt;proc~error_get_message -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge82" class="edge">
+<title>proc~run_sapt&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#7f00ff" d="M488.66,-636.32C503.41,-664.41 543.67,-733.19 599,-765 610.74,-771.75 624.03,-776.48 637.48,-779.77"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="636.78,-783.2 647.29,-781.93 638.28,-776.37 636.78,-783.2"/>
+</g>
+<!-- proc~run_sapt&#45;&gt;proc~error_has_error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge83" class="edge">
+<title>proc~run_sapt&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#7f00ff" d="M510.73,-621.5C588.23,-615.22 802.06,-602.12 856,-643 895.99,-673.31 858.76,-712.42 892,-750 909.5,-769.78 935.23,-783.42 958.47,-792.47"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="957.32,-795.78 967.91,-795.96 959.74,-789.21 957.32,-795.78"/>
+</g>
+<!-- proc~run_sapt&#45;&gt;proc~json_output_data_destroy -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge84" class="edge">
+<title>proc~run_sapt&#45;&gt;proc~json_output_data_destroy</title>
+<path fill="none" stroke="#7f00ff" d="M502.37,-611.89C519.32,-601.12 543.89,-584.42 563,-567 581.17,-550.44 577.58,-537.06 599,-525 602.32,-523.13 605.77,-521.41 609.3,-519.84"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="610.87,-522.98 618.85,-516.01 608.26,-516.49 610.87,-522.98"/>
+</g>
+<!-- proc~run_sapt&#45;&gt;proc~write_json_output -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge88" class="edge">
+<title>proc~run_sapt&#45;&gt;proc~write_json_output</title>
+<path fill="none" stroke="#7f00ff" d="M508.98,-611.83C526.97,-602.19 549.8,-587.02 563,-567 605.03,-503.25 563.47,-466.59 599,-399 624.67,-350.17 672.98,-306.31 702.21,-282.58"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="704.62,-285.13 710.26,-276.16 700.26,-279.66 704.62,-285.13"/>
+</g>
+<!-- proc~run_sapt&#45;&gt;to_char -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge89" class="edge">
+<title>proc~run_sapt&#45;&gt;to_char</title>
+<path fill="none" stroke="#7f00ff" d="M489.6,-636.22C505.76,-664.71 545.29,-738.18 563,-805 583.6,-882.72 542.95,-1107.36 599,-1165 639.14,-1206.28 799.09,-1189.27 856,-1198 980.95,-1217.17 1039.5,-1166.34 1136,-1248 1246.71,-1341.69 1265.62,-1533.96 1268.84,-1599.52"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="1265.36,-1600.06 1269.27,-1609.91 1272.35,-1599.77 1265.36,-1600.06"/>
+</g>
+<!-- proc~run_sapt&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge81" class="edge">
+<title>proc~run_sapt&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#7f00ff" d="M506.34,-611.83C523.97,-601.82 547.5,-586.18 563,-567 588.53,-535.41 567.03,-508.05 599,-483 609.8,-474.54 622.72,-468.92 636.12,-465.27"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="637.02,-468.66 645.95,-462.95 635.41,-461.85 637.02,-468.66"/>
+</g>
+<!-- proc~run_sapt&#45;&gt;proc~refuse -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge85" class="edge">
+<title>proc~run_sapt&#45;&gt;proc~refuse</title>
+<path fill="none" stroke="#7f00ff" d="M505.56,-611.89C528.65,-600.21 565.47,-582.76 599,-572 629.06,-562.35 664.3,-555.49 690.1,-551.25"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="690.86,-554.67 700.19,-549.64 689.76,-547.76 690.86,-554.67"/>
+</g>
+<!-- proc~run_libcint_sapt0 -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node55" class="node">
+<title>proc~run_libcint_sapt0</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node55"><a xlink:href="../proc/run_libcint_sapt0.html" xlink:title="run_libcint_sapt0">
+<polygon fill="#d9534f" stroke="#d9534f" points="779,-756 676,-756 676,-732 779,-732 779,-756"/>
+<text text-anchor="middle" x="727.5" y="-741.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_sapt0</text>
+</a>
+</g>
+</g>
+<!-- proc~run_sapt&#45;&gt;proc~run_libcint_sapt0 -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge86" class="edge">
+<title>proc~run_sapt&#45;&gt;proc~run_libcint_sapt0</title>
+<path fill="none" stroke="#7f00ff" d="M504.67,-636.02C527.98,-648.57 565.82,-668.65 599,-685 629.46,-700.01 664.49,-716.14 690.12,-727.74"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="688.9,-731.03 699.46,-731.95 691.78,-724.65 688.9,-731.03"/>
+</g>
+<!-- proc~run_libcint_sapt2 -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node56" class="node">
+<title>proc~run_libcint_sapt2</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node56"><a xlink:href="../proc/run_libcint_sapt2.html" xlink:title="run_libcint_sapt2">
+<polygon fill="#d9534f" stroke="#d9534f" points="779,-676 676,-676 676,-652 779,-652 779,-676"/>
+<text text-anchor="middle" x="727.5" y="-661.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_sapt2</text>
+</a>
+</g>
+</g>
+<!-- proc~run_sapt&#45;&gt;proc~run_libcint_sapt2 -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge87" class="edge">
+<title>proc~run_sapt&#45;&gt;proc~run_libcint_sapt2</title>
+<path fill="none" stroke="#7f00ff" d="M510.97,-628.67C548.72,-634.86 616.34,-645.94 665.79,-654.05"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="665.31,-657.52 675.74,-655.68 666.44,-650.61 665.31,-657.52"/>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge90" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;info</title>
+<path fill="none" stroke="#cc00ff" d="M1102.05,-2581.71C1115.06,-2577.81 1127.08,-2571.33 1136,-2561 1188.21,-2500.5 1154.28,-1200.92 1172,-1123 1189.32,-1046.84 1234.25,-964.79 1256.55,-927.11"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1259.81,-928.48 1261.95,-918.11 1253.81,-924.88 1259.81,-928.48"/>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;to_char -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge94" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;to_char</title>
+<path fill="none" stroke="#cc00ff" d="M1102.19,-2581.48C1115.11,-2577.58 1127.06,-2571.16 1136,-2561 1195.95,-2492.86 1140.27,-1830.03 1172,-1745 1187.84,-1702.57 1224.21,-1663.38 1247.78,-1641.12"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1250.26,-1643.59 1255.23,-1634.24 1245.51,-1638.45 1250.26,-1643.59"/>
+</g>
+<!-- interface~distributed_unfragmented_hessian -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node30" class="node">
+<title>interface~distributed_unfragmented_hessian</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node30"><a xlink:href="../interface/distributed_unfragmented_hessian.html" xlink:title="distributed_unfragmented_hessian">
+<polygon fill="#a7506f" stroke="#a7506f" points="1369,-2594 1172,-2594 1172,-2570 1369,-2570 1369,-2594"/>
+<text text-anchor="middle" x="1270.5" y="-2579.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">distributed_unfragmented_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;interface~distributed_unfragmented_hessian -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge91" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;interface~distributed_unfragmented_hessian</title>
+<path fill="none" stroke="#cc00ff" d="M1102.23,-2582C1121.43,-2582 1141.99,-2582 1161.89,-2582"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1161.91,-2585.5 1171.91,-2582 1161.91,-2578.5 1161.91,-2585.5"/>
+</g>
+<!-- interface~unfragmented_calculation -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node31" class="node">
+<title>interface~unfragmented_calculation</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node31"><a xlink:href="../interface/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
+<polygon fill="#a7506f" stroke="#a7506f" points="1347,-2720 1194,-2720 1194,-2696 1347,-2696 1347,-2720"/>
+<text text-anchor="middle" x="1270.5" y="-2705.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;interface~unfragmented_calculation -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge92" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;interface~unfragmented_calculation</title>
+<path fill="none" stroke="#cc00ff" d="M1029.07,-2594.14C1055.32,-2616.14 1114.33,-2662.56 1172,-2687 1177.31,-2689.25 1182.89,-2691.27 1188.58,-2693.08"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1187.65,-2696.46 1198.23,-2695.94 1189.63,-2689.74 1187.65,-2696.46"/>
+</g>
+<!-- proc~calc_type_to_string -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node35" class="node">
+<title>proc~calc_type_to_string</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node35"><a xlink:href="../proc/calc_type_to_string.html" xlink:title="calc_type_to_string">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1327.5,-2678 1213.5,-2678 1213.5,-2654 1327.5,-2654 1327.5,-2678"/>
+<text text-anchor="middle" x="1270.5" y="-2663.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_type_to_string</text>
+</a>
+</g>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;proc~calc_type_to_string -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge93" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;proc~calc_type_to_string</title>
+<path fill="none" stroke="#cc00ff" d="M1041.18,-2594.1C1071.95,-2607.94 1124.82,-2630.57 1172,-2645 1182.04,-2648.07 1192.79,-2650.86 1203.35,-2653.34"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1202.87,-2656.82 1213.4,-2655.62 1204.42,-2649.99 1202.87,-2656.82"/>
+</g>
+<!-- verbose -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node69" class="node">
+<title>verbose</title>
+<polygon fill="#777777" stroke="#777777" points="1298,-2636 1243,-2636 1243,-2612 1298,-2612 1298,-2636"/>
+<text text-anchor="middle" x="1270.5" y="-2621.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">verbose</text>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;verbose -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge95" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;verbose</title>
+<path fill="none" stroke="#cc00ff" d="M1087.93,-2594.04C1135.32,-2601.86 1195.09,-2611.72 1232.82,-2617.95"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1232.41,-2621.43 1242.85,-2619.6 1233.55,-2614.52 1232.41,-2621.43"/>
+</g>
+<!-- proc~write_json_output&#45;&gt;error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge96" class="edge">
+<title>proc~write_json_output&#45;&gt;error</title>
+<path fill="none" stroke="#ff00e5" d="M780.57,-263.96C805.69,-266.41 834.88,-273.19 856,-290 886.19,-314.03 861.49,-345.38 892,-369 979.07,-436.41 1056.68,-335.63 1136,-412 1190.7,-464.66 1118.31,-525.32 1172,-579 1187.82,-594.81 1212.5,-600.02 1233.07,-601.29"/>
+<polygon fill="#ff00e5" stroke="#ff00e5" points="1232.97,-604.79 1243.08,-601.63 1233.2,-597.79 1232.97,-604.79"/>
+</g>
+<!-- proc~write_fragment_table -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node60" class="node">
+<title>proc~write_fragment_table</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node60"><a xlink:href="../proc/write_fragment_table.html" xlink:title="write_fragment_table">
+<polygon fill="#d9534f" stroke="#d9534f" points="1077,-670 951,-670 951,-646 1077,-646 1077,-670"/>
+<text text-anchor="middle" x="1014" y="-655.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_fragment_table</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_fragment_table -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge97" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_fragment_table</title>
+<path fill="none" stroke="#ff00e5" d="M775.46,-276.09C803.11,-285.64 836.39,-301.84 856,-328 909.38,-399.22 852.53,-445.23 892,-525 915.59,-572.67 961.37,-615.8 989.36,-639.31"/>
+<polygon fill="#ff00e5" stroke="#ff00e5" points="987.49,-642.31 997.43,-645.97 991.94,-636.91 987.49,-642.31"/>
+</g>
+<!-- proc~write_gmbe_pie_json_impl -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node61" class="node">
+<title>proc~write_gmbe_pie_json_impl</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node61"><a xlink:href="../proc/write_gmbe_pie_json_impl.html" xlink:title="write_gmbe_pie_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="1090,-276 938,-276 938,-252 1090,-252 1090,-276"/>
+<text text-anchor="middle" x="1014" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_gmbe_pie_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_gmbe_pie_json_impl -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge98" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_gmbe_pie_json_impl</title>
+<path fill="none" stroke="#ff00e5" d="M780.68,-264C821.79,-264 879.95,-264 927.79,-264"/>
+<polygon fill="#ff00e5" stroke="#ff00e5" points="927.84,-267.5 937.84,-264 927.84,-260.5 927.84,-267.5"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node62" class="node">
+<title>proc~write_mbe_breakdown_json_impl</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node62"><a xlink:href="../proc/write_mbe_breakdown_json_impl.html" xlink:title="write_mbe_breakdown_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="1107.5,-234 920.5,-234 920.5,-210 1107.5,-210 1107.5,-234"/>
+<text text-anchor="middle" x="1014" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_mbe_breakdown_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_mbe_breakdown_json_impl -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge99" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_mbe_breakdown_json_impl</title>
+<path fill="none" stroke="#ff00e5" d="M780.68,-256.3C819.99,-250.49 874.88,-242.39 921.43,-235.52"/>
+<polygon fill="#ff00e5" stroke="#ff00e5" points="922.16,-238.95 931.54,-234.03 921.14,-232.02 922.16,-238.95"/>
+</g>
+<!-- proc~write_unfragmented_json_impl -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node63" class="node">
+<title>proc~write_unfragmented_json_impl</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node63"><a xlink:href="../proc/write_unfragmented_json_impl.html" xlink:title="write_unfragmented_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="1102,-360 926,-360 926,-336 1102,-336 1102,-360"/>
+<text text-anchor="middle" x="1014" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_unfragmented_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_unfragmented_json_impl -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge100" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_unfragmented_json_impl</title>
+<path fill="none" stroke="#ff00e5" d="M780.56,-267.55C804.67,-270.92 833,-277.43 856,-290 876.13,-301 871.71,-316.29 892,-327 899.52,-330.97 907.64,-334.21 915.98,-336.86"/>
+<polygon fill="#ff00e5" stroke="#ff00e5" points="915.28,-340.29 925.85,-339.69 917.21,-333.57 915.28,-340.29"/>
+</g>
+<!-- proc~write_vibrational_json_impl -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node64" class="node">
+<title>proc~write_vibrational_json_impl</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node64"><a xlink:href="../proc/write_vibrational_json_impl.html" xlink:title="write_vibrational_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="1092.5,-318 935.5,-318 935.5,-294 1092.5,-294 1092.5,-318"/>
+<text text-anchor="middle" x="1014" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_vibrational_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_vibrational_json_impl -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge101" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_vibrational_json_impl</title>
+<path fill="none" stroke="#ff00e5" d="M780.68,-271.7C821.12,-277.67 878.05,-286.08 925.43,-293.07"/>
+<polygon fill="#ff00e5" stroke="#ff00e5" points="924.98,-296.54 935.39,-294.54 926.01,-289.62 924.98,-296.54"/>
+</g>
+<!-- proc~binomial_i32 -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node79" class="node">
+<title>proc~binomial_i32</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node79"><a xlink:href="../proc/binomial_i32.html" xlink:title="binomial_i32">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1054.5,-2270 973.5,-2270 973.5,-2246 1054.5,-2246 1054.5,-2270"/>
+<text text-anchor="middle" x="1014" y="-2255.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">binomial_i32</text>
+</a>
+</g>
+</g>
+<!-- interface~binomial&#45;&gt;proc~binomial_i32 -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge102" class="edge">
+<title>interface~binomial&#45;&gt;proc~binomial_i32</title>
+<path fill="none" stroke="#ff4700" stroke-dasharray="5,2" d="M757.08,-2258C805.2,-2258 902.98,-2258 962.77,-2258"/>
+<polygon fill="#ff4700" stroke="#ff4700" points="963.11,-2261.5 973.11,-2258 963.11,-2254.5 963.11,-2261.5"/>
+</g>
+<!-- proc~binomial_i64 -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node80" class="node">
+<title>proc~binomial_i64</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node80"><a xlink:href="../proc/binomial_i64.html" xlink:title="binomial_i64">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1054.5,-2312 973.5,-2312 973.5,-2288 1054.5,-2288 1054.5,-2312"/>
+<text text-anchor="middle" x="1014" y="-2297.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">binomial_i64</text>
+</a>
+</g>
+</g>
+<!-- interface~binomial&#45;&gt;proc~binomial_i64 -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge103" class="edge">
+<title>interface~binomial&#45;&gt;proc~binomial_i64</title>
+<path fill="none" stroke="#ff4700" stroke-dasharray="5,2" d="M757.08,-2262.22C805.3,-2269.34 903.39,-2283.82 963.14,-2292.64"/>
+<polygon fill="#ff4700" stroke="#ff4700" points="962.7,-2296.11 973.11,-2294.11 963.73,-2289.19 962.7,-2296.11"/>
+</g>
+<!-- proc~distributed_unfragmented_hessian -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node86" class="node">
+<title>proc~distributed_unfragmented_hessian</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node86"><a xlink:href="../proc/distributed_unfragmented_hessian.html" xlink:title="distributed_unfragmented_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="1602,-2594 1405,-2594 1405,-2570 1602,-2570 1602,-2594"/>
+<text text-anchor="middle" x="1503.5" y="-2579.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">distributed_unfragmented_hessian</text>
+</a>
+</g>
+</g>
+<!-- interface~distributed_unfragmented_hessian&#45;&gt;proc~distributed_unfragmented_hessian -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge104" class="edge">
+<title>interface~distributed_unfragmented_hessian&#45;&gt;proc~distributed_unfragmented_hessian</title>
+<path fill="none" stroke="#ff6a00" stroke-dasharray="5,2" d="M1369.13,-2582C1377.63,-2582 1386.25,-2582 1394.83,-2582"/>
+<polygon fill="#ff6a00" stroke="#ff6a00" points="1394.85,-2585.5 1404.85,-2582 1394.85,-2578.5 1394.85,-2585.5"/>
+</g>
+<!-- proc~unfragmented_calculation -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node103" class="node">
+<title>proc~unfragmented_calculation</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node103"><a xlink:href="../proc/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="1580,-2720 1427,-2720 1427,-2696 1580,-2696 1580,-2720"/>
+<text text-anchor="middle" x="1503.5" y="-2705.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- interface~unfragmented_calculation&#45;&gt;proc~unfragmented_calculation -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge105" class="edge">
+<title>interface~unfragmented_calculation&#45;&gt;proc~unfragmented_calculation</title>
+<path fill="none" stroke="#ff8e00" stroke-dasharray="5,2" d="M1347.14,-2708C1369.37,-2708 1393.86,-2708 1416.68,-2708"/>
+<polygon fill="#ff8e00" stroke="#ff8e00" points="1416.69,-2711.5 1426.69,-2708 1416.69,-2704.5 1416.69,-2711.5"/>
+</g>
+<!-- proc~add_method&#45;&gt;proc~hash_text -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge107" class="edge">
+<title>proc~add_method&#45;&gt;proc~hash_text</title>
+<path fill="none" stroke="#ffb100" d="M1053.65,-2533.62C1092.65,-2527.19 1153.68,-2517.11 1200.91,-2509.32"/>
+<polygon fill="#ffb100" stroke="#ffb100" points="1201.77,-2512.73 1211.07,-2507.64 1200.63,-2505.82 1201.77,-2512.73"/>
+</g>
+<!-- proc~hash_flag -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node96" class="node">
+<title>proc~hash_flag</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node96"><a xlink:href="../proc/hash_flag.html" xlink:title="hasher_t%hash_flag">
+<polygon fill="#d9534f" stroke="#d9534f" points="1330,-2552 1211,-2552 1211,-2528 1330,-2528 1330,-2552"/>
+<text text-anchor="middle" x="1270.5" y="-2537.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hasher_t%hash_flag</text>
+</a>
+</g>
+</g>
+<!-- proc~add_method&#45;&gt;proc~hash_flag -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge106" class="edge">
+<title>proc~add_method&#45;&gt;proc~hash_flag</title>
+<path fill="none" stroke="#ffb100" d="M1053.65,-2540C1092.52,-2540 1153.27,-2540 1200.43,-2540"/>
+<polygon fill="#ffb100" stroke="#ffb100" points="1200.58,-2543.5 1210.58,-2540 1200.58,-2536.5 1200.58,-2543.5"/>
+</g>
+<!-- proc~add_system&#45;&gt;proc~hash_text -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge110" class="edge">
+<title>proc~add_system&#45;&gt;proc~hash_text</title>
+<path fill="none" stroke="#ffd500" d="M1052.01,-2465.53C1091,-2471.35 1153.3,-2480.65 1201.25,-2487.81"/>
+<polygon fill="#ffd500" stroke="#ffd500" points="1200.84,-2491.29 1211.25,-2489.3 1201.87,-2484.36 1200.84,-2491.29"/>
+</g>
+<!-- proc~hash_int_array -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node97" class="node">
+<title>proc~hash_int_array</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node97"><a xlink:href="../proc/hash_int_array.html" xlink:title="hasher_t%hash_int_array">
+<polygon fill="#d9534f" stroke="#d9534f" points="1343.5,-2468 1197.5,-2468 1197.5,-2444 1343.5,-2444 1343.5,-2468"/>
+<text text-anchor="middle" x="1270.5" y="-2453.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hasher_t%hash_int_array</text>
+</a>
+</g>
+</g>
+<!-- proc~add_system&#45;&gt;proc~hash_int_array -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge108" class="edge">
+<title>proc~add_system&#45;&gt;proc~hash_int_array</title>
+<path fill="none" stroke="#ffd500" d="M1052.01,-2459.42C1087.32,-2458.86 1141.73,-2458.01 1187.29,-2457.29"/>
+<polygon fill="#ffd500" stroke="#ffd500" points="1187.52,-2460.79 1197.47,-2457.13 1187.41,-2453.79 1187.52,-2460.79"/>
+</g>
+<!-- proc~hash_real_array -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node98" class="node">
+<title>proc~hash_real_array</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node98"><a xlink:href="../proc/hash_real_array.html" xlink:title="hasher_t%hash_real_array">
+<polygon fill="#d9534f" stroke="#d9534f" points="1347,-2426 1194,-2426 1194,-2402 1347,-2402 1347,-2426"/>
+<text text-anchor="middle" x="1270.5" y="-2411.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hasher_t%hash_real_array</text>
+</a>
+</g>
+</g>
+<!-- proc~add_system&#45;&gt;proc~hash_real_array -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge109" class="edge">
+<title>proc~add_system&#45;&gt;proc~hash_real_array</title>
+<path fill="none" stroke="#ffd500" d="M1052.09,-2453.69C1076.05,-2449.59 1107.88,-2444.07 1136,-2439 1155.46,-2435.49 1176.51,-2431.59 1196,-2427.95"/>
+<polygon fill="#ffd500" stroke="#ffd500" points="1196.85,-2431.35 1206.04,-2426.06 1195.56,-2424.47 1196.85,-2431.35"/>
+</g>
+<!-- proc~apply_distance_screening&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge111" class="edge">
+<title>proc~apply_distance_screening&#45;&gt;info</title>
+<path fill="none" stroke="#fff900" d="M1066.72,-1753.91C1091.93,-1745.21 1120.15,-1730.7 1136,-1707 1208.27,-1598.91 1140.85,-1249.24 1172,-1123 1190.71,-1047.17 1234.98,-964.96 1256.84,-927.18"/>
+<polygon fill="#fff900" stroke="#fff900" points="1260.09,-928.54 1262.13,-918.15 1254.05,-925.01 1260.09,-928.54"/>
+</g>
+<!-- proc~apply_distance_screening&#45;&gt;to_char -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge114" class="edge">
+<title>proc~apply_distance_screening&#45;&gt;to_char</title>
+<path fill="none" stroke="#fff900" d="M1088.72,-1756.43C1104.84,-1752.65 1121.42,-1747.36 1136,-1740 1184.58,-1715.46 1229.45,-1668.91 1252.76,-1642.2"/>
+<polygon fill="#fff900" stroke="#fff900" points="1255.7,-1644.15 1259.54,-1634.27 1250.38,-1639.59 1255.7,-1644.15"/>
+</g>
+<!-- proc~fragment_should_be_screened -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node88" class="node">
+<title>proc~fragment_should_be_screened</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node88"><a xlink:href="../proc/fragment_should_be_screened.html" xlink:title="fragment_should_be_screened">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1358,-1778 1183,-1778 1183,-1754 1358,-1754 1358,-1778"/>
+<text text-anchor="middle" x="1270.5" y="-1763.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_should_be_screened</text>
+</a>
+</g>
+</g>
+<!-- proc~apply_distance_screening&#45;&gt;proc~fragment_should_be_screened -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge112" class="edge">
+<title>proc~apply_distance_screening&#45;&gt;proc~fragment_should_be_screened</title>
+<path fill="none" stroke="#fff900" d="M1088.61,-1766C1114.76,-1766 1144.61,-1766 1172.42,-1766"/>
+<polygon fill="#fff900" stroke="#fff900" points="1172.56,-1769.5 1182.56,-1766 1172.56,-1762.5 1172.56,-1769.5"/>
+</g>
+<!-- proc~fragment_size_of -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node89" class="node">
+<title>proc~fragment_size_of</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node89"><a xlink:href="../proc/fragment_size_of.html" xlink:title="fragment_size_of">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1322,-1820 1219,-1820 1219,-1796 1322,-1796 1322,-1820"/>
+<text text-anchor="middle" x="1270.5" y="-1805.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_size_of</text>
+</a>
+</g>
+</g>
+<!-- proc~apply_distance_screening&#45;&gt;proc~fragment_size_of -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge113" class="edge">
+<title>proc~apply_distance_screening&#45;&gt;proc~fragment_size_of</title>
+<path fill="none" stroke="#fff900" d="M1087.93,-1778.04C1126.19,-1784.35 1172.53,-1792 1208.81,-1797.98"/>
+<polygon fill="#fff900" stroke="#fff900" points="1208.32,-1801.45 1218.76,-1799.63 1209.46,-1794.54 1208.32,-1801.45"/>
+</g>
+<!-- proc~check_counterpoise_support&#45;&gt;proc~error_set -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge115" class="edge">
+<title>proc~check_counterpoise_support&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#bdff00" d="M810.19,-1098.27C826.86,-1094.16 843.2,-1087.28 856,-1076 893.33,-1043.11 864.15,-1011.23 892,-970 916.62,-933.55 957.26,-902.3 984.57,-883.82"/>
+<polygon fill="#bdff00" stroke="#bdff00" points="986.53,-886.73 992.93,-878.29 982.66,-880.89 986.53,-886.73"/>
+</g>
+<!-- proc~combine_util -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node82" class="node">
+<title>proc~combine_util</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node82"><a xlink:href="../proc/combine_util.html" xlink:title="combine_util">
+<polygon fill="#d9534f" stroke="#d9534f" points="1054.5,-2228 973.5,-2228 973.5,-2204 1054.5,-2204 1054.5,-2228"/>
+<text text-anchor="middle" x="1014" y="-2213.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">combine_util</text>
+</a>
+</g>
+</g>
+<!-- proc~combine&#45;&gt;proc~combine_util -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge116" class="edge">
+<title>proc~combine&#45;&gt;proc~combine_util</title>
+<path fill="none" stroke="#9aff00" d="M757.12,-2169.57C789.74,-2175.88 844.67,-2186.41 892,-2195 915.45,-2199.26 941.5,-2203.8 963.4,-2207.57"/>
+<polygon fill="#9aff00" stroke="#9aff00" points="963.02,-2211.06 973.46,-2209.3 964.2,-2204.16 963.02,-2211.06"/>
+</g>
+<!-- proc~fraglist_replace&#45;&gt;proc~error_set -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge117" class="edge">
+<title>proc~fraglist_replace&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ff3b" d="M744.68,-1287.81C772.11,-1266.23 827.53,-1218.5 856,-1165 890.24,-1100.66 859.07,-1070.03 892,-1005 917,-955.64 963.44,-909.54 990.94,-884.82"/>
+<polygon fill="#00ff3b" stroke="#00ff3b" points="993.32,-887.39 998.5,-878.14 988.69,-882.14 993.32,-887.39"/>
+</g>
+<!-- proc~fraglist_replace&#45;&gt;proc~fraglist_destroy -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge118" class="edge">
+<title>proc~fraglist_replace&#45;&gt;proc~fraglist_destroy</title>
+<path fill="none" stroke="#00ff3b" d="M802.51,-1309.36C841.36,-1314.28 889.12,-1320.32 929.32,-1325.41"/>
+<polygon fill="#00ff3b" stroke="#00ff3b" points="929,-1328.9 939.36,-1326.68 929.88,-1321.95 929,-1328.9"/>
+</g>
+<!-- proc~generate_mbe_term_list&#45;&gt;proc~apply_distance_screening -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge120" class="edge">
+<title>proc~generate_mbe_term_list&#45;&gt;proc~apply_distance_screening</title>
+<path fill="none" stroke="#00ff82" d="M791.99,-1724.05C835.78,-1732.36 894.11,-1743.43 939.85,-1752.12"/>
+<polygon fill="#00ff82" stroke="#00ff82" points="939.22,-1755.56 949.7,-1753.99 940.53,-1748.68 939.22,-1755.56"/>
+</g>
+<!-- proc~generate_mbe_term_list&#45;&gt;proc~create_monomer_list -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge121" class="edge">
+<title>proc~generate_mbe_term_list&#45;&gt;proc~create_monomer_list</title>
+<path fill="none" stroke="#00ff82" d="M798.55,-1710.67C819.07,-1707.09 840.22,-1699.87 856,-1686 893.06,-1653.44 854.46,-1613.01 892,-1581 905.89,-1569.15 924.03,-1562.88 942.02,-1559.78"/>
+<polygon fill="#00ff82" stroke="#00ff82" points="942.56,-1563.24 951.97,-1558.37 941.58,-1556.31 942.56,-1563.24"/>
+</g>
+<!-- proc~generate_mbe_term_list&#45;&gt;proc~sort_fragments_by_size -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge124" class="edge">
+<title>proc~generate_mbe_term_list&#45;&gt;proc~sort_fragments_by_size</title>
+<path fill="none" stroke="#00ff82" d="M750,-1724.06C780.6,-1740.7 838.91,-1770.52 892,-1787 905.9,-1791.31 920.99,-1794.82 935.64,-1797.64"/>
+<polygon fill="#00ff82" stroke="#00ff82" points="935.23,-1801.13 945.7,-1799.49 936.49,-1794.24 935.23,-1801.13"/>
+</g>
+<!-- proc~add_vmfc_rows -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node78" class="node">
+<title>proc~add_vmfc_rows</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node78"><a xlink:href="../proc/add_vmfc_rows.html" xlink:title="add_vmfc_rows">
+<polygon fill="#d9534f" stroke="#d9534f" points="1061,-1656 967,-1656 967,-1632 1061,-1632 1061,-1656"/>
+<text text-anchor="middle" x="1014" y="-1641.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_vmfc_rows</text>
+</a>
+</g>
+</g>
+<!-- proc~generate_mbe_term_list&#45;&gt;proc~add_vmfc_rows -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge119" class="edge">
+<title>proc~generate_mbe_term_list&#45;&gt;proc~add_vmfc_rows</title>
+<path fill="none" stroke="#00ff82" d="M798.82,-1701.93C817.74,-1698.07 837.95,-1692.89 856,-1686 873.31,-1679.39 874.6,-1671.35 892,-1665 912.57,-1657.49 936.11,-1652.63 956.92,-1649.5"/>
+<polygon fill="#00ff82" stroke="#00ff82" points="957.48,-1652.95 966.9,-1648.09 956.51,-1646.02 957.48,-1652.95"/>
+</g>
+<!-- proc~generate_fragment_list -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node91" class="node">
+<title>proc~generate_fragment_list</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node91"><a xlink:href="../proc/generate_fragment_list.html" xlink:title="generate_fragment_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="1082,-1614 946,-1614 946,-1590 1082,-1590 1082,-1614"/>
+<text text-anchor="middle" x="1014" y="-1599.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_fragment_list</text>
+</a>
+</g>
+</g>
+<!-- proc~generate_mbe_term_list&#45;&gt;proc~generate_fragment_list -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge122" class="edge">
+<title>proc~generate_mbe_term_list&#45;&gt;proc~generate_fragment_list</title>
+<path fill="none" stroke="#00ff82" d="M798.7,-1708.48C818.65,-1704.75 839.44,-1697.99 856,-1686 882.13,-1667.09 865.6,-1641.52 892,-1623 904.81,-1614.01 920.23,-1608.45 935.7,-1605.09"/>
+<polygon fill="#00ff82" stroke="#00ff82" points="936.67,-1608.47 945.85,-1603.19 935.38,-1601.59 936.67,-1608.47"/>
+</g>
+<!-- proc~get_nfrags -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node93" class="node">
+<title>proc~get_nfrags</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node93"><a xlink:href="../proc/get_nfrags.html" xlink:title="get_nfrags">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1048.5,-1698 979.5,-1698 979.5,-1674 1048.5,-1674 1048.5,-1698"/>
+<text text-anchor="middle" x="1014" y="-1683.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_nfrags</text>
+</a>
+</g>
+</g>
+<!-- proc~generate_mbe_term_list&#45;&gt;proc~get_nfrags -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge123" class="edge">
+<title>proc~generate_mbe_term_list&#45;&gt;proc~get_nfrags</title>
+<path fill="none" stroke="#00ff82" d="M798.83,-1705.57C852.1,-1700.7 923.65,-1694.17 969.05,-1690.02"/>
+<polygon fill="#00ff82" stroke="#00ff82" points="969.52,-1693.49 979.16,-1689.09 968.88,-1686.52 969.52,-1693.49"/>
+</g>
+<!-- proc~gmbe_enumerate_pie_terms&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge126" class="edge">
+<title>proc~gmbe_enumerate_pie_terms&#45;&gt;info</title>
+<path fill="none" stroke="#00ffc9" d="M784.38,-1619.96C810.45,-1611.36 839.34,-1596.91 856,-1573 913.36,-1490.69 824.5,-1197.21 892,-1123 966.09,-1041.54 1041.86,-1137.12 1136,-1080 1197.85,-1042.47 1241.44,-964.79 1259.79,-927.24"/>
+<polygon fill="#00ffc9" stroke="#00ffc9" points="1262.96,-928.72 1264.11,-918.19 1256.64,-925.71 1262.96,-928.72"/>
+</g>
+<!-- proc~gmbe_enumerate_pie_terms&#45;&gt;proc~error_has_error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge129" class="edge">
+<title>proc~gmbe_enumerate_pie_terms&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#00ffc9" d="M785.35,-1619.96C811.32,-1611.38 839.84,-1596.96 856,-1573 946.57,-1438.72 792.47,-972.79 892,-845 902.61,-831.38 918.1,-822.64 934.49,-817.06"/>
+<polygon fill="#00ffc9" stroke="#00ffc9" points="935.64,-820.37 944.2,-814.13 933.62,-813.66 935.64,-820.37"/>
+</g>
+<!-- proc~gmbe_enumerate_pie_terms&#45;&gt;to_char -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge131" class="edge">
+<title>proc~gmbe_enumerate_pie_terms&#45;&gt;to_char</title>
+<path fill="none" stroke="#00ffc9" d="M810.52,-1626.22C826.71,-1622.18 842.77,-1615.84 856,-1606 883.13,-1585.83 862.99,-1556.35 892,-1539 985.08,-1483.35 1031.72,-1509.23 1136,-1539 1179.85,-1551.52 1223.34,-1583.06 1248.25,-1603.46"/>
+<polygon fill="#00ffc9" stroke="#00ffc9" points="1246.05,-1606.17 1255.96,-1609.9 1250.54,-1600.8 1246.05,-1606.17"/>
+</g>
+<!-- proc~gmbe_enumerate_pie_terms&#45;&gt;proc~error_set -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge130" class="edge">
+<title>proc~gmbe_enumerate_pie_terms&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ffc9" d="M784.87,-1619.97C810.9,-1611.38 839.6,-1596.95 856,-1573 927.45,-1468.64 843.94,-1121.99 892,-1005 912.91,-954.09 960.35,-908.84 989.23,-884.63"/>
+<polygon fill="#00ffc9" stroke="#00ffc9" points="991.69,-887.14 997.2,-878.09 987.25,-881.73 991.69,-887.14"/>
+</g>
+<!-- atom_list -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node71" class="node">
+<title>atom_list</title>
+<polygon fill="#777777" stroke="#777777" points="1044.5,-1450 983.5,-1450 983.5,-1426 1044.5,-1426 1044.5,-1450"/>
+<text text-anchor="middle" x="1014" y="-1435.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atom_list</text>
+</g>
+<!-- proc~gmbe_enumerate_pie_terms&#45;&gt;atom_list -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge125" class="edge">
+<title>proc~gmbe_enumerate_pie_terms&#45;&gt;atom_list</title>
+<path fill="none" stroke="#00ffc9" d="M810.61,-1629.17C827.36,-1625.03 843.63,-1617.9 856,-1606 904.48,-1559.37 842.84,-1504.91 892,-1459 913.53,-1438.89 947.06,-1434.37 973.37,-1434.47"/>
+<polygon fill="#00ffc9" stroke="#00ffc9" points="973.34,-1437.97 983.42,-1434.73 973.52,-1430.97 973.34,-1437.97"/>
+</g>
+<!-- proc~compute_polymer_atoms -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node84" class="node">
+<title>proc~compute_polymer_atoms</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node84"><a xlink:href="../proc/compute_polymer_atoms.html" xlink:title="compute_polymer_atoms">
+<polygon fill="#d9534f" stroke="#d9534f" points="1088,-1408 940,-1408 940,-1384 1088,-1384 1088,-1408"/>
+<text text-anchor="middle" x="1014" y="-1393.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_polymer_atoms</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_enumerate_pie_terms&#45;&gt;proc~compute_polymer_atoms -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge127" class="edge">
+<title>proc~gmbe_enumerate_pie_terms&#45;&gt;proc~compute_polymer_atoms</title>
+<path fill="none" stroke="#00ffc9" d="M810.74,-1629.72C827.59,-1625.57 843.86,-1618.3 856,-1606 916.07,-1545.15 831.04,-1476.97 892,-1417 902.37,-1406.8 915.82,-1400.54 929.95,-1396.85"/>
+<polygon fill="#00ffc9" stroke="#00ffc9" points="930.8,-1400.25 939.82,-1394.69 929.31,-1393.41 930.8,-1400.25"/>
+</g>
+<!-- proc~dfs_pie_accumulate -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node85" class="node">
+<title>proc~dfs_pie_accumulate</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node85"><a xlink:href="../proc/dfs_pie_accumulate.html" xlink:title="dfs_pie_accumulate">
+<polygon fill="#d9534f" stroke="#d9534f" points="1073,-1492 955,-1492 955,-1468 1073,-1468 1073,-1492"/>
+<text text-anchor="middle" x="1014" y="-1477.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dfs_pie_accumulate</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_enumerate_pie_terms&#45;&gt;proc~dfs_pie_accumulate -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge128" class="edge">
+<title>proc~gmbe_enumerate_pie_terms&#45;&gt;proc~dfs_pie_accumulate</title>
+<path fill="none" stroke="#00ffc9" d="M810.7,-1627.93C827.15,-1623.82 843.27,-1617.01 856,-1606 891.72,-1575.09 856.44,-1537.09 892,-1506 906.53,-1493.29 925.77,-1486.3 944.62,-1482.58"/>
+<polygon fill="#00ffc9" stroke="#00ffc9" points="945.44,-1485.99 954.72,-1480.88 944.27,-1479.09 945.44,-1485.99"/>
+</g>
+<!-- proc~hash_byte -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node95" class="node">
+<title>proc~hash_byte</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node95"><a xlink:href="../proc/hash_byte.html" xlink:title="hasher_t%hash_byte">
+<polygon fill="#d9534f" stroke="#d9534f" points="1564.5,-2510 1442.5,-2510 1442.5,-2486 1564.5,-2486 1564.5,-2510"/>
+<text text-anchor="middle" x="1503.5" y="-2495.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hasher_t%hash_byte</text>
+</a>
+</g>
+</g>
+<!-- proc~hash_text&#45;&gt;proc~hash_byte -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge132" class="edge">
+<title>proc~hash_text&#45;&gt;proc~hash_byte</title>
+<path fill="none" stroke="#00edff" d="M1329.79,-2498C1360.79,-2498 1399.13,-2498 1431.82,-2498"/>
+<polygon fill="#00edff" stroke="#00edff" points="1432.21,-2501.5 1442.21,-2498 1432.21,-2494.5 1432.21,-2501.5"/>
+</g>
+<!-- proc~refuse&#45;&gt;error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge133" class="edge">
+<title>proc~refuse&#45;&gt;error</title>
+<path fill="none" stroke="#0082ff" d="M754.59,-548.6C842.96,-557.43 1131.12,-586.19 1233.23,-596.38"/>
+<polygon fill="#0082ff" stroke="#0082ff" points="1233.05,-599.88 1243.35,-597.39 1233.75,-592.91 1233.05,-599.88"/>
+</g>
+<!-- proc~refuse&#45;&gt;proc~error_set -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge134" class="edge">
+<title>proc~refuse&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#0082ff" d="M753.81,-558.02C783.3,-573.41 831.13,-602.95 856,-643 900.43,-714.53 835.69,-766.4 892,-829 907.23,-845.92 929.95,-855.21 951.61,-860.27"/>
+<polygon fill="#0082ff" stroke="#0082ff" points="950.96,-863.7 961.46,-862.31 952.37,-856.85 950.96,-863.7"/>
+</g>
+<!-- proc~run_libcint_efp&#45;&gt;proc~error_set -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge135" class="edge">
+<title>proc~run_libcint_efp&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#005eff" d="M773.27,-866C821.19,-866 897.56,-866 951.2,-866"/>
+<polygon fill="#005eff" stroke="#005eff" points="951.27,-869.5 961.27,-866 951.27,-862.5 951.27,-869.5"/>
+</g>
+<!-- proc~run_libcint_makefp&#45;&gt;proc~error_set -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge136" class="edge">
+<title>proc~run_libcint_makefp&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#003bff" d="M784.62,-414.87C809.94,-415.76 838.11,-421.8 856,-441 915.03,-504.36 837.33,-761.85 892,-829 906.49,-846.8 929.31,-856.24 951.25,-861.17"/>
+<polygon fill="#003bff" stroke="#003bff" points="950.75,-864.63 961.23,-863.13 952.1,-857.77 950.75,-864.63"/>
+</g>
+<!-- proc~run_libcint_sapt0&#45;&gt;proc~error_set -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge137" class="edge">
+<title>proc~run_libcint_sapt0&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#0017ff" d="M779.23,-742.39C804.31,-743.93 833.86,-749.5 856,-765 882.73,-783.72 866.57,-808.54 892,-829 908.91,-842.61 930.8,-851.23 951.3,-856.68"/>
+<polygon fill="#0017ff" stroke="#0017ff" points="950.68,-860.13 961.23,-859.1 952.35,-853.33 950.68,-860.13"/>
+</g>
+<!-- proc~run_libcint_sapt2&#45;&gt;proc~error_set -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge138" class="edge">
+<title>proc~run_libcint_sapt2&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#0b00ff" d="M776.59,-676.09C803.25,-685.04 835.12,-699.79 856,-723 889.27,-760 856.28,-794.36 892,-829 908,-844.51 930.31,-853.54 951.43,-858.79"/>
+<polygon fill="#0b00ff" stroke="#0b00ff" points="950.82,-862.24 961.34,-861.01 952.35,-855.41 950.82,-862.24"/>
+</g>
+<!-- proc~sort_fragments_by_size&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge139" class="edge">
+<title>proc~sort_fragments_by_size&#45;&gt;info</title>
+<path fill="none" stroke="#2f00ff" d="M1082.1,-1811.53C1102.2,-1809.01 1122.47,-1802.22 1136,-1787 1185.08,-1731.77 1154.56,-1194.8 1172,-1123 1190.43,-1047.1 1234.83,-964.93 1256.78,-927.16"/>
+<polygon fill="#2f00ff" stroke="#2f00ff" points="1260.04,-928.53 1262.09,-918.14 1254,-924.98 1260.04,-928.53"/>
+</g>
+<!-- proc~sort_fragments_by_size&#45;&gt;sort_index -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge141" class="edge">
+<title>proc~sort_fragments_by_size&#45;&gt;sort_index</title>
+<path fill="none" stroke="#2f00ff" d="M1053.93,-1820.08C1100.6,-1834.57 1178.54,-1858.77 1226.82,-1873.75"/>
+<polygon fill="#2f00ff" stroke="#2f00ff" points="1226.06,-1877.18 1236.65,-1876.8 1228.13,-1870.49 1226.06,-1877.18"/>
+</g>
+<!-- proc~sort_fragments_by_size&#45;&gt;proc~fragment_size_of -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge140" class="edge">
+<title>proc~sort_fragments_by_size&#45;&gt;proc~fragment_size_of</title>
+<path fill="none" stroke="#2f00ff" d="M1082.2,-1808C1121.37,-1808 1170.39,-1808 1208.46,-1808"/>
+<polygon fill="#2f00ff" stroke="#2f00ff" points="1208.89,-1811.5 1218.89,-1808 1208.89,-1804.5 1208.89,-1811.5"/>
+</g>
+<!-- proc~complain -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node83" class="node">
+<title>proc~complain</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node83"><a xlink:href="../proc/complain.html" xlink:title="complain">
+<polygon fill="#d9534f" stroke="#d9534f" points="1045,-2018 983,-2018 983,-1994 1045,-1994 1045,-2018"/>
+<text text-anchor="middle" x="1014" y="-2003.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">complain</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_system&#45;&gt;proc~complain -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge142" class="edge">
+<title>proc~validate_system&#45;&gt;proc~complain</title>
+<path fill="none" stroke="#5300ff" d="M776.76,-1988.56C831.93,-1992.63 921.25,-1999.23 972.8,-2003.03"/>
+<polygon fill="#5300ff" stroke="#5300ff" points="972.67,-2006.53 982.9,-2003.78 973.18,-1999.55 972.67,-2006.53"/>
+</g>
+<!-- proc~int_to_text -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node99" class="node">
+<title>proc~int_to_text</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node99"><a xlink:href="../proc/int_to_text.html" xlink:title="int_to_text">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1047.5,-2060 980.5,-2060 980.5,-2036 1047.5,-2036 1047.5,-2060"/>
+<text text-anchor="middle" x="1014" y="-2045.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">int_to_text</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_system&#45;&gt;proc~int_to_text -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge143" class="edge">
+<title>proc~validate_system&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#5300ff" d="M771.65,-1997.09C804.49,-2006.04 850.88,-2018.17 892,-2027 917.88,-2032.56 947.11,-2037.67 970.36,-2041.45"/>
+<polygon fill="#5300ff" stroke="#5300ff" points="969.82,-2044.91 980.25,-2043.04 970.94,-2038 969.82,-2044.91"/>
+</g>
+<!-- proc~missing_broken_bonds -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node100" class="node">
+<title>proc~missing_broken_bonds</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node100"><a xlink:href="../proc/missing_broken_bonds.html" xlink:title="missing_broken_bonds">
+<polygon fill="#d9534f" stroke="#d9534f" points="1080.5,-1976 947.5,-1976 947.5,-1952 1080.5,-1952 1080.5,-1976"/>
+<text text-anchor="middle" x="1014" y="-1961.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">missing_broken_bonds</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_system&#45;&gt;proc~missing_broken_bonds -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge144" class="edge">
+<title>proc~validate_system&#45;&gt;proc~missing_broken_bonds</title>
+<path fill="none" stroke="#5300ff" d="M776.76,-1981.44C820.75,-1978.19 886.46,-1973.34 937.41,-1969.58"/>
+<polygon fill="#5300ff" stroke="#5300ff" points="937.68,-1973.07 947.4,-1968.84 937.16,-1966.09 937.68,-1973.07"/>
+</g>
+<!-- proc~check_subset_closure -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node81" class="node">
+<title>proc~check_subset_closure</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node81"><a xlink:href="../proc/check_subset_closure.html" xlink:title="check_subset_closure">
+<polygon fill="#d9534f" stroke="#d9534f" points="1077.5,-2186 950.5,-2186 950.5,-2162 1077.5,-2162 1077.5,-2186"/>
+<text text-anchor="middle" x="1014" y="-2171.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_subset_closure</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_terms&#45;&gt;proc~check_subset_closure -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge145" class="edge">
+<title>proc~validate_terms&#45;&gt;proc~check_subset_closure</title>
+<path fill="none" stroke="#7600ff" d="M747.29,-2081.07C776.87,-2099.5 836.62,-2134.45 892,-2153 907.32,-2158.13 924.17,-2162.06 940.3,-2165.06"/>
+<polygon fill="#7600ff" stroke="#7600ff" points="939.78,-2168.52 950.24,-2166.81 940.99,-2161.63 939.78,-2168.52"/>
+</g>
+<!-- proc~validate_terms&#45;&gt;proc~complain -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge146" class="edge">
+<title>proc~validate_terms&#45;&gt;proc~complain</title>
+<path fill="none" stroke="#7600ff" d="M771.65,-2056.91C804.49,-2047.96 850.88,-2035.83 892,-2027 918.78,-2021.25 949.16,-2015.98 972.78,-2012.16"/>
+<polygon fill="#7600ff" stroke="#7600ff" points="973.46,-2015.59 982.79,-2010.56 972.36,-2008.68 973.46,-2015.59"/>
+</g>
+<!-- proc~fraglist_level_of -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node87" class="node">
+<title>proc~fraglist_level_of</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node87"><a xlink:href="../proc/fraglist_level_of.html" xlink:title="fraglist_t%fraglist_level_of">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1089.5,-2144 938.5,-2144 938.5,-2120 1089.5,-2120 1089.5,-2144"/>
+<text text-anchor="middle" x="1014" y="-2129.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fraglist_t%fraglist_level_of</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_terms&#45;&gt;proc~fraglist_level_of -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge147" class="edge">
+<title>proc~validate_terms&#45;&gt;proc~fraglist_level_of</title>
+<path fill="none" stroke="#7600ff" d="M771.65,-2081.09C804.49,-2090.04 850.88,-2102.17 892,-2111 903.64,-2113.5 915.97,-2115.91 928.12,-2118.15"/>
+<polygon fill="#7600ff" stroke="#7600ff" points="927.8,-2121.65 938.27,-2119.99 929.05,-2114.76 927.8,-2121.65"/>
+</g>
+<!-- proc~validate_terms&#45;&gt;proc~int_to_text -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge148" class="edge">
+<title>proc~validate_terms&#45;&gt;proc~int_to_text</title>
+<path fill="none" stroke="#7600ff" d="M773.27,-2065.7C827.25,-2061.71 917.33,-2055.06 970.35,-2051.15"/>
+<polygon fill="#7600ff" stroke="#7600ff" points="970.73,-2054.63 980.44,-2050.4 970.21,-2047.65 970.73,-2054.63"/>
+</g>
+<!-- proc~text64 -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node102" class="node">
+<title>proc~text64</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node102"><a xlink:href="../proc/text64.html" xlink:title="text64">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1041,-2102 987,-2102 987,-2078 1041,-2078 1041,-2102"/>
+<text text-anchor="middle" x="1014" y="-2087.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">text64</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_terms&#45;&gt;proc~text64 -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge149" class="edge">
+<title>proc~validate_terms&#45;&gt;proc~text64</title>
+<path fill="none" stroke="#7600ff" d="M773.27,-2072.3C829.48,-2076.45 924.84,-2083.49 976.73,-2087.32"/>
+<polygon fill="#7600ff" stroke="#7600ff" points="976.58,-2090.82 986.81,-2088.07 977.09,-2083.84 976.58,-2090.82"/>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge150" class="edge">
+<title>proc~write_fragment_table&#45;&gt;error</title>
+<path fill="none" stroke="#9a00ff" d="M1075.86,-645.98C1095.17,-641.88 1116.56,-637.05 1136,-632 1152.19,-627.79 1155.81,-625.21 1172,-621 1192.13,-615.77 1214.83,-610.82 1233.26,-607.05"/>
+<polygon fill="#9a00ff" stroke="#9a00ff" points="1234.18,-610.43 1243.29,-605.02 1232.79,-603.57 1234.18,-610.43"/>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge152" class="edge">
+<title>proc~write_fragment_table&#45;&gt;info</title>
+<path fill="none" stroke="#9a00ff" d="M1077.24,-658.42C1098.32,-661.64 1120.44,-668.88 1136,-684 1184.24,-730.88 1135.27,-774.65 1172,-831 1188.12,-855.73 1215.27,-875.63 1236.83,-888.69"/>
+<polygon fill="#9a00ff" stroke="#9a00ff" points="1235.28,-891.84 1245.68,-893.87 1238.81,-885.8 1235.28,-891.84"/>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;to_char -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge157" class="edge">
+<title>proc~write_fragment_table&#45;&gt;to_char</title>
+<path fill="none" stroke="#9a00ff" d="M1032.36,-670.32C1059.84,-690.91 1112.62,-735.23 1136,-787 1205.46,-940.8 1146.35,-998.2 1172,-1165 1197.93,-1333.65 1247.07,-1533.67 1263.77,-1599.66"/>
+<polygon fill="#9a00ff" stroke="#9a00ff" points="1260.48,-1600.91 1266.34,-1609.74 1267.26,-1599.18 1260.48,-1600.91"/>
+</g>
+<!-- get_elapsed_time -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node75" class="node">
+<title>get_elapsed_time</title>
+<polygon fill="#777777" stroke="#777777" points="1323.5,-654 1217.5,-654 1217.5,-630 1323.5,-630 1323.5,-654"/>
+<text text-anchor="middle" x="1270.5" y="-639.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_elapsed_time</text>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;get_elapsed_time -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge151" class="edge">
+<title>proc~write_fragment_table&#45;&gt;get_elapsed_time</title>
+<path fill="none" stroke="#9a00ff" d="M1077.26,-654.09C1116.79,-651.6 1167.75,-648.4 1207.28,-645.91"/>
+<polygon fill="#9a00ff" stroke="#9a00ff" points="1207.56,-649.4 1217.32,-645.28 1207.12,-642.41 1207.56,-649.4"/>
+</g>
+<!-- proc~fragment_table_filename -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node90" class="node">
+<title>proc~fragment_table_filename</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node90"><a xlink:href="../proc/fragment_table_filename.html" xlink:title="fragment_table_filename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1344,-822 1197,-822 1197,-798 1344,-798 1344,-822"/>
+<text text-anchor="middle" x="1270.5" y="-807.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_table_filename</text>
+</a>
+</g>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;proc~fragment_table_filename -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge153" class="edge">
+<title>proc~write_fragment_table&#45;&gt;proc~fragment_table_filename</title>
+<path fill="none" stroke="#9a00ff" d="M1077.14,-659.31C1097.95,-662.65 1119.93,-669.73 1136,-684 1172.89,-716.75 1135.12,-756.24 1172,-789 1176.56,-793.05 1181.71,-796.39 1187.21,-799.12"/>
+<polygon fill="#9a00ff" stroke="#9a00ff" points="1186.16,-802.48 1196.74,-803.19 1188.91,-796.04 1186.16,-802.48"/>
+</g>
+<!-- proc~scf_status_label -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node101" class="node">
+<title>proc~scf_status_label</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node101"><a xlink:href="../proc/scf_status_label.html" xlink:title="scf_status_label">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1318.5,-780 1222.5,-780 1222.5,-756 1318.5,-756 1318.5,-780"/>
+<text text-anchor="middle" x="1270.5" y="-765.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">scf_status_label</text>
+</a>
+</g>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;proc~scf_status_label -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge154" class="edge">
+<title>proc~write_fragment_table&#45;&gt;proc~scf_status_label</title>
+<path fill="none" stroke="#9a00ff" d="M1077.27,-661.33C1097.51,-664.91 1119.09,-671.63 1136,-684 1162.03,-703.04 1145.98,-727.95 1172,-747 1183.58,-755.48 1197.88,-760.67 1211.93,-763.81"/>
+<polygon fill="#9a00ff" stroke="#9a00ff" points="1211.59,-767.31 1222.07,-765.75 1212.91,-760.43 1211.59,-767.31"/>
+</g>
+<!-- proc~write_optional_value -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node107" class="node">
+<title>proc~write_optional_value</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node107"><a xlink:href="../proc/write_optional_value.html" xlink:title="write_optional_value">
+<polygon fill="#d9534f" stroke="#d9534f" points="1331.5,-738 1209.5,-738 1209.5,-714 1331.5,-714 1331.5,-738"/>
+<text text-anchor="middle" x="1270.5" y="-723.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_optional_value</text>
+</a>
+</g>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;proc~write_optional_value -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge155" class="edge">
+<title>proc~write_fragment_table&#45;&gt;proc~write_optional_value</title>
+<path fill="none" stroke="#9a00ff" d="M1077.04,-667.41C1096.31,-671.37 1117.37,-676.78 1136,-684 1153.27,-690.7 1154.73,-698.3 1172,-705 1180.75,-708.39 1190.16,-711.29 1199.56,-713.75"/>
+<polygon fill="#9a00ff" stroke="#9a00ff" points="1198.78,-717.16 1209.33,-716.16 1200.46,-710.37 1198.78,-717.16"/>
+</g>
+<!-- start -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node111" class="node">
+<title>start</title>
+<polygon fill="#777777" stroke="#777777" points="1297.5,-696 1243.5,-696 1243.5,-672 1297.5,-672 1297.5,-696"/>
+<text text-anchor="middle" x="1270.5" y="-681.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">start</text>
+</g>
+<!-- proc~write_fragment_table&#45;&gt;start -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge156" class="edge">
+<title>proc~write_fragment_table&#45;&gt;start</title>
+<path fill="none" stroke="#9a00ff" d="M1077.26,-664.36C1126.26,-669.37 1192.85,-676.17 1233.41,-680.31"/>
+<polygon fill="#9a00ff" stroke="#9a00ff" points="1233.08,-683.8 1243.38,-681.33 1233.79,-676.83 1233.08,-683.8"/>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge162" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#bd00ff" d="M1090.01,-262.36C1107.21,-265.63 1123.95,-272.33 1136,-285 1226.73,-380.38 1083.21,-481.81 1172,-579 1187.19,-595.62 1212.1,-600.78 1232.94,-601.82"/>
+<polygon fill="#bd00ff" stroke="#bd00ff" points="1233.02,-605.33 1243.09,-602.04 1233.17,-598.33 1233.02,-605.33"/>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge163" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#bd00ff" d="M1090.19,-261.84C1107.49,-265.09 1124.24,-271.92 1136,-285 1217.31,-375.42 1114.72,-723.74 1172,-831 1185.7,-856.66 1212.43,-876.25 1234.44,-888.96"/>
+<polygon fill="#bd00ff" stroke="#bd00ff" points="1232.78,-892.04 1243.23,-893.82 1236.17,-885.92 1232.78,-892.04"/>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge166" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#bd00ff" d="M1090.22,-262.62C1106.62,-259.29 1122.95,-253.31 1136,-243 1167.87,-217.81 1140.65,-184.82 1172,-159 1184.06,-149.07 1199.73,-143.53 1214.97,-140.52"/>
+<polygon fill="#bd00ff" stroke="#bd00ff" points="1215.58,-143.96 1224.88,-138.88 1214.44,-137.06 1215.58,-143.96"/>
+</g>
+<!-- add -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node70" class="node">
+<title>add</title>
+<polygon fill="#777777" stroke="#777777" points="1297.5,-360 1243.5,-360 1243.5,-336 1297.5,-336 1297.5,-360"/>
+<text text-anchor="middle" x="1270.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;add -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge158" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#bd00ff" d="M1090.08,-268.8C1105.96,-272.02 1122.1,-277.1 1136,-285 1157.37,-297.15 1150.88,-314.42 1172,-327 1190.54,-338.04 1214.13,-343.31 1233.46,-345.81"/>
+<polygon fill="#bd00ff" stroke="#bd00ff" points="1233.1,-349.29 1243.42,-346.9 1233.86,-342.33 1233.1,-349.29"/>
+</g>
+<!-- create_array -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node72" class="node">
+<title>create_array</title>
+<polygon fill="#777777" stroke="#777777" points="1310.5,-108 1230.5,-108 1230.5,-84 1310.5,-84 1310.5,-108"/>
+<text text-anchor="middle" x="1270.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_array</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;create_array -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge159" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;create_array</title>
+<path fill="none" stroke="#bd00ff" d="M1090.26,-263.98C1106.95,-260.65 1123.39,-254.33 1136,-243 1179.32,-204.07 1129.48,-156.8 1172,-117 1185,-104.83 1203.28,-99.05 1220.51,-96.49"/>
+<polygon fill="#bd00ff" stroke="#bd00ff" points="1220.96,-99.96 1230.49,-95.33 1220.15,-93.01 1220.96,-99.96"/>
+</g>
+<!-- create_object -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node73" class="node">
+<title>create_object</title>
+<polygon fill="#777777" stroke="#777777" points="1313,-318 1228,-318 1228,-294 1313,-294 1313,-318"/>
+<text text-anchor="middle" x="1270.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_object</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;create_object -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge160" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#bd00ff" d="M1087.93,-276.04C1129.42,-282.88 1180.39,-291.29 1217.75,-297.46"/>
+<polygon fill="#bd00ff" stroke="#bd00ff" points="1217.47,-300.96 1227.91,-299.14 1218.61,-294.05 1217.47,-300.96"/>
+</g>
+<!-- destroy -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node74" class="node">
+<title>destroy</title>
+<polygon fill="#777777" stroke="#777777" points="1297.5,-276 1243.5,-276 1243.5,-252 1297.5,-252 1297.5,-276"/>
+<text text-anchor="middle" x="1270.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">destroy</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;destroy -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge161" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#bd00ff" d="M1090.33,-264C1137.42,-264 1195.96,-264 1233.04,-264"/>
+<polygon fill="#bd00ff" stroke="#bd00ff" points="1233.36,-267.5 1243.36,-264 1233.36,-260.5 1233.36,-267.5"/>
+</g>
+<!-- initialize -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node76" class="node">
+<title>initialize</title>
+<polygon fill="#777777" stroke="#777777" points="1299,-234 1242,-234 1242,-210 1299,-210 1299,-234"/>
+<text text-anchor="middle" x="1270.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">initialize</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;initialize -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge164" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#bd00ff" d="M1087.93,-251.96C1134.92,-244.21 1194.08,-234.45 1231.85,-228.21"/>
+<polygon fill="#bd00ff" stroke="#bd00ff" points="1232.61,-231.63 1241.91,-226.55 1231.47,-224.73 1232.61,-231.63"/>
+</g>
+<!-- proc~add_gradient -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node77" class="node">
+<title>proc~add_gradient</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node77"><a xlink:href="../proc/add_gradient.html" xlink:title="add_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="1312,-192 1229,-192 1229,-168 1312,-168 1312,-192"/>
+<text text-anchor="middle" x="1270.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;proc~add_gradient -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge165" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;proc~add_gradient</title>
+<path fill="none" stroke="#bd00ff" d="M1090.08,-259.2C1105.96,-255.98 1122.1,-250.9 1136,-243 1157.37,-230.85 1150.88,-213.58 1172,-201 1186.03,-192.64 1202.96,-187.59 1218.75,-184.55"/>
+<polygon fill="#bd00ff" stroke="#bd00ff" points="1219.65,-187.95 1228.92,-182.82 1218.47,-181.04 1219.65,-187.95"/>
+</g>
+<!-- proc~get_output_json_filename -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node94" class="node">
+<title>proc~get_output_json_filename</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node94"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1345,-402 1196,-402 1196,-378 1345,-378 1345,-402"/>
+<text text-anchor="middle" x="1270.5" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_output_json_filename</text>
+</a>
+</g>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge167" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#bd00ff" d="M1090.22,-265.38C1106.62,-268.71 1122.95,-274.69 1136,-285 1167.87,-310.19 1140.65,-343.18 1172,-369 1176.34,-372.58 1181.16,-375.59 1186.25,-378.11"/>
+<polygon fill="#bd00ff" stroke="#bd00ff" points="1185.1,-381.43 1195.67,-382.15 1187.86,-374.99 1185.1,-381.43"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge172" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#e100ff" d="M1107.72,-225.01C1118.38,-228.91 1128.2,-234.68 1136,-243 1238.69,-352.6 1071.54,-467.35 1172,-579 1187.16,-595.85 1212.3,-600.96 1233.26,-601.93"/>
+<polygon fill="#e100ff" stroke="#e100ff" points="1233.4,-605.43 1243.46,-602.1 1233.52,-598.43 1233.4,-605.43"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge173" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#e100ff" d="M1107.78,-224.57C1118.5,-228.53 1128.32,-234.42 1136,-243 1223.31,-340.55 1110.61,-715.38 1172,-831 1185.64,-856.7 1212.38,-876.28 1234.4,-888.98"/>
+<polygon fill="#e100ff" stroke="#e100ff" points="1232.75,-892.07 1243.19,-893.84 1236.13,-885.94 1232.75,-892.07"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;warning -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge180" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;warning</title>
+<path fill="none" stroke="#e100ff" d="M1107.5,-224.07C1118.41,-228.07 1128.35,-234.11 1136,-243 1166.16,-278.07 1166.38,-1862.08 1172,-1908 1191.56,-2067.8 1244.35,-2255.2 1262.93,-2318.14"/>
+<polygon fill="#e100ff" stroke="#e100ff" points="1259.59,-2319.2 1265.79,-2327.79 1266.3,-2317.2 1259.59,-2319.2"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge176" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#e100ff" d="M1101.57,-209.95C1113.55,-206.43 1125.38,-201.88 1136,-196 1156.08,-184.89 1151.93,-170.11 1172,-159 1185.05,-151.78 1200.35,-147.04 1214.92,-143.93"/>
+<polygon fill="#e100ff" stroke="#e100ff" points="1215.68,-147.34 1224.84,-142.02 1214.36,-140.47 1215.68,-147.34"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;add -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge168" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#e100ff" d="M1107.71,-228.07C1117.92,-231.56 1127.64,-236.39 1136,-243 1167.87,-268.19 1140.65,-301.18 1172,-327 1188.96,-340.97 1213.06,-346.25 1233.05,-348.02"/>
+<polygon fill="#e100ff" stroke="#e100ff" points="1232.87,-351.52 1243.08,-348.66 1233.32,-344.53 1232.87,-351.52"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;create_array -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge169" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;create_array</title>
+<path fill="none" stroke="#e100ff" d="M1029.07,-209.86C1055.32,-187.86 1114.33,-141.44 1172,-117 1187.04,-110.63 1204.24,-106.1 1219.95,-102.92"/>
+<polygon fill="#e100ff" stroke="#e100ff" points="1220.86,-106.31 1230.03,-101.02 1219.56,-99.44 1220.86,-106.31"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;create_object -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge170" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#e100ff" d="M1107.53,-231.14C1117.49,-234.12 1127.2,-237.99 1136,-243 1157.37,-255.15 1150.88,-272.42 1172,-285 1185.79,-293.21 1202.38,-298.23 1217.93,-301.29"/>
+<polygon fill="#e100ff" stroke="#e100ff" points="1217.5,-304.77 1227.96,-303.03 1218.7,-297.87 1217.5,-304.77"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;destroy -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge171" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#e100ff" d="M1087.93,-234.04C1135.59,-241.9 1195.77,-251.83 1233.46,-258.05"/>
+<polygon fill="#e100ff" stroke="#e100ff" points="1233.02,-261.53 1243.46,-259.7 1234.16,-254.62 1233.02,-261.53"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;initialize -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge174" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#e100ff" d="M1107.6,-222C1150.56,-222 1199.23,-222 1231.89,-222"/>
+<polygon fill="#e100ff" stroke="#e100ff" points="1231.9,-225.5 1241.9,-222 1231.9,-218.5 1231.9,-225.5"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~add_gradient -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge175" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~add_gradient</title>
+<path fill="none" stroke="#e100ff" d="M1087.93,-209.96C1129.68,-203.07 1181.05,-194.6 1218.47,-188.42"/>
+<polygon fill="#e100ff" stroke="#e100ff" points="1219.35,-191.82 1228.64,-186.74 1218.21,-184.92 1219.35,-191.82"/>
+</g>
+<!-- proc~get_frag_level_name -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node92" class="node">
+<title>proc~get_frag_level_name</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node92"><a xlink:href="../proc/get_frag_level_name.html" xlink:title="get_frag_level_name">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1332.5,-66 1208.5,-66 1208.5,-42 1332.5,-42 1332.5,-66"/>
+<text text-anchor="middle" x="1270.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_frag_level_name</text>
+</a>
+</g>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_frag_level_name -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge177" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_frag_level_name</title>
+<path fill="none" stroke="#e100ff" d="M1024.09,-209.81C1046.06,-181.28 1105.18,-109.99 1172,-75 1180.31,-70.65 1189.47,-67.2 1198.75,-64.46"/>
+<polygon fill="#e100ff" stroke="#e100ff" points="1199.68,-67.84 1208.43,-61.86 1197.86,-61.08 1199.68,-67.84"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge178" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#e100ff" d="M1107.65,-226.74C1118.06,-230.42 1127.83,-235.66 1136,-243 1179.32,-281.93 1129.48,-329.2 1172,-369 1176.37,-373.09 1181.35,-376.46 1186.67,-379.23"/>
+<polygon fill="#e100ff" stroke="#e100ff" points="1185.38,-382.48 1195.94,-383.34 1188.22,-376.09 1185.38,-382.48"/>
+</g>
+<!-- proc~write_unconverged_section -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node109" class="node">
+<title>proc~write_unconverged_section</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node109"><a xlink:href="../proc/write_unconverged_section.html" xlink:title="write_unconverged_section">
+<polygon fill="#d9534f" stroke="#d9534f" points="1349.5,-24 1191.5,-24 1191.5,0 1349.5,0 1349.5,-24"/>
+<text text-anchor="middle" x="1270.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_unconverged_section</text>
+</a>
+</g>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~write_unconverged_section -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge179" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~write_unconverged_section</title>
+<path fill="none" stroke="#e100ff" d="M1021.22,-209.9C1039.36,-175.94 1095.76,-79.21 1172,-33 1175.19,-31.07 1178.53,-29.31 1181.97,-27.72"/>
+<polygon fill="#e100ff" stroke="#e100ff" points="1183.39,-30.92 1191.3,-23.86 1180.72,-24.45 1183.39,-30.92"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge184" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#ff00f9" d="M1102.23,-353.63C1114.9,-357.93 1126.76,-364.4 1136,-374 1200.16,-440.64 1107.85,-512.35 1172,-579 1187.61,-595.22 1212.52,-600.38 1233.25,-601.53"/>
+<polygon fill="#ff00f9" stroke="#ff00f9" points="1233.25,-605.03 1243.34,-601.81 1233.44,-598.04 1233.25,-605.03"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge185" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#ff00f9" d="M1031,-360.06C1058.01,-381.45 1112.04,-428.9 1136,-483 1198.97,-625.17 1096.22,-695.23 1172,-831 1186.27,-856.57 1213.22,-876.26 1235.18,-889.04"/>
+<polygon fill="#ff00f9" stroke="#ff00f9" points="1233.49,-892.1 1243.92,-893.92 1236.9,-885.99 1233.49,-892.1"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge188" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#ff00f9" d="M1102.04,-345.79C1114.65,-342.02 1126.55,-336.09 1136,-327 1191.05,-274.07 1118.03,-213.02 1172,-159 1183.24,-147.75 1198.97,-141.86 1214.52,-138.95"/>
+<polygon fill="#ff00f9" stroke="#ff00f9" points="1215.29,-142.37 1224.67,-137.44 1214.26,-135.45 1215.29,-142.37"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;add -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge181" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#ff00f9" d="M1102.23,-348C1146.89,-348 1198.88,-348 1232.9,-348"/>
+<polygon fill="#ff00f9" stroke="#ff00f9" points="1233.28,-351.5 1243.28,-348 1233.28,-344.5 1233.28,-351.5"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;create_object -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge182" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#ff00f9" d="M1087.93,-335.96C1129.42,-329.12 1180.39,-320.71 1217.75,-314.54"/>
+<polygon fill="#ff00f9" stroke="#ff00f9" points="1218.61,-317.95 1227.91,-312.86 1217.47,-311.04 1218.61,-317.95"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;destroy -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge183" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#ff00f9" d="M1102.16,-340.38C1113.99,-337.23 1125.62,-332.9 1136,-327 1157.37,-314.85 1150.88,-297.58 1172,-285 1190.54,-273.96 1214.13,-268.69 1233.46,-266.19"/>
+<polygon fill="#ff00f9" stroke="#ff00f9" points="1233.86,-269.67 1243.42,-265.1 1233.1,-262.71 1233.86,-269.67"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;initialize -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge186" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#ff00f9" d="M1102.15,-343.69C1114.38,-340.12 1126.13,-334.8 1136,-327 1167.87,-301.81 1140.65,-268.82 1172,-243 1188.54,-229.38 1211.87,-224.02 1231.57,-222.12"/>
+<polygon fill="#ff00f9" stroke="#ff00f9" points="1232.04,-225.59 1241.77,-221.4 1231.55,-218.61 1232.04,-225.59"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~add_gradient -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge187" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~add_gradient</title>
+<path fill="none" stroke="#ff00f9" d="M1102.14,-345.05C1114.59,-341.34 1126.41,-335.62 1136,-327 1179.32,-288.07 1129.48,-240.8 1172,-201 1184.46,-189.34 1201.77,-183.54 1218.36,-180.83"/>
+<polygon fill="#ff00f9" stroke="#ff00f9" points="1219.07,-184.26 1228.54,-179.51 1218.18,-177.32 1219.07,-184.26"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge189" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#ff00f9" d="M1087.93,-360.04C1118.68,-365.11 1154.64,-371.04 1186.4,-376.29"/>
+<polygon fill="#ff00f9" stroke="#ff00f9" points="1186.12,-379.79 1196.56,-377.96 1187.26,-372.88 1186.12,-379.79"/>
+</g>
+<!-- proc~write_charges_section -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node104" class="node">
+<title>proc~write_charges_section</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node104"><a xlink:href="../proc/write_charges_section.html" xlink:title="write_charges_section">
+<polygon fill="#d9534f" stroke="#d9534f" points="1335.5,-486 1205.5,-486 1205.5,-462 1335.5,-462 1335.5,-486"/>
+<text text-anchor="middle" x="1270.5" y="-471.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_charges_section</text>
+</a>
+</g>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~write_charges_section -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge190" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~write_charges_section</title>
+<path fill="none" stroke="#ff00f9" d="M1102.13,-356.38C1114.37,-360.39 1126.12,-366.05 1136,-374 1166.06,-398.18 1141.94,-428.81 1172,-453 1178.96,-458.6 1187.07,-462.8 1195.59,-465.93"/>
+<polygon fill="#ff00f9" stroke="#ff00f9" points="1194.75,-469.33 1205.34,-469.03 1196.87,-462.66 1194.75,-469.33"/>
+</g>
+<!-- proc~write_fukui_section -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node105" class="node">
+<title>proc~write_fukui_section</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node105"><a xlink:href="../proc/write_fukui_section.html" xlink:title="write_fukui_section">
+<polygon fill="#d9534f" stroke="#d9534f" points="1327.5,-444 1213.5,-444 1213.5,-420 1327.5,-420 1327.5,-444"/>
+<text text-anchor="middle" x="1270.5" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_fukui_section</text>
+</a>
+</g>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~write_fukui_section -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge191" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~write_fukui_section</title>
+<path fill="none" stroke="#ff00f9" d="M1101.57,-360.05C1113.55,-363.57 1125.38,-368.12 1136,-374 1156.08,-385.11 1151.93,-399.89 1172,-411 1181.63,-416.33 1192.48,-420.31 1203.36,-423.28"/>
+<polygon fill="#ff00f9" stroke="#ff00f9" points="1202.78,-426.74 1213.33,-425.73 1204.45,-419.94 1202.78,-426.74"/>
+</g>
+<!-- proc~write_ieda_section -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node106" class="node">
+<title>proc~write_ieda_section</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node106"><a xlink:href="../proc/write_ieda_section.html" xlink:title="write_ieda_section">
+<polygon fill="#d9534f" stroke="#d9534f" points="1326,-570 1215,-570 1215,-546 1326,-546 1326,-570"/>
+<text text-anchor="middle" x="1270.5" y="-555.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_ieda_section</text>
+</a>
+</g>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~write_ieda_section -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge192" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~write_ieda_section</title>
+<path fill="none" stroke="#ff00f9" d="M1102.18,-354.08C1114.78,-358.34 1126.63,-364.68 1136,-374 1188.61,-426.31 1119.4,-484.68 1172,-537 1180.96,-545.91 1192.74,-551.45 1204.99,-554.81"/>
+<polygon fill="#ff00f9" stroke="#ff00f9" points="1204.36,-558.26 1214.88,-557.07 1205.91,-551.43 1204.36,-558.26"/>
+</g>
+<!-- proc~write_sapt_section -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node108" class="node">
+<title>proc~write_sapt_section</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node108"><a xlink:href="../proc/write_sapt_section.html" xlink:title="write_sapt_section">
+<polygon fill="#d9534f" stroke="#d9534f" points="1325.5,-528 1215.5,-528 1215.5,-504 1325.5,-504 1325.5,-528"/>
+<text text-anchor="middle" x="1270.5" y="-513.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_sapt_section</text>
+</a>
+</g>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~write_sapt_section -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge193" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~write_sapt_section</title>
+<path fill="none" stroke="#ff00f9" d="M1102.23,-354.88C1114.67,-359.06 1126.46,-365.17 1136,-374 1177.18,-412.11 1130.83,-456.88 1172,-495 1181.27,-503.59 1193.19,-508.98 1205.48,-512.31"/>
+<polygon fill="#ff00f9" stroke="#ff00f9" points="1204.84,-515.76 1215.37,-514.56 1206.4,-508.93 1204.84,-515.76"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;error -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge197" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#ff00d5" d="M1092.66,-305.1C1108.86,-308.54 1124.49,-315.14 1136,-327 1214.79,-408.19 1094.86,-496.24 1172,-579 1187.35,-595.47 1212.26,-600.63 1233.06,-601.71"/>
+<polygon fill="#ff00d5" stroke="#ff00d5" points="1233.11,-605.22 1243.19,-601.95 1233.27,-598.22 1233.11,-605.22"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;info -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge198" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#ff00d5" d="M1092.66,-304.38C1109.06,-307.81 1124.77,-314.59 1136,-327 1211.31,-410.29 1118.84,-732.1 1172,-831 1185.77,-856.63 1212.5,-876.22 1234.49,-888.94"/>
+<polygon fill="#ff00d5" stroke="#ff00d5" points="1232.82,-892.02 1243.26,-893.8 1236.22,-885.89 1232.82,-892.02"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge201" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#ff00d5" d="M1092.78,-305.45C1108.59,-302 1124.03,-295.76 1136,-285 1179.32,-246.07 1129.48,-198.8 1172,-159 1183.51,-148.23 1199.17,-142.46 1214.57,-139.5"/>
+<polygon fill="#ff00d5" stroke="#ff00d5" points="1215.26,-142.94 1224.6,-137.94 1214.18,-136.02 1215.26,-142.94"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;add -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge194" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#ff00d5" d="M1087.93,-318.04C1135.59,-325.9 1195.77,-335.83 1233.46,-342.05"/>
+<polygon fill="#ff00d5" stroke="#ff00d5" points="1233.02,-345.53 1243.46,-343.7 1234.16,-338.62 1233.02,-345.53"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;create_object -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge195" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#ff00d5" d="M1092.74,-306C1133.19,-306 1181.54,-306 1217.44,-306"/>
+<polygon fill="#ff00d5" stroke="#ff00d5" points="1217.69,-309.5 1227.69,-306 1217.69,-302.5 1217.69,-309.5"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;destroy -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge196" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#ff00d5" d="M1087.93,-293.96C1135.59,-286.1 1195.77,-276.17 1233.46,-269.95"/>
+<polygon fill="#ff00d5" stroke="#ff00d5" points="1234.16,-273.38 1243.46,-268.3 1233.02,-266.47 1234.16,-273.38"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;initialize -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge199" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#ff00d5" d="M1092.62,-300.67C1107.67,-297.43 1122.84,-292.48 1136,-285 1157.37,-272.85 1150.88,-255.58 1172,-243 1189.95,-232.31 1212.64,-227.03 1231.61,-224.44"/>
+<polygon fill="#ff00d5" stroke="#ff00d5" points="1232.19,-227.89 1241.71,-223.26 1231.38,-220.94 1232.19,-227.89"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;proc~add_gradient -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge200" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;proc~add_gradient</title>
+<path fill="none" stroke="#ff00d5" d="M1092.75,-304.08C1108.29,-300.67 1123.62,-294.78 1136,-285 1167.87,-259.81 1140.65,-226.82 1172,-201 1185.06,-190.24 1202.36,-184.64 1218.75,-181.82"/>
+<polygon fill="#ff00d5" stroke="#ff00d5" points="1219.38,-185.26 1228.8,-180.4 1218.41,-178.33 1219.38,-185.26"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge202" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#ff00d5" d="M1092.62,-311.33C1107.67,-314.57 1122.84,-319.52 1136,-327 1157.37,-339.15 1150.88,-356.42 1172,-369 1176.49,-371.67 1181.27,-374.01 1186.22,-376.05"/>
+<polygon fill="#ff00d5" stroke="#ff00d5" points="1185.31,-379.44 1195.9,-379.61 1187.73,-372.87 1185.31,-379.44"/>
+</g>
+<!-- proc~xtb_get_solvation_info&#45;&gt;to_char -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge204" class="edge">
+<title>proc~xtb_get_solvation_info&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff00b1" d="M1115.19,-1156.09C1122.77,-1159.74 1129.86,-1164.3 1136,-1170 1264.7,-1289.32 1271.45,-1526 1270.26,-1599.61"/>
+<polygon fill="#ff00b1" stroke="#ff00b1" points="1266.76,-1599.55 1270.03,-1609.62 1273.76,-1599.71 1266.76,-1599.55"/>
+</g>
+<!-- proc~xtb_has_solvation -->
+<g id="proc~~evaluate_hessian~~CallsGraph_node110" class="node">
+<title>proc~xtb_has_solvation</title>
+<g id="a_proc~~evaluate_hessian~~CallsGraph_node110"><a xlink:href="../proc/xtb_has_solvation.html" xlink:title="xtb_config_t%xtb_has_solvation">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1360.5,-1156 1180.5,-1156 1180.5,-1132 1360.5,-1132 1360.5,-1156"/>
+<text text-anchor="middle" x="1270.5" y="-1141.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_config_t%xtb_has_solvation</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_get_solvation_info&#45;&gt;proc~xtb_has_solvation -->
+<g id="proc~~evaluate_hessian~~CallsGraph_edge203" class="edge">
+<title>proc~xtb_get_solvation_info&#45;&gt;proc~xtb_has_solvation</title>
+<path fill="none" stroke="#ff00b1" d="M1116.32,-1144C1134.05,-1144 1152.48,-1144 1170.15,-1144"/>
+<polygon fill="#ff00b1" stroke="#ff00b1" points="1170.46,-1147.5 1180.46,-1144 1170.46,-1140.5 1170.46,-1147.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocevaluate_hessianCallsGraph = svgPanZoom('#procevaluate_hessianCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-command"></span>
+              integer(kind=int32),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>command</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hess_config"></span>
+              type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>hess_config</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~11"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-saved_level~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>saved_level</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">evaluate_hessian</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">coords</span><span class="p">,</span><span class="w"> </span><span class="n">hessian</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Second derivatives at a geometry, for an engine that climbs</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The mirror of `evaluate_energy_gradient` for the algorithms that need</span>
+<span class="w">      </span><span class="c">!! curvature rather than slope -- P-RFO and Newton-Raphson. Same MPI</span>
+<span class="w">      </span><span class="c">!! shape: the command goes out, the geometry follows, and every rank runs</span>
+<span class="w">      </span><span class="c">!! the same calculation type, which for a finite-difference Hessian is</span>
+<span class="w">      </span><span class="c">!! what distributes the displacements across them.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! **A failure here is reported and not raised.** `status` non-zero sends</span>
+<span class="w">      </span><span class="c">!! DL-FIND to its own two-point finite differences, which reaches the</span>
+<span class="w">      </span><span class="c">!! same matrix by a slower route. Killing the optimization instead would</span>
+<span class="w">      </span><span class="c">!! trade a correct answer for no answer.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coords</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hessian</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">n_atoms</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">status</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
+<span class="k">      type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hess_config</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">command</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">saved_level</span>
+
+<span class="w">      </span><span class="n">hessian</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+
+<span class="w">      </span><span class="n">command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_CMD_HESSIAN</span>
+<span class="w">      </span><span class="k">call </span><span class="n">bcast</span><span class="p">(</span><span class="n">ctx_resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">command</span><span class="p">,</span><span class="w"> </span><span class="mi">1_int32</span><span class="p">,</span><span class="w"> </span><span class="mi">0_int32</span><span class="p">)</span>
+
+<span class="w">      </span><span class="n">ctx_sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coords</span>
+<span class="w">      </span><span class="k">call </span><span class="n">send_final_geometry</span><span class="p">(</span><span class="n">ctx_resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">ctx_sys_geom</span><span class="p">)</span>
+
+<span class="w">      </span><span class="n">hess_config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx_config</span>
+<span class="w">      </span><span class="n">hess_config</span><span class="p">%</span><span class="n">calc_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CALC_TYPE_HESSIAN</span>
+
+<span class="w">      </span><span class="n">saved_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logger</span><span class="p">%</span><span class="n">log_level</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">saved_level</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">verbose_level</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">configure</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">warning_level</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">run_step</span><span class="p">(</span><span class="n">hess_config</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">configure</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">saved_level</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">has_hessian</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">hessian</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">n_atoms</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      </span><span class="n">hessian</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">hessian</span>
+<span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">evaluate_hessian</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-25 13:55 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

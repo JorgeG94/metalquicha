@@ -199,9 +199,9 @@ shape from data that arrived with it and never assumes one.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_bcast.html'>mqc_bcast</a></li>
               </ul>
             </li>
@@ -824,7 +824,7 @@ checked against, and splitting them invites sending four of five</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~2"></span>
+              <span class="anchor" id="variable-comm"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -839,7 +839,7 @@ checked against, and splitting them invites sending four of five</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~27"></span>
+              <span class="anchor" id="variable-sys_geom~19"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -854,7 +854,7 @@ checked against, and splitting them invites sending four of five</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~8"></span>
+              <span class="anchor" id="variable-root~7"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -894,7 +894,7 @@ checked against, and splitting them invites sending four of five</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~6"></span>
+              <span class="anchor" id="variable-comm~5"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -909,7 +909,7 @@ checked against, and splitting them invites sending four of five</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~12"></span>
+              <span class="anchor" id="variable-bonds~4"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -924,7 +924,7 @@ checked against, and splitting them invites sending four of five</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~12"></span>
+              <span class="anchor" id="variable-root~11"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -939,7 +939,7 @@ checked against, and splitting them invites sending four of five</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-is_root~6"></span>
+              <span class="anchor" id="variable-is_root~5"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -979,7 +979,7 @@ checked against, and splitting them invites sending four of five</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~3"></span>
+              <span class="anchor" id="variable-comm~2"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1003,6 +1003,91 @@ checked against, and splitting them invites sending four of five</p>
             </td>
             <td>::</td>
             <td><strong>array</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-root~8"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>root</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-is_root~2"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>is_root</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-bcast_int_2d"></span> <h3>private  subroutine <a href='../proc/bcast_int_2d.html'>bcast_int_2d</a>(comm, array, root, is_root)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>One default-integer matrix, with both extents</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-comm~3"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>comm</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-array~2"></span>
+              integer,
+            </td>
+<td>intent(inout),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>array</strong>(:,:)</td>
             <td>
 
             </td>
@@ -1045,11 +1130,11 @@ checked against, and splitting them invites sending four of five</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-bcast_int_2d"></span> <h3>private  subroutine <a href='../proc/bcast_int_2d.html'>bcast_int_2d</a>(comm, array, root, is_root)  
+    <div class="card-header codesum"><span class="anchor" id="proc-bcast_real_2d"></span> <h3>private  subroutine <a href='../proc/bcast_real_2d.html'>bcast_real_2d</a>(comm, array, root, is_root)  
 </h3></div>
     <div class="card-body">
           
-  <p>One default-integer matrix, with both extents</p>
+  <p>One double matrix, with both extents &ndash; the coordinates, in Bohr</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1079,8 +1164,8 @@ checked against, and splitting them invites sending four of five</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-array~2"></span>
-              integer,
+              <span class="anchor" id="variable-array~3"></span>
+              real(kind=dp),
             </td>
 <td>intent(inout),</td>
               <td></td>            <td>
@@ -1129,91 +1214,6 @@ checked against, and splitting them invites sending four of five</p>
     </div>
   </div>
 
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-bcast_real_2d"></span> <h3>private  subroutine <a href='../proc/bcast_real_2d.html'>bcast_real_2d</a>(comm, array, root, is_root)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>One double matrix, with both extents &ndash; the coordinates, in Bohr</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-comm~5"></span>
-              type(comm_t),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>comm</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-array~3"></span>
-              real(kind=dp),
-            </td>
-<td>intent(inout),</td>
-              <td></td>            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>array</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-root~11"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>root</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-is_root~5"></span>
-              logical,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>is_root</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
         </section>
         <br>
 
@@ -1237,7 +1237,7 @@ checked against, and splitting them invites sending four of five</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-25 12:45 +0000             </p>
+ on 2026-08-25 13:55 +0000             </p>
           </div>
         </div>
         <br>

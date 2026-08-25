@@ -10,7 +10,9 @@ module mqc_config_adapter
    use mqc_calculation_keywords, only: hessian_keywords_t, aimd_keywords_t, scf_keywords_t
    use mqc_optimizer_types, only: optimizer_settings_t, &
                                   coordinates_from_string, algorithm_from_string, &
-                                  OPT_COORDS_UNKNOWN, OPT_ALGO_UNKNOWN
+                                  hessian_update_from_string, &
+                                  OPT_COORDS_UNKNOWN, OPT_ALGO_UNKNOWN, &
+                                  OPT_HESSIAN_UPDATE_ENGINE
    use mqc_method_config, only: method_config_t
    use mqc_method_types, only: METHOD_TYPE_CCSD_T, METHOD_TYPE_GFN1, &
                                METHOD_TYPE_GFN2, METHOD_TYPE_EFP2
@@ -217,6 +219,15 @@ contains
       driver_config%optimization%print_level = mqc_config%opt_print_level
       driver_config%optimization%trajectory = mqc_config%opt_trajectory
       driver_config%optimization%freeze_terms = mqc_config%opt_freeze_terms
+      driver_config%optimization%hess_end = mqc_config%opt_hess_end
+      driver_config%optimization%timestep = mqc_config%opt_timestep
+      driver_config%optimization%friction = mqc_config%opt_friction
+      driver_config%optimization%friction_factor = mqc_config%opt_friction_factor
+      driver_config%optimization%friction_rising = mqc_config%opt_friction_rising
+      if (allocated(mqc_config%opt_frozen_atoms)) then
+         driver_config%optimization%frozen_atoms = mqc_config%opt_frozen_atoms
+      end if
+      call set_optimization_constraints(mqc_config, driver_config)
       call set_optimization_vocabulary(mqc_config, driver_config, error)
 
       driver_config%scf%max_iterations = mqc_config%scf_maxiter
@@ -407,13 +418,53 @@ contains
                call error%set(ERROR_VALIDATION, &
                               "Unknown keywords.optimization.algorithm: '"// &
                               trim(mqc_config%opt_algorithm)// &
-                              "'. Use lbfgs, cg, sd or prfo.")
+                              "'. Use lbfgs, cg, cg-auto, sd, prfo, nr or damped.")
+            end if
+            return
+         end if
+      end if
+
+      ! "auto" is a spelling of "leave DL-FIND's own choice alone", so it maps
+      ! to the sentinel rather than to a scheme -- which is why the refusal
+      ! below tests for the parse failure and not for the sentinel.
+      if (allocated(mqc_config%opt_hessian_update)) then
+         driver_config%optimization%hessian_update = &
+            hessian_update_from_string(mqc_config%opt_hessian_update)
+         if (driver_config%optimization%hessian_update < OPT_HESSIAN_UPDATE_ENGINE) then
+            if (present(error)) then
+               call error%set(ERROR_VALIDATION, &
+                              "Unknown keywords.optimization.hessian_update: '"// &
+                              trim(mqc_config%opt_hessian_update)// &
+                              "'. Use none, powell, bofill or auto.")
             end if
             return
          end if
       end if
 
    end subroutine set_optimization_vocabulary
+
+   subroutine set_optimization_constraints(mqc_config, driver_config)
+      !! Gather the constrained coordinates into the optimizer's own type
+      !!
+      !! The reader has already checked that each type is one this program
+      !! knows and that its atom count matches, so this only rearranges: two
+      !! parallel arrays, which is what a flat config can hold, into one array
+      !! of records, which is what the engine wants to iterate.
+      type(mqc_config_t), intent(in) :: mqc_config
+      type(driver_config_t), intent(inout) :: driver_config
+
+      integer :: i, n
+
+      if (.not. allocated(mqc_config%opt_constraint_kinds)) return
+      n = size(mqc_config%opt_constraint_kinds)
+      if (n < 1) return
+
+      allocate (driver_config%optimization%constraints(n))
+      do i = 1, n
+         driver_config%optimization%constraints(i)%kind = mqc_config%opt_constraint_kinds(i)
+         driver_config%optimization%constraints(i)%atoms = mqc_config%opt_constraint_atoms(:, i)
+      end do
+   end subroutine set_optimization_constraints
 
    subroutine check_counterpoise_support(driver_config, error)
       !! Refuse a counterpoise request the chosen expansion cannot honour

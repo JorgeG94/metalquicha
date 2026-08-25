@@ -7,7 +7,8 @@ module mqc_dlfind_bridge
    !! the same either way, and `dlfind_available` is how it asks in advance so
    !! the refusal can name the build option.
    use pic_types, only: dp
-   use mqc_optimizer_types, only: optimizer_settings_t, energy_gradient_i, step_callback_i
+   use mqc_optimizer_types, only: optimizer_settings_t, energy_gradient_i, step_callback_i, &
+                                  hessian_i
    use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
    private
@@ -24,8 +25,14 @@ contains
    end function dlfind_available
 
    subroutine dlfind_optimize(opt_settings, natoms, znuc, residues, coords, &
-                              energy_gradient, step_taken, final_energy, error)
+                              energy_gradient, step_taken, final_energy, error, &
+                              hessian)
       !! No-op stand-in: optimizing a geometry needs the DL-FIND backend
+      !!
+      !! The argument list has to track the real bridge's exactly, including the
+      !! arguments nothing here reads: the caller is compiled once against
+      !! whichever of the two is present, so a signature that has drifted is a
+      !! compile error in a build nobody makes locally.
       type(optimizer_settings_t), intent(in) :: opt_settings
       integer, intent(in) :: natoms
       integer, intent(in) :: znuc(natoms)
@@ -35,6 +42,7 @@ contains
       procedure(step_callback_i) :: step_taken
       real(dp), intent(out) :: final_energy
       type(error_t), intent(inout) :: error
+      procedure(hessian_i), optional :: hessian
 
       final_energy = 0.0_dp
       call error%set(ERROR_VALIDATION, &
