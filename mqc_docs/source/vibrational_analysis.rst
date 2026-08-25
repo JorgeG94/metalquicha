@@ -231,7 +231,18 @@ Zero-Point Energy (ZPE)
 
 where ``CM1_TO_KELVIN = 1.4387773538277`` K/cm⁻¹.
 
-Only positive (real) frequencies are included. Imaginary frequencies are skipped with a warning.
+Only positive (real) frequencies are included. Imaginary frequencies are skipped
+with a warning.
+
+The threshold for "imaginary" here is exactly zero, so a projected rotational
+mode that comes back at ``-1e-5`` cm-1 rather than at zero is counted and
+skipped. On a genuine minimum the reported count is therefore often 3 (or 5 for
+a linear molecule) rather than 0, and those modes contribute nothing to the sums
+anyway. The frequency table printed above the thermochemistry is what to read
+for whether a mode is really imaginary: it shows an ``i`` only past a ``10``
+cm-1 window, which is also what
+:ref:`hess_end <hess-end>` uses when it decides whether an optimized geometry is
+a minimum.
 
 Translational Contributions
 ---------------------------

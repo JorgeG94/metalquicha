@@ -28,7 +28,10 @@ module mqc_dlfind_bridge
    use mqc_optimizer_types, only: optimizer_settings_t, energy_gradient_i, step_callback_i, &
                                   OPT_COORDS_CARTESIAN, OPT_COORDS_HDLC, OPT_COORDS_DLC, &
                                   OPT_COORDS_HDLC_TC, OPT_COORDS_DLC_TC, &
-                                  OPT_ALGO_SD, OPT_ALGO_CG, OPT_ALGO_LBFGS, OPT_ALGO_PRFO
+                                  OPT_ALGO_SD, OPT_ALGO_CG, OPT_ALGO_LBFGS, OPT_ALGO_PRFO, &
+                                  OPT_ALGO_CG_AUTO, OPT_ALGO_NR, OPT_ALGO_DAMPED, &
+                                  OPT_HESSIAN_UPDATE_ENGINE, hessian_i, &
+                                  algorithm_needs_hessian, constraint_atom_count
    use mqc_error, only: error_t, ERROR_GENERIC, ERROR_VALIDATION
    implicit none
    private
@@ -46,12 +49,36 @@ module mqc_dlfind_bridge
    integer(c_int), parameter :: DLF_COORDS_DLC_TC = 4
 
    integer(c_int), parameter :: DLF_OPT_SD = 0
+   integer(c_int), parameter :: DLF_OPT_CG_AUTO = 1
    integer(c_int), parameter :: DLF_OPT_CG = 2
+      !! Two spellings of Polak-Ribiere: 1 restarts on the Powell-Beale test,
+      !! 2 every ten steps. DL-FIND's own source calls 2 "better
+      !! implementation", which is why it is what `cg` has always meant here.
    integer(c_int), parameter :: DLF_OPT_LBFGS = 3
    integer(c_int), parameter :: DLF_OPT_PRFO = 10
+   integer(c_int), parameter :: DLF_OPT_NR = 20
+   integer(c_int), parameter :: DLF_OPT_DAMPED = 30
+
+   ! `inithessian`: where the first Hessian comes from. 0 asks the external
+   ! program -- this bridge -- and DL-FIND falls back to two-point finite
+   ! differences by itself if the callback declines, so 0 is safe to set even
+   ! when nothing can supply one.
+   integer(c_int), parameter :: DLF_INITHESS_EXTERNAL = 0
+   integer(c_int), parameter :: DLF_INITHESS_TWO_POINT = 2
+
+   integer(c_int), parameter :: DLF_SPEC_FROZEN = -1
+      !! A `spec` entry of -1 removes the atom's three coordinates from the
+      !! optimization entirely. DL-FIND also has -2/-3/-4 for freezing single
+      !! Cartesian components and -23/-24/-34 for pairs; only the whole-atom
+      !! case is offered here, because the others are a coordinate-frame choice
+      !! disguised as a chemistry one -- they mean nothing unless the caller
+      !! knows which way the input axes point.
 
    ! The optimization in progress. See the note above on why this is here.
    procedure(energy_gradient_i), pointer, save :: evaluator => null()
+   procedure(hessian_i), pointer, save :: hessian_evaluator => null()
+      !! Null when the caller has none to offer, which is not an error: the
+      !! Hessian callback then declines and DL-FIND builds its own.
    procedure(step_callback_i), pointer, save :: on_step => null()
    type(optimizer_settings_t), save :: settings
    integer, save :: n_atoms = 0
@@ -94,7 +121,8 @@ contains
    end function dlfind_available
 
    subroutine dlfind_optimize(opt_settings, natoms, znuc, residues, coords, &
-                              energy_gradient, step_taken, final_energy, error)
+                              energy_gradient, step_taken, final_energy, error, &
+                              hessian)
       !! Minimize `coords` in place, calling `energy_gradient` for each geometry
       !!
       !! Coordinates are Bohr in and Bohr out. On success `coords` holds the
@@ -113,8 +141,14 @@ contains
          !! Called once per accepted geometry, for the trajectory
       real(dp), intent(out) :: final_energy
       type(error_t), intent(inout) :: error
+      procedure(hessian_i), optional :: hessian
+         !! Second derivatives, for the algorithms that climb rather than
+         !! descend. Absent is not a refusal: DL-FIND falls back to two-point
+         !! finite differences of the gradients it is already asking for, which
+         !! costs `6N` of them per Hessian and gets the same answer.
 
       integer(c_int) :: nvar, nspec
+      integer :: k, n_cons_atoms, ncons_here
 
       final_energy = 0.0_dp
 
@@ -123,20 +157,73 @@ contains
          return
       end if
 
-      ! P-RFO climbs to a saddle rather than descending to a minimum, and it
-      ! needs a Hessian this bridge does not supply. Refused here, naming the
-      ! setting, rather than left to converge on something nobody asked for.
-      if (opt_settings%algorithm == OPT_ALGO_PRFO) then
-         call error%set(ERROR_VALIDATION, &
-                        'keywords.optimization.algorithm "prfo" searches for a transition '// &
-                        "state and is not wired up yet. Use lbfgs, cg or sd.")
-         return
+      ! Frozen atoms are written into `spec` as negative entries, and pure
+      ! internal coordinates cannot express one: DL-FIND checks for it and
+      ! calls `dlf_fail`, which ends the process. Refused here so it is a
+      ! message rather than a Fortran backtrace.
+      if (allocated(opt_settings%frozen_atoms)) then
+         if (size(opt_settings%frozen_atoms) > 0 .and. &
+             (opt_settings%coordinates == OPT_COORDS_DLC .or. &
+              opt_settings%coordinates == OPT_COORDS_DLC_TC)) then
+            call error%set(ERROR_VALIDATION, &
+                           "keywords.optimization.frozen_atoms needs a coordinate system "// &
+                           "that can hold an atom still. Pure internals cannot -- use "// &
+                           '"hdlc" or "cartesian".')
+            return
+         end if
+         if (any(opt_settings%frozen_atoms < 1) .or. &
+             any(opt_settings%frozen_atoms > natoms)) then
+            call error%set(ERROR_VALIDATION, &
+                           "keywords.optimization.frozen_atoms names an atom outside the "// &
+                           "system.")
+            return
+         end if
+      end if
+
+      ! A constraint is a primitive internal coordinate held fixed, so there
+      ! has to be an internal coordinate system holding it. In Cartesians
+      ! DL-FIND has nowhere to put one and ignores it, which is the failure
+      ! that looks like success -- the run converges to the unconstrained
+      ! answer and says nothing.
+      if (allocated(opt_settings%constraints)) then
+         if (size(opt_settings%constraints) > 0 .and. &
+             opt_settings%coordinates == OPT_COORDS_CARTESIAN) then
+            call error%set(ERROR_VALIDATION, &
+                           "keywords.optimization.constraints needs an internal coordinate "// &
+                           'system to constrain. Use "hdlc"; in cartesian the constraint '// &
+                           "would be silently ignored.")
+            return
+         end if
+         do k = 1, size(opt_settings%constraints)
+            n_cons_atoms = constraint_atom_count(opt_settings%constraints(k)%kind)
+            if (n_cons_atoms == 0) then
+               call error%set(ERROR_VALIDATION, &
+                              "keywords.optimization.constraints has an entry whose type "// &
+                              "is not one this program knows.")
+               return
+            end if
+            if (any(opt_settings%constraints(k)%atoms(1:n_cons_atoms) < 1) .or. &
+                any(opt_settings%constraints(k)%atoms(1:n_cons_atoms) > natoms)) then
+               call error%set(ERROR_VALIDATION, &
+                              "keywords.optimization.constraints names an atom outside "// &
+                              "the system.")
+               return
+            end if
+         end do
       end if
 
       settings = opt_settings
       n_atoms = natoms
       evaluator => energy_gradient
       on_step => step_taken
+
+      ! Only for the algorithms that hold one. Pointing it at a live evaluator
+      ! for L-BFGS would be harmless -- nothing would call it -- but it would
+      ! also be a lie about what the run is going to do.
+      nullify (hessian_evaluator)
+      if (present(hessian) .and. algorithm_needs_hessian(opt_settings%algorithm)) then
+         hessian_evaluator => hessian
+      end if
       have_result = .false.
       evaluation_failed = .false.
 
@@ -157,7 +244,19 @@ contains
       ! [frozen(nat), znuc(nat), micspec(nat)]. Passing znuc rather than
       ! leaving nz at zero is what lets HDLC and DLC perceive connectivity --
       ! without it those coordinate systems have no elements to work from.
-      nspec = int(3*natoms, c_int)
+      ! [residue(nat), znuc(nat), icons(5*ncons), iconn(2*nconn), micspec(nat)].
+      ! The constraint block sits between the charges and the microiterative
+      ! flags, so adding constraints moves micspec -- which is why the offset
+      ! below is computed rather than written as 2*nat.
+      !
+      ! `nconn` stays zero. DL-FIND reads `iconn` from `nat+nz+ncons` while it
+      ! reads `micspec` from `nat+nz+5*ncons+2*nconn`; the two disagree about
+      ! how long the constraint block is, so a deck using both would have its
+      ! connections read out of the middle of the constraints. Constraints are
+      ! the half worth having, so they are the half that is offered.
+      ncons_here = 0
+      if (allocated(opt_settings%constraints)) ncons_here = size(opt_settings%constraints)
+      nspec = int(3*natoms + 5*ncons_here, c_int)
 
       ! nvarin2 = 0: the second coordinate array carries NEB images, a reaction
       ! path or per-atom masses and weights, none of which a minimization uses.
@@ -251,7 +350,7 @@ contains
       integer(c_int), intent(inout) :: nzero, coupled_states, qtsflag
       integer(c_int), intent(inout) :: imicroiter, maxmicrocycle, micro_esp_fit
 
-      integer :: i
+      integer :: i, k, ic, ispec, n_constraints
 
       ierr = 0_c_int
 
@@ -276,13 +375,41 @@ contains
       do i = 1, n_atoms
          spec(i) = int(atom_residues(i), c_int)
       end do
+
+      ! A frozen atom's residue is overwritten rather than annotated: the entry
+      ! is one number and DL-FIND reads a negative one as "held still". So a
+      ! frozen atom belongs to no residue, which is DL-FIND's model and not a
+      ! choice made here -- it has no coordinates for a residue to contain.
+      if (allocated(settings%frozen_atoms)) then
+         do i = 1, size(settings%frozen_atoms)
+            spec(settings%frozen_atoms(i)) = DLF_SPEC_FROZEN
+         end do
+      end if
+
       do i = 1, n_atoms
          spec(n_atoms + i) = int(atomic_numbers(i), c_int)
       end do
-      spec(2*n_atoms + 1:3*n_atoms) = 1_c_int
+
+      ! [type, atom1..atom4], 1-based, unused atom slots zero. DL-FIND reshapes
+      ! this block column-major into icons(5, ncons), so the five entries of one
+      ! constraint are contiguous.
+      ispec = 2*n_atoms
+      n_constraints = 0
+      if (allocated(settings%constraints)) n_constraints = size(settings%constraints)
+      if (allocated(settings%constraints)) then
+         do k = 1, size(settings%constraints)
+            spec(ispec + 1) = int(settings%constraints(k)%kind, c_int)
+            do ic = 1, 4
+               spec(ispec + 1 + ic) = int(settings%constraints(k)%atoms(ic), c_int)
+            end do
+            ispec = ispec + 5
+         end do
+      end if
+
+      spec(ispec + 1:ispec + n_atoms) = 1_c_int
 
       nz = int(n_atoms, c_int)
-      ncons = 0_c_int
+      ncons = int(n_constraints, c_int)
       nconn = 0_c_int
       tatoms = 1_c_int  !! The variables really are atoms; HDLC needs to know
 
@@ -323,6 +450,30 @@ contains
       ! dlf_put_coords. Without it the optimization runs to convergence and
       ! hands back nothing, which is the one failure that looks like success.
       printf = 1_c_int
+
+      ! Curvature settings, which only P-RFO and Newton-Raphson read. Asking
+      ! for the external Hessian is safe whether or not one can be produced:
+      ! the callback declines and DL-FIND says "External Hessian not
+      ! available, using two point FD" and carries on.
+      if (algorithm_needs_hessian(settings%algorithm)) then
+         if (associated(hessian_evaluator)) then
+            inithessian = DLF_INITHESS_EXTERNAL
+         else
+            inithessian = DLF_INITHESS_TWO_POINT
+         end if
+         if (settings%hessian_update /= OPT_HESSIAN_UPDATE_ENGINE) then
+            update = int(settings%hessian_update, c_int)
+         end if
+      end if
+
+      ! Damped dynamics only. Negative in the settings means the engine's own,
+      ! as everywhere else here.
+      if (settings%algorithm == OPT_ALGO_DAMPED) then
+         if (settings%timestep > 0.0_dp) timestep = real(settings%timestep, c_double)
+         if (settings%friction >= 0.0_dp) fric0 = real(settings%friction, c_double)
+         if (settings%friction_factor > 0.0_dp) fricfac = real(settings%friction_factor, c_double)
+         if (settings%friction_rising >= 0.0_dp) fricp = real(settings%friction_rising, c_double)
+      end if
 
       ! No restart files. DL-FIND writes them into the working directory under
       ! fixed names, so two optimizations sharing a directory would read each
@@ -395,19 +546,48 @@ contains
    end subroutine cb_put_coords
 
    subroutine cb_get_hessian(nvar, coords, hessian, status) bind(c)
-      !! Declining to supply an analytic Hessian
+      !! DL-FIND asking for second derivatives at a geometry
       !!
-      !! A non-zero status is how DL-FIND is told to build its own by finite
-      !! difference or by update, which is what the minimizers here want. This
-      !! program can compute a Hessian, but doing it per optimization step
-      !! costs 6N gradients for a curvature that L-BFGS approximates for free.
+      !! **Declining is a supported answer.** A non-zero status tells DL-FIND
+      !! to build its own by two-point finite difference of the gradients it is
+      !! already requesting, and it says so and carries on. So this returns 1
+      !! whenever there is no evaluator rather than failing the run -- a
+      !! minimiser never asks, and an algorithm that does asks for something it
+      !! can get another way.
+      !!
+      !! Cartesian on the way out. DL-FIND calls `dlf_coords_hessian_xtoi` on
+      !! whatever it gets, so handing it a matrix already in internals would be
+      !! transformed a second time.
       integer(c_int), intent(in), value :: nvar
       real(c_double), intent(in) :: coords(nvar)
       real(c_double), intent(out) :: hessian(nvar, nvar)
       integer(c_int), intent(out) :: status
 
+      real(dp), allocatable :: geometry(:, :), h(:, :)
+      integer :: local_status
+
       hessian = 0.0_c_double
       status = 1_c_int
+
+      if (.not. associated(hessian_evaluator)) return
+      if (nvar /= 3*n_atoms) return
+
+      allocate (geometry(3, n_atoms), h(3*n_atoms, 3*n_atoms))
+      geometry = reshape(real(coords, dp), [3, n_atoms])
+
+      call hessian_evaluator(n_atoms, geometry, h, local_status)
+      if (local_status == 0) then
+         hessian = real(h, c_double)
+         status = 0_c_int
+      else
+         ! Left at 1. The evaluation that failed is not this optimization's to
+         ! recover from, and DL-FIND's own fallback is a correct Hessian by a
+         ! slower route rather than a degraded one.
+         call logger%verbose("dlfind: no analytic Hessian at this geometry, "// &
+                             "DL-FIND will build one by finite difference")
+      end if
+
+      deallocate (geometry, h)
 
    end subroutine cb_get_hessian
 
@@ -507,6 +687,12 @@ contains
          iopt = DLF_OPT_CG
       case (OPT_ALGO_PRFO)
          iopt = DLF_OPT_PRFO
+      case (OPT_ALGO_CG_AUTO)
+         iopt = DLF_OPT_CG_AUTO
+      case (OPT_ALGO_NR)
+         iopt = DLF_OPT_NR
+      case (OPT_ALGO_DAMPED)
+         iopt = DLF_OPT_DAMPED
       case default
          iopt = DLF_OPT_LBFGS
       end select

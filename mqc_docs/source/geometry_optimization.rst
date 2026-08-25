@@ -256,7 +256,8 @@ All optional. Everything under ``keywords.optimization``:
        ``coordinate_system`` is accepted too
    * - ``algorithm``
      - ``lbfgs``
-     - ``lbfgs``, ``cg`` or ``sd``. ``optimizer`` is accepted too
+     - ``lbfgs``, ``cg``, ``cg-auto``, ``sd``, ``prfo``, ``nr`` or ``damped``.
+       ``optimizer`` is accepted too. See :ref:`opt-algorithms`
    * - ``lbfgs_memory``
      - engine
      - Steps of curvature history L-BFGS keeps
@@ -266,6 +267,23 @@ All optional. Everything under ``keywords.optimization``:
    * - ``trajectory``
      - ``true``
      - Record every accepted geometry
+   * - ``hess_end``
+     - ``false``
+     - Hessian at the converged geometry, to say whether it is a minimum. See
+       :ref:`hess-end`
+   * - ``hessian_update``
+     - engine
+     - ``none``, ``powell``, ``bofill`` or ``auto``. Only the algorithms that
+       hold a Hessian read it
+   * - ``frozen_atoms``
+     - none
+     - 0-based indices held at their input position. See :ref:`opt-constraints`
+   * - ``constraints``
+     - none
+     - Internal coordinates held fixed. See :ref:`opt-constraints`
+   * - ``timestep``, ``friction``, ``friction_factor``, ``friction_rising``
+     - engine
+     - ``damped`` only
    * - ``print_level``
      - follows log
      - How much DL-FIND itself prints
@@ -273,8 +291,163 @@ All optional. Everything under ``keywords.optimization``:
 Where a default is given as "engine", the setting is left to DL-FIND rather than
 overridden with a second number chosen here.
 
-``prfo`` parses as an algorithm but is refused: it searches for a transition state
-rather than a minimum and needs a Hessian this interface does not yet supply.
+.. _opt-algorithms:
+
+Choosing an algorithm
+---------------------
+
+Seven, of which six go downhill and one climbs. ``nr`` is the awkward one: it
+goes to whichever stationary point it starts nearest, which is a minimum only if
+it began in that basin.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 18 82
+
+   * - ``algorithm``
+     - What it does
+   * - ``lbfgs``
+     - Limited-memory BFGS. The default, and what you want unless you know
+       otherwise: it builds curvature from the gradients it was going to
+       compute anyway
+   * - ``cg``
+     - Polak-Ribiere conjugate gradient, restarting every ten steps
+   * - ``cg-auto``
+     - The same method restarting on the Powell-Beale test instead -- when the
+       directions stop being usefully conjugate rather than on a schedule
+   * - ``sd``
+     - Steepest descent. Robust, and slow enough that it is mostly a way of
+       finding out whether something else was the problem
+   * - ``damped``
+     - Damped molecular dynamics. Integrates motion and bleeds energy out
+       through friction, so it crosses small barriers a downhill method stops
+       at. ``timestep``, ``friction``, ``friction_factor`` and
+       ``friction_rising`` tune it
+   * - ``nr``
+     - Newton-Raphson. Needs a Hessian, and converges to whichever stationary
+       point it starts nearest -- a minimum only if it began in that basin
+   * - ``prfo``
+     - Partitioned rational function optimization: climbs to a **transition
+       state** rather than descending to a minimum. Needs a Hessian
+
+.. _opt-transition-states:
+
+Transition states
+-----------------
+
+``prfo`` follows one Hessian eigenvector uphill while minimising along every
+other, so it needs real curvature rather than the approximation a minimiser
+accumulates::
+
+    "keywords": {
+      "optimization": {"algorithm": "prfo", "hessian_update": "bofill"}
+    }
+
+Where the Hessian comes from depends on the method. Restricted Hartree-Fock has
+an analytic one and it is supplied directly. Everything else falls back to
+DL-FIND's own two-point finite differences, which costs ``6N`` gradients per
+Hessian and reaches the same matrix -- correct, and expensive enough to plan
+around on anything but a small system.
+
+``hessian_update`` is what keeps that affordable: an exact Hessian at the start
+and an update thereafter, rather than a fresh one per step. ``bofill`` is the
+usual choice for a saddle point, because it does not assume the matrix is
+positive definite -- which at a transition state it is not.
+
+A P-RFO run converges on the same gradient criterion as a minimisation, so it
+tells you it found a stationary point and not what kind. Confirm it the same way
+you would a minimum, with a Hessian: exactly one imaginary frequency is a
+first-order saddle, and the mode it belongs to should be the one along the
+reaction coordinate.
+
+.. _opt-constraints:
+
+Holding part of the geometry still
+----------------------------------
+
+Two different things, which are worth not confusing.
+
+``frozen_atoms`` removes atoms from the optimization entirely::
+
+    "optimization": {"frozen_atoms": [0, 1, 2]}
+
+Indices are 0-based. A frozen atom contributes no coordinates at all -- it is
+not restrained towards its position, it simply is not a variable. It also stops
+belonging to a residue, which is DL-FIND's own model rather than a choice made
+here, and means ``dlc`` and ``dlc-tc`` cannot express it: pure internals have no
+way to hold an atom still, and a deck combining them is refused rather than left
+to DL-FIND, which ends the process.
+
+``constraints`` fixes an internal coordinate while the atoms it is measured over
+stay free::
+
+    "optimization": {
+      "coordinates": "hdlc",
+      "constraints": [
+        {"type": "bond", "atoms": [0, 4]},
+        {"type": "torsion", "atoms": [0, 1, 2, 3]}
+      ]
+    }
+
+Types are ``bond``, ``angle``, ``torsion``, ``cartesian`` and
+``bond-difference``, taking 2, 3, 4, 1 and 3 atoms respectively. The count is
+checked against the type, because three atoms under ``"torsion"`` is a
+well-formed list and a meaningless constraint.
+
+A constraint needs an internal coordinate system to live in, so ``cartesian`` is
+refused -- there DL-FIND has nowhere to put one and would ignore it silently,
+converging to the unconstrained answer without saying so.
+
+User-supplied connections (DL-FIND's ``nconn``) are deliberately not exposed.
+DL-FIND reads them from an offset computed as ``nat + nz + ncons`` while it
+reads the block after them from ``nat + nz + 5*ncons + 2*nconn``; the two
+disagree about how long the constraint block is, so a deck using both would have
+its connections read out of the middle of its constraints.
+
+.. _hess-end:
+
+Checking that it is a minimum
+-----------------------------
+
+An optimization converges on the gradient, and a vanishing gradient is a
+*stationary point*: a saddle satisfies it exactly as well as a minimum does.
+Nothing in the run distinguishes them, so "converged" names the condition that
+was met rather than the thing that was found. The second derivatives are what
+settle it, and ``hess_end`` asks for them::
+
+    "keywords": {
+      "optimization": {"hess_end": true}
+    }
+
+A Hessian is computed at the converged geometry and the frequencies are printed
+as they are for a ``Hessian`` deck, followed by the one line that answers the
+question: no imaginary frequencies means a minimum, exactly one means a
+first-order saddle point, more than one means neither. A mode is called
+imaginary below ``-10`` cm-1, the same threshold the frequency summary uses to
+separate vibrations from translation and rotation.
+
+One thing to expect in the output. The thermochemistry block a few lines above
+the verdict prints its own ``Imaginary freqs`` count, and the two can disagree:
+thermochemistry treats any frequency below zero as imaginary, so the projected
+rotational modes -- which land at around ``-1e-5`` cm-1 rather than exactly zero
+-- are counted there and not here. On a genuine minimum you will see something
+like ``Imaginary freqs: 3 (skipped)`` directly above ``no imaginary
+frequencies``. The verdict uses the ``-10`` cm-1 window and is the one answering
+the question; the frequency table above both settles any doubt.
+
+Restricted Hartree-Fock only for now, and refused at the start of the run rather
+than at the end -- the end is the one place where the news is expensive, because
+the optimization has already been paid for. For anything else, run the
+optimization and then a separate ``Hessian`` deck on the geometry it writes.
+
+It runs only on a converged optimization. Curvature at a geometry the optimizer
+was still moving away from describes that geometry and not the minimum, and
+printing it under a "did not converge" line invites it to be read as the
+minimum's.
+
+The cost is one Hessian on top of the optimization -- analytic for restricted
+Hartree-Fock in a libfint build, and central differences of gradients otherwise,
+which is ``6N`` gradients. That is why it is off by default.
 
 .. _optimizer-build:
 

@@ -27,14 +27,15 @@ module mqc_geometry_optimizer
    use mqc_convergence_report, only: convergence_header
    use mqc_optimizer_types, only: optimizer_settings_t, &
                                   OPT_COORDS_CARTESIAN, OPT_COORDS_UNKNOWN, OPT_ALGO_UNKNOWN, &
-                                  coordinates_to_string, algorithm_to_string
+                                  coordinates_to_string, algorithm_to_string, &
+                                  algorithm_needs_hessian
    use mqc_physical_fragment, only: system_geometry_t, to_angstrom
    use mqc_bond_perception, only: connected_components
    use mqc_config_adapter, only: driver_config_t
    use mqc_config_types, only: bond_t
    use mqc_resources, only: resources_t
    use mqc_result_types, only: calculation_result_t
-   use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_ENERGY
+   use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_ENERGY, CALC_TYPE_HESSIAN
    use mqc_method_types, only: method_type_to_string, METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
    use mqc_error, only: error_t, ERROR_GENERIC, ERROR_VALIDATION
    use mqc_elements, only: element_number_to_symbol
@@ -52,6 +53,7 @@ module mqc_geometry_optimizer
    integer(int32), parameter :: OPT_CMD_STOP = 0
    integer(int32), parameter :: OPT_CMD_EVALUATE = 1
    integer(int32), parameter :: OPT_CMD_FINAL = 2
+   integer(int32), parameter :: OPT_CMD_HESSIAN = 3
 
    ! The optimization in progress, reachable from the evaluator.
    !
@@ -153,10 +155,21 @@ contains
                            "hdlc, hdlc-tc, dlc or dlc-tc.")
          else if (config%optimization%algorithm == OPT_ALGO_UNKNOWN) then
             call error%set(ERROR_VALIDATION, &
-                           "Unknown keywords.optimization.algorithm. Use lbfgs, cg, sd or prfo.")
+                           "Unknown keywords.optimization.algorithm. Use lbfgs, cg, cg-auto, "// &
+                           "sd, prfo, nr or damped.")
          else if (n_atoms < 2) then
             call error%set(ERROR_VALIDATION, &
                            "Nothing to optimize: a single atom has no geometry.")
+         else if (config%optimization%hess_end .and. .not. is_restricted_hf(config)) then
+            ! Refused here rather than after the optimization, which is the
+            ! only place the news is cheap. Discovering it at the end means the
+            ! steps have already been paid for and the one thing the run was
+            ! asked to establish is the thing it cannot do.
+            call error%set(ERROR_VALIDATION, &
+                           "keywords.optimization.hess_end is restricted to restricted "// &
+                           "Hartree-Fock for now. Drop the keyword, or run the "// &
+                           'optimization and a separate "Hessian" deck on the geometry '// &
+                           "it writes.")
          end if
       end if
 
@@ -221,9 +234,21 @@ contains
          call ctx_wall%start()
          call convergence_header(.true., "optimization steps", &
                                  "    step                 energy        |g|max     qc_time    opt_time", 69)
-         call dlfind_optimize(config%optimization, n_atoms, atomic_numbers, residues, &
-                              coords, evaluate_energy_gradient, record_step, &
-                              final_energy, error)
+         ! The analytic Hessian is offered only where there is one. For any
+         ! other method DL-FIND builds its own from `6N` gradients, which is
+         ! the same matrix and slower -- so the argument is omitted rather than
+         ! passed and refused per geometry, which would spend a failed
+         ! calculation to learn what is already known here.
+         if (algorithm_needs_hessian(config%optimization%algorithm) .and. &
+             is_restricted_hf(config)) then
+            call dlfind_optimize(config%optimization, n_atoms, atomic_numbers, residues, &
+                                 coords, evaluate_energy_gradient, record_step, &
+                                 final_energy, error, hessian=evaluate_hessian)
+         else
+            call dlfind_optimize(config%optimization, n_atoms, atomic_numbers, residues, &
+                                 coords, evaluate_energy_gradient, record_step, &
+                                 final_energy, error)
+         end if
          call logger%info("  "//repeat("-", 69))
 
          ! Stop the workers whether or not that succeeded. A rank 0 that
@@ -242,6 +267,14 @@ contains
             call write_optimized_xyz(sys_geom, final_energy, converged, error)
             if (.not. error%has_error()) then
                call write_optimization_record(sys_geom, config, final_energy, converged, error)
+            end if
+
+            ! Only on a converged geometry. The curvature at a point the
+            ! optimizer was still moving away from describes that point and
+            ! not the minimum, and reporting it beside a "did not converge"
+            ! line invites it to be read as the minimum's.
+            if (config%optimization%hess_end .and. converged .and. .not. error%has_error()) then
+               call run_final_hessian(sys_geom)
             end if
             if (.not. converged .and. .not. error%has_error()) then
                call error%set(ERROR_GENERIC, &
@@ -365,6 +398,54 @@ contains
 
    end subroutine evaluate_energy_gradient
 
+   subroutine evaluate_hessian(n_atoms, coords, hessian, status)
+      !! Second derivatives at a geometry, for an engine that climbs
+      !!
+      !! The mirror of `evaluate_energy_gradient` for the algorithms that need
+      !! curvature rather than slope -- P-RFO and Newton-Raphson. Same MPI
+      !! shape: the command goes out, the geometry follows, and every rank runs
+      !! the same calculation type, which for a finite-difference Hessian is
+      !! what distributes the displacements across them.
+      !!
+      !! **A failure here is reported and not raised.** `status` non-zero sends
+      !! DL-FIND to its own two-point finite differences, which reaches the
+      !! same matrix by a slower route. Killing the optimization instead would
+      !! trade a correct answer for no answer.
+      integer, intent(in) :: n_atoms
+      real(dp), intent(in) :: coords(3, n_atoms)
+      real(dp), intent(out) :: hessian(3*n_atoms, 3*n_atoms)
+      integer, intent(out) :: status
+
+      type(calculation_result_t) :: result
+      type(driver_config_t) :: hess_config
+      integer(int32) :: command
+      integer :: saved_level
+
+      hessian = 0.0_dp
+      status = 1
+
+      command = OPT_CMD_HESSIAN
+      call bcast(ctx_resources%mpi_comms%world_comm, command, 1_int32, 0_int32)
+
+      ctx_sys_geom%coordinates = coords
+      call send_final_geometry(ctx_resources%mpi_comms%world_comm, ctx_sys_geom)
+
+      hess_config = ctx_config
+      hess_config%calc_type = CALC_TYPE_HESSIAN
+
+      saved_level = logger%log_level
+      if (saved_level < verbose_level) call logger%configure(level=warning_level)
+      call run_step(hess_config, result)
+      call logger%configure(level=saved_level)
+
+      if (result%has_error .or. .not. result%has_hessian) return
+      if (size(result%hessian, 1) /= 3*n_atoms) return
+
+      hessian = result%hessian
+      status = 0
+
+   end subroutine evaluate_hessian
+
    subroutine worker_loop(comm)
       !! A worker's half of an optimization: compute what rank 0 asks for
       !!
@@ -397,6 +478,7 @@ contains
          ! calculations.
          step_config = gradient_config
          if (command == OPT_CMD_FINAL) step_config%calc_type = CALC_TYPE_ENERGY
+         if (command == OPT_CMD_HESSIAN) step_config%calc_type = CALC_TYPE_HESSIAN
 
          saved_level = logger%log_level
          if (saved_level < verbose_level) call logger%configure(level=warning_level)
@@ -540,6 +622,110 @@ contains
       call run_step(energy_config, result, write_output=.true.)
 
    end subroutine write_final_single_point
+
+   pure function is_restricted_hf(config) result(restricted)
+      !! Whether this deck is the one case `hess_end` is allowed for
+      !!
+      !! Restricted Hartree-Fock and nothing else, for now. The restriction is
+      !! about what has been checked rather than what would run: the Hessian
+      !! path itself takes any method with a gradient, by central differences
+      !! where there is no analytic form.
+      use mqc_method_types, only: METHOD_TYPE_HF
+      type(driver_config_t), intent(in) :: config
+      logical :: restricted
+
+      restricted = config%method_config%method_type == METHOD_TYPE_HF &
+                   .and. .not. config%method_config%scf%unrestricted
+   end function is_restricted_hf
+
+   subroutine run_final_hessian(sys_geom)
+      !! A Hessian at the converged geometry, and the verdict it settles
+      !!
+      !! **What this is for.** A minimiser stops on the gradient, and a
+      !! vanishing gradient is a stationary point -- a saddle satisfies it just
+      !! as exactly as a minimum does. So "converged" names the condition that
+      !! was met and not the thing that was found, and the second derivatives
+      !! are the only way to tell which one it is.
+      !!
+      !! The frequency table, thermochemistry and warnings are already printed
+      !! by the Hessian workflow itself. What is added here is the one line
+      !! that answers the question the keyword was set to ask, because in a
+      !! table of 3N modes a single negative entry is easy to walk past.
+      !!
+      !! `write_output` is false: the energy at this geometry has already
+      !! written `output_<name>.json` and rewriting it here would replace that
+      !! document with a different one after the fact.
+      use mqc_vibrational_analysis, only: compute_vibrational_analysis
+      type(system_geometry_t), intent(in) :: sys_geom
+
+      !! Below this a mode is translation or rotation rather than a vibration,
+      !! and the same number the analysis prints its own summary against.
+      real(dp), parameter :: ZERO_FREQ_CM = 10.0_dp
+
+      type(calculation_result_t) :: result
+      type(driver_config_t) :: hess_config
+      integer(int32) :: command
+      real(dp), allocatable :: frequencies(:), reduced_masses(:), force_constants(:)
+      real(dp), allocatable :: cart_disp(:, :)
+      integer :: k, n_imag
+      real(dp) :: worst
+
+      call logger%info(" ")
+      call logger%info("  Hessian at the converged geometry (keywords.optimization.hess_end)")
+
+      command = OPT_CMD_HESSIAN
+      call bcast(ctx_resources%mpi_comms%world_comm, command, 1_int32, 0_int32)
+
+      ctx_sys_geom%coordinates = sys_geom%coordinates
+      call send_final_geometry(ctx_resources%mpi_comms%world_comm, ctx_sys_geom)
+
+      hess_config = ctx_config
+      hess_config%calc_type = CALC_TYPE_HESSIAN
+
+      call run_step(hess_config, result, write_output=.false.)
+
+      if (result%has_error .or. .not. result%has_hessian) then
+         ! Not fatal. The optimization converged and its geometry is written;
+         ! what failed is the check on it, and turning that into a failed run
+         ! would throw away the result that did succeed.
+         call logger%warning("  the final Hessian could not be computed; the optimized "// &
+                             "geometry stands, unverified")
+         return
+      end if
+
+      call compute_vibrational_analysis(result%hessian, sys_geom%element_numbers, &
+                                        frequencies, reduced_masses, force_constants, &
+                                        cart_disp, coordinates=sys_geom%coordinates, &
+                                        project_trans_rot=.true.)
+      if (.not. allocated(frequencies)) then
+         call logger%warning("  no frequencies came back from the final Hessian")
+         return
+      end if
+
+      ! Negative is how an imaginary frequency is carried here -- the square
+      ! root of a negative eigenvalue is stored with its sign rather than as a
+      ! complex number, which is why this is a comparison and not an `aimag`.
+      n_imag = 0
+      worst = 0.0_dp
+      do k = 1, size(frequencies)
+         if (frequencies(k) < -ZERO_FREQ_CM) then
+            n_imag = n_imag + 1
+            worst = min(worst, frequencies(k))
+         end if
+      end do
+
+      if (n_imag == 0) then
+         call logger%info("  no imaginary frequencies: this is a minimum")
+      else if (n_imag == 1) then
+         call logger%warning("  one imaginary frequency, "//to_char(abs(worst))// &
+                             " cm-1: this is a first-order saddle point, not a minimum")
+      else
+         call logger%warning("  "//to_char(n_imag)//" imaginary frequencies, the largest "// &
+                             to_char(abs(worst))//" cm-1: this is not a minimum")
+      end if
+      call logger%info(" ")
+
+   end subroutine run_final_hessian
 
    subroutine record_step(n_atoms, coords, energy)
       !! Keep one accepted geometry, growing the trajectory to fit
