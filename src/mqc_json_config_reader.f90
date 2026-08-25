@@ -260,6 +260,7 @@ contains
       call optional_real(json, "keywords.scf.tolerance", config%scf_tolerance)
       call named(json, "keywords.scf.tolerance", config%scf_tolerance_set)
       call optional_real(json, "keywords.scf.density_tolerance", config%scf_density_tolerance)
+      call optional_real(json, "keywords.scf.level_shift", config%scf_level_shift)
       call named(json, "keywords.scf.density_tolerance", config%scf_density_tolerance_set)
       call optional_logical(json, "keywords.scf.unrestricted", config%scf_unrestricted)
       call optional_string(json, "keywords.scf.guess", config%scf_guess)

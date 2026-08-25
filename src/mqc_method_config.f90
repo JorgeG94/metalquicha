@@ -36,6 +36,13 @@ module mqc_method_config
          !! Whether the deck named these, as opposed to inheriting them. A
          !! caller with a stricter default of its own -- MAKEFP -- keeps that
          !! default when they are false and honours the deck when they are true.
+      real(dp) :: level_shift = 0.0_dp
+         !! Hartree added to the virtual block of the Fock matrix before each
+         !! diagonalisation, to widen the gap the next density is built through.
+         !! Zero is off. Tapered to zero as the SCF converges, so that the
+         !! orbitals and orbital energies reported at exit belong to the
+         !! unshifted operator -- see `mqc_libcint_rhf`, where that matters more
+         !! than it looks.
       logical :: use_diis = .true.
          !! Use DIIS acceleration
       integer :: diis_size = 8
