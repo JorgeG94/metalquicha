@@ -1455,6 +1455,9 @@ contains
          !! dependent functionals are refused at construction, so these are
          !! zeros in and discarded out -- the single largest simplification
          !! available on this rung, and the energy path already takes it.
+      real(dp), allocatable :: v_local(:, :)
+      type(error_t) :: local_error
+      logical :: failed
       integer :: g0, g1, nb, i, ig, id, npts
       logical :: gga, mgga
 
@@ -1471,7 +1474,29 @@ contains
       ! then some: tau is built from them too.
       gga = gga .or. mgga
       npts = ctx%grid%n_points
+      failed = .false.
+
+      ! Threaded over blocks like the potential paths. This one is driven once
+      ! per CPHF iteration rather than once per SCF iteration, so a response
+      ! property or a Z-vector pays for it repeatedly.
+      !$omp parallel default(none) &
+      !$omp    shared(ctx, mol, density, dtilde, v_kernel, error, failed, &
+      !$omp           gga, mgga, npts) &
+      !$omp    private(g0, g1, nb, i, ig, id, ao, ao_grad, rho, rho_grad, drho, &
+      !$omp            drho_grad, sigma, dsigma, frr, frs, fss, vsig, frr_i, &
+      !$omp            frs_i, fss_i, exc_i, vrho_i, vsigma_i, c_rho, c_grad, &
+      !$omp            c_tau, no_tau, tau, dtau, lapl, frt, fst, ftt, vtau, &
+      !$omp            frt_i, fst_i, ftt_i, vtau_i, lapl_scratch, v_local) &
+      !$omp    firstprivate(local_error)
+      allocate (v_local(size(v_kernel, 1), size(v_kernel, 2)))
+      v_local = 0.0_dp
+
+      !$omp do schedule(dynamic)
       do g0 = 1, npts, AO_POINT_BLOCK
+         ! As in the potential: a thread that has failed stops working, but the
+         ! loop still has to run out so every thread reaches the barrier.
+         if (failed) cycle
+
          g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
          nb = g1 - g0 + 1
 
@@ -1479,9 +1504,26 @@ contains
          ! density is what it multiplies. Both are ordinary densities on the
          ! grid, so one routine builds them -- and for a GGA both need their
          ! gradients, which is the only reason the AO gradients are asked for.
+         ! Hoisted out of the branch so the error is checked once, before
+         ! anything reads `ao` -- `eval_ao_block` returns without allocating it
+         ! on its error paths.
+         if (gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
+                               grad=ao_grad)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error)
+         end if
+         if (local_error%has_error()) then
+            !$omp critical (xc_kernel_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (xc_kernel_failure)
+            cycle
+         end if
+
          if (mgga) then
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
-            if (error%has_error()) return
             ! **The tau convention never has to be decided here.** Whatever
             ! `eval_rho` means by tau is what the energy path already fed libxc
             ! and what `accumulate_xc_matrix` already differentiates, and the
@@ -1491,13 +1533,9 @@ contains
             call eval_rho(ao, density, rho, ao_grad=ao_grad, rho_grad=rho_grad, tau=tau)
             call eval_rho(ao, dtilde, drho, ao_grad=ao_grad, rho_grad=drho_grad, tau=dtau)
          else if (gga) then
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
-            if (error%has_error()) return
             call eval_rho(ao, density, rho, ao_grad=ao_grad, rho_grad=rho_grad)
             call eval_rho(ao, dtilde, drho, ao_grad=ao_grad, rho_grad=drho_grad)
          else
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error)
-            if (error%has_error()) return
             call eval_rho(ao, density, rho)
             call eval_rho(ao, dtilde, drho)
          end if
@@ -1633,15 +1671,24 @@ contains
          ! in place of the potential's. Writing a second one would be two copies
          ! of the arithmetic that is hardest to get right here.
          if (mgga) then
-            call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, v_kernel, &
+            call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, v_local, &
                                       ao_grad=ao_grad, grad_coeff=c_grad, vtau=c_tau, &
                                       any_gga=gga, any_mgga=.true.)
          else
-            call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, v_kernel, &
+            call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, v_local, &
                                       ao_grad=ao_grad, grad_coeff=c_grad, vtau=no_tau, &
                                       any_gga=gga, any_mgga=.false.)
          end if
       end do
+      !$omp end do
+
+      ! `v_kernel` is accumulated into rather than assigned -- the caller adds
+      ! this to a response operator it has already partly built -- so the
+      ! reduction adds too.
+      !$omp critical (xc_kernel_reduce)
+      v_kernel = v_kernel + v_local
+      !$omp end critical (xc_kernel_reduce)
+      !$omp end parallel
 #else
       call error%set(ERROR_VALIDATION, "no libxc in this build")
       if (size(density) < 0 .or. size(dtilde) < 0 .or. size(v_kernel) < 0) return
