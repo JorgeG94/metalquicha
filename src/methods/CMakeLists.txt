@@ -41,3 +41,10 @@ target_sources(${main_lib} PRIVATE mqc_method_factory.F90)
 if(NOT MQC_ENABLE_LIBCINT)
   target_sources(${main_lib} PRIVATE mqc_libcint_bridge_stub.f90)
 endif()
+
+# The real driver lives in backends/crest/, outside src/, because fpm globs src/
+# and cannot choose between two files defining mqc_crest_driver. Only one of the
+# two is ever compiled, the same arrangement as mqc_hdf5_checkpoint_stub.
+if(NOT MQC_ENABLE_CREST)
+  target_sources(${main_lib} PRIVATE mqc_crest_driver_stub.f90)
+endif()

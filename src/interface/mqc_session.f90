@@ -33,7 +33,7 @@ module mqc_session
    use mqc_config_types, only: mqc_config_t
    use mqc_json_config_reader, only: read_json_config_text
    use mqc_config_adapter, only: driver_config_t, config_to_driver, get_logger_level
-   use mqc_calc_types, only: CALC_TYPE_OPTIMIZE
+   use mqc_calc_types, only: CALC_TYPE_OPTIMIZE, CALC_TYPE_CONFORMERS
    use mqc_method_factory, only: method_backend_built
    use mqc_method_types, only: method_type_to_string
    use mqc_driver, only: run_calculation
@@ -275,6 +275,15 @@ contains
       ! which has nobody to return to, and fatal for a driven run: it takes the
       ! interpreter and every rank with it instead of raising something a script
       ! can catch.
+      if (driver%calc_type == CALC_TYPE_CONFORMERS) then
+         call error%set(ERROR_VALIDATION, "driver 'conformers' is not available "// &
+                        "through a session or the C API. The sampling drives "// &
+                        "run_calculation rather than being driven by it, so it "// &
+                        "works from an input deck for a single molecule only. "// &
+                        "Run the deck through the mqc executable.")
+         return
+      end if
+
       if (driver%calc_type == CALC_TYPE_OPTIMIZE) then
          call error%set(ERROR_VALIDATION, "driver 'optimize' is not available "// &
                         "through a session or the C API. The optimizer drives "// &

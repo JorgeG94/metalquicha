@@ -639,6 +639,7 @@ if(MQC_ENABLE_CREST)
   FetchContent_MakeAvailable(crest)
   target_link_libraries(${main_lib} PUBLIC lib-crest-static)
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_CREST)
+  add_subdirectory(backends/crest)
   message(STATUS "CREST enabled: ${MQC_CREST_REPOSITORY}@${MQC_CREST_TAG}")
 
   # The seam the integration rests on, checked on its own because every way it

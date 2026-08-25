@@ -6,15 +6,60 @@ Metalquicha can link CREST_ and drive its conformer and ensemble sampling with
 gradients served from mqc's own code, in the same process. No file is written
 between the two and no subprocess is spawned.
 
+Without ``MQC_ENABLE_CREST``, asking for this driver is refused by name and
+every other driver runs unchanged.
+
 .. _CREST: https://github.com/crest-lab/crest
 
-.. note::
+Running one
+===========
 
-   There is no deck keyword for this yet. Everything below is reachable from
-   Fortran that links ``libmetalquicha.a``, and the three ``check_crest_*``
-   programs under ``validation/`` are working examples. A ``driver`` value that
-   runs a search from a JSON input is the next piece of work, not a thing this
-   page is describing.
+.. code-block:: json
+
+   {
+     "schema": { "name": "mqc-frag", "version": "1.0" },
+     "molecules": [
+       { "xyz": "water.xyz", "molecular_charge": 0, "molecular_multiplicity": 1 }
+     ],
+     "model": { "method": "hf", "basis": "sto-3g" },
+     "driver": "conformers"
+   }
+
+``"conformer"`` and ``"crest"`` are accepted as well. The ``model`` block is the
+*refinement* method -- what the survivors are re-evaluated with. The sampling
+method is CREST's own default, GFN2-xTB in process, and is not chosen here.
+
+The search writes its ensemble into the working directory the way CREST always
+does: ``crest_conformers.xyz``, ``crest_rotamers.xyz``, ``crest_best.xyz`` and
+``crest.energies``, alongside the usual scratch. The absolute energies on the
+comment line of each structure are the refinement method's -- for the deck
+above, HF/STO-3G:
+
+.. code-block:: text
+
+     3
+           -74.96203654
+    O         -0.0000000000        0.0636623383        0.0000000001
+
+``crest.energies`` holds energies relative to the lowest, in kcal/mol.
+
+.. code-block:: text
+
+   conformer sampling: CREST samples, this program refines
+   ...
+   number of unique conformers for further calc            1
+   refinement calculations: 1432
+
+Where it does not work
+======================
+
+``conformers`` runs from an input deck, for a single molecule, through the
+``mqc`` executable. It is driven above ``run_calculation`` rather than inside
+it -- the same position as ``optimize``, and for the same reason -- so a
+multi-molecule deck, a session and the C API all refuse it by name rather than
+letting it fall through.
+
+It also refuses to run on more than one rank; see below.
 
 What it is for
 ==============
@@ -66,8 +111,13 @@ Running on one rank
 ===================
 
 CREST samples on a single rank with OpenMP threads underneath, while
-``compute_energy_and_forces`` expects every rank to call it. A driver must
-therefore refuse above one rank rather than deadlock.
+``compute_energy_and_forces`` expects every rank to call it. The two cannot both
+be satisfied, and the failure if it is not caught is a hang rather than an
+error, so the driver refuses:
+
+.. code-block:: text
+
+   conformer sampling runs on a single rank. [...] Re-run without mpirun, or with -n 1.
 
 This is checked at run time, not at build time, so one binary serves both and
 ``mpirun -n 1`` still works. ``MQC_ENABLE_MPI`` can stay ``ON``.

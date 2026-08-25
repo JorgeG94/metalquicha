@@ -239,7 +239,8 @@ contains
       config%calc_type = calc_type_from_string(text)
       if (config%calc_type == CALC_TYPE_UNKNOWN) then
          call error%set(ERROR_VALIDATION, "unknown driver '"//trim(text)// &
-                        "'. Accepted: energy, gradient, hessian, optimize, makefp")
+                        "'. Accepted: energy, gradient, hessian, optimize, "// &
+                        "makefp, conformers")
          return
       end if
 
