@@ -648,6 +648,12 @@ if(MQC_ENABLE_CREST)
   target_include_directories(check_crest_callback
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_crest_callback PRIVATE ${main_lib})
+
+  add_executable(check_crest_search
+                 ${PROJECT_SOURCE_DIR}/validation/check_crest_search.f90)
+  target_include_directories(check_crest_search
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_crest_search PRIVATE ${main_lib})
 endif()
 
 # DL-FIND, behind libdlfind, for geometry optimization.
@@ -1000,6 +1006,7 @@ foreach(
         check_ao
         check_ao_deriv2
         check_crest_callback
+        check_crest_search
         check_bcast
         check_bcast_system
         check_bond_orders
