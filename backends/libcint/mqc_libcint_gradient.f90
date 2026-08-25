@@ -33,7 +33,8 @@ module mqc_libcint_gradient
                                     build_df_shell_table, three_centre, two_centre, &
                                     metric_inverse_sqrt, eri_shell_table_t, &
                                     eri_shell_table, eri_schwarz_collapse
-   use mqc_libcint_ao, only: eval_ao_block, AO_POINT_BLOCK, AO_HESS_COMP
+   use mqc_libcint_ao, only: eval_ao_block, AO_POINT_BLOCK, AO_HESS_COMP, &
+                             shell_extents, block_significant_aos
    use mqc_libcint_xc, only: xc_context_t, xc_grid_lda_quantities, &
                              xc_grid_gga_quantities, xc_grid_kernel_quantities
    use mqc_dft_partition, only: becke_partition_derivatives
@@ -373,10 +374,14 @@ contains
       real(dp), allocatable :: dgchi(:, :, :), dgchi_beta(:, :, :)
       logical :: gga, mgga
       real(dp), allocatable :: dpart(:, :, :)
-      integer, allocatable :: offsets(:), counts(:)
+      real(dp), allocatable :: extents(:), d_sig(:, :), db_sig(:, :)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer, allocatable :: c_offsets(:), c_counts(:)
       real(dp) :: contrib(3)
       real(dp) :: wv, scale
-      integer :: npts, nao, natm, g0, g1, nb, ig, gg, mu, comp, ia, own
+      integer :: npts, nao, natm, g0, g1, nb, ig, gg, comp, ia, own
+      integer :: n_sig, isig, jsig
       logical :: unrestricted
 
       ! A VV10 gradient is not the semilocal gradient. The non-local term
@@ -445,79 +450,123 @@ contains
       end if
       if (error%has_error()) return
 
-      allocate (offsets(natm), counts(natm))
-      call atom_ao_blocks(mol, offsets, counts)
+      allocate (c_offsets(natm), c_counts(natm))
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
+      allocate (d_sig(nao, nao))
+      if (unrestricted) allocate (db_sig(nao, nao))
+      call shell_extents(mol, ctx%screen_tol, extents)
 
       ! A closed-shell density already carries its factor of two, so the
       ! derivative of rho with respect to a moving basis function is 2*D*chi
       ! either way -- the two is the bra/ket pair, not the occupation.
       scale = 2.0_dp
 
-      do g0 = 1, npts, AO_POINT_BLOCK
-         g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
 
-         if (gga) then
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
-                               grad=ao_grad, hess=ao_hess)
-         else
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
-         end if
-         if (error%has_error()) return
+         ! Which functions reach this block, and where each atom's kept ones
+         ! begin in the compressed numbering.
+         !
+         ! **Both halves of every accumulation below run over that same
+         ! compressed set** -- the per-atom ranges and the sum over every
+         ! function -- and those ranges tile 1..n_sig without a gap, so summing
+         ! them is still summing every function that survived. That is what
+         ! keeps the two opposite-signed terms cancelling and the gradient
+         ! translationally invariant. Screening the two halves against
+         ! different sets would not crash; it would leave a small spurious net
+         ! force, which is why the sum over atoms is the check worth running.
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig, &
+                                    atom_offsets=c_offsets, atom_counts=c_counts)
 
-         ! (D chi)_mu(g) = sum_nu D_mu,nu chi_nu(g), the partner every term
-         ! below contracts the basis-function gradient against.
-         if (allocated(dchi)) deallocate (dchi)
-         allocate (dchi(nb, nao))
-         call density_times_ao(ao, density, nb, nao, dchi)
-         if (unrestricted) then
-            if (allocated(dchi_beta)) deallocate (dchi_beta)
-            allocate (dchi_beta(nb, nao))
-            call density_times_ao(ao, density_beta, nb, nao, dchi_beta)
-         end if
-
-         ! (D grad chi)_mu(g), which only the GGA term needs: it is the partner
-         ! for the piece where the two first derivatives pair with each other.
-         if (gga) then
-            if (allocated(dgchi)) deallocate (dgchi)
-            allocate (dgchi(nb, nao, 3))
-            call density_times_ao_grad(ao_grad, density, nb, nao, dgchi)
+         ! `n_sig == 0` is empty space that no basis function reaches, so the
+         ! basis-function and grid-motion terms are zero there. The
+         ! partition-weight term below is deliberately not skipped with them:
+         ! it depends on the grid and the nuclei, not on the basis.
+         if (n_sig > 0) then
+            do jsig = 1, n_sig
+               do isig = 1, n_sig
+                  d_sig(isig, jsig) = density(ao_list(isig), ao_list(jsig))
+               end do
+            end do
             if (unrestricted) then
-               if (allocated(dgchi_beta)) deallocate (dgchi_beta)
-               allocate (dgchi_beta(nb, nao, 3))
-               call density_times_ao_grad(ao_grad, density_beta, nb, nao, dgchi_beta)
+               do jsig = 1, n_sig
+                  do isig = 1, n_sig
+                     db_sig(isig, jsig) = density_beta(ao_list(isig), ao_list(jsig))
+                  end do
+               end do
             end if
-         end if
 
-         do ig = 1, nb
-            gg = g0 + ig - 1
-            own = ctx%grid%atom(gg)
-
-            wv = ctx%grid%weights(gg)*vrho(gg)
-            call accumulate_channel(ao_grad, dchi, ig, nao, wv, scale, &
-                                    offsets, counts, natm, own, gradient)
             if (gga) then
-               call accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, nao, &
-                                           ctx%grid%weights(gg)*gcoef(gg, :), scale, &
-                                           offsets, counts, natm, own, gradient)
+               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+                                  grad=ao_grad, hess=ao_hess, shell_mask=shell_mask, &
+                                  ao_offset=ao_offset, n_ao_out=n_sig)
+            else
+               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+                                  grad=ao_grad, shell_mask=shell_mask, &
+                                  ao_offset=ao_offset, n_ao_out=n_sig)
             end if
-            if (mgga) then
-               call accumulate_mgga_channel(ao_grad, ao_hess, dgchi, ig, nao, &
-                                            ctx%grid%weights(gg)*vtau(gg), scale, &
-                                            offsets, counts, natm, own, gradient)
-            end if
+            if (error%has_error()) return
+
+            ! (D chi)_mu(g) = sum_nu D_mu,nu chi_nu(g), the partner every term
+            ! below contracts the basis-function gradient against.
+            if (allocated(dchi)) deallocate (dchi)
+            allocate (dchi(nb, n_sig))
+            call density_times_ao(ao, d_sig(1:n_sig, 1:n_sig), nb, n_sig, dchi)
             if (unrestricted) then
-               wv = ctx%grid%weights(gg)*vrho_beta(gg)
-               call accumulate_channel(ao_grad, dchi_beta, ig, nao, wv, scale, &
-                                       offsets, counts, natm, own, gradient)
-               if (gga) then
-                  call accumulate_gga_channel(ao_grad, ao_hess, dchi_beta, dgchi_beta, &
-                                              ig, nao, &
-                                              ctx%grid%weights(gg)*gcoef_beta(gg, :), &
-                                              scale, offsets, counts, natm, own, gradient)
+               if (allocated(dchi_beta)) deallocate (dchi_beta)
+               allocate (dchi_beta(nb, n_sig))
+               call density_times_ao(ao, db_sig(1:n_sig, 1:n_sig), nb, n_sig, dchi_beta)
+            end if
+
+            ! (D grad chi)_mu(g), which only the GGA term needs: it is the
+            ! partner for the piece where the two first derivatives pair with
+            ! each other.
+            if (gga) then
+               if (allocated(dgchi)) deallocate (dgchi)
+               allocate (dgchi(nb, n_sig, 3))
+               call density_times_ao_grad(ao_grad, d_sig(1:n_sig, 1:n_sig), nb, n_sig, &
+                                          dgchi)
+               if (unrestricted) then
+                  if (allocated(dgchi_beta)) deallocate (dgchi_beta)
+                  allocate (dgchi_beta(nb, n_sig, 3))
+                  call density_times_ao_grad(ao_grad, db_sig(1:n_sig, 1:n_sig), nb, &
+                                             n_sig, dgchi_beta)
                end if
             end if
-         end do
+
+            do ig = 1, nb
+               gg = g0 + ig - 1
+               own = ctx%grid%atom(gg)
+
+               wv = ctx%grid%weights(gg)*vrho(gg)
+               call accumulate_channel(ao_grad, dchi, ig, n_sig, wv, scale, &
+                                       c_offsets, c_counts, natm, own, gradient)
+               if (gga) then
+                  call accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, n_sig, &
+                                              ctx%grid%weights(gg)*gcoef(gg, :), scale, &
+                                              c_offsets, c_counts, natm, own, gradient)
+               end if
+               if (mgga) then
+                  call accumulate_mgga_channel(ao_grad, ao_hess, dgchi, ig, n_sig, &
+                                               ctx%grid%weights(gg)*vtau(gg), scale, &
+                                               c_offsets, c_counts, natm, own, gradient)
+               end if
+               if (unrestricted) then
+                  wv = ctx%grid%weights(gg)*vrho_beta(gg)
+                  call accumulate_channel(ao_grad, dchi_beta, ig, n_sig, wv, scale, &
+                                          c_offsets, c_counts, natm, own, gradient)
+                  if (gga) then
+                     call accumulate_gga_channel(ao_grad, ao_hess, dchi_beta, &
+                                                 dgchi_beta, ig, n_sig, &
+                                                 ctx%grid%weights(gg)*gcoef_beta(gg, :), &
+                                                 scale, c_offsets, c_counts, natm, own, &
+                                                 gradient)
+                  end if
+               end if
+            end do
+         end if
 
          ! The partition-weight term. Differentiated blockwise for the same
          ! reason the density is: the full (3, natm, npoints) array is large and
