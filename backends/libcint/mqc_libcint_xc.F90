@@ -32,6 +32,7 @@ module mqc_libcint_xc
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_libcint_vv10, only: vv10_nlc
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid, DEFAULT_GRID_LEVEL
    use mqc_xc_spec, only: xc_spec_t, xc_spec_from_name, MAX_XC_COMPONENTS
    use mqc_libcint_integrals, only: libcint_molecule_t
@@ -481,7 +482,7 @@ contains
 
    subroutine xc_grid_gga_quantities(ctx, mol, density, rho, exc, vrho, grad_coeff, error, &
                                      density_beta, rho_beta, vrho_beta, grad_coeff_beta, &
-                                     vtau)
+                                     vtau, sigma_out)
       !! rho, eps_xc, dE/drho and dE/d(grad rho) at every grid point, for a GGA
       !!
       !! The counterpart of `xc_grid_lda_quantities` for a functional that reads
@@ -517,6 +518,10 @@ contains
       real(dp), allocatable, intent(out), optional :: vrho_beta(:)
       real(dp), allocatable, intent(out), optional :: grad_coeff_beta(:, :)
       real(dp), allocatable, intent(out), optional :: vtau(:)
+      real(dp), allocatable, intent(out), optional :: sigma_out(:)
+         !! |grad rho|^2 on the whole grid. Formed per block here already and
+         !! otherwise discarded; VV10 needs it over every point at once, since
+         !! its inner sum is not blockable.
          !! `dE/dtau` per point, for a meta-GGA. Absent, a meta-GGA is refused
          !! rather than evaluated without it -- see the check below, and note
          !! that the dispatch further down would otherwise treat one as an LDA.
@@ -534,6 +539,10 @@ contains
       npts = ctx%grid%n_points
 
       allocate (rho(npts), exc(npts), vrho(npts), grad_coeff(npts, 3))
+      if (present(sigma_out)) then
+         allocate (sigma_out(npts))
+         sigma_out = 0.0_dp
+      end if
       rho = 0.0_dp
       exc = 0.0_dp
       vrho = 0.0_dp
@@ -658,6 +667,7 @@ contains
             end if
             do ig = 1, nb
                sigma(ig) = rho_grad(ig, 1)**2 + rho_grad(ig, 2)**2 + rho_grad(ig, 3)**2
+               if (present(sigma_out)) sigma_out(g0 + ig - 1) = sigma(ig)
             end do
 
             do i = 1, ctx%n_func
@@ -871,6 +881,13 @@ contains
       real(dp), allocatable :: exc_i(:), vrho_i(:), grad_coeff(:, :)
       real(dp), allocatable :: ao_grad(:, :, :), rho_grad(:, :), sigma(:)
       real(dp), allocatable :: vsigma(:), vsigma_i(:)
+      !> VV10 over the whole grid, computed once before the block loop: its
+      !> inner sum runs over every point, so unlike the semilocal part it
+      !> cannot be evaluated a block at a time.
+      logical :: with_nlc
+      real(dp), allocatable :: nl_rho(:), nl_sigma(:), nl_exc(:)
+      real(dp), allocatable :: nl_vrho(:), nl_vsigma(:)
+      real(dp), allocatable :: nl_tmp_exc(:), nl_tmp_vrho(:), nl_tmp_gc(:, :)
       real(dp), allocatable :: tau(:), vtau(:), vtau_i(:), lapl(:), vlapl(:)
       real(dp), allocatable :: v_local(:, :), v_sig(:, :), d_sig(:, :)
       real(dp), allocatable :: extents(:)
@@ -883,18 +900,6 @@ contains
       integer :: g0, g1, nb, i, ig, id
 
       v_xc = 0.0_dp
-      !> Until the non-local term is folded in below, a functional carrying it
-      !> must not reach the Fock matrix: the semilocal half alone converges and
-      !> prints a plausible number that is 43 mHa wrong on water. The
-      !> parameters are already on the context; what is missing is the double
-      !> integral, and `mqc_libcint_vv10` holds it.
-      if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
-         call error%set(ERROR_VALIDATION, "this functional carries a non-local "// &
-                        "correlation term (VV10) that is not yet applied on this path. "// &
-                        "Refused rather than evaluated without it.")
-         return
-      end if
-
       e_xc = 0.0_dp
       n_elec = 0.0_dp
 
@@ -952,10 +957,28 @@ contains
       ! and a shell dropped beyond its radius contributes less than that at
       ! every point of the block -- so this is a truncation with a stated
       ! bound, not a heuristic.
+      !> VV10, once, before anything is blocked. `xc_grid_gga_quantities` is
+      !> reused rather than a second density pass written: it already walks the
+      !> grid forming rho and sigma, and its other outputs are discarded here.
+      !> That costs one extra semilocal pass per iteration against an
+      !> O(N_grid^2) double sum, which is not where the time goes.
+      with_nlc = (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp)
+      if (with_nlc) then
+         call xc_grid_gga_quantities(ctx, mol, density, nl_rho, nl_tmp_exc, &
+                                     nl_tmp_vrho, nl_tmp_gc, error, sigma_out=nl_sigma)
+         if (error%has_error()) return
+         allocate (nl_exc(ctx%grid%n_points), nl_vrho(ctx%grid%n_points), &
+                   nl_vsigma(ctx%grid%n_points))
+         call vv10_nlc(ctx%nlc_b, ctx%nlc_c, ctx%grid%coords, nl_rho, nl_sigma, &
+                       ctx%grid%coords, nl_rho, nl_sigma, ctx%grid%weights, &
+                       nl_exc, nl_vrho, nl_vsigma)
+      end if
+
       call shell_extents(mol, ctx%screen_tol, extents)
 
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, density, v_xc, e_xc, n_elec, error, failed, extents) &
+      !$omp    shared(with_nlc, nl_exc, nl_vrho, nl_vsigma) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, rho, exc, vrho, exc_i, vrho_i, &
       !$omp            grad_coeff, ao_grad, rho_grad, sigma, vsigma, vsigma_i, &
       !$omp            tau, vtau, vtau_i, lapl, vlapl) &
@@ -1069,6 +1092,15 @@ contains
             vrho = vrho + ctx%weight(i)*vrho_i
          end do
 
+         !> VV10 joins here, so that everything downstream -- the energy sum
+         !> below, `grad_coeff`, the contraction into v_local -- treats it as
+         !> part of the functional. Nothing after this point knows it exists.
+         if (with_nlc) then
+            exc = exc + nl_exc(g0:g1)
+            vrho = vrho + nl_vrho(g0:g1)
+            if (allocated(vsigma)) vsigma = vsigma + nl_vsigma(g0:g1)
+         end if
+
          n_local = n_local + sum(ctx%grid%weights(g0:g1)*rho)
          e_local = e_local + sum(ctx%grid%weights(g0:g1)*rho*exc)
 
@@ -1171,8 +1203,8 @@ contains
 
       v_alpha = 0.0_dp
       v_beta = 0.0_dp
-      !> Until the non-local term is folded in below, a functional carrying it
-      !> must not reach the Fock matrix: the semilocal half alone converges and
+      !> The restricted assembler applies VV10; this one does not yet, and a
+      !> functional carrying it must not reach the Fock matrix meanwhile: the semilocal half alone converges and
       !> prints a plausible number that is 43 mHa wrong on water. The
       !> parameters are already on the context; what is missing is the double
       !> integral, and `mqc_libcint_vv10` holds it.
