@@ -86,11 +86,19 @@ with, run ``mqc --version``, which prints a ``features:`` line.
    * - ``MQC_ENABLE_HDF5``
      - ``OFF``
      - Binary checkpoints carrying gradients and Hessians
+   * - ``MQC_ENABLE_CREST``
+     - ``OFF``
+     - Conformer and ensemble sampling, through CREST
 
 ``MQC_ENABLE_DLFIND`` is off for a licensing reason rather than a technical one:
 DL-FIND is LGPL-3 and metalquicha is MIT. It is fetched and linked as a shared
 library so the two stay separable, and turning it on is a choice the person
 building makes. See :doc:`geometry_optimization`.
+
+``MQC_ENABLE_CREST`` is off for the same reason -- CREST is LGPL-3.0 -- and for
+a second one: it needs ``WITH_GFN0=ON`` to be useful, and CREST's own tblite pin
+disagrees with the release this project builds against. See
+:doc:`conformer_sampling`.
 
 .. code-block:: bash
 

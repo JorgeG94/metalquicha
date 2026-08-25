@@ -28,6 +28,7 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    scf_convergence
    vibrational_analysis
    geometry_optimization
+   conformer_sampling
    fmo
    counterpoise
    continuum_solvation
