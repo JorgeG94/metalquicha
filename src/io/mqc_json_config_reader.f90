@@ -426,6 +426,14 @@ contains
       call optional_string(json, "keywords.optimization.neb_endpoints", config%opt_neb_ends)
       call optional_int(json, "keywords.optimization.images", config%opt_n_images)
       call optional_real(json, "keywords.optimization.neb_spring", config%opt_neb_spring)
+      call optional_string(json, "keywords.optimization.saddle_method", &
+                           config%opt_saddle_method)
+      call optional_real(json, "keywords.optimization.dimer_separation", &
+                         config%opt_dimer_separation)
+      call optional_int(json, "keywords.optimization.dimer_max_rotations", &
+                        config%opt_dimer_max_rotations)
+      call optional_real(json, "keywords.optimization.dimer_rotation_tolerance", &
+                         config%opt_dimer_rot_tol)
       call optional_real(json, "keywords.optimization.timestep", config%opt_timestep)
       call optional_real(json, "keywords.optimization.friction", config%opt_friction)
       call optional_real(json, "keywords.optimization.friction_factor", &

@@ -43,6 +43,8 @@ module mqc_optimizer_types
    public :: target_from_string, target_to_string, algorithm_finds_saddle
    public :: NEB_ENDS_FROZEN, NEB_ENDS_PERPENDICULAR, NEB_ENDS_FREE, MIN_NEB_IMAGES
    public :: neb_ends_from_string, neb_ends_to_string
+   public :: SADDLE_METHOD_PRFO, SADDLE_METHOD_DIMER
+   public :: saddle_method_from_string, saddle_method_to_string
    public :: algorithm_needs_hessian
 
    ! This program's own numbering rather than DL-FIND's, even though DL-FIND is
@@ -105,6 +107,17 @@ module mqc_optimizer_types
    ! How a chain-of-states run treats the two structures it was given. The
    ! endpoints are usually already optimized minima, so freezing them is the
    ! default: relaxing a minimum again costs images and moves nothing.
+   ! How a saddle is hunted, once `target` says one is wanted. Not the same
+   ! axis as `algorithm`: the dimer is a way of *searching*, and the algorithm
+   ! named alongside it is what translates and rotates the pair.
+   integer, parameter :: SADDLE_METHOD_PRFO = 0
+      !! Follow a Hessian eigenvector uphill. Needs curvature, and pays for it.
+   integer, parameter :: SADDLE_METHOD_DIMER = 1
+      !! Two images a short distance apart, rotated to find the softest
+      !! direction and translated with the force along it inverted. Never forms
+      !! a Hessian at all, which is the point: on a system where the analytic
+      !! Hessian is the bottleneck, this is the method that runs.
+
    integer, parameter :: MIN_NEB_IMAGES = 3
       !! DL-FIND's own floor. Two images are the two endpoints, so a band of
       !! two has nothing between them to relax.
@@ -186,6 +199,16 @@ module mqc_optimizer_types
          !! Spring constant holding neighbouring images apart. Negative means
          !! the engine default.
       integer :: neb_ends = NEB_ENDS_FROZEN
+      integer :: saddle_method = SADDLE_METHOD_PRFO
+      real(dp) :: dimer_separation = -1.0_dp
+         !! Distance between the two dimer images, Bohr. Negative is the engine
+         !! default. Small enough to sample curvature, large enough that the
+         !! gradient difference is not noise.
+      integer :: dimer_max_rotations = -1
+         !! Rotation steps per translation step. Negative is the engine default.
+      real(dp) :: dimer_rotation_tolerance = -1.0_dp
+         !! Stop rotating once the angle falls below this. Negative is the
+         !! engine default.
       integer :: hessian_update = OPT_HESSIAN_UPDATE_ENGINE
          !! How curvature is carried between steps once a Hessian exists.
          !! Ignored by the algorithms that never build one.
@@ -400,6 +423,36 @@ contains
 
       needs = algorithm == OPT_ALGO_PRFO .or. algorithm == OPT_ALGO_NR
    end function algorithm_needs_hessian
+
+   pure function saddle_method_from_string(text) result(method)
+      !! Parse how a deck wants the saddle hunted
+      character(len=*), intent(in) :: text
+      integer :: method
+
+      select case (lowercase(text))
+      case ("prfo", "p-rfo", "hessian")
+         method = SADDLE_METHOD_PRFO
+      case ("dimer")
+         method = SADDLE_METHOD_DIMER
+      case default
+         method = -2
+      end select
+   end function saddle_method_from_string
+
+   pure function saddle_method_to_string(method) result(text)
+      !! Name a saddle-search method, for the log
+      integer, intent(in) :: method
+      character(len=:), allocatable :: text
+
+      select case (method)
+      case (SADDLE_METHOD_PRFO)
+         text = "p-rfo"
+      case (SADDLE_METHOD_DIMER)
+         text = "dimer"
+      case default
+         text = "unknown"
+      end select
+   end function saddle_method_to_string
 
    pure function neb_ends_from_string(text) result(ends)
       !! Parse how a deck wants the path endpoints treated

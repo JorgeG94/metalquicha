@@ -292,6 +292,19 @@ All optional. Everything under ``keywords.optimization``:
    * - ``neb_endpoints``
      - ``frozen``
      - ``frozen``, ``perpendicular`` or ``free``
+   * - ``saddle_method``
+     - ``prfo``
+     - ``prfo`` or ``dimer``. How a ``target: "saddle"`` run hunts. See
+       :ref:`dimer`
+   * - ``dimer_separation``
+     - engine
+     - Distance between the two dimer images, Bohr
+   * - ``dimer_max_rotations``
+     - engine
+     - Rotation steps per translation step
+   * - ``dimer_rotation_tolerance``
+     - engine
+     - Stop rotating below this angle
    * - ``frozen_atoms``
      - none
      - 0-based indices held at their input position. See :ref:`opt-constraints`
@@ -370,6 +383,60 @@ around on anything but a small system.
 and an update thereafter, rather than a fresh one per step. ``bofill`` is the
 usual choice for a saddle point, because it does not assume the matrix is
 positive definite -- which at a transition state it is not.
+
+.. _dimer:
+
+Finding a saddle without a Hessian: the dimer
+----------------------------------------------
+
+P-RFO needs curvature, and on a large system the Hessian is the whole cost.
+The dimer method needs none. It carries two images a short distance apart,
+rotates them to find the softest direction available, and then translates with
+the force along that direction inverted -- so it climbs the one axis and
+descends the rest, using gradients only::
+
+    "keywords": {
+      "optimization": {
+        "target": "saddle",
+        "saddle_method": "dimer",
+        "algorithm": "lbfgs",
+        "endpoint": "product.xyz",
+        "max_step": 0.15
+      }
+    }
+
+``algorithm`` here is not the saddle finder. The dimer inverts the force itself,
+so what is named beside it is only what translates and rotates the pair, and a
+minimiser is the right choice. This is why ``saddle_method: "dimer"`` lifts the
+refusal that ``target: "saddle"`` otherwise applies to downhill algorithms.
+
+**Give it a direction.** With no ``endpoint`` DL-FIND randomises the dimer axis,
+which on any real system means starting the search along an arbitrary direction
+in 3N-dimensional space. An ``endpoint`` points the pair along the reaction
+instead. The same file serves both this and :ref:`neb`, and the dimer uses it as
+a direction rather than as a structure to reach -- so a rough product is enough,
+where NEB wants a real one.
+
+Progress is readable in the curvature at the dimer midpoint, printed each cycle.
+It starts positive, because a minimum has no negative direction, and the search
+has arrived somewhere interesting when it goes negative::
+
+    Curvature at dimer midpoint    0.35512     <- still in the basin
+    ...
+    Curvature at dimer midpoint   -0.14239     <- on the ridge
+
+Ammonia inversion, ``HF/STO-3G``, from the pyramidal minimum pointed at its own
+inversion: 53 steps to one imaginary frequency at 1081 cm-1, with the three
+hydrogens carrying 31% of the mode each and the nitrogen 7% -- the umbrella. No
+Hessian was built at any point.
+
+.. tip::
+
+   Reduce ``max_step`` for a dimer run. The default is sized for a minimisation,
+   and a dimer that overshoots while climbing lands somewhere with no SCF at
+   all; the run then stops with an energy evaluation failure several cycles
+   after the step that caused it. ``0.1`` to ``0.15`` is a reasonable starting
+   point.
 
 .. _neb:
 

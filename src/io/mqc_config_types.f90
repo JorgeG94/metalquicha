@@ -422,6 +422,10 @@ module mqc_config_types
       character(len=:), allocatable :: opt_neb_ends  !! frozen, perpendicular, free
       integer :: opt_n_images = 0                      !! Images along the path
       real(dp) :: opt_neb_spring = -1.0_dp             !! <0 = engine default
+      character(len=:), allocatable :: opt_saddle_method  !! prfo or dimer
+      real(dp) :: opt_dimer_separation = -1.0_dp       !! <0 = engine default
+      integer :: opt_dimer_max_rotations = -1          !! <0 = engine default
+      real(dp) :: opt_dimer_rot_tol = -1.0_dp          !! <0 = engine default
       real(dp) :: opt_timestep = -1.0_dp               !! Damped dynamics step
       real(dp) :: opt_friction = -1.0_dp               !! Damped dynamics start friction
       real(dp) :: opt_friction_factor = -1.0_dp        !! Friction decay while descending

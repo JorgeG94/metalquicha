@@ -32,7 +32,8 @@ module mqc_dlfind_bridge
                                   OPT_ALGO_CG_AUTO, OPT_ALGO_NR, OPT_ALGO_DAMPED, &
                                   OPT_HESSIAN_UPDATE_ENGINE, hessian_i, &
                                   algorithm_needs_hessian, constraint_atom_count, &
-                                  NEB_ENDS_FREE, NEB_ENDS_PERPENDICULAR
+                                  NEB_ENDS_FREE, NEB_ENDS_PERPENDICULAR, &
+                                  SADDLE_METHOD_DIMER
    use mqc_error, only: error_t, ERROR_GENERIC, ERROR_VALIDATION
    implicit none
    private
@@ -56,6 +57,14 @@ module mqc_dlfind_bridge
    ! not NEB at all -- it is the quantum transition state search -- which is why
    ! the offsets stop at 120 and are added to a unit place rather than used
    ! whole. The implementation is improved-tangent NEB with a climbing image.
+   ! The dimer occupies the 200 band, with the tens place choosing how the pair
+   ! is rotated: 20X leaves translation and rotation to the optimizer named by
+   ! `iopt`, 21X and 22X do the rotation by a line search inside DL-FIND's own
+   ! dimer module at the cost of extra energy evaluations per rotation. 20X is
+   ! taken here because it is the one that respects the algorithm the deck
+   ! chose.
+   integer(c_int), parameter :: DLF_DIMER = 200
+
    integer(c_int), parameter :: DLF_NEB_ENDS_FREE = 100
    integer(c_int), parameter :: DLF_NEB_ENDS_PERPENDICULAR = 110
    integer(c_int), parameter :: DLF_NEB_ENDS_FROZEN = 120
@@ -291,6 +300,8 @@ contains
       ! guesses.
       nvar2_in = 0_c_int
       if (allocated(endpoint_coords)) nvar2_in = int(3*natoms, c_int)
+      if (opt_settings%saddle_method == SADDLE_METHOD_DIMER .and. &
+          .not. allocated(endpoint_coords)) nvar2_in = 0_c_int
 
       call api_dl_find(nvar, nvar2_in, nspec, 1_c_int, &
                        c_funloc(cb_error), &
@@ -468,7 +479,30 @@ contains
       ! for images or a spring constant without an endpoint is not a path, and
       ! silently running one from a single geometry would optimize something
       ! nobody described.
-      if (allocated(endpoint_coords)) then
+      if (settings%saddle_method == SADDLE_METHOD_DIMER) then
+         ! The dimer needs a direction to start from, and randomises one when
+         ! it is given nothing -- which on any real system means starting the
+         ! search along an arbitrary direction in 3N space. An endpoint, when
+         ! there is one, points the pair along the reaction instead.
+         !
+         ! Handed over as the geometry, not as the displacement to it. DL-FIND
+         ! reads `coords2` as an absolute structure and takes the difference
+         ! itself unless `tsrelative` says otherwise, so passing a difference
+         ! while leaving that flag alone has it subtract the coordinates a
+         ! second time. The resulting axis points somewhere arbitrary, the
+         ! first translation lands on a geometry with no SCF, and the run dies
+         ! as "energy evaluation failed" several cycles later.
+         icoord = dlfind_coordinates(settings%coordinates, DLF_DIMER)
+         if (settings%dimer_separation > 0.0_dp) delta = real(settings%dimer_separation, c_double)
+         if (settings%dimer_max_rotations > 0) maxrot = int(settings%dimer_max_rotations, c_int)
+         if (settings%dimer_rotation_tolerance > 0.0_dp) then
+            tolrot = real(settings%dimer_rotation_tolerance, c_double)
+         end if
+         if (allocated(endpoint_coords)) then
+            nframe = 1_c_int
+            coords2(1:3*n_atoms) = reshape(endpoint_coords, [3*n_atoms])
+         end if
+      else if (allocated(endpoint_coords)) then
          icoord = dlfind_coordinates(settings%coordinates, dlfind_neb_band(settings%neb_ends))
          if (settings%n_images > 0) nimage = int(settings%n_images, c_int)
          if (settings%neb_spring >= 0.0_dp) nebk = real(settings%neb_spring, c_double)
