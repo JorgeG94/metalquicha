@@ -9,7 +9,9 @@ module test_mqc_scf_common
    use mqc_error, only: error_t
    use mqc_scf_common, only: build_orthogonalizer, build_density_closed_shell, &
                              build_density_spin, spin_contamination, &
-                             LINEAR_DEPENDENCE_TOL, LINEAR_DEPENDENCE_WARN_TOL
+                             LINEAR_DEPENDENCE_TOL, LINEAR_DEPENDENCE_WARN_TOL, &
+                             report_linear_dependence, lindep_tally_t, &
+                             lindep_collect_begin, lindep_collect_end
    implicit none
    private
 
@@ -35,9 +37,94 @@ contains
                   new_unittest("scf_spin_density_is_half_the_closed_shell_one", test_density_spin), &
                   new_unittest("scf_density_of_no_electrons_is_zero", test_density_empty), &
                   new_unittest("scf_spin_contamination_vanishes_for_a_closed_shell", test_s2_closed), &
-                  new_unittest("scf_spin_contamination_is_exact_for_a_lone_electron", test_s2_doublet) &
+                  new_unittest("scf_spin_contamination_is_exact_for_a_lone_electron", test_s2_doublet), &
+                  new_unittest("scf_lindep_tally_sums_drops_over_many_scfs", test_tally_drops), &
+                  new_unittest("scf_lindep_tally_separates_near_from_dropped", test_tally_near), &
+                  new_unittest("scf_lindep_tally_stays_silent_on_a_healthy_basis", test_tally_healthy), &
+                  new_unittest("scf_lindep_tally_resets_between_windows", test_tally_resets) &
                   ]
    end subroutine collect_mqc_scf_common
+
+   subroutine test_tally_drops(error)
+      !! Many SCFs that each lose functions become one tally, not many reports
+      type(error_type), allocatable, intent(out) :: error
+      type(lindep_tally_t) :: t
+
+      call lindep_collect_begin()
+      ! 10 functions, 8 survive: two dropped, smallest eigenvalue 1e-9.
+      call report_linear_dependence(10, 8, 1.0e-9_dp, 1.0e-3_dp, .false.)
+      ! 10 functions, 7 survive: three more, and a worse eigenvalue.
+      call report_linear_dependence(10, 7, 4.0e-11_dp, 2.0e-3_dp, .false.)
+      call lindep_collect_end(t)
+
+      call check(error, t%n_reports, 2)
+      if (allocated(error)) return
+      call check(error, t%n_dropped_scf, 2)
+      if (allocated(error)) return
+      call check(error, t%total_dropped, 5)
+      if (allocated(error)) return
+      call check(error, t%n_near_scf, 0)
+      if (allocated(error)) return
+      ! The worst is the smallest seen, not the last one written.
+      call check(error, t%worst_overlap, 4.0e-11_dp, thr=1.0e-20_dp)
+      if (allocated(error)) return
+      call check(error, t%worst_kept, 1.0e-3_dp, thr=TOL)
+   end subroutine test_tally_drops
+
+   subroutine test_tally_near(error)
+      !! An SCF that keeps every function but is ill-conditioned counts apart
+      type(error_type), allocatable, intent(out) :: error
+      type(lindep_tally_t) :: t
+
+      call lindep_collect_begin()
+      ! Nothing dropped, but the smallest surviving mode is under the warn tol.
+      call report_linear_dependence(10, 10, 1.0e-6_dp, 1.0e-6_dp, .false.)
+      call lindep_collect_end(t)
+
+      call check(error, t%n_reports, 1)
+      if (allocated(error)) return
+      call check(error, t%n_near_scf, 1)
+      if (allocated(error)) return
+      call check(error, t%n_dropped_scf, 0)
+      if (allocated(error)) return
+      call check(error, t%total_dropped, 0)
+   end subroutine test_tally_near
+
+   subroutine test_tally_healthy(error)
+      !! A well-conditioned SCF contributes nothing, so the summary can stay quiet
+      type(error_type), allocatable, intent(out) :: error
+      type(lindep_tally_t) :: t
+
+      call lindep_collect_begin()
+      call report_linear_dependence(10, 10, 0.5_dp, 0.5_dp, .false.)
+      call report_linear_dependence(10, 10, 0.25_dp, 0.25_dp, .false.)
+      call lindep_collect_end(t)
+
+      call check(error, t%n_reports, 0)
+      if (allocated(error)) return
+      call check(error, t%n_near_scf, 0)
+      if (allocated(error)) return
+      call check(error, t%n_dropped_scf, 0)
+   end subroutine test_tally_healthy
+
+   subroutine test_tally_resets(error)
+      !! A second window starts empty, so one run cannot inherit another's count
+      type(error_type), allocatable, intent(out) :: error
+      type(lindep_tally_t) :: first, second
+
+      call lindep_collect_begin()
+      call report_linear_dependence(10, 8, 1.0e-9_dp, 1.0e-3_dp, .false.)
+      call lindep_collect_end(first)
+
+      call lindep_collect_begin()
+      call lindep_collect_end(second)
+
+      call check(error, first%n_reports, 1)
+      if (allocated(error)) return
+      call check(error, second%n_reports, 0)
+      if (allocated(error)) return
+      call check(error, second%total_dropped, 0)
+   end subroutine test_tally_resets
 
    pure subroutine model_overlap(n, off_diagonal, overlap)
       !! A symmetric positive-definite overlap: 1 on the diagonal, `s` off it

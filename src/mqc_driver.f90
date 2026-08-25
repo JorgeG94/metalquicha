@@ -31,6 +31,8 @@ module mqc_driver
    use mqc_config_types, only: bond_t, mqc_config_t
    use mqc_mbe, only: compute_gmbe
    use mqc_result_types, only: calculation_result_t
+   use mqc_scf_common, only: lindep_tally_t, lindep_collect_begin, lindep_collect_end, &
+                             report_linear_dependence_tally
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_fingerprint, only: calculation_fingerprint
    use mqc_checkpoint, only: checkpoint_t
@@ -96,6 +98,7 @@ contains
       logical :: should_write_json  !! Whether this rank should write JSON
       logical :: wants_output       !! Whether the caller asked for files at all
       type(error_t) :: geometry_error  !! Two atoms in the same place, if any
+      type(lindep_tally_t) :: lindep   !! One report for every fragment SCF
 
       ! Set max_level from config
       max_level = config%nlevel
@@ -249,9 +252,23 @@ contains
          ! json_data is collected whether or not it will be written, because it
          ! is also where a fragmented result comes from -- the expansion has no
          ! other route back to a calculation_result_t.
+         ! Fold every fragment SCF's linear-dependence report into one.
+         !
+         ! Each fragment raises its own otherwise, and the block is eight to
+         ! twelve lines -- an expansion over a few thousand fragments buries the
+         ! run in warnings about calculations that are, in the near-dependent
+         ! case, perfectly fine. Unfragmented runs are left alone: there is one
+         ! SCF, so the per-SCF report is already the summary.
+         !
+         ! The window is per rank, so with MPI each rank reports its own
+         ! fragments rather than the run's. That still turns thousands of blocks
+         ! into one per rank, and a cross-rank reduction is a separate change.
+         call lindep_collect_begin()
          call run_fragmented_calculation(resources, config, sys_geom, bonds, json_data, &
                                          supplied_terms=supplied_terms, &
                                          n_supplied_terms=n_supplied_terms)
+         call lindep_collect_end(lindep)
+         call report_linear_dependence_tally(lindep, "fragment SCFs")
          if (present(result_out)) call result_from_json(json_data, result_out)
       end if
 
