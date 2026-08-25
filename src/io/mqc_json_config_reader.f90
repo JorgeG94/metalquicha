@@ -434,6 +434,9 @@ contains
                         config%opt_dimer_max_rotations)
       call optional_real(json, "keywords.optimization.dimer_rotation_tolerance", &
                          config%opt_dimer_rot_tol)
+      call optional_int(json, "keywords.optimization.zero_modes", config%opt_zero_modes)
+      call optional_real(json, "keywords.optimization.soft_mode_threshold", &
+                         config%opt_soft_modes)
       call optional_logical(json, "keywords.optimization.connect", config%opt_connect)
       call optional_real(json, "keywords.optimization.connect_distort", &
                          config%opt_connect_distort)
