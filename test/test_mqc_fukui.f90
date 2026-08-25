@@ -42,7 +42,8 @@ contains
                   new_unittest("water_is_nucleophilic_at_oxygen", water_is_nucleophilic_at_oxygen), &
                   new_unittest("refuses_an_open_shell_neutral", refuses_an_open_shell_neutral), &
                   new_unittest("values_have_not_drifted", values_have_not_drifted), &
-                  new_unittest("the_ions_feel_the_solvent", the_ions_feel_the_solvent) &
+                  new_unittest("the_ions_feel_the_solvent", the_ions_feel_the_solvent), &
+                  new_unittest("the_global_descriptors_agree", the_global_descriptors_agree) &
                   ]
    end subroutine collect_mqc_fukui_tests
 
@@ -97,6 +98,46 @@ contains
       call check(error, solvated%electron_affinity > gas%electron_affinity, &
                  "a solvated anion should make the electron affinity less negative")
    end subroutine the_ions_feel_the_solvent
+
+   subroutine the_global_descriptors_agree(error)
+      !! The three global descriptors are one definition, not three numbers
+      !!
+      !! `mu = -(IP + EA)/2` and `eta = (IP - EA)/2` are the first and second
+      !! derivatives of the energy with respect to electron number, and
+      !! `omega = mu^2 / 2 eta` is written for exactly those. The hardness once
+      !! lost its half while the chemical potential kept its own, which left the
+      !! hardness twice what it should be and the electrophilicity half -- and
+      !! nothing caught it, because each number is plausible on its own and no
+      !! reference for them is checked anywhere.
+      !!
+      !! So what is pinned here is the relation between them rather than any one
+      !! value: recompute all three from the two energies the ions gave and
+      !! require agreement. That survives a change of molecule, basis or scheme,
+      !! and it is the only check that would have failed when the half went
+      !! missing.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(fukui_result_t) :: res
+      type(error_t) :: err
+      logical :: ok
+      real(dp) :: mu, eta
+
+      call water_fukui("chelpg", res, err, ok)
+      call check(error, ok, "the analysis did not run: "//err%get_message())
+      if (allocated(error)) return
+
+      mu = -0.5_dp*(res%ionisation_potential + res%electron_affinity)
+      eta = 0.5_dp*(res%ionisation_potential - res%electron_affinity)
+
+      call check(error, res%chemical_potential, mu, thr=1.0e-12_dp, &
+                 more="the chemical potential is not -(IP + EA)/2")
+      if (allocated(error)) return
+      call check(error, res%hardness, eta, thr=1.0e-12_dp, &
+                 more="the hardness is not (IP - EA)/2 -- Parr and Pearson's half")
+      if (allocated(error)) return
+      call check(error, res%electrophilicity, mu**2/(2.0_dp*eta), thr=1.0e-12_dp, &
+                 more="the electrophilicity is not mu^2 / 2 eta")
+   end subroutine the_global_descriptors_agree
 
    subroutine water_fukui(scheme, res, err, ok, solvate)
       !! Converge water and run the analysis on it

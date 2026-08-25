@@ -75,7 +75,7 @@ module mqc_libcint_fukui
       real(dp) :: ionisation_potential = 0.0_dp   !! E(N-1) - E(N)
       real(dp) :: electron_affinity = 0.0_dp      !! E(N) - E(N+1)
       real(dp) :: chemical_potential = 0.0_dp     !! -(IP + EA)/2
-      real(dp) :: hardness = 0.0_dp               !! IP - EA
+      real(dp) :: hardness = 0.0_dp               !! (IP - EA)/2
       real(dp) :: electrophilicity = 0.0_dp       !! mu^2 / 2 eta
       logical :: anion_bound = .true.
          !! Whether `E(N+1)` came out below `E(N)`. When it did not, nothing
@@ -352,7 +352,17 @@ contains
       res%ionisation_potential = res%energy_cation - res%energy_neutral
       res%electron_affinity = res%energy_neutral - res%energy_anion
       res%chemical_potential = -0.5_dp*(res%ionisation_potential + res%electron_affinity)
-      res%hardness = res%ionisation_potential - res%electron_affinity
+      ! **The half is Parr and Pearson's, and it was missing.** Absolute hardness
+      ! is `(IP - EA)/2`, the second derivative of the energy with respect to
+      ! electron number, in the same way the chemical potential just above is
+      ! the first: `-(IP + EA)/2`. Dropping it here made the hardness twice what
+      ! it should be, and -- because `omega = mu^2 / 2 eta` is written for the
+      ! halved quantity -- the electrophilicity half.
+      !
+      ! The give-away was internal rather than a reference: the chemical
+      ! potential carried its half and this did not, while the electrophilicity
+      ! below assumed both did. Three expressions that cannot all be right.
+      res%hardness = 0.5_dp*(res%ionisation_potential - res%electron_affinity)
       if (abs(res%hardness) > 1.0e-10_dp) then
          res%electrophilicity = res%chemical_potential**2/(2.0_dp*res%hardness)
       end if

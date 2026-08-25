@@ -108,6 +108,46 @@ basis-set sensitivity does not cancel; asked for on its own a charge is usually
 wanted as the cheap population number, and Mulliken is one trace against an
 overlap that already exists.
 
+Where the numbers come out
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Not on the terminal.** Neither scheme prints a table of charges however
+verbose the logger is; they are written to the JSON output beside the deck, as
+``output_<deck>.json``, under ``atomic_charges``. CHELPG prints a single line
+saying how many grid points it fitted, which is a progress note and not the
+result -- it is easy to read that line, see no table, and conclude the request
+was dropped.
+
+.. code-block:: console
+
+   $ mqc water.json
+   ...
+     chelpg: fitted 3 charges to 4358 grid points
+   $ python3 -c "import json; d=json.load(open('output_water.json'));
+   >   k=list(d)[0]; print(json.dumps(d[k]['atomic_charges'], indent=2))"
+
+.. code-block:: json
+
+   {
+     "scheme": "chelpg",
+     "sum": -5.55e-17,
+     "atoms": [
+       {"atom": 1, "charge": -0.957464},
+       {"atom": 2, "charge": 0.478851},
+       {"atom": 3, "charge": 0.478613}
+     ]
+   }
+
+``sum`` is the total charge the partition accounts for and should equal the
+molecular charge; a value that does not is the fastest way to see that a fit
+went wrong, which is why it is written rather than left to be added up.
+
+The same water in the same basis gives -0.957 on the oxygen from CHELPG and
+-0.800 from Mulliken. That spread is not an error in either -- they answer
+different questions, one fitting the electrostatic potential and the other
+dividing the overlap -- and it is the reason a scheme is named in the output
+rather than assumed by whoever reads it.
+
 For an unrestricted reference the charges come from ``P_alpha + P_beta``, and
 Mulliken additionally reports **spin populations** from ``P_alpha - P_beta``:
 
