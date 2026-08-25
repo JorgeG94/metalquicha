@@ -1000,8 +1000,13 @@ contains
          d_a_old = d_a
          d_b_old = d_b
 
+         ! Read before the build, not after it. Both stages are cumulative, so a
+         ! reading taken once the build has already charged them differences
+         ! against itself -- which is what the XC column was doing.
+         t_fock_iter = clk%seconds_of(STAGE_FOCK)
+         t_xc_iter = clk%seconds_of(STAGE_XC)
          call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
-                                e_elec, error)
+                                e_elec, error, clk=clk)
          if (error%has_error()) return
          ! The continuum sees one density -- the total -- and both spins feel
          ! one potential, as they would from any classical charge.
@@ -1012,8 +1017,6 @@ contains
             fock_b = fock_b + v_pcm
             e_elec = e_elec + e_pcm
          end if
-         t_fock_iter = clk%seconds_of(STAGE_FOCK)
-         t_xc_iter = clk%seconds_of(STAGE_XC)
          call clk%lap(STAGE_FOCK)
          t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
          t_xc_iter = clk%seconds_of(STAGE_XC) - t_xc_iter
@@ -1372,7 +1375,7 @@ contains
    end subroutine assemble_fock
 
    subroutine assemble_fock_uhf(mol, h, d_alpha, d_beta, eri, bounds, xc, &
-                                fock_a, fock_b, e_elec, error)
+                                fock_a, fock_b, e_elec, error, clk)
       !! Both spin Fock matrices for this pair of densities, and their energy
       !!
       !! The unrestricted twin of `assemble_fock`, and it exists for the same
@@ -1391,6 +1394,10 @@ contains
       real(dp), intent(out) :: fock_a(:, :), fock_b(:, :)
       real(dp), intent(out) :: e_elec
       type(error_t), intent(inout) :: error
+      type(timing_report_t), intent(inout), optional :: clk
+         !! Charges the two-electron build and the quadrature to their own
+         !! buckets. Optional because the guess and the final rebuild call this
+         !! outside the iteration, where there is no per-iteration row to fill.
 
       type(direct_stats_t) :: stats
       real(dp), allocatable :: v_a(:, :), v_b(:, :)
@@ -1450,6 +1457,14 @@ contains
       ! Taken here, while the Fock matrices are still a mean field.
       e_elec = uhf_electronic_energy(h, fock_a, fock_b, d_alpha, d_beta)
 
+      ! Close the Fock bucket before the quadrature opens, for the reason
+      ! `assemble_fock` sets out at length. The unrestricted path had neither
+      ! lap: it was never handed a clock, so `STAGE_XC` was never charged at
+      ! all and the caller's XC column differenced a constant against itself.
+      ! It printed 0.00 s next to a grid-4 PBE run, which is not a small number
+      ! reported imprecisely but no measurement at all.
+      if (present(clk)) call clk%lap(STAGE_FOCK)
+
       if (kohn_sham) then
          allocate (v_a(n, n), v_b(n, n))
          call xc_add_potential_uks(xc, mol, d_alpha, d_beta, v_a, v_b, e_xc, n_elec, error)
@@ -1457,6 +1472,7 @@ contains
          fock_a = fock_a + v_a
          fock_b = fock_b + v_b
          e_elec = e_elec + e_xc
+         if (present(clk)) call clk%lap(STAGE_XC)
          deallocate (v_a, v_b)
       end if
    end subroutine assemble_fock_uhf
