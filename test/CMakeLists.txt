@@ -297,6 +297,13 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_afo_model)
   addtest(mqc_afo_orbital)
   addtest(mqc_afo_fmo)
+
+  # The VV10 kernel. Inside this guard because mqc_libcint_vv10 lives in
+  # backends/libcint/, which is only added when an integrals backend is enabled
+  # -- registering it beside the src/ tests built fine here and broke every
+  # configuration that turns libcint off, because the test was unconditional and
+  # the module it uses was not.
+  addtest(mqc_vv10)
 endif()
 
 # Only meaningful with the cuEST backend compiled in.
@@ -310,7 +317,6 @@ endif()
 addtest(mqc_pcm_radii)
 addtest(mqc_atomic_radii)
 addtest(mqc_scf_common)
-addtest(mqc_vv10)
 addtest(mqc_shared_helpers)
 
 # What a functional name means as a composition. Unconditional: the
