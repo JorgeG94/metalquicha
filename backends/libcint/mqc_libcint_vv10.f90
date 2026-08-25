@@ -110,6 +110,17 @@ contains
          rpw(j) = r_i*inner_weights(keep(j))
       end do
 
+      !> Every outer point is independent: it writes only its own three
+      !> outputs and reads a shared inner grid that nothing mutates. The
+      !> accumulators are per-point and so private. This loop is the whole cost
+      !> of the term -- the two AO sweeps around it are linear in points and
+      !> disappear against it -- so it is the only thing here worth threading.
+      !$omp parallel do default(none) &
+      !$omp    shared(n_out, n_kept, rho, sigma, coords, inner_coords, keep, &
+      !$omp           w0p, kp, rpw, exc, vrho, vsigma, c, kvv, pi43, beta) &
+      !$omp    private(i, j, r_i, s_i, w0, w0tmp, dw0_drho, dw0_dsigma, k_out, &
+      !$omp            dk_drho, f_sum, u_sum, w_sum, dx, dy, dz, r2, g, gp, gt, t, tt) &
+      !$omp    schedule(dynamic, 64)
       do i = 1, n_out
          if (rho(i) < VV10_RHO_THRESHOLD) cycle
          r_i = rho(i)
@@ -153,6 +164,7 @@ contains
          vrho(i) = beta + f_sum + 1.5_dp*(u_sum*dk_drho + w_sum*dw0_drho)
          vsigma(i) = 1.5_dp*w_sum*dw0_dsigma
       end do
+      !$omp end parallel do
    end subroutine vv10_nlc
 
 end module mqc_libcint_vv10

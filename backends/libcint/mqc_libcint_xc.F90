@@ -65,6 +65,15 @@ module mqc_libcint_xc
       !! first thing to try if the screen is not paying for itself, and the
       !! gly10 total energy is the thing to watch while doing so.
 
+   integer, parameter, public :: NLC_GRID_LEVEL = 1
+      !! Default level for the non-local inner grid.
+      !!
+      !! Deliberately not the exchange grid's level. PySCF defaults its
+      !! `nlcgrids` to the same level as the main grid, which is the safe
+      !! choice and costs the full product; this is one step down, and the
+      !! error it introduces is measured rather than assumed -- see the
+      !! validation deck. A deck can raise it back.
+
    public :: xc_context_t
    public :: xc_context_create
    public :: xc_add_potential
@@ -114,6 +123,17 @@ module mqc_libcint_xc
          !! MP2 correlation fraction, for a double hybrid. Carried here so the
          !! caller can see it without re-parsing the name; nothing in this module
          !! acts on it, because perturbative correlation is not a grid quantity.
+      type(dft_grid_t) :: nlc_grid
+         !! A second, coarser quadrature for VV10's inner sum only.
+         !!
+         !! The non-local term is a double integral, so its cost goes as the
+         !! product of the two grids' sizes while everything else here is
+         !! linear in one. On water that product is 5.7e8 pairs per iteration
+         !! against the exchange grid and 7.8e7 against this one; on benzene it
+         !! is six times worse again. The outer points stay on the exchange
+         !! grid because that is where the potential has to be contracted into
+         !! the Fock matrix.
+      integer :: nlc_grid_level = NLC_GRID_LEVEL
       real(dp) :: nlc_b = 0.0_dp
       real(dp) :: nlc_c = 0.0_dp
          !! VV10's two parameters, as libxc reports them. Both zero means the
@@ -217,6 +237,7 @@ contains
       allocate (numbers(mol%natm))
       numbers = nint(mol%charges)
       call build_dft_grid(mol%coords, numbers, ctx%grid, error, level=grid_level)
+      if (error%has_error()) return
       deallocate (numbers)
       if (error%has_error()) return
 
@@ -353,6 +374,7 @@ contains
       end do
 #endif
       call this%grid%destroy()
+      call this%nlc_grid%destroy()
       this%n_func = 0
       this%active = .false.
       this%exx_fraction = 0.0_dp
@@ -881,13 +903,7 @@ contains
       real(dp), allocatable :: exc_i(:), vrho_i(:), grad_coeff(:, :)
       real(dp), allocatable :: ao_grad(:, :, :), rho_grad(:, :), sigma(:)
       real(dp), allocatable :: vsigma(:), vsigma_i(:)
-      !> VV10 over the whole grid, computed once before the block loop: its
-      !> inner sum runs over every point, so unlike the semilocal part it
-      !> cannot be evaluated a block at a time.
-      logical :: with_nlc
-      real(dp), allocatable :: nl_rho(:), nl_sigma(:), nl_exc(:)
-      real(dp), allocatable :: nl_vrho(:), nl_vsigma(:)
-      real(dp), allocatable :: nl_tmp_exc(:), nl_tmp_vrho(:), nl_tmp_gc(:, :)
+      real(dp) :: e_nl_total
       real(dp), allocatable :: tau(:), vtau(:), vtau_i(:), lapl(:), vlapl(:)
       real(dp), allocatable :: v_local(:, :), v_sig(:, :), d_sig(:, :)
       real(dp), allocatable :: extents(:)
@@ -957,28 +973,11 @@ contains
       ! and a shell dropped beyond its radius contributes less than that at
       ! every point of the block -- so this is a truncation with a stated
       ! bound, not a heuristic.
-      !> VV10, once, before anything is blocked. `xc_grid_gga_quantities` is
-      !> reused rather than a second density pass written: it already walks the
-      !> grid forming rho and sigma, and its other outputs are discarded here.
-      !> That costs one extra semilocal pass per iteration against an
-      !> O(N_grid^2) double sum, which is not where the time goes.
-      with_nlc = (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp)
-      if (with_nlc) then
-         call xc_grid_gga_quantities(ctx, mol, density, nl_rho, nl_tmp_exc, &
-                                     nl_tmp_vrho, nl_tmp_gc, error, sigma_out=nl_sigma)
-         if (error%has_error()) return
-         allocate (nl_exc(ctx%grid%n_points), nl_vrho(ctx%grid%n_points), &
-                   nl_vsigma(ctx%grid%n_points))
-         call vv10_nlc(ctx%nlc_b, ctx%nlc_c, ctx%grid%coords, nl_rho, nl_sigma, &
-                       ctx%grid%coords, nl_rho, nl_sigma, ctx%grid%weights, &
-                       nl_exc, nl_vrho, nl_vsigma)
-      end if
 
       call shell_extents(mol, ctx%screen_tol, extents)
 
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, density, v_xc, e_xc, n_elec, error, failed, extents) &
-      !$omp    shared(with_nlc, nl_exc, nl_vrho, nl_vsigma) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, rho, exc, vrho, exc_i, vrho_i, &
       !$omp            grad_coeff, ao_grad, rho_grad, sigma, vsigma, vsigma_i, &
       !$omp            tau, vtau, vtau_i, lapl, vlapl) &
@@ -1092,15 +1091,6 @@ contains
             vrho = vrho + ctx%weight(i)*vrho_i
          end do
 
-         !> VV10 joins here, so that everything downstream -- the energy sum
-         !> below, `grad_coeff`, the contraction into v_local -- treats it as
-         !> part of the functional. Nothing after this point knows it exists.
-         if (with_nlc) then
-            exc = exc + nl_exc(g0:g1)
-            vrho = vrho + nl_vrho(g0:g1)
-            if (allocated(vsigma)) vsigma = vsigma + nl_vsigma(g0:g1)
-         end if
-
          n_local = n_local + sum(ctx%grid%weights(g0:g1)*rho)
          e_local = e_local + sum(ctx%grid%weights(g0:g1)*rho*exc)
 
@@ -1145,6 +1135,17 @@ contains
       n_elec = n_elec + n_local
       !$omp end critical (xc_reduce)
       !$omp end parallel
+
+      !> VV10 last, on its own grid, adding into the same matrix and the same
+      !> energy. It is outside the parallel region because it runs its own two
+      !> sweeps over a different quadrature; folding it into the block loop
+      !> above would tie its cost to the exchange grid, which is exactly what
+      !> the separate grid exists to avoid.
+      if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
+         call vv10_add_potential(ctx, mol, density, v_xc, e_nl_total, error)
+         if (error%has_error()) return
+         e_xc = e_xc + e_nl_total
+      end if
 #endif
    end subroutine xc_add_potential
 
@@ -1812,6 +1813,114 @@ contains
       if (ctx%n_func < 0) return
 #endif
    end subroutine xc_kernel_apply
+
+   subroutine vv10_add_potential(ctx, mol, density, v_nl, e_nl, error)
+      !! VV10's energy and Fock contribution, entirely on its own coarse grid
+      !!
+      !! **Both grids are the coarse one, and that is the whole point.** The
+      !! non-local term is a double integral, so its cost goes as the product
+      !! of the two grids' sizes. Coarsening only the inner sum saves 13x on
+      !! water; coarsening both saves 184x, which is the difference between
+      !! usable and not. PySCF makes the same choice for the same reason.
+      !!
+      !! It costs a second AO pass, because a potential has to be contracted on
+      !! the grid it was evaluated on. That pass is linear in points, on a grid
+      !! an order of magnitude smaller than the exchange one, so it disappears
+      !! against the double sum it enables.
+      !!
+      !! Two sweeps over that grid rather than one: the kernel's inner sum runs
+      !! over every point, so nothing can be contracted until rho and sigma are
+      !! known everywhere.
+      !!
+      !! No AO screening here, unlike the exchange loop. On a grid this size
+      !! the saving is small and the indexing it needs -- a per-block
+      !! significant-AO list, a compacted density, a scatter back -- is a
+      !! standing invitation to an off-by-one that would be wrong by
+      !! millihartree while converging.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(inout) :: v_nl(:, :)
+      real(dp), intent(out) :: e_nl
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: rho(:), sigma(:), rho_grad(:, :)
+      real(dp), allocatable :: exc(:), vrho(:), vsigma(:)
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), grad_coeff(:, :)
+      real(dp), allocatable :: rho_blk(:), rho_grad_blk(:, :), vtau_none(:)
+      integer, allocatable :: numbers(:)
+      integer :: npts, g0, g1, nb, ig, id
+
+      e_nl = 0.0_dp
+
+      !> Built on first use rather than beside the exchange grid, because
+      !> whether it is needed at all is only known once the functional's
+      !> components have been read, which happens after that grid is made.
+      !> Nothing that is not a `-V` functional ever pays for it.
+      if (ctx%nlc_grid%n_points == 0) then
+         allocate (numbers(mol%natm))
+         numbers = nint(mol%charges)
+         call build_dft_grid(mol%coords, numbers, ctx%nlc_grid, error, &
+                             level=ctx%nlc_grid_level)
+         deallocate (numbers)
+         if (error%has_error()) return
+      end if
+
+      npts = ctx%nlc_grid%n_points
+      if (npts == 0) return
+
+      allocate (rho(npts), sigma(npts), rho_grad(npts, 3))
+      rho = 0.0_dp
+      sigma = 0.0_dp
+      rho_grad = 0.0_dp
+
+      !> Sweep one: rho and sigma everywhere.
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
+         nb = g1 - g0 + 1
+         if (allocated(rho_blk)) deallocate (rho_blk, rho_grad_blk)
+         allocate (rho_blk(nb), rho_grad_blk(nb, 3))
+         call eval_ao_block(mol, ctx%nlc_grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+         if (error%has_error()) return
+         call eval_rho(ao, density, rho_blk, ao_grad=ao_grad, rho_grad=rho_grad_blk)
+         do ig = 1, nb
+            rho(g0 + ig - 1) = rho_blk(ig)
+            do id = 1, 3
+               rho_grad(g0 + ig - 1, id) = rho_grad_blk(ig, id)
+            end do
+            sigma(g0 + ig - 1) = rho_grad_blk(ig, 1)**2 + rho_grad_blk(ig, 2)**2 &
+                                 + rho_grad_blk(ig, 3)**2
+         end do
+      end do
+
+      allocate (exc(npts), vrho(npts), vsigma(npts))
+      call vv10_nlc(ctx%nlc_b, ctx%nlc_c, ctx%nlc_grid%coords, rho, sigma, &
+                    ctx%nlc_grid%coords, rho, sigma, ctx%nlc_grid%weights, &
+                    exc, vrho, vsigma)
+
+      e_nl = sum(ctx%nlc_grid%weights*rho*exc)
+
+      !> Sweep two: contract the potential on the grid it was evaluated on.
+      allocate (vtau_none(0))
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
+         nb = g1 - g0 + 1
+         call eval_ao_block(mol, ctx%nlc_grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+         if (error%has_error()) return
+         if (allocated(grad_coeff)) deallocate (grad_coeff)
+         allocate (grad_coeff(nb, 3))
+         !> dE/d(grad rho) = 2 vsigma grad rho, the same chain rule the
+         !> semilocal path applies, so the two cannot disagree about it.
+         do id = 1, 3
+            do ig = 1, nb
+               grad_coeff(ig, id) = 2.0_dp*vsigma(g0 + ig - 1)*rho_grad(g0 + ig - 1, id)
+            end do
+         end do
+         call accumulate_xc_matrix(ctx%nlc_grid%weights(g0:g1), ao, vrho(g0:g1), &
+                                   v_nl, ao_grad=ao_grad, grad_coeff=grad_coeff, &
+                                   vtau=vtau_none, any_gga=.true., any_mgga=.false.)
+      end do
+   end subroutine vv10_add_potential
 
    subroutine accumulate_xc_matrix(weights, ao, vrho, v, ao_grad, grad_coeff, vtau, &
                                    any_gga, any_mgga)
