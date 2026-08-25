@@ -207,6 +207,22 @@ jobs:
           conda list -n mqc "hdf5|h5py"
           python3 -c "import h5py; print('h5py', h5py.__version__, 'links HDF5', h5py.version.hdf5_version)"
 
+      # The one check the Fortran suite cannot make. A block written under the
+      # wrong declared shape holds the right bytes and round trips through our
+      # own bindings exactly, so every Fortran assertion passes and the file is
+      # a different tensor to h5py, h5dump and anything else. Being readable by
+      # something that is not Fortran is the whole reason this data is in HDF5,
+      # so it is checked by something that is not Fortran.
+      - name: Check the amplitude file's on-disk layout
+        if: matrix.hdf5
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          cmake --build build --target check_amplitude_layout --parallel 2
+          cd validation
+          ../build/check_amplitude_layout
+          python3 check_amplitude_layout.py
+
       - name: Run unit tests
         shell: bash -el {0}
         run: |

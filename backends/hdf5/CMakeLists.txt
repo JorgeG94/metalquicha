@@ -14,5 +14,6 @@
 # to say it fails in Python rather than in CMake.
 #
 # Pulled in by the top-level CMakeLists when MQC_ENABLE_HDF5 is ON.
-target_sources(${main_lib} PRIVATE mqc_hdf5_bindings.f90
-                                   mqc_hdf5_checkpoint.f90)
+target_sources(
+  ${main_lib} PRIVATE mqc_hdf5_bindings.f90 mqc_hdf5_checkpoint.f90
+                      mqc_hdf5_amplitudes.f90)
