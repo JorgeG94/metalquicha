@@ -74,6 +74,58 @@ On water, with an HF/STO-3G refinement, that split measured **1,432 mqc calls
 against roughly 56,000 gradients in total**. The ratio is what makes ab initio
 refinement affordable at all.
 
+How often refinement runs
+=========================
+
+.. important::
+
+   The refinement level is applied after **every** optimization-and-sorting
+   cycle, not once at the end. On the water deck above that is six passes, and
+   it is why a molecule with a single conformer still costs 1,432 refinement
+   calculations rather than one.
+
+CREST's iMTD-GC workflow is a loop: metadynamics, optimize every snapshot,
+CREGEN sorting, regular MDs on the survivors, genetic crossing, repeat until no
+new lowest conformer appears. Anything registered through ``env%addrefine``
+runs inside that loop, re-ranking the whole surviving set each time round.
+
+At semiempirical or small-basis cost that is invisible. At RI-MP2 or DFT on a
+real molecule it is the difference between an afternoon and a week, and it is
+the first thing to look at if a run is taking longer than expected. There is
+currently no deck keyword to move refinement to the end; changing it means
+registering a different ``refine`` stage, which is a code change.
+
+What a refinement call costs
+============================
+
+Each call is an **energy**, not a gradient. CREST re-ranks with the energy and
+never reads the gradient at this stage, and an RI-MP2 gradient is several times
+its energy -- so asking for one would be most of the cost of the thing you
+actually want. The gradient handed back is zero.
+
+Measured on the water deck, three runs of the same input:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 46 18 36
+
+   * - Configuration
+     - Wall time
+     - Refinement
+   * - sampling only, no refinement level
+     - 18.9 s
+     - --
+   * - refinement asking for gradients, writing JSON per call
+     - 26.7 s
+     - 7.8 s, 5.4 ms/call
+   * - refinement asking for energies, no per-call output
+     - 20.6 s
+     - 1.7 s, 1.2 ms/call
+
+At this size refinement is **not** the bottleneck -- the sampling is 92% of the
+run. That inverts completely with an ab initio method, which is the case the
+split exists for.
+
 Building
 ========
 
