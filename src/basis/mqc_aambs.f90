@@ -170,10 +170,15 @@ contains
       !! Locate `aambs/aambs.json` on the basis search path
       !!
       !! In a subdirectory rather than beside the other basis sets, and
-      !! deliberately: `mqc_extract_basis_sets` deletes any `basis_sets/*.json`
-      !! that `MQC_BASIS_SETS` does not name, and this file is tracked rather
-      !! than extracted from the Basis Set Exchange bundle. The subdirectory is
-      !! what keeps a configure from removing it.
+      !! deliberately: `mqc_extract_basis_sets` deletes any `*.json` under
+      !! `basis_sets/` that `MQC_BASIS_SETS` does not name, and this file is
+      !! tracked rather than extracted from the Basis Set Exchange bundle. The
+      !! subdirectory is what keeps a configure from removing it.
+      !!
+      !! The glob is written `*.json` under `basis_sets/` rather than the
+      !! obvious way round because CMake's Ninja generator preprocesses every
+      !! Fortran source to scan module dependencies, and `cpp` reads a literal
+      !! slash-star as the start of a C comment that never closes.
       character(len=:), allocatable, intent(out) :: filename
       type(error_t), intent(out) :: error
 
