@@ -43,9 +43,59 @@ contains
                   new_unittest("refuses_an_open_shell_neutral", refuses_an_open_shell_neutral), &
                   new_unittest("values_have_not_drifted", values_have_not_drifted), &
                   new_unittest("the_ions_feel_the_solvent", the_ions_feel_the_solvent), &
-                  new_unittest("the_global_descriptors_agree", the_global_descriptors_agree) &
+                  new_unittest("the_global_descriptors_agree", the_global_descriptors_agree), &
+                  new_unittest("the_ions_start_from_the_neutral", the_ions_start_from_the_neutral) &
                   ]
    end subroutine collect_mqc_fukui_tests
+
+   subroutine the_ions_start_from_the_neutral(error)
+      !! The neutral's orbitals are a guess for its own ions, and get used
+      !!
+      !! A Fukui run solves the neutral first and then two ions that differ from
+      !! it by one electron. The converged neutral is therefore the best guess
+      !! available for both, and it is already in the routine's hands. Before
+      !! this it was used only to condense charges: the ions fell through to the
+      !! unrestricted default, Wolfsberg-Helmholz, which carries no two-electron
+      !! information at all and starts the anion nearly two Hartree above its own
+      !! answer.
+      !!
+      !! Pinned as a comparison rather than against a fixed iteration count,
+      !! since the count depends on the basis, the tolerances and DIIS, and a
+      !! magic number here would be re-tuned rather than believed. What must
+      !! hold is the direction: seeded is cheaper, and never lands higher.
+      type(error_type), allocatable, intent(out) :: error
+      type(fukui_result_t) :: bare, seeded
+      type(error_t) :: err
+      logical :: ok
+
+      call water_fukui("mulliken", bare, err, ok)
+      call check(error, ok, "the unseeded Fukui run failed")
+      if (allocated(error)) return
+      call water_fukui("mulliken", seeded, err, ok, seed=.true.)
+      call check(error, ok, "the seeded Fukui run failed")
+      if (allocated(error)) return
+
+      call check(error, seeded%iterations_anion < bare%iterations_anion, &
+                 "seeding the anion from the neutral did not save an iteration")
+      if (allocated(error)) return
+      call check(error, seeded%iterations_cation <= bare%iterations_cation, &
+                 "seeding made the cation worse")
+      if (allocated(error)) return
+
+      ! Never *worse*, rather than identical. On water/6-31g the two runs agree
+      ! to 1e-12, but this test is in STO-3G, where the anion is a minimal-basis
+      ! anion with nowhere to put the extra electron: it has more than one SCF
+      ! solution and the guess decides which one is found. Seeding finds the
+      ! lower of the two by 0.13 Hartree. That is the guess doing its job -- a
+      ! variational method that lands lower has landed better -- but it means
+      ! "the answer does not move" is the wrong invariant to pin. What must hold
+      ! is that a better starting point never buys a worse stationary point.
+      call check(error, seeded%energy_anion <= bare%energy_anion + 1.0e-10_dp, &
+                 "the seeded anion converged above the unseeded one")
+      if (allocated(error)) return
+      call check(error, seeded%energy_cation <= bare%energy_cation + 1.0e-10_dp, &
+                 "the seeded cation converged above the unseeded one")
+   end subroutine the_ions_start_from_the_neutral
 
    subroutine the_ions_feel_the_solvent(error)
       !! A continuum reaches all three states, not only the neutral
@@ -139,7 +189,7 @@ contains
                  more="the electrophilicity is not mu^2 / 2 eta")
    end subroutine the_global_descriptors_agree
 
-   subroutine water_fukui(scheme, res, err, ok, solvate)
+   subroutine water_fukui(scheme, res, err, ok, solvate, seed)
       !! Converge water and run the analysis on it
       character(len=*), intent(in) :: scheme
       type(fukui_result_t), intent(out) :: res
@@ -147,11 +197,16 @@ contains
       logical, intent(out) :: ok
       logical, intent(in), optional :: solvate
          !! Build a C-PCM water continuum and hand it to all three states.
+      logical, intent(in), optional :: seed
+         !! Hand the neutral's orbitals over, so the ions start from them.
+         !! Absent is the old behaviour, where they fall back to GWH -- which
+         !! is what makes the two runs comparable in the test below.
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(pcm_context_t) :: pcm_ctx
       type(pcm_config_t) :: pcm_cfg
+      real(dp), allocatable :: orbs(:, :)
       logical :: wet
 
       ok = .false.
@@ -181,8 +236,15 @@ contains
          call mol%destroy()
          return
       end if
+      ! `orbs` stays unallocated when not seeding, and an unallocated
+      ! allocatable is absent at an optional dummy -- so one call site serves
+      ! both the seeded path and the bare one.
+      if (present(seed)) then
+         if (seed) orbs = scf%orbitals
+      end if
       call fukui_indices(mol, 10, 1, scf%density, scf%energy, scheme, 100, &
-                         1.0e-10_dp, 1.0e-8_dp, res, err, pcm=pcm_ctx)
+                         1.0e-10_dp, 1.0e-8_dp, res, err, pcm=pcm_ctx, &
+                         neutral_orbitals=orbs)
       call mol%destroy()
       ok = .not. err%has_error()
    end subroutine water_fukui

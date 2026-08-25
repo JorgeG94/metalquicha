@@ -30,7 +30,9 @@ module mqc_libcint_fukui
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t
    use mqc_libcint_pcm, only: pcm_context_t
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_uhf
+   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_uhf, &
+                              SCF_GUESS_GWH, SCF_GUESS_SAD
+   use mqc_scf_common, only: build_density_spin
    use mqc_libcint_charges, only: mulliken_charges, chelpg_charges
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2, &
@@ -77,6 +79,13 @@ module mqc_libcint_fukui
       real(dp) :: chemical_potential = 0.0_dp     !! -(IP + EA)/2
       real(dp) :: hardness = 0.0_dp               !! (IP - EA)/2
       real(dp) :: electrophilicity = 0.0_dp       !! mu^2 / 2 eta
+      integer :: iterations_anion = 0
+      integer :: iterations_cation = 0
+         !! What each ion SCF cost. Reported because the ions are the two states
+         !! that misbehave, and because the guess they start from is otherwise
+         !! invisible: a regression that dropped the neutral seed would still
+         !! give the right energies, just slowly, and nothing else here would
+         !! notice.
       logical :: anion_bound = .true.
          !! Whether `E(N+1)` came out below `E(N)`. When it did not, nothing
          !! bound the extra electron and `f+` describes whatever orbital was
@@ -176,6 +185,9 @@ contains
 
       type(rhf_result_t) :: anion, cation
       real(dp), allocatable :: overlap(:, :), total(:, :)
+      real(dp), allocatable :: d_guess_a(:, :), d_guess_b(:, :)
+      integer :: n_ao, n_occ_neutral, guess_kind
+      logical :: seeded
       logical :: loud
       integer :: natm
       type(xc_context_t), target :: xc_ions
@@ -281,12 +293,50 @@ contains
       ! silently meant the report could say the affinity was negative while
       ! the evidence for why -- the iterations it took, the energy it settled
       ! on, <S^2> for the doublet -- was never printed.
+      ! Both ions start from the neutral, which is the whole reason the neutral
+      ! is solved first. Without this they fell through to the unrestricted
+      ! default, Wolfsberg-Helmholz -- a one-electron guess with no two-electron
+      ! information in it at all -- while the converged neutral density sat in
+      ! this routine's own argument list, used only to condense charges. On
+      ! water/6-31g that started the anion 1.94 Hartree above its own answer and
+      ! spent five iterations climbing back; the first density change was 3.1e-1
+      ! against the neutral's 3.0e-2.
+      !
+      ! Each ion is seeded at *its own* occupation rather than from the neutral
+      ! density halved. The neutral is closed shell, so its orbitals are a fine
+      ! basis for both ions, and filling them Aufbau for a doublet gives the
+      ! anion (n/2 + 1, n/2) and the cation (n/2, n/2 - 1) -- the right electron
+      ! count and the right spin, where a halved density has neither.
+      !
+      ! `d_guess_a` and `d_guess_b` stay unallocated when there are no orbitals
+      ! to seed from, and an unallocated allocatable actual argument is *absent*
+      ! at an optional non-allocatable dummy (F2018 15.5.2.13). That is what
+      ! makes one call site serve both paths: `guess_kind` falls back to GWH and
+      ! the two densities vanish from the call, which is exactly the old
+      ! behaviour rather than an error.
+      n_ao = size(neutral_density, 1)
+      n_occ_neutral = nelec/2
+      guess_kind = SCF_GUESS_GWH
+      seeded = present(neutral_orbitals)
+      if (seeded) seeded = size(neutral_orbitals, 1) == n_ao .and. &
+                           size(neutral_orbitals, 2) >= n_occ_neutral + 1
+      if (seeded) then
+         guess_kind = SCF_GUESS_SAD
+         allocate (d_guess_a(n_ao, n_ao), d_guess_b(n_ao, n_ao))
+      end if
+
       if (loud) then
          call logger%info("")
          call logger%info("  Fukui: anion SCF, N+1 electrons")
       end if
+      if (seeded) then
+         call build_density_spin(neutral_orbitals, n_occ_neutral + 1, d_guess_a)
+         call build_density_spin(neutral_orbitals, n_occ_neutral, d_guess_b)
+      end if
       call run_libcint_uhf(mol, nelec + 1, 2, max_iter, energy_tol, density_tol, &
-                           loud, anion, error, xc=xc_arg, pcm=pcm)
+                           loud, anion, error, xc=xc_arg, pcm=pcm, &
+                           guess=guess_kind, guess_density_alpha=d_guess_a, &
+                           guess_density_beta=d_guess_b)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the anion")
          return
@@ -310,6 +360,7 @@ contains
          e_pt2_anion = pt2*e_pt2_anion
       end if
       res%energy_anion = anion%energy + e_pt2_anion
+      res%iterations_anion = anion%iterations
       deallocate (total)
 
       ! The cation.
@@ -317,8 +368,14 @@ contains
          call logger%info("")
          call logger%info("  Fukui: cation SCF, N-1 electrons")
       end if
+      if (seeded) then
+         call build_density_spin(neutral_orbitals, n_occ_neutral, d_guess_a)
+         call build_density_spin(neutral_orbitals, n_occ_neutral - 1, d_guess_b)
+      end if
       call run_libcint_uhf(mol, nelec - 1, 2, max_iter, energy_tol, density_tol, &
-                           loud, cation, error, xc=xc_arg, pcm=pcm)
+                           loud, cation, error, xc=xc_arg, pcm=pcm, &
+                           guess=guess_kind, guess_density_alpha=d_guess_a, &
+                           guess_density_beta=d_guess_b)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the cation")
          return
@@ -341,6 +398,7 @@ contains
          e_pt2_cation = pt2*e_pt2_cation
       end if
       res%energy_cation = cation%energy + e_pt2_cation
+      res%iterations_cation = cation%iterations
       deallocate (total, overlap)
 
       allocate (res%f_plus(natm), res%f_minus(natm), res%f_zero(natm), res%dual(natm))
