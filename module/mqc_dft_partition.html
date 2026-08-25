@@ -142,7 +142,7 @@
             <a class="list-group-item" href="../module/mqc_dft_partition.html#variable-partition_stratmann">PARTITION_STRATMANN</a>
             <a class="list-group-item" href="../module/mqc_dft_partition.html#variable-tiny_radius">TINY_RADIUS</a>
             <a class="list-group-item" href="../module/mqc_dft_partition.html#variable-max_adjust">MAX_ADJUST</a>
-            <a class="list-group-item" href="../module/mqc_dft_partition.html#variable-n_dim~3">N_DIM</a>
+            <a class="list-group-item" href="../module/mqc_dft_partition.html#variable-n_dim~2">N_DIM</a>
             <a class="list-group-item" href="../module/mqc_dft_partition.html#variable-stratmann_a">STRATMANN_A</a>
         </div>
       </div>
@@ -703,7 +703,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_dim~3"></span>
+              <span class="anchor" id="variable-n_dim~2"></span>
               integer,
             </td>
               <td>private,</td>
@@ -767,7 +767,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~9"></span>
+              <span class="anchor" id="variable-scheme~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -997,7 +997,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-points~4"></span>
+              <span class="anchor" id="variable-points~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1013,151 +1013,6 @@ parameter
         <tr>
             <td>
               <span class="anchor" id="variable-atom_coords~4"></span>
-              real(kind=dp),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>atom_coords</strong>(:,:)</td>
-            <td>
-<p>(3, n_atoms), Bohr</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-atomic_numbers~13"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>atomic_numbers</strong>(:)</td>
-            <td>
-<p>Z per atom, for the radii</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-owner~6"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>owner</strong>(:)</td>
-            <td>
-<p>Atom each point belongs to</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-scheme~11"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>scheme</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-adjust~5"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>adjust</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-dweights"></span>
-              real(kind=dp),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>dweights</strong>(:,:,:)</td>
-            <td>
-<p>(3, n_atoms, n_points)</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-error~164"></span>
-              type(<a href='../type/error_t.html'>error_t</a>),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>error</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-becke_partition_weights"></span> <h3>public  subroutine <a href='../proc/becke_partition_weights.html'>becke_partition_weights</a>(points, atom_coords, atomic_numbers, owner, scheme, adjust, weights, error)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Partition weight at each grid point, for the atom that owns it</p><a href="../proc/becke_partition_weights.html" class="pull-right"><emph>Read more&hellip;</emph></a>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-points~3"></span>
-              real(kind=dp),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>points</strong>(:,:)</td>
-            <td>
-<p>(3, n_points), Bohr</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-atom_coords~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1202,7 +1057,152 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~10"></span>
+              <span class="anchor" id="variable-scheme~8"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scheme</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-adjust~5"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>adjust</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dweights"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dweights</strong>(:,:,:)</td>
+            <td>
+<p>(3, n_atoms, n_points)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~101"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-becke_partition_weights"></span> <h3>public  subroutine <a href='../proc/becke_partition_weights.html'>becke_partition_weights</a>(points, atom_coords, atomic_numbers, owner, scheme, adjust, weights, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Partition weight at each grid point, for the atom that owns it</p><a href="../proc/becke_partition_weights.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-points"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>points</strong>(:,:)</td>
+            <td>
+<p>(3, n_points), Bohr</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_coords~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom_coords</strong>(:,:)</td>
+            <td>
+<p>(3, n_atoms), Bohr</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atomic_numbers~11"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atomic_numbers</strong>(:)</td>
+            <td>
+<p>Z per atom, for the radii</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-owner~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>owner</strong>(:)</td>
+            <td>
+<p>Atom each point belongs to</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scheme~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1232,7 +1232,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-weights~4"></span>
+              <span class="anchor" id="variable-weights~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1247,7 +1247,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~163"></span>
+              <span class="anchor" id="variable-error~100"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1287,7 +1287,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~14"></span>
+              <span class="anchor" id="variable-atomic_numbers~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1317,7 +1317,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-shift~7"></span>
+              <span class="anchor" id="variable-shift~6"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1360,7 +1360,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-25 13:55 +0000             </p>
+ on 2026-08-25 17:27 +0000             </p>
           </div>
         </div>
         <br>

@@ -198,16 +198,16 @@ cannot end up with mismatched Coulomb and XC definitions.</p>
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
                   <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
                   <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1831,7 +1831,7 @@ production calculation should start from.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~7"></span>
+              <span class="anchor" id="variable-guess~8"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1955,7 +1955,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties~5"></span>
+              <span class="anchor" id="variable-properties~4"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
               <td>public</td>
@@ -2091,7 +2091,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~12"></span>
+              <span class="anchor" id="variable-verbose~13"></span>
               logical,
             </td>
               <td>public</td>
@@ -2141,7 +2141,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~141"></span>
+              <span class="anchor" id="variable-this~137"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2156,7 +2156,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~22"></span>
+              <span class="anchor" id="variable-fragment~35"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2211,7 +2211,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~143"></span>
+              <span class="anchor" id="variable-this~139"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2226,7 +2226,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~24"></span>
+              <span class="anchor" id="variable-fragment~37"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2281,7 +2281,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~144"></span>
+              <span class="anchor" id="variable-this~140"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2296,7 +2296,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~25"></span>
+              <span class="anchor" id="variable-fragment~38"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2351,7 +2351,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~142"></span>
+              <span class="anchor" id="variable-this~138"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2366,7 +2366,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~23"></span>
+              <span class="anchor" id="variable-fragment~36"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2439,7 +2439,7 @@ backend ignores it, which <code>run_cuest_scf</code>&rsquo;s stub makes visible.
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-25 13:55 +0000             </p>
+ on 2026-08-25 17:27 +0000             </p>
           </div>
         </div>
         <br>
