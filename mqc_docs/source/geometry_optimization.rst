@@ -275,6 +275,10 @@ All optional. Everything under ``keywords.optimization``:
      - engine
      - ``none``, ``powell``, ``bofill`` or ``auto``. Only the algorithms that
        hold a Hessian read it
+   * - ``target``
+     - ``minimum``
+     - ``minimum`` or ``saddle``. What the run is looking for, which decides
+       how ``hess_end`` reads its own result. See :ref:`saddle-search`
    * - ``frozen_atoms``
      - none
      - 0-based indices held at their input position. See :ref:`opt-constraints`
@@ -354,11 +358,63 @@ and an update thereafter, rather than a fresh one per step. ``bofill`` is the
 usual choice for a saddle point, because it does not assume the matrix is
 positive definite -- which at a transition state it is not.
 
+.. _saddle-search:
+
+Saying that a saddle is what you want
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 A P-RFO run converges on the same gradient criterion as a minimisation, so it
-tells you it found a stationary point and not what kind. Confirm it the same way
-you would a minimum, with a Hessian: exactly one imaginary frequency is a
-first-order saddle, and the mode it belongs to should be the one along the
-reaction coordinate.
+tells you it found a stationary point and not what kind. ``target`` says which
+kind was wanted, and ``hess_end`` then reads its own result against that::
+
+    "keywords": {
+      "optimization": {
+        "algorithm": "prfo",
+        "hessian_update": "bofill",
+        "coordinates": "dlc",
+        "target": "saddle",
+        "hess_end": true
+      }
+    }
+
+The curvature test does not change; which count is a pass does. With
+``target: "saddle"`` one imaginary frequency is success and is reported as
+such, no imaginary frequencies means the search fell off the ridge into a
+basin, and two or more means a higher-order stationary point that is not a
+transition state. With the default ``target: "minimum"`` those readings invert,
+which is the behaviour every existing deck already has.
+
+On success the imaginary mode is broken down by atom::
+
+    one imaginary frequency, 1245.77 cm-1: this is a first-order saddle point
+    the imaginary mode moves, most to least:
+       atom 3 H   85.7% of the motion
+       atom 2 C    7.7% of the motion
+       atom 1 N    6.6% of the motion
+
+That is the check no frequency count can make for you. One imaginary frequency
+proves a first-order saddle; it does not prove it is *your* saddle. A molecule
+has more than one and P-RFO finds whichever is nearest the guess, so the
+question is whether the mode moves the atoms whose bond is being made or
+broken. Above, on the ``HCN`` to ``HNC`` isomerisation, the hydrogen carries 86%
+of the motion, which is the transfer.
+
+``target: "saddle"`` is refused with a downhill algorithm. Steepest descent,
+conjugate gradient and L-BFGS will report a minimum however the target is
+spelled, so the combination is a deck that cannot be satisfied rather than one
+that is satisfied slowly; use ``prfo``, or ``nr`` from a guess already near the
+ridge.
+
+.. warning::
+
+   Do not run a saddle search in Cartesian coordinates. P-RFO maximises along
+   the lowest Hessian eigenvalue, and in Cartesians the lowest six modes are
+   translations and rotations -- so it follows a rotation instead of the
+   reaction mode and wanders. On the ``HCN``/``HNC`` saddle, from the same guess
+   and the same analytic Hessian, ``cartesian`` and ``hdlc`` both ran 60 steps
+   without converging while ``dlc`` converged in four. A deck that asks for both
+   is warned; use ``dlc``, or ``hdlc`` for a cluster where plain DLC has no
+   bonds to span the fragments.
 
 .. _opt-constraints:
 

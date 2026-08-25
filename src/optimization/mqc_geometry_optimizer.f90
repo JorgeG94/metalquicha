@@ -44,6 +44,16 @@ module mqc_geometry_optimizer
                                       write_trajectory_xyz
    use mqc_frag_utils, only: generate_mbe_term_list
    implicit none
+
+   real(dp), parameter :: ZERO_FREQ_CM = 10.0_dp
+      !! Below this a mode is translation or rotation rather than a vibration,
+      !! and the same number the analysis prints its own summary against.
+   integer, parameter :: MAX_REACTION_MODE_ATOMS = 6
+      !! How many atoms of the imaginary mode to name. A reaction coordinate is
+      !! carried by a few atoms; listing all of them buries the few.
+   real(dp), parameter :: REACTION_MODE_FLOOR = 0.02_dp
+      !! Stop listing once an atom carries under 2% of the motion.
+   integer, parameter :: LINE_LEN = 256
    private
 
    public :: run_geometry_optimization
@@ -274,7 +284,7 @@ contains
             ! not the minimum, and reporting it beside a "did not converge"
             ! line invites it to be read as the minimum's.
             if (config%optimization%hess_end .and. converged .and. .not. error%has_error()) then
-               call run_final_hessian(sys_geom)
+               call run_final_hessian(sys_geom, config%optimization%target)
             end if
             if (.not. converged .and. .not. error%has_error()) then
                call error%set(ERROR_GENERIC, &
@@ -638,7 +648,7 @@ contains
                    .and. .not. config%method_config%scf%unrestricted
    end function is_restricted_hf
 
-   subroutine run_final_hessian(sys_geom)
+   subroutine run_final_hessian(sys_geom, target)
       !! A Hessian at the converged geometry, and the verdict it settles
       !!
       !! **What this is for.** A minimiser stops on the gradient, and a
@@ -656,11 +666,11 @@ contains
       !! written `output_<name>.json` and rewriting it here would replace that
       !! document with a different one after the fact.
       use mqc_vibrational_analysis, only: compute_vibrational_analysis
+      use mqc_optimizer_types, only: OPT_TARGET_SADDLE
       type(system_geometry_t), intent(in) :: sys_geom
-
-      !! Below this a mode is translation or rotation rather than a vibration,
-      !! and the same number the analysis prints its own summary against.
-      real(dp), parameter :: ZERO_FREQ_CM = 10.0_dp
+      integer, intent(in) :: target
+         !! What was being looked for. The curvature test is the same either
+         !! way; which count is the pass is not.
 
       type(calculation_result_t) :: result
       type(driver_config_t) :: hess_config
@@ -714,18 +724,107 @@ contains
          end if
       end do
 
-      if (n_imag == 0) then
-         call logger%info("  no imaginary frequencies: this is a minimum")
-      else if (n_imag == 1) then
-         call logger%warning("  one imaginary frequency, "//to_char(abs(worst))// &
-                             " cm-1: this is a first-order saddle point, not a minimum")
+      ! The same three cases, read against what was asked for. A first-order
+      ! saddle is the failure when a minimum was wanted and the success when it
+      ! was not, so the branch that changes is which one is logged as a warning.
+      if (target == OPT_TARGET_SADDLE) then
+         if (n_imag == 1) then
+            call logger%info("  one imaginary frequency, "//to_char(abs(worst))// &
+                             " cm-1: this is a first-order saddle point")
+            call report_reaction_mode(frequencies, cart_disp, sys_geom)
+         else if (n_imag == 0) then
+            call logger%warning("  no imaginary frequencies: this is a minimum, not a "// &
+                                "saddle. The search fell off the ridge -- start closer "// &
+                                "to the barrier, or use a path method to find a guess.")
+         else
+            call logger%warning("  "//to_char(n_imag)//" imaginary frequencies, the largest "// &
+                                to_char(abs(worst))//" cm-1: this is a stationary point of "// &
+                                "order "//to_char(n_imag)//", not a transition state")
+         end if
       else
-         call logger%warning("  "//to_char(n_imag)//" imaginary frequencies, the largest "// &
-                             to_char(abs(worst))//" cm-1: this is not a minimum")
+         if (n_imag == 0) then
+            call logger%info("  no imaginary frequencies: this is a minimum")
+         else if (n_imag == 1) then
+            call logger%warning("  one imaginary frequency, "//to_char(abs(worst))// &
+                                " cm-1: this is a first-order saddle point, not a minimum")
+         else
+            call logger%warning("  "//to_char(n_imag)//" imaginary frequencies, the largest "// &
+                                to_char(abs(worst))//" cm-1: this is not a minimum")
+         end if
       end if
       call logger%info(" ")
 
    end subroutine run_final_hessian
+
+   subroutine report_reaction_mode(frequencies, cart_disp, sys_geom)
+      !! Name the atoms the imaginary mode actually moves
+      !!
+      !! One imaginary frequency proves a first-order saddle. It does not prove
+      !! it is the saddle anybody wanted: the same molecule has more than one,
+      !! and P-RFO finds whichever is nearest the guess. What separates them is
+      !! which atoms move along the mode, and that is a chemist's judgement made
+      !! on a handful of numbers -- so the numbers are printed rather than left
+      !! in an eigenvector nothing displays.
+      !!
+      !! Displacements are ranked by the norm of each atom's own three
+      !! components, and the list stops once the remaining atoms carry little
+      !! enough to be noise. A transition state whose largest displacements are
+      !! not on the bond being made or broken is the wrong one, and that is
+      !! visible in three lines.
+      real(dp), intent(in) :: frequencies(:)
+      real(dp), intent(in) :: cart_disp(:, :)
+         !! `(3N, mode)`, Cartesian, one column per mode
+      type(system_geometry_t), intent(in) :: sys_geom
+
+      real(dp), allocatable :: amplitude(:)
+      integer, allocatable :: order(:)
+      integer :: n_atoms, k, imode, i, j, swap
+      real(dp) :: total
+      character(len=LINE_LEN) :: line
+
+      imode = 0
+      do k = 1, size(frequencies)
+         if (frequencies(k) < -ZERO_FREQ_CM) then
+            imode = k
+            exit
+         end if
+      end do
+      if (imode == 0) return
+      if (size(cart_disp, 2) < imode) return
+
+      n_atoms = size(sys_geom%element_numbers)
+      if (size(cart_disp, 1) < 3*n_atoms) return
+
+      allocate (amplitude(n_atoms), order(n_atoms))
+      do i = 1, n_atoms
+         amplitude(i) = norm2(cart_disp(3*i - 2:3*i, imode))
+         order(i) = i
+      end do
+      total = sum(amplitude)
+      if (total <= 0.0_dp) return
+
+      ! A selection sort over the atom count, which is the right algorithm here:
+      ! this runs once per optimization and the list printed is a handful long.
+      do i = 1, n_atoms - 1
+         do j = i + 1, n_atoms
+            if (amplitude(order(j)) > amplitude(order(i))) then
+               swap = order(i)
+               order(i) = order(j)
+               order(j) = swap
+            end if
+         end do
+      end do
+
+      call logger%info("  the imaginary mode moves, most to least:")
+      do k = 1, min(n_atoms, MAX_REACTION_MODE_ATOMS)
+         i = order(k)
+         if (amplitude(i)/total < REACTION_MODE_FLOOR) exit
+         write (line, "(a,i0,a,a,a,f5.1,a)") "     atom ", i, " ", &
+            trim(element_number_to_symbol(sys_geom%element_numbers(i))), &
+            "  ", 100.0_dp*amplitude(i)/total, "% of the motion"
+         call logger%info(trim(line))
+      end do
+   end subroutine report_reaction_mode
 
    subroutine record_step(n_atoms, coords, energy)
       !! Keep one accepted geometry, growing the trajectory to fit

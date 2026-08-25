@@ -10,9 +10,11 @@ module mqc_config_adapter
    use mqc_calculation_keywords, only: hessian_keywords_t, aimd_keywords_t, scf_keywords_t
    use mqc_optimizer_types, only: optimizer_settings_t, &
                                   coordinates_from_string, algorithm_from_string, &
-                                  hessian_update_from_string, &
+                                  hessian_update_from_string, target_from_string, &
                                   OPT_COORDS_UNKNOWN, OPT_ALGO_UNKNOWN, &
-                                  OPT_HESSIAN_UPDATE_ENGINE
+                                  OPT_HESSIAN_UPDATE_ENGINE, OPT_TARGET_MINIMUM, &
+                                  OPT_TARGET_SADDLE, OPT_COORDS_CARTESIAN, &
+                                  algorithm_to_string, algorithm_finds_saddle
    use mqc_method_config, only: method_config_t
    use mqc_method_types, only: METHOD_TYPE_CCSD_T, METHOD_TYPE_GFN1, &
                                METHOD_TYPE_GFN2, METHOD_TYPE_EFP2
@@ -440,6 +442,50 @@ contains
                               "'. Use none, powell, bofill or auto.")
             end if
             return
+         end if
+      end if
+
+      if (allocated(mqc_config%opt_target)) then
+         driver_config%optimization%target = target_from_string(mqc_config%opt_target)
+         if (driver_config%optimization%target < OPT_TARGET_MINIMUM) then
+            if (present(error)) then
+               call error%set(ERROR_VALIDATION, &
+                              "Unknown keywords.optimization.target: '"// &
+                              trim(mqc_config%opt_target)// &
+                              "'. Use minimum or saddle.")
+            end if
+            return
+         end if
+      end if
+
+      ! A saddle is not something every algorithm can look for. Steepest
+      ! descent and the quasi-Newton minimisers go downhill by construction and
+      ! will report a minimum however the target is spelled, so asking them for
+      ! a saddle is a deck that cannot be satisfied rather than one that will
+      ! be satisfied slowly. Refused rather than silently switched: choosing an
+      ! optimizer on the user's behalf is how a run ends up being something
+      ! other than what was asked for.
+      if (driver_config%optimization%target == OPT_TARGET_SADDLE) then
+         if (.not. algorithm_finds_saddle(driver_config%optimization%algorithm)) then
+            if (present(error)) then
+               call error%set(ERROR_VALIDATION, &
+                              "keywords.optimization.target is 'saddle' but the algorithm is '"// &
+                              algorithm_to_string(driver_config%optimization%algorithm)// &
+                              "', which descends to a minimum. Use prfo, which "// &
+                              "maximises along one mode and minimises along the rest, or nr.")
+            end if
+            return
+         end if
+         ! Cartesian P-RFO maximises along the lowest eigenvalue, and in
+         ! Cartesian coordinates the lowest six are translations and rotations.
+         ! It follows one of those instead of the reaction mode and wanders. On
+         ! the HCN-HNC saddle that is 60 steps without converging in Cartesians
+         ! and four in DLC, from the same guess and the same Hessian.
+         if (driver_config%optimization%coordinates == OPT_COORDS_CARTESIAN) then
+            call logger%warning("  keywords.optimization: a saddle search in Cartesian "// &
+                                "coordinates follows a rotation, not the reaction mode.")
+            call logger%warning("     Use coordinates 'dlc' (or 'hdlc' for a cluster) "// &
+                                "unless you have a reason not to.")
          end if
       end if
 
