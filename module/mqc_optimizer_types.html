@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.4% of total for modules and submodules.">338 statements</a>
+                 title=" 1.5% of total for modules and submodules.">370 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -164,6 +164,8 @@
             <a class="list-group-item" href="../module/mqc_optimizer_types.html#variable-opt_hessian_update_powell">OPT_HESSIAN_UPDATE_POWELL</a>
             <a class="list-group-item" href="../module/mqc_optimizer_types.html#variable-opt_target_minimum">OPT_TARGET_MINIMUM</a>
             <a class="list-group-item" href="../module/mqc_optimizer_types.html#variable-opt_target_saddle">OPT_TARGET_SADDLE</a>
+            <a class="list-group-item" href="../module/mqc_optimizer_types.html#variable-saddle_method_dimer">SADDLE_METHOD_DIMER</a>
+            <a class="list-group-item" href="../module/mqc_optimizer_types.html#variable-saddle_method_prfo">SADDLE_METHOD_PRFO</a>
         </div>
       </div>
     </div>
@@ -221,6 +223,8 @@
             <a class="list-group-item" href="../module/mqc_optimizer_types.html#proc-hessian_update_to_string">hessian_update_to_string</a>
             <a class="list-group-item" href="../module/mqc_optimizer_types.html#proc-neb_ends_from_string">neb_ends_from_string</a>
             <a class="list-group-item" href="../module/mqc_optimizer_types.html#proc-neb_ends_to_string">neb_ends_to_string</a>
+            <a class="list-group-item" href="../module/mqc_optimizer_types.html#proc-saddle_method_from_string">saddle_method_from_string</a>
+            <a class="list-group-item" href="../module/mqc_optimizer_types.html#proc-saddle_method_to_string">saddle_method_to_string</a>
             <a class="list-group-item" href="../module/mqc_optimizer_types.html#proc-target_from_string">target_from_string</a>
             <a class="list-group-item" href="../module/mqc_optimizer_types.html#proc-target_to_string">target_to_string</a>
             <a class="list-group-item" href="../module/mqc_optimizer_types.html#proc-lowercase">lowercase</a>
@@ -1113,18 +1117,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff7f00" stroke-dasharray="5,2" d="M943.14,-403.42C897.48,-407.03 807.25,-414.18 752.36,-418.53"/>
 <polygon fill="#ff7f00" stroke="#ff7f00" points="751.9,-415.06 742.2,-419.34 752.45,-422.04 751.9,-415.06"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_optimizer_types~~UsedByGraph_node44" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_optimizer_types~~UsedByGraph_node44"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_optimizer_types~~UsedByGraph_node44"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1011.5,-539.17 933.5,-539.17 933.5,-515.17 1011.5,-515.17 1011.5,-539.17"/>
 <text text-anchor="middle" x="972.5" y="-524.77" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_optimizer_types~~UsedByGraph_edge26" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ff7f00" stroke-dasharray="5,2" d="M933.35,-527.68C910.49,-526.22 881.9,-521.08 861,-506.17 834.75,-487.44 851.37,-461.74 825,-443.17 804.02,-428.39 775.89,-422.96 752.31,-421.31"/>
 <polygon fill="#ff7f00" stroke="#ff7f00" points="752.33,-417.81 742.17,-420.81 751.99,-424.8 752.33,-417.81"/>
 </g>
@@ -1774,6 +1778,43 @@ means the search fell off the ridge into a basin; two or more means it
 is a higher-order stationary point and not a transition state.</p>
             </td>
         </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-saddle_method_dimer"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>SADDLE_METHOD_DIMER</strong></td>
+<td> =</td>
+                <td>1</td>
+            <td>
+                <p>Two images a short distance apart, rotated to find the softest
+direction and translated with the force along it inverted. Never forms
+a Hessian at all, which is the point: on a system where the analytic
+Hessian is the bottleneck, this is the method that runs.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-saddle_method_prfo"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>SADDLE_METHOD_PRFO</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>Follow a Hessian eigenvector uphill. Needs curvature, and pays for it.</p>
+            </td>
+        </tr>
     </tbody>
   </table>
 
@@ -1818,7 +1859,7 @@ perfectly plausible small gradient.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~24"></span>
+              <span class="anchor" id="variable-n_atoms~28"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1833,7 +1874,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~8"></span>
+              <span class="anchor" id="variable-coords~10"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1848,7 +1889,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~14"></span>
+              <span class="anchor" id="variable-energy~9"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1863,7 +1904,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~9"></span>
+              <span class="anchor" id="variable-gradient~7"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1878,7 +1919,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~25"></span>
+              <span class="anchor" id="variable-status~16"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1933,7 +1974,7 @@ there is nothing here a caller could not recover from.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~23"></span>
+              <span class="anchor" id="variable-n_atoms~27"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1948,7 +1989,7 @@ there is nothing here a caller could not recover from.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~7"></span>
+              <span class="anchor" id="variable-coords~9"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1978,7 +2019,7 @@ there is nothing here a caller could not recover from.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~24"></span>
+              <span class="anchor" id="variable-status~15"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2029,7 +2070,7 @@ document) is not the engine&rsquo;s business.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~25"></span>
+              <span class="anchor" id="variable-n_atoms~29"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2044,7 +2085,7 @@ document) is not the engine&rsquo;s business.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~9"></span>
+              <span class="anchor" id="variable-coords~11"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2059,7 +2100,7 @@ document) is not the engine&rsquo;s business.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~15"></span>
+              <span class="anchor" id="variable-energy~10"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2110,7 +2151,7 @@ document) is not the engine&rsquo;s business.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atoms~2"></span>
+              <span class="anchor" id="variable-atoms~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2127,7 +2168,7 @@ document) is not the engine&rsquo;s business.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-kind"></span>
+              <span class="anchor" id="variable-kind~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2176,7 +2217,7 @@ document) is not the engine&rsquo;s business.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-algorithm"></span>
+              <span class="anchor" id="variable-algorithm~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2211,7 +2252,7 @@ system to hold them in &ndash; see <code>mqc_dlfind_bridge</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates"></span>
+              <span class="anchor" id="variable-coordinates~15"></span>
               integer,
             </td>
               <td>public</td>
@@ -2228,7 +2269,61 @@ system to hold them in &ndash; see <code>mqc_dlfind_bridge</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-endpoint~2"></span>
+              <span class="anchor" id="variable-dimer_max_rotations"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dimer_max_rotations</strong></td>
+<td> =</td>
+                <td>-1</td>
+            <td>
+<p>Rotation steps per translation step. Negative is the engine default.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dimer_rotation_tolerance"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dimer_rotation_tolerance</strong></td>
+<td> =</td>
+                <td>-1.0_dp</td>
+            <td>
+<p>Stop rotating once the angle falls below this. Negative is the
+engine default.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dimer_separation"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dimer_separation</strong></td>
+<td> =</td>
+                <td>-1.0_dp</td>
+            <td>
+<p>Distance between the two dimer images, Bohr. Negative is the engine
+default. Small enough to sample curvature, large enough that the
+gradient difference is not noise.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-endpoint~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2356,7 +2451,7 @@ so a frozen pair contributes no coordinates at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient_tolerance"></span>
+              <span class="anchor" id="variable-gradient_tolerance~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2531,6 +2626,23 @@ the engine default.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-saddle_method"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>saddle_method</strong></td>
+<td> =</td>
+                <td>SADDLE_METHOD_PRFO</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-target"></span>
               integer,
             </td>
@@ -2566,7 +2678,7 @@ Independent of <code>algorithm</code> on purpose &ndash; see <code>OPT_TARGET_SA
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-trajectory"></span>
+              <span class="anchor" id="variable-trajectory~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2618,7 +2730,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-algorithm~5"></span>
+              <span class="anchor" id="variable-algorithm~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2663,7 +2775,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~17"></span>
+              <span class="anchor" id="variable-text~9"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2708,7 +2820,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-algorithm~4"></span>
+              <span class="anchor" id="variable-algorithm~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2753,7 +2865,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-algorithm~3"></span>
+              <span class="anchor" id="variable-algorithm~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2798,7 +2910,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-kind~3"></span>
+              <span class="anchor" id="variable-kind~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2843,7 +2955,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~25"></span>
+              <span class="anchor" id="variable-text~19"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2888,7 +3000,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~15"></span>
+              <span class="anchor" id="variable-text~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2933,7 +3045,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~3"></span>
+              <span class="anchor" id="variable-coordinates~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2978,7 +3090,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~23"></span>
+              <span class="anchor" id="variable-text~17"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3068,7 +3180,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~19"></span>
+              <span class="anchor" id="variable-text~13"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3139,6 +3251,96 @@ as one document, which is 3N doubles per step of memory.</p>
   </div>
 
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-saddle_method_from_string"></span> <h3>public pure function <a href='../proc/saddle_method_from_string.html'>saddle_method_from_string</a>(text) result(method)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Parse how a deck wants the saddle hunted</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-text~11"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>text</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-saddle_method_to_string"></span> <h3>public pure function <a href='../proc/saddle_method_to_string.html'>saddle_method_to_string</a>(method) result(text)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Name a saddle-search method, for the log</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>method</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>character(len=:), allocatable</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-target_from_string"></span> <h3>public pure function <a href='../proc/target_from_string.html'>target_from_string</a>(text) result(want)  
 </h3></div>
     <div class="card-body">
@@ -3158,7 +3360,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~21"></span>
+              <span class="anchor" id="variable-text~15"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3203,7 +3405,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-want~4"></span>
+              <span class="anchor" id="variable-want~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3248,7 +3450,7 @@ as one document, which is 3N doubles per step of memory.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~26"></span>
+              <span class="anchor" id="variable-text~20"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3297,7 +3499,7 @@ as one document, which is 3N doubles per step of memory.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-26 16:34 +0000             </p>
+ on 2026-08-26 17:45 +0000             </p>
           </div>
         </div>
         <br>

@@ -144,7 +144,7 @@
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-opt_cmd_final">OPT_CMD_FINAL</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-opt_cmd_hessian">OPT_CMD_HESSIAN</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-opt_cmd_stop">OPT_CMD_STOP</a>
-            <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-active">active</a>
+            <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-active~3">active</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-ctx_bonds">ctx_bonds</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-ctx_config">ctx_config</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#variable-ctx_failed">ctx_failed</a>
@@ -217,7 +217,7 @@
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-send_final_geometry">send_final_geometry</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-send_geometry">send_geometry</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-stop_workers">stop_workers</a>
-            <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-worker_loop">worker_loop</a>
+            <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-worker_loop~2">worker_loop</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-write_final_single_point">write_final_single_point</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-write_optimization_record">write_optimization_record</a>
             <a class="list-group-item" href="../module/mqc_geometry_optimizer.html#proc-write_optimized_xyz">write_optimized_xyz</a>
@@ -262,26 +262,26 @@ workers the same way and for the same reason.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_config_adapter.html'>mqc_config_adapter</a></li>
+                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
                   <li class="list-inline-item"><a href='mqc_resources.html'>mqc_resources</a></li>
-                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item"><a href='mqc_config_adapter.html'>mqc_config_adapter</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
-                  <li class="list-inline-item"><a href='mqc_dlfind_bridge.html'>mqc_dlfind_bridge</a></li>
                   <li class="list-inline-item"><a href='mqc_optimization_output.html'>mqc_optimization_output</a></li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
                   <li class="list-inline-item"><a href='mqc_convergence_report.html'>mqc_convergence_report</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_dlfind_bridge.html'>mqc_dlfind_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_optimizer_types.html'>mqc_optimizer_types</a></li>
-                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1690,7 +1690,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-active"></span>
+              <span class="anchor" id="variable-active~3"></span>
               logical,
             </td>
               <td>private,</td>
@@ -2052,7 +2052,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~24"></span>
+              <span class="anchor" id="variable-config~13"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2198,7 +2198,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~22"></span>
+              <span class="anchor" id="variable-config~11"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2213,7 +2213,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~14"></span>
+              <span class="anchor" id="variable-sys_geom~15"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2228,7 +2228,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~5"></span>
+              <span class="anchor" id="variable-bonds~3"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2243,7 +2243,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~52"></span>
+              <span class="anchor" id="variable-error~28"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2298,7 +2298,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~23"></span>
+              <span class="anchor" id="variable-config~12"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2313,7 +2313,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~18"></span>
+              <span class="anchor" id="variable-sys_geom~19"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2328,7 +2328,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~6"></span>
+              <span class="anchor" id="variable-bonds~4"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2368,7 +2368,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~23"></span>
+              <span class="anchor" id="variable-sys_geom~24"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2436,7 +2436,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~7"></span>
+              <span class="anchor" id="variable-n_atoms~16"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2451,7 +2451,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~3"></span>
+              <span class="anchor" id="variable-coords~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2466,7 +2466,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~5"></span>
+              <span class="anchor" id="variable-energy~4"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2496,7 +2496,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~12"></span>
+              <span class="anchor" id="variable-status~6"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2536,7 +2536,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~8"></span>
+              <span class="anchor" id="variable-n_atoms~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2551,7 +2551,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~4"></span>
+              <span class="anchor" id="variable-coords~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2566,7 +2566,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~2"></span>
+              <span class="anchor" id="variable-hessian~6"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2581,7 +2581,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~13"></span>
+              <span class="anchor" id="variable-status~7"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2621,7 +2621,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~24"></span>
+              <span class="anchor" id="variable-sys_geom~25"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2636,7 +2636,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~27"></span>
+              <span class="anchor" id="variable-config~16"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2676,7 +2676,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~13"></span>
+              <span class="anchor" id="variable-path~5"></span>
               character(len=:),
             </td>
 <td>intent(in),</td>
@@ -2691,7 +2691,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~6"></span>
+              <span class="anchor" id="variable-atomic_numbers~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2721,7 +2721,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~53"></span>
+              <span class="anchor" id="variable-error~29"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2761,7 +2761,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~11"></span>
+              <span class="anchor" id="variable-n_atoms~20"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2776,7 +2776,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~6"></span>
+              <span class="anchor" id="variable-coords~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2791,7 +2791,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~14"></span>
+              <span class="anchor" id="variable-status~8"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2846,7 +2846,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~17"></span>
+              <span class="anchor" id="variable-sys_geom~18"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2886,7 +2886,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~10"></span>
+              <span class="anchor" id="variable-n_atoms~19"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2901,7 +2901,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~5"></span>
+              <span class="anchor" id="variable-coords~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2916,7 +2916,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~6"></span>
+              <span class="anchor" id="variable-energy~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2956,7 +2956,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~3"></span>
+              <span class="anchor" id="variable-frequencies~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2986,7 +2986,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~21"></span>
+              <span class="anchor" id="variable-sys_geom~22"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3026,7 +3026,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-final_energy~3"></span>
+              <span class="anchor" id="variable-final_energy~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3041,7 +3041,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~3"></span>
+              <span class="anchor" id="variable-converged~5"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -3096,7 +3096,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~26"></span>
+              <span class="anchor" id="variable-config~15"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3111,7 +3111,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~12"></span>
+              <span class="anchor" id="variable-n_atoms~21"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3151,7 +3151,7 @@ time split between the quantum-chemistry evaluation and the optimizer.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~20"></span>
+              <span class="anchor" id="variable-sys_geom~21"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3225,7 +3225,7 @@ spelling.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~24"></span>
+              <span class="anchor" id="variable-result~16"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3295,7 +3295,7 @@ spelling.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~15"></span>
+              <span class="anchor" id="variable-sys_geom~16"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3350,7 +3350,7 @@ spelling.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~16"></span>
+              <span class="anchor" id="variable-sys_geom~17"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3411,11 +3411,11 @@ spelling.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-worker_loop"></span> <h3>private  subroutine <a href='../proc/worker_loop.html'>worker_loop</a>(comm)  
+    <div class="card-header codesum"><span class="anchor" id="proc-worker_loop~2"></span> <h3>private  subroutine <a href='../proc/worker_loop~2.html'>worker_loop</a>(comm)  
 </h3></div>
     <div class="card-body">
           
-  <p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -3470,7 +3470,7 @@ spelling.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~19"></span>
+              <span class="anchor" id="variable-sys_geom~20"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3510,7 +3510,7 @@ spelling.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~22"></span>
+              <span class="anchor" id="variable-sys_geom~23"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3525,7 +3525,7 @@ spelling.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~25"></span>
+              <span class="anchor" id="variable-config~14"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3540,7 +3540,7 @@ spelling.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-final_energy~2"></span>
+              <span class="anchor" id="variable-final_energy~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3555,7 +3555,7 @@ spelling.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~2"></span>
+              <span class="anchor" id="variable-converged~4"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -3570,7 +3570,7 @@ spelling.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~54"></span>
+              <span class="anchor" id="variable-error~30"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3610,7 +3610,7 @@ spelling.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~25"></span>
+              <span class="anchor" id="variable-sys_geom~26"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3625,7 +3625,7 @@ spelling.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-final_energy~4"></span>
+              <span class="anchor" id="variable-final_energy~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3640,7 +3640,7 @@ spelling.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~4"></span>
+              <span class="anchor" id="variable-converged~6"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -3655,7 +3655,7 @@ spelling.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~55"></span>
+              <span class="anchor" id="variable-error~31"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3698,7 +3698,7 @@ spelling.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-26 16:34 +0000             </p>
+ on 2026-08-26 17:45 +0000             </p>
           </div>
         </div>
         <br>
