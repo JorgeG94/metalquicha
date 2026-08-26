@@ -39,6 +39,8 @@ module mqc_optimizer_types
    public :: algorithm_from_string, algorithm_to_string
    public :: hessian_update_from_string, hessian_update_to_string
    public :: constraint_from_string, constraint_atom_count
+   public :: OPT_TARGET_MINIMUM, OPT_TARGET_SADDLE
+   public :: target_from_string, target_to_string, algorithm_finds_saddle
    public :: algorithm_needs_hessian
 
    ! This program's own numbering rather than DL-FIND's, even though DL-FIND is
@@ -86,6 +88,17 @@ module mqc_optimizer_types
       !! Damped molecular dynamics. Not a minimiser in the line-search sense:
       !! it integrates motion and bleeds energy out through a friction term, so
       !! it crosses small barriers a downhill method would stop at.
+
+   ! What the optimization is looking for. Not the same question as which
+   ! algorithm runs: P-RFO can be asked for either, and a Newton-Raphson run
+   ! settles on whatever stationary point it started nearest. Naming the target
+   ! separately is what lets the end-of-run Hessian say whether the thing found
+   ! is the thing wanted, rather than always reporting against "minimum".
+   integer, parameter :: OPT_TARGET_MINIMUM = 0
+   integer, parameter :: OPT_TARGET_SADDLE = 1
+      !! A first-order saddle: one imaginary frequency, and exactly one. Zero
+      !! means the search fell off the ridge into a basin; two or more means it
+      !! is a higher-order stationary point and not a transition state.
 
    ! How the engine carries curvature between steps once it has a Hessian.
    ! Only the algorithms that hold one pay attention to this.
@@ -142,6 +155,9 @@ module mqc_optimizer_types
          !! Choose the MBE term list once, at the starting geometry, and keep
          !! it for every step. See `mqc_geometry_optimizer` for why an
          !! optimization on a re-screened list is optimizing a moving target.
+      integer :: target = OPT_TARGET_MINIMUM
+         !! Whether this run is looking for a minimum or a first-order saddle.
+         !! Independent of `algorithm` on purpose -- see `OPT_TARGET_SADDLE`.
       integer :: hessian_update = OPT_HESSIAN_UPDATE_ENGINE
          !! How curvature is carried between steps once a Hessian exists.
          !! Ignored by the algorithms that never build one.
@@ -356,6 +372,55 @@ contains
 
       needs = algorithm == OPT_ALGO_PRFO .or. algorithm == OPT_ALGO_NR
    end function algorithm_needs_hessian
+
+   pure function algorithm_finds_saddle(algorithm) result(can)
+      !! Whether this algorithm can converge on a first-order saddle
+      !!
+      !! P-RFO by construction -- it maximises along one eigenvector and
+      !! minimises along the others. Newton-Raphson because it seeks a
+      !! vanishing gradient and does not care about the curvature it lands in,
+      !! so from a guess near the ridge it will settle there. Everything else
+      !! here goes downhill and will find a minimum however the deck spells the
+      !! target.
+      integer, intent(in) :: algorithm
+      logical :: can
+
+      can = algorithm == OPT_ALGO_PRFO .or. algorithm == OPT_ALGO_NR
+   end function algorithm_finds_saddle
+
+   pure function target_from_string(text) result(want)
+      !! Parse what the deck says it is looking for
+      !!
+      !! The result is `want` and not `target`: the component these two read
+      !! and write keeps the keyword's own spelling, but a local of that name
+      !! shadows the Fortran attribute, which is legal and reads badly.
+      character(len=*), intent(in) :: text
+      integer :: want
+
+      select case (lowercase(text))
+      case ("minimum", "min")
+         want = OPT_TARGET_MINIMUM
+      case ("saddle", "ts", "transition_state", "transition-state")
+         want = OPT_TARGET_SADDLE
+      case default
+         want = -2   ! not a spelling anybody recognises
+      end select
+   end function target_from_string
+
+   pure function target_to_string(want) result(text)
+      !! Name a target, for the log
+      integer, intent(in) :: want
+      character(len=:), allocatable :: text
+
+      select case (want)
+      case (OPT_TARGET_MINIMUM)
+         text = "minimum"
+      case (OPT_TARGET_SADDLE)
+         text = "saddle"
+      case default
+         text = "unknown"
+      end select
+   end function target_to_string
 
    pure function hessian_update_from_string(text) result(update)
       !! Parse the Hessian update scheme a deck asked for

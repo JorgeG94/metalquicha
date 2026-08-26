@@ -510,6 +510,7 @@ contains
       call allow(keys, "freeze_terms")
       call allow(keys, "hess_end")
       call allow(keys, "hessian_update")
+      call allow(keys, "target")
       call allow(keys, "frozen_atoms")
       call allow(keys, "constraints")
       call allow(keys, "timestep")

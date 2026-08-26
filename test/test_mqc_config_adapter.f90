@@ -2,8 +2,9 @@ module test_mqc_config_adapter
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_config_types, only: input_fragment_t, mqc_config_t
    use mqc_config_adapter, only: check_fragment_overlap, config_to_driver, driver_config_t
+   use mqc_optimizer_types, only: OPT_TARGET_MINIMUM, OPT_TARGET_SADDLE
    use mqc_method_types, only: METHOD_TYPE_GFN2
-   use mqc_calc_types, only: CALC_TYPE_ENERGY
+   use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_OPTIMIZE
    use mqc_error, only: error_t
    implicit none
    private
@@ -21,7 +22,10 @@ contains
                   new_unittest("overlap_detection", test_overlap_detected), &
                   new_unittest("single_fragment_no_overlap", test_single_fragment), &
                   new_unittest("driver_global_groups", test_driver_global_groups), &
-                  new_unittest("driver_nodes_per_group", test_driver_nodes_per_group) &
+                  new_unittest("driver_nodes_per_group", test_driver_nodes_per_group), &
+                  new_unittest("saddle_target_reaches_driver", test_saddle_target), &
+                  new_unittest("saddle_needs_a_saddle_algorithm", test_saddle_algorithm), &
+                  new_unittest("unknown_target_refused", test_unknown_target) &
                   ]
    end subroutine collect_mqc_config_adapter_tests
 
@@ -161,6 +165,93 @@ contains
 
       call check(error, driver_config%global_groups, 0, "global_groups should default to 0")
    end subroutine test_driver_nodes_per_group
+
+   subroutine optimize_config(config)
+      !! The smallest deck that reaches the optimization vocabulary
+      type(mqc_config_t), intent(out) :: config
+
+      config%method = METHOD_TYPE_GFN2
+      config%calc_type = CALC_TYPE_OPTIMIZE
+      config%nfrag = 0
+   end subroutine optimize_config
+
+   subroutine test_saddle_target(error)
+      !! A saddle target with an algorithm that can look for one
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver_config
+      type(error_t) :: parse_error
+
+      call optimize_config(config)
+      config%opt_target = "saddle"
+      config%opt_algorithm = "prfo"
+      config%opt_coordinates = "dlc"
+
+      call config_to_driver(config, driver_config, error=parse_error)
+
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, driver_config%optimization%target, OPT_TARGET_SADDLE, &
+                 "the target should reach the driver")
+   end subroutine test_saddle_target
+
+   subroutine test_saddle_algorithm(error)
+      !! Asked for a saddle, given a downhill optimizer
+      !!
+      !! Both spellings of the deck: one that names L-BFGS and one that names
+      !! no algorithm at all and gets it as the default. The second is the case
+      !! worth pinning -- it is the deck a first-time user writes, and it has to
+      !! be refused rather than run to a minimum and reported as a saddle.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver_config
+      type(error_t) :: parse_error
+
+      call optimize_config(config)
+      config%opt_target = "saddle"
+      config%opt_algorithm = "lbfgs"
+
+      call config_to_driver(config, driver_config, error=parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a saddle search with a downhill algorithm should be refused")
+      if (allocated(error)) return
+
+      call optimize_config(config)
+      config%opt_target = "saddle"
+
+      call config_to_driver(config, driver_config, error=parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a saddle search with the default algorithm should be refused too")
+   end subroutine test_saddle_algorithm
+
+   subroutine test_unknown_target(error)
+      !! A target nobody recognises, with and without somewhere to report it
+      !!
+      !! The second half is the point. `error` is optional and the session
+      !! omits it, so a parse failure that was written into the driver anyway
+      !! would sit there as a sentinel below OPT_TARGET_MINIMUM and read as
+      !! "not a saddle" -- a minimisation, run silently, from a deck that asked
+      !! for something else.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver_config
+      type(error_t) :: parse_error
+
+      call optimize_config(config)
+      config%opt_target = "banana"
+
+      call config_to_driver(config, driver_config, error=parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an unrecognised target should be refused by name")
+      if (allocated(error)) return
+
+      call optimize_config(config)
+      config%opt_target = "banana"
+
+      call config_to_driver(config, driver_config)
+      call check(error, driver_config%optimization%target, OPT_TARGET_MINIMUM, &
+                 "a target that failed to parse must not reach the driver")
+   end subroutine test_unknown_target
 
 end module test_mqc_config_adapter
 

@@ -84,6 +84,7 @@ contains
                   new_unittest("ormas_partition", test_ormas_keywords), &
                   new_unittest("full_valence_space", test_full_valence), &
                   new_unittest("optimization_hess_end", test_hess_end), &
+                  new_unittest("optimization_target", test_opt_target), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -1612,6 +1613,54 @@ contains
       call check(error,.not. config%opt_hess_end, &
                  "a deck that never asked should not get a Hessian")
    end subroutine test_hess_end
+
+   subroutine test_opt_target(error)
+      !! `keywords.optimization.target`, through the reader and the schema
+      !!
+      !! The key has to survive three separate gates before it means anything:
+      !! the schema allow-list, which refuses what it does not know; the
+      !! reader, which puts the string on the config; and the default, which
+      !! stays unallocated when nothing asked, so the type's own
+      !! `OPT_TARGET_MINIMUM` is what an existing deck still gets. The
+      !! vocabulary itself is checked in `test_mqc_optimizer_types`; what is
+      !! checked here is that the string arrives at all.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Optimize", &
+                      '"optimization": {"target": "saddle", "algorithm": "prfo", '// &
+                      '"coordinates": "dlc"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%opt_target), "the target should be read")
+      if (allocated(error)) return
+      call check(error, trim(config%opt_target) == "saddle", &
+                 "the target should arrive as it was spelled")
+      if (allocated(error)) return
+
+      ! Not mentioned. `optional_string` leaves the component unallocated, and
+      ! the adapter only assigns when it is allocated -- which is what keeps
+      ! every optimization written before this keyword existed a minimisation.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Optimize", &
+                      '"optimization": {"max_steps": 50}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. allocated(config%opt_target), &
+                 "a deck that never asked should leave the target to its default")
+      if (allocated(error)) return
+
+      ! The schema gate. A misspelled key inside the optimization block is
+      ! refused before the reader sees it, so a typo cannot silently become a
+      ! minimisation reported as a saddle search.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Optimize", &
+                      '"optimization": {"targett": "saddle"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a misspelled optimization key should be refused")
+   end subroutine test_opt_target
 
    subroutine test_full_valence(error)
       !! `keywords.mcscf.full_valence`, and that it is the only space named

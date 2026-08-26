@@ -19,7 +19,10 @@ module test_mqc_optimizer_types
                                   hessian_update_from_string, &
                                   OPT_HESSIAN_UPDATE_ENGINE, OPT_HESSIAN_UPDATE_NONE, &
                                   OPT_HESSIAN_UPDATE_POWELL, OPT_HESSIAN_UPDATE_BOFILL, &
-                                  constraint_from_string, constraint_atom_count
+                                  constraint_from_string, constraint_atom_count, &
+                                  target_from_string, target_to_string, &
+                                  algorithm_finds_saddle, &
+                                  OPT_TARGET_MINIMUM, OPT_TARGET_SADDLE
    use mqc_calc_types, only: calc_type_from_string, calc_type_to_string, CALC_TYPE_OPTIMIZE
    use pic_types, only: dp
    implicit none
@@ -43,9 +46,80 @@ contains
                   new_unittest("optimize_driver_parses", test_optimize_driver_parses), &
                   new_unittest("new_algorithms_parse", test_new_algorithms), &
                   new_unittest("hessian_update_parses", test_hessian_update), &
-                  new_unittest("constraint_atom_counts", test_constraint_atoms) &
+                  new_unittest("constraint_atom_counts", test_constraint_atoms), &
+                  new_unittest("target_parses", test_target_parses), &
+                  new_unittest("target_roundtrip", test_target_roundtrip), &
+                  new_unittest("target_defaults_to_minimum", test_target_default), &
+                  new_unittest("only_saddle_capable_algorithms", test_saddle_capable) &
                   ]
    end subroutine collect_mqc_optimizer_types_tests
+
+   subroutine test_target_parses(error)
+      !! Every spelling a deck is likely to use, and one it is not
+      type(error_type), allocatable, intent(out) :: error
+
+      call check(error, target_from_string("minimum") == OPT_TARGET_MINIMUM)
+      if (allocated(error)) return
+      call check(error, target_from_string("min") == OPT_TARGET_MINIMUM)
+      if (allocated(error)) return
+      call check(error, target_from_string("saddle") == OPT_TARGET_SADDLE)
+      if (allocated(error)) return
+      call check(error, target_from_string("ts") == OPT_TARGET_SADDLE)
+      if (allocated(error)) return
+      call check(error, target_from_string("transition_state") == OPT_TARGET_SADDLE)
+      if (allocated(error)) return
+      call check(error, target_from_string("SADDLE") == OPT_TARGET_SADDLE, &
+                 "the target should be case-insensitive like its siblings")
+      if (allocated(error)) return
+      ! Negative rather than a default. A misspelled target that quietly became
+      ! "minimum" would run a completely different calculation from the one
+      ! asked for and report success.
+      call check(error, target_from_string("banana") < OPT_TARGET_MINIMUM, &
+                 "an unrecognised target must not fall back to a valid one")
+   end subroutine test_target_parses
+
+   subroutine test_target_roundtrip(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      call check(error, target_from_string(target_to_string(OPT_TARGET_MINIMUM)) == &
+                 OPT_TARGET_MINIMUM)
+      if (allocated(error)) return
+      call check(error, target_from_string(target_to_string(OPT_TARGET_SADDLE)) == &
+                 OPT_TARGET_SADDLE)
+   end subroutine test_target_roundtrip
+
+   subroutine test_target_default(error)
+      !! An optimization nobody said anything about is a minimisation
+      type(error_type), allocatable, intent(out) :: error
+      type(optimizer_settings_t) :: settings
+
+      call check(error, settings%target == OPT_TARGET_MINIMUM, &
+                 "the default target must stay 'minimum'; every existing deck relies on it")
+   end subroutine test_target_default
+
+   subroutine test_saddle_capable(error)
+      !! Which algorithms can be asked for a saddle
+      !!
+      !! The downhill methods are the point of this test. Asking steepest
+      !! descent for a transition state is a deck that cannot be satisfied, and
+      !! it has to be refused rather than run to a minimum and reported as one.
+      type(error_type), allocatable, intent(out) :: error
+
+      call check(error, algorithm_finds_saddle(OPT_ALGO_PRFO), &
+                 "P-RFO is the saddle optimizer")
+      if (allocated(error)) return
+      call check(error, algorithm_finds_saddle(OPT_ALGO_NR), &
+                 "Newton-Raphson seeks a stationary point of any curvature")
+      if (allocated(error)) return
+      call check(error,.not. algorithm_finds_saddle(OPT_ALGO_LBFGS))
+      if (allocated(error)) return
+      call check(error,.not. algorithm_finds_saddle(OPT_ALGO_SD))
+      if (allocated(error)) return
+      call check(error,.not. algorithm_finds_saddle(OPT_ALGO_CG))
+      if (allocated(error)) return
+      call check(error,.not. algorithm_finds_saddle(OPT_ALGO_DAMPED), &
+                 "damped dynamics crosses barriers; it does not stop on them")
+   end subroutine test_saddle_capable
 
    subroutine test_coordinates_from_string(error)
       type(error_type), allocatable, intent(out) :: error
