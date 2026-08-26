@@ -394,7 +394,7 @@ contains
 
       ! The long-range half of a range-separated functional's exchange. No
       ! Coulomb: the full-range pass above already supplied it.
-      if (this%rs_omega > 0.0_dp .and. .not. off("MQC_NO_LR_OP")) then
+      if (this%rs_omega > 0.0_dp) then
          if (.not. allocated(g_lr)) allocate (g_lr(size(g, 1), size(g, 2), size(g, 3)))
          call build_fock_direct_many(this%mol, this%zero_h, dens, this%bounds, g_lr, &
                                      stats, error, k_scale=this%rs_k_lr, j_scale=0.0_dp, &
@@ -782,7 +782,7 @@ contains
       ! them.
       call hess_2e_contract(mol, density, hess, error, k_scale=k_scale)
       if (error%has_error()) return
-      if (present(rs_omega) .and. .not. off("MQC_NO_LR_PARTIAL")) then
+      if (present(rs_omega)) then
          if (rs_omega > 0.0_dp) then
             ! The attenuated exchange, with no Coulomb of its own.
             call hess_2e_contract(mol, density, hess, error, k_scale=rs_k_lr, &
@@ -869,7 +869,7 @@ contains
       call build_fock_direct(mol, hcore, density, bounds, fock, stats, error, &
                              density_screen=.false., k_scale=k_scale)
       if (error%has_error()) return
-      if (present(rs_omega) .and. .not. off("MQC_NO_LR_FOCK")) then
+      if (present(rs_omega)) then
          if (rs_omega > 0.0_dp) then
             allocate (fock_lr(nao, nao))
             call build_fock_direct(mol, zero_h, density, bounds, fock_lr, stats, error, &
@@ -895,7 +895,7 @@ contains
       ! added below.
       call h1_contract(mol, density, h1, error, k_scale=k_scale)
       if (error%has_error()) return
-      if (present(rs_omega) .and. .not. off("MQC_NO_LR_H1")) then
+      if (present(rs_omega)) then
          if (rs_omega > 0.0_dp) then
             ! Into a temporary and added: `h1_contract` allocates its output and
             ! zeroes it, so a second call in place would discard the full-range
@@ -1400,7 +1400,7 @@ contains
          call build_fock_direct_many(mol, zero_h, chunk, bounds, out, stats, error, &
                                      k_scale=k_scale)
          if (error%has_error()) return
-         if (present(rs_omega) .and. .not. off("MQC_NO_LR_MEAN")) then
+         if (present(rs_omega)) then
             if (rs_omega > 0.0_dp) then
                if (.not. allocated(out_lr)) allocate (out_lr, mold=out)
                call build_fock_direct_many(mol, zero_h, chunk, bounds, out_lr, stats, &
