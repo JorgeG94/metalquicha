@@ -17,6 +17,7 @@ module mqc_config_adapter
                                   OPT_TARGET_SADDLE, OPT_COORDS_CARTESIAN, &
                                   algorithm_to_string, algorithm_finds_saddle, &
                                   neb_ends_from_string, NEB_ENDS_FROZEN, &
+                                  saddle_method_from_string, SADDLE_METHOD_PRFO, &
                                   MIN_NEB_IMAGES
    use mqc_method_config, only: method_config_t
    use mqc_method_types, only: METHOD_TYPE_CCSD_T, METHOD_TYPE_GFN1, &
@@ -524,6 +525,24 @@ contains
          end if
       end if
 
+      driver_config%optimization%dimer_separation = mqc_config%opt_dimer_separation
+      driver_config%optimization%dimer_max_rotations = mqc_config%opt_dimer_max_rotations
+      driver_config%optimization%dimer_rotation_tolerance = mqc_config%opt_dimer_rot_tol
+
+      if (allocated(mqc_config%opt_saddle_method)) then
+         driver_config%optimization%saddle_method = &
+            saddle_method_from_string(mqc_config%opt_saddle_method)
+         if (driver_config%optimization%saddle_method < SADDLE_METHOD_PRFO) then
+            if (present(error)) then
+               call error%set(ERROR_VALIDATION, &
+                              "Unknown keywords.optimization.saddle_method: '"// &
+                              trim(mqc_config%opt_saddle_method)// &
+                              "'. Use prfo or dimer.")
+            end if
+            return
+         end if
+      end if
+
       ! A saddle is not something every algorithm can look for. Steepest
       ! descent and the quasi-Newton minimisers go downhill by construction and
       ! will report a minimum however the target is spelled, so asking them for
@@ -532,7 +551,12 @@ contains
       ! optimizer on the user's behalf is how a run ends up being something
       ! other than what was asked for.
       if (driver_config%optimization%target == OPT_TARGET_SADDLE) then
-         if (.not. algorithm_finds_saddle(driver_config%optimization%algorithm)) then
+         ! The dimer finds a saddle by construction -- it inverts the force
+         ! along the softest direction -- so the algorithm beside it is only
+         ! translating and rotating the pair, and a minimiser is the right
+         ! thing there. The P-RFO requirement applies to the P-RFO path only.
+         if (driver_config%optimization%saddle_method == SADDLE_METHOD_PRFO .and. &
+             .not. algorithm_finds_saddle(driver_config%optimization%algorithm)) then
             if (present(error)) then
                ! Named or defaulted, said differently. A deck with no
                ! `algorithm` key at all gets the default, and a message that
@@ -568,7 +592,8 @@ contains
          ! coordinate system, so a deck that simply never mentioned coordinates
          ! lands here, which is why the warning says what it will cost rather
          ! than only what it is.
-         if (driver_config%optimization%coordinates == OPT_COORDS_CARTESIAN) then
+         if (driver_config%optimization%coordinates == OPT_COORDS_CARTESIAN .and. &
+             driver_config%optimization%saddle_method == SADDLE_METHOD_PRFO) then
             if (allocated(mqc_config%opt_coordinates)) then
                call logger%warning("  keywords.optimization: a saddle search in Cartesian "// &
                                    "coordinates follows a rotation, not the reaction mode.")

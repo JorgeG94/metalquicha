@@ -25,7 +25,9 @@ module test_mqc_optimizer_types
                                   OPT_TARGET_MINIMUM, OPT_TARGET_SADDLE, &
                                   neb_ends_from_string, neb_ends_to_string, &
                                   NEB_ENDS_FROZEN, NEB_ENDS_PERPENDICULAR, &
-                                  NEB_ENDS_FREE, MIN_NEB_IMAGES
+                                  NEB_ENDS_FREE, MIN_NEB_IMAGES, &
+                                  saddle_method_from_string, saddle_method_to_string, &
+                                  SADDLE_METHOD_PRFO, SADDLE_METHOD_DIMER
    use mqc_calc_types, only: calc_type_from_string, calc_type_to_string, CALC_TYPE_OPTIMIZE
    use pic_types, only: dp
    implicit none
@@ -55,9 +57,46 @@ contains
                   new_unittest("target_defaults_to_minimum", test_target_default), &
                   new_unittest("only_saddle_capable_algorithms", test_saddle_capable), &
                   new_unittest("neb_endpoints_parse", test_neb_ends), &
-                  new_unittest("neb_defaults_are_off", test_neb_defaults) &
+                  new_unittest("neb_defaults_are_off", test_neb_defaults), &
+                  new_unittest("saddle_method_parses", test_saddle_method) &
                   ]
    end subroutine collect_mqc_optimizer_types_tests
+
+   subroutine test_saddle_method(error)
+      !! How a deck spells the way a saddle is hunted
+      !!
+      !! Separate from `algorithm` on purpose. The dimer inverts the force along
+      !! its own axis, so the algorithm beside it is only translating and
+      !! rotating the pair and a minimiser is the right thing there -- which is
+      !! why `saddle_method` is not just another spelling of `algorithm`.
+      type(error_type), allocatable, intent(out) :: error
+      type(optimizer_settings_t) :: settings
+
+      call check(error, saddle_method_from_string("prfo") == SADDLE_METHOD_PRFO)
+      if (allocated(error)) return
+      call check(error, saddle_method_from_string("p-rfo") == SADDLE_METHOD_PRFO)
+      if (allocated(error)) return
+      call check(error, saddle_method_from_string("dimer") == SADDLE_METHOD_DIMER)
+      if (allocated(error)) return
+      call check(error, saddle_method_from_string("DIMER") == SADDLE_METHOD_DIMER)
+      if (allocated(error)) return
+      call check(error, saddle_method_from_string("banana") < SADDLE_METHOD_PRFO, &
+                 "an unrecognised saddle method must not fall back to a valid one")
+      if (allocated(error)) return
+      call check(error, saddle_method_from_string(saddle_method_to_string( &
+                                                  SADDLE_METHOD_DIMER)) == SADDLE_METHOD_DIMER)
+      if (allocated(error)) return
+      call check(error, settings%saddle_method == SADDLE_METHOD_PRFO, &
+                 "P-RFO stays the default saddle method")
+      if (allocated(error)) return
+      ! Negative is "let the engine decide", which is how these avoid having to
+      ! carry DL-FIND's own defaults around and keep them in step.
+      call check(error, settings%dimer_separation < 0.0_dp)
+      if (allocated(error)) return
+      call check(error, settings%dimer_max_rotations < 0)
+      if (allocated(error)) return
+      call check(error, settings%dimer_rotation_tolerance < 0.0_dp)
+   end subroutine test_saddle_method
 
    subroutine test_neb_ends(error)
       !! How a deck spells the endpoint treatment
