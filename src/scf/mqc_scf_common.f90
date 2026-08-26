@@ -20,6 +20,10 @@ module mqc_scf_common
 
    public :: build_orthogonalizer
    public :: report_linear_dependence
+   public :: lindep_tally_t
+   public :: lindep_collect_begin
+   public :: lindep_collect_end
+   public :: report_linear_dependence_tally
    public :: build_density_closed_shell
    public :: build_density_spin
    public :: spin_contamination
@@ -54,7 +58,46 @@ module mqc_scf_common
    !> is one constant here rather than one in each of them.
    real(dp), parameter :: GWH_K = 1.75_dp
 
+   type :: lindep_tally_t
+      !! What a run of many SCFs saw, instead of what each one saw
+      integer :: n_reports = 0        !! SCFs that had anything to say
+      integer :: n_dropped_scf = 0    !! of those, ones that lost basis functions
+      integer :: n_near_scf = 0       !! of those, ones merely ill-conditioned
+      integer :: total_dropped = 0    !! functions dropped, summed over SCFs
+      real(dp) :: worst_overlap = 0.0_dp  !! smallest eigenvalue behind a drop
+      real(dp) :: worst_kept = 0.0_dp     !! smallest surviving eigenvalue seen
+   end type lindep_tally_t
+
+   logical, save :: collecting = .false.
+      !! Set while a caller is running many SCFs and wants one report, not many.
+      !!
+      !! **Why this is module state rather than an argument.** The report is
+      !! raised deep inside `run_libcint_rhf`, which is reached from the fragment
+      !! bridge, SAPT, AFO, Fukui and the atomic guess. Threading a collector
+      !! through all of them would change eight signatures across six files to
+      !! carry something only one caller sets, and every future call site would
+      !! have to remember it. Fragments are distributed over MPI and pinned to
+      !! one thread apiece -- `omp_set_num_threads(1)` on that path -- so this is
+      !! written and read by one thread per rank, which is what makes it safe
+      !! here and would not be if fragments were threaded.
+   type(lindep_tally_t), save :: tally
+      !! What the open window has accumulated so far
+
 contains
+
+   subroutine lindep_collect_begin()
+      !! Start folding linear-dependence reports into a tally
+      collecting = .true.
+      tally = lindep_tally_t()
+   end subroutine lindep_collect_begin
+
+   subroutine lindep_collect_end(result)
+      !! Stop collecting and hand back what was seen
+      type(lindep_tally_t), intent(out) :: result
+      collecting = .false.
+      result = tally
+      tally = lindep_tally_t()
+   end subroutine lindep_collect_end
 
    subroutine build_orthogonalizer(overlap, transform, n_mo, error, &
                                    smallest_overlap, smallest_kept, threshold)
@@ -159,6 +202,35 @@ contains
 
       n_dropped = n_ao - n_mo
 
+      ! Collecting: fold this SCF into the tally and say nothing. One
+      ! fragmented run is thousands of SCFs, and the block below is eight to
+      ! twelve lines apiece -- the advisory branch especially, which reports a
+      ! calculation that is *fine*. The information is kept; only the repetition
+      ! is dropped. See `report_linear_dependence_tally`.
+      if (collecting) then
+         if (n_dropped > 0) then
+            tally%n_reports = tally%n_reports + 1
+            tally%n_dropped_scf = tally%n_dropped_scf + 1
+            tally%total_dropped = tally%total_dropped + n_dropped
+            if (tally%worst_overlap <= 0.0_dp .or. smallest_overlap < tally%worst_overlap) then
+               tally%worst_overlap = smallest_overlap
+            end if
+         else if (smallest_kept > 0.0_dp .and. &
+                  smallest_kept < max(LINEAR_DEPENDENCE_WARN_TOL, 100.0_dp*tol)) then
+            tally%n_reports = tally%n_reports + 1
+            tally%n_near_scf = tally%n_near_scf + 1
+         end if
+         ! Tracked for every SCF that reported, dropped or not: the smallest
+         ! surviving eigenvalue is what X actually divides by, and it is the
+         ! number that says how bad the worst fragment was.
+         if (smallest_kept > 0.0_dp) then
+            if (tally%worst_kept <= 0.0_dp .or. smallest_kept < tally%worst_kept) then
+               tally%worst_kept = smallest_kept
+            end if
+         end if
+         return
+      end if
+
       if (n_dropped > 0) then
          call logger%warning("")
          write (line, "(a,i0,a,i0,a)") "  LINEAR DEPENDENCE: ", n_dropped, " of ", n_ao, &
@@ -209,6 +281,52 @@ contains
       write (buffer, "(i0)") value
       text = trim(buffer)
    end function int_text
+
+   subroutine report_linear_dependence_tally(result, context)
+      !! One report for many SCFs, in place of one report each
+      !!
+      !! Says nothing when nothing was seen, which is the ordinary case -- a
+      !! summary that prints "0 of 5000 fragments" every run trains people to
+      !! skip it, and then it is not read on the run where it matters.
+      type(lindep_tally_t), intent(in) :: result
+      character(len=*), intent(in) :: context
+         !! What the SCFs were, for the message: "fragment SCFs" and so on.
+
+      character(len=200) :: line
+
+      if (result%n_reports == 0) return
+
+      call logger%warning("")
+      if (result%n_dropped_scf > 0) then
+         write (line, "(a,i0,a,i0,a)") "  LINEAR DEPENDENCE: ", result%n_dropped_scf, &
+            " "//trim(context)//" dropped basis functions, ", result%total_dropped, &
+            " in total."
+         call logger%warning(trim(line))
+         write (line, "(a,es9.2,a)") "     the smallest overlap eigenvalue behind a drop "// &
+            "was ", result%worst_overlap, "."
+         call logger%warning(trim(line))
+         call logger%warning("     Those SCFs ran in a smaller basis than the input "// &
+                             "named, so their energies")
+         call logger%warning("     are not comparable with a run that kept every "// &
+                             "function.")
+      end if
+      if (result%n_near_scf > 0) then
+         write (line, "(a,i0,a)") "  NEARLY LINEARLY DEPENDENT: ", result%n_near_scf, &
+            " "//trim(context)//" were ill-conditioned."
+         call logger%warning(trim(line))
+         call logger%warning("     Nothing was dropped in those, so the basis is intact, "// &
+                             "but convergence")
+         call logger%warning("     may be slow and an ill-conditioned SCF can settle on "// &
+                             "different")
+         call logger%warning("     solutions from different guesses.")
+      end if
+      if (result%worst_kept > 0.0_dp) then
+         write (line, "(a,es9.2,a)") "     the smallest surviving overlap eigenvalue "// &
+            "anywhere was ", result%worst_kept, "."
+         call logger%warning(trim(line))
+      end if
+      call logger%warning("")
+   end subroutine report_linear_dependence_tally
 
    subroutine build_density_closed_shell(coeff, n_occ, density)
       !! D = 2 C_occ C_occ^T, the closed-shell density
