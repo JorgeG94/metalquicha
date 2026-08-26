@@ -26,7 +26,7 @@ contains
 
    subroutine dlfind_optimize(opt_settings, natoms, znuc, residues, coords, &
                               energy_gradient, step_taken, final_energy, error, &
-                              hessian)
+                              hessian, endpoint)
       !! No-op stand-in: optimizing a geometry needs the DL-FIND backend
       !!
       !! The argument list has to track the real bridge's exactly, including the
@@ -43,6 +43,7 @@ contains
       real(dp), intent(out) :: final_energy
       type(error_t), intent(inout) :: error
       procedure(hessian_i), optional :: hessian
+      real(dp), intent(in), optional :: endpoint(:, :)
 
       final_energy = 0.0_dp
       call error%set(ERROR_VALIDATION, &

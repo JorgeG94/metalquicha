@@ -35,11 +35,13 @@ module mqc_json_schema
 
    public :: ensure_valid_json  !! Reject a deck the schema does not describe
 
-   integer, parameter :: MAX_KEYS = 24
+   integer, parameter :: MAX_KEYS = 32
       !! Widest allow-list below; raising it is the only cost of a new key.
-      !! fragmentation_keys is the widest at 21 (its FMO inner-SCF controls
-      !! pushed it past 16, and bond_breaking/cap_scale past 18), so this keeps
-      !! a little headroom above that.
+      !! optimization_keys is now the widest: the transition-state work added
+      !! `target`, and the chain-of-states work `endpoint`, `neb_endpoints`,
+      !! `images` and `neb_spring`, which took it past fragmentation_keys (21,
+      !! pushed there by its FMO inner-SCF controls and bond_breaking/cap_scale).
+      !! This keeps headroom above that.
       !!
       !! `allow` checks this rather than trusting the comment. It used not to,
       !! and going one over wrote past `allowed` and corrupted whatever followed
@@ -511,6 +513,10 @@ contains
       call allow(keys, "hess_end")
       call allow(keys, "hessian_update")
       call allow(keys, "target")
+      call allow(keys, "endpoint")
+      call allow(keys, "neb_endpoints")
+      call allow(keys, "images")
+      call allow(keys, "neb_spring")
       call allow(keys, "frozen_atoms")
       call allow(keys, "constraints")
       call allow(keys, "timestep")

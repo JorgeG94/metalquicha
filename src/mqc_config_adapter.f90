@@ -7,6 +7,7 @@ module mqc_config_adapter
    use mqc_physical_fragment, only: system_geometry_t, to_bohr
    use mqc_elements, only: element_symbol_to_number
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_string_utils, only: int_to_text
    use mqc_calculation_keywords, only: hessian_keywords_t, aimd_keywords_t, scf_keywords_t
    use mqc_optimizer_types, only: optimizer_settings_t, &
                                   coordinates_from_string, algorithm_from_string, &
@@ -14,7 +15,9 @@ module mqc_config_adapter
                                   OPT_COORDS_UNKNOWN, OPT_ALGO_UNKNOWN, &
                                   OPT_HESSIAN_UPDATE_ENGINE, OPT_TARGET_MINIMUM, &
                                   OPT_TARGET_SADDLE, OPT_COORDS_CARTESIAN, &
-                                  algorithm_to_string, algorithm_finds_saddle
+                                  algorithm_to_string, algorithm_finds_saddle, &
+                                  neb_ends_from_string, NEB_ENDS_FROZEN, &
+                                  MIN_NEB_IMAGES
    use mqc_method_config, only: method_config_t
    use mqc_method_types, only: METHOD_TYPE_CCSD_T, METHOD_TYPE_GFN1, &
                                METHOD_TYPE_GFN2, METHOD_TYPE_EFP2
@@ -466,6 +469,59 @@ contains
             return
          end if
          driver_config%optimization%target = want
+      end if
+
+      if (allocated(mqc_config%opt_endpoint)) then
+         driver_config%optimization%endpoint = mqc_config%opt_endpoint
+      end if
+      driver_config%optimization%n_images = mqc_config%opt_n_images
+      driver_config%optimization%neb_spring = mqc_config%opt_neb_spring
+
+      if (allocated(mqc_config%opt_neb_ends)) then
+         driver_config%optimization%neb_ends = neb_ends_from_string(mqc_config%opt_neb_ends)
+         if (driver_config%optimization%neb_ends < NEB_ENDS_FROZEN) then
+            if (present(error)) then
+               call error%set(ERROR_VALIDATION, &
+                              "Unknown keywords.optimization.neb_endpoints: '"// &
+                              trim(mqc_config%opt_neb_ends)// &
+                              "'. Use frozen, perpendicular or free.")
+            end if
+            return
+         end if
+      end if
+
+      ! The path keywords describe a band, and a band needs two structures. A
+      ! deck that sets images or a spring without an endpoint has described
+      ! something it did not supply, and running the ordinary single-structure
+      ! optimization would silently do different work from the one asked for.
+      if (.not. allocated(driver_config%optimization%endpoint)) then
+         if (mqc_config%opt_n_images > 0 .or. allocated(mqc_config%opt_neb_ends) .or. &
+             mqc_config%opt_neb_spring >= 0.0_dp) then
+            if (present(error)) then
+               call error%set(ERROR_VALIDATION, &
+                              "keywords.optimization sets a path option (images, "// &
+                              "neb_spring or neb_endpoints) but no 'endpoint'. A "// &
+                              "chain-of-states run needs a second structure to run "// &
+                              "between; give the product geometry as "// &
+                              "keywords.optimization.endpoint.")
+            end if
+            return
+         end if
+      else
+         ! Two images are the endpoints and nothing in between, so there is no
+         ! band to relax. DL-FIND refuses it too, but from inside the engine and
+         ! with a message about its own variable.
+         if (mqc_config%opt_n_images > 0 .and. mqc_config%opt_n_images < MIN_NEB_IMAGES) then
+            if (present(error)) then
+               call error%set(ERROR_VALIDATION, &
+                              "keywords.optimization.images is "// &
+                              trim(int_to_text(mqc_config%opt_n_images))// &
+                              ". A path needs at least "// &
+                              trim(int_to_text(MIN_NEB_IMAGES))//": two of them are the "// &
+                              "endpoints, so fewer leaves nothing between them to relax.")
+            end if
+            return
+         end if
       end if
 
       ! A saddle is not something every algorithm can look for. Steepest

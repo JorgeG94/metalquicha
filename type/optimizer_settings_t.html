@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 1.6% of total for derived types.</p>Including implementation: 21 statements,  0.6% of total for derived types.">21 statements</a>
+                 title="<p> 1.9% of total for derived types.</p>Including implementation: 25 statements,  0.7% of total for derived types.">25 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -139,6 +139,7 @@
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-algorithm">algorithm</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-constraints">constraints</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-coordinates">coordinates</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-endpoint~2">endpoint</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-energy_tolerance">energy_tolerance</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-freeze_terms">freeze_terms</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-friction">friction</a>
@@ -151,6 +152,9 @@
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-lbfgs_memory">lbfgs_memory</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-max_step">max_step</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-max_steps">max_steps</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-n_images">n_images</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-neb_ends">neb_ends</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-neb_spring">neb_spring</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-print_level">print_level</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-target">target</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-timestep">timestep</a>
@@ -354,7 +358,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~fmo_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~optimizer_settings_t~~InheritedByGraph_edge3" class="edge">
+<g id="type~~optimizer_settings_t~~InheritedByGraph_edge4" class="edge">
 <title>type~fmo_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#ff0000" d="M597.74,-83.84C592.59,-81.29 587.49,-78.33 583,-75 573.13,-67.67 577.29,-54 565,-54"/>
 </g>
@@ -368,7 +372,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~gmbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~optimizer_settings_t~~InheritedByGraph_edge5" class="edge">
+<g id="type~~optimizer_settings_t~~InheritedByGraph_edge3" class="edge">
 <title>type~gmbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#ff0000" d="M582.92,-54C576.89,-54 570.8,-54 565,-54"/>
 </g>
@@ -382,7 +386,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~mbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~optimizer_settings_t~~InheritedByGraph_edge4" class="edge">
+<g id="type~~optimizer_settings_t~~InheritedByGraph_edge5" class="edge">
 <title>type~mbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#ff0000" d="M597.74,-24.16C592.59,-26.71 587.49,-29.67 583,-33 573.13,-40.33 577.29,-54 565,-54"/>
 <path fill="none" stroke="#ff0000" d="M564,-54C561.46,-54 558.88,-54 556.27,-54"/>
@@ -509,6 +513,25 @@ system to hold them in &ndash; see <code>mqc_dlfind_bridge</code>.</p>
                 <td>OPT_COORDS_CARTESIAN</td>
             <td>
                 
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-endpoint~2"></span>
+              character(len=:),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>endpoint</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Path to a second geometry: the product, for a chain-of-states run.
+Unallocated is the ordinary single-structure optimization, and is
+what makes NEB opt-in rather than inferred.</p>
             </td>
         </tr>
         <tr>
@@ -734,6 +757,60 @@ Ignored by the algorithms that never build one.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-n_images"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_images</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>Images along the path, endpoints included. Zero means the engine&rsquo;s
+own default. DL-FIND refuses fewer than three, since two images are
+just the endpoints and there is no path between them to relax.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-neb_ends"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>neb_ends</strong></td>
+<td> =</td>
+                <td>NEB_ENDS_FROZEN</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-neb_spring"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>neb_spring</strong></td>
+<td> =</td>
+                <td>-1.0_dp</td>
+            <td>
+                <p>Spring constant holding neighbouring images apart. Negative means
+the engine default.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-print_level"></span>
               integer,
             </td>
@@ -845,6 +922,18 @@ as one document, which is 3N doubles per step of memory.</p>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_TARGET_MINIMUM</span>
 <span class="w">         </span><span class="c">!! Whether this run is looking for a minimum or a first-order saddle.</span>
 <span class="w">         </span><span class="c">!! Independent of `algorithm` on purpose -- see `OPT_TARGET_SADDLE`.</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">endpoint</span>
+<span class="w">         </span><span class="c">!! Path to a second geometry: the product, for a chain-of-states run.</span>
+<span class="w">         </span><span class="c">!! Unallocated is the ordinary single-structure optimization, and is</span>
+<span class="w">         </span><span class="c">!! what makes NEB opt-in rather than inferred.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_images</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">         </span><span class="c">!! Images along the path, endpoints included. Zero means the engine's</span>
+<span class="w">         </span><span class="c">!! own default. DL-FIND refuses fewer than three, since two images are</span>
+<span class="w">         </span><span class="c">!! just the endpoints and there is no path between them to relax.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">neb_spring</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mf">1.0_dp</span>
+<span class="w">         </span><span class="c">!! Spring constant holding neighbouring images apart. Negative means</span>
+<span class="w">         </span><span class="c">!! the engine default.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">neb_ends</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NEB_ENDS_FROZEN</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hessian_update</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_HESSIAN_UPDATE_ENGINE</span>
 <span class="w">         </span><span class="c">!! How curvature is carried between steps once a Hessian exists.</span>
 <span class="w">         </span><span class="c">!! Ignored by the algorithms that never build one.</span>
@@ -907,7 +996,7 @@ as one document, which is 3N doubles per step of memory.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-26 14:19 +0000             </p>
+ on 2026-08-26 16:34 +0000             </p>
           </div>
         </div>
         <br>
