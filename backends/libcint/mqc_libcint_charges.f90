@@ -30,6 +30,8 @@ module mqc_libcint_charges
    use mqc_elements, only: element_vdw_radius
    use mqc_physical_constants, only: ANGSTROM_TO_BOHR
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim
+   use mqc_population_analysis, only: mulliken_atomic_charges, &
+                                      mulliken_atomic_spin_populations
    use mqc_libcint_esp, only: esp_contract
    use libcint_fortran, only: LIBCINT_BAS_SLOTS, LIBCINT_ATOM_OF
    implicit none
@@ -89,26 +91,9 @@ contains
       type(error_t), intent(inout) :: error
 
       integer, allocatable :: owner(:)
-      real(dp) :: population
-      integer :: mu, nu
-
-      if (size(density, 1) /= mol%nao .or. size(overlap, 1) /= mol%nao) then
-         call error%set(ERROR_VALIDATION, "mulliken charges: density and overlap must "// &
-                        "be the size of the basis")
-         return
-      end if
 
       call ao_to_atom(mol, owner)
-      allocate (charges(mol%natm))
-      charges = mol%charges     !! nuclear charge to start from
-
-      do mu = 1, mol%nao
-         population = 0.0_dp
-         do nu = 1, mol%nao
-            population = population + density(mu, nu)*overlap(nu, mu)
-         end do
-         charges(owner(mu)) = charges(owner(mu)) - population
-      end do
+      call mulliken_atomic_charges(owner, mol%charges, density, overlap, charges, error)
    end subroutine mulliken_charges
 
    subroutine mulliken_spin_populations(mol, spin_density, overlap, populations, error)
@@ -130,25 +115,10 @@ contains
       type(error_t), intent(inout) :: error
 
       integer, allocatable :: owner(:)
-      real(dp) :: population
-      integer :: mu, nu
-
-      if (size(spin_density, 1) /= mol%nao .or. size(overlap, 1) /= mol%nao) then
-         call error%set(ERROR_VALIDATION, "mulliken spin populations: density and "// &
-                        "overlap must be the size of the basis")
-         return
-      end if
 
       call ao_to_atom(mol, owner)
-      allocate (populations(mol%natm), source=0.0_dp)
-
-      do mu = 1, mol%nao
-         population = 0.0_dp
-         do nu = 1, mol%nao
-            population = population + spin_density(mu, nu)*overlap(nu, mu)
-         end do
-         populations(owner(mu)) = populations(owner(mu)) + population
-      end do
+      call mulliken_atomic_spin_populations(owner, mol%natm, spin_density, overlap, &
+                                            populations, error)
    end subroutine mulliken_spin_populations
 
    subroutine chelpg_grid(mol, points, error, spacing, head_space)

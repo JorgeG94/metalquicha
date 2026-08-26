@@ -215,6 +215,21 @@ fit residual as a fraction of a tiny potential that looks poor.
 Requirements
 ------------
 
-Charges need the libcint integrals backend, since they need a density. In a build
-without it the Python methods raise with a message naming the CMake option rather
-than failing at import. Bond orders need tblite.
+Charges need an integrals backend, since they need a density. In a build with
+none the Python methods raise with a message naming the CMake option rather than
+failing at import. Bond orders need tblite.
+
+Both backends compute Mulliken charges, from the same code: the partition is a
+trace of ``D S`` against an AO-to-atom map, and only the map is arrived at
+differently, so the two cannot drift apart. **CHELPG is CPU only.** It fits the
+electrostatic potential at points away from the atoms, and the GPU backend
+builds no integral for that; asking for it there is refused by name rather than
+quietly answered with Mulliken, because the two schemes disagree by design.
+
+.. note::
+
+   The GPU charge path is compiled and unit-tested but has not been run against
+   cuEST, which needs an sm_80 card. The arithmetic it runs is the CPU path's,
+   so what is unverified is the AO-to-atom map and the overlap it is handed --
+   check a molecule with inequivalent atoms against the CPU backend before
+   trusting a GPU charge.

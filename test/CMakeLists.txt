@@ -317,6 +317,9 @@ endif()
 addtest(mqc_pcm_radii)
 addtest(mqc_atomic_radii)
 addtest(mqc_scf_common)
+# Unconditional on purpose: mqc_population_analysis lives in src/ and is
+# compiled in every configuration, unlike the backend-gated tests above.
+addtest(mqc_population_analysis)
 addtest(mqc_shared_helpers)
 
 # What a functional name means as a composition. Unconditional: the
