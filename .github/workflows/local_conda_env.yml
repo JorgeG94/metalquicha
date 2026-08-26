@@ -266,6 +266,29 @@ jobs:
           cmake --build build --target check_crest_callback --parallel 2
           ./build/check_crest_callback
 
+      # Compile the cuEST backend, which nothing else here does.
+      #
+      # MQC_ENABLE_CUEST is OFF by default and turning it on needs CUEST_ROOT
+      # and an sm_80 card, so backends/cuest/ -- the bindings and twelve
+      # backend modules -- is never handed to a compiler in CI. It can break
+      # and stay broken until someone with a card builds it, which is a long
+      # way from the change that broke it.
+      #
+      # Its bindings are plain bind(C) interfaces, so cuEST is needed to link
+      # but not to compile, and gfortran type-checks every call against them.
+      # This is a compile check and says nothing about whether cuEST returns
+      # the right numbers.
+      #
+      # On the default job only: it needs .mod files from a completed build and
+      # any build will do, so running it on all eleven would be the same check
+      # eleven times.
+      - name: Compile the cuEST backend
+        if: matrix.defaults
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          tools/check_cuest_compiles.sh build
+
       - name: Run unit tests
         shell: bash -el {0}
         run: |
