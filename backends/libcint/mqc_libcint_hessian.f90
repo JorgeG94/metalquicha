@@ -27,7 +27,7 @@ module mqc_libcint_hessian
                                     HESS_OVLP_II, HESS_OVLP_IJ, HESS_KIN_II, HESS_KIN_IJ, &
                                     HESS_NUC_II, HESS_NUC_IJ, HESS_RINV_II, HESS_RINV_IJ, &
                                     HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
-   use mqc_libcint_xc, only: xc_context_t, xc_kernel_apply
+   use mqc_libcint_xc, only: xc_context_t, xc_kernel_apply, xc_add_potential
    use mqc_libcint_xc_hessian, only: xc_potential_deriv
    use mqc_libcint_direct, only: build_fock_direct, build_fock_direct_many, &
                                  schwarz_bounds, direct_stats_t
@@ -811,6 +811,8 @@ contains
       real(dp), allocatable :: d1(:, :, :, :), w1(:, :, :, :)
       real(dp), allocatable :: mo1(:, :, :, :), s1a(:, :, :), hcore_a(:, :, :)
       real(dp), allocatable :: hcore(:, :), fock(:, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: vxc_ref(:, :)
+      real(dp) :: e_xc_ref, n_xc_ref
       real(dp), allocatable :: g1all(:, :, :), f1(:, :), half(:, :), c_occ(:, :)
       real(dp), allocatable :: tmp(:, :), work(:, :)
       real(dp), allocatable :: outer(:, :), middle(:, :)
@@ -829,9 +831,23 @@ contains
       if (error%has_error()) return
       allocate (fock(nao, nao), zero_h(nao, nao))
       zero_h = 0.0_dp
+      ! The converged Fock, and for a Kohn-Sham reference that means *its* Fock:
+      ! exact exchange at the functional's fraction and the exchange-correlation
+      ! potential added on. `W = D F D / 2` is built from this, so a
+      ! Hartree-Fock matrix here gives a wrong energy-weighted density and an
+      ! error spread across every atom pair -- large, smooth, and symmetric
+      ! enough to look like physics.
       call build_fock_direct(mol, hcore, density, bounds, fock, stats, error, &
-                             density_screen=.false.)
+                             density_screen=.false., k_scale=k_scale)
       if (error%has_error()) return
+      if (present(xc)) then
+         allocate (vxc_ref(nao, nao))
+         vxc_ref = 0.0_dp
+         call xc_add_potential(xc, mol, density, vxc_ref, e_xc_ref, n_xc_ref, error)
+         if (error%has_error()) return
+         fock = fock + vxc_ref
+         deallocate (vxc_ref)
+      end if
 
       ! Every atom's two-electron perturbation in one pass over the shell
       ! quartets, rather than `make_h1_atom` per atom over a stored `nao^4`
@@ -997,37 +1013,27 @@ contains
       !!
       !! The grid is held fixed throughout, as `xc_hessian` sets out.
       !!
-      !! **Not yet exact, and not wired to any driver.** Every piece below is
-      !! verified on its own -- the explicit exchange-correlation term against
-      !! differences of its own gradient, the potential derivative against
-      !! differences of the potential matrix, the Hartree-Fock skeleton and
-      !! response against differences of the Hartree-Fock gradient, and the
-      !! gradient being differenced against dE/dR to 1.3e-6. The assembly is
-      !! close but not right: on water at LDA exchange the worst entry is 0.12
-      !! from a difference of the analytic gradient, where Hartree-Fock through
-      !! the same harness manages 5e-6.
+      !! Validated against `pyscf.hessian.rks` with `grid_response = False`:
+      !! water at STO-3G and LDA exchange agrees to **1.8e-8** on every entry.
       !!
-      !! What is now known, and worth not rediscovering:
+      !! Three bugs were found getting there, and all three produce a Hessian
+      !! that is symmetric, translationally invariant and wrong -- so they are
+      !! worth naming rather than leaving in the history:
       !!
-      !!   * **Translational invariance is satisfied**, and converges with the
-      !!     grid -- 5.4e-4 at level 3, 2.6e-6 at level 9. That is the omitted
-      !!     grid response behaving exactly as it should, and it means the
-      !!     assembly is structurally sound rather than missing a whole term.
-      !!   * The remaining disagreement does **not** move with grid level
-      !!     (0.12399 to 0.12371 from level 3 to 9), so it is neither the grid
-      !!     response nor quadrature error.
-      !!   * It is not the coupled-perturbed convergence: tightening to 1e-10
-      !!     and 200 iterations changes nothing.
-      !!   * It is not a scale on the exchange-correlation term: doubling it
-      !!     gives 0.57 and halving it 0.16, so one is already near the minimum.
+      !!   * The relaxed mean field feeding `dW/dR` needed the same kernel and
+      !!     exchange fraction as the response operator. Without it the two
+      !!     halves of the response disagree about what the Fock operator is.
+      !!   * `xc_kernel_apply` accumulates into its output rather than
+      !!     assigning. A buffer shared across perturbations carried each one's
+      !!     kernel into the next: 0.49 of translational-invariance violation on
+      !!     its own.
+      !!   * **The converged Fock that `W = D F D / 2` is built from was a
+      !!     Hartree-Fock matrix** -- full exact exchange, no `V_xc`. That was
+      !!     the last 0.12, spread smoothly across every atom pair.
       !!
-      !! Two bugs were found getting this far and both are the kind that look
-      !! like physics. The relaxed mean field feeding `dW/dR` needed the same
-      !! kernel and exchange fraction as the response operator -- without it the
-      !! two halves of the response disagreed about what the Fock operator was.
-      !! And `xc_kernel_apply` accumulates into its output rather than assigning,
-      !! so a buffer shared across perturbations carried each one's kernel into
-      !! the next; that alone was 0.49 of translational-invariance violation.
+      !! Not wired to a driver yet: `xc_potential_deriv` is LDA-only, so this
+      !! refuses a GGA, and offering an analytic Hessian for one functional
+      !! family through a keyword that names none is worse than not offering it.
       use mqc_libcint_xc_hessian, only: xc_hessian
       type(libcint_molecule_t), intent(in), target :: mol
       integer, intent(in) :: atomic_numbers(:)

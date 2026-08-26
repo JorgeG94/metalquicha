@@ -400,11 +400,14 @@ contains
       call check(error, wtrans < 1.0e-3_dp, &
                  "the Kohn-Sham Hessian is not translationally invariant")
       if (allocated(error)) return
-      ! Not yet an agreement test. See `ks_hessian`, which records what this
-      ! number is and what has been ruled out; 0.13 is where it stands and
-      ! pinning it would be pinning a defect.
-      call check(error, worst < 2.0e-1_dp, &
-                 "the Kohn-Sham Hessian regressed against differences of the gradient")
+      ! Bounded by the finite difference, not by the Hessian. PySCF's own
+      ! analytic Kohn-Sham Hessian is 4.3e-4 from a difference of PySCF's own
+      ! gradient on this system, and ours is 5.2e-4 from a difference of ours --
+      ! the same quadrature noise, not an error in either. The tight check is
+      ! against PySCF's analytic Hessian directly, where this agrees to 1.8e-8;
+      ! that comparison lives in the validation suite because it needs PySCF.
+      call check(error, worst < 2.0e-3_dp, &
+                 "the Kohn-Sham Hessian disagrees with differences of the gradient")
    end subroutine test_ks_end_to_end
 
    subroutine ks_at(coords, hess, err, ok)
@@ -425,8 +428,7 @@ contains
       call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (.not. err%has_error()) then
          call ks_hessian(mol, WATER_Z, scf%density, scf%orbitals, scf%orbital_energies, &
-                         5, ctx, ctx%exx_fraction, hess, err, &
-                         max_iter=200, tol=1.0e-10_dp)
+                         5, ctx, ctx%exx_fraction, hess, err)
       end if
       call mol%destroy()
       ok = .not. err%has_error()
