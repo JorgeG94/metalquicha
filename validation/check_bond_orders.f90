@@ -22,6 +22,7 @@ program check_bond_orders
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t
    use mqc_method_xtb, only: xtb_method_t
+   use mqc_physical_constants, only: ANGSTROM_TO_BOHR
    implicit none
 
    integer :: n_bad
@@ -87,7 +88,6 @@ contains
       real(dp), intent(in) :: expected, tol
       integer, intent(inout) :: n_bad
 
-      real(dp), parameter :: ANGSTROM_TO_BOHR = 1.8897261254578281_dp
       type(physical_fragment_t) :: frag
       type(calculation_result_t) :: res
       type(xtb_method_t) :: xtb

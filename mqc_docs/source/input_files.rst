@@ -277,20 +277,27 @@ density-fitted integrals is refused rather than run, because those tensors are
 built for the full Coulomb kernel and the long-range exchange would simply be
 absent.
 
-**Two families are refused rather than approximated**, each checked on libxc's own
+**Functionals carrying non-local correlation** -- VV10, so ωB97X-V, ωB97M-V and
+B97M-V -- are evaluated rather than refused. That term is a double integral over
+the density rather than a functional of it at a point, so libxc supplies only the
+semilocal half and reports the two parameters ``b`` and ``c`` through
+``xc_nlc_coef``; the integral itself is this program's work. See
+`Non-local correlation (VV10)`_ below for the grid it runs on.
+
+**One family is still refused rather than approximated**, checked on libxc's own
 report of the functional rather than a list of names kept here:
 
-- **functionals carrying non-local correlation** (VV10, so ωB97M-V and relatives) --
-  that term is a double integral over the density, not a functional of it at a
-  point. Detected by ``xc_nlc_coef``.
 - **meta-GGAs needing the density Laplacian**, which is a second derivative of every
   basis function. Detected by the ``XC_FLAGS_NEEDS_LAPLACIAN`` flag.
 
-Each refusal names what is missing. Why they are refusals rather than
-approximations is worth stating: a functional whose exchange coefficient is taken
+The refusal names what is missing. Why it is a refusal rather than an
+approximation is worth stating: a functional whose exchange coefficient is taken
 at face value when it does not mean what a global hybrid's means returns a
 converged energy several Hartree out -- 3.4 for CAM-B3LYP, 6.4 for ωB97X, before
-range separation was handled -- and nothing about either run looks wrong.
+range separation was handled -- and nothing about either run looks wrong. Dropping
+VV10 is the same kind of error at a smaller size: on water/STO-3G it moves ωB97X-V
+by 43 mHa, 27 kcal/mol, on three atoms, and the run converges and prints a
+plausible number either way.
 
 What metalquicha adds on top is friendly names for combinations libxc has the
 parts for but not a name for the pair, plus double hybrids, which libxc does not
@@ -329,6 +336,15 @@ carry at all:
    * - ``cam-b3lyp``, ``camb3lyp``
      - range-separated hybrid
      - ``hyb_gga_xc_cam_b3lyp`` (ω = 0.33)
+   * - ``wb97x-v``, ``wb97xv``
+     - range-separated hybrid + VV10
+     - ``hyb_gga_xc_wb97x_v``
+   * - ``wb97m-v``, ``wb97mv``
+     - range-separated meta-GGA hybrid + VV10
+     - ``hyb_mgga_xc_wb97m_v``
+   * - ``b97m-v``, ``b97mv``
+     - meta-GGA + VV10
+     - ``mgga_xc_b97m_v``
    * - ``b2plyp``
      - double hybrid
      - 0.53 exact exchange, 0.47 B88; 0.27 MP2, 0.73 LYP
@@ -424,6 +440,7 @@ The integration grid, and how the quadrature walks it:
 
    "dft": {
      "grid_level": 3,
+     "nlc_grid_level": 1,
      "screening_tolerance": 1e-12,
      "block_size": 512
    }
@@ -431,6 +448,10 @@ The integration grid, and how the quadrature walks it:
 - ``grid_level``: 0 to 9, from the standard per-element tables -- the same tables
   PySCF uses, which is what makes a level-for-level comparison meaningful. Default
   3, and where a production calculation should start.
+- ``nlc_grid_level``: the level of the *separate* grid VV10's double integral runs
+  on, for a ``-V`` functional. Default 1. Negative keeps the default. Ignored
+  entirely by a functional with no non-local term. See
+  `Non-local correlation (VV10)`_.
 - ``radial_points`` / ``angular_points``: override the level for every atom, which
   is what a convergence study wants. Supplying these takes the level out of
   charge; supplying one without the other is refused rather than half-applied.
@@ -466,6 +487,84 @@ The integration grid, and how the quadrature walks it:
    The exchange-correlation *gradient* is not screened yet and evaluates the
    whole basis, so a ``Gradient`` or ``Optimize`` run sees the benefit in its SCF
    iterations and not in the derivative that follows them.
+
+Non-local correlation (VV10)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A ``-V`` functional -- ``wb97x-v``, ``wb97m-v``, ``b97m-v`` -- carries a
+correlation term that is not a functional of the density at a point:
+
+.. math::
+
+   E_c^{nl} = \int \rho(\mathbf{r})
+              \left[ \tfrac{1}{2} \int \rho(\mathbf{r}')\,
+              \Phi(\mathbf{r},\mathbf{r}')\, d\mathbf{r}' + \beta \right]
+              d\mathbf{r}
+
+libxc evaluates the semilocal half and reports the functional's own ``b`` and
+``c``; the double integral is evaluated here, folded into the potential, and the
+SCF converges on the resulting density. It is not a correction applied to a
+converged result afterwards.
+
+Both spins are handled. VV10 depends on the total density only, with no spin
+dependence anywhere in the kernel, so an unrestricted calculation evaluates it
+once on :math:`\rho_\alpha + \rho_\beta` and adds the identical contribution
+to each spin's matrix.
+
+Why it needs its own grid
+"""""""""""""""""""""""""
+
+The double integral costs the *product* of two point counts, per SCF iteration,
+where everything else on the grid costs one. At the default ``grid_level`` of 3
+that is 33,704 points on water and 84,712 on benzene -- 3.6 billion pairs an
+iteration for benzene, which is not a calculation anyone would wait for. So the
+non-local term runs on a grid of its own, and ``nlc_grid_level`` sets it.
+
+Accuracy of the VV10 energy against PySCF's, water/STO-3G, by level:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 40 40
+
+   * - ``nlc_grid_level``
+     - Points (water)
+     - Error in the VV10 energy
+   * - 0
+     - 2,328
+     - 2.95e-05 Ha
+   * - 1 (default)
+     - 10,128
+     - 4.44e-07 Ha
+   * - 2
+     - 21,952
+     - 2.09e-09 Ha
+   * - 3
+     - 33,704
+     - 8.00e-12 Ha
+
+Level 1 is the default because 4.4e-07 Ha is below what the rest of the
+calculation is uncertain by, at an eleventh of level 3's pair count. Raise it if
+you are comparing against a published number computed on a fine non-local grid;
+the term converges quickly, so there is rarely a reason to go past 2.
+
+.. important::
+
+   **A ``-V`` functional has no nuclear gradient.** The non-local term depends on
+   the nuclear positions twice over -- through :math:`|\mathbf{r}-\mathbf{r}'|`
+   and through the density and its gradient at both points -- and none of that is
+   implemented, so a ``Gradient`` or ``Optimize`` deck is refused rather than
+   handed forces that silently omit it.
+
+   Two of the three are also range-separated, and the range-separated gradient
+   refusal is reached first, so ``wb97x-v`` and ``wb97m-v`` report that instead.
+   ``b97m-v`` reports the VV10 one.
+
+.. note::
+
+   This is the CPU path. The GPU backend refuses ``-V`` functionals by name:
+   cuEST exposes the entry points for it, and this backend does not yet call
+   them, so evaluating the semilocal half alone would return a converged and
+   quietly wrong energy.
 
 Driver Section
 --------------

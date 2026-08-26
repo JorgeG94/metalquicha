@@ -7,13 +7,13 @@ module test_mqc_dft_grid
                            grid_level_angular, MIN_GRID_LEVEL, MAX_GRID_LEVEL, &
                            DEFAULT_GRID_LEVEL
    use mqc_dft_prune, only: PRUNE_NONE
+   use mqc_physical_constants, only: PI
    implicit none
    private
 
    public :: collect_mqc_dft_grid
 
    integer, parameter :: N_DIM = 3
-   real(dp), parameter :: PI = 3.14159265358979323846_dp
 
 contains
 

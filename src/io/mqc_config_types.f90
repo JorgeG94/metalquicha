@@ -256,6 +256,12 @@ module mqc_config_types
          !! backend default. Sets both how tightly the screen bites and how many
          !! blocks there are to spread over threads.
       integer :: dft_grid_level = 3
+      integer :: dft_nlc_grid_level = -1
+         !! `keywords.dft.nlc_grid_level`, the quadrature VV10's double integral
+         !! uses. Separate from `grid_level` because the non-local term costs
+         !! the *product* of two grid sizes while everything else costs one, so
+         !! the level that is right for exchange is an order of magnitude too
+         !! expensive here. Negative means the backend's own default.
       integer :: dft_radial_points = -1    !! -1 leaves grid_level in charge
       integer :: dft_angular_points = -1
          !! Fit J and K against the auxiliary basis, on the CPU backend

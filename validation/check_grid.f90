@@ -22,12 +22,12 @@ program check_grid
    use mqc_error, only: error_t
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid, grid_level_radial, grid_level_angular
    use mqc_dft_prune, only: PRUNE_NONE, PRUNE_NWCHEM, prune_scheme_name
+   use mqc_physical_constants, only: PI
    implicit none
 
    integer, parameter :: N_DIM = 3
    integer, parameter :: MAX_LEVEL = 5
    integer, parameter :: N_INTEGRANDS = 2
-   real(dp), parameter :: PI = 3.14159265358979323846_dp
    real(dp), parameter :: GAUSS_ALPHA = 1.3_dp
    real(dp), parameter :: SLATER_ZETA = 1.7_dp
 

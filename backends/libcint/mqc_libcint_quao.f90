@@ -28,6 +28,7 @@ module mqc_libcint_quao
                         aambs_element_counts
    use mqc_libcint_integrals, only: libcint_molecule_t, mixed_basis_overlap, &
                                     atom_ao_blocks
+   use mqc_physical_constants, only: HARTREE_TO_KCALMOL
    implicit none
    private
 
@@ -53,7 +54,6 @@ module mqc_libcint_quao
       !! magnitude above the bond energies chemistry quotes, so they are scaled
       !! to be comparable with them. Paper II says the treatment of resonance
       !! integrals will be revisited.
-   real(dp), parameter :: HARTREE_TO_KCAL = 627.5094740631_dp
 
    real(dp), parameter :: JACOBI_CRIT = 1.0e-10_dp
       !! GAMESS's `CRIT` in `LOCAL_MODELORB_DRIV`. Both the rotation magnitude
@@ -1165,7 +1165,7 @@ contains
       call pic_gemm(quao%orbitals, work, t, transa="T")
 
       if (present(interference)) interference = t*quao%population_bond_order
-      kbo = KBO_SCALE*t*quao%population_bond_order*HARTREE_TO_KCAL
+      kbo = KBO_SCALE*t*quao%population_bond_order*HARTREE_TO_KCALMOL
       deallocate (work, t)
    end subroutine kinetic_bond_orders
 

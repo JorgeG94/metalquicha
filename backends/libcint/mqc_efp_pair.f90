@@ -39,9 +39,9 @@ module mqc_efp_pair
    public :: dispersion_e8_damped
    public :: lmo_overlap
    public :: charge_transfer
-   !> Slot counts of the two higher dispersion records. Exposed because
-   !> anything unpacking one needs the same number, and two files agreeing by
-   !> coincidence is how a packing convention drifts apart.
+   ! Slot counts of the two higher dispersion records. Exposed because
+   ! anything unpacking one needs the same number, and two files agreeing by
+   ! coincidence is how a packing convention drifts apart.
    public :: N_DQ_SLOTS, N_QQ_SLOTS
 
    !> Overlap below which a pair's damping series is not evaluated at all,

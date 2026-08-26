@@ -33,9 +33,9 @@ module mqc_efp_read
 
    public :: efp_fragment_t
    public :: read_efp_potential
-   !> How many components each stored multipole carries. Exposed because anything
-   !> that unpacks one needs the same count, and two files agreeing by coincidence
-   !> is how a packing convention drifts.
+   ! How many components each stored multipole carries. Exposed because anything
+   ! that unpacks one needs the same count, and two files agreeing by coincidence
+   ! is how a packing convention drifts.
    public :: N_DIPOLE, N_QUADRUPOLE, N_OCTUPOLE
 
    !> Multipole components at one expansion point, in the file's own order.

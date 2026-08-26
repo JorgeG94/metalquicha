@@ -188,6 +188,26 @@ contains
          spec%n_components = 1
          spec%component(1) = xc_component_t("hyb_gga_xc_wb97x", 1.0_dp)
 
+         ! The -V family, which libxc carries and this table used to omit. Named
+         ! here so an unsupported one is refused for the reason it is actually
+         ! unsupported -- the non-local correlation check in `mqc_libcint_xc`, or
+         ! the meta-GGA one -- rather than with "libxc does not know the
+         ! functional", which was never true and read like a typo in the deck.
+      case ("wb97x-v", "wb97xv")
+         spec%from_libxc = .true.
+         spec%n_components = 1
+         spec%component(1) = xc_component_t("hyb_gga_xc_wb97x_v", 1.0_dp)
+
+      case ("wb97m-v", "wb97mv")
+         spec%from_libxc = .true.
+         spec%n_components = 1
+         spec%component(1) = xc_component_t("hyb_mgga_xc_wb97m_v", 1.0_dp)
+
+      case ("b97m-v", "b97mv")
+         spec%from_libxc = .true.
+         spec%n_components = 1
+         spec%component(1) = xc_component_t("mgga_xc_b97m_v", 1.0_dp)
+
       case ("cam-b3lyp", "camb3lyp")
          spec%from_libxc = .true.
          spec%n_components = 1

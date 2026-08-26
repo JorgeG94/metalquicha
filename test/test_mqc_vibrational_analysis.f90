@@ -5,6 +5,7 @@ module test_mqc_vibrational_analysis
                                        compute_reduced_masses, compute_force_constants, &
                                        compute_cartesian_displacements, print_vibrational_analysis
    use pic_types, only: dp
+   use mqc_physical_constants, only: AU_TO_MDYNE_ANG
    implicit none
    private
    public :: collect_mqc_vibrational_analysis_tests
@@ -26,9 +27,6 @@ module test_mqc_vibrational_analysis
 
    ! Test force constant (Hartree/Bohr^2)
    real(dp), parameter :: test_force_constant = 0.5_dp
-
-   ! Conversion factor: atomic units to mdyne/Angstrom
-   real(dp), parameter :: au_to_mdyne_angstrom = 15.569141_dp
 
    ! Number of atoms in test systems
    integer, parameter :: n_atoms_monatomic = 1
@@ -434,7 +432,7 @@ contains
 
       ! mdyne/A should be ~ 15.57 times atomic units
       call check(error, abs(force_constants_mdyne(n_coords_diatomic) - &
-                            force_constants(n_coords_diatomic)*au_to_mdyne_angstrom) < near_zero_threshold, &
+                            force_constants(n_coords_diatomic)*AU_TO_MDYNE_ANG) < near_zero_threshold, &
                  "mdyne/A conversion should be correct")
 
       deallocate (frequencies, eigenvalues, eigenvectors, reduced_masses, force_constants, &

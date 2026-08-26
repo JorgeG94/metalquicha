@@ -24,12 +24,12 @@ module test_mqc_fmo_partitions
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_libcint_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
    use mqc_error, only: error_t
+   use mqc_physical_constants, only: ANGSTROM_TO_BOHR
    implicit none
    private
 
    public :: collect_fmo_partitions
 
-   real(dp), parameter :: ANGSTROM_TO_BOHR = 1.8897261254578281_dp
    integer, parameter :: N_DIM = 3
    integer, parameter :: N_ETHANE = 8
    integer, parameter :: N_RING = 9

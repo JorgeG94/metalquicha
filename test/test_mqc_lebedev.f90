@@ -6,12 +6,11 @@ module test_mqc_lebedev
    use mqc_lebedev, only: lebedev_available_orders, lebedev_is_available, &
                           lebedev_order_at_least, lebedev_has_negative_weights, &
                           lebedev_grid
+   use mqc_physical_constants, only: PI
    implicit none
    private
 
    public :: collect_mqc_lebedev
-
-   real(dp), parameter :: PI = 3.14159265358979323846_dp
 
    !> Weights are exact rational-ish constants summed in a fixed order, so the
    !> sum-to-one check can be held to a few ulp over 5810 terms.
