@@ -60,12 +60,12 @@ module mqc_efp_potential
    public :: efp_potential_t
    public :: make_efp_potential
    public :: write_efp_potential
-   !> Exposed so a reader can invert it. The printed contraction coefficients carry
-   !> this factor, and recovering the raw ones is an exact division by it.
+   ! Exposed so a reader can invert it. The printed contraction coefficients carry
+   ! this factor, and recovering the raw ones is an exact division by it.
    public :: gamess_primitive_norm
    public :: from_gamess_ao_order
-   !> Its inverse, for anything that changes an orbital and must hand the result back
-   !> to a fragment still storing GAMESS's order. Rotation is the first such caller.
+   ! Its inverse, for anything that changes an orbital and must hand the result back
+   ! to a fragment still storing GAMESS's order. Rotation is the first such caller.
    public :: to_gamess_ao_order
    public :: frozen_core
 

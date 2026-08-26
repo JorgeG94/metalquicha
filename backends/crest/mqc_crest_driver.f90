@@ -92,13 +92,13 @@ contains
       character(len=*), parameter :: START_FILE = "crest_input.xyz"
       integer :: unit, i, io
 
-      !> **Single rank, refused rather than deadlocked.** CREST samples on one
-      !> rank with OpenMP threads underneath, while `compute_energy_and_forces`
-      !> expects every rank to call it. The two cannot both be satisfied, and
-      !> the failure if this is not caught is a hang rather than an error.
-      !>
-      !> Checked here rather than at build time so one binary serves both and
-      !> `mpirun -n 1` still works.
+      ! **Single rank, refused rather than deadlocked.** CREST samples on one
+      ! rank with OpenMP threads underneath, while `compute_energy_and_forces`
+      ! expects every rank to call it. The two cannot both be satisfied, and
+      ! the failure if this is not caught is a hang rather than an error.
+      !
+      ! Checked here rather than at build time so one binary serves both and
+      ! `mpirun -n 1` still works.
       if (resources%mpi_comms%world_comm%size() > 1) then
          call error%set(ERROR_VALIDATION, "conformer sampling runs on a single rank. "// &
                         "CREST samples on one rank with OpenMP underneath, and the "// &
@@ -113,10 +113,10 @@ contains
          return
       end if
 
-      !> The starting structure, written once. This is not the file-based
-      !> gradient exchange the callback exists to avoid: CREST reads it at
-      !> setup, the way any program reads its input geometry, and every
-      !> gradient after this crosses in memory.
+      ! The starting structure, written once. This is not the file-based
+      ! gradient exchange the callback exists to avoid: CREST reads it at
+      ! setup, the way any program reads its input geometry, and every
+      ! gradient after this crosses in memory.
       open (newunit=unit, file=START_FILE, status="replace", action="write", iostat=io)
       if (io /= 0) then
          call error%set(ERROR_IO, "could not write "//START_FILE)
@@ -124,10 +124,10 @@ contains
       end if
       write (unit, "(i0)") sys_geom%total_atoms
       write (unit, "(a)") "written by mqc for conformer sampling"
-      !> Symbols, not atomic numbers. CREST's reader takes an element symbol
-      !> here, and handed a bare integer it parses nothing and leaves `mol`
-      !> unusable -- which surfaces as a segfault later, inside `axis`, rather
-      !> than as a read error.
+      ! Symbols, not atomic numbers. CREST's reader takes an element symbol
+      ! here, and handed a bare integer it parses nothing and leaves `mol`
+      ! unusable -- which surfaces as a segfault later, inside `axis`, rather
+      ! than as a read error.
       do i = 1, sys_geom%total_atoms
          write (unit, "(a2,3f20.12)") element_number_to_symbol(sys_geom%element_numbers(i)), &
             sys_geom%coordinates(:, i)*BOHR_TO_ANGSTROM
@@ -146,8 +146,8 @@ contains
          return
       end if
 
-      !> Level two: this program, on what survives. Same arrangement CREST uses
-      !> for two xTB levels in `legacy_wrappers.f90`.
+      ! Level two: this program, on what survives. Same arrangement CREST uses
+      ! for two xTB levels in `legacy_wrappers.f90`.
       refine_level%id = jobtype%callback
       refine_level%external_engrad => crest_engrad
       refine_level%refine_lvl = refine%singlepoint
@@ -167,9 +167,9 @@ contains
          return
       end if
 
-      !> A search that never reached the refinement level looks like a success
-      !> from every other angle, and the ensemble energies would silently be
-      !> the sampling method's rather than this program's.
+      ! A search that never reached the refinement level looks like a success
+      ! from every other angle, and the ensemble energies would silently be
+      ! the sampling method's rather than this program's.
       if (ctx_calls < 1) then
          call error%set(ERROR_VALIDATION, "the search finished without ever refining. "// &
                         "The ensemble energies belong to the sampling method, not to "// &
@@ -188,15 +188,15 @@ contains
 
       ctx_geom = sys_geom
       ctx_config = config
-      !> **An energy, not a gradient.** The level this installs is registered
-      !> as `refine%singlepoint`, and CREST uses it to re-rank an ensemble --
-      !> it reads the energy and never looks at the gradient. Computing one
-      !> anyway is invisible at HF/STO-3G, where the arithmetic rounds to zero
-      !> against the per-call overhead, and is most of the cost at anything
-      !> worth refining with: an RI-MP2 gradient is several times its energy.
-      !>
-      !> If a level is ever registered as `refine%geoopt`, which does need
-      !> gradients, this has to become conditional on the stage.
+      ! **An energy, not a gradient.** The level this installs is registered
+      ! as `refine%singlepoint`, and CREST uses it to re-rank an ensemble --
+      ! it reads the energy and never looks at the gradient. Computing one
+      ! anyway is invisible at HF/STO-3G, where the arithmetic rounds to zero
+      ! against the per-call overhead, and is most of the cost at anything
+      ! worth refining with: an RI-MP2 gradient is several times its energy.
+      !
+      ! If a level is ever registered as `refine%geoopt`, which does need
+      ! gradients, this has to become conditional on the stage.
       ctx_config%calc_type = CALC_TYPE_ENERGY
       ctx_resources = resources
       ctx_ready = .true.
@@ -224,8 +224,8 @@ contains
          iostatus = 1
          return
       end if
-      !> A sampling run may not change what the molecule is. If it ever does,
-      !> the installed context is the wrong one rather than a resizable one.
+      ! A sampling run may not change what the molecule is. If it ever does,
+      ! the installed context is the wrong one rather than a resizable one.
       if (nat /= ctx_geom%total_atoms) then
          iostatus = 2
          return
@@ -239,12 +239,12 @@ contains
       ctx_calls = ctx_calls + 1
 
       ctx_geom%coordinates = xyz
-      !> `write_output` off: the driver writes results.json on every call
-      !> otherwise, so a search asking for a few thousand energies produced a
-      !> few thousand writes of a file each one immediately overwrote.
-      !>
-      !> No `gradient` argument, so none is computed. `grad` stays zero, which
-      !> is what CREST does with it at this refinement stage anyway.
+      ! `write_output` off: the driver writes results.json on every call
+      ! otherwise, so a search asking for a few thousand energies produced a
+      ! few thousand writes of a file each one immediately overwrote.
+      !
+      ! No `gradient` argument, so none is computed. `grad` stays zero, which
+      ! is what CREST does with it at this refinement stage anyway.
       call compute_energy_and_forces(ctx_geom, ctx_config, ctx_resources, &
                                      energy, write_output=.false.)
    end subroutine crest_engrad

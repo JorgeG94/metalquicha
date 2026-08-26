@@ -77,7 +77,7 @@ module mqc_libcint_cphf
    public :: distributed_dynamic_polarizability
    public :: distributed_dynamic_cross
    public :: casimir_polder_frequencies
-   !> Exposed side by side so a check can hold both builds of the same matrices.
+   ! Exposed side by side so a check can hold both builds of the same matrices.
    public :: build_hessian, build_hessian_df, build_hessian_mo
    public :: dynamic_response_iterative
    public :: static_response_dense

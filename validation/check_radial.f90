@@ -11,13 +11,13 @@ program check_radial
    use mqc_error, only: error_t
    use mqc_dft_radial, only: treutler_ahlrichs_radial, radial_volume_weights, &
                              treutler_xi, bragg_radius
+   use mqc_physical_constants, only: PI
    implicit none
 
    integer, parameter :: N_ELEMENTS = 5
    integer, parameter :: N_SIZES = 2
    integer, parameter :: ELEMENTS(N_ELEMENTS) = [1, 6, 8, 26, 79]
    integer, parameter :: SIZES(N_SIZES) = [25, 75]
-   real(dp), parameter :: PI = 3.14159265358979323846_dp
 
    real(dp), allocatable :: r(:), dr(:), w(:)
    type(error_t) :: error

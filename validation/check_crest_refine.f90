@@ -161,15 +161,15 @@ program check_crest_refine
    nat = env%ref%nat
    write (*, "(a)") ""
    write (*, "(a,i0)") "  atoms                 ", nat
-   !> Whatever parseflags chose stays: GFN2-xTB through tblite, in process.
-   !> That is the arrangement this is for, and it needs both projects to agree
-   !> on one tblite. They now can -- see the eeq_guess commit in the fork --
-   !> where before, CREST's pin to a dormant xtb_solvation branch and mqc's
-   !> release v0.6.0 could not coexist in one binary.
+   ! Whatever parseflags chose stays: GFN2-xTB through tblite, in process.
+   ! That is the arrangement this is for, and it needs both projects to agree
+   ! on one tblite. They now can -- see the eeq_guess commit in the fork --
+   ! where before, CREST's pin to a dormant xtb_solvation branch and mqc's
+   ! release v0.6.0 could not coexist in one binary.
    write (*, "(a,i0)") "  sampling level id     ", env%calc%calcs(1)%id
    write (*, "(a)") "  (6 = tblite, i.e. GFN2-xTB in process)"
 
-   !> mqc's side of the arrangement
+   ! mqc's side of the arrangement
    geom%n_monomers = 1
    geom%atoms_per_monomer = nat
    geom%total_atoms = nat
@@ -185,9 +185,9 @@ program check_crest_refine
    config%method_config%basis_set = "sto-3g"
    call install_mqc(geom, config, res)
 
-   !> The second level, applied to the ensemble the search leaves behind.
-   !> Same shape as legacy_wrappers.f90's two-xTB-level arrangement, with mqc
-   !> where the second xTB would be.
+   ! The second level, applied to the ensemble the search leaves behind.
+   ! Same shape as legacy_wrappers.f90's two-xTB-level arrangement, with mqc
+   ! where the second xTB would be.
    refine_level%id = jobtype%callback
    refine_level%external_engrad => mqc_refine_engrad
    refine_level%refine_lvl = refine%singlepoint
@@ -211,10 +211,10 @@ program check_crest_refine
       write (*, "(a)") "  FAIL: the search did not complete"
       error stop 1
    end if
-   !> The point of the whole arrangement: mqc is reached, and reached a few
-   !> times rather than tens of thousands. A zero here would mean the
-   !> refinement level was configured and never applied, which looks like
-   !> success from every other angle.
+   ! The point of the whole arrangement: mqc is reached, and reached a few
+   ! times rather than tens of thousands. A zero here would mean the
+   ! refinement level was configured and never applied, which looks like
+   ! success from every other angle.
    if (refine_calls < 1) then
       write (*, "(a)") "  FAIL: the refinement level was never applied"
       error stop 1

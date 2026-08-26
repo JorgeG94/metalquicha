@@ -28,10 +28,10 @@ program check_libxc
    ! interface and the spin constants, xc_f03_funcs_m the several thousand
    ! XC_* identifiers, which are generated at build time.
    use xc_f03_funcs_m, only: XC_LDA_X, XC_LDA_C_VWN
+   use mqc_physical_constants, only: PI
    implicit none
 
    integer, parameter :: NPOINT = 4
-   real(dp), parameter :: PI = 3.14159265358979323846_dp
 
    type(xc_f03_func_t) :: func
    type(xc_f03_func_info_t) :: info

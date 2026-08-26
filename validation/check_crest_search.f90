@@ -62,10 +62,10 @@ program check_crest_search
    real(wp), allocatable :: r0(:, :)
    real(wp) :: d(3)
 
-   !> The starting structure is a file, and that is not the file-based
-   !> gradient exchange this design exists to avoid: it is read once, at
-   !> setup, the way any program reads its input geometry. Every gradient
-   !> after this crosses in memory.
+   ! The starting structure is a file, and that is not the file-based
+   ! gradient exchange this design exists to avoid: it is read once, at
+   ! setup, the way any program reads its input geometry. Every gradient
+   ! after this crosses in memory.
    open (newunit=unit, file="crest_probe.xyz", status="replace", action="write")
    write (unit, "(a)") "3"
    write (unit, "(a)") "water"
@@ -96,16 +96,16 @@ program check_crest_search
 
    write (*, "(a,i0)") "    level 1 jobtype id   ", env%calc%calcs(1)%id
 
-   !> Swap whatever level parseflags chose for this program's own hook. This
-   !> is the whole point: CREST keeps its algorithm, its defaults and its
-   !> bookkeeping, and every energy it asks for comes from here.
+   ! Swap whatever level parseflags chose for this program's own hook. This
+   ! is the whole point: CREST keeps its algorithm, its defaults and its
+   ! bookkeeping, and every energy it asks for comes from here.
    env%calc%calcs(1)%id = jobtype%callback
    env%calc%calcs(1)%external_engrad => probe_engrad
    call env%calc%calcs(1)%printid(1, 1)
 
    write (*, "(a)") ""
-   !> spring lengths from the structure parseflags read, so the model's
-   !> minimum is where CREST starts
+   ! spring lengths from the structure parseflags read, so the model's
+   ! minimum is where CREST starts
    allocate (r0(env%ref%nat, env%ref%nat), source=0.0_wp)
    do i = 1, env%ref%nat
       do j = 1, env%ref%nat

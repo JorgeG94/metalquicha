@@ -5,12 +5,11 @@ module test_mqc_dft_radial
    use mqc_error, only: error_t
    use mqc_dft_radial, only: treutler_xi, bragg_radius, treutler_ahlrichs_radial, &
                              radial_volume_weights
+   use mqc_physical_constants, only: PI
    implicit none
    private
 
    public :: collect_mqc_dft_radial
-
-   real(dp), parameter :: PI = 3.14159265358979323846_dp
 
 contains
 

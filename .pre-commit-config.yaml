@@ -29,6 +29,16 @@ repos:
         exclude: '\.efp$'
   - repo: local
     hooks:
+      - id: mqc-lint
+        name: mqc house rules
+        # Comment markers and duplicated physical constants. `--allow-predoc`
+        # tolerates `!>` where it documents a declaration, because swapping
+        # those to `!!` in place would reattach the docstring to whatever sits
+        # above it; see tools/lint/README.md.
+        entry: tools/lint/mqc_lint.py --allow-predoc
+        language: system
+        types: [file]
+        files: '\.(f|F|f90|F90)$'
       - id: fprettify
         name: fprettify
         entry: fprettify --silent -i 3 -l 122

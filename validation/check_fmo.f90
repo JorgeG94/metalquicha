@@ -37,6 +37,7 @@ program check_fmo
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
+   use mqc_physical_constants, only: ANGSTROM_TO_BOHR
    implicit none
 
    integer, parameter :: N_DIM = 3
@@ -46,7 +47,6 @@ program check_fmo
    integer, parameter :: N_ETHANE = 8
    integer, parameter :: N_RING = 9
    integer, parameter :: N_DIMER = 6
-   real(dp), parameter :: ANGSTROM_TO_BOHR = 1.8897261254578281_dp
    integer :: n_bad
 
    n_bad = 0

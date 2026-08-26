@@ -106,9 +106,9 @@ contains
          return
       end if
       if (nat /= ctx_geom%total_atoms) then
-         !> CREST may not change the atom count under a sampling run, and if it
-         !> ever does the installed context is the wrong one rather than a
-         !> resizable one. Refuse instead of reallocating into a mismatch.
+         ! CREST may not change the atom count under a sampling run, and if it
+         ! ever does the installed context is the wrong one rather than a
+         ! resizable one. Refuse instead of reallocating into a mismatch.
          iostatus = 2
          return
       end if
@@ -157,8 +157,8 @@ program check_crest_callback
 
    failures = 0
 
-   !> a geometry with no symmetry at all, so a transposed or partially
-   !> copied array cannot accidentally give the right answer
+   ! a geometry with no symmetry at all, so a transposed or partially
+   ! copied array cannot accidentally give the right answer
    mol%nat = NAT
    allocate (mol%at(NAT), mol%xyz(3, NAT))
    mol%at = [8, 1, 1]
@@ -188,9 +188,9 @@ program check_crest_callback
       failures = failures + 1
    end if
 
-   !> Exact, not approximate. Both sides evaluate the same expression on the
-   !> same numbers; the only thing between them is the pointer call, so any
-   !> difference at all is a transport fault rather than arithmetic.
+   ! Exact, not approximate. Both sides evaluate the same expression on the
+   ! same numbers; the only thing between them is the pointer call, so any
+   ! difference at all is a transport fault rather than arithmetic.
    if (energy /= e_ref) then
       write (*, "(a)") "  FAIL: energy did not survive the callback"
       failures = failures + 1
@@ -200,23 +200,23 @@ program check_crest_callback
       failures = failures + 1
    end if
 
-   !> and the reference must not be zero, or the two comparisons above would
-   !> pass without the callback ever having been reached
+   ! and the reference must not be zero, or the two comparisons above would
+   ! pass without the callback ever having been reached
    if (e_ref == 0.0_wp) then
       write (*, "(a)") "  FAIL: the reference is zero; this check proves nothing"
       failures = failures + 1
    end if
 
-   !> ------------------------------------------------------------------
-   !> and now the same path with mqc's own SCF behind the pointer
-   !> ------------------------------------------------------------------
+   ! ------------------------------------------------------------------
+   ! and now the same path with mqc's own SCF behind the pointer
+   ! ------------------------------------------------------------------
 
-   !> The communicator has to be built the way app/main.f90 builds it.
-   !> resources_init only sets thread and GPU defaults -- it does not touch
-   !> MPI -- and compute_energy_and_forces returns its results only under
-   !> `world_comm%rank() == 0`, so an uninitialised comm makes the whole
-   !> calculation run and hand back nothing. It ran, printed a converged SCF,
-   !> and returned zero. Whatever drives CREST has to own this.
+   ! The communicator has to be built the way app/main.f90 builds it.
+   ! resources_init only sets thread and GPU defaults -- it does not touch
+   ! MPI -- and compute_energy_and_forces returns its results only under
+   ! `world_comm%rank() == 0`, so an uninitialised comm makes the whole
+   ! calculation run and hand back nothing. It ran, printed a converged SCF,
+   ! and returned zero. Whatever drives CREST has to own this.
    call pic_mpi_init()
    res%mpi_comms%world_comm = comm_world()
    res%mpi_comms%node_comm = res%mpi_comms%world_comm%split()
@@ -225,11 +225,11 @@ program check_crest_callback
    write (*, "(a)") ""
    write (*, "(a,i0)") "  ranks in this run     ", nranks
 
-   !> Conformer sampling runs on one rank: CREST loops on the master with
-   !> OpenMP underneath, while compute_energy_and_forces expects every rank to
-   !> call it. Refusing here is the guard the scoping settled on -- at run time
-   !> rather than at build time, so one binary serves both and `mpirun -n 1`
-   !> is still allowed.
+   ! Conformer sampling runs on one rank: CREST loops on the master with
+   ! OpenMP underneath, while compute_energy_and_forces expects every rank to
+   ! call it. Refusing here is the guard the scoping settled on -- at run time
+   ! rather than at build time, so one binary serves both and `mpirun -n 1`
+   ! is still allowed.
    if (nranks > 1) then
       write (*, "(a)") "  SKIP: CREST sampling runs on a single rank; re-run without mpirun"
    else
@@ -249,10 +249,10 @@ program check_crest_callback
 
       allocate (g_direct(3, NAT), g_crest(3, NAT))
 
-      !> mqc on its own
+      ! mqc on its own
       call compute_energy_and_forces(geom, config, res, e_direct, gradient=g_direct)
 
-      !> the same calculation, reached through CREST's pointer
+      ! the same calculation, reached through CREST's pointer
       call install_mqc_engrad(geom, config, res)
       sett2%id = jobtype%callback
       sett2%external_engrad => mqc_engrad
@@ -267,9 +267,9 @@ program check_crest_callback
          write (*, "(a,i0)") "  FAIL: CREST reported status ", io
          failures = failures + 1
       end if
-      !> Exact again: this compares mqc against mqc, so the callback is the
-      !> only thing in between. It says nothing about whether the gradient is
-      !> right -- only that it arrives unaltered, which is what this checks.
+      ! Exact again: this compares mqc against mqc, so the callback is the
+      ! only thing in between. It says nothing about whether the gradient is
+      ! right -- only that it arrives unaltered, which is what this checks.
       if (e_crest /= e_direct) then
          write (*, "(a)") "  FAIL: the SCF energy changed crossing the callback"
          failures = failures + 1
