@@ -31,7 +31,8 @@ module mqc_dlfind_bridge
                                   OPT_ALGO_SD, OPT_ALGO_CG, OPT_ALGO_LBFGS, OPT_ALGO_PRFO, &
                                   OPT_ALGO_CG_AUTO, OPT_ALGO_NR, OPT_ALGO_DAMPED, &
                                   OPT_HESSIAN_UPDATE_ENGINE, hessian_i, &
-                                  algorithm_needs_hessian, constraint_atom_count
+                                  algorithm_needs_hessian, constraint_atom_count, &
+                                  NEB_ENDS_FREE, NEB_ENDS_PERPENDICULAR
    use mqc_error, only: error_t, ERROR_GENERIC, ERROR_VALIDATION
    implicit none
    private
@@ -47,6 +48,17 @@ module mqc_dlfind_bridge
    integer(c_int), parameter :: DLF_COORDS_DLC = 3
    integer(c_int), parameter :: DLF_COORDS_HDLC_TC = 2
    integer(c_int), parameter :: DLF_COORDS_DLC_TC = 4
+
+   ! Chain-of-states runs are selected through `icoord`, not through `iopt`:
+   ! DL-FIND reads the unit place as the coordinate system and the hundreds and
+   ! tens as what the band is. 10X is NEB with free endpoints, 11X endpoints
+   ! moving only perpendicular to their tangent, 12X frozen endpoints. 190 is
+   ! not NEB at all -- it is the quantum transition state search -- which is why
+   ! the offsets stop at 120 and are added to a unit place rather than used
+   ! whole. The implementation is improved-tangent NEB with a climbing image.
+   integer(c_int), parameter :: DLF_NEB_ENDS_FREE = 100
+   integer(c_int), parameter :: DLF_NEB_ENDS_PERPENDICULAR = 110
+   integer(c_int), parameter :: DLF_NEB_ENDS_FROZEN = 120
 
    integer(c_int), parameter :: DLF_OPT_SD = 0
    integer(c_int), parameter :: DLF_OPT_CG_AUTO = 1
@@ -85,6 +97,10 @@ module mqc_dlfind_bridge
    integer, allocatable, save :: atomic_numbers(:)
    integer, allocatable, save :: atom_residues(:)
    real(dp), allocatable, save :: initial_coords(:, :)
+   real(dp), allocatable, save :: endpoint_coords(:, :)
+      !! The second structure of a chain-of-states run, held here for the same
+      !! reason the geometry is: `cb_get_params` is a C callback and takes no
+      !! context of its own.
    real(dp), allocatable, save :: latest_coords(:, :)
    real(dp), save :: latest_energy = 0.0_dp
    logical, save :: have_result = .false.
@@ -122,7 +138,7 @@ contains
 
    subroutine dlfind_optimize(opt_settings, natoms, znuc, residues, coords, &
                               energy_gradient, step_taken, final_energy, error, &
-                              hessian)
+                              hessian, endpoint)
       !! Minimize `coords` in place, calling `energy_gradient` for each geometry
       !!
       !! Coordinates are Bohr in and Bohr out. On success `coords` holds the
@@ -142,12 +158,15 @@ contains
       real(dp), intent(out) :: final_energy
       type(error_t), intent(inout) :: error
       procedure(hessian_i), optional :: hessian
+      real(dp), intent(in), optional :: endpoint(:, :)
+         !! The product geometry, Bohr, same atom order as `coords`. Present
+         !! turns this into a chain-of-states run.
          !! Second derivatives, for the algorithms that climb rather than
          !! descend. Absent is not a refusal: DL-FIND falls back to two-point
          !! finite differences of the gradients it is already asking for, which
          !! costs `6N` of them per Hessian and gets the same answer.
 
-      integer(c_int) :: nvar, nspec
+      integer(c_int) :: nvar, nspec, nvar2_in
       integer :: k, n_cons_atoms, ncons_here
 
       final_energy = 0.0_dp
@@ -234,6 +253,11 @@ contains
       allocate (atomic_numbers(natoms), source=znuc)
       allocate (atom_residues(natoms), source=residues)
       allocate (initial_coords(3, natoms), source=coords)
+      ! Held for `cb_get_params`, and cleared when absent: this module's state is
+      ! `save`, so a second optimization in the same process would otherwise
+      ! inherit the previous run's path and quietly become a chain-of-states run.
+      if (allocated(endpoint_coords)) deallocate (endpoint_coords)
+      if (present(endpoint)) allocate (endpoint_coords(3, natoms), source=endpoint)
       allocate (latest_coords(3, natoms), source=coords)
 
       nvar = int(3*natoms, c_int)
@@ -258,10 +282,17 @@ contains
       if (allocated(opt_settings%constraints)) ncons_here = size(opt_settings%constraints)
       nspec = int(3*natoms + 5*ncons_here, c_int)
 
-      ! nvarin2 = 0: the second coordinate array carries NEB images, a reaction
-      ! path or per-atom masses and weights, none of which a minimization uses.
-      ! DL-FIND still hands the callback a length of max(nvarin2,1).
-      call api_dl_find(nvar, 0_c_int, nspec, 1_c_int, &
+      ! The second coordinate array carries NEB images, a reaction endpoint or
+      ! per-atom masses and weights. A minimization uses none of them and
+      ! passes zero, and DL-FIND still hands the callback a length of
+      ! max(nvarin2,1). A chain-of-states run passes one frame: the product.
+      ! DL-FIND interpolates the images between it and the geometry it was
+      ! given, so a path is two structures and a count rather than a file of
+      ! guesses.
+      nvar2_in = 0_c_int
+      if (allocated(endpoint_coords)) nvar2_in = int(3*natoms, c_int)
+
+      call api_dl_find(nvar, nvar2_in, nspec, 1_c_int, &
                        c_funloc(cb_error), &
                        c_funloc(cb_get_gradient), &
                        c_funloc(cb_get_hessian), &
@@ -433,7 +464,19 @@ contains
       nmass = 0_c_int
       nweight = 0_c_int
 
-      icoord = dlfind_coordinates(settings%coordinates)
+      ! A band only when a second structure was actually given. The deck asking
+      ! for images or a spring constant without an endpoint is not a path, and
+      ! silently running one from a single geometry would optimize something
+      ! nobody described.
+      if (allocated(endpoint_coords)) then
+         icoord = dlfind_coordinates(settings%coordinates, dlfind_neb_band(settings%neb_ends))
+         if (settings%n_images > 0) nimage = int(settings%n_images, c_int)
+         if (settings%neb_spring >= 0.0_dp) nebk = real(settings%neb_spring, c_double)
+         nframe = 1_c_int
+         coords2(1:3*n_atoms) = reshape(endpoint_coords, [3*n_atoms])
+      else
+         icoord = dlfind_coordinates(settings%coordinates)
+      end if
       iopt = dlfind_algorithm(settings%algorithm)
 
       tolerance = real(settings%gradient_tolerance, c_double)
@@ -656,9 +699,15 @@ contains
 
    end function dlfind_print_level
 
-   pure function dlfind_coordinates(coordinates) result(icoord)
+   pure function dlfind_coordinates(coordinates, band) result(icoord)
       !! This program's coordinate-system numbering, in DL-FIND's
+      !!
+      !! `band` is added on top: zero for an ordinary single-structure run, and
+      !! one of the `DLF_NEB_ENDS_*` offsets for a chain of states. The unit
+      !! place stays the coordinate system either way, which is exactly how
+      !! DL-FIND decodes it.
       integer, intent(in) :: coordinates
+      integer(c_int), intent(in), optional :: band
       integer(c_int) :: icoord
 
       select case (coordinates)
@@ -673,7 +722,23 @@ contains
       case default
          icoord = DLF_COORDS_CARTESIAN
       end select
+      if (present(band)) icoord = icoord + band
    end function dlfind_coordinates
+
+   pure function dlfind_neb_band(ends) result(band)
+      !! This program's endpoint treatment, as DL-FIND's `icoord` offset
+      integer, intent(in) :: ends
+      integer(c_int) :: band
+
+      select case (ends)
+      case (NEB_ENDS_FREE)
+         band = DLF_NEB_ENDS_FREE
+      case (NEB_ENDS_PERPENDICULAR)
+         band = DLF_NEB_ENDS_PERPENDICULAR
+      case default
+         band = DLF_NEB_ENDS_FROZEN
+      end select
+   end function dlfind_neb_band
 
    pure function dlfind_algorithm(algorithm) result(iopt)
       !! This program's algorithm numbering, in DL-FIND's

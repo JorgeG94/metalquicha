@@ -41,6 +41,8 @@ module mqc_optimizer_types
    public :: constraint_from_string, constraint_atom_count
    public :: OPT_TARGET_MINIMUM, OPT_TARGET_SADDLE
    public :: target_from_string, target_to_string, algorithm_finds_saddle
+   public :: NEB_ENDS_FROZEN, NEB_ENDS_PERPENDICULAR, NEB_ENDS_FREE, MIN_NEB_IMAGES
+   public :: neb_ends_from_string, neb_ends_to_string
    public :: algorithm_needs_hessian
 
    ! This program's own numbering rather than DL-FIND's, even though DL-FIND is
@@ -100,6 +102,20 @@ module mqc_optimizer_types
       !! means the search fell off the ridge into a basin; two or more means it
       !! is a higher-order stationary point and not a transition state.
 
+   ! How a chain-of-states run treats the two structures it was given. The
+   ! endpoints are usually already optimized minima, so freezing them is the
+   ! default: relaxing a minimum again costs images and moves nothing.
+   integer, parameter :: MIN_NEB_IMAGES = 3
+      !! DL-FIND's own floor. Two images are the two endpoints, so a band of
+      !! two has nothing between them to relax.
+   integer, parameter :: NEB_ENDS_FROZEN = 0
+   integer, parameter :: NEB_ENDS_PERPENDICULAR = 1
+      !! Endpoints move only perpendicular to their own tangent, which lets a
+      !! slightly-off endpoint settle onto the path without sliding along it.
+   integer, parameter :: NEB_ENDS_FREE = 2
+      !! Fully relaxed endpoints. For a pair of structures that are not yet
+      !! minima, at the cost of the path being free to shorten itself.
+
    ! How the engine carries curvature between steps once it has a Hessian.
    ! Only the algorithms that hold one pay attention to this.
    integer, parameter :: OPT_HESSIAN_UPDATE_ENGINE = -1  !! Leave DL-FIND's own choice
@@ -158,6 +174,18 @@ module mqc_optimizer_types
       integer :: target = OPT_TARGET_MINIMUM
          !! Whether this run is looking for a minimum or a first-order saddle.
          !! Independent of `algorithm` on purpose -- see `OPT_TARGET_SADDLE`.
+      character(len=:), allocatable :: endpoint
+         !! Path to a second geometry: the product, for a chain-of-states run.
+         !! Unallocated is the ordinary single-structure optimization, and is
+         !! what makes NEB opt-in rather than inferred.
+      integer :: n_images = 0
+         !! Images along the path, endpoints included. Zero means the engine's
+         !! own default. DL-FIND refuses fewer than three, since two images are
+         !! just the endpoints and there is no path between them to relax.
+      real(dp) :: neb_spring = -1.0_dp
+         !! Spring constant holding neighbouring images apart. Negative means
+         !! the engine default.
+      integer :: neb_ends = NEB_ENDS_FROZEN
       integer :: hessian_update = OPT_HESSIAN_UPDATE_ENGINE
          !! How curvature is carried between steps once a Hessian exists.
          !! Ignored by the algorithms that never build one.
@@ -372,6 +400,40 @@ contains
 
       needs = algorithm == OPT_ALGO_PRFO .or. algorithm == OPT_ALGO_NR
    end function algorithm_needs_hessian
+
+   pure function neb_ends_from_string(text) result(ends)
+      !! Parse how a deck wants the path endpoints treated
+      character(len=*), intent(in) :: text
+      integer :: ends
+
+      select case (lowercase(text))
+      case ("frozen", "fixed")
+         ends = NEB_ENDS_FROZEN
+      case ("perpendicular", "perp")
+         ends = NEB_ENDS_PERPENDICULAR
+      case ("free", "relaxed")
+         ends = NEB_ENDS_FREE
+      case default
+         ends = -2
+      end select
+   end function neb_ends_from_string
+
+   pure function neb_ends_to_string(ends) result(text)
+      !! Name an endpoint treatment, for the log
+      integer, intent(in) :: ends
+      character(len=:), allocatable :: text
+
+      select case (ends)
+      case (NEB_ENDS_FROZEN)
+         text = "frozen"
+      case (NEB_ENDS_PERPENDICULAR)
+         text = "perpendicular"
+      case (NEB_ENDS_FREE)
+         text = "free"
+      case default
+         text = "unknown"
+      end select
+   end function neb_ends_to_string
 
    pure function algorithm_finds_saddle(algorithm) result(can)
       !! Whether this algorithm can converge on a first-order saddle

@@ -29,7 +29,7 @@ module mqc_geometry_optimizer
                                   OPT_COORDS_CARTESIAN, OPT_COORDS_UNKNOWN, OPT_ALGO_UNKNOWN, &
                                   coordinates_to_string, algorithm_to_string, &
                                   algorithm_needs_hessian
-   use mqc_physical_fragment, only: system_geometry_t, to_angstrom
+   use mqc_physical_fragment, only: system_geometry_t, to_angstrom, to_bohr
    use mqc_bond_perception, only: connected_components
    use mqc_config_adapter, only: driver_config_t
    use mqc_config_types, only: bond_t
@@ -140,6 +140,7 @@ contains
       integer :: probe_status
       real(dp) :: final_energy
       real(dp), allocatable :: coords(:, :)
+      real(dp), allocatable :: endpoint_geom(:, :)
       integer, allocatable :: atomic_numbers(:)
       integer, allocatable :: residues(:)
 
@@ -255,15 +256,22 @@ contains
          ! the same matrix and slower -- so the argument is omitted rather than
          ! passed and refused per geometry, which would spend a failed
          ! calculation to learn what is already known here.
+         ! `endpoint_geom` stays unallocated for an ordinary optimization, and an
+         ! unallocated allocatable is absent at an optional dummy -- so one pair
+         ! of call sites serves both the band and the single structure.
+         call load_endpoint(config%optimization%endpoint, atomic_numbers, endpoint_geom, error)
+         if (error%has_error()) return
+
          if (algorithm_needs_hessian(config%optimization%algorithm) .and. &
              is_restricted_hf(config)) then
             call dlfind_optimize(config%optimization, n_atoms, atomic_numbers, residues, &
                                  coords, evaluate_energy_gradient, record_step, &
-                                 final_energy, error, hessian=evaluate_hessian)
+                                 final_energy, error, hessian=evaluate_hessian, &
+                                 endpoint=endpoint_geom)
          else
             call dlfind_optimize(config%optimization, n_atoms, atomic_numbers, residues, &
                                  coords, evaluate_energy_gradient, record_step, &
-                                 final_energy, error)
+                                 final_energy, error, endpoint=endpoint_geom)
          end if
          call logger%info("  "//repeat("-", 69))
 
@@ -778,6 +786,66 @@ contains
       call logger%info(" ")
 
    end subroutine run_final_hessian
+
+   subroutine load_endpoint(path, atomic_numbers, endpoint, error)
+      !! Read the second structure of a chain-of-states run
+      !!
+      !! Unallocated on return when no endpoint was asked for, which is how the
+      !! caller passes "absent" to an optional dummy without branching.
+      !!
+      !! The two checks here are the ones that make a path meaningful. Atom
+      !! *count* is obvious. Atom *order* is not, and it is the one that bites:
+      !! DL-FIND interpolates image `i` between coordinate `i` of each
+      !! structure, so a product written with two atoms swapped describes a
+      !! reaction in which those atoms trade places, and the band relaxes to
+      !! something with no chemical meaning while converging perfectly happily.
+      use mqc_xyz_reader, only: read_xyz_file
+      use mqc_geometry, only: geometry_type
+      use mqc_elements, only: element_symbol_to_number
+      character(len=:), allocatable, intent(in) :: path
+      integer, intent(in) :: atomic_numbers(:)
+      real(dp), allocatable, intent(out) :: endpoint(:, :)
+      type(error_t), intent(inout) :: error
+
+      type(geometry_type) :: geom
+      type(error_t) :: read_error
+      integer :: i, z
+
+      if (.not. allocated(path)) return
+
+      call read_xyz_file(path, geom, read_error)
+      if (read_error%has_error()) then
+         call error%set(ERROR_VALIDATION, "keywords.optimization.endpoint could not be "// &
+                        "read: "//read_error%get_message())
+         return
+      end if
+
+      if (geom%natoms /= size(atomic_numbers)) then
+         call error%set(ERROR_VALIDATION, "keywords.optimization.endpoint has "// &
+                        trim(to_char(geom%natoms))//" atoms and the starting geometry has "// &
+                        trim(to_char(size(atomic_numbers)))// &
+                        ". A reaction path runs between two structures of the same system.")
+         return
+      end if
+
+      do i = 1, geom%natoms
+         z = element_symbol_to_number(trim(geom%elements(i)))
+         if (z /= atomic_numbers(i)) then
+            call error%set(ERROR_VALIDATION, "keywords.optimization.endpoint disagrees with "// &
+                           "the starting geometry at atom "//trim(to_char(i))//": "// &
+                           trim(element_number_to_symbol(atomic_numbers(i)))//" there, "// &
+                           trim(geom%elements(i))//" here. The images are interpolated atom "// &
+                           "by atom, so the two files have to list the same atoms in the "// &
+                           "same order.")
+            return
+         end if
+      end do
+
+      allocate (endpoint(3, geom%natoms))
+      do i = 1, geom%natoms
+         endpoint(:, i) = to_bohr(geom%coords(:, i))
+      end do
+   end subroutine load_endpoint
 
    subroutine report_reaction_mode(frequencies, cart_disp, sys_geom)
       !! Name the atoms the imaginary mode actually moves

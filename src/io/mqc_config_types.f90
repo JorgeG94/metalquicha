@@ -418,6 +418,10 @@ module mqc_config_types
       logical :: opt_hess_end = .false.                !! Hessian at the converged geometry
       character(len=:), allocatable :: opt_hessian_update  !! none, powell, bofill, auto
       character(len=:), allocatable :: opt_target  !! minimum or saddle
+      character(len=:), allocatable :: opt_endpoint  !! xyz of the product, for NEB
+      character(len=:), allocatable :: opt_neb_ends  !! frozen, perpendicular, free
+      integer :: opt_n_images = 0                      !! Images along the path
+      real(dp) :: opt_neb_spring = -1.0_dp             !! <0 = engine default
       real(dp) :: opt_timestep = -1.0_dp               !! Damped dynamics step
       real(dp) :: opt_friction = -1.0_dp               !! Damped dynamics start friction
       real(dp) :: opt_friction_factor = -1.0_dp        !! Friction decay while descending

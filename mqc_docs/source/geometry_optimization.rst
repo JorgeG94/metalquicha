@@ -279,6 +279,19 @@ All optional. Everything under ``keywords.optimization``:
      - ``minimum``
      - ``minimum`` or ``saddle``. What the run is looking for, which decides
        how ``hess_end`` reads its own result. See :ref:`saddle-search`
+   * - ``endpoint``
+     - none
+     - Path to a second geometry. Turns the run into a chain of states between
+       it and the starting structure. See :ref:`neb`
+   * - ``images``
+     - engine
+     - Images along the path, endpoints included. At least 3
+   * - ``neb_spring``
+     - engine
+     - Spring constant holding neighbouring images apart
+   * - ``neb_endpoints``
+     - ``frozen``
+     - ``frozen``, ``perpendicular`` or ``free``
    * - ``frozen_atoms``
      - none
      - 0-based indices held at their input position. See :ref:`opt-constraints`
@@ -357,6 +370,68 @@ around on anything but a small system.
 and an update thereafter, rather than a fresh one per step. ``bofill`` is the
 usual choice for a saddle point, because it does not assume the matrix is
 positive definite -- which at a transition state it is not.
+
+.. _neb:
+
+Finding the guess: a path between two structures
+-------------------------------------------------
+
+P-RFO converges on the saddle nearest where it starts, so the hard part of a
+transition state is usually the starting geometry rather than the optimization.
+Where reactant and product are both known, the path between them supplies one.
+
+Give the second structure as ``endpoint`` and the run becomes a nudged elastic
+band: a chain of images between the two, relaxed together, with springs holding
+neighbours apart so the chain cannot slide into either well::
+
+    "keywords": {
+      "optimization": {
+        "algorithm": "lbfgs",
+        "endpoint": "product.xyz",
+        "images": 7,
+        "neb_endpoints": "frozen"
+      }
+    }
+
+Only ``endpoint`` turns this on. ``images``, ``neb_spring`` or
+``neb_endpoints`` without it is refused rather than run as an ordinary
+optimization, because a deck that describes a band and supplies one structure
+has asked for something it did not provide.
+
+The two structures must be the same atoms in the same order. This is checked,
+and the check is worth more than it sounds: images are interpolated atom by
+atom, so a product written with two atoms swapped describes a reaction in which
+those atoms trade places. That band relaxes perfectly happily to something with
+no chemical meaning.
+
+The implementation is improved-tangent NEB with a climbing image. The climbing
+image is the one that matters for a transition state: once the band has settled,
+the highest image stops obeying the springs and is driven uphill along the path
+instead, so it converges on the barrier top rather than near it. Its geometry is
+what you hand to P-RFO.
+
+``neb_endpoints`` decides whether the two ends may move. ``frozen`` is the
+default and the usual case, since endpoints are normally already-optimized
+minima and relaxing them again spends images to move nothing.
+``perpendicular`` lets a slightly-off endpoint settle onto the path without
+sliding along it, and ``free`` relaxes them fully.
+
+.. note::
+
+   Images are interpolated on a straight line between the two structures, so
+   the interpolation has to be physical. On ammonia inversion it is: the
+   nitrogen passes through the plane of the hydrogens, which is the reaction.
+   On ``HCN`` to ``HNC`` it is not -- the hydrogen is at one end of the molecule
+   in the reactant and the other end in the product, and interpolating drives it
+   straight through both nuclei. The middle images then have no SCF and the run
+   stops with an energy evaluation failure. Where the straight line is
+   unphysical, optimize a rough intermediate by hand and start P-RFO from it
+   instead.
+
+Ammonia inversion, ``HF/STO-3G``, seven images: the band converges with the
+climbing image at the middle of the path, and the geometry it lands on has all
+four atoms coplanar -- the ``D3h`` transition state -- at a barrier of 0.0164
+Hartree, or 10.3 kcal/mol.
 
 .. _saddle-search:
 
