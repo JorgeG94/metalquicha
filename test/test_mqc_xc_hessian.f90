@@ -41,7 +41,8 @@ contains
 
       testsuite = [ &
                   new_unittest("xc_hessian_differences_its_own_gradient", test_against_fd), &
-                  new_unittest("xc_hessian_refuses_a_gga", test_refuses_gga) &
+                  new_unittest("xc_hessian_gga_differences_its_gradient", test_gga_against_fd), &
+                  new_unittest("xc_hessian_refuses_a_meta_gga", test_refuses_mgga) &
                   ]
    end subroutine collect_mqc_xc_hessian
 
@@ -171,13 +172,68 @@ contains
       end do
    end subroutine test_against_fd
 
-   subroutine test_refuses_gga(error)
-      !! A GGA is refused rather than silently missing its sigma terms
+   subroutine test_gga_against_fd(error)
+      !! The same comparison for a GGA, where the sigma channel is
       !!
-      !! The terms a GGA adds need third derivatives of the basis functions, and
-      !! the grid evaluator produces two. Omitting them would give a Hessian
-      !! wrong by a few percent that looks entirely plausible, so the refusal is
-      !! the feature.
+      !! Worth its own test rather than a parameter on the first: a GGA adds
+      !! five terms the LDA does not have, and the one that consumes third
+      !! derivatives of the basis functions appears only on the diagonal atom
+      !! block. An error confined there would leave every off-diagonal entry
+      !! correct, so a test that stopped at the first disagreement on an LDA
+      !! would never reach it.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: H = 2.0e-3_dp
+      real(dp), parameter :: TOL = 2.0e-5_dp
+      real(dp) :: hess(3, 3, 3, 3), plus(3, 3), minus(3, 3), shifted(3, 3)
+      real(dp) :: fd
+      real(dp), allocatable :: dens(:, :)
+      type(xc_context_t) :: ctx
+      type(error_t) :: err
+      logical :: ok
+      integer :: ia, a, ja, b
+
+      if (.not. xc_available()) return
+
+      call reference_state("gga_x_pbe", ctx, dens, err, ok)
+      call check(error, ok, "the reference Kohn-Sham state failed")
+      if (allocated(error)) return
+
+      call xc_at(ctx, WATER, hess=hess, density=dens, err=err, ok=ok)
+      call check(error, ok, "the analytic GGA exchange-correlation Hessian failed")
+      if (allocated(error)) return
+
+      do ia = 1, 3
+         do a = 1, 3
+            shifted = WATER
+            shifted(a, ia) = shifted(a, ia) + H
+            call xc_at(ctx, shifted, gradient=plus, density=dens, err=err, ok=ok)
+            if (.not. ok) then
+               call check(error, .false., "a displaced gradient failed")
+               return
+            end if
+            shifted = WATER
+            shifted(a, ia) = shifted(a, ia) - H
+            call xc_at(ctx, shifted, gradient=minus, density=dens, err=err, ok=ok)
+            if (.not. ok) then
+               call check(error, .false., "a displaced gradient failed")
+               return
+            end if
+            do ja = 1, 3
+               do b = 1, 3
+                  fd = (plus(b, ja) - minus(b, ja))/(2.0_dp*H)
+                  call check(error, hess(a, b, ia, ja), fd, thr=TOL, &
+                             more="GGA exchange-correlation Hessian entry disagrees "// &
+                             "with a difference of its own gradient")
+                  if (allocated(error)) return
+               end do
+            end do
+         end do
+      end do
+   end subroutine test_gga_against_fd
+
+   subroutine test_refuses_mgga(error)
+      !! A meta-GGA is refused rather than silently missing its tau terms
       type(error_type), allocatable, intent(out) :: error
 
       real(dp) :: hess(3, 3, 3, 3)
@@ -188,13 +244,11 @@ contains
 
       if (.not. xc_available()) return
 
-      call reference_state("gga_x_pbe", ctx, dens, err, ok)
+      call reference_state("mgga_x_scan", ctx, dens, err, ok)
       if (.not. ok) return
       call xc_at(ctx, WATER, hess=hess, density=dens, err=err, ok=ok)
-      call check(error,.not. ok, "a GGA Hessian must be refused, not approximated")
-      if (allocated(error)) return
-      call check(error, err%has_error())
-   end subroutine test_refuses_gga
+      call check(error,.not. ok, "a meta-GGA Hessian must be refused, not approximated")
+   end subroutine test_refuses_mgga
 
 end module test_mqc_xc_hessian
 

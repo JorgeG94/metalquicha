@@ -44,7 +44,8 @@ module mqc_libcint_xc_hessian
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t
-   use mqc_libcint_ao, only: eval_ao_block, shell_extents, block_significant_aos
+   use mqc_libcint_ao, only: eval_ao_block, shell_extents, block_significant_aos, &
+                             AO_DERIV3_COMP
    use mqc_libcint_xc, only: xc_context_t, xc_grid_kernel_quantities
    implicit none
    private
@@ -71,18 +72,28 @@ contains
       integer, allocatable :: ao_offset(:), ao_list(:)
       integer, allocatable :: c_offsets(:), c_counts(:)
       integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig
-      integer :: ia, ja, a, b, i, j, ig, p, q
+      integer :: ia, ja, a, b, i, j, ig, p, q, c, d, e, ih
       real(dp) :: acc
+      logical :: gga
+      real(dp), allocatable :: ao_d3(:, :, :), dmu_d(:, :, :)
+      real(dp), allocatable :: dgrad(:, :, :), dsig(:, :), wsig(:, :)
+      integer, parameter :: PAIR(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
+      integer, parameter :: TRIP(3, 3, 3) = reshape( &
+                            [1, 2, 3, 2, 4, 5, 3, 5, 6, &
+                             2, 4, 5, 4, 7, 8, 5, 8, 9, &
+                             3, 5, 6, 5, 8, 9, 6, 9, 10], [3, 3, 3])
+         !! Which packed third-derivative component a Cartesian triple is.
 
       if (error%has_error()) return
 
-      if (ctx%any_gga .or. ctx%any_mgga) then
-         call error%set(ERROR_VALIDATION, "An analytic Hessian is available for LDA "// &
-                        "functionals only. A GGA needs third derivatives of the basis "// &
-                        "functions, which the grid evaluator does not yet produce; use "// &
+      if (ctx%any_mgga) then
+         call error%set(ERROR_VALIDATION, "An analytic Hessian is available for LDA and "// &
+                        "GGA functionals. A meta-GGA additionally depends on the kinetic "// &
+                        "energy density, whose second derivative is not implemented; use "// &
                         "the semi-numerical path for one.")
          return
       end if
+      gga = ctx%any_gga
 
       natm = size(mol%coords, 2)
       nao = mol%nao
@@ -115,9 +126,15 @@ contains
             end do
          end do
 
-         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
-                            grad=ao_grad, hess=ao_hess, shell_mask=shell_mask, &
-                            ao_offset=ao_offset, n_ao_out=n_sig)
+         if (gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+                               grad=ao_grad, hess=ao_hess, deriv3=ao_d3, &
+                               shell_mask=shell_mask, ao_offset=ao_offset, n_ao_out=n_sig)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+                               grad=ao_grad, hess=ao_hess, shell_mask=shell_mask, &
+                               ao_offset=ao_offset, n_ao_out=n_sig)
+         end if
          if (error%has_error()) return
 
          if (allocated(wg)) deallocate (wg)
@@ -146,18 +163,85 @@ contains
             end do
          end do
 
-         ! Kernel term: f_rr contracted with the two first derivatives. An outer
-         ! product over the block, which is one gemm rather than a loop nest.
+         ! d(grad rho)_d / dA_c, and from it d sigma / dA_c. Both are needed by
+         ! the kernel terms and by the potential term below, so they are formed
+         ! once here rather than twice.
+         if (gga) then
+            if (allocated(dmu_d)) deallocate (dmu_d)
+            allocate (dmu_d(nb, n_sig, 3))
+            do d = 1, 3
+               call pic_gemm(ao_grad(1:nb, 1:n_sig, d), d_sig(1:n_sig, 1:n_sig), &
+                             dmu_d(:, :, d), beta=0.0_dp)
+            end do
+
+            if (allocated(dgrad)) deallocate (dgrad)
+            if (allocated(dsig)) deallocate (dsig)
+            allocate (dgrad(3*natm, 3, nb), dsig(3*natm, nb))
+            dgrad = 0.0_dp
+            dsig = 0.0_dp
+            do ia = 1, natm
+               if (c_counts(ia) == 0) cycle
+               do c = 1, 3
+                  do d = 1, 3
+                     do ig = 1, nb
+                        acc = 0.0_dp
+                        do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                           acc = acc + ao_hess(ig, i, PAIR(c, d))*dmu(ig, i) &
+                                 + ao_grad(ig, i, c)*dmu_d(ig, i, d)
+                        end do
+                        dgrad(3*(ia - 1) + c, d, ig) = -2.0_dp*acc
+                     end do
+                  end do
+               end do
+            end do
+            do ig = 1, nb
+               do p = 1, 3*natm
+                  acc = 0.0_dp
+                  do d = 1, 3
+                     acc = acc + rho_grad(g0 + ig - 1, d)*dgrad(p, d, ig)
+                  end do
+                  dsig(p, ig) = 2.0_dp*acc
+               end do
+            end do
+         end if
+
+         ! Kernel terms: the second functional derivatives against the first
+         ! derivatives of their own arguments. For an LDA that is `f_rr` alone;
+         ! a GGA adds the two cross terms and `f_ss`.
          do ig = 1, nb
-            acc = wg(ig)*frr(g0 + ig - 1)
             do p = 1, 3*natm
                do q = 1, 3*natm
+                  acc = frr(g0 + ig - 1)*dchi(p, ig)*dchi(q, ig)
+                  if (gga) then
+                     acc = acc + frs(g0 + ig - 1) &
+                           *(dchi(p, ig)*dsig(q, ig) + dsig(p, ig)*dchi(q, ig)) &
+                           + fss(g0 + ig - 1)*dsig(p, ig)*dsig(q, ig)
+                  end if
                   hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) = &
                      hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) &
-                     + acc*dchi(p, ig)*dchi(q, ig)
+                     + wg(ig)*acc
                end do
             end do
          end do
+
+         ! Potential term against the second derivative of sigma, first half:
+         ! the product of two first derivatives of grad rho. Same shape as the
+         ! kernel terms, so it goes with them.
+         if (gga) then
+            do ig = 1, nb
+               do p = 1, 3*natm
+                  do q = 1, 3*natm
+                     acc = 0.0_dp
+                     do d = 1, 3
+                        acc = acc + dgrad(p, d, ig)*dgrad(q, d, ig)
+                     end do
+                     hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) = &
+                        hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) &
+                        + 2.0_dp*wg(ig)*vsigma(g0 + ig - 1)*acc
+                  end do
+               end do
+            end do
+         end if
 
          ! Potential term, second piece: the off-diagonal product of two first
          ! derivatives of different functions. Built as nine weighted overlaps
@@ -185,6 +269,46 @@ contains
                end do
             end do
          end do
+
+         ! Potential term against the second derivative of sigma, second half:
+         ! `grad rho` contracted with `d2(grad rho)`. This is the only place the
+         ! third derivatives of the basis functions are used, and they appear
+         ! only on the diagonal atom block -- both nuclear derivatives landing
+         ! on the same function is what produces a third position derivative.
+         if (gga) then
+            if (allocated(wsig)) deallocate (wsig)
+            allocate (wsig(nb, 3))
+            do d = 1, 3
+               wsig(:, d) = 2.0_dp*wg*vsigma(g0:g1)*rho_grad(g0:g1, d)
+            end do
+            if (allocated(zmat)) deallocate (zmat)
+            allocate (zmat(n_sig, n_sig))
+
+            do d = 1, 3
+               do c = 1, 3
+                  do e = 1, 3
+                     ! Diagonal: d3 chi against chi, and d2 chi against d chi.
+                     call weighted_overlap(ao_d3(1:nb, 1:n_sig, TRIP(c, e, d)), &
+                                           ao(1:nb, 1:n_sig), wsig(:, d), zmat)
+                     call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+                                     natm, n_sig, c, e, 2.0_dp, diagonal=.true.)
+                     call weighted_overlap(ao_hess(1:nb, 1:n_sig, PAIR(c, e)), &
+                                           ao_grad(1:nb, 1:n_sig, d), wsig(:, d), zmat)
+                     call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+                                     natm, n_sig, c, e, 2.0_dp, diagonal=.true.)
+                     ! Off-diagonal: one derivative on each centre.
+                     call weighted_overlap(ao_hess(1:nb, 1:n_sig, PAIR(c, d)), &
+                                           ao_grad(1:nb, 1:n_sig, e), wsig(:, d), zmat)
+                     call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+                                     natm, n_sig, c, e, 2.0_dp, diagonal=.false.)
+                     call weighted_overlap(ao_grad(1:nb, 1:n_sig, c), &
+                                           ao_hess(1:nb, 1:n_sig, PAIR(e, d)), wsig(:, d), zmat)
+                     call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+                                     natm, n_sig, c, e, 2.0_dp, diagonal=.false.)
+                  end do
+               end do
+            end do
+         end if
 
          ! Potential term, first piece: both derivatives on the same function,
          ! so it lands on the diagonal atom block only.
@@ -228,12 +352,14 @@ contains
 
       real(dp), allocatable :: rho(:), rho_grad(:, :), vrho(:), vsigma(:)
       real(dp), allocatable :: frr(:), frs(:), fss(:)
-      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
-      real(dp), allocatable :: extents(:), d_sig(:, :), dmu(:, :)
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), ao_hess(:, :, :)
+      real(dp), allocatable :: extents(:), d_sig(:, :), dmu(:, :), dmu_d(:, :, :)
       logical, allocatable :: shell_mask(:)
       integer, allocatable :: ao_offset(:), ao_list(:), c_offsets(:), c_counts(:)
-      integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig, ia, a, i, ig
+      integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig, ia, a, i, ig, d
       real(dp) :: acc
+      logical :: gga
+      integer, parameter :: PAIR(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
 
       if (error%has_error()) return
 
@@ -241,6 +367,7 @@ contains
       nao = mol%nao
       npts = size(ctx%grid%weights)
 
+      gga = ctx%any_gga
       call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
                                      frr, frs, fss, error)
       if (error%has_error()) return
@@ -262,12 +389,22 @@ contains
                d_sig(isig, jsig) = density(ao_list(isig), ao_list(jsig))
             end do
          end do
-         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad, &
-                            shell_mask=shell_mask, ao_offset=ao_offset, n_ao_out=n_sig)
+         if (gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad, &
+                               hess=ao_hess, shell_mask=shell_mask, ao_offset=ao_offset, &
+                               n_ao_out=n_sig)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad, &
+                               shell_mask=shell_mask, ao_offset=ao_offset, n_ao_out=n_sig)
+         end if
          if (error%has_error()) return
 
          if (allocated(dmu)) deallocate (dmu)
          allocate (dmu(nb, n_sig))
+         if (gga) then
+            if (allocated(dmu_d)) deallocate (dmu_d)
+            allocate (dmu_d(nb, n_sig, 3))
+         end if
          call pic_gemm(ao(1:nb, 1:n_sig), d_sig(1:n_sig, 1:n_sig), dmu, beta=0.0_dp)
 
          do ia = 1, natm
@@ -283,8 +420,77 @@ contains
                gradient(a, ia) = gradient(a, ia) - 2.0_dp*acc
             end do
          end do
+
+         ! The sigma channel: v_sigma against d sigma / dA, which is
+         ! 2 grad rho . d(grad rho)/dA and costs one more derivative of every
+         ! basis function than the rho term does.
+         if (gga) then
+            do d = 1, 3
+               call pic_gemm(ao_grad(1:nb, 1:n_sig, d), d_sig(1:n_sig, 1:n_sig), &
+                             dmu_d(:, :, d), beta=0.0_dp)
+            end do
+            do ia = 1, natm
+               if (c_counts(ia) == 0) cycle
+               do a = 1, 3
+                  acc = 0.0_dp
+                  do d = 1, 3
+                     do ig = 1, nb
+                        do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                           acc = acc + 2.0_dp*ctx%grid%weights(g0 + ig - 1) &
+                                 *vsigma(g0 + ig - 1)*rho_grad(g0 + ig - 1, d) &
+                                 *(ao_hess(ig, i, PAIR(a, d))*dmu(ig, i) &
+                                   + ao_grad(ig, i, a)*dmu_d(ig, i, d))
+                        end do
+                     end do
+                  end do
+                  gradient(a, ia) = gradient(a, ia) - 2.0_dp*acc
+               end do
+            end do
+         end if
       end do
    end subroutine xc_gradient_fixed_grid
+
+   subroutine add_masked(hess, dens, mat, offsets, counts, natm, n_sig, c, e, scale, diagonal)
+      !! Add `scale * sum_{u in A, v in B} D_uv mat(u,v)` into `hess(c, e, A, B)`
+      !!
+      !! `diagonal` restricts the second index to every function rather than to
+      !! atom B's, and puts the result on `hess(c, e, A, A)`. That is the case
+      !! where both nuclear derivatives fell on the same centre, so there is no
+      !! second atom to range over.
+      real(dp), intent(inout) :: hess(:, :, :, :)
+      real(dp), intent(in) :: dens(:, :), mat(:, :)
+      integer, intent(in) :: offsets(:), counts(:)
+      integer, intent(in) :: natm, n_sig, c, e
+      real(dp), intent(in) :: scale
+      logical, intent(in) :: diagonal
+
+      integer :: ia, ja, i, j
+      real(dp) :: acc
+
+      do ia = 1, natm
+         if (counts(ia) == 0) cycle
+         if (diagonal) then
+            acc = 0.0_dp
+            do j = 1, n_sig
+               do i = offsets(ia) + 1, offsets(ia) + counts(ia)
+                  acc = acc + dens(i, j)*mat(i, j)
+               end do
+            end do
+            hess(c, e, ia, ia) = hess(c, e, ia, ia) + scale*acc
+         else
+            do ja = 1, natm
+               if (counts(ja) == 0) cycle
+               acc = 0.0_dp
+               do j = offsets(ja) + 1, offsets(ja) + counts(ja)
+                  do i = offsets(ia) + 1, offsets(ia) + counts(ia)
+                     acc = acc + dens(i, j)*mat(i, j)
+                  end do
+               end do
+               hess(c, e, ia, ja) = hess(c, e, ia, ja) + scale*acc
+            end do
+         end if
+      end do
+   end subroutine add_masked
 
    subroutine weighted_overlap(left, right, w, out)
       !! `out(u,v) = sum_g w(g) left(g,u) right(g,v)`
