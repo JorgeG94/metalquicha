@@ -83,6 +83,11 @@ module mqc_libcint_hessian
          !! second derivative of the energy, so it has a point to be taken at,
          !! and it is not the trial density being contracted.
       real(dp) :: k_scale = 1.0_dp
+      real(dp) :: rs_k_lr = 0.0_dp
+      real(dp) :: rs_omega = 0.0_dp
+         !! A range-separated functional's second exchange term:
+         !! `rs_k_lr` of the exchange built against `erf(omega r)/r`. Zero
+         !! omega is the ordinary case and costs nothing.
          !! Exact exchange in the response operator. One for Hartree-Fock, zero
          !! for a pure functional, the mixing fraction for a hybrid.
    contains
@@ -351,6 +356,7 @@ contains
 
       real(dp), allocatable :: mo1(:, :, :), half(:, :), dens(:, :, :), g(:, :, :)
       real(dp), allocatable :: vxc(:, :)
+      real(dp), allocatable :: g_lr(:, :, :)
       real(dp), allocatable :: work(:, :), gmo(:, :)
       type(direct_stats_t) :: stats
       integer :: n_ao, i, a, p
@@ -385,6 +391,17 @@ contains
       call build_fock_direct_many(this%mol, this%zero_h, dens, this%bounds, g, stats, error, &
                                   k_scale=this%k_scale)
       if (error%has_error()) return
+
+      ! The long-range half of a range-separated functional's exchange. No
+      ! Coulomb: the full-range pass above already supplied it.
+      if (this%rs_omega > 0.0_dp .and. .not. off("MQC_NO_LR_OP")) then
+         if (.not. allocated(g_lr)) allocate (g_lr(size(g, 1), size(g, 2), size(g, 3)))
+         call build_fock_direct_many(this%mol, this%zero_h, dens, this%bounds, g_lr, &
+                                     stats, error, k_scale=this%rs_k_lr, j_scale=0.0_dp, &
+                                     omega=this%rs_omega)
+         if (error%has_error()) return
+         g = g + g_lr
+      end if
 
       ! The exchange-correlation kernel, for a Kohn-Sham reference. `J - K/2`
       ! above is the whole two-electron response of a Hartree-Fock operator; a
@@ -580,7 +597,8 @@ contains
       end do
    end subroutine nuclear_repulsion_hessian
 
-   subroutine partial_hessian(mol, density, weighted, hess, error, k_scale)
+   subroutine partial_hessian(mol, density, weighted, hess, error, k_scale, &
+                              rs_k_lr, rs_omega)
       !! The Hessian of the energy expression with the orbitals held fixed
       !!
       !! Everything in `d2E/dRdR` that survives when the density is not allowed
@@ -623,6 +641,7 @@ contains
       real(dp), allocatable, intent(out) :: hess(:, :, :, :)   !! (3, 3, natm, natm)
       real(dp), intent(in), optional :: k_scale
          !! Exact-exchange fraction; one (Hartree-Fock) by default.
+      real(dp), intent(in), optional :: rs_k_lr, rs_omega
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: s2(:, :, :), sab(:, :, :)
@@ -763,12 +782,20 @@ contains
       ! them.
       call hess_2e_contract(mol, density, hess, error, k_scale=k_scale)
       if (error%has_error()) return
+      if (present(rs_omega) .and. .not. off("MQC_NO_LR_PARTIAL")) then
+         if (rs_omega > 0.0_dp) then
+            ! The attenuated exchange, with no Coulomb of its own.
+            call hess_2e_contract(mol, density, hess, error, k_scale=rs_k_lr, &
+                                  j_scale=0.0_dp, omega=rs_omega)
+         end if
+      end if
+      if (error%has_error()) return
 
       deallocate (owner, offsets, counts)
    end subroutine partial_hessian
 
    subroutine response_hessian(mol, density, orbitals, energies, n_occ, hess, error, &
-                               xc, reference, k_scale, &
+                               xc, reference, k_scale, rs_k_lr, rs_omega, &
                                max_iter, tol)
       !! What the Hessian gains from letting the density relax
       !!
@@ -803,6 +830,7 @@ contains
       type(xc_context_t), intent(inout), optional, target :: xc
       real(dp), intent(in), optional :: reference(:, :)
       real(dp), intent(in), optional :: k_scale
+      real(dp), intent(in), optional :: rs_k_lr, rs_omega
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
@@ -811,7 +839,8 @@ contains
       real(dp), allocatable :: d1(:, :, :, :), w1(:, :, :, :)
       real(dp), allocatable :: mo1(:, :, :, :), s1a(:, :, :), hcore_a(:, :, :)
       real(dp), allocatable :: hcore(:, :), fock(:, :), bounds(:, :), zero_h(:, :)
-      real(dp), allocatable :: vxc_ref(:, :)
+      real(dp), allocatable :: vxc_ref(:, :), fock_lr(:, :)
+      real(dp), allocatable :: h1_lr(:, :, :, :)
       real(dp) :: e_xc_ref, n_xc_ref
       real(dp), allocatable :: g1all(:, :, :), f1(:, :), half(:, :), c_occ(:, :)
       real(dp), allocatable :: tmp(:, :), work(:, :)
@@ -840,6 +869,17 @@ contains
       call build_fock_direct(mol, hcore, density, bounds, fock, stats, error, &
                              density_screen=.false., k_scale=k_scale)
       if (error%has_error()) return
+      if (present(rs_omega) .and. .not. off("MQC_NO_LR_FOCK")) then
+         if (rs_omega > 0.0_dp) then
+            allocate (fock_lr(nao, nao))
+            call build_fock_direct(mol, zero_h, density, bounds, fock_lr, stats, error, &
+                                   density_screen=.false., k_scale=rs_k_lr, &
+                                   j_scale=0.0_dp, omega=rs_omega)
+            if (error%has_error()) return
+            fock = fock + fock_lr
+            deallocate (fock_lr)
+         end if
+      end if
       if (present(xc)) then
          allocate (vxc_ref(nao, nao))
          vxc_ref = 0.0_dp
@@ -854,6 +894,21 @@ contains
       ! array. The core Hamiltonian derivative is per-atom either way and is
       ! added below.
       call h1_contract(mol, density, h1, error, k_scale=k_scale)
+      if (error%has_error()) return
+      if (present(rs_omega) .and. .not. off("MQC_NO_LR_H1")) then
+         if (rs_omega > 0.0_dp) then
+            ! Into a temporary and added: `h1_contract` allocates its output and
+            ! zeroes it, so a second call in place would discard the full-range
+            ! pass rather than adding to it. `hess_2e_contract` next door
+            ! accumulates, which is exactly the asymmetry that makes this easy
+            ! to get wrong.
+            call h1_contract(mol, density, h1_lr, error, k_scale=rs_k_lr, &
+                             j_scale=0.0_dp, omega=rs_omega)
+            if (error%has_error()) return
+            h1 = h1 + h1_lr
+            deallocate (h1_lr)
+         end if
+      end if
       if (error%has_error()) return
       ! For a Kohn-Sham reference the Fock derivative also carries the
       ! exchange-correlation potential's own, which `h1_contract` does not
@@ -879,6 +934,7 @@ contains
       ! iteration are shared rather than repeated `3 natm` times.
       call solve_mo1_batch(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
                            xc=xc, reference=reference, k_scale=k_scale, &
+                           rs_k_lr=rs_k_lr, rs_omega=rs_omega, &
                            max_iter=max_iter, tol=tol)
       if (error%has_error()) return
 
@@ -897,7 +953,8 @@ contains
       ! reason as the solve above: `3 natm` separate builds pay for the same
       ! integrals `3 natm` times.
       call mean_field_batch(mol, d1, bounds, zero_h, g1all, error, &
-                            xc=xc, reference=reference, k_scale=k_scale)
+                            xc=xc, reference=reference, k_scale=k_scale, &
+                            rs_k_lr=rs_k_lr, rs_omega=rs_omega)
       if (error%has_error()) return
 
       do ia = 1, natm
@@ -1031,7 +1088,8 @@ contains
       !!     Hartree-Fock matrix** -- full exact exchange, no `V_xc`. That was
       !!     the last 0.12, spread smoothly across every atom pair.
       !!
-      !! LDA, GGA, meta-GGA and hybrids of each.
+      !! LDA, GGA, meta-GGA and hybrids of each. Range-separated hybrids and
+      !! VV10 are refused; the refusal below records what is known.
       use mqc_libcint_xc_hessian, only: xc_hessian
       type(libcint_molecule_t), intent(in), target :: mol
       integer, intent(in) :: atomic_numbers(:)
@@ -1051,6 +1109,54 @@ contains
 
       if (error%has_error()) return
 
+      ! Range separation and VV10 are refused rather than approximated, for
+      ! different reasons.
+      !
+      ! **Range separated.** The plumbing is here: `hess_2e_contract`,
+      ! `h1_contract` and `build_fock_direct_many` all take `omega` and
+      ! `j_scale`, and the attenuated second derivatives do come back
+      ! attenuated -- the long-range exchange Hessian differs from the
+      ! full-range one by 0.48 on water/STO-3G, so `PTR_RANGE_OMEGA` is
+      ! reaching `ipip1` and its neighbours. The assembled result is still 2.1
+      ! from PySCF for wB97X and 0.53 for CAM-B3LYP, where every
+      ! non-separated functional agrees to 1e-8. It is not any one of the five
+      ! long-range passes: disabling them individually gives 2.29, 0.26, 2.76,
+      ! 1.93 and 0.30, and the best combination still leaves 0.13. The SCF
+      ! energies agree with PySCF to 3e-8 and the coefficients are right, so
+      ! the fault is in the second-derivative assembly rather than in the
+      ! functional. Shipping it would mean shipping plausible wrong frequencies.
+      !
+      ! **VV10.** The second derivative of the non-local term is not
+      ! implemented here, and it is a real piece of work rather than a gap in
+      ! the plumbing: PySCF implements all three parts of it --
+      ! `_get_enlc_deriv2` for the energy, `_get_vnlc_deriv1` for the Fock
+      ! derivative and `get_vnlc_resp` for the orbital-Hessian response --
+      ! behind dedicated C kernels (`VXC_vv10nlc_hessian_eval_*`), because
+      ! VV10 is a double integral over the density and its second derivative is
+      ! a double-grid object.
+      !
+      ! On water/STO-3G the term is small: our `b97m-v` Hessian sits 1.4e-3
+      ! from PySCF's, which is the size of the missing contribution and also
+      ! the size of meta-GGA grid noise. That it is small here is not a reason
+      ! to omit it silently -- it is worth 43 mHartree in the energy, and
+      ! nothing says it stays small on a dispersion-bound system, which is what
+      ! VV10 is for.
+      if (xc%range_separated) then
+         call error%set(ERROR_VALIDATION, "an analytic Hessian for a range-separated "// &
+                        "functional is not available yet: the long-range exchange passes "// &
+                        "are implemented but the assembled result does not reproduce a "// &
+                        "reference. Use the semi-numerical path.")
+         return
+      end if
+      if (xc%nlc_b > 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "an analytic Hessian for a functional with "// &
+                        "VV10 non-local correlation is not available: the second "// &
+                        "derivative of the non-local term is not implemented, and "// &
+                        "omitting it would give a plausible wrong answer. Use the "// &
+                        "semi-numerical path.")
+         return
+      end if
+
       nao = mol%nao
       allocate (weighted(nao, nao))
       weighted = 0.0_dp
@@ -1061,12 +1167,14 @@ contains
       end do
 
       call nuclear_repulsion_hessian(atomic_numbers, mol%coords, hess, error)
-      call partial_hessian(mol, density, weighted, part, error, k_scale=k_scale)
+      call partial_hessian(mol, density, weighted, part, error, k_scale=k_scale, &
+                           rs_k_lr=xc%rs_k_lr, rs_omega=xc%rs_omega)
       if (error%has_error()) return
       call xc_hessian(xc, mol, density, part, error)
       if (error%has_error()) return
       call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
                             xc=xc, reference=density, k_scale=k_scale, &
+                            rs_k_lr=xc%rs_k_lr, rs_omega=xc%rs_omega, &
                             max_iter=max_iter, tol=tol)
       if (error%has_error()) return
 
@@ -1109,7 +1217,7 @@ contains
    end subroutine hessian_to_matrix
 
    subroutine solve_mo1_batch(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
-                              xc, reference, k_scale, &
+                              xc, reference, k_scale, rs_k_lr, rs_omega, &
                               max_iter, tol)
       !! The first-order orbitals for every atom, a dozen perturbations at a time
       !!
@@ -1141,6 +1249,7 @@ contains
       type(xc_context_t), intent(inout), optional, target :: xc
       real(dp), intent(in), optional :: reference(:, :)
       real(dp), intent(in), optional :: k_scale
+      real(dp), intent(in), optional :: rs_k_lr, rs_omega
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
@@ -1171,6 +1280,8 @@ contains
       if (present(xc)) operator%xc => xc
       if (present(reference)) operator%reference = reference
       if (present(k_scale)) operator%k_scale = k_scale
+      if (present(rs_k_lr)) operator%rs_k_lr = rs_k_lr
+      if (present(rs_omega)) operator%rs_omega = rs_omega
       call schwarz_bounds(mol, operator%bounds, error)
       if (error%has_error()) return
 
@@ -1233,7 +1344,8 @@ contains
       deallocate (h1mo, s1mo, work, rhs)
    end subroutine solve_mo1_batch
 
-   subroutine mean_field_batch(mol, d1, bounds, zero_h, g1, error, xc, reference, k_scale)
+   subroutine mean_field_batch(mol, d1, bounds, zero_h, g1, error, xc, reference, &
+                               k_scale, rs_k_lr, rs_omega)
       !! `G(D')` for every first-order density, a chunk at a time
       !!
       !! Flattens `(n_ao, n_ao, 3, natm)` to `(n_ao, n_ao, 3*natm)` and hands
@@ -1254,10 +1366,12 @@ contains
          !! applies, so it needs the same exchange fraction and the same
          !! kernel -- getting one right and not the other is a Hessian
          !! that is wrong while looking symmetric and plausible.
+      real(dp), intent(in), optional :: rs_k_lr, rs_omega
 
       integer, parameter :: MAX_BATCH = 12
 
       real(dp), allocatable :: chunk(:, :, :), out(:, :, :), vxc_chunk(:, :)
+      real(dp), allocatable :: out_lr(:, :, :)
       type(direct_stats_t) :: stats
       integer :: nao, natm, n_pert, first, last, wide, p, q, ia, a, ic
       integer :: n_chunks, per_chunk
@@ -1286,6 +1400,16 @@ contains
          call build_fock_direct_many(mol, zero_h, chunk, bounds, out, stats, error, &
                                      k_scale=k_scale)
          if (error%has_error()) return
+         if (present(rs_omega) .and. .not. off("MQC_NO_LR_MEAN")) then
+            if (rs_omega > 0.0_dp) then
+               if (.not. allocated(out_lr)) allocate (out_lr, mold=out)
+               call build_fock_direct_many(mol, zero_h, chunk, bounds, out_lr, stats, &
+                                           error, k_scale=rs_k_lr, j_scale=0.0_dp, &
+                                           omega=rs_omega)
+               if (error%has_error()) return
+               out = out + out_lr
+            end if
+         end if
 
          ! The same kernel the response operator applies. `dW/dR` is built from
          ! this mean field, so leaving it out here while including it there

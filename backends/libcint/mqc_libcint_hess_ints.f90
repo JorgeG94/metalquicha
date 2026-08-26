@@ -28,7 +28,8 @@ module mqc_libcint_hess_ints
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks, &
                                     eri_shell_table_t, eri_shell_table, eri_schwarz_collapse
    use mqc_libcint_direct, only: schwarz_bounds
-   use libcint_fortran, only: LIBCINT_NPRIM_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_RINV_ORIG
+   use libcint_fortran, only: LIBCINT_NPRIM_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_RINV_ORIG, &
+                              LIBCINT_PTR_RANGE_OMEGA
    use mqc_libcint_hess_abi, only: &
       cint1e_ipipovlp_sph, cint1e_ipipovlp_cart, cint1e_ipovlpip_sph, cint1e_ipovlpip_cart, &
       cint1e_ipipkin_sph, cint1e_ipipkin_cart, cint1e_ipkinip_sph, cint1e_ipkinip_cart, &
@@ -376,7 +377,7 @@ contains
                   shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
                   dims = [di, dj, dk, dl]
 
-                  have = drive_2e(mol, which, buf, dims, shls, atm_flat, bas_flat)
+                  have = drive_2e(mol, which, buf, dims, shls, atm_flat, bas_flat, mol%env)
                   if (.not. have) cycle
 
                   do comp = 1, N_COMPONENTS
@@ -400,13 +401,18 @@ contains
       deallocate (buf, atm_flat, bas_flat)
    end subroutine hess_2e_block
 
-   function drive_2e(mol, which, buf, dims, shls, atm, bas) result(have)
+   function drive_2e(mol, which, buf, dims, shls, atm, bas, env) result(have)
       !! Dispatch one shell quartet to the right entry point
+      !!
+      !! `env` is passed rather than taken from `mol` so a caller can hand in a
+      !! copy with `PTR_RANGE_OMEGA` set. Range separation in libcint is an
+      !! environment slot, not a different procedure.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: which
       real(dp), intent(inout) :: buf(0:)
       integer, intent(in) :: dims(0:), shls(0:)
       integer, intent(in), target :: atm(0:), bas(0:)
+      real(dp), intent(in), target :: env(0:)
       logical :: have
 
       have = .false.
@@ -414,25 +420,25 @@ contains
          select case (which)
          case (HESS_ERI_II)
             have = cint2e_ipip1_cart(buf, shls, atm, mol%natm, &
-                                     bas, mol%nbas, mol%env, c_null_ptr) /= 0
+                                     bas, mol%nbas, env, c_null_ptr) /= 0
          case (HESS_ERI_IJ)
             have = cint2e_ipvip1_cart(buf, shls, atm, mol%natm, &
-                                      bas, mol%nbas, mol%env, c_null_ptr) /= 0
+                                      bas, mol%nbas, env, c_null_ptr) /= 0
          case default
             have = cint2e_ip1ip2_cart(buf, shls, atm, mol%natm, &
-                                      bas, mol%nbas, mol%env, c_null_ptr) /= 0
+                                      bas, mol%nbas, env, c_null_ptr) /= 0
          end select
       else
          select case (which)
          case (HESS_ERI_II)
             have = cint2e_ipip1_sph(buf, shls, atm, mol%natm, &
-                                    bas, mol%nbas, mol%env, c_null_ptr) /= 0
+                                    bas, mol%nbas, env, c_null_ptr) /= 0
          case (HESS_ERI_IJ)
             have = cint2e_ipvip1_sph(buf, shls, atm, mol%natm, &
-                                     bas, mol%nbas, mol%env, c_null_ptr) /= 0
+                                     bas, mol%nbas, env, c_null_ptr) /= 0
          case default
             have = cint2e_ip1ip2_sph(buf, shls, atm, mol%natm, &
-                                     bas, mol%nbas, mol%env, c_null_ptr) /= 0
+                                     bas, mol%nbas, env, c_null_ptr) /= 0
          end select
       end if
    end function drive_2e
@@ -517,7 +523,8 @@ contains
       deallocate (buf, atm_flat, bas_flat)
    end subroutine eri_ip1_block
 
-   subroutine hess_2e_contract(mol, density, hess, error, screen_tol, k_scale)
+   subroutine hess_2e_contract(mol, density, hess, error, screen_tol, k_scale, &
+                               j_scale, omega)
       !! The two-electron second derivatives, contracted as they are computed
       !!
       !! Same numbers `hess_2e_block` produces and never the same array. Each
@@ -541,14 +548,24 @@ contains
       real(dp), intent(in), optional :: k_scale
          !! Fraction of exact exchange. One is Hartree-Fock and the default;
          !! zero is a pure density functional, which has none; a hybrid is its
-         !! mixing fraction. Only the exchange terms scale -- the Coulomb ones
-         !! are the same whatever the functional.
+         !! mixing fraction.
+      real(dp), intent(in), optional :: j_scale
+         !! Fraction of Coulomb, one by default. Zero is what a long-range pass
+         !! wants: a range-separated functional's second exchange term has no
+         !! Coulomb of its own to add, the full-range pass having already
+         !! supplied it.
+      real(dp), intent(in), optional :: omega
+         !! Range-separation parameter. Reaches libcint through
+         !! `env(PTR_RANGE_OMEGA)`, so the attenuated integrals are the same
+         !! entry points over the same quartets -- no new procedures, which is
+         !! what makes this a threading job rather than an integral one.
       real(dp), allocatable :: buf_ii(:), buf_ij(:), buf_ik(:), buf_ik2(:)
       real(dp), allocatable :: hloc(:, :, :, :)
       integer, allocatable :: atm_flat(:), bas_flat(:), owner(:)
       integer, allocatable :: offsets(:), counts(:), sh_dim(:), sh_off(:)
       real(dp), allocatable :: bounds(:, :), dsh(:, :), sa(:)
-      real(dp) :: qq, wbound, est, tol, kx
+      real(dp) :: qq, wbound, est, tol, kx, jx
+      real(dp), allocatable, target :: env_use(:)
       integer :: dims(0:3), shls(0:3), dims2(0:3), shls2(0:3)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
       integer :: io, jo, ko, lo, i, j, k, l, comp, mx, idx
@@ -561,6 +578,12 @@ contains
 
       kx = 1.0_dp
       if (present(k_scale)) kx = k_scale
+      jx = 1.0_dp
+      if (present(j_scale)) jx = j_scale
+      ! A local copy so an omega pass can set the range-separation slot
+      ! without disturbing the molecule every other caller shares.
+      allocate (env_use(0:size(mol%env) - 1), source=mol%env)
+      if (present(omega)) env_use(LIBCINT_PTR_RANGE_OMEGA) = omega
 
       nao = mol%nao
       natm = mol%natm
@@ -623,7 +646,7 @@ contains
       ! `9*natm^2` doubles -- small enough that a private copy costs nothing and
       ! an atomic update per quartet would cost everything.
       !$omp parallel default(none) &
-      !$omp shared(kx, mol, density, hess, owner, sh_dim, sh_off, atm_flat, bas_flat, &
+      !$omp shared(kx, jx, env_use, mol, density, hess, owner, sh_dim, sh_off, atm_flat, bas_flat, &
       !$omp        mx, natm, n_pairs, error, bounds, dsh, sa, tol) &
       !$omp private(buf_ii, buf_ij, buf_ik, buf_ik2, hloc, dims, shls, dims2, shls2, &
       !$omp         ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, i, j, k, l, &
@@ -674,8 +697,8 @@ contains
                ! written the way the contraction weight is: a Coulomb term and
                ! the two exchange terms the eightfold symmetrisation produces.
                wbound = 0.5_dp*dsh(ish, jsh)*dsh(ksh, lsh) &
-                        + kx*0.125_dp*(dsh(ish, lsh)*dsh(ksh, jsh) &
-                                       + dsh(ish, ksh)*dsh(jsh, lsh))
+                        + abs(kx)*0.125_dp*(dsh(ish, lsh)*dsh(ksh, jsh) &
+                                            + dsh(ish, ksh)*dsh(jsh, lsh))
                qq = bounds(ish, jsh)*bounds(ksh, lsh)
                ! Four times the deposit weights (4, 4 and 8) against the
                ! per-integral derivative factors, which differ because the two
@@ -685,15 +708,15 @@ contains
                                         + 2.0_dp*sa(ish)*sa(ksh))
                if (est < tol) cycle
 
-               have_ii = drive_2e(mol, HESS_ERI_II, buf_ii, dims, shls, atm_flat, bas_flat)
-               have_ij = drive_2e(mol, HESS_ERI_IJ, buf_ij, dims, shls, atm_flat, bas_flat)
-               have_ik = drive_2e(mol, HESS_ERI_IK, buf_ik, dims, shls, atm_flat, bas_flat)
+               have_ii = drive_2e(mol, HESS_ERI_II, buf_ii, dims, shls, atm_flat, bas_flat, env_use)
+               have_ij = drive_2e(mol, HESS_ERI_IJ, buf_ij, dims, shls, atm_flat, bas_flat, env_use)
+               have_ik = drive_2e(mol, HESS_ERI_IK, buf_ik, dims, shls, atm_flat, bas_flat, env_use)
                have_ik2 = .false.
                if (lsh /= ksh) then
                   shls2 = [ish - 1, jsh - 1, lsh - 1, ksh - 1]
                   dims2 = [di, dj, dl, dk]
                   have_ik2 = drive_2e(mol, HESS_ERI_IK, buf_ik2, dims2, shls2, &
-                                      atm_flat, bas_flat)
+                                      atm_flat, bas_flat, env_use)
                end if
                if (.not. (have_ii .or. have_ij .or. have_ik .or. have_ik2)) cycle
 
@@ -707,7 +730,7 @@ contains
                            ia = owner(io + i)
                            ! Symmetric under `k <-> l`, which is what lets the
                            ! swapped ordering reuse it.
-                           gam = 0.5_dp*density(io + i, jo + j)*density(ko + k, lo + l) &
+                           gam = jx*0.5_dp*density(io + i, jo + j)*density(ko + k, lo + l) &
                                  - kx*0.125_dp &
                                  *(density(io + i, lo + l)*density(ko + k, jo + j) &
                                    + density(io + i, ko + k)*density(jo + j, lo + l))
@@ -747,7 +770,8 @@ contains
       deallocate (bounds, dsh, sa)
    end subroutine hess_2e_contract
 
-   subroutine h1_contract(mol, density, h1, error, screen_tol, k_scale)
+   subroutine h1_contract(mol, density, h1, error, screen_tol, k_scale, &
+                          j_scale, omega)
       !! The skeleton derivative Fock for **every** atom, in one pass
       !!
       !! `make_h1_atom` builds one atom's `dF/dR` from a stored `int2e_ip1`
@@ -774,11 +798,21 @@ contains
       real(dp), intent(in), optional :: k_scale
          !! Fraction of exact exchange. One is Hartree-Fock and the default;
          !! zero is a pure density functional, which has none; a hybrid is its
-         !! mixing fraction. Only the exchange terms scale -- the Coulomb ones
-         !! are the same whatever the functional.
+         !! mixing fraction.
+      real(dp), intent(in), optional :: j_scale
+         !! Fraction of Coulomb, one by default. Zero is what a long-range pass
+         !! wants: a range-separated functional's second exchange term has no
+         !! Coulomb of its own to add, the full-range pass having already
+         !! supplied it.
+      real(dp), intent(in), optional :: omega
+         !! Range-separation parameter. Reaches libcint through
+         !! `env(PTR_RANGE_OMEGA)`, so the attenuated integrals are the same
+         !! entry points over the same quartets -- no new procedures, which is
+         !! what makes this a threading job rather than an integral one.
       real(dp), allocatable :: buf(:), hloc(:, :, :, :)
       real(dp), allocatable :: bounds(:, :), bq(:, :), dsh(:, :), sa(:)
-      real(dp) :: wmax, est, tol, kx
+      real(dp) :: wmax, est, tol, kx, jx
+      real(dp), allocatable, target :: env_use(:)
       integer, allocatable :: atm_flat(:), bas_flat(:), owner(:)
       integer, allocatable :: offsets(:), counts(:)
       type(eri_shell_table_t) :: tab
@@ -793,6 +827,12 @@ contains
 
       kx = 1.0_dp
       if (present(k_scale)) kx = k_scale
+      jx = 1.0_dp
+      if (present(j_scale)) jx = j_scale
+      ! A local copy so an omega pass can set the range-separation slot
+      ! without disturbing the molecule every other caller shares.
+      allocate (env_use(0:size(mol%env) - 1), source=mol%env)
+      if (present(omega)) env_use(LIBCINT_PTR_RANGE_OMEGA) = omega
 
       nao = mol%nao
       natm = mol%natm
@@ -853,7 +893,7 @@ contains
       ! alternative is an atomic per deposit, and there are seven per buffer
       ! element.
       !$omp parallel default(none) &
-      !$omp shared(kx, mol, density, h1, owner, tab, atm_flat, bas_flat, &
+      !$omp shared(kx, jx, env_use, mol, density, h1, owner, tab, atm_flat, bas_flat, &
       !$omp        mx, nao, natm, n_pairs, bq, dsh, sa, tol) &
       !$omp private(buf, hloc, dims, shls, ish, jsh, ksh, lsh, di, dj, dk, dl, &
       !$omp         io, jo, ko, lo, i, j, k, l, comp, idx, ii, jj, kk, ll, at, b, &
@@ -910,9 +950,10 @@ contains
                               ! The nabla sits on the first index, so the whole
                               ! quartet belongs to that index's atom.
                               at = owner(ii)
-                              hloc(ii, jj, comp, at) = hloc(ii, jj, comp, at) - density(kk, ll)*b
-                              hloc(jj, ii, comp, at) = hloc(jj, ii, comp, at) - density(kk, ll)*b
-                              hloc(kk, ll, comp, at) = hloc(kk, ll, comp, at) - 2.0_dp*density(ii, jj)*b
+                              hloc(ii, jj, comp, at) = hloc(ii, jj, comp, at) - jx*density(kk, ll)*b
+                              hloc(jj, ii, comp, at) = hloc(jj, ii, comp, at) - jx*density(kk, ll)*b
+                              hloc(kk, ll, comp, at) = hloc(kk, ll, comp, at) &
+                                                       - jx*2.0_dp*density(ii, jj)*b
                               hloc(ii, ll, comp, at) = hloc(ii, ll, comp, at) &
                                                        + kx*0.5_dp*density(jj, kk)*b
                               hloc(jj, ll, comp, at) = hloc(jj, ll, comp, at) &
