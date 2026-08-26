@@ -25,7 +25,7 @@ module test_mqc_vv10
 
    integer, parameter :: NPT = 5
 
-   !> wB97X-V's parameters, as libxc reports them through xc_f03_nlc_coef
+   !! wB97X-V's parameters, as libxc reports them through xc_f03_nlc_coef
    real(dp), parameter :: B_VV = 5.9_dp
    real(dp), parameter :: C_VV = 0.0093_dp
 
@@ -53,9 +53,9 @@ module test_mqc_vv10
                           2.97672128300922e-06_dp]
    real(dp), parameter :: E_NL_REF = 5.04946017002175e-03_dp
 
-   !> The reference carries fourteen digits, so this is close to what double
-   !> precision can express over a sum of this length. A looser threshold would
-   !> accept a dropped term small enough to matter later.
+   !! The reference carries fourteen digits, so this is close to what double
+   !! precision can express over a sum of this length. A looser threshold would
+   !! accept a dropped term small enough to matter later.
    real(dp), parameter :: THR = 1.0e-12_dp
 
 contains
@@ -99,8 +99,8 @@ contains
          print '(a,es24.16)', "  max deviation ", maxval(abs(vrho - VRHO_REF))
          return
       end if
-      !> vsigma is four orders smaller than vrho, so an absolute threshold
-      !> would pass on a value of zero. Checked relatively.
+      ! vsigma is four orders smaller than vrho, so an absolute threshold
+      ! would pass on a value of zero. Checked relatively.
       if (maxval(abs(vsigma - VSIGMA_REF)/max(abs(VSIGMA_REF), tiny(1.0_dp))) > 1.0e-10_dp) then
          call test_failed(error, "vv10 vsigma does not match")
          print '(3es24.16)', vsigma
@@ -116,7 +116,7 @@ contains
       e_nl = sum(WEIGHTS*RHO*exc)
       call check(error, e_nl, E_NL_REF, thr=THR)
       if (allocated(error)) return
-      !> and it must not be zero, or every comparison above is vacuous
+      ! and it must not be zero, or every comparison above is vacuous
       call check(error, abs(e_nl) > 1.0e-6_dp, "the reference energy is not zero")
    end subroutine test_energy
 
@@ -149,7 +149,7 @@ contains
 
       call run(exc, vrho, vsigma)
 
-      !> the same system with two empty points bolted on
+      ! the same system with two empty points bolted on
       c2(:, 1:NPT) = COORDS; r2(1:NPT) = RHO; s2(1:NPT) = SIGMA; w2(1:NPT) = WEIGHTS
       c2(:, NPT + 1) = [5.0_dp, 5.0_dp, 5.0_dp]
       c2(:, NPT + 2) = [-6.0_dp, 2.0_dp, -4.0_dp]

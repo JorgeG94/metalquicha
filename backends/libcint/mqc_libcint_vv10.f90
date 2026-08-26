@@ -87,9 +87,9 @@ contains
       kvv = b*1.5_dp*PI*(9.0_dp*PI)**(-1.0_dp/6.0_dp)
       beta = ((3.0_dp/(b*b))**0.75_dp)/32.0_dp
 
-      !> The inner grid is precomputed once and then read n_out times, so the
-      !> threshold pays for itself twice: it shrinks the array and it shortens
-      !> every one of the outer loop's passes over it.
+      ! The inner grid is precomputed once and then read n_out times, so the
+      ! threshold pays for itself twice: it shrinks the array and it shortens
+      ! every one of the outer loop's passes over it.
       allocate (keep(n_in))
       n_kept = 0
       do j = 1, n_in
@@ -110,11 +110,11 @@ contains
          rpw(j) = r_i*inner_weights(keep(j))
       end do
 
-      !> Every outer point is independent: it writes only its own three
-      !> outputs and reads a shared inner grid that nothing mutates. The
-      !> accumulators are per-point and so private. This loop is the whole cost
-      !> of the term -- the two AO sweeps around it are linear in points and
-      !> disappear against it -- so it is the only thing here worth threading.
+      ! Every outer point is independent: it writes only its own three
+      ! outputs and reads a shared inner grid that nothing mutates. The
+      ! accumulators are per-point and so private. This loop is the whole cost
+      ! of the term -- the two AO sweeps around it are linear in points and
+      ! disappear against it -- so it is the only thing here worth threading.
       !$omp parallel do default(none) &
       !$omp    shared(n_out, n_kept, rho, sigma, coords, inner_coords, keep, &
       !$omp           w0p, kp, rpw, exc, vrho, vsigma, c, kvv, pi43, beta) &
@@ -129,10 +129,10 @@ contains
          w0tmp = c*(s_i/(r_i*r_i))**2
          w0 = sqrt(w0tmp + pi43*r_i)
          dw0_drho = (0.5_dp*pi43*r_i - 2.0_dp*w0tmp)/w0
-         !> sigma appears in the denominator, and a point can have density with
-         !> a vanishing gradient -- a nucleus, or any local extremum. w0tmp is
-         !> proportional to sigma squared, so the limit is zero rather than
-         !> singular; taking it explicitly avoids 0/0.
+         ! sigma appears in the denominator, and a point can have density with
+         ! a vanishing gradient -- a nucleus, or any local extremum. w0tmp is
+         ! proportional to sigma squared, so the limit is zero rather than
+         ! singular; taking it explicitly avoids 0/0.
          if (s_i > 0.0_dp) then
             dw0_dsigma = w0tmp*r_i/(s_i*w0)
          else

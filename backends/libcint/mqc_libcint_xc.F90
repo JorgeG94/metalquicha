@@ -1145,11 +1145,11 @@ contains
       !$omp end critical (xc_reduce)
       !$omp end parallel
 
-      !> VV10 last, on its own grid, adding into the same matrix and the same
-      !> energy. It is outside the parallel region because it runs its own two
-      !> sweeps over a different quadrature; folding it into the block loop
-      !> above would tie its cost to the exchange grid, which is exactly what
-      !> the separate grid exists to avoid.
+      ! VV10 last, on its own grid, adding into the same matrix and the same
+      ! energy. It is outside the parallel region because it runs its own two
+      ! sweeps over a different quadrature; folding it into the block loop
+      ! above would tie its cost to the exchange grid, which is exactly what
+      ! the separate grid exists to avoid.
       if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
          call vv10_add_potential(ctx, mol, density, v_xc, e_nl_total, error)
          if (error%has_error()) return
@@ -1464,18 +1464,18 @@ contains
       !$omp end critical (xc_uks_reduce)
       !$omp end parallel
 
-      !> VV10 sees only the total density, so one evaluation serves both spins
-      !> and its contribution is identical in each. That is not a
-      !> simplification: the kernel is built from rho and |grad rho| of the
-      !> total density, with no spin dependence anywhere in it, so
-      !> dE/drho_a = dE/drho_b and likewise for the gradient term.
+      ! VV10 sees only the total density, so one evaluation serves both spins
+      ! and its contribution is identical in each. That is not a
+      ! simplification: the kernel is built from rho and |grad rho| of the
+      ! total density, with no spin dependence anywhere in it, so
+      ! dE/drho_a = dE/drho_b and likewise for the gradient term.
       if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
          call vv10_add_potential(ctx, mol, d_alpha + d_beta, v_alpha, e_nl_total, error)
          if (error%has_error()) return
          call vv10_add_potential(ctx, mol, d_alpha + d_beta, v_beta, e_nl_dup, error)
          if (error%has_error()) return
-         !> Added once, not twice: `e_nl` is the energy of the whole density,
-         !> and the second call is only there to reach the beta matrix.
+         ! Added once, not twice: `e_nl` is the energy of the whole density,
+         ! and the second call is only there to reach the beta matrix.
          e_xc = e_xc + e_nl_total
       end if
 #endif
@@ -1866,10 +1866,10 @@ contains
 
       e_nl = 0.0_dp
 
-      !> Built on first use rather than beside the exchange grid, because
-      !> whether it is needed at all is only known once the functional's
-      !> components have been read, which happens after that grid is made.
-      !> Nothing that is not a `-V` functional ever pays for it.
+      ! Built on first use rather than beside the exchange grid, because
+      ! whether it is needed at all is only known once the functional's
+      ! components have been read, which happens after that grid is made.
+      ! Nothing that is not a `-V` functional ever pays for it.
       if (ctx%nlc_grid%n_points == 0) then
          allocate (numbers(mol%natm))
          numbers = nint(mol%charges)
@@ -1887,7 +1887,7 @@ contains
       sigma = 0.0_dp
       rho_grad = 0.0_dp
 
-      !> Sweep one: rho and sigma everywhere.
+      ! Sweep one: rho and sigma everywhere.
       do g0 = 1, npts, ctx%point_block
          g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
@@ -1913,7 +1913,7 @@ contains
 
       e_nl = sum(ctx%nlc_grid%weights*rho*exc)
 
-      !> Sweep two: contract the potential on the grid it was evaluated on.
+      ! Sweep two: contract the potential on the grid it was evaluated on.
       allocate (vtau_none(0))
       do g0 = 1, npts, ctx%point_block
          g1 = min(g0 + ctx%point_block - 1, npts)
@@ -1922,8 +1922,8 @@ contains
          if (error%has_error()) return
          if (allocated(grad_coeff)) deallocate (grad_coeff)
          allocate (grad_coeff(nb, 3))
-         !> dE/d(grad rho) = 2 vsigma grad rho, the same chain rule the
-         !> semilocal path applies, so the two cannot disagree about it.
+         ! dE/d(grad rho) = 2 vsigma grad rho, the same chain rule the
+         ! semilocal path applies, so the two cannot disagree about it.
          do id = 1, 3
             do ig = 1, nb
                grad_coeff(ig, id) = 2.0_dp*vsigma(g0 + ig - 1)*rho_grad(g0 + ig - 1, id)
