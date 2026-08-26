@@ -140,7 +140,7 @@
             <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-max_grid_level">MAX_GRID_LEVEL</a>
             <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-min_grid_level">MIN_GRID_LEVEL</a>
             <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-ang_points">ANG_POINTS</a>
-            <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-n_dim">N_DIM</a>
+            <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-n_dim~2">N_DIM</a>
             <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-n_periods">N_PERIODS</a>
             <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-period_last_z">PERIOD_LAST_Z</a>
             <a class="list-group-item" href="../module/mqc_dft_grid.html#variable-rad_grids">RAD_GRIDS</a>
@@ -232,13 +232,13 @@ default and is the one a production calculation should start from.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_dft_partition.html'>mqc_dft_partition</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
-                  <li class="list-inline-item"><a href='mqc_dft_radial.html'>mqc_dft_radial</a></li>
-                  <li class="list-inline-item"><a href='mqc_dft_prune.html'>mqc_dft_prune</a></li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_dft_radial.html'>mqc_dft_radial</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
                   <li class="list-inline-item"><a href='mqc_lebedev.html'>mqc_lebedev</a></li>
+                  <li class="list-inline-item"><a href='mqc_dft_partition.html'>mqc_dft_partition</a></li>
+                  <li class="list-inline-item"><a href='mqc_dft_prune.html'>mqc_dft_prune</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -676,7 +676,7 @@ are the point counts directly, since that is what <code>lebedev_grid</code> take
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_dim"></span>
+              <span class="anchor" id="variable-n_dim~2"></span>
               integer,
             </td>
               <td>private,</td>
@@ -812,7 +812,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~5"></span>
+              <span class="anchor" id="variable-coords"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -829,7 +829,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_points"></span>
+              <span class="anchor" id="variable-n_points~7"></span>
               integer,
             </td>
               <td>public</td>
@@ -886,7 +886,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme"></span>
+              <span class="anchor" id="variable-scheme~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -903,7 +903,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-weights"></span>
+              <span class="anchor" id="variable-weights~3"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -929,7 +929,7 @@ where the partition underflows.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/dft_grid_t.html#boundprocedure-destroy~10'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_grid_destroy.html'>dft_grid_destroy</a></td>
+  <strong><a href='../type/dft_grid_t.html#boundprocedure-destroy~6'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_grid_destroy.html'>dft_grid_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -962,7 +962,7 @@ where the partition underflows.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~12"></span>
+              <span class="anchor" id="variable-atomic_number~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -977,7 +977,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~12"></span>
+              <span class="anchor" id="variable-level~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1022,7 +1022,7 @@ where the partition underflows.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~11"></span>
+              <span class="anchor" id="variable-atomic_number~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1037,7 +1037,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~11"></span>
+              <span class="anchor" id="variable-level~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1082,7 +1082,7 @@ where the partition underflows.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~13"></span>
+              <span class="anchor" id="variable-level~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1127,7 +1127,7 @@ where the partition underflows.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~10"></span>
+              <span class="anchor" id="variable-atomic_number~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1222,7 +1222,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~83"></span>
+              <span class="anchor" id="variable-error~46"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1237,7 +1237,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~14"></span>
+              <span class="anchor" id="variable-level~9"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1252,7 +1252,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~2"></span>
+              <span class="anchor" id="variable-scheme~5"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1297,7 +1297,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_angular~3"></span>
+              <span class="anchor" id="variable-n_angular~4"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1397,7 +1397,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~3"></span>
+              <span class="anchor" id="variable-scheme~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1427,7 +1427,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~84"></span>
+              <span class="anchor" id="variable-error~47"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1467,7 +1467,7 @@ where the partition underflows.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~13"></span>
+              <span class="anchor" id="variable-atomic_number~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1482,7 +1482,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~15"></span>
+              <span class="anchor" id="variable-level~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1512,7 +1512,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_angular~4"></span>
+              <span class="anchor" id="variable-n_angular~5"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1542,7 +1542,7 @@ where the partition underflows.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-na~5"></span>
+              <span class="anchor" id="variable-na~9"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1582,7 +1582,7 @@ where the partition underflows.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~57"></span>
+              <span class="anchor" id="variable-this~37"></span>
               class(<a href='../type/dft_grid_t.html'>dft_grid_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1625,7 +1625,7 @@ where the partition underflows.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-26 05:05 +0000             </p>
+ on 2026-08-26 05:55 +0000             </p>
           </div>
         </div>
         <br>
