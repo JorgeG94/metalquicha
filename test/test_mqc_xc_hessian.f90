@@ -278,7 +278,28 @@ contains
 
       if (.not. xc_available()) return
 
-      call reference_state("lda_x", ctx, dens, err, ok)
+      call vxc_deriv_for("lda_x", error)
+      if (allocated(error)) return
+      call vxc_deriv_for("gga_x_pbe", error)
+      if (allocated(error)) return
+      call vxc_deriv_for("pbe", error)
+   end subroutine test_vxc_deriv
+
+   subroutine vxc_deriv_for(functional, error)
+      !! One functional, every element of dV/dR against a central difference
+      character(len=*), intent(in) :: functional
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: H = 2.0e-3_dp
+      real(dp) :: shifted(3, 3), worst
+      real(dp), allocatable :: dens(:, :), h1(:, :, :, :), vp(:, :), vm(:, :)
+      type(xc_context_t) :: ctx
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      logical :: ok
+      integer :: ia, a, nao, u, v
+
+      call reference_state(functional, ctx, dens, err, ok)
       call check(error, ok, "the reference Kohn-Sham state failed")
       if (allocated(error)) return
 
@@ -310,8 +331,8 @@ contains
 
       call check(error, worst < 1.0e-5_dp, &
                  "the exchange-correlation potential derivative disagrees with "// &
-                 "differences of the potential")
-   end subroutine test_vxc_deriv
+                 "differences of the potential for "//functional)
+   end subroutine vxc_deriv_for
 
    subroutine vxc_at(ctx, coords, dens, v, err)
       !! The exchange-correlation potential matrix at a displaced geometry, on
@@ -358,8 +379,27 @@ contains
 
       if (.not. xc_available()) return
 
-      call ks_at(WATER, hess, err, ok)
-      call check(error, ok, "the Kohn-Sham Hessian failed")
+      call ks_end_to_end_for("lda_x", error)
+      if (allocated(error)) return
+      call ks_end_to_end_for("pbe", error)
+      if (allocated(error)) return
+      call ks_end_to_end_for("b3lyp", error)
+   end subroutine test_ks_end_to_end
+
+   subroutine ks_end_to_end_for(functional, error)
+      !! One functional, assembled Hessian against a difference of its gradient
+      character(len=*), intent(in) :: functional
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: H = 3.0e-3_dp
+      real(dp) :: shifted(3, 3), fd, worst, rowsum, wtrans
+      real(dp), allocatable :: hess(:, :, :, :), plus(:, :), minus(:, :)
+      type(error_t) :: err
+      logical :: ok
+      integer :: ia, a, ja, b
+
+      call ks_at_f(WATER, functional, hess, err, ok)
+      call check(error, ok, "the Kohn-Sham Hessian failed for "//functional)
       if (allocated(error)) return
 
       wtrans = 0.0_dp
@@ -377,14 +417,14 @@ contains
          do a = 1, 3
             shifted = WATER
             shifted(a, ia) = shifted(a, ia) + H
-            call dft_gradient_at(shifted, plus, err, ok)
+            call dft_gradient_at(shifted, functional, plus, err, ok)
             if (.not. ok) then
                call check(error, .false., "a displaced gradient failed")
                return
             end if
             shifted = WATER
             shifted(a, ia) = shifted(a, ia) - H
-            call dft_gradient_at(shifted, minus, err, ok)
+            call dft_gradient_at(shifted, functional, minus, err, ok)
             if (.not. ok) then
                call check(error, .false., "a displaced gradient failed")
                return
@@ -407,15 +447,16 @@ contains
       ! against PySCF's analytic Hessian directly, where this agrees to 1.8e-8;
       ! that comparison lives in the validation suite because it needs PySCF.
       call check(error, worst < 2.0e-3_dp, &
-                 "the Kohn-Sham Hessian disagrees with differences of the gradient")
-   end subroutine test_ks_end_to_end
+                 "the Kohn-Sham Hessian disagrees with differences of the gradient for "// &
+                 functional)
+   end subroutine ks_end_to_end_for
 
-   subroutine ks_at(coords, hess, err, ok)
+   subroutine ks_at_f(coords, functional, hess, err, ok)
       real(dp), intent(in) :: coords(3, 3)
+      character(len=*), intent(in) :: functional
       real(dp), allocatable, intent(out) :: hess(:, :, :, :)
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
-
       type(libcint_molecule_t) :: mol
       type(xc_context_t) :: ctx
       type(rhf_result_t) :: scf
@@ -423,7 +464,7 @@ contains
       ok = .false.
       call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
-      call xc_context_create(mol, "lda_x", ctx, err, level=3)
+      call xc_context_create(mol, functional, ctx, err, level=3)
       if (err%has_error()) return
       call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (.not. err%has_error()) then
@@ -432,10 +473,11 @@ contains
       end if
       call mol%destroy()
       ok = .not. err%has_error()
-   end subroutine ks_at
+   end subroutine ks_at_f
 
-   subroutine dft_gradient_at(coords, gradient, err, ok)
+   subroutine dft_gradient_at(coords, functional, gradient, err, ok)
       real(dp), intent(in) :: coords(3, 3)
+      character(len=*), intent(in) :: functional
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
@@ -447,7 +489,7 @@ contains
       ok = .false.
       call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
-      call xc_context_create(mol, "lda_x", ctx, err, level=3)
+      call xc_context_create(mol, functional, ctx, err, level=3)
       if (err%has_error()) return
       call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (.not. err%has_error()) then

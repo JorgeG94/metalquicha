@@ -1031,9 +1031,8 @@ contains
       !!     Hartree-Fock matrix** -- full exact exchange, no `V_xc`. That was
       !!     the last 0.12, spread smoothly across every atom pair.
       !!
-      !! Not wired to a driver yet: `xc_potential_deriv` is LDA-only, so this
-      !! refuses a GGA, and offering an analytic Hessian for one functional
-      !! family through a keyword that names none is worse than not offering it.
+      !! LDA, GGA and hybrids. A meta-GGA is refused: it depends on the kinetic
+      !! energy density as well, whose second derivative is not implemented.
       use mqc_libcint_xc_hessian, only: xc_hessian
       type(libcint_molecule_t), intent(in), target :: mol
       integer, intent(in) :: atomic_numbers(:)
@@ -1052,16 +1051,14 @@ contains
       integer :: i, nao
 
       if (error%has_error()) return
-
-      ! `xc_hessian` handles a GGA, but the response half does not yet:
-      ! `xc_potential_deriv` is LDA-only, and a Hessian assembled from a
-      ! complete explicit term and an incomplete response is wrong in a way
-      ! neither piece's own test would catch.
-      if (xc%any_gga .or. xc%any_mgga) then
+      ! A meta-GGA depends on the kinetic energy density as well, whose second
+      ! derivative is not implemented. Dropping those terms silently would give
+      ! a plausible wrong answer, so it is refused.
+      if (xc%any_mgga) then
          call error%set(ERROR_VALIDATION, "An analytic Kohn-Sham Hessian is available "// &
-                        "for LDA functionals. The exchange-correlation potential's "// &
-                        "nuclear derivative, which the response term needs, does not yet "// &
-                        "carry the gradient channel; use the semi-numerical path.")
+                        "for LDA and GGA functionals, hybrids included. A meta-GGA also "// &
+                        "depends on the kinetic energy density, whose second derivative "// &
+                        "is not implemented; use the semi-numerical path for one.")
          return
       end if
 

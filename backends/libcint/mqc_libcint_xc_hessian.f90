@@ -353,7 +353,11 @@ contains
       !! is out by 0.87 against a finite difference of the gradient, where the
       !! same comparison for Hartree-Fock agrees to 5e-6.
       !!
-      !! LDA only, and the caller refuses a GGA rather than dropping its terms.
+      !! A GGA adds the `sigma` channel to all of it: the potential itself gains
+      !! `2 v_sigma grad rho . grad(chi_u chi_v)`, and every factor in that
+      !! moves. Only second derivatives of the basis functions are needed here
+      !! -- the third ones belong to the *energy's* second derivative, not the
+      !! potential's first.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
@@ -362,19 +366,24 @@ contains
 
       real(dp), allocatable :: rho(:), rho_grad(:, :), vrho(:), vsigma(:)
       real(dp), allocatable :: frr(:), frs(:), fss(:)
-      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), ao_hess(:, :, :)
       real(dp), allocatable :: extents(:), d_sig(:, :), dmu(:, :), dchi(:, :)
-      real(dp), allocatable :: wcol(:), blk(:, :)
+      real(dp), allocatable :: wcol(:), blk(:, :), dmu_d(:, :, :)
+      real(dp), allocatable :: dgrad(:, :, :), dsig(:, :)
+      real(dp), allocatable :: gdot(:, :), dgdot(:, :), hgdot(:, :)
       logical, allocatable :: shell_mask(:)
       integer, allocatable :: ao_offset(:), ao_list(:), c_offsets(:), c_counts(:)
-      integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig, ia, a, i, j, ig
+      integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig, ia, a, i, j, ig, d
       real(dp) :: acc
+      logical :: gga
+      integer, parameter :: PAIR(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
 
       if (error%has_error()) return
 
       natm = size(mol%coords, 2)
       nao = mol%nao
       npts = size(ctx%grid%weights)
+      gga = ctx%any_gga
 
       call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
                                      frr, frs, fss, error)
@@ -397,8 +406,14 @@ contains
                d_sig(isig, jsig) = density(ao_list(isig), ao_list(jsig))
             end do
          end do
-         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad, &
-                            shell_mask=shell_mask, ao_offset=ao_offset, n_ao_out=n_sig)
+         if (gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad, &
+                               hess=ao_hess, shell_mask=shell_mask, ao_offset=ao_offset, &
+                               n_ao_out=n_sig)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad, &
+                               shell_mask=shell_mask, ao_offset=ao_offset, n_ao_out=n_sig)
+         end if
          if (error%has_error()) return
 
          if (allocated(dmu)) deallocate (dmu)
@@ -422,9 +437,63 @@ contains
             end do
          end do
 
+         if (gga) then
+            ! d(grad rho)/dA and d sigma/dA, as in `xc_hessian`, plus
+            ! `gdot(g, u) = sum_d grad rho_d (d_d chi_u)`, which is the factor
+            ! `grad rho . grad(chi_u chi_v)` reduces to once one index is fixed.
+            if (allocated(dmu_d)) deallocate (dmu_d)
+            allocate (dmu_d(nb, n_sig, 3))
+            do d = 1, 3
+               call pic_gemm(ao_grad(1:nb, 1:n_sig, d), d_sig(1:n_sig, 1:n_sig), &
+                             dmu_d(:, :, d), beta=0.0_dp)
+            end do
+            if (allocated(dgrad)) deallocate (dgrad)
+            if (allocated(dsig)) deallocate (dsig)
+            if (allocated(gdot)) deallocate (gdot)
+            allocate (dgrad(3*natm, 3, nb), dsig(3*natm, nb), gdot(nb, n_sig))
+            dgrad = 0.0_dp
+            do ia = 1, natm
+               if (c_counts(ia) == 0) cycle
+               do a = 1, 3
+                  do d = 1, 3
+                     do ig = 1, nb
+                        acc = 0.0_dp
+                        do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                           acc = acc + ao_hess(ig, i, PAIR(a, d))*dmu(ig, i) &
+                                 + ao_grad(ig, i, a)*dmu_d(ig, i, d)
+                        end do
+                        dgrad(3*(ia - 1) + a, d, ig) = -2.0_dp*acc
+                     end do
+                  end do
+               end do
+            end do
+            do ig = 1, nb
+               do i = 1, 3*natm
+                  acc = 0.0_dp
+                  do d = 1, 3
+                     acc = acc + rho_grad(g0 + ig - 1, d)*dgrad(i, d, ig)
+                  end do
+                  dsig(i, ig) = 2.0_dp*acc
+               end do
+            end do
+            gdot = 0.0_dp
+            do d = 1, 3
+               do i = 1, n_sig
+                  do ig = 1, nb
+                     gdot(ig, i) = gdot(ig, i) + rho_grad(g0 + ig - 1, d)*ao_grad(ig, i, d)
+                  end do
+               end do
+            end do
+         end if
+
          if (allocated(blk)) deallocate (blk)
          if (allocated(wcol)) deallocate (wcol)
          allocate (blk(n_sig, n_sig), wcol(nb))
+         if (gga) then
+            if (allocated(dgdot)) deallocate (dgdot)
+            if (allocated(hgdot)) deallocate (hgdot)
+            allocate (dgdot(nb, n_sig), hgdot(nb, n_sig))
+         end if
 
          do ia = 1, natm
             if (c_counts(ia) == 0) cycle
@@ -442,19 +511,126 @@ contains
                   end do
                end do
 
-               ! The potential following its own density.
+               ! The potential following its own density. For a GGA `v_rho`
+               ! depends on sigma as well, so the weight carries both channels.
                wcol = ctx%grid%weights(g0:g1)*frr(g0:g1)*dchi(3*(ia - 1) + a, 1:nb)
+               if (gga) wcol = wcol + ctx%grid%weights(g0:g1)*frs(g0:g1) &
+                               *dsig(3*(ia - 1) + a, 1:nb)
                call weighted_overlap(ao(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
-               do j = 1, n_sig
-                  do i = 1, n_sig
-                     h1(ao_list(i), ao_list(j), a, ia) = &
-                        h1(ao_list(i), ao_list(j), a, ia) + blk(i, j)
+               call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
+
+               if (gga) then
+                  ! d v_sigma / dA, against `2 grad rho . grad(chi_u chi_v)`.
+                  wcol = 2.0_dp*ctx%grid%weights(g0:g1) &
+                         *(frs(g0:g1)*dchi(3*(ia - 1) + a, 1:nb) &
+                           + fss(g0:g1)*dsig(3*(ia - 1) + a, 1:nb))
+                  call weighted_overlap(gdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
+                  call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
+                  call deposit_full(h1, ao_list, n_sig, a, ia, transpose(blk), 1.0_dp)
+
+                  ! `grad rho` itself moving, against the same factor.
+                  dgdot = 0.0_dp
+                  do d = 1, 3
+                     do i = 1, n_sig
+                        do ig = 1, nb
+                           dgdot(ig, i) = dgdot(ig, i) &
+                                          + dgrad(3*(ia - 1) + a, d, ig)*ao_grad(ig, i, d)
+                        end do
+                     end do
                   end do
-               end do
+                  wcol = 2.0_dp*ctx%grid%weights(g0:g1)*vsigma(g0:g1)
+                  call weighted_overlap(dgdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
+                  call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
+                  call deposit_full(h1, ao_list, n_sig, a, ia, transpose(blk), 1.0_dp)
+
+                  ! The basis functions inside `grad(chi_u chi_v)` moving. Four
+                  ! pieces, two on each index, and only the rows or columns this
+                  ! atom owns.
+                  hgdot = 0.0_dp
+                  do d = 1, 3
+                     do i = 1, n_sig
+                        do ig = 1, nb
+                           hgdot(ig, i) = hgdot(ig, i) &
+                                          + rho_grad(g0 + ig - 1, d)*ao_hess(ig, i, PAIR(a, d))
+                        end do
+                     end do
+                  end do
+                  call weighted_overlap(hgdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
+                  call deposit_rows(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                    c_offsets, c_counts)
+                  call weighted_overlap(ao(1:nb, 1:n_sig), hgdot(1:nb, 1:n_sig), wcol, blk)
+                  call deposit_cols(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                    c_offsets, c_counts)
+                  call weighted_overlap(ao_grad(1:nb, 1:n_sig, a), gdot(1:nb, 1:n_sig), &
+                                        wcol, blk)
+                  call deposit_rows(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                    c_offsets, c_counts)
+                  call weighted_overlap(gdot(1:nb, 1:n_sig), ao_grad(1:nb, 1:n_sig, a), &
+                                        wcol, blk)
+                  call deposit_cols(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                    c_offsets, c_counts)
+               end if
             end do
          end do
       end do
    end subroutine xc_potential_deriv
+
+   subroutine deposit_full(h1, ao_list, n_sig, a, ia, blk, scale)
+      !! Add `scale * blk` into every element of one atom's perturbation block
+      real(dp), intent(inout) :: h1(:, :, :, :)
+      integer, intent(in) :: ao_list(:)
+      integer, intent(in) :: n_sig, a, ia
+      real(dp), intent(in) :: blk(:, :)
+      real(dp), intent(in) :: scale
+      integer :: i, j
+
+      do j = 1, n_sig
+         do i = 1, n_sig
+            h1(ao_list(i), ao_list(j), a, ia) = h1(ao_list(i), ao_list(j), a, ia) &
+                                                + scale*blk(i, j)
+         end do
+      end do
+   end subroutine deposit_full
+
+   subroutine deposit_rows(h1, ao_list, n_sig, a, ia, blk, scale, offsets, counts)
+      !! As `deposit_full`, restricted to the rows atom `ia` owns
+      real(dp), intent(inout) :: h1(:, :, :, :)
+      integer, intent(in) :: ao_list(:)
+      integer, intent(in) :: n_sig, a, ia
+      real(dp), intent(in) :: blk(:, :)
+      real(dp), intent(in) :: scale
+      integer, intent(in) :: offsets(:), counts(:)
+
+      integer :: i, j
+
+      if (counts(ia) == 0) return
+      do j = 1, n_sig
+         do i = offsets(ia) + 1, offsets(ia) + counts(ia)
+            h1(ao_list(i), ao_list(j), a, ia) = h1(ao_list(i), ao_list(j), a, ia) &
+                                                + scale*blk(i, j)
+         end do
+      end do
+   end subroutine deposit_rows
+
+   subroutine deposit_cols(h1, ao_list, n_sig, a, ia, blk, scale, offsets, counts)
+      !! As `deposit_full`, restricted to the columns atom `ia` owns
+      real(dp), intent(inout) :: h1(:, :, :, :)
+      integer, intent(in) :: ao_list(:)
+      integer, intent(in) :: n_sig, a, ia
+      real(dp), intent(in) :: blk(:, :)
+      real(dp), intent(in) :: scale
+      integer, intent(in) :: offsets(:), counts(:)
+
+      integer :: i, j
+
+      if (counts(ia) == 0) return
+      do j = offsets(ia) + 1, offsets(ia) + counts(ia)
+         do i = 1, n_sig
+            h1(ao_list(i), ao_list(j), a, ia) = h1(ao_list(i), ao_list(j), a, ia) &
+                                                + scale*blk(i, j)
+         end do
+      end do
+   end subroutine deposit_cols
 
    subroutine xc_gradient_fixed_grid(ctx, mol, density, gradient, error)
       !! dE_xc/dR with the grid held fixed -- the first derivative `xc_hessian`
