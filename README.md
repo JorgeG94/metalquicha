@@ -30,11 +30,15 @@ Metalquicha implements a naive backend for unfragmented and fragmented quantum c
 calculations. Three chemistry engines are available:
 
 - [tblite](https://github.com/tblite/tblite) for semi-empirical xTB (GFN1, GFN2), on the CPU
-- [libcint](https://github.com/sunqm/libcint) for Gaussian-basis ab initio on the
-  CPU — Hartree-Fock and Kohn-Sham DFT, both restricted and unrestricted, plus
+- [libfint](https://github.com/JorgeG94/libfint) for Gaussian-basis ab initio on
+  the CPU — Hartree-Fock and Kohn-Sham DFT, both restricted and unrestricted, plus
   MP2 and CCSD(T), each conventional or density-fitted. This one exists to be
   checked against as much as to be run: it gives the GPU path a second, independent implementation to
   disagree with, and every method in it is validated against PySCF.
+  libfint is an all-Fortran port of [libcint](https://github.com/sunqm/libcint)
+  and is what a default build uses; `-DMQC_USE_LIBFINT=OFF` selects libcint
+  itself instead. The two are bit-identical, so the choice is a build option
+  rather than a migration.
 - [NVIDIA cuEST](https://developer.nvidia.com/cuda/cuda-x-libraries/cuest) for
   Hartree-Fock and Kohn-Sham DFT on the GPU — energies, analytic gradients and
   Hessians, for whole molecules and for every fragment of an MBE/GMBE expansion.
@@ -89,20 +93,28 @@ You will need an internet connection to download the dependencies. The main depe
 — Hartree-Fock, DFT, MP2 and coupled cluster in a Gaussian basis, no GPU needed.
 All three dependencies are fetched automatically, so **a default configure needs
 network access.** On a machine without it, either point
-`FETCHCONTENT_SOURCE_DIR_LIBCINT` and `FETCHCONTENT_SOURCE_DIR_LIBXC` at local
-copies, or turn them off and build the xTB path alone.
+`FETCHCONTENT_SOURCE_DIR_LIBFINT` and `FETCHCONTENT_SOURCE_DIR_LIBXC` at local
+copies, or turn them off and build the xTB path alone. It is `_LIBFINT` because
+that is what a default configure fetches; a build with `-DMQC_USE_LIBFINT=OFF`
+wants `FETCHCONTENT_SOURCE_DIR_LIBCINT` instead.
 
 | Option | Default | What it controls |
 | --- | --- | --- |
 | `-DMQC_ENABLE_TBLITE=` | `ON` | xTB (GFN1/GFN2) through tblite |
 | `-DMQC_ENABLE_LIBCINT=` | `ON` | Gaussian integrals on the CPU, no GPU needed |
-| `-DMQC_ENABLE_LIBXC=` | `ON` | Exchange-correlation functionals, so DFT |
+| `-DMQC_USE_LIBFINT=` | `ON` | Use libfint, the Fortran port, for those integrals |
 | `-DMQC_ENABLE_HDF5=` | `OFF` | Binary checkpoints, to restart a gradient or Hessian |
 | `-DMQC_ENABLE_CUEST=` | `OFF` | GPU Hartree-Fock/DFT; also needs `-DCUEST_ROOT=` |
 
-Turning `LIBXC` off while leaving `LIBCINT` on is a supported build, but note
-what it means: every deck naming a functional is refused, because there is
-nothing to evaluate it with. That is the reason both default to on.
+`MQC_ENABLE_LIBCINT` names the library the backend was first written against
+rather than the one it now links by default; it switches the whole CPU ab initio
+path on and off, whichever integral library is underneath.
+
+`MQC_ENABLE_LIBXC` is no longer listed above. It defaults to on, it is marked
+advanced, and turning it off is not a configuration to reach for: the build
+still configures and CI still exercises it, but every deck naming a functional
+is refused, because there is nothing left to evaluate it with. It survives for
+the coverage build, which disables libxc because libxc refuses that build type.
 
 **tblite needs gfortran, ifort or ifx.** With nvfortran or LLVM Flang the
 configure stops and says so; pass `-DMQC_ENABLE_TBLITE=OFF` and the rest of the
@@ -215,8 +227,8 @@ For Hartree-Fock or DFT rather than xTB:
 ```
 
 `functional` applies to `dft` only. Which backend runs depends on the build:
-cuEST when it is compiled in, otherwise libcint on the CPU. cuEST always
-density-fits J and K, so `aux_basis` is required there. libcint has both paths
+cuEST when it is compiled in, otherwise the CPU ab initio path. cuEST always
+density-fits J and K, so `aux_basis` is required there. The CPU path has both
 and uses exact integrals unless asked:
 
 ```json

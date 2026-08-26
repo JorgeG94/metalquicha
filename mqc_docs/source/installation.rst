@@ -73,10 +73,7 @@ with, run ``mqc --version``, which prints a ``features:`` line.
      - xTB (GFN1, GFN2) through tblite
    * - ``MQC_ENABLE_LIBCINT``
      - ``ON``
-     - CPU Gaussian integrals: Hartree-Fock, MP2, coupled cluster
-   * - ``MQC_ENABLE_LIBXC``
-     - ``ON``
-     - Exchange-correlation functionals, for CPU DFT
+     - The CPU ab initio path: Hartree-Fock, DFT, MP2, coupled cluster
    * - ``MQC_ENABLE_DLFIND``
      - ``OFF``
      - Geometry optimization, through DL-FIND
@@ -89,6 +86,28 @@ with, run ``mqc --version``, which prints a ``features:`` line.
    * - ``MQC_ENABLE_CREST``
      - ``OFF``
      - Conformer and ensemble sampling, through CREST
+
+``MQC_ENABLE_LIBCINT`` is named after the library the backend was first written
+against, not the one it links now. A default build takes its integrals from
+`libfint <https://github.com/JorgeG94/libfint>`_, an all-Fortran port of libcint
+that this project also maintains; the flag switches the whole CPU ab initio path
+on and off regardless of which of the two is underneath.
+
+Two options are deliberately absent from the table above. Both default to ``ON``,
+both are marked advanced in CMake, and neither is a knob to reach for:
+
+``MQC_USE_LIBFINT``
+   ``OFF`` takes libcint itself instead of the Fortran port. The two are
+   bit-identical, so this changes what gets built and not what gets computed.
+   libcint is being phased out of the default surface; the option stays because
+   the two configurations compile different source -- libfint carries L (sp)
+   shells and libcint cannot represent one -- and CI builds both.
+
+``MQC_ENABLE_LIBXC``
+   ``OFF`` removes the exchange-correlation functionals, so every deck naming
+   one is refused. It survives for the coverage build, which disables libxc
+   because libxc refuses that build type, rather than because a metalquicha
+   without DFT is something to want.
 
 ``MQC_ENABLE_DLFIND`` is off for a licensing reason rather than a technical one:
 DL-FIND is LGPL-3 and metalquicha is MIT. It is fetched and linked as a shared
@@ -111,7 +130,13 @@ downloaded, which is how to configure on a cluster node with no network:
 
    cmake -B build -DMQC_ENABLE_DLFIND=ON \
          -DFETCHCONTENT_SOURCE_DIR_LIBDLFIND=/path/to/libdlfind \
-         -DFETCHCONTENT_SOURCE_DIR_LIBCINT=/path/to/libcint
+         -DFETCHCONTENT_SOURCE_DIR_LIBFINT=/path/to/libfint
+
+The variable is named after what is actually fetched, so a default build wants
+``_LIBFINT``. ``_LIBCINT`` is the right one only alongside
+``-DMQC_USE_LIBFINT=OFF``; setting it on a default configure does nothing and
+the fetch still reaches for the network, which on a compute node with none is a
+configure that fails rather than one that falls back.
 
 Building with the Fortran Package Manager (fpm)
 ===============================================

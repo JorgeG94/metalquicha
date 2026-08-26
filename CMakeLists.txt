@@ -141,6 +141,13 @@ option(MQC_ENABLE_LIBCINT
 option(MQC_ENABLE_LIBXC
        "Fetch libxc for exchange-correlation functionals (CPU DFT)" ON)
 
+# Advanced, and on its way out of the user-facing surface. A build without libxc
+# still configures and is exercised in CI, but it refuses every deck that names
+# a functional -- which is most of what this program is asked to do. It survives
+# for the coverage build, which disables libxc because libxc refuses that build
+# type, rather than because anybody wants a metalquicha without DFT.
+mark_as_advanced(MQC_ENABLE_LIBXC)
+
 # A coverage build measures this project's own Fortran, not its dependencies --
 # and `backends/libcint/` is this project's own Fortran. It used to be dropped
 # here alongside libxc, which meant every line of the CPU backend -- the SCF,
@@ -451,6 +458,14 @@ endif()
 # CI rather than only the default.
 option(MQC_USE_LIBFINT
        "Use libfint (the Fortran port) instead of libcint for CPU integrals" ON)
+
+# Advanced: this switch exists to select libcint, and libcint is being phased
+# out of the default surface. libfint has been the default since it proved
+# bit-identical, so OFF is now the unusual answer rather than the escape hatch
+# it was. Kept working and kept in CI -- the two configurations compile
+# different source, because libfint carries L (sp) shells and libcint cannot
+# represent one -- but no longer advertised.
+mark_as_advanced(MQC_USE_LIBFINT)
 
 if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
   include(FetchContent)
