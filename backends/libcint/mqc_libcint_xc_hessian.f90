@@ -66,6 +66,7 @@ contains
 
       real(dp), allocatable :: rho(:), rho_grad(:, :), vrho(:), vsigma(:)
       real(dp), allocatable :: frr(:), frs(:), fss(:)
+      real(dp), allocatable :: tau(:), vtau(:), frt(:), fst(:), ftt(:)
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), ao_hess(:, :, :)
       real(dp), allocatable :: extents(:), d_sig(:, :), dchi(:, :)
       real(dp), allocatable :: dmu(:, :), zmat(:, :), ymat(:, :), wg(:)
@@ -75,9 +76,9 @@ contains
       integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig
       integer :: ia, ja, a, b, i, j, ig, p, q, c, d, e, ih
       real(dp) :: acc
-      logical :: gga
+      logical :: gga, mgga
       real(dp), allocatable :: ao_d3(:, :, :), dmu_d(:, :, :)
-      real(dp), allocatable :: dgrad(:, :, :), dsig(:, :), wsig(:, :)
+      real(dp), allocatable :: dgrad(:, :, :), dsig(:, :), wsig(:, :), dtau(:, :)
       integer, parameter :: PAIR(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
       integer, parameter :: TRIP(3, 3, 3) = reshape( &
                             [1, 2, 3, 2, 4, 5, 3, 5, 6, &
@@ -87,14 +88,8 @@ contains
 
       if (error%has_error()) return
 
-      if (ctx%any_mgga) then
-         call error%set(ERROR_VALIDATION, "An analytic Hessian is available for LDA and "// &
-                        "GGA functionals. A meta-GGA additionally depends on the kinetic "// &
-                        "energy density, whose second derivative is not implemented; use "// &
-                        "the semi-numerical path for one.")
-         return
-      end if
-      gga = ctx%any_gga
+      mgga = ctx%any_mgga
+      gga = ctx%any_gga .or. mgga
 
       natm = size(mol%coords, 2)
       nao = mol%nao
@@ -102,8 +97,14 @@ contains
 
       ! rho, the potential and the kernel over the whole grid. The GGA channels
       ! come back too and are unused here, which the refusal above makes safe.
-      call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
-                                     frr, frs, fss, error)
+      if (mgga) then
+         call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
+                                        frr, frs, fss, error, tau=tau, vtau=vtau, &
+                                        frt=frt, fst=fst, ftt=ftt)
+      else
+         call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
+                                        frr, frs, fss, error)
+      end if
       if (error%has_error()) return
 
       allocate (extents(mol%nbas))
@@ -206,6 +207,29 @@ contains
             end do
          end if
 
+         ! d tau / dA. With tau = 1/2 sum_d sum_uv D_uv (d_d chi_u)(d_d chi_v),
+         ! one nuclear derivative lands on a second position derivative and the
+         ! half cancels against the two equal halves of the product rule.
+         if (mgga) then
+            if (allocated(dtau)) deallocate (dtau)
+            allocate (dtau(3*natm, nb))
+            dtau = 0.0_dp
+            do ia = 1, natm
+               if (c_counts(ia) == 0) cycle
+               do c = 1, 3
+                  do ig = 1, nb
+                     acc = 0.0_dp
+                     do d = 1, 3
+                        do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                           acc = acc + ao_hess(ig, i, PAIR(c, d))*dmu_d(ig, i, d)
+                        end do
+                     end do
+                     dtau(3*(ia - 1) + c, ig) = -acc
+                  end do
+               end do
+            end do
+         end if
+
          ! Kernel terms: the second functional derivatives against the first
          ! derivatives of their own arguments. For an LDA that is `f_rr` alone;
          ! a GGA adds the two cross terms and `f_ss`.
@@ -217,6 +241,13 @@ contains
                      acc = acc + frs(g0 + ig - 1) &
                            *(dchi(p, ig)*dsig(q, ig) + dsig(p, ig)*dchi(q, ig)) &
                            + fss(g0 + ig - 1)*dsig(p, ig)*dsig(q, ig)
+                  end if
+                  if (mgga) then
+                     acc = acc + frt(g0 + ig - 1) &
+                           *(dchi(p, ig)*dtau(q, ig) + dtau(p, ig)*dchi(q, ig)) &
+                           + fst(g0 + ig - 1) &
+                           *(dsig(p, ig)*dtau(q, ig) + dtau(p, ig)*dsig(q, ig)) &
+                           + ftt(g0 + ig - 1)*dtau(p, ig)*dtau(q, ig)
                   end if
                   hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) = &
                      hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) &
@@ -311,6 +342,33 @@ contains
             end do
          end if
 
+         ! `v_tau` against the second derivative of tau. Same shape as the sigma
+         ! term above: a diagonal piece where both nuclear derivatives land on
+         ! one centre and reach a third position derivative, and an off-diagonal
+         ! piece with one on each.
+         if (mgga) then
+            if (allocated(wsig)) deallocate (wsig)
+            allocate (wsig(nb, 1))
+            wsig(:, 1) = wg*vtau(g0:g1)
+            if (allocated(zmat)) deallocate (zmat)
+            allocate (zmat(n_sig, n_sig))
+            do c = 1, 3
+               do e = 1, 3
+                  do d = 1, 3
+                     call weighted_overlap(ao_d3(1:nb, 1:n_sig, TRIP(c, e, d)), &
+                                           ao_grad(1:nb, 1:n_sig, d), wsig(:, 1), zmat)
+                     call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+                                     natm, n_sig, c, e, 1.0_dp, diagonal=.true.)
+                     call weighted_overlap(ao_hess(1:nb, 1:n_sig, PAIR(c, d)), &
+                                           ao_hess(1:nb, 1:n_sig, PAIR(e, d)), &
+                                           wsig(:, 1), zmat)
+                     call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+                                     natm, n_sig, c, e, 1.0_dp, diagonal=.false.)
+                  end do
+               end do
+            end do
+         end if
+
          ! Potential term, first piece: both derivatives on the same function,
          ! so it lands on the diagonal atom block only.
          if (allocated(ymat)) deallocate (ymat)
@@ -366,16 +424,17 @@ contains
 
       real(dp), allocatable :: rho(:), rho_grad(:, :), vrho(:), vsigma(:)
       real(dp), allocatable :: frr(:), frs(:), fss(:)
+      real(dp), allocatable :: tau(:), vtau(:), frt(:), fst(:), ftt(:)
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), ao_hess(:, :, :)
       real(dp), allocatable :: extents(:), d_sig(:, :), dmu(:, :), dchi(:, :)
       real(dp), allocatable :: wcol(:), blk(:, :), dmu_d(:, :, :)
       real(dp), allocatable :: dgrad(:, :, :), dsig(:, :)
-      real(dp), allocatable :: gdot(:, :), dgdot(:, :), hgdot(:, :)
+      real(dp), allocatable :: gdot(:, :), dgdot(:, :), hgdot(:, :), dtau(:, :)
       logical, allocatable :: shell_mask(:)
       integer, allocatable :: ao_offset(:), ao_list(:), c_offsets(:), c_counts(:)
       integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig, ia, a, i, j, ig, d
       real(dp) :: acc
-      logical :: gga
+      logical :: gga, mgga
       integer, parameter :: PAIR(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
 
       if (error%has_error()) return
@@ -383,10 +442,17 @@ contains
       natm = size(mol%coords, 2)
       nao = mol%nao
       npts = size(ctx%grid%weights)
-      gga = ctx%any_gga
+      mgga = ctx%any_mgga
+      gga = ctx%any_gga .or. mgga
 
-      call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
-                                     frr, frs, fss, error)
+      if (mgga) then
+         call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
+                                        frr, frs, fss, error, tau=tau, vtau=vtau, &
+                                        frt=frt, fst=fst, ftt=ftt)
+      else
+         call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
+                                        frr, frs, fss, error)
+      end if
       if (error%has_error()) return
 
       allocate (extents(mol%nbas))
@@ -486,6 +552,26 @@ contains
             end do
          end if
 
+         if (mgga) then
+            if (allocated(dtau)) deallocate (dtau)
+            allocate (dtau(3*natm, nb))
+            dtau = 0.0_dp
+            do ia = 1, natm
+               if (c_counts(ia) == 0) cycle
+               do a = 1, 3
+                  do ig = 1, nb
+                     acc = 0.0_dp
+                     do d = 1, 3
+                        do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                           acc = acc + ao_hess(ig, i, PAIR(a, d))*dmu_d(ig, i, d)
+                        end do
+                     end do
+                     dtau(3*(ia - 1) + a, ig) = -acc
+                  end do
+               end do
+            end do
+         end if
+
          if (allocated(blk)) deallocate (blk)
          if (allocated(wcol)) deallocate (wcol)
          allocate (blk(n_sig, n_sig), wcol(nb))
@@ -516,6 +602,8 @@ contains
                wcol = ctx%grid%weights(g0:g1)*frr(g0:g1)*dchi(3*(ia - 1) + a, 1:nb)
                if (gga) wcol = wcol + ctx%grid%weights(g0:g1)*frs(g0:g1) &
                                *dsig(3*(ia - 1) + a, 1:nb)
+               if (mgga) wcol = wcol + ctx%grid%weights(g0:g1)*frt(g0:g1) &
+                                *dtau(3*(ia - 1) + a, 1:nb)
                call weighted_overlap(ao(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
                call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
 
@@ -524,6 +612,8 @@ contains
                   wcol = 2.0_dp*ctx%grid%weights(g0:g1) &
                          *(frs(g0:g1)*dchi(3*(ia - 1) + a, 1:nb) &
                            + fss(g0:g1)*dsig(3*(ia - 1) + a, 1:nb))
+                  if (mgga) wcol = wcol + 2.0_dp*ctx%grid%weights(g0:g1)*fst(g0:g1) &
+                                   *dtau(3*(ia - 1) + a, 1:nb)
                   call weighted_overlap(gdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
                   call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
                   call deposit_full(h1, ao_list, n_sig, a, ia, transpose(blk), 1.0_dp)
@@ -569,6 +659,31 @@ contains
                                         wcol, blk)
                   call deposit_cols(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
                                     c_offsets, c_counts)
+               end if
+
+               if (mgga) then
+                  ! `v_tau` against half the gradient overlap of the two basis
+                  ! functions. Its own derivative first, then the functions.
+                  wcol = 0.5_dp*ctx%grid%weights(g0:g1) &
+                         *(frt(g0:g1)*dchi(3*(ia - 1) + a, 1:nb) &
+                           + fst(g0:g1)*dsig(3*(ia - 1) + a, 1:nb) &
+                           + ftt(g0:g1)*dtau(3*(ia - 1) + a, 1:nb))
+                  do d = 1, 3
+                     call weighted_overlap(ao_grad(1:nb, 1:n_sig, d), &
+                                           ao_grad(1:nb, 1:n_sig, d), wcol, blk)
+                     call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
+                  end do
+                  wcol = 0.5_dp*ctx%grid%weights(g0:g1)*vtau(g0:g1)
+                  do d = 1, 3
+                     call weighted_overlap(ao_hess(1:nb, 1:n_sig, PAIR(a, d)), &
+                                           ao_grad(1:nb, 1:n_sig, d), wcol, blk)
+                     call deposit_rows(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                       c_offsets, c_counts)
+                     call weighted_overlap(ao_grad(1:nb, 1:n_sig, d), &
+                                           ao_hess(1:nb, 1:n_sig, PAIR(a, d)), wcol, blk)
+                     call deposit_cols(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                       c_offsets, c_counts)
+                  end do
                end if
             end do
          end do
@@ -651,13 +766,14 @@ contains
 
       real(dp), allocatable :: rho(:), rho_grad(:, :), vrho(:), vsigma(:)
       real(dp), allocatable :: frr(:), frs(:), fss(:)
+      real(dp), allocatable :: tau(:), vtau(:), frt(:), fst(:), ftt(:)
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), ao_hess(:, :, :)
       real(dp), allocatable :: extents(:), d_sig(:, :), dmu(:, :), dmu_d(:, :, :)
       logical, allocatable :: shell_mask(:)
       integer, allocatable :: ao_offset(:), ao_list(:), c_offsets(:), c_counts(:)
       integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig, ia, a, i, ig, d
       real(dp) :: acc
-      logical :: gga
+      logical :: gga, mgga
       integer, parameter :: PAIR(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
 
       if (error%has_error()) return
@@ -666,9 +782,16 @@ contains
       nao = mol%nao
       npts = size(ctx%grid%weights)
 
-      gga = ctx%any_gga
-      call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
-                                     frr, frs, fss, error)
+      mgga = ctx%any_mgga
+      gga = ctx%any_gga .or. mgga
+      if (mgga) then
+         call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
+                                        frr, frs, fss, error, tau=tau, vtau=vtau, &
+                                        frt=frt, fst=fst, ftt=ftt)
+      else
+         call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
+                                        frr, frs, fss, error)
+      end if
       if (error%has_error()) return
 
       allocate (extents(mol%nbas))
@@ -743,6 +866,24 @@ contains
                      end do
                   end do
                   gradient(a, ia) = gradient(a, ia) - 2.0_dp*acc
+               end do
+            end do
+         end if
+
+         if (mgga) then
+            do ia = 1, natm
+               if (c_counts(ia) == 0) cycle
+               do a = 1, 3
+                  acc = 0.0_dp
+                  do d = 1, 3
+                     do ig = 1, nb
+                        do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                           acc = acc + ctx%grid%weights(g0 + ig - 1)*vtau(g0 + ig - 1) &
+                                 *ao_hess(ig, i, PAIR(a, d))*dmu_d(ig, i, d)
+                        end do
+                     end do
+                  end do
+                  gradient(a, ia) = gradient(a, ia) - acc
                end do
             end do
          end if

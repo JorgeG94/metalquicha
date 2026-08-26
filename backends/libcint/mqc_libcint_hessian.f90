@@ -1031,8 +1031,7 @@ contains
       !!     Hartree-Fock matrix** -- full exact exchange, no `V_xc`. That was
       !!     the last 0.12, spread smoothly across every atom pair.
       !!
-      !! LDA, GGA and hybrids. A meta-GGA is refused: it depends on the kinetic
-      !! energy density as well, whose second derivative is not implemented.
+      !! LDA, GGA, meta-GGA and hybrids of each.
       use mqc_libcint_xc_hessian, only: xc_hessian
       type(libcint_molecule_t), intent(in), target :: mol
       integer, intent(in) :: atomic_numbers(:)
@@ -1051,16 +1050,6 @@ contains
       integer :: i, nao
 
       if (error%has_error()) return
-      ! A meta-GGA depends on the kinetic energy density as well, whose second
-      ! derivative is not implemented. Dropping those terms silently would give
-      ! a plausible wrong answer, so it is refused.
-      if (xc%any_mgga) then
-         call error%set(ERROR_VALIDATION, "An analytic Kohn-Sham Hessian is available "// &
-                        "for LDA and GGA functionals, hybrids included. A meta-GGA also "// &
-                        "depends on the kinetic energy density, whose second derivative "// &
-                        "is not implemented; use the semi-numerical path for one.")
-         return
-      end if
 
       nao = mol%nao
       allocate (weighted(nao, nao))
