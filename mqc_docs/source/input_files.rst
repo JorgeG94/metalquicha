@@ -566,10 +566,18 @@ the term converges quickly, so there is rarely a reason to go past 2.
 
 .. note::
 
-   This is the CPU path. The GPU backend refuses ``-V`` functionals by name:
-   cuEST exposes the entry points for it, and this backend does not yet call
-   them, so evaluating the semilocal half alone would return a converged and
-   quietly wrong energy.
+   The GPU path calls cuEST's own ``cuestNonlocalXCPotential{RKS,UKS}Compute``
+   for this term, rather than reimplementing it. Whether the functional carries
+   VV10 is asked of the XC plan (``CUEST_XCINTPLAN_IS_VV10``) rather than
+   matched against a list of names, so ``nlc_grid_level`` does not apply there:
+   cuEST chooses its own quadrature for the non-local term.
+
+   .. warning::
+
+      The GPU wiring compiles and is type-checked against cuEST's headers, but
+      **has not been run against the library**, which needs an sm_80 card. Until
+      it has, check a ``-V`` energy on the GPU against the CPU path before
+      trusting it. The GPU gradient is refused, as on CPU.
 
 Driver Section
 --------------

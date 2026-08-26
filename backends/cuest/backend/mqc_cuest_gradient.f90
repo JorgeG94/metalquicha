@@ -32,7 +32,7 @@ module mqc_cuest_gradient
    use pic_types, only: dp
    use mqc_nuclear_repulsion, only: add_nuclear_repulsion_gradient
    use pic_blas_interfaces, only: pic_gemm
-   use mqc_error, only: error_t
+   use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cuest_integrals, only: cuest_system_t
    use mqc_cuest_scf, only: scf_result_t
    implicit none
@@ -100,6 +100,21 @@ contains
       real(dp), allocatable :: term(:, :), weighted(:, :), half_density(:, :)
       real(dp), allocatable :: weighted_beta(:, :)
       integer :: n_atoms, n_ao
+
+      ! A VV10 gradient is not the semilocal gradient. cuestXCDerivativeRKSCompute
+      ! returns the derivative of the semilocal part; the non-local term has its
+      ! own entry point, cuestNonlocalXCDerivativeRKSCompute, which this does not
+      ! call. Refused rather than omitted, because omitting it survives every
+      ! check a user can make -- the SCF converges, the energy is right, and the
+      ! forces are quietly wrong, so an optimisation walks to the wrong minimum.
+      ! This is the same refusal the CPU path makes, for the same reason.
+      if (system%has_nlc) then
+         call error%set(ERROR_VALIDATION, "this functional carries a non-local "// &
+                        "correlation term (VV10), whose contribution to the nuclear "// &
+                        "gradient is not implemented on the GPU path. Refused rather "// &
+                        "than returning a gradient missing it.")
+         return
+      end if
 
       n_atoms = size(atomic_numbers)
       n_ao = size(scf%density, 1)

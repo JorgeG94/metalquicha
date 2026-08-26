@@ -107,8 +107,23 @@ module mqc_cuest_integrals
                     CUEST_MOLECULARGRID_PARAMETERS, CUEST_XCINTPLAN_PARAMETERS, &
                     CUEST_XCPOTENTIALRKSCOMPUTE_PARAMETERS, &
                     CUEST_XCINTPLAN, CUEST_XCINTPLAN_EXCHANGE_SCALE, &
-                    CUEST_XCINTPLAN_LRC_EXCHANGE_SCALE, CUEST_XCINTPLAN_LRC_OMEGA
-   use cuest_helpers, only: cuest_query_i64, cuest_query_f64, cuest_param_set_f64, &
+                    CUEST_XCINTPLAN_LRC_EXCHANGE_SCALE, CUEST_XCINTPLAN_LRC_OMEGA, &
+                    CUEST_XCINTPLAN_IS_VV10, CUEST_XCINTPLAN_VV10_B, &
+                    CUEST_XCINTPLAN_VV10_C, CUEST_XCINTPLAN_VV10_SCALE, &
+                    CUEST_NONLOCALXCPOTENTIALRKSCOMPUTE_PARAMETERS, &
+                    CUEST_NONLOCALXCPOTENTIALUKSCOMPUTE_PARAMETERS, &
+                    CUEST_NONLOCALXCPOTENTIALRKSCOMPUTE_PARAMETERS_VV10_B, &
+                    CUEST_NONLOCALXCPOTENTIALRKSCOMPUTE_PARAMETERS_VV10_C, &
+                    CUEST_NONLOCALXCPOTENTIALRKSCOMPUTE_PARAMETERS_VV10_SCALE, &
+                    CUEST_NONLOCALXCPOTENTIALUKSCOMPUTE_PARAMETERS_VV10_B, &
+                    CUEST_NONLOCALXCPOTENTIALUKSCOMPUTE_PARAMETERS_VV10_C, &
+                    CUEST_NONLOCALXCPOTENTIALUKSCOMPUTE_PARAMETERS_VV10_SCALE, &
+                    cuestNonlocalXCPotentialRKSCompute, &
+                    cuestNonlocalXCPotentialRKSComputeWorkspaceQuery, &
+                    cuestNonlocalXCPotentialUKSCompute, &
+                    cuestNonlocalXCPotentialUKSComputeWorkspaceQuery
+   use cuest_helpers, only: cuest_query_i64, cuest_query_i32, cuest_query_f64, &
+                            cuest_param_set_f64, &
                             cuest_param_set_i64, cuest_results_query_f64, &
                             cuest_results_query_i64
    implicit none
@@ -196,6 +211,20 @@ module mqc_cuest_integrals
       real(dp) :: lrc_omega = 0.0_dp
          !! Range-separation parameter
 
+      logical :: has_nlc = .false.
+         !! Whether the functional carries VV10 non-local correlation.
+         !!
+         !! Queried from the plan rather than matched against a list of names,
+         !! so a `-V` functional cuEST adds later is covered without a change
+         !! here. It also means the check cannot drift out of step with what
+         !! the plan was actually built for.
+      real(dp) :: nlc_b = 0.0_dp
+      real(dp) :: nlc_c = 0.0_dp
+         !! VV10's own two parameters, as the plan reports them
+      real(dp) :: nlc_scale = 0.0_dp
+         !! How much of the non-local term the functional wants. Queried and
+         !! passed through rather than assumed to be 1.
+
       logical :: has_xc = .false.
          !! Whether an XC plan exists, i.e. this is DFT rather than HF
       logical :: needs_exchange = .true.
@@ -272,6 +301,8 @@ module mqc_cuest_integrals
       procedure :: coulomb_device => system_coulomb_device
       procedure :: exchange_device => system_exchange_device
       procedure :: xc_device => system_xc_device
+      procedure :: nlc_device => system_nlc_device
+      procedure :: nlc_uks_device => system_nlc_uks_device
       procedure :: pcm_device => system_pcm_device
       procedure :: build_pcm => build_pcm_plan
       procedure :: xc_uks_device => system_xc_uks_device
@@ -887,6 +918,7 @@ contains
       type(c_ptr) :: grid_params, plan_params
       real(dp), allocatable, target :: xyz(:)
       integer(c_int) :: status
+      integer(c_int) :: is_vv10
 
       ! ---- per-atom grids ---------------------------------------------------
       call build_atom_grids(this%handle, atomic_numbers, n_radial, n_angular, &
@@ -969,6 +1001,27 @@ contains
       call cuest_status_check(cuest_query_f64(this%handle, CUEST_XCINTPLAN, this%xc_plan, &
                                               CUEST_XCINTPLAN_LRC_OMEGA, this%lrc_omega), &
                               "query XC plan range-separation parameter", error)
+
+      ! ---- and whether it carries VV10 --------------------------------------
+      ! Asked of the plan, not of the name the deck used. `is_vv10` is the
+      ! plan's own answer, so a functional cuEST adds later is handled here
+      ! without a list to keep in step.
+      is_vv10 = 0
+      call cuest_status_check(cuest_query_i32(this%handle, CUEST_XCINTPLAN, this%xc_plan, &
+                                              CUEST_XCINTPLAN_IS_VV10, is_vv10), &
+                              "query XC plan VV10 flag", error)
+      this%has_nlc = (is_vv10 /= 0)
+      if (this%has_nlc) then
+         call cuest_status_check(cuest_query_f64(this%handle, CUEST_XCINTPLAN, this%xc_plan, &
+                                                 CUEST_XCINTPLAN_VV10_B, this%nlc_b), &
+                                 "query XC plan VV10 b", error)
+         call cuest_status_check(cuest_query_f64(this%handle, CUEST_XCINTPLAN, this%xc_plan, &
+                                                 CUEST_XCINTPLAN_VV10_C, this%nlc_c), &
+                                 "query XC plan VV10 c", error)
+         call cuest_status_check(cuest_query_f64(this%handle, CUEST_XCINTPLAN, this%xc_plan, &
+                                                 CUEST_XCINTPLAN_VV10_SCALE, this%nlc_scale), &
+                                 "query XC plan VV10 scale", error)
+      end if
    end subroutine build_xc_plan
 
    subroutine build_pcm_plan(this, atomic_numbers, pcm, error)
@@ -1419,6 +1472,185 @@ contains
 
       if (.not. error%has_error()) xc_energy = energy
    end subroutine system_xc_device
+
+   subroutine system_nlc_device(this, d_c_occ, d_out, nlc_energy, error)
+      !! VV10 non-local correlation, RKS, device in and device out
+      !!
+      !! **Adds into `d_out`.** `system_xc_device` has already written the
+      !! semilocal potential there, and this is a second contribution to the
+      !! same matrix rather than a replacement for it -- cuEST keeps the two
+      !! behind separate entry points because the non-local term is a double
+      !! integral over the density rather than a functional of it at a point.
+      !!
+      !! The accumulation goes through a scratch matrix and a daxpy rather than
+      !! handing cuEST `d_out` directly, because whether the routine adds to its
+      !! output or overwrites it is not something this code can assume. Writing
+      !! into a buffer of our own and adding it is correct either way, and costs
+      !! one n_ao^2 allocation per call.
+      class(cuest_system_t), intent(inout) :: this
+      type(c_ptr), intent(in) :: d_c_occ   !! Occupied MOs, (n_ao, n_occ) on device
+      type(c_ptr), intent(in) :: d_out     !! Vxc, (n_ao, n_ao) on device, added to
+      real(dp), intent(out) :: nlc_energy  !! E_nl, Hartree
+      type(error_t), intent(inout) :: error
+
+      type(cuestWorkspaceDescriptor_t) :: temporary_desc, variable_buffer
+      type(cuestWorkspace_t) :: temporary_ws
+      type(c_ptr) :: params, d_v_nl
+      integer(c_int) :: status
+      real(dp), target :: energy
+
+      nlc_energy = 0.0_dp
+      if (error%has_error() .or. .not. this%has_xc .or. .not. this%has_nlc) return
+
+      d_v_nl = c_null_ptr
+      call device_alloc(d_v_nl, this%n_ao*this%n_ao, "VV10 potential matrix", error)
+      if (error%has_error()) return
+
+      params = c_null_ptr
+      call cuest_status_check(cuestParametersCreate(CUEST_NONLOCALXCPOTENTIALRKSCOMPUTE_PARAMETERS, &
+                                                    params), &
+                              "cuestParametersCreate(RKS VV10 potential)", error)
+
+      ! The plan knows b, c and the scale; they are handed to the compute call
+      ! rather than re-derived, so the two cannot disagree about the functional.
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuest_param_set_f64(CUEST_NONLOCALXCPOTENTIALRKSCOMPUTE_PARAMETERS, &
+                                                     params, CUEST_NONLOCALXCPOTENTIALRKSCOMPUTE_PARAMETERS_VV10_B, &
+                                                     this%nlc_b), "set VV10 b (RKS)", error)
+      end if
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuest_param_set_f64(CUEST_NONLOCALXCPOTENTIALRKSCOMPUTE_PARAMETERS, &
+                                                     params, CUEST_NONLOCALXCPOTENTIALRKSCOMPUTE_PARAMETERS_VV10_C, &
+                                                     this%nlc_c), "set VV10 c (RKS)", error)
+      end if
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuest_param_set_f64(CUEST_NONLOCALXCPOTENTIALRKSCOMPUTE_PARAMETERS, &
+                                                     params, CUEST_NONLOCALXCPOTENTIALRKSCOMPUTE_PARAMETERS_VV10_SCALE, &
+                                                     this%nlc_scale), "set VV10 scale (RKS)", error)
+      end if
+
+      variable_buffer%hostBufferSizeInBytes = 0_c_size_t
+      variable_buffer%deviceBufferSizeInBytes = DF_EXCHANGE_BUFFER_BYTES
+
+      energy = 0.0_dp
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestNonlocalXCPotentialRKSComputeWorkspaceQuery( &
+                                 this%handle, this%xc_plan, params, variable_buffer, &
+                                 temporary_desc, this%n_occ, d_c_occ, c_loc(energy), d_v_nl), &
+                                 "cuestNonlocalXCPotentialRKSComputeWorkspaceQuery", error)
+      end if
+      if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestNonlocalXCPotentialRKSCompute( &
+                                 this%handle, this%xc_plan, params, variable_buffer, &
+                                 temporary_ws, this%n_occ, d_c_occ, c_loc(energy), d_v_nl), &
+                                 "cuestNonlocalXCPotentialRKSCompute", error)
+      end if
+      if (.not. error%has_error()) then
+         call cublas_status_check(cublasDaxpy(this%cublas, int(this%n_ao*this%n_ao, c_int), &
+                                              1.0_dp, d_v_nl, 1, d_out, 1), &
+                                  "cublasDaxpy(+VV10)", error)
+      end if
+
+      call workspace_free(temporary_ws)
+      status = cuestParametersDestroy(CUEST_NONLOCALXCPOTENTIALRKSCOMPUTE_PARAMETERS, params)
+      call cuest_status_check(status, "cuestParametersDestroy(RKS VV10 potential)", error)
+      call device_free(d_v_nl)
+
+      if (.not. error%has_error()) nlc_energy = energy
+   end subroutine system_nlc_device
+
+   subroutine system_nlc_uks_device(this, d_c_alpha, d_c_beta, n_occ_beta, &
+                                    d_out_alpha, d_out_beta, nlc_energy, error)
+      !! VV10 non-local correlation, UKS
+      !!
+      !! One call for both spins: VV10 is built from the total density and has
+      !! no spin dependence, so cuEST returns a single potential matrix and a
+      !! single energy. That matrix is added to **both** channels and the energy
+      !! is counted **once** -- the same arrangement the CPU path uses.
+      class(cuest_system_t), intent(inout) :: this
+      type(c_ptr), intent(in) :: d_c_alpha, d_c_beta
+      integer, intent(in) :: n_occ_beta               !! Beta columns, at least 1
+      type(c_ptr), intent(in) :: d_out_alpha, d_out_beta
+      real(dp), intent(out) :: nlc_energy
+      type(error_t), intent(inout) :: error
+
+      type(cuestWorkspaceDescriptor_t) :: temporary_desc, variable_buffer
+      type(cuestWorkspace_t) :: temporary_ws
+      type(c_ptr) :: params, d_v_nl
+      integer(c_int) :: status
+      integer(c_int64_t) :: beta_occupancy
+      real(dp), target :: energy
+
+      nlc_energy = 0.0_dp
+      if (error%has_error() .or. .not. this%has_xc .or. .not. this%has_nlc) return
+
+      ! cuEST requires numOccupiedBeta > 0 even where the molecule has no beta
+      ! electrons; the caller guarantees that column is zeroed, exactly as it
+      ! does for the semilocal path above.
+      beta_occupancy = max(int(n_occ_beta, c_int64_t), 1_c_int64_t)
+
+      d_v_nl = c_null_ptr
+      call device_alloc(d_v_nl, this%n_ao*this%n_ao, "VV10 potential matrix (UKS)", error)
+      if (error%has_error()) return
+
+      params = c_null_ptr
+      call cuest_status_check(cuestParametersCreate(CUEST_NONLOCALXCPOTENTIALUKSCOMPUTE_PARAMETERS, &
+                                                    params), &
+                              "cuestParametersCreate(UKS VV10 potential)", error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuest_param_set_f64(CUEST_NONLOCALXCPOTENTIALUKSCOMPUTE_PARAMETERS, &
+                                                     params, CUEST_NONLOCALXCPOTENTIALUKSCOMPUTE_PARAMETERS_VV10_B, &
+                                                     this%nlc_b), "set VV10 b (UKS)", error)
+      end if
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuest_param_set_f64(CUEST_NONLOCALXCPOTENTIALUKSCOMPUTE_PARAMETERS, &
+                                                     params, CUEST_NONLOCALXCPOTENTIALUKSCOMPUTE_PARAMETERS_VV10_C, &
+                                                     this%nlc_c), "set VV10 c (UKS)", error)
+      end if
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuest_param_set_f64(CUEST_NONLOCALXCPOTENTIALUKSCOMPUTE_PARAMETERS, &
+                                                     params, CUEST_NONLOCALXCPOTENTIALUKSCOMPUTE_PARAMETERS_VV10_SCALE, &
+                                                     this%nlc_scale), "set VV10 scale (UKS)", error)
+      end if
+
+      variable_buffer%hostBufferSizeInBytes = 0_c_size_t
+      variable_buffer%deviceBufferSizeInBytes = DF_EXCHANGE_BUFFER_BYTES
+
+      energy = 0.0_dp
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestNonlocalXCPotentialUKSComputeWorkspaceQuery( &
+                                 this%handle, this%xc_plan, params, variable_buffer, &
+                                 temporary_desc, this%n_occ, beta_occupancy, d_c_alpha, d_c_beta, &
+                                 c_loc(energy), d_v_nl), &
+                                 "cuestNonlocalXCPotentialUKSComputeWorkspaceQuery", error)
+      end if
+      if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestNonlocalXCPotentialUKSCompute( &
+                                 this%handle, this%xc_plan, params, variable_buffer, &
+                                 temporary_ws, this%n_occ, beta_occupancy, d_c_alpha, d_c_beta, &
+                                 c_loc(energy), d_v_nl), &
+                                 "cuestNonlocalXCPotentialUKSCompute", error)
+      end if
+      if (.not. error%has_error()) then
+         call cublas_status_check(cublasDaxpy(this%cublas, int(this%n_ao*this%n_ao, c_int), &
+                                              1.0_dp, d_v_nl, 1, d_out_alpha, 1), &
+                                  "cublasDaxpy(+VV10 alpha)", error)
+      end if
+      if (.not. error%has_error()) then
+         call cublas_status_check(cublasDaxpy(this%cublas, int(this%n_ao*this%n_ao, c_int), &
+                                              1.0_dp, d_v_nl, 1, d_out_beta, 1), &
+                                  "cublasDaxpy(+VV10 beta)", error)
+      end if
+
+      call workspace_free(temporary_ws)
+      status = cuestParametersDestroy(CUEST_NONLOCALXCPOTENTIALUKSCOMPUTE_PARAMETERS, params)
+      call cuest_status_check(status, "cuestParametersDestroy(UKS VV10 potential)", error)
+      call device_free(d_v_nl)
+
+      if (.not. error%has_error()) nlc_energy = energy
+   end subroutine system_nlc_uks_device
 
    subroutine system_compute_xc(this, c_occ, xc_energy, xc_potential, error)
       !! Exchange-correlation energy and potential from host MO coefficients
