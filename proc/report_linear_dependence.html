@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">42 statements</a>
+                 title=" 0.3% of total for procedures.">61 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,9 +136,9 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/report_linear_dependence.html#variable-line~10">line</a>
+            <a class="list-group-item" href="../proc/report_linear_dependence.html#variable-line~7">line</a>
             <a class="list-group-item" href="../proc/report_linear_dependence.html#variable-n_dropped">n_dropped</a>
-            <a class="list-group-item" href="../proc/report_linear_dependence.html#variable-tol~9">tol</a>
+            <a class="list-group-item" href="../proc/report_linear_dependence.html#variable-tol~5">tol</a>
         </div>
       </div>
     </div>
@@ -201,7 +201,7 @@ production runs use. Only the healthy-basis line is verbose-only.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_ao~6"></span>
+              <span class="anchor" id="variable-n_ao~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -216,7 +216,7 @@ production runs use. Only the healthy-basis line is verbose-only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_mo~5"></span>
+              <span class="anchor" id="variable-n_mo~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -261,7 +261,7 @@ production runs use. Only the healthy-basis line is verbose-only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~12"></span>
+              <span class="anchor" id="variable-verbose~4"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -457,7 +457,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~10"></span>
+              <span class="anchor" id="variable-line~7"></span>
               character(len=160),
             </td>
               <td>private</td>
@@ -491,7 +491,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tol~9"></span>
+              <span class="anchor" id="variable-tol~5"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -555,7 +555,36 @@ large graphs.</div>
 
 <span class="k">      </span><span class="n">n_dropped</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_ao</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">n_mo</span>
 
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_dropped</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">      </span><span class="c">! Collecting: fold this SCF into the tally and say nothing. One</span>
+<span class="w">      </span><span class="c">! fragmented run is thousands of SCFs, and the block below is eight to</span>
+<span class="w">      </span><span class="c">! twelve lines apiece -- the advisory branch especially, which reports a</span>
+<span class="w">      </span><span class="c">! calculation that is *fine*. The information is kept; only the repetition</span>
+<span class="w">      </span><span class="c">! is dropped. See `report_linear_dependence_tally`.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">collecting</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">n_dropped</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">tally</span><span class="p">%</span><span class="n">n_reports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tally</span><span class="p">%</span><span class="n">n_reports</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="n">tally</span><span class="p">%</span><span class="n">n_dropped_scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tally</span><span class="p">%</span><span class="n">n_dropped_scf</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="n">tally</span><span class="p">%</span><span class="n">total_dropped</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tally</span><span class="p">%</span><span class="n">total_dropped</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n_dropped</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tally</span><span class="p">%</span><span class="n">worst_overlap</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">smallest_overlap</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">tally</span><span class="p">%</span><span class="n">worst_overlap</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               </span><span class="n">tally</span><span class="p">%</span><span class="n">worst_overlap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">smallest_overlap</span>
+<span class="w">            </span><span class="k">end if</span>
+<span class="k">         else if</span><span class="w"> </span><span class="p">(</span><span class="n">smallest_kept</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                  </span><span class="n">smallest_kept</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="n">LINEAR_DEPENDENCE_WARN_TOL</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="mf">0.0_dp</span><span class="o">*</span><span class="n">tol</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">tally</span><span class="p">%</span><span class="n">n_reports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tally</span><span class="p">%</span><span class="n">n_reports</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="n">tally</span><span class="p">%</span><span class="n">n_near_scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tally</span><span class="p">%</span><span class="n">n_near_scf</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="w">         </span><span class="c">! Tracked for every SCF that reported, dropped or not: the smallest</span>
+<span class="w">         </span><span class="c">! surviving eigenvalue is what X actually divides by, and it is the</span>
+<span class="w">         </span><span class="c">! number that says how bad the worst fragment was.</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">smallest_kept</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="n">tally</span><span class="p">%</span><span class="n">worst_kept</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">smallest_kept</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">tally</span><span class="p">%</span><span class="n">worst_kept</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               </span><span class="n">tally</span><span class="p">%</span><span class="n">worst_kept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">smallest_kept</span>
+<span class="w">            </span><span class="k">end if</span>
+<span class="k">         end if</span>
+<span class="k">         return</span>
+<span class="k">      end if</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">n_dropped</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
 <span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,i0,a,i0,a)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  LINEAR DEPENDENCE: "</span><span class="p">,</span><span class="w"> </span><span class="n">n_dropped</span><span class="p">,</span><span class="w"> </span><span class="s2">" of "</span><span class="p">,</span><span class="w"> </span><span class="n">n_ao</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">            </span><span class="s2">" basis functions were dropped."</span>
@@ -618,7 +647,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-26 05:55 +0000             </p>
+ on 2026-08-26 06:15 +0000             </p>
           </div>
         </div>
         <br>

@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/build_task_payload_from_row.html#variable-n_cols~4">n_cols</a>
+            <a class="list-group-item" href="../proc/build_task_payload_from_row.html#variable-n_cols~2">n_cols</a>
         </div>
       </div>
     </div>
@@ -208,7 +208,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_type~2"></span>
+              <span class="anchor" id="variable-fragment_type"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -223,7 +223,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~11"></span>
+              <span class="anchor" id="variable-fragment_size~3"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -238,7 +238,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_indices~2"></span>
+              <span class="anchor" id="variable-fragment_indices"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -253,7 +253,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-disp_code~2"></span>
+              <span class="anchor" id="variable-disp_code"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -427,33 +427,33 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M946.04,-33C954.55,-33 963.25,-33 971.87,-33"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="971.94,-36.5 981.94,-33 971.94,-29.5 971.94,-36.5"/>
 </g>
-<!-- proc~handle_group_node_requests~2 -->
+<!-- proc~handle_group_node_requests -->
 <g id="proc~~build_task_payload_from_row~~CalledByGraph_node3" class="node">
-<title>proc~handle_group_node_requests~2</title>
-<g id="a_proc~~build_task_payload_from_row~~CalledByGraph_node3"><a xlink:href="../proc/handle_group_node_requests~2.html" xlink:title="handle_group_node_requests">
+<title>proc~handle_group_node_requests</title>
+<g id="a_proc~~build_task_payload_from_row~~CalledByGraph_node3"><a xlink:href="../proc/handle_group_node_requests.html" xlink:title="handle_group_node_requests">
 <polygon fill="#d9534f" stroke="#d9534f" points="723,-66 555,-66 555,-42 723,-42 723,-66"/>
 <text text-anchor="middle" x="639" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_group_node_requests</text>
 </a>
 </g>
 </g>
-<!-- proc~handle_group_node_requests~2&#45;&gt;proc~send_task_payload_from_row -->
+<!-- proc~handle_group_node_requests&#45;&gt;proc~send_task_payload_from_row -->
 <g id="proc~~build_task_payload_from_row~~CalledByGraph_edge2" class="edge">
-<title>proc~handle_group_node_requests~2&#45;&gt;proc~send_task_payload_from_row</title>
+<title>proc~handle_group_node_requests&#45;&gt;proc~send_task_payload_from_row</title>
 <path fill="none" stroke="#ff0000" d="M723.11,-46.12C737.87,-44.72 753.33,-43.26 768.35,-41.83"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="769.04,-45.28 778.66,-40.85 768.38,-38.31 769.04,-45.28"/>
 </g>
-<!-- proc~handle_local_worker_requests_group~2 -->
+<!-- proc~handle_local_worker_requests_group -->
 <g id="proc~~build_task_payload_from_row~~CalledByGraph_node4" class="node">
-<title>proc~handle_local_worker_requests_group~2</title>
-<g id="a_proc~~build_task_payload_from_row~~CalledByGraph_node4"><a xlink:href="../proc/handle_local_worker_requests_group~2.html" xlink:title="handle_local_worker_requests_group">
+<title>proc~handle_local_worker_requests_group</title>
+<g id="a_proc~~build_task_payload_from_row~~CalledByGraph_node4"><a xlink:href="../proc/handle_local_worker_requests_group.html" xlink:title="handle_local_worker_requests_group">
 <polygon fill="#d9534f" stroke="#d9534f" points="743,-24 535,-24 535,0 743,0 743,-24"/>
 <text text-anchor="middle" x="639" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_local_worker_requests_group</text>
 </a>
 </g>
 </g>
-<!-- proc~handle_local_worker_requests_group~2&#45;&gt;proc~send_task_payload_from_row -->
+<!-- proc~handle_local_worker_requests_group&#45;&gt;proc~send_task_payload_from_row -->
 <g id="proc~~build_task_payload_from_row~~CalledByGraph_edge3" class="edge">
-<title>proc~handle_local_worker_requests_group~2&#45;&gt;proc~send_task_payload_from_row</title>
+<title>proc~handle_local_worker_requests_group&#45;&gt;proc~send_task_payload_from_row</title>
 <path fill="none" stroke="#ff0000" d="M743.29,-21.79C751.79,-22.6 760.35,-23.41 768.77,-24.21"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="768.66,-27.71 778.95,-25.17 769.32,-20.74 768.66,-27.71"/>
 </g>
@@ -466,15 +466,15 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~global_coordinator_impl&#45;&gt;proc~handle_group_node_requests~2 -->
+<!-- proc~global_coordinator_impl&#45;&gt;proc~handle_group_node_requests -->
 <g id="proc~~build_task_payload_from_row~~CalledByGraph_edge4" class="edge">
-<title>proc~global_coordinator_impl&#45;&gt;proc~handle_group_node_requests~2</title>
+<title>proc~global_coordinator_impl&#45;&gt;proc~handle_group_node_requests</title>
 <path fill="none" stroke="#ff0000" d="M481.27,-54C501.39,-54 523.64,-54 544.91,-54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="544.92,-57.5 554.92,-54 544.92,-50.5 544.92,-57.5"/>
 </g>
-<!-- proc~global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group~2 -->
+<!-- proc~global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group -->
 <g id="proc~~build_task_payload_from_row~~CalledByGraph_edge6" class="edge">
-<title>proc~global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group~2</title>
+<title>proc~global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group</title>
 <path fill="none" stroke="#00ffff" d="M476.05,-41.96C503.12,-36.96 534.72,-31.11 562.78,-25.92"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="563.75,-29.3 572.94,-24.04 562.47,-22.42 563.75,-29.3"/>
 </g>
@@ -487,15 +487,15 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~group_global_coordinator_impl&#45;&gt;proc~handle_group_node_requests~2 -->
+<!-- proc~group_global_coordinator_impl&#45;&gt;proc~handle_group_node_requests -->
 <g id="proc~~build_task_payload_from_row~~CalledByGraph_edge5" class="edge">
-<title>proc~group_global_coordinator_impl&#45;&gt;proc~handle_group_node_requests~2</title>
+<title>proc~group_global_coordinator_impl&#45;&gt;proc~handle_group_node_requests</title>
 <path fill="none" stroke="#ff0000" d="M476.05,-24.04C503.12,-29.04 534.72,-34.89 562.78,-40.08"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="562.47,-43.58 572.94,-41.96 563.75,-36.7 562.47,-43.58"/>
 </g>
-<!-- proc~group_global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group~2 -->
+<!-- proc~group_global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group -->
 <g id="proc~~build_task_payload_from_row~~CalledByGraph_edge7" class="edge">
-<title>proc~group_global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group~2</title>
+<title>proc~group_global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group</title>
 <path fill="none" stroke="#00ffff" d="M499.09,-12C507.51,-12 516.13,-12 524.74,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="524.84,-15.5 534.84,-12 524.84,-8.5 524.84,-15.5"/>
 </g>
@@ -663,7 +663,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_cols~4"></span>
+              <span class="anchor" id="variable-n_cols~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -738,7 +738,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-26 05:55 +0000             </p>
+ on 2026-08-26 06:15 +0000             </p>
           </div>
         </div>
         <br>
