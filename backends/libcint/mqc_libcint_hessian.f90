@@ -396,6 +396,10 @@ contains
       if (associated(this%xc)) then
          if (.not. allocated(vxc)) allocate (vxc(size(dens, 1), size(dens, 2)))
          do p = 1, size(dens, 3)
+            ! Zeroed per perturbation: `xc_kernel_apply` accumulates into its
+            ! output rather than assigning, so a shared buffer carries the
+            ! previous perturbation's kernel into this one.
+            vxc = 0.0_dp
             call xc_kernel_apply(this%xc, this%mol, this%reference, dens(:, :, p), vxc, error)
             if (error%has_error()) return
             g(:, :, p) = g(:, :, p) + vxc
@@ -876,7 +880,8 @@ contains
       ! Their mean fields in one batch, chunked the same way and for the same
       ! reason as the solve above: `3 natm` separate builds pay for the same
       ! integrals `3 natm` times.
-      call mean_field_batch(mol, d1, bounds, zero_h, g1all, error)
+      call mean_field_batch(mol, d1, bounds, zero_h, g1all, error, &
+                            xc=xc, reference=reference, k_scale=k_scale)
       if (error%has_error()) return
 
       do ia = 1, natm
@@ -992,24 +997,37 @@ contains
       !!
       !! The grid is held fixed throughout, as `xc_hessian` sets out.
       !!
-      !! **Not yet validated end to end, and not wired to any driver.** Each
-      !! piece below is checked on its own -- the explicit exchange-correlation
-      !! term against differences of its own gradient, the potential derivative
-      !! against differences of the potential matrix, the Hartree-Fock skeleton
-      !! and response against differences of the Hartree-Fock gradient -- and
-      !! the assembly of them is not. On water at LDA exchange it disagrees with
-      !! a difference of the analytic density-functional gradient by 0.26 on the
-      !! worst entry, where the same comparison for Hartree-Fock agrees to
-      !! 5e-6, and it violates translational invariance by 3.4e-2 where
-      !! Hartree-Fock manages 7e-12.
+      !! **Not yet exact, and not wired to any driver.** Every piece below is
+      !! verified on its own -- the explicit exchange-correlation term against
+      !! differences of its own gradient, the potential derivative against
+      !! differences of the potential matrix, the Hartree-Fock skeleton and
+      !! response against differences of the Hartree-Fock gradient, and the
+      !! gradient being differenced against dE/dR to 1.3e-6. The assembly is
+      !! close but not right: on water at LDA exchange the worst entry is 0.12
+      !! from a difference of the analytic gradient, where Hartree-Fock through
+      !! the same harness manages 5e-6.
       !!
-      !! What that rules out: the disagreement does not move between grid level
-      !! 3 and grid level 7 (0.26455 against 0.26481), so it is not the omitted
-      !! grid response and not quadrature error, both of which shrink as the
-      !! quadrature approaches exactness. Disabling the kernel in the response
-      !! operator moves it by 5e-4, so it is not that either. Something in how
-      !! these terms are combined is wrong, and it is worth finding before this
-      !! is offered to a driver.
+      !! What is now known, and worth not rediscovering:
+      !!
+      !!   * **Translational invariance is satisfied**, and converges with the
+      !!     grid -- 5.4e-4 at level 3, 2.6e-6 at level 9. That is the omitted
+      !!     grid response behaving exactly as it should, and it means the
+      !!     assembly is structurally sound rather than missing a whole term.
+      !!   * The remaining disagreement does **not** move with grid level
+      !!     (0.12399 to 0.12371 from level 3 to 9), so it is neither the grid
+      !!     response nor quadrature error.
+      !!   * It is not the coupled-perturbed convergence: tightening to 1e-10
+      !!     and 200 iterations changes nothing.
+      !!   * It is not a scale on the exchange-correlation term: doubling it
+      !!     gives 0.57 and halving it 0.16, so one is already near the minimum.
+      !!
+      !! Two bugs were found getting this far and both are the kind that look
+      !! like physics. The relaxed mean field feeding `dW/dR` needed the same
+      !! kernel and exchange fraction as the response operator -- without it the
+      !! two halves of the response disagreed about what the Fock operator was.
+      !! And `xc_kernel_apply` accumulates into its output rather than assigning,
+      !! so a buffer shared across perturbations carried each one's kernel into
+      !! the next; that alone was 0.49 of translational-invariance violation.
       use mqc_libcint_xc_hessian, only: xc_hessian
       type(libcint_molecule_t), intent(in), target :: mol
       integer, intent(in) :: atomic_numbers(:)
@@ -1223,7 +1241,7 @@ contains
       deallocate (h1mo, s1mo, work, rhs)
    end subroutine solve_mo1_batch
 
-   subroutine mean_field_batch(mol, d1, bounds, zero_h, g1, error)
+   subroutine mean_field_batch(mol, d1, bounds, zero_h, g1, error, xc, reference, k_scale)
       !! `G(D')` for every first-order density, a chunk at a time
       !!
       !! Flattens `(n_ao, n_ao, 3, natm)` to `(n_ao, n_ao, 3*natm)` and hands
@@ -1236,12 +1254,20 @@ contains
       real(dp), intent(in) :: zero_h(:, :)
       real(dp), allocatable, intent(out) :: g1(:, :, :)
       type(error_t), intent(inout) :: error
+      type(xc_context_t), intent(inout), optional :: xc
+      real(dp), intent(in), optional :: reference(:, :)
+      real(dp), intent(in), optional :: k_scale
+         !! As the response operator's. The relaxed mean field entering
+         !! `dW/dR` is the same object the coupled-perturbed operator
+         !! applies, so it needs the same exchange fraction and the same
+         !! kernel -- getting one right and not the other is a Hessian
+         !! that is wrong while looking symmetric and plausible.
 
       integer, parameter :: MAX_BATCH = 12
 
-      real(dp), allocatable :: chunk(:, :, :), out(:, :, :)
+      real(dp), allocatable :: chunk(:, :, :), out(:, :, :), vxc_chunk(:, :)
       type(direct_stats_t) :: stats
-      integer :: nao, natm, n_pert, first, last, wide, p, q, ia, a
+      integer :: nao, natm, n_pert, first, last, wide, p, q, ia, a, ic
       integer :: n_chunks, per_chunk
 
       if (error%has_error()) return
@@ -1265,8 +1291,23 @@ contains
             a = p - 3*(ia - 1)
             chunk(:, :, q) = d1(:, :, a, ia)
          end do
-         call build_fock_direct_many(mol, zero_h, chunk, bounds, out, stats, error)
+         call build_fock_direct_many(mol, zero_h, chunk, bounds, out, stats, error, &
+                                     k_scale=k_scale)
          if (error%has_error()) return
+
+         ! The same kernel the response operator applies. `dW/dR` is built from
+         ! this mean field, so leaving it out here while including it there
+         ! makes the two halves of the response disagree about what the Fock
+         ! operator is.
+         if (present(xc) .and. present(reference)) then
+            if (.not. allocated(vxc_chunk)) allocate (vxc_chunk(size(chunk, 1), size(chunk, 2)))
+            do ic = 1, size(chunk, 3)
+               vxc_chunk = 0.0_dp
+               call xc_kernel_apply(xc, mol, reference, chunk(:, :, ic), vxc_chunk, error)
+               if (error%has_error()) return
+               out(:, :, ic) = out(:, :, ic) + vxc_chunk
+            end do
+         end if
          g1(:, :, first:last) = out
          deallocate (chunk, out)
          first = last + 1
