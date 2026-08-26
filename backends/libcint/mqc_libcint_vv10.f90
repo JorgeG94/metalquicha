@@ -25,6 +25,7 @@ module mqc_libcint_vv10
    !! convention. Its published pure-Python inner loop is the reference this was
    !! written from and the unit test checks against.
    use pic_types, only: dp
+   use mqc_physical_constants, only: PI
    implicit none
    private
 
@@ -67,7 +68,6 @@ contains
       real(dp), intent(out) :: vrho(:)        !! (n_out), dE/drho
       real(dp), intent(out) :: vsigma(:)      !! (n_out), dE/dsigma
 
-      real(dp), parameter :: PI = acos(-1.0_dp)
       real(dp) :: pi43, kvv, beta
       real(dp) :: w0, k_out, dw0_drho, dw0_dsigma, dk_drho, w0tmp
       real(dp) :: dx, dy, dz, r2, g, gp, gt, t, tt
