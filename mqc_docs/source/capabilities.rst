@@ -775,8 +775,14 @@ Current Limitations
 6. **Periodic boundaries**: not implemented
 7. **AIMD**: keywords are defined and reach the driver config, but there is no
    propagator behind them
-8. **Analytic second derivatives**: restricted Hartree-Fock only. Everything else
-   takes the semi-numerical path
+8. **Analytic second derivatives**: restricted references only, and within
+   those, everything except range-separated hybrids, VV10 functionals and
+   density fitting -- so Hartree-Fock, LDA, GGA, meta-GGA and hybrids of each
+   are covered, and ``wb97x``, ``b97m-v`` and any open shell are not. What is
+   not covered falls back to the semi-numerical path rather than failing. The
+   grid response is omitted, as it is in the reference this is checked against.
+   See :doc:`analytic_hessians`, and note that none of it is reachable from a
+   deck yet
 9. **SCF convergence aids**: DIIS and level shifting, and no damping, Fermi
    smearing or second-order fallback. The shift is tapered off before
    convergence, so what it costs is iterations and not the orbital energies --
