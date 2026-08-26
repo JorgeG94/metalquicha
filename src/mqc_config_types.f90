@@ -417,6 +417,7 @@ module mqc_config_types
       logical :: opt_freeze_terms = .true.             !! Fix the MBE term list for the run
       logical :: opt_hess_end = .false.                !! Hessian at the converged geometry
       character(len=:), allocatable :: opt_hessian_update  !! none, powell, bofill, auto
+      character(len=:), allocatable :: opt_target  !! minimum or saddle
       real(dp) :: opt_timestep = -1.0_dp               !! Damped dynamics step
       real(dp) :: opt_friction = -1.0_dp               !! Damped dynamics start friction
       real(dp) :: opt_friction_factor = -1.0_dp        !! Friction decay while descending

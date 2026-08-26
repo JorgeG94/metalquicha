@@ -211,6 +211,12 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/algorithm_finds_saddle.html'>algorithm_finds_saddle</a></td>
+                 <td><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></td>
+                 <td>Function</td>
+                 <td><p>Whether this algorithm can converge on a first-order saddle</p><a href="../proc/algorithm_finds_saddle.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/algorithm_from_string.html'>algorithm_from_string</a></td>
                  <td><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></td>
                  <td>Function</td>
@@ -2254,15 +2260,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -2272,27 +2278,27 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Drain results from local workers and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
-                 <td></td>
+                 <td><p>Drain results from local workers and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -2302,15 +2308,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -3889,6 +3895,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><p>One report for many SCFs, in place of one report each</p><a href="../proc/report_linear_dependence_tally.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/report_reaction_mode.html'>report_reaction_mode</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Name the atoms the imaginary mode actually moves</p><a href="../proc/report_reaction_mode.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/report_result.html'>report_result</a></td>
                  <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
@@ -4421,15 +4433,15 @@ Trailing newlines do not create empty lines</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/string_terms.html'>string_terms</a></td>
-                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
                  <td>Subroutine</td>
-                 <td><p>The part of a diagonal element that depends on one spin alone</p></td>
+                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/string_terms~2.html'>string_terms</a></td>
-                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
                  <td>Subroutine</td>
-                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>The part of a diagonal element that depends on one spin alone</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/strings_of_one_spin.html'>strings_of_one_spin</a></td>
@@ -4481,6 +4493,18 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><a href='../module/mqc_method_xtb.html'>mqc_method_xtb</a></td>
                  <td>Subroutine</td>
                  <td><p>Copy the bond-order matrix out of tblite&rsquo;s results dictionary</p><a href="../proc/take_bond_orders.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/target_from_string.html'>target_from_string</a></td>
+                 <td><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></td>
+                 <td>Function</td>
+                 <td><p>Parse what the deck says it is looking for</p><a href="../proc/target_from_string.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/target_to_string.html'>target_to_string</a></td>
+                 <td><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></td>
+                 <td>Function</td>
+                 <td><p>Name a target, for the log</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/text64.html'>text64</a></td>
@@ -4796,7 +4820,7 @@ whatever libxc itself was configured to do.</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-26 06:15 +0000             </p>
+ on 2026-08-26 14:19 +0000             </p>
           </div>
         </div>
         <br>

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 1.5% of total for derived types.</p>Including implementation: 20 statements,  0.5% of total for derived types.">20 statements</a>
+                 title="<p> 1.6% of total for derived types.</p>Including implementation: 21 statements,  0.6% of total for derived types.">21 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,24 +136,25 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-algorithm~2">algorithm</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-algorithm">algorithm</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-constraints">constraints</a>
-            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-coordinates~7">coordinates</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-coordinates">coordinates</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-energy_tolerance">energy_tolerance</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-freeze_terms">freeze_terms</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-friction">friction</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-friction_factor">friction_factor</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-friction_rising">friction_rising</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-frozen_atoms">frozen_atoms</a>
-            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-gradient_tolerance~2">gradient_tolerance</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-gradient_tolerance">gradient_tolerance</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-hess_end">hess_end</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-hessian_update">hessian_update</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-lbfgs_memory">lbfgs_memory</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-max_step">max_step</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-max_steps">max_steps</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-print_level">print_level</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-target">target</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-timestep">timestep</a>
-            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-trajectory~2">trajectory</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-trajectory">trajectory</a>
         </div>
       </div>
     </div>
@@ -353,7 +354,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~fmo_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~optimizer_settings_t~~InheritedByGraph_edge5" class="edge">
+<g id="type~~optimizer_settings_t~~InheritedByGraph_edge3" class="edge">
 <title>type~fmo_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#ff0000" d="M597.74,-83.84C592.59,-81.29 587.49,-78.33 583,-75 573.13,-67.67 577.29,-54 565,-54"/>
 </g>
@@ -367,7 +368,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~gmbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~optimizer_settings_t~~InheritedByGraph_edge3" class="edge">
+<g id="type~~optimizer_settings_t~~InheritedByGraph_edge5" class="edge">
 <title>type~gmbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#ff0000" d="M582.92,-54C576.89,-54 570.8,-54 565,-54"/>
 </g>
@@ -460,7 +461,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-algorithm~2"></span>
+              <span class="anchor" id="variable-algorithm"></span>
               integer,
             </td>
               <td>public</td>
@@ -495,7 +496,7 @@ system to hold them in &ndash; see <code>mqc_dlfind_bridge</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~7"></span>
+              <span class="anchor" id="variable-coordinates"></span>
               integer,
             </td>
               <td>public</td>
@@ -621,7 +622,7 @@ so a frozen pair contributes no coordinates at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient_tolerance~2"></span>
+              <span class="anchor" id="variable-gradient_tolerance"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -750,6 +751,24 @@ Ignored by the algorithms that never build one.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-target"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>target</strong></td>
+<td> =</td>
+                <td>OPT_TARGET_MINIMUM</td>
+            <td>
+                <p>Whether this run is looking for a minimum or a first-order saddle.
+Independent of <code>algorithm</code> on purpose &ndash; see <code>OPT_TARGET_SADDLE</code>.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-timestep"></span>
               real(kind=dp),
             </td>
@@ -767,7 +786,7 @@ Ignored by the algorithms that never build one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-trajectory~2"></span>
+              <span class="anchor" id="variable-trajectory"></span>
               logical,
             </td>
               <td>public</td>
@@ -823,6 +842,9 @@ as one document, which is 3N doubles per step of memory.</p>
 <span class="w">         </span><span class="c">!! Choose the MBE term list once, at the starting geometry, and keep</span>
 <span class="w">         </span><span class="c">!! it for every step. See `mqc_geometry_optimizer` for why an</span>
 <span class="w">         </span><span class="c">!! optimization on a re-screened list is optimizing a moving target.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_TARGET_MINIMUM</span>
+<span class="w">         </span><span class="c">!! Whether this run is looking for a minimum or a first-order saddle.</span>
+<span class="w">         </span><span class="c">!! Independent of `algorithm` on purpose -- see `OPT_TARGET_SADDLE`.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hessian_update</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OPT_HESSIAN_UPDATE_ENGINE</span>
 <span class="w">         </span><span class="c">!! How curvature is carried between steps once a Hessian exists.</span>
 <span class="w">         </span><span class="c">!! Ignored by the algorithms that never build one.</span>
@@ -885,7 +907,7 @@ as one document, which is 3N doubles per step of memory.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-26 06:15 +0000             </p>
+ on 2026-08-26 14:19 +0000             </p>
           </div>
         </div>
         <br>

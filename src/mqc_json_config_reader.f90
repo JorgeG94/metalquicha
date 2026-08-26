@@ -421,6 +421,7 @@ contains
       call optional_logical(json, "keywords.optimization.hess_end", config%opt_hess_end)
       call optional_string(json, "keywords.optimization.hessian_update", &
                            config%opt_hessian_update)
+      call optional_string(json, "keywords.optimization.target", config%opt_target)
       call optional_real(json, "keywords.optimization.timestep", config%opt_timestep)
       call optional_real(json, "keywords.optimization.friction", config%opt_friction)
       call optional_real(json, "keywords.optimization.friction_factor", &

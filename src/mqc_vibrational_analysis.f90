@@ -55,7 +55,10 @@ contains
       integer, intent(in) :: element_numbers(:)
          !! Atomic numbers for each atom (N atoms)
       real(dp), allocatable, intent(out) :: frequencies(:)
-         !! Vibrational frequencies in cm⁻¹ (3*N modes, or 3*N-6 if projected)
+         !! Vibrational frequencies in cm⁻¹. Always 3*N of them: projection
+         !! zeroes the translation and rotation modes rather than removing
+         !! them, so those come back at (or within rounding of) zero and the
+         !! array keeps its length either way.
       real(dp), allocatable, intent(out), optional :: eigenvalues_out(:)
          !! Raw eigenvalues from diagonalization (Hartree/Bohr²/amu)
       real(dp), allocatable, intent(out), optional :: eigenvectors(:, :)

@@ -193,12 +193,12 @@ Uses LAPACK eigenvalue decomposition via pic-blas interfaces.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
                   <li class="list-inline-item">pic_lapack_interfaces</li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1240,7 +1240,7 @@ the vanishing singular value that says so.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~6"></span>
+              <span class="anchor" id="variable-dipole_derivatives~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1396,7 +1396,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~13"></span>
+              <span class="anchor" id="variable-hessian~12"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1516,7 +1516,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~13"></span>
+              <span class="anchor" id="variable-coordinates~14"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1561,7 +1561,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~5"></span>
+              <span class="anchor" id="variable-dipole_derivatives~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1616,7 +1616,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~12"></span>
+              <span class="anchor" id="variable-hessian~11"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1656,7 +1656,10 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
             <td>::</td>
             <td><strong>frequencies</strong>(:)</td>
             <td>
-<p>Vibrational frequencies in cm⁻¹ (3<em>N modes, or 3</em>N-6 if projected)</p>
+<p>Vibrational frequencies in cm⁻¹. Always 3*N of them: projection
+zeroes the translation and rotation modes rather than removing
+them, so those come back at (or within rounding of) zero and the
+array keeps its length either way.</p>
             </td>
         </tr>
         <tr>
@@ -1691,7 +1694,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~12"></span>
+              <span class="anchor" id="variable-coordinates~13"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1761,7 +1764,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~14"></span>
+              <span class="anchor" id="variable-hessian~13"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1936,7 +1939,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~40"></span>
+              <span class="anchor" id="variable-n_atoms~38"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1966,7 +1969,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~15"></span>
+              <span class="anchor" id="variable-coordinates~16"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -2066,7 +2069,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~14"></span>
+              <span class="anchor" id="variable-coordinates~15"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2124,7 +2127,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-26 06:15 +0000             </p>
+ on 2026-08-26 14:19 +0000             </p>
           </div>
         </div>
         <br>
