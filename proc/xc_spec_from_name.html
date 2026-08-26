@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.4% of total for procedures.">86 statements</a>
+                 title=" 0.5% of total for procedures.">98 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/xc_spec_from_name.html#variable-i~154">i</a>
-            <a class="list-group-item" href="../proc/xc_spec_from_name.html#variable-lower~2">lower</a>
+            <a class="list-group-item" href="../proc/xc_spec_from_name.html#variable-i~4">i</a>
+            <a class="list-group-item" href="../proc/xc_spec_from_name.html#variable-lower">lower</a>
         </div>
       </div>
     </div>
@@ -198,7 +198,7 @@ own error, which is a better message than one invented here.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~16"></span>
+              <span class="anchor" id="variable-name~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -228,7 +228,7 @@ own error, which is a better message than one invented here.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~132"></span>
+              <span class="anchor" id="variable-error~10"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -382,7 +382,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~154"></span>
+              <span class="anchor" id="variable-i~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -399,7 +399,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lower~2"></span>
+              <span class="anchor" id="variable-lower"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -515,6 +515,26 @@ large graphs.</div>
 <span class="w">         </span><span class="n">spec</span><span class="p">%</span><span class="n">n_components</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">         </span><span class="n">spec</span><span class="p">%</span><span class="n">component</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xc_component_t</span><span class="p">(</span><span class="s2">"hyb_gga_xc_wb97x"</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="p">)</span>
 
+<span class="w">         </span><span class="c">! The -V family, which libxc carries and this table used to omit. Named</span>
+<span class="w">         </span><span class="c">! here so an unsupported one is refused for the reason it is actually</span>
+<span class="w">         </span><span class="c">! unsupported -- the non-local correlation check in `mqc_libcint_xc`, or</span>
+<span class="w">         </span><span class="c">! the meta-GGA one -- rather than with "libxc does not know the</span>
+<span class="w">         </span><span class="c">! functional", which was never true and read like a typo in the deck.</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"wb97x-v"</span><span class="p">,</span><span class="w"> </span><span class="s2">"wb97xv"</span><span class="p">)</span>
+<span class="w">         </span><span class="n">spec</span><span class="p">%</span><span class="n">from_libxc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="n">spec</span><span class="p">%</span><span class="n">n_components</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="n">spec</span><span class="p">%</span><span class="n">component</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xc_component_t</span><span class="p">(</span><span class="s2">"hyb_gga_xc_wb97x_v"</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"wb97m-v"</span><span class="p">,</span><span class="w"> </span><span class="s2">"wb97mv"</span><span class="p">)</span>
+<span class="w">         </span><span class="n">spec</span><span class="p">%</span><span class="n">from_libxc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="n">spec</span><span class="p">%</span><span class="n">n_components</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="n">spec</span><span class="p">%</span><span class="n">component</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xc_component_t</span><span class="p">(</span><span class="s2">"hyb_mgga_xc_wb97m_v"</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"b97m-v"</span><span class="p">,</span><span class="w"> </span><span class="s2">"b97mv"</span><span class="p">)</span>
+<span class="w">         </span><span class="n">spec</span><span class="p">%</span><span class="n">from_libxc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="n">spec</span><span class="p">%</span><span class="n">n_components</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="n">spec</span><span class="p">%</span><span class="n">component</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xc_component_t</span><span class="p">(</span><span class="s2">"mgga_xc_b97m_v"</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="p">)</span>
+
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"cam-b3lyp"</span><span class="p">,</span><span class="w"> </span><span class="s2">"camb3lyp"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">spec</span><span class="p">%</span><span class="n">from_libxc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">         </span><span class="n">spec</span><span class="p">%</span><span class="n">n_components</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
@@ -591,7 +611,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-25 17:27 +0000             </p>
+ on 2026-08-26 05:05 +0000             </p>
           </div>
         </div>
         <br>

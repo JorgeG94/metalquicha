@@ -66,6 +66,8 @@ module mqc_cuest_iface
       ! from the standard tables; radial_points/angular_points override it for
       ! every atom, which is what a convergence study wants.
       integer :: grid_level = 3
+      integer :: nlc_grid_level = -1
+         !! VV10's quadrature level; negative means the backend default.
       real(dp) :: screening_tolerance = 1.0e-12_dp
       integer :: block_size = -1
       integer :: backend = BACKEND_AUTO
