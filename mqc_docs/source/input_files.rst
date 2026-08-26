@@ -479,14 +479,19 @@ The integration grid, and how the quadrature walks it:
 
 .. note::
 
-   Both apply to every Kohn-Sham potential built during the SCF -- restricted and
-   unrestricted alike -- and to the exchange-correlation kernel behind CPHF, the
-   response properties and the Z-vector a double hybrid or an RI-MP2 gradient
-   solves. All three are threaded over blocks of grid points as well.
+   Both apply to every grid loop the exchange-correlation code has: the
+   Kohn-Sham potential built during the SCF, restricted and unrestricted alike;
+   the kernel behind CPHF, the response properties and the Z-vector a double
+   hybrid or an RI-MP2 gradient solves; and the exchange-correlation gradient,
+   again for either reference and including the reference-operator term a double
+   hybrid needs. A ``Gradient`` or ``Optimize`` run therefore sees the benefit in
+   the derivative as well as in the SCF iterations before it. The SCF-side paths
+   are threaded over blocks of grid points as well.
 
-   The exchange-correlation *gradient* is not screened yet and evaluates the
-   whole basis, so a ``Gradient`` or ``Optimize`` run sees the benefit in its SCF
-   iterations and not in the derivative that follows them.
+   One part of the gradient is deliberately outside this. The derivatives of the
+   Becke partition weights depend on the nuclear positions and the grid, not on
+   the basis, so there is nothing for a basis-function screen to drop and these
+   keywords do not reach them.
 
 Non-local correlation (VV10)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

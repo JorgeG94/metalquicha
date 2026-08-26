@@ -48,7 +48,8 @@ contains
                   new_unittest("ao_gradients_match_finite_differences", test_ao_grad), &
                   new_unittest("shell_extent_really_bounds_the_shell", test_extent_bound), &
                   new_unittest("screening_off_keeps_every_function", test_screen_off), &
-                  new_unittest("screened_block_matches_the_full_one", test_screen_matches) &
+                  new_unittest("screened_block_matches_the_full_one", test_screen_matches), &
+                  new_unittest("compressed_atom_ranges_are_contiguous", test_atom_ranges) &
                   ]
    end subroutine collect_mqc_libcint_ao_tests
 
@@ -101,6 +102,83 @@ contains
       call grid%destroy()
       call mol%destroy()
    end subroutine overlap_error
+
+   subroutine test_atom_ranges(error)
+      !! The per-atom compressed ranges partition the kept set, in order
+      !!
+      !! The gradient sums over one atom's range and lands the result on that
+      !! atom, so a range that is off by one, overlaps its neighbour or leaves a
+      !! gap attributes force to the wrong nucleus. That is a wrong gradient
+      !! rather than a slow one, and it does not announce itself -- the energy
+      !! is untouched and the forces still look like forces.
+      !!
+      !! Checked by reconstruction rather than by eye: walking the atoms in
+      !! order and concatenating their ranges has to reproduce `ao_list`
+      !! exactly, which fails on an overlap, a gap, or a wrong start.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: radius(:), pts(:, :)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:), a_off(:), a_cnt(:)
+      integer :: n_sig, iatom, i, seen, k
+      logical :: ok
+
+      call water(mol, err, "6-31g")
+      call check(error,.not. err%has_error(), "building the molecule")
+      if (allocated(error)) return
+
+      call shell_extents(mol, 1.0e-10_dp, radius)
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
+      allocate (a_off(mol%natm), a_cnt(mol%natm))
+
+      ! Offset from every nucleus so the screen actually drops something --
+      ! a block that keeps everything would not exercise the compression.
+      allocate (pts(3, 3))
+      do k = 1, 3
+         pts(:, k) = mol%coords(:, 1) + [2.0_dp + 0.1_dp*k, 0.4_dp, 0.3_dp]
+      end do
+
+      call block_significant_aos(mol, pts, radius, shell_mask, ao_list, &
+                                 ao_offset, n_sig, atom_offsets=a_off, &
+                                 atom_counts=a_cnt)
+      call check(error, n_sig > 0, "the block should keep something")
+      if (allocated(error)) return
+
+      call check(error, sum(a_cnt) == n_sig, &
+                 "the per-atom counts should add up to the kept count")
+      if (allocated(error)) return
+
+      ! Walk the atoms in order; their ranges must lay out ao_list end to end.
+      seen = 0
+      ok = .true.
+      do iatom = 1, mol%natm
+         if (a_cnt(iatom) == 0) cycle
+         if (a_off(iatom) /= seen) ok = .false.
+         do i = 1, a_cnt(iatom)
+            seen = seen + 1
+            if (seen > n_sig) then
+               ok = .false.
+               exit
+            end if
+         end do
+      end do
+      call check(error, ok .and. seen == n_sig, &
+                 "the per-atom ranges do not tile the compressed set in atom "// &
+                 "order, so an atom's functions are not contiguous")
+      if (allocated(error)) return
+
+      ! And every kept function must belong to exactly one atom's range.
+      do iatom = 1, mol%natm
+         do i = 1, a_cnt(iatom)
+            call check(error, ao_list(a_off(iatom) + i) >= 1 .and. &
+                       ao_list(a_off(iatom) + i) <= mol%nao, &
+                       "an atom range points outside the basis")
+            if (allocated(error)) return
+         end do
+      end do
+   end subroutine test_atom_ranges
 
    subroutine test_extent_bound(error)
       !! Past every shell's radius, every basis function is below threshold
