@@ -40,6 +40,8 @@ module mqc_dft_partition
    public :: ADJUST_NONE, ADJUST_BECKE, ADJUST_TREUTLER
    public :: becke_partition_weights
    public :: becke_partition_derivatives
+   public :: becke_cutoff_derivative, stratmann_cutoff_derivative
+   public :: becke_cutoff_second_derivative, stratmann_cutoff_second_derivative
    public :: partition_scheme_name
 
    !> Cutoff profile
@@ -452,5 +454,61 @@ contains
               *(35.0_dp + z2*(-105.0_dp + z2*(105.0_dp - 35.0_dp*z2)))/STRATMANN_A
       end if
    end function stratmann_cutoff_derivative
+
+   pure function becke_cutoff_second_derivative(nu) result(d2s)
+      !! d2/dnu2 of `becke_cutoff`
+      !!
+      !! Three nested copies of p(x) = x(3 - x^2)/2, so with
+      !! f0 = nu, f1 = p(f0), f2 = p(f1) and s = (1 - p(f2))/2 the first
+      !! derivative is the product of the three p' factors and the second
+      !! follows from differentiating that product:
+      !!
+      !!   s'  = -1/2 . p'(f2) p'(f1) p'(f0)
+      !!   s'' = -1/2 [ p''(f2) p'(f1)^2 p'(f0)^2
+      !!                + p'(f2) p''(f1) p'(f0)^2
+      !!                + p'(f2) p'(f1) p''(f0) ]
+      !!
+      !! using p'(x) = 3(1 - x^2)/2 and p''(x) = -3x. Each term carries the
+      !! chain factors for the layers *below* the one being differentiated
+      !! twice, which is where the squares come from.
+      real(dp), intent(in) :: nu
+      real(dp) :: d2s
+      real(dp) :: f0, f1, f2, p0, p1, p2, q0, q1, q2
+
+      f0 = nu
+      f1 = 0.5_dp*f0*(3.0_dp - f0*f0)
+      f2 = 0.5_dp*f1*(3.0_dp - f1*f1)
+
+      p0 = 1.5_dp*(1.0_dp - f0*f0)
+      p1 = 1.5_dp*(1.0_dp - f1*f1)
+      p2 = 1.5_dp*(1.0_dp - f2*f2)
+
+      q0 = -3.0_dp*f0
+      q1 = -3.0_dp*f1
+      q2 = -3.0_dp*f2
+
+      d2s = -0.5_dp*(q2*p1*p1*p0*p0 + p2*q1*p0*p0 + p2*p1*q0)
+   end function becke_cutoff_second_derivative
+
+   pure function stratmann_cutoff_second_derivative(mu) result(d2s)
+      !! d2/dmu2 of `stratmann_cutoff`, zero where the cutoff is flat
+      !!
+      !! The polynomial is g(z) = (35z - 35z^3 + 21z^5 - 5z^7)/16 with
+      !! s = (1 - g)/2, so s'' = -g''/2 scaled by 1/a^2 for the two chain
+      !! factors of z = mu/a.
+      real(dp), intent(in) :: mu
+      real(dp) :: d2s
+      real(dp) :: z, z2
+
+      if (mu <= -STRATMANN_A .or. mu >= STRATMANN_A) then
+         d2s = 0.0_dp
+      else
+         z = mu/STRATMANN_A
+         z2 = z*z
+         d2s = -0.5_dp*(1.0_dp/16.0_dp) &
+               *z*(-210.0_dp + z2*(420.0_dp - 210.0_dp*z2)) &
+               /(STRATMANN_A*STRATMANN_A)
+      end if
+   end function stratmann_cutoff_second_derivative
 
 end module mqc_dft_partition

@@ -97,6 +97,11 @@ if(MQC_ENABLE_LIBCINT)
   # either backend now that the entry points are reached through the C ABI.
   addtest(mqc_hess_ints)
   target_link_libraries(test_mqc_hess_ints PRIVATE cint_fortran cint)
+  # The exchange-correlation Hessian, against differences of its own gradient.
+  # The test skips itself when the build has no libxc, so it is registered
+  # beside its neighbours rather than behind another condition.
+  addtest(mqc_xc_hessian)
+  target_link_libraries(test_mqc_xc_hessian PRIVATE cint_fortran cint)
   # Fukui indices by difference in the electron count.
   addtest(mqc_fukui)
   target_link_libraries(test_mqc_fukui PRIVATE cint_fortran cint)

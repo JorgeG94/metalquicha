@@ -20,6 +20,7 @@ target_sources(
           mqc_libcint_hess_abi.f90
           mqc_libcint_hess_ints.f90
           mqc_libcint_hessian.f90
+          mqc_libcint_xc_hessian.f90
           mqc_libcint_bridge.f90
           mqc_libcint_direct.f90
           mqc_libcint_integrals.F90
