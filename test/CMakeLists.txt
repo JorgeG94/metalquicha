@@ -102,6 +102,10 @@ if(MQC_ENABLE_LIBCINT)
   # beside its neighbours rather than behind another condition.
   addtest(mqc_xc_hessian)
   target_link_libraries(test_mqc_xc_hessian PRIVATE cint_fortran cint)
+  # The second exchange derivative a range-separated functional needs, against a
+  # difference of its own energy. Skips itself without libxc.
+  addtest(mqc_rsh_gradient)
+  target_link_libraries(test_mqc_rsh_gradient PRIVATE cint_fortran cint)
   # Fukui indices by difference in the electron count.
   addtest(mqc_fukui)
   target_link_libraries(test_mqc_fukui PRIVATE cint_fortran cint)

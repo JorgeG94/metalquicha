@@ -145,7 +145,7 @@ contains
 
       real(dp), allocatable :: total_density(:, :), weighted(:, :)
       real(dp), allocatable :: s1(:, :, :), h1(:, :, :), kin(:, :, :)
-      real(dp), allocatable :: vhf(:, :, :), vhf_beta(:, :, :)
+      real(dp), allocatable :: vhf(:, :, :), vhf_beta(:, :, :), vhf_lr(:, :, :)
       real(dp), allocatable :: vrinv(:, :, :), hcore_a(:, :, :)
       real(dp) :: exx
       integer, allocatable :: offsets(:), counts(:)
@@ -241,6 +241,20 @@ contains
       else
          call two_electron_deriv(mol, total_density, vhf, error, exx_fraction=exx)
          if (error%has_error()) return
+         ! The long-range half of a range-separated functional's exchange, at
+         ! the screened omega. Exchange only, and added into the same `vhf` the
+         ! per-atom loop below contracts: `J` is complete from the pass above,
+         ! and the attenuated kernel carries no Coulomb term of its own.
+         if (present(xc)) then
+            if (xc%range_separated) then
+               call two_electron_deriv(mol, total_density, vhf_lr, error, &
+                                       exx_fraction=xc%rs_k_lr, omega=xc%rs_omega, &
+                                       with_coulomb=.false.)
+               if (error%has_error()) return
+               vhf = vhf + vhf_lr
+               deallocate (vhf_lr)
+            end if
+         end if
       end if
 
       allocate (offsets(mol%natm), counts(mol%natm))
@@ -298,25 +312,23 @@ contains
       ! an addition to the Hartree-Fock gradient, not a replacement for any part
       ! of it.
       if (present(xc)) then
-         ! The second exchange derivative at the screened omega now exists,
-         ! but only on the fitted path -- `df_two_electron_gradient` takes an
-         ! `rs_omega`, while `two_electron_deriv` on the exact path still builds
-         ! one kernel per call and has no second pass wired to it.
-         ! `.or. unrestricted`, and that half is not hypothetical-only: the
-         ! fitted long-range pass below is written in the *restricted* branch
-         ! alone. Without this, unrestricted + fitted + range separated falls
-         ! through both the pass and the refusal and returns a gradient missing
-         ! wB97X's dominant exchange term. It is unreachable today because the
-         ! SCF refuses unrestricted fitting up front -- which is exactly the
-         ! shape the fitted-exchange-fraction bug had before Kohn-Sham fitting
-         ! became reachable and turned it live.
-         if (xc%range_separated .and. (.not. fitted .or. unrestricted)) then
+         ! Both closed-shell paths now build the second exchange derivative
+         ! at the screened omega -- the fitted one through
+         ! `df_two_electron_gradient`'s `rs_omega`, the exact one through
+         ! `two_electron_deriv`'s. What is left is the open shell, and it is
+         ! not hypothetical: neither long-range pass is written in an
+         ! unrestricted branch. Without this refusal, unrestricted plus range
+         ! separation falls through both the pass and the check and returns a
+         ! gradient missing wB97X's dominant exchange term, converged and
+         ! unflagged -- the same shape the fitted-exchange-fraction bug had
+         ! before Kohn-Sham fitting became reachable and turned it live.
+         if (xc%range_separated .and. unrestricted) then
             call error%set(ERROR_VALIDATION, "the gradient of a range-separated "// &
                            "functional needs a second exchange derivative at the "// &
-                           "screened omega. The density-fitted path builds it; the "// &
-                           "exact-ERI one does not yet. Give an auxiliary basis, or "// &
-                           "take the gradient at a functional that is not range "// &
-                           "separated.")
+                           "screened omega, and the open-shell path does not build "// &
+                           "one. The closed-shell path does, fitted or exact. Take "// &
+                           "the gradient at a closed shell, or at a functional that "// &
+                           "is not range separated.")
             return
          end if
          if (unrestricted) then
@@ -1409,7 +1421,7 @@ contains
    end subroutine iprinv_deriv_at
 
    subroutine two_electron_deriv(mol, density, vhf, error, exchange_density, exx_fraction, &
-                                 screen_tol)
+                                 screen_tol, omega, with_coulomb)
       !! `J - K/2` built from the differentiated ERIs, as (nao, nao, 3)
       !!
       !! `density` drives the Coulomb field and is the total density in both
@@ -1436,13 +1448,23 @@ contains
       real(dp), intent(in), optional :: screen_tol
          !! Bound below which a shell quartet is skipped, on the *contribution*
          !! rather than the integral. Default `DERIV_SCREEN_TOL`.
+      real(dp), intent(in), optional :: omega
+         !! Switch the kernel to `erf(omega r)/r`, for the long-range exchange
+         !! of a range-separated functional. libfint takes this through `env`
+         !! rather than a separate entry point, so an attenuated pass is this
+         !! same loop over a modified copy -- no new integrals.
+      logical, intent(in), optional :: with_coulomb
+         !! Default true. False builds exchange alone, which is what the
+         !! long-range pass wants: `J` is complete from the full-range pass,
+         !! and the attenuated kernel's Coulomb term belongs to no energy.
 
-      real(dp), allocatable :: buf(:), vj(:, :, :), vk(:, :, :)
+      real(dp), allocatable :: buf(:), vj(:, :, :), vk(:, :, :), env_use(:)
       real(dp), allocatable :: vj_local(:, :, :), vk_local(:, :, :)
       real(dp), allocatable :: exchange_from(:, :)
       real(dp), allocatable :: bounds(:, :), bq(:, :), bra_bound(:, :), dsh(:, :), esh(:, :)
       integer, allocatable :: dims(:), offs(:)
-      real(dp) :: g, k_scale, tol, bra, est, amax
+      real(dp) :: g, k_scale, tol, bra, est, amax, jx
+      logical :: do_j
       type(c_ptr) :: opt
       type(eri_shell_table_t) :: tab
       integer :: shls(4)
@@ -1470,6 +1492,18 @@ contains
       tol = DERIV_SCREEN_TOL
       if (present(screen_tol)) tol = screen_tol
 
+      do_j = .true.
+      if (present(with_coulomb)) do_j = with_coulomb
+      jx = 0.0_dp
+      if (do_j) jx = 1.0_dp
+
+      ! A copy, because `tab%env` is shared and an attenuated pass must not
+      ! leave the omega set behind for the next caller. The slot is one-based
+      ! here and zero-based in libfint's headers, so it is `+ 1`; getting it
+      ! wrong is silent, and the "attenuated" integrals come back full-range.
+      env_use = tab%env
+      if (present(omega)) env_use(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
+
       allocate (exchange_from(nao, nao))
       if (present(exchange_density)) then
          exchange_from = exchange_density
@@ -1483,9 +1517,9 @@ contains
 
       opt = c_null_ptr
       if (mol%cartesian) then
-         call libcint_2e_ip1_cart_optimizer(opt, mol%atm, mol%natm, tab%bas, tab%nbas, tab%env)
+         call libcint_2e_ip1_cart_optimizer(opt, mol%atm, mol%natm, tab%bas, tab%nbas, env_use)
       else
-         call libcint_2e_ip1_sph_optimizer(opt, mol%atm, mol%natm, tab%bas, tab%nbas, tab%env)
+         call libcint_2e_ip1_sph_optimizer(opt, mol%atm, mol%natm, tab%bas, tab%nbas, env_use)
       end if
 
       ! Shell dimensions and offsets once, rather than a `shell_dim` call --
@@ -1549,7 +1583,7 @@ contains
       ! uneven, and a static split leaves threads idle on the tail.
       !$omp parallel default(none) &
       !$omp    shared(mol, tab, density, exchange_from, opt, vj, vk, mx, nao, nbas, &
-      !$omp           dims, offs, bq, bra_bound, dsh, esh, tol) &
+      !$omp           dims, offs, bq, bra_bound, dsh, esh, tol, env_use, do_j) &
       !$omp    private(ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, &
       !$omp            i, j, k, l, comp, ret, idx, g, shls, buf, vj_local, vk_local, &
       !$omp            bra, est)
@@ -1578,18 +1612,22 @@ contains
                   ! two Coulomb, from the ket pair both ways round, and two
                   ! exchange, pairing the bra's second index with each of the
                   ! ket's.
-                  est = bra*bq(ksh, lsh) &
-                        *max(dsh(lsh, ksh), dsh(ksh, lsh), esh(jsh, ksh), esh(jsh, lsh))
+                  if (do_j) then
+                     est = bra*bq(ksh, lsh) &
+                           *max(dsh(lsh, ksh), dsh(ksh, lsh), esh(jsh, ksh), esh(jsh, lsh))
+                  else
+                     est = bra*bq(ksh, lsh)*max(esh(jsh, ksh), esh(jsh, lsh))
+                  end if
                   if (est < tol) cycle
 
                   shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
 
                   if (mol%cartesian) then
                      ret = libcint_2e_ip1_cart(buf, shls, mol%atm, mol%natm, &
-                                               tab%bas, nbas, tab%env, opt)
+                                               tab%bas, nbas, env_use, opt)
                   else
                      ret = libcint_2e_ip1_sph(buf, shls, mol%atm, mol%natm, &
-                                              tab%bas, nbas, tab%env, opt)
+                                              tab%bas, nbas, env_use, opt)
                   end if
                   if (ret == 0) cycle
 
@@ -1636,7 +1674,7 @@ contains
       ! returns the nabla on the bra, and the derivative with respect to the
       ! atom is its negative.
       allocate (vhf(nao, nao, 3))
-      vhf = -(vj - k_scale*vk)
+      vhf = -(jx*vj - k_scale*vk)
 
       deallocate (bounds, bq, bra_bound, dsh, esh, dims, offs)
    end subroutine two_electron_deriv
