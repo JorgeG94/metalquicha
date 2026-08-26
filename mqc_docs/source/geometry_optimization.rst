@@ -403,7 +403,8 @@ of the motion, which is the transfer.
 conjugate gradient and L-BFGS will report a minimum however the target is
 spelled, so the combination is a deck that cannot be satisfied rather than one
 that is satisfied slowly; use ``prfo``, or ``nr`` from a guess already near the
-ridge.
+ridge. This is refused whether the algorithm was named or left to the default,
+which is L-BFGS -- so a saddle search has to say which optimizer runs it.
 
 .. warning::
 
@@ -415,6 +416,13 @@ ridge.
    without converging while ``dlc`` converged in four. A deck that asks for both
    is warned; use ``dlc``, or ``hdlc`` for a cluster where plain DLC has no
    bonds to span the fragments.
+
+   ``cartesian`` is the *default* coordinate system, so this is what a saddle
+   search that never mentioned coordinates gets. The warning says so, and says
+   that the run will spend all of ``max_steps`` before giving up. It is a
+   warning rather than a refusal because a Cartesian saddle search can be made
+   to work, from a guess close enough that the reaction mode is already the
+   lowest eigenvalue, where a downhill algorithm cannot.
 
 .. _opt-constraints:
 

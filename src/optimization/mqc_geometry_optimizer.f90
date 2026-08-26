@@ -48,6 +48,12 @@ module mqc_geometry_optimizer
    real(dp), parameter :: ZERO_FREQ_CM = 10.0_dp
       !! Below this a mode is translation or rotation rather than a vibration,
       !! and the same number the analysis prints its own summary against.
+   real(dp), parameter :: NOISE_FREQ_CM = 0.1_dp
+      !! Under this a negative frequency is arithmetic, not physics: projection
+      !! zeroes the translation and rotation rows of the mass-weighted Hessian,
+      !! and their eigenvalues come back on either side of zero at the level of
+      !! rounding. Only negatives above this are worth mentioning as possibly
+      !! being a very flat mode.
    integer, parameter :: MAX_REACTION_MODE_ATOMS = 6
       !! How many atoms of the imaginary mode to name. A reaction coordinate is
       !! carried by a few atoms; listing all of them buries the few.
@@ -648,7 +654,7 @@ contains
                    .and. .not. config%method_config%scf%unrestricted
    end function is_restricted_hf
 
-   subroutine run_final_hessian(sys_geom, target)
+   subroutine run_final_hessian(sys_geom, want)
       !! A Hessian at the converged geometry, and the verdict it settles
       !!
       !! **What this is for.** A minimiser stops on the gradient, and a
@@ -668,9 +674,12 @@ contains
       use mqc_vibrational_analysis, only: compute_vibrational_analysis
       use mqc_optimizer_types, only: OPT_TARGET_SADDLE
       type(system_geometry_t), intent(in) :: sys_geom
-      integer, intent(in) :: target
+      integer, intent(in) :: want
          !! What was being looked for. The curvature test is the same either
-         !! way; which count is the pass is not.
+         !! way; which count is the pass is not. Named `want` rather than
+         !! `target` so that it does not shadow the Fortran attribute of that
+         !! name; the config component it comes from keeps the keyword's own
+         !! spelling.
 
       type(calculation_result_t) :: result
       type(driver_config_t) :: hess_config
@@ -678,7 +687,7 @@ contains
       real(dp), allocatable :: frequencies(:), reduced_masses(:), force_constants(:)
       real(dp), allocatable :: cart_disp(:, :)
       integer :: k, n_imag
-      real(dp) :: worst
+      real(dp) :: worst, softest
 
       call logger%info(" ")
       call logger%info("  Hessian at the converged geometry (keywords.optimization.hess_end)")
@@ -717,17 +726,24 @@ contains
       ! complex number, which is why this is a comparison and not an `aimag`.
       n_imag = 0
       worst = 0.0_dp
+      softest = 0.0_dp
       do k = 1, size(frequencies)
          if (frequencies(k) < -ZERO_FREQ_CM) then
             n_imag = n_imag + 1
             worst = min(worst, frequencies(k))
+         else if (frequencies(k) < -NOISE_FREQ_CM) then
+            ! Negative, but under the floor that separates a vibration from a
+            ! projected translation. Kept because a very flat saddle looks
+            ! exactly like this, and reporting it as a minimum without saying
+            ! so is the one way this check can mislead.
+            softest = min(softest, frequencies(k))
          end if
       end do
 
       ! The same three cases, read against what was asked for. A first-order
       ! saddle is the failure when a minimum was wanted and the success when it
       ! was not, so the branch that changes is which one is logged as a warning.
-      if (target == OPT_TARGET_SADDLE) then
+      if (want == OPT_TARGET_SADDLE) then
          if (n_imag == 1) then
             call logger%info("  one imaginary frequency, "//to_char(abs(worst))// &
                              " cm-1: this is a first-order saddle point")
@@ -736,6 +752,13 @@ contains
             call logger%warning("  no imaginary frequencies: this is a minimum, not a "// &
                                 "saddle. The search fell off the ridge -- start closer "// &
                                 "to the barrier, or use a path method to find a guess.")
+            if (softest < 0.0_dp) then
+               call logger%warning("     but the lowest mode is "//to_char(abs(softest))// &
+                                   " cm-1 imaginary, under the floor that separates a "// &
+                                   "vibration from a projected translation. A very flat "// &
+                                   "saddle looks exactly like this, so read the frequency "// &
+                                   "table before taking the verdict above.")
+            end if
          else
             call logger%warning("  "//to_char(n_imag)//" imaginary frequencies, the largest "// &
                                 to_char(abs(worst))//" cm-1: this is a stationary point of "// &
@@ -815,7 +838,10 @@ contains
          end do
       end do
 
-      call logger%info("  the imaginary mode moves, most to least:")
+      ! Atoms are numbered from one, as everywhere else in this log. A deck
+      ! counts from zero, so the two differ by one and saying which this is
+      ! saves the reader checking against their own `frozen_atoms` list.
+      call logger%info("  the imaginary mode moves, most to least (atoms numbered from 1):")
       do k = 1, min(n_atoms, MAX_REACTION_MODE_ATOMS)
          i = order(k)
          if (amplitude(i)/total < REACTION_MODE_FLOOR) exit

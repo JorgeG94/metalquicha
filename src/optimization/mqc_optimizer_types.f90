@@ -388,27 +388,31 @@ contains
       can = algorithm == OPT_ALGO_PRFO .or. algorithm == OPT_ALGO_NR
    end function algorithm_finds_saddle
 
-   pure function target_from_string(text) result(target)
+   pure function target_from_string(text) result(want)
       !! Parse what the deck says it is looking for
+      !!
+      !! The result is `want` and not `target`: the component these two read
+      !! and write keeps the keyword's own spelling, but a local of that name
+      !! shadows the Fortran attribute, which is legal and reads badly.
       character(len=*), intent(in) :: text
-      integer :: target
+      integer :: want
 
       select case (lowercase(text))
       case ("minimum", "min")
-         target = OPT_TARGET_MINIMUM
+         want = OPT_TARGET_MINIMUM
       case ("saddle", "ts", "transition_state", "transition-state")
-         target = OPT_TARGET_SADDLE
+         want = OPT_TARGET_SADDLE
       case default
-         target = -2   ! not a spelling anybody recognises
+         want = -2   ! not a spelling anybody recognises
       end select
    end function target_from_string
 
-   pure function target_to_string(target) result(text)
+   pure function target_to_string(want) result(text)
       !! Name a target, for the log
-      integer, intent(in) :: target
+      integer, intent(in) :: want
       character(len=:), allocatable :: text
 
-      select case (target)
+      select case (want)
       case (OPT_TARGET_MINIMUM)
          text = "minimum"
       case (OPT_TARGET_SADDLE)

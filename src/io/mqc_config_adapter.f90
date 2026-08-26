@@ -396,9 +396,12 @@ contains
       !! values may say belongs with the type that holds the constants. An
       !! unrecognised spelling is refused here by name, which is the only place
       !! that still has the string the user typed.
+      use pic_io, only: to_char
       type(mqc_config_t), intent(in) :: mqc_config
       type(driver_config_t), intent(inout) :: driver_config
       type(error_t), intent(inout), optional :: error
+
+      integer :: want
 
       if (allocated(mqc_config%opt_coordinates)) then
          driver_config%optimization%coordinates = &
@@ -445,9 +448,15 @@ contains
          end if
       end if
 
+      ! Parsed into a local and only then stored, which the siblings above do
+      ! not need to do: `error` is optional, and the callers that omit it -- the
+      ! session, the tests -- would otherwise carry the parse failure into the
+      ! driver, where a sentinel below OPT_TARGET_MINIMUM reads as "not a
+      ! saddle" and runs a minimisation. Refusing without `error` still has to
+      ! leave the default behind rather than a value nothing recognises.
       if (allocated(mqc_config%opt_target)) then
-         driver_config%optimization%target = target_from_string(mqc_config%opt_target)
-         if (driver_config%optimization%target < OPT_TARGET_MINIMUM) then
+         want = target_from_string(mqc_config%opt_target)
+         if (want < OPT_TARGET_MINIMUM) then
             if (present(error)) then
                call error%set(ERROR_VALIDATION, &
                               "Unknown keywords.optimization.target: '"// &
@@ -456,6 +465,7 @@ contains
             end if
             return
          end if
+         driver_config%optimization%target = want
       end if
 
       ! A saddle is not something every algorithm can look for. Steepest
@@ -468,11 +478,25 @@ contains
       if (driver_config%optimization%target == OPT_TARGET_SADDLE) then
          if (.not. algorithm_finds_saddle(driver_config%optimization%algorithm)) then
             if (present(error)) then
-               call error%set(ERROR_VALIDATION, &
-                              "keywords.optimization.target is 'saddle' but the algorithm is '"// &
-                              algorithm_to_string(driver_config%optimization%algorithm)// &
-                              "', which descends to a minimum. Use prfo, which "// &
-                              "maximises along one mode and minimises along the rest, or nr.")
+               ! Named or defaulted, said differently. A deck with no
+               ! `algorithm` key at all gets the default, and a message that
+               ! quotes it back as though the user had chosen it sends them
+               ! looking for a line their file does not contain.
+               if (allocated(mqc_config%opt_algorithm)) then
+                  call error%set(ERROR_VALIDATION, &
+                                 "keywords.optimization.target is 'saddle' but the algorithm is '"// &
+                                 algorithm_to_string(driver_config%optimization%algorithm)// &
+                                 "', which descends to a minimum. Use prfo, which "// &
+                                 "maximises along one mode and minimises along the rest, or nr.")
+               else
+                  call error%set(ERROR_VALIDATION, &
+                                 "keywords.optimization.target is 'saddle' but no algorithm was "// &
+                                 "named, so the default '"// &
+                                 algorithm_to_string(driver_config%optimization%algorithm)// &
+                                 "' applies, and it descends to a minimum. Set "// &
+                                 "keywords.optimization.algorithm to prfo, which maximises along "// &
+                                 "one mode and minimises along the rest, or nr.")
+               end if
             end if
             return
          end if
@@ -481,9 +505,25 @@ contains
          ! It follows one of those instead of the reaction mode and wanders. On
          ! the HCN-HNC saddle that is 60 steps without converging in Cartesians
          ! and four in DLC, from the same guess and the same Hessian.
+         ! Warned rather than refused, because a Cartesian saddle search is a
+         ! deck that can be satisfied -- from a guess close enough that the
+         ! reaction mode is already the lowest eigenvalue -- where a downhill
+         ! algorithm is one that cannot. But Cartesian is the default
+         ! coordinate system, so a deck that simply never mentioned coordinates
+         ! lands here, which is why the warning says what it will cost rather
+         ! than only what it is.
          if (driver_config%optimization%coordinates == OPT_COORDS_CARTESIAN) then
-            call logger%warning("  keywords.optimization: a saddle search in Cartesian "// &
-                                "coordinates follows a rotation, not the reaction mode.")
+            if (allocated(mqc_config%opt_coordinates)) then
+               call logger%warning("  keywords.optimization: a saddle search in Cartesian "// &
+                                   "coordinates follows a rotation, not the reaction mode.")
+            else
+               call logger%warning("  keywords.optimization: no coordinates were named, so this "// &
+                                   "saddle search runs in Cartesians, where it follows a "// &
+                                   "rotation rather than the reaction mode.")
+            end if
+            call logger%warning("     Expect it to wander for all "// &
+                                to_char(driver_config%optimization%max_steps)// &
+                                " steps without converging.")
             call logger%warning("     Use coordinates 'dlc' (or 'hdlc' for a cluster) "// &
                                 "unless you have a reason not to.")
          end if
