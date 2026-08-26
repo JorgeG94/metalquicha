@@ -517,7 +517,7 @@ contains
       deallocate (buf, atm_flat, bas_flat)
    end subroutine eri_ip1_block
 
-   subroutine hess_2e_contract(mol, density, hess, error, screen_tol)
+   subroutine hess_2e_contract(mol, density, hess, error, screen_tol, k_scale)
       !! The two-electron second derivatives, contracted as they are computed
       !!
       !! Same numbers `hess_2e_block` produces and never the same array. Each
@@ -538,13 +538,17 @@ contains
       real(dp), intent(inout) :: hess(:, :, :, :)   !! (3, 3, natm, natm), accumulated
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: screen_tol
-
+      real(dp), intent(in), optional :: k_scale
+         !! Fraction of exact exchange. One is Hartree-Fock and the default;
+         !! zero is a pure density functional, which has none; a hybrid is its
+         !! mixing fraction. Only the exchange terms scale -- the Coulomb ones
+         !! are the same whatever the functional.
       real(dp), allocatable :: buf_ii(:), buf_ij(:), buf_ik(:), buf_ik2(:)
       real(dp), allocatable :: hloc(:, :, :, :)
       integer, allocatable :: atm_flat(:), bas_flat(:), owner(:)
       integer, allocatable :: offsets(:), counts(:), sh_dim(:), sh_off(:)
       real(dp), allocatable :: bounds(:, :), dsh(:, :), sa(:)
-      real(dp) :: qq, wbound, est, tol
+      real(dp) :: qq, wbound, est, tol, kx
       integer :: dims(0:3), shls(0:3), dims2(0:3), shls2(0:3)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
       integer :: io, jo, ko, lo, i, j, k, l, comp, mx, idx
@@ -554,6 +558,9 @@ contains
       logical :: have_ii, have_ij, have_ik, have_ik2
 
       if (error%has_error()) return
+
+      kx = 1.0_dp
+      if (present(k_scale)) kx = k_scale
 
       nao = mol%nao
       natm = mol%natm
@@ -616,7 +623,7 @@ contains
       ! `9*natm^2` doubles -- small enough that a private copy costs nothing and
       ! an atomic update per quartet would cost everything.
       !$omp parallel default(none) &
-      !$omp shared(mol, density, hess, owner, sh_dim, sh_off, atm_flat, bas_flat, &
+      !$omp shared(kx, mol, density, hess, owner, sh_dim, sh_off, atm_flat, bas_flat, &
       !$omp        mx, natm, n_pairs, error, bounds, dsh, sa, tol) &
       !$omp private(buf_ii, buf_ij, buf_ik, buf_ik2, hloc, dims, shls, dims2, shls2, &
       !$omp         ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, i, j, k, l, &
@@ -667,8 +674,8 @@ contains
                ! written the way the contraction weight is: a Coulomb term and
                ! the two exchange terms the eightfold symmetrisation produces.
                wbound = 0.5_dp*dsh(ish, jsh)*dsh(ksh, lsh) &
-                        + 0.125_dp*(dsh(ish, lsh)*dsh(ksh, jsh) &
-                                    + dsh(ish, ksh)*dsh(jsh, lsh))
+                        + kx*0.125_dp*(dsh(ish, lsh)*dsh(ksh, jsh) &
+                                       + dsh(ish, ksh)*dsh(jsh, lsh))
                qq = bounds(ish, jsh)*bounds(ksh, lsh)
                ! Four times the deposit weights (4, 4 and 8) against the
                ! per-integral derivative factors, which differ because the two
@@ -701,8 +708,9 @@ contains
                            ! Symmetric under `k <-> l`, which is what lets the
                            ! swapped ordering reuse it.
                            gam = 0.5_dp*density(io + i, jo + j)*density(ko + k, lo + l) &
-                                 - 0.125_dp*(density(io + i, lo + l)*density(ko + k, jo + j) &
-                                             + density(io + i, ko + k)*density(jo + j, lo + l))
+                                 - kx*0.125_dp &
+                                 *(density(io + i, lo + l)*density(ko + k, jo + j) &
+                                   + density(io + i, ko + k)*density(jo + j, lo + l))
                            if (gam == 0.0_dp) cycle
                            do comp = 1, N_COMPONENTS
                               a = (comp - 1)/3 + 1
@@ -739,7 +747,7 @@ contains
       deallocate (bounds, dsh, sa)
    end subroutine hess_2e_contract
 
-   subroutine h1_contract(mol, density, h1, error, screen_tol)
+   subroutine h1_contract(mol, density, h1, error, screen_tol, k_scale)
       !! The skeleton derivative Fock for **every** atom, in one pass
       !!
       !! `make_h1_atom` builds one atom's `dF/dR` from a stored `int2e_ip1`
@@ -763,10 +771,14 @@ contains
       real(dp), allocatable, intent(out) :: h1(:, :, :, :)   !! (nao, nao, 3, natm)
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: screen_tol
-
+      real(dp), intent(in), optional :: k_scale
+         !! Fraction of exact exchange. One is Hartree-Fock and the default;
+         !! zero is a pure density functional, which has none; a hybrid is its
+         !! mixing fraction. Only the exchange terms scale -- the Coulomb ones
+         !! are the same whatever the functional.
       real(dp), allocatable :: buf(:), hloc(:, :, :, :)
       real(dp), allocatable :: bounds(:, :), bq(:, :), dsh(:, :), sa(:)
-      real(dp) :: wmax, est, tol
+      real(dp) :: wmax, est, tol, kx
       integer, allocatable :: atm_flat(:), bas_flat(:), owner(:)
       integer, allocatable :: offsets(:), counts(:)
       type(eri_shell_table_t) :: tab
@@ -778,6 +790,9 @@ contains
       logical :: have
 
       if (error%has_error()) return
+
+      kx = 1.0_dp
+      if (present(k_scale)) kx = k_scale
 
       nao = mol%nao
       natm = mol%natm
@@ -838,7 +853,7 @@ contains
       ! alternative is an atomic per deposit, and there are seven per buffer
       ! element.
       !$omp parallel default(none) &
-      !$omp shared(mol, density, h1, owner, tab, atm_flat, bas_flat, &
+      !$omp shared(kx, mol, density, h1, owner, tab, atm_flat, bas_flat, &
       !$omp        mx, nao, natm, n_pairs, bq, dsh, sa, tol) &
       !$omp private(buf, hloc, dims, shls, ish, jsh, ksh, lsh, di, dj, dk, dl, &
       !$omp         io, jo, ko, lo, i, j, k, l, comp, idx, ii, jj, kk, ll, at, b, &
@@ -898,10 +913,14 @@ contains
                               hloc(ii, jj, comp, at) = hloc(ii, jj, comp, at) - density(kk, ll)*b
                               hloc(jj, ii, comp, at) = hloc(jj, ii, comp, at) - density(kk, ll)*b
                               hloc(kk, ll, comp, at) = hloc(kk, ll, comp, at) - 2.0_dp*density(ii, jj)*b
-                              hloc(ii, ll, comp, at) = hloc(ii, ll, comp, at) + 0.5_dp*density(jj, kk)*b
-                              hloc(jj, ll, comp, at) = hloc(jj, ll, comp, at) + 0.5_dp*density(ii, kk)*b
-                              hloc(kk, jj, comp, at) = hloc(kk, jj, comp, at) + 0.5_dp*density(ll, ii)*b
-                              hloc(kk, ii, comp, at) = hloc(kk, ii, comp, at) + 0.5_dp*density(ll, jj)*b
+                              hloc(ii, ll, comp, at) = hloc(ii, ll, comp, at) &
+                                                       + kx*0.5_dp*density(jj, kk)*b
+                              hloc(jj, ll, comp, at) = hloc(jj, ll, comp, at) &
+                                                       + kx*0.5_dp*density(ii, kk)*b
+                              hloc(kk, jj, comp, at) = hloc(kk, jj, comp, at) &
+                                                       + kx*0.5_dp*density(ll, ii)*b
+                              hloc(kk, ii, comp, at) = hloc(kk, ii, comp, at) &
+                                                       + kx*0.5_dp*density(ll, jj)*b
                            end do
                         end do
                      end do

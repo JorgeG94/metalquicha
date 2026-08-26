@@ -620,7 +620,7 @@ contains
    end subroutine build_fock_direct
 
    subroutine build_fock_direct_many(mol, h, densities, bounds, focks, stats, error, &
-                                     screen_tol)
+                                     screen_tol, k_scale)
       !! F = H + J - K/2 for many densities, over one pass of the integrals
       !!
       !! **Why this exists.** In a direct scheme the integral evaluation dominates
@@ -672,6 +672,10 @@ contains
       type(direct_stats_t), intent(out) :: stats
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: screen_tol
+      real(dp), intent(in), optional :: k_scale
+         !! Fraction of exact exchange, one by default. A pure density
+         !! functional's response operator has none; a hybrid's has its
+         !! mixing fraction. The Coulomb term is the same either way.
 
       real(dp), allocatable :: buf(:), g(:, :, :), g_local(:, :, :), d_half(:, :, :)
       real(dp), allocatable :: bq(:, :)
@@ -685,7 +689,7 @@ contains
       integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:), order(:)
       integer :: itask
       integer(int64) :: n_total, n_computed, n_screened
-      real(dp) :: tol, deg, value, scaled
+      real(dp) :: tol, deg, value, scaled, kx
 
       n = mol%nao
       n_set = size(densities, 3)
@@ -745,6 +749,8 @@ contains
       ! without its factor of two. `build_density` produces D = 2 C_occ C_occ^T,
       ! so halve it here. Skipping this makes both J and K exactly twice too
       ! large -- an error that still converges, to a badly wrong energy.
+      kx = 1.0_dp
+      if (present(k_scale)) kx = k_scale
       d_half = 0.5_dp*densities
 
       ! Created once and reused for every quartet in this build.
@@ -777,7 +783,7 @@ contains
       ! thousands of times the first, and a static split would leave most
       ! threads idle waiting for the tail.
       !$omp parallel default(none) &
-      !$omp    shared(mol, tab, bq, d_half, g, dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
+      !$omp    shared(kx, mol, tab, bq, d_half, g, dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
       !$omp           block_max, n_set) &
       !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, &
@@ -849,13 +855,13 @@ contains
                            g_local(b3, b4, iset) = g_local(b3, b4, iset) &
                                                    + d_half(b1, b2, iset)*scaled
                            g_local(b1, b3, iset) = g_local(b1, b3, iset) &
-                                                   - 0.25_dp*d_half(b2, b4, iset)*scaled
+                                                   - kx*0.25_dp*d_half(b2, b4, iset)*scaled
                            g_local(b2, b4, iset) = g_local(b2, b4, iset) &
-                                                   - 0.25_dp*d_half(b1, b3, iset)*scaled
+                                                   - kx*0.25_dp*d_half(b1, b3, iset)*scaled
                            g_local(b1, b4, iset) = g_local(b1, b4, iset) &
-                                                   - 0.25_dp*d_half(b2, b3, iset)*scaled
+                                                   - kx*0.25_dp*d_half(b2, b3, iset)*scaled
                            g_local(b2, b3, iset) = g_local(b2, b3, iset) &
-                                                   - 0.25_dp*d_half(b1, b4, iset)*scaled
+                                                   - kx*0.25_dp*d_half(b1, b4, iset)*scaled
                         end do
                      end do
                   end do

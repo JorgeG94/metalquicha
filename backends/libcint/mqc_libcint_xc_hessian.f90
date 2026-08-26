@@ -52,6 +52,7 @@ module mqc_libcint_xc_hessian
 
    public :: xc_hessian
    public :: xc_gradient_fixed_grid
+   public :: xc_potential_deriv
 
 contains
 
@@ -332,6 +333,128 @@ contains
          end do
       end do
    end subroutine xc_hessian
+
+   subroutine xc_potential_deriv(ctx, mol, density, h1, error)
+      !! The skeleton nuclear derivative of the exchange-correlation potential
+      !!
+      !! The response half of a Hessian contracts `dD/dR_B` against `dF/dR_A`,
+      !! and for a Kohn-Sham reference `F` contains `V_xc`. Its derivative at
+      !! fixed density matrix has two parts:
+      !!
+      !!     dV_uv/dA_c = int w v_rho d(chi_u chi_v)/dA_c
+      !!                + int w f_rr chi_u chi_v (d rho/dA_c)
+      !!
+      !! the first from the basis functions moving and the second because the
+      !! potential is itself a function of a density that moves with them.
+      !!
+      !! Leaving this out does not fail visibly. The coupled-perturbed solve
+      !! converges, the Hessian comes back symmetric and plausible, and it is
+      !! wrong by order one -- on water/STO-3G at LDA exchange the worst entry
+      !! is out by 0.87 against a finite difference of the gradient, where the
+      !! same comparison for Hartree-Fock agrees to 5e-6.
+      !!
+      !! LDA only, and the caller refuses a GGA rather than dropping its terms.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(inout) :: h1(:, :, :, :)   !! (n_ao, n_ao, 3, natm), in place
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: rho(:), rho_grad(:, :), vrho(:), vsigma(:)
+      real(dp), allocatable :: frr(:), frs(:), fss(:)
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
+      real(dp), allocatable :: extents(:), d_sig(:, :), dmu(:, :), dchi(:, :)
+      real(dp), allocatable :: wcol(:), blk(:, :)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_offset(:), ao_list(:), c_offsets(:), c_counts(:)
+      integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig, ia, a, i, j, ig
+      real(dp) :: acc
+
+      if (error%has_error()) return
+
+      natm = size(mol%coords, 2)
+      nao = mol%nao
+      npts = size(ctx%grid%weights)
+
+      call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
+                                     frr, frs, fss, error)
+      if (error%has_error()) return
+
+      allocate (extents(mol%nbas))
+      call shell_extents(mol, ctx%screen_tol, extents)
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
+      allocate (c_offsets(natm), c_counts(natm), d_sig(nao, nao))
+
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
+         nb = g1 - g0 + 1
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig, &
+                                    atom_offsets=c_offsets, atom_counts=c_counts)
+         if (n_sig == 0) cycle
+         do jsig = 1, n_sig
+            do isig = 1, n_sig
+               d_sig(isig, jsig) = density(ao_list(isig), ao_list(jsig))
+            end do
+         end do
+         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad, &
+                            shell_mask=shell_mask, ao_offset=ao_offset, n_ao_out=n_sig)
+         if (error%has_error()) return
+
+         if (allocated(dmu)) deallocate (dmu)
+         allocate (dmu(nb, n_sig))
+         call pic_gemm(ao(1:nb, 1:n_sig), d_sig(1:n_sig, 1:n_sig), dmu, beta=0.0_dp)
+
+         ! d rho / dA_c on this block, as it is built in `xc_hessian`.
+         if (allocated(dchi)) deallocate (dchi)
+         allocate (dchi(3*natm, nb))
+         dchi = 0.0_dp
+         do ia = 1, natm
+            if (c_counts(ia) == 0) cycle
+            do a = 1, 3
+               do ig = 1, nb
+                  acc = 0.0_dp
+                  do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                     acc = acc + ao_grad(ig, i, a)*dmu(ig, i)
+                  end do
+                  dchi(3*(ia - 1) + a, ig) = -2.0_dp*acc
+               end do
+            end do
+         end do
+
+         if (allocated(blk)) deallocate (blk)
+         if (allocated(wcol)) deallocate (wcol)
+         allocate (blk(n_sig, n_sig), wcol(nb))
+
+         do ia = 1, natm
+            if (c_counts(ia) == 0) cycle
+            do a = 1, 3
+               ! Basis-function motion: minus the position derivative, and only
+               ! on the rows this atom owns. The transpose supplies the ket half.
+               wcol = ctx%grid%weights(g0:g1)*vrho(g0:g1)
+               call weighted_overlap(ao_grad(1:nb, 1:n_sig, a), ao(1:nb, 1:n_sig), wcol, blk)
+               do j = 1, n_sig
+                  do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                     h1(ao_list(i), ao_list(j), a, ia) = &
+                        h1(ao_list(i), ao_list(j), a, ia) - blk(i, j)
+                     h1(ao_list(j), ao_list(i), a, ia) = &
+                        h1(ao_list(j), ao_list(i), a, ia) - blk(i, j)
+                  end do
+               end do
+
+               ! The potential following its own density.
+               wcol = ctx%grid%weights(g0:g1)*frr(g0:g1)*dchi(3*(ia - 1) + a, 1:nb)
+               call weighted_overlap(ao(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
+               do j = 1, n_sig
+                  do i = 1, n_sig
+                     h1(ao_list(i), ao_list(j), a, ia) = &
+                        h1(ao_list(i), ao_list(j), a, ia) + blk(i, j)
+                  end do
+               end do
+            end do
+         end do
+      end do
+   end subroutine xc_potential_deriv
 
    subroutine xc_gradient_fixed_grid(ctx, mol, density, gradient, error)
       !! dE_xc/dR with the grid held fixed -- the first derivative `xc_hessian`

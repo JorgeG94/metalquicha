@@ -27,6 +27,8 @@ module mqc_libcint_hessian
                                     HESS_OVLP_II, HESS_OVLP_IJ, HESS_KIN_II, HESS_KIN_IJ, &
                                     HESS_NUC_II, HESS_NUC_IJ, HESS_RINV_II, HESS_RINV_IJ, &
                                     HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
+   use mqc_libcint_xc, only: xc_context_t, xc_kernel_apply
+   use mqc_libcint_xc_hessian, only: xc_potential_deriv
    use mqc_libcint_direct, only: build_fock_direct, build_fock_direct_many, &
                                  schwarz_bounds, direct_stats_t
    use mqc_libcint_response, only: response_operator_t, solve_response
@@ -44,6 +46,7 @@ module mqc_libcint_hessian
    public :: partial_hessian
    public :: response_hessian
    public :: rhf_hessian
+   public :: ks_hessian
    public :: hessian_to_matrix
 
    type, extends(response_operator_t) :: nuclear_response_t
@@ -71,6 +74,17 @@ module mqc_libcint_hessian
          !! `n_mo` by `n_occ` by this, and the whole point of it being more
          !! than one is that a Fock build costs an integral pass whether it
          !! contracts one density or a dozen.
+      type(xc_context_t), pointer :: xc => null()
+         !! The exchange-correlation context when the reference was Kohn-Sham.
+         !! Null for Hartree-Fock, which is what makes the kernel term opt-in
+         !! rather than a branch on the functional name.
+      real(dp), allocatable :: reference(:, :)
+         !! The converged density the kernel is evaluated at. The kernel is a
+         !! second derivative of the energy, so it has a point to be taken at,
+         !! and it is not the trial density being contracted.
+      real(dp) :: k_scale = 1.0_dp
+         !! Exact exchange in the response operator. One for Hartree-Fock, zero
+         !! for a pure functional, the mixing fraction for a hybrid.
    contains
       procedure :: apply => nuclear_apply
       procedure :: length => nuclear_length
@@ -336,6 +350,7 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: mo1(:, :, :), half(:, :), dens(:, :, :), g(:, :, :)
+      real(dp), allocatable :: vxc(:, :)
       real(dp), allocatable :: work(:, :), gmo(:, :)
       type(direct_stats_t) :: stats
       integer :: n_ao, i, a, p
@@ -367,7 +382,25 @@ contains
       ! a batch is bit-for-bit what the same densities give one at a time --
       ! which matters here, because a response density is not a density and
       ! screening on its magnitude would be wrong.
-      call build_fock_direct_many(this%mol, this%zero_h, dens, this%bounds, g, stats, error)
+      call build_fock_direct_many(this%mol, this%zero_h, dens, this%bounds, g, stats, error, &
+                                  k_scale=this%k_scale)
+      if (error%has_error()) return
+
+      ! The exchange-correlation kernel, for a Kohn-Sham reference. `J - K/2`
+      ! above is the whole two-electron response of a Hartree-Fock operator; a
+      ! functional's response also contains the second derivative of E_xc with
+      ! respect to the density, which is what `xc_kernel_apply` contracts
+      ! against the trial density. Leaving it out does not fail -- the solve
+      ! still converges -- it converges to the wrong orbital response, and the
+      ! Hessian is then wrong by a few percent with nothing to object.
+      if (associated(this%xc)) then
+         if (.not. allocated(vxc)) allocate (vxc(size(dens, 1), size(dens, 2)))
+         do p = 1, size(dens, 3)
+            call xc_kernel_apply(this%xc, this%mol, this%reference, dens(:, :, p), vxc, error)
+            if (error%has_error()) return
+            g(:, :, p) = g(:, :, p) + vxc
+         end do
+      end if
       if (error%has_error()) return
 
       ! Back to the molecular basis, occupied columns only.
@@ -543,7 +576,7 @@ contains
       end do
    end subroutine nuclear_repulsion_hessian
 
-   subroutine partial_hessian(mol, density, weighted, hess, error)
+   subroutine partial_hessian(mol, density, weighted, hess, error, k_scale)
       !! The Hessian of the energy expression with the orbitals held fixed
       !!
       !! Everything in `d2E/dRdR` that survives when the density is not allowed
@@ -584,6 +617,8 @@ contains
       real(dp), intent(in) :: density(:, :)    !! Closed shell, carrying its factor of two
       real(dp), intent(in) :: weighted(:, :)   !! `2 sum_i eps_i C_i C_i^T`
       real(dp), allocatable, intent(out) :: hess(:, :, :, :)   !! (3, 3, natm, natm)
+      real(dp), intent(in), optional :: k_scale
+         !! Exact-exchange fraction; one (Hartree-Fock) by default.
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: s2(:, :, :), sab(:, :, :)
@@ -722,13 +757,14 @@ contains
       ! then read back: the three arrays this would otherwise form are `nao^4`
       ! times nine each. The deposit rules live there with the loop that uses
       ! them.
-      call hess_2e_contract(mol, density, hess, error)
+      call hess_2e_contract(mol, density, hess, error, k_scale=k_scale)
       if (error%has_error()) return
 
       deallocate (owner, offsets, counts)
    end subroutine partial_hessian
 
    subroutine response_hessian(mol, density, orbitals, energies, n_occ, hess, error, &
+                               xc, reference, k_scale, &
                                max_iter, tol)
       !! What the Hessian gains from letting the density relax
       !!
@@ -760,6 +796,9 @@ contains
       real(dp), intent(in) :: energies(:)
       integer, intent(in) :: n_occ
       real(dp), allocatable, intent(out) :: hess(:, :, :, :)   !! (3, 3, natm, natm)
+      type(xc_context_t), intent(inout), optional, target :: xc
+      real(dp), intent(in), optional :: reference(:, :)
+      real(dp), intent(in), optional :: k_scale
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
@@ -794,7 +833,12 @@ contains
       ! quartets, rather than `make_h1_atom` per atom over a stored `nao^4`
       ! array. The core Hamiltonian derivative is per-atom either way and is
       ! added below.
-      call h1_contract(mol, density, h1, error)
+      call h1_contract(mol, density, h1, error, k_scale=k_scale)
+      if (error%has_error()) return
+      ! For a Kohn-Sham reference the Fock derivative also carries the
+      ! exchange-correlation potential's own, which `h1_contract` does not
+      ! produce -- it knows only about integrals.
+      if (present(xc)) call xc_potential_deriv(xc, mol, density, h1, error)
       if (error%has_error()) return
 
       allocate (s1(nao, nao, 3, natm))
@@ -814,6 +858,7 @@ contains
       ! Every perturbation at once, in chunks, so the Fock builds inside the
       ! iteration are shared rather than repeated `3 natm` times.
       call solve_mo1_batch(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
+                           xc=xc, reference=reference, k_scale=k_scale, &
                            max_iter=max_iter, tol=tol)
       if (error%has_error()) return
 
@@ -924,6 +969,101 @@ contains
       deallocate (weighted, part, resp)
    end subroutine rhf_hessian
 
+   subroutine ks_hessian(mol, atomic_numbers, density, orbitals, energies, n_occ, &
+                         xc, k_scale, hess, error, max_iter, tol)
+      !! The analytic Hessian of a converged Kohn-Sham energy
+      !!
+      !! `rhf_hessian` with the exchange-correlation parts put back. Three
+      !! things change and each is a place a Kohn-Sham Hessian is commonly got
+      !! wrong:
+      !!
+      !! **Exact exchange is scaled.** A pure functional has none, so the
+      !! exchange half of the explicit two-electron term and of the response
+      !! operator both vanish; a hybrid keeps its mixing fraction. Left at one,
+      !! the Hessian is a Hartree-Fock one with a functional's density in it.
+      !!
+      !! **The exchange-correlation second derivatives are added** -- the
+      !! explicit term, `xc_hessian`.
+      !!
+      !! **The response operator gains the kernel.** Without it the
+      !! coupled-perturbed solve still converges, to the wrong orbital
+      !! response, and the result is wrong by a few percent with nothing to
+      !! object to it.
+      !!
+      !! The grid is held fixed throughout, as `xc_hessian` sets out.
+      !!
+      !! **Not yet validated end to end, and not wired to any driver.** Each
+      !! piece below is checked on its own -- the explicit exchange-correlation
+      !! term against differences of its own gradient, the potential derivative
+      !! against differences of the potential matrix, the Hartree-Fock skeleton
+      !! and response against differences of the Hartree-Fock gradient -- and
+      !! the assembly of them is not. On water at LDA exchange it disagrees with
+      !! a difference of the analytic density-functional gradient by 0.26 on the
+      !! worst entry, where the same comparison for Hartree-Fock agrees to
+      !! 5e-6, and it violates translational invariance by 3.4e-2 where
+      !! Hartree-Fock manages 7e-12.
+      !!
+      !! What that rules out: the disagreement does not move between grid level
+      !! 3 and grid level 7 (0.26455 against 0.26481), so it is not the omitted
+      !! grid response and not quadrature error, both of which shrink as the
+      !! quadrature approaches exactness. Disabling the kernel in the response
+      !! operator moves it by 5e-4, so it is not that either. Something in how
+      !! these terms are combined is wrong, and it is worth finding before this
+      !! is offered to a driver.
+      use mqc_libcint_xc_hessian, only: xc_hessian
+      type(libcint_molecule_t), intent(in), target :: mol
+      integer, intent(in) :: atomic_numbers(:)
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: energies(:)
+      integer, intent(in) :: n_occ
+      type(xc_context_t), intent(inout) :: xc
+      real(dp), intent(in) :: k_scale   !! Exact-exchange fraction of the functional
+      real(dp), allocatable, intent(out) :: hess(:, :, :, :)
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: max_iter
+      real(dp), intent(in), optional :: tol
+
+      real(dp), allocatable :: weighted(:, :), part(:, :, :, :), resp(:, :, :, :)
+      integer :: i, nao
+
+      if (error%has_error()) return
+
+      ! `xc_hessian` handles a GGA, but the response half does not yet:
+      ! `xc_potential_deriv` is LDA-only, and a Hessian assembled from a
+      ! complete explicit term and an incomplete response is wrong in a way
+      ! neither piece's own test would catch.
+      if (xc%any_gga .or. xc%any_mgga) then
+         call error%set(ERROR_VALIDATION, "An analytic Kohn-Sham Hessian is available "// &
+                        "for LDA functionals. The exchange-correlation potential's "// &
+                        "nuclear derivative, which the response term needs, does not yet "// &
+                        "carry the gradient channel; use the semi-numerical path.")
+         return
+      end if
+
+      nao = mol%nao
+      allocate (weighted(nao, nao))
+      weighted = 0.0_dp
+      do i = 1, n_occ
+         weighted = weighted + 2.0_dp*energies(i) &
+                    *matmul(reshape(orbitals(:, i), [nao, 1]), &
+                            reshape(orbitals(:, i), [1, nao]))
+      end do
+
+      call nuclear_repulsion_hessian(atomic_numbers, mol%coords, hess, error)
+      call partial_hessian(mol, density, weighted, part, error, k_scale=k_scale)
+      if (error%has_error()) return
+      call xc_hessian(xc, mol, density, part, error)
+      if (error%has_error()) return
+      call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
+                            xc=xc, reference=density, k_scale=k_scale, &
+                            max_iter=max_iter, tol=tol)
+      if (error%has_error()) return
+
+      hess = hess + part + resp
+      deallocate (weighted, part, resp)
+   end subroutine ks_hessian
+
    subroutine hessian_to_matrix(hess, matrix)
       !! `(3, 3, natm, natm)` to the `(3N, 3N)` a vibrational analysis reads
       !!
@@ -959,6 +1099,7 @@ contains
    end subroutine hessian_to_matrix
 
    subroutine solve_mo1_batch(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
+                              xc, reference, k_scale, &
                               max_iter, tol)
       !! The first-order orbitals for every atom, a dozen perturbations at a time
       !!
@@ -987,6 +1128,9 @@ contains
       real(dp), intent(in) :: h1(:, :, :, :)   !! (n_ao, n_ao, 3, natm)
       real(dp), intent(in) :: s1(:, :, :, :)
       real(dp), allocatable, intent(out) :: mo1(:, :, :, :)  !! (n_mo, n_occ, 3, natm)
+      type(xc_context_t), intent(inout), optional, target :: xc
+      real(dp), intent(in), optional :: reference(:, :)
+      real(dp), intent(in), optional :: k_scale
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
@@ -1014,6 +1158,9 @@ contains
       operator%n_mo = n_mo
       allocate (operator%zero_h(n_ao, n_ao))
       operator%zero_h = 0.0_dp
+      if (present(xc)) operator%xc => xc
+      if (present(reference)) operator%reference = reference
+      if (present(k_scale)) operator%k_scale = k_scale
       call schwarz_bounds(mol, operator%bounds, error)
       if (error%has_error()) return
 

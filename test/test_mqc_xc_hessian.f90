@@ -18,8 +18,10 @@ module test_mqc_xc_hessian
    use mqc_error, only: error_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
-   use mqc_libcint_xc_hessian, only: xc_hessian, xc_gradient_fixed_grid
+   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available, &
+                             xc_add_potential
+   use mqc_libcint_xc_hessian, only: xc_hessian, xc_gradient_fixed_grid, &
+                                     xc_potential_deriv
    implicit none
    private
 
@@ -42,7 +44,8 @@ contains
       testsuite = [ &
                   new_unittest("xc_hessian_differences_its_own_gradient", test_against_fd), &
                   new_unittest("xc_hessian_gga_differences_its_gradient", test_gga_against_fd), &
-                  new_unittest("xc_hessian_refuses_a_meta_gga", test_refuses_mgga) &
+                  new_unittest("xc_hessian_refuses_a_meta_gga", test_refuses_mgga), &
+                  new_unittest("xc_potential_derivative_matches_differences", test_vxc_deriv) &
                   ]
    end subroutine collect_mqc_xc_hessian
 
@@ -249,6 +252,82 @@ contains
       call xc_at(ctx, WATER, hess=hess, density=dens, err=err, ok=ok)
       call check(error,.not. ok, "a meta-GGA Hessian must be refused, not approximated")
    end subroutine test_refuses_mgga
+
+   subroutine test_vxc_deriv(error)
+      !! The exchange-correlation potential's nuclear derivative, against
+      !! central differences of the potential matrix itself
+      !!
+      !! This is the term the response half of a Kohn-Sham Hessian needs and
+      !! that `h1_contract` cannot supply, because it knows only about
+      !! integrals. Differenced against `xc_add_potential` -- the same matrix
+      !! the SCF builds -- with the density matrix and the grid both held fixed,
+      !! for the reasons the Hessian test above sets out.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: H = 2.0e-3_dp
+      real(dp) :: shifted(3, 3), worst
+      real(dp), allocatable :: dens(:, :), h1(:, :, :, :), vp(:, :), vm(:, :)
+      type(xc_context_t) :: ctx
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      logical :: ok
+      integer :: ia, a, nao, u, v
+
+      if (.not. xc_available()) return
+
+      call reference_state("lda_x", ctx, dens, err, ok)
+      call check(error, ok, "the reference Kohn-Sham state failed")
+      if (allocated(error)) return
+
+      nao = size(dens, 1)
+      allocate (h1(nao, nao, 3, size(WATER_Z)))
+      h1 = 0.0_dp
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call xc_potential_deriv(ctx, mol, dens, h1, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the potential derivative failed")
+      if (allocated(error)) return
+
+      worst = 0.0_dp
+      do ia = 1, 3
+         do a = 1, 3
+            shifted = WATER
+            shifted(a, ia) = shifted(a, ia) + H
+            call vxc_at(ctx, shifted, dens, vp, err)
+            shifted = WATER
+            shifted(a, ia) = shifted(a, ia) - H
+            call vxc_at(ctx, shifted, dens, vm, err)
+            do v = 1, nao
+               do u = 1, nao
+                  worst = max(worst, abs(h1(u, v, a, ia) - (vp(u, v) - vm(u, v))/(2.0_dp*H)))
+               end do
+            end do
+         end do
+      end do
+
+      call check(error, worst < 1.0e-5_dp, &
+                 "the exchange-correlation potential derivative disagrees with "// &
+                 "differences of the potential")
+   end subroutine test_vxc_deriv
+
+   subroutine vxc_at(ctx, coords, dens, v, err)
+      !! The exchange-correlation potential matrix at a displaced geometry, on
+      !! the reference grid and against the reference density
+      type(xc_context_t), intent(inout) :: ctx
+      real(dp), intent(in) :: coords(3, 3), dens(:, :)
+      real(dp), allocatable, intent(out) :: v(:, :)
+      type(error_t), intent(inout) :: err
+
+      type(libcint_molecule_t) :: mol
+      real(dp) :: e, n
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      if (allocated(v)) deallocate (v)
+      allocate (v(size(dens, 1), size(dens, 2)))
+      v = 0.0_dp
+      call xc_add_potential(ctx, mol, dens, v, e, n, err)
+      call mol%destroy()
+   end subroutine vxc_at
 
 end module test_mqc_xc_hessian
 
