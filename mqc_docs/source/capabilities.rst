@@ -134,8 +134,12 @@ against PySCF on the same geometries and the same basis data.
   which is what keeps its cost in proportion to the Fock build rather than
   dominating it; the threshold and the block size are both ``keywords.dft``.
   Range separation uses libcint's erf-attenuated integrals, which puts ωB97X and
-  CAM-B3LYP in reach. Non-local correlation (VV10) and Laplacian-dependent
-  meta-GGAs are refused rather than approximated. Grids are Treutler-Ahlrichs
+  CAM-B3LYP in reach. Non-local correlation (VV10) is evaluated as the double
+  integral it is, on a coarser grid of its own, which is what ωB97X-V, ωB97M-V and
+  B97M-V need; it enters the Fock build, so the energy is self-consistent rather
+  than a correction applied afterwards, and its nuclear gradient is refused.
+  Laplacian-dependent meta-GGAs are still refused rather than approximated. Grids
+  are Treutler-Ahlrichs
   radial times Lebedev angular with a Becke partition, from the same level tables
   PySCF uses.
 - **Multiconfigurational**: CASSCF and CASCI over a complete active space, with
@@ -259,6 +263,11 @@ What has a gradient on the CPU backend, at a glance:
    * - Kohn-Sham: LDA, GGA, hybrid, meta-GGA
      - yes
      - Restricted and unrestricted; meta-GGA restricted only
+   * - Kohn-Sham: non-local correlation (``-V``)
+     - yes
+     - ωB97X-V, ωB97M-V, B97M-V. Self-consistent, restricted and unrestricted,
+       on a separate grid set by ``keywords.dft.nlc_grid_level``. **Energy only:
+       the nuclear gradient is refused.** CPU backend only
    * - Kohn-Sham: range-separated hybrid
      - yes
      - **Needs an auxiliary basis.** The exact-ERI path builds no second
@@ -751,9 +760,12 @@ Current Limitations
    would build on, but nothing consumes it yet
 2. **Relativistic Hamiltonians**: none -- no ZORA, DKH or X2C, and no spin-orbit
    coupling operator
-3. **Dispersion corrections**: no D3, D4 or VV10 for the ab initio path. The xTB
-   methods carry their own through tblite; a Kohn-Sham number here does not
-   include a dispersion term. VV10 is refused rather than approximated
+3. **Dispersion corrections**: no D3 or D4 for the ab initio path. The xTB
+   methods carry their own through tblite; a Kohn-Sham number from a functional
+   that does not include dispersion itself does not get it from anywhere here.
+   VV10 is the exception: the ``-V`` functionals carry their own non-local
+   correlation and it is evaluated, for the energy. Its nuclear gradient is not
+   implemented and is refused, so a ``-V`` functional cannot be optimized
 4. **Multireference dynamic correlation**: CASSCF and ORMAS-SCF give the
    reference, and there is no NEVPT2, CASPT2 or MRCI on top of it
 5. **Local correlation**: no DLPNO or equivalent, so coupled cluster is
