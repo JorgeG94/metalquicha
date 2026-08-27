@@ -543,6 +543,42 @@ contains
          end if
       end if
 
+      driver_config%optimization%connect = mqc_config%opt_connect
+      driver_config%optimization%connect_distort = mqc_config%opt_connect_distort
+
+      ! Following a saddle downhill needs a saddle to follow. Asked for
+      ! alongside a minimisation it describes something that cannot happen, and
+      ! running the minimisation and ignoring the request would report success
+      ! for half of what the deck asked.
+      if (mqc_config%opt_connect .and. &
+          driver_config%optimization%target /= OPT_TARGET_SADDLE) then
+         if (present(error)) then
+            call error%set(ERROR_VALIDATION, &
+                           "keywords.optimization.connect asks for the minima on either "// &
+                           "side of a transition state, but target is 'minimum'. Set "// &
+                           "target to 'saddle'.")
+         end if
+         return
+      end if
+
+      ! A connect run does not stop at the saddle -- it carries on downhill
+      ! twice -- so the geometry it finishes with is the second minimum. A
+      ! Hessian there describes that minimum and reports, correctly and
+      ! uselessly, that it has no imaginary frequencies. Refused rather than
+      ! run, because the output would read as the saddle having been checked
+      ! and failed.
+      if (mqc_config%opt_connect .and. mqc_config%opt_hess_end) then
+         if (present(error)) then
+            call error%set(ERROR_VALIDATION, &
+                           "keywords.optimization sets both connect and hess_end. A "// &
+                           "connect run ends at one of the minima rather than at the "// &
+                           "saddle, so the final Hessian would describe the wrong "// &
+                           "structure. Run the saddle search with hess_end first, then "// &
+                           "connect from the geometry it found.")
+         end if
+         return
+      end if
+
       ! A saddle is not something every algorithm can look for. Steepest
       ! descent and the quasi-Newton minimisers go downhill by construction and
       ! will report a minimum however the target is spelled, so asking them for

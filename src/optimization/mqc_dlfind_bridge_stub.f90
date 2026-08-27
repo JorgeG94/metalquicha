@@ -15,6 +15,7 @@ module mqc_dlfind_bridge
 
    public :: dlfind_available
    public :: dlfind_optimize
+   public :: dlfind_connected_minima
 
 contains
 
@@ -23,6 +24,22 @@ contains
       logical :: available
       available = .false.
    end function dlfind_available
+
+   subroutine dlfind_connected_minima(a, energy_first, b, energy_second, found, e_saddle)
+      !! Nothing ran, so nothing was connected
+      real(dp), allocatable, intent(out) :: a(:, :), b(:, :)
+      real(dp), intent(out) :: energy_first, energy_second
+      logical, intent(out) :: found
+      real(dp), intent(out) :: e_saddle
+
+      found = .false.
+      e_saddle = 0.0_dp
+      energy_first = 0.0_dp
+      energy_second = 0.0_dp
+      if (.false.) then
+         allocate (a(0, 0), b(0, 0))
+      end if
+   end subroutine dlfind_connected_minima
 
    subroutine dlfind_optimize(opt_settings, natoms, znuc, residues, coords, &
                               energy_gradient, step_taken, final_energy, error, &

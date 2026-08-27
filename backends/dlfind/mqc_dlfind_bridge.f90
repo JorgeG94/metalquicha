@@ -40,6 +40,7 @@ module mqc_dlfind_bridge
 
    public :: dlfind_available
    public :: dlfind_optimize
+   public :: dlfind_connected_minima
 
    ! DL-FIND's own numbering, which this file is the only place to know.
    ! `icoord`: mod 10 selects the coordinate system, and the tens and hundreds
@@ -64,6 +65,23 @@ module mqc_dlfind_bridge
    ! taken here because it is the one that respects the algorithm the deck
    ! chose.
    integer(c_int), parameter :: DLF_DIMER = 200
+
+   ! DL-FIND's task numbers. 1011 is "TS search, then find both downhill
+   ! structures": it runs the saddle search as configured, stores the geometry
+   ! and the imaginary mode, then displaces along that mode in each direction
+   ! and minimises, which is the practical answer to what the saddle connects.
+   ! DL-FIND has no IRC -- there is no `dlf_irc.f90` -- so this is the closest
+   ! thing to one it offers, and it answers the question an IRC is usually run
+   ! to answer.
+   integer(c_int), parameter :: DLF_TASK_TS_AND_DOWNHILL = 1011
+
+   ! Which structure `cb_put_coords` is being handed. 1 is an ordinary step, 2
+   ! the transition mode, 3 the transition structure, and 4 and 5 the two minima
+   ! reached by relaxing downhill from it.
+   integer(c_int), parameter :: DLF_PUT_STEP = 1
+   integer(c_int), parameter :: DLF_PUT_TS = 3
+   integer(c_int), parameter :: DLF_PUT_DOWNHILL_A = 4
+   integer(c_int), parameter :: DLF_PUT_DOWNHILL_B = 5
 
    integer(c_int), parameter :: DLF_NEB_ENDS_FREE = 100
    integer(c_int), parameter :: DLF_NEB_ENDS_PERPENDICULAR = 110
@@ -106,6 +124,15 @@ module mqc_dlfind_bridge
    integer, allocatable, save :: atomic_numbers(:)
    integer, allocatable, save :: atom_residues(:)
    real(dp), allocatable, save :: initial_coords(:, :)
+   real(dp), allocatable, save :: downhill_a(:, :), downhill_b(:, :)
+   real(dp), save :: energy_a = 0.0_dp, energy_b = 0.0_dp
+   real(dp), save :: saddle_energy = 0.0_dp
+   logical, save :: have_saddle = .false.
+      !! The transition structure's own energy. A `connect` run does not stop
+      !! there -- it carries on downhill twice -- so the energy the optimizer
+      !! finishes with belongs to the last minimum, not to the saddle.
+   logical, save :: have_downhill_a = .false., have_downhill_b = .false.
+      !! The two minima a `connect` run falls to, kept for the caller to report.
    real(dp), allocatable, save :: endpoint_coords(:, :)
       !! The second structure of a chain-of-states run, held here for the same
       !! reason the geometry is: `cb_get_params` is a C callback and takes no
@@ -265,6 +292,11 @@ contains
       ! Held for `cb_get_params`, and cleared when absent: this module's state is
       ! `save`, so a second optimization in the same process would otherwise
       ! inherit the previous run's path and quietly become a chain-of-states run.
+      have_downhill_a = .false.
+      have_downhill_b = .false.
+      have_saddle = .false.
+      if (allocated(downhill_a)) deallocate (downhill_a)
+      if (allocated(downhill_b)) deallocate (downhill_b)
       if (allocated(endpoint_coords)) deallocate (endpoint_coords)
       if (present(endpoint)) allocate (endpoint_coords(3, natoms), source=endpoint)
       allocate (latest_coords(3, natoms), source=coords)
@@ -471,6 +503,13 @@ contains
       ! against its serial stubs. Splitting the job again underneath would be
       ! two schedulers dividing the same ranks.
       ntasks = 1_c_int
+      if (settings%connect) then
+         task = DLF_TASK_TS_AND_DOWNHILL
+         if (settings%connect_distort > 0.0_dp) then
+            distort = real(settings%connect_distort, c_double)
+         end if
+      end if
+
       nframe = 0_c_int
       nmass = 0_c_int
       nweight = 0_c_int
@@ -527,6 +566,13 @@ contains
       ! dlf_put_coords. Without it the optimization runs to convergence and
       ! hands back nothing, which is the one failure that looks like success.
       printf = 1_c_int
+      ! A `connect` run needs 4. DL-FIND hands back the transition structure and
+      ! the two minima it relaxed to only from inside `printf >= 4` blocks --
+      ! the same blocks that write TS.xyz and minimum_+.xyz -- so at the default
+      ! the downhill runs happen, report themselves as finished, and are never
+      ! passed to the caller. It costs a handful of files in the working
+      ! directory, which is a fair price for the answer being reachable.
+      if (settings%connect) printf = 4_c_int
 
       ! Curvature settings, which only P-RFO and Newton-Raphson read. Asking
       ! for the external Hessian is safe whether or not one can be produced:
@@ -607,7 +653,29 @@ contains
       integer(c_int), intent(in), value :: iam  !! Task id; only the first reports
 
       if (iam /= 0_c_int) return
-      if (switch /= 1_c_int .and. switch /= 3_c_int) return
+      ! The two downhill minima arrive here and nowhere else, so they are kept
+      ! rather than filtered out with everything that is not a step.
+      if (nvar == 3*n_atoms) then
+         if (switch == DLF_PUT_DOWNHILL_A) then
+            if (.not. allocated(downhill_a)) allocate (downhill_a(3, n_atoms))
+            downhill_a = reshape(coords, [3, n_atoms])
+            energy_a = energy
+            have_downhill_a = .true.
+            return
+         end if
+         if (switch == DLF_PUT_DOWNHILL_B) then
+            if (.not. allocated(downhill_b)) allocate (downhill_b(3, n_atoms))
+            downhill_b = reshape(coords, [3, n_atoms])
+            energy_b = energy
+            have_downhill_b = .true.
+            return
+         end if
+      end if
+      if (switch == DLF_PUT_TS .and. nvar == 3*n_atoms) then
+         saddle_energy = energy
+         have_saddle = .true.
+      end if
+      if (switch /= DLF_PUT_STEP .and. switch /= DLF_PUT_TS) return
       if (nvar /= 3*n_atoms) return
 
       latest_coords = reshape(real(coords, dp), [3, n_atoms])
@@ -758,6 +826,23 @@ contains
       end select
       if (present(band)) icoord = icoord + band
    end function dlfind_coordinates
+
+   subroutine dlfind_connected_minima(a, energy_first, b, energy_second, found, e_saddle)
+      !! The two minima a `connect` run relaxed to, if it ran and reached them
+      real(dp), allocatable, intent(out) :: a(:, :), b(:, :)
+      real(dp), intent(out) :: energy_first, energy_second
+      logical, intent(out) :: found
+      real(dp), intent(out) :: e_saddle
+         !! The saddle's own energy, which is not the one the run finishes with.
+
+      e_saddle = saddle_energy
+      found = have_downhill_a .and. have_downhill_b .and. have_saddle
+      energy_first = energy_a
+      energy_second = energy_b
+      if (.not. found) return
+      a = downhill_a
+      b = downhill_b
+   end subroutine dlfind_connected_minima
 
    pure function dlfind_neb_band(ends) result(band)
       !! This program's endpoint treatment, as DL-FIND's `icoord` offset
