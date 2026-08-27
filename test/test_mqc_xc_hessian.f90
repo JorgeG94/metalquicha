@@ -730,6 +730,15 @@ contains
       call ks_end_to_end_for("b3lyp", error)
       if (allocated(error)) return
       call ks_end_to_end_for("tpss", error)
+      if (allocated(error)) return
+      ! The `-V` case exercises all three VV10 pieces through the assembled
+      ! Hessian: the explicit second derivative, the perturbed Fock and the
+      ! response kernel. The gradient being differenced carries the NLC
+      ! grid's response as well as the semilocal grid's, so the residual is
+      ! larger than the pieces' own step errors for the reason the header
+      ! sets out -- measured at 1.2e-3 here (invariance 1.0e-3), the size of
+      ! the TPSS-class cases and inside the shared tolerance.
+      call ks_end_to_end_for("b97m-v", error)
    end subroutine test_ks_end_to_end
 
    subroutine ks_end_to_end_for(functional, error)

@@ -27,8 +27,9 @@ module mqc_libcint_hessian
                                     HESS_OVLP_II, HESS_OVLP_IJ, HESS_KIN_II, HESS_KIN_IJ, &
                                     HESS_NUC_II, HESS_NUC_IJ, HESS_RINV_II, HESS_RINV_IJ, &
                                     HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
-   use mqc_libcint_xc, only: xc_context_t, xc_kernel_apply, xc_add_potential
-   use mqc_libcint_xc_hessian, only: xc_potential_deriv
+   use mqc_libcint_xc, only: xc_context_t, xc_kernel_apply, xc_add_potential, &
+                             vv10_kernel_apply
+   use mqc_libcint_xc_hessian, only: xc_potential_deriv, vv10_potential_deriv
    use mqc_libcint_direct, only: build_fock_direct, build_fock_direct_many, &
                                  schwarz_bounds, direct_stats_t
    use mqc_libcint_response, only: response_operator_t, solve_response
@@ -355,7 +356,7 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: mo1(:, :, :), half(:, :), dens(:, :, :), g(:, :, :)
-      real(dp), allocatable :: vxc(:, :)
+      real(dp), allocatable :: vxc(:, :), vnl(:, :, :)
       real(dp), allocatable :: g_lr(:, :, :)
       real(dp), allocatable :: work(:, :), gmo(:, :)
       type(direct_stats_t) :: stats
@@ -421,6 +422,20 @@ contains
             if (error%has_error()) return
             g(:, :, p) = g(:, :, p) + vxc
          end do
+         ! The non-local kernel, once for the whole batch rather than inside
+         ! the loop above: `vv10_kernel_apply`'s pair sweep is O(npts^2)
+         ! whether it carries one trial or a dozen, so applying it per
+         ! perturbation would multiply the only expensive part by the batch
+         ! width on every iteration of the solve. It accumulates, like the
+         ! semilocal kernel, hence the zeroed buffer of its own.
+         if (this%xc%nlc_b /= 0.0_dp .or. this%xc%nlc_c /= 0.0_dp) then
+            allocate (vnl(size(dens, 1), size(dens, 2), size(dens, 3)))
+            vnl = 0.0_dp
+            call vv10_kernel_apply(this%xc, this%mol, this%reference, dens, vnl, error)
+            if (error%has_error()) return
+            g = g + vnl
+            deallocate (vnl)
+         end if
       end if
       if (error%has_error()) return
 
@@ -912,8 +927,15 @@ contains
       if (error%has_error()) return
       ! For a Kohn-Sham reference the Fock derivative also carries the
       ! exchange-correlation potential's own, which `h1_contract` does not
-      ! produce -- it knows only about integrals.
-      if (present(xc)) call xc_potential_deriv(xc, mol, density, h1, error)
+      ! produce -- it knows only about integrals. The non-local term's is
+      ! separate because it lives on the NLC grid: `vv10_potential_deriv`
+      ! accumulates into `h1` exactly as `xc_potential_deriv` does, and
+      ! returns untouched when the functional carries no VV10.
+      if (present(xc)) then
+         call xc_potential_deriv(xc, mol, density, h1, error)
+         if (error%has_error()) return
+         call vv10_potential_deriv(xc, mol, density, h1, error)
+      end if
       if (error%has_error()) return
 
       allocate (s1(nao, nao, 3, natm))
@@ -1088,9 +1110,9 @@ contains
       !!     Hartree-Fock matrix** -- full exact exchange, no `V_xc`. That was
       !!     the last 0.12, spread smoothly across every atom pair.
       !!
-      !! LDA, GGA, meta-GGA and hybrids of each. Range-separated hybrids and
-      !! VV10 are refused; the refusal below records what is known.
-      use mqc_libcint_xc_hessian, only: xc_hessian
+      !! LDA, GGA, meta-GGA, hybrids of each, range-separated hybrids, and
+      !! functionals carrying VV10 non-local correlation.
+      use mqc_libcint_xc_hessian, only: xc_hessian, vv10_hessian
       type(libcint_molecule_t), intent(in), target :: mol
       integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: density(:, :)
@@ -1109,29 +1131,28 @@ contains
 
       if (error%has_error()) return
 
-      ! **VV10 is refused rather than approximated.** The second derivative of
-      ! the non-local term is not implemented here, and it is a real piece of
-      ! work rather than a gap in the plumbing: PySCF implements all three parts
-      ! of it -- `_get_enlc_deriv2` for the energy, `_get_vnlc_deriv1` for the Fock
-      ! derivative and `get_vnlc_resp` for the orbital-Hessian response --
-      ! behind dedicated C kernels (`VXC_vv10nlc_hessian_eval_*`), because
-      ! VV10 is a double integral over the density and its second derivative is
-      ! a double-grid object.
+      ! **VV10 contributes in the same three places as the semilocal term**,
+      ! each validated on its own by differencing the object one derivative
+      ! order below it: `vv10_hessian` in the explicit part alongside
+      ! `xc_hessian`, `vv10_potential_deriv` in the perturbed Fock alongside
+      ! `xc_potential_deriv`, and `vv10_kernel_apply` in the response operator
+      ! and the relaxed mean field alongside `xc_kernel_apply` -- PySCF's
+      ! `_get_enlc_deriv2`, `_get_vnlc_deriv1` and `get_vnlc_resp`. The NLC
+      ! grid is held fixed like the semilocal one, which is one place this
+      ! deliberately departs from PySCF: its `_get_vnlc_deriv1` hard-codes the
+      ! NLC grid response even when the rest of its Hessian omits grid
+      ! response, so the two Hessians differ by exactly that term. On
+      ! water/STO-3G it is 2.1e-5 on the worst element at NLC level 1,
+      ! shrinking to 3.6e-6 at level 2 and 6.0e-7 at level 3 -- the clean
+      ! grid-scaling that identifies quadrature response, where a missing
+      ! derivative would sit still.
       !
-      ! On water/STO-3G the term is small: our `b97m-v` Hessian sits 1.4e-3
-      ! from PySCF's, which is the size of the missing contribution and also
-      ! the size of meta-GGA grid noise. That it is small here is not a reason
-      ! to omit it silently -- it is worth 43 mHartree in the energy, and
-      ! nothing says it stays small on a dispersion-bound system, which is what
-      ! VV10 is for.
-      if (xc%nlc_b > 0.0_dp) then
-         call error%set(ERROR_VALIDATION, "an analytic Hessian for a functional with "// &
-                        "VV10 non-local correlation is not available: the second "// &
-                        "derivative of the non-local term is not implemented, and "// &
-                        "omitting it would give a plausible wrong answer. Use the "// &
-                        "semi-numerical path.")
-         return
-      end if
+      ! The kernel intermediates VV10 rebuilds on every `vv10_kernel_apply`
+      ! depend only on the SCF density; caching them across the solve's
+      ! iterations would save one of its two pair sweeps per call. Left as a
+      ! measured follow-up rather than folded in here: it is a speed change
+      ! with a stale-cache failure mode, and this assembly is the correctness
+      ! commit.
 
       nao = mol%nao
       allocate (weighted(nao, nao))
@@ -1147,6 +1168,11 @@ contains
                            rs_k_lr=xc%rs_k_lr, rs_omega=xc%rs_omega)
       if (error%has_error()) return
       call xc_hessian(xc, mol, density, part, error)
+      if (error%has_error()) return
+      ! The non-local term's explicit second derivative, on the NLC grid.
+      ! Accumulates into `part` as `xc_hessian` does, and returns untouched
+      ! for a functional without VV10.
+      call vv10_hessian(xc, mol, density, part, error)
       if (error%has_error()) return
       call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
                             xc=xc, reference=density, k_scale=k_scale, &
@@ -1360,7 +1386,7 @@ contains
       integer, parameter :: MAX_BATCH = 12
 
       real(dp), allocatable :: chunk(:, :, :), out(:, :, :), vxc_chunk(:, :)
-      real(dp), allocatable :: out_lr(:, :, :)
+      real(dp), allocatable :: vnl_chunk(:, :, :), out_lr(:, :, :)
       type(direct_stats_t) :: stats
       integer :: nao, natm, n_pert, first, last, wide, p, q, ia, a, ic
       integer :: n_chunks, per_chunk
@@ -1423,6 +1449,17 @@ contains
                if (error%has_error()) return
                out(:, :, ic) = out(:, :, ic) + vxc_chunk
             end do
+            ! The non-local kernel, once per chunk for the reason `nuclear_apply`
+            ! gives: the pair sweep costs the same however many densities ride
+            ! along, so it takes the whole chunk rather than one column at a time.
+            if (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp) then
+               allocate (vnl_chunk(size(chunk, 1), size(chunk, 2), size(chunk, 3)))
+               vnl_chunk = 0.0_dp
+               call vv10_kernel_apply(xc, mol, reference, chunk, vnl_chunk, error)
+               if (error%has_error()) return
+               out = out + vnl_chunk
+               deallocate (vnl_chunk)
+            end if
          end if
          g1(:, :, first:last) = out
          deallocate (chunk, out)

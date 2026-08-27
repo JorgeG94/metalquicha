@@ -556,8 +556,8 @@ depends on *where* the grid points are, through :math:`|\mathbf{r}-\mathbf{r}'|`
 and a point's weight enters the energy twice rather than once. Leaving either
 out costs 4.5e-4 on water and does not shrink when the grid is refined, since
 neither is a quadrature error. The open shell is refused rather than
-approximated, and the second derivative is not implemented; see
-:doc:`analytic_hessians`.
+approximated. The second derivative is implemented as well, for a restricted
+reference; see :doc:`analytic_hessians`.
 
 Why it needs its own grid
 """""""""""""""""""""""""
@@ -595,17 +595,12 @@ calculation is uncertain by, at an eleventh of level 3's pair count. Raise it if
 you are comparing against a published number computed on a fine non-local grid;
 the term converges quickly, so there is rarely a reason to go past 2.
 
-.. important::
+.. note::
 
-   **A ``-V`` functional has no nuclear gradient.** The non-local term depends on
-   the nuclear positions twice over -- through :math:`|\mathbf{r}-\mathbf{r}'|`
-   and through the density and its gradient at both points -- and none of that is
-   implemented, so a ``Gradient`` or ``Optimize`` deck is refused rather than
-   handed forces that silently omit it.
-
-   Two of the three are also range-separated, and the range-separated gradient
-   refusal is reached first, so ``wb97x-v`` and ``wb97m-v`` report that instead.
-   ``b97m-v`` reports the VV10 one.
+   The nuclear gradient (closed shell) and the analytic Hessian (restricted)
+   both carry the non-local term -- a ``-V`` functional can be optimized and
+   its frequencies computed. See :doc:`analytic_hessians` for the second
+   derivative and its NLC-grid caveat.
 
 .. note::
 

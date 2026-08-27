@@ -86,6 +86,13 @@ DIMER = [("O", (-0.0702, -0.0227, 0.0)),
 # is the Pople convention and correct, while `mol.cart = False` below asks
 # PySCF for spherical -- 19 functions against 18, which is a different basis
 # and not a disagreement about Hessians.
+#
+# `b97m-v` carries a residual of its own kind: mqc's Hessian holds the NLC grid
+# fixed like every other grid, while PySCF's `_get_vnlc_deriv1` hard-codes the
+# NLC grid response even under `grid_response=False`. The two therefore differ
+# by that term -- 2.1e-5 on the worst element at NLC level 1, shrinking as the
+# NLC grid is refined, which is what identifies it as grid response and not a
+# missing derivative. The scale covers it with the usual margin.
 CASES = [("water", WATER, ["sto-3g", "6-31g", "cc-pvdz"], None, 1),
          ("dimer", DIMER, ["sto-3g", "6-31g"], None, 1),
          ("water", WATER, ["sto-3g"], "pbe", 1),
@@ -93,6 +100,7 @@ CASES = [("water", WATER, ["sto-3g", "6-31g", "cc-pvdz"], None, 1),
          ("water", WATER, ["sto-3g"], "tpss", 1),
          ("water", WATER, ["sto-3g"], "cam-b3lyp", 1),
          ("water", WATER, ["sto-3g"], "wb97x", 1),
+         ("water", WATER, ["sto-3g"], "b97m-v", 50),
          ("water", WATER, ["6-31g"], "pbe", 50),
          ("water", WATER, ["6-31g"], "b3lyp", 50),
          ("water", WATER, ["cc-pvdz"], "pbe", 50),
@@ -101,6 +109,11 @@ CASES = [("water", WATER, ["sto-3g", "6-31g", "cc-pvdz"], None, 1),
 # Both sides quadrature on this. It has to be one number, not each code's
 # default, or the comparison measures the grids rather than the derivatives.
 GRID_LEVEL = 3
+
+# The NLC grid likewise: mqc's deck default for a `-V` functional, pinned on
+# the PySCF side too, whose `nlcgrids` would otherwise default to level 3.
+NLC_GRID_LEVEL = 1
+NLC_FUNCTIONALS = {"b97m-v", "wb97m-v", "wb97x-v"}
 
 # PySCF spells two of these without the hyphen.
 PYSCF_XC = {"cam-b3lyp": "camb3lyp"}
@@ -176,6 +189,8 @@ def run_pyscf(atoms, basis, functional=None):
         mf = dft.RKS(mol)
         mf.xc = PYSCF_XC.get(functional, functional)
         mf.grids.level = GRID_LEVEL
+        if functional in NLC_FUNCTIONALS:
+            mf.nlcgrids.level = NLC_GRID_LEVEL
     mf.conv_tol = 1e-13
     mf.kernel()
 

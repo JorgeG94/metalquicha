@@ -39,7 +39,7 @@ What is covered
      - yes
      - ``wb97x``, ``cam-b3lyp``
    * - VV10 non-local correlation
-     - **no**
+     - yes
      - ``b97m-v``, ``wb97m-v``
    * - Unrestricted (UKS)
      - **no**
@@ -79,8 +79,21 @@ Every covered functional is checked against ``pyscf.hessian.rks`` with
      - 1.71e-08
      - ``wb97x``
      - 1.27e-08
+   * - ``b97m-v``
+     - 2.11e-05
+     -
+     -
 
 against Hessian elements of order one.
+
+``b97m-v`` sits apart, and the gap is understood rather than tolerated: mqc
+holds the NLC grid fixed like every other grid, while PySCF's
+``_get_vnlc_deriv1`` hard-codes the NLC grid response even under
+``grid_response = False``. The difference between the two Hessians is exactly
+that term, and it behaves like one -- 2.11e-05 with the NLC grid at level 1
+(the default), 3.56e-06 at level 2 and 5.98e-07 at level 3, on both codes'
+matched grids. A missing derivative would not move when the grid did; this
+shrinks the way quadrature response must.
 
 How it is assembled
 ===================
@@ -107,6 +120,15 @@ it are easy to get wrong and were each wrong once here:
 
 Each produces a Hessian that is symmetric, translationally invariant and wrong,
 which is why they are named here.
+
+A ``-V`` functional's non-local correlation contributes in the same three
+places -- an explicit second derivative, a Fock-derivative term, and a kernel
+in the response operator -- each on the NLC grid, each a pair sum rather than
+a per-point expression. The response kernel is applied to every perturbation
+in a batch at once, because its pair sweep costs the same whether it carries
+one trial density or a dozen, and a per-perturbation application would
+multiply the only expensive part by :math:`3N` on every iteration of the
+solve.
 
 A range-separated functional splits its exchange over an ``erf`` kernel, so
 every one of those places needs a *second* exchange pass at the screened
@@ -140,6 +162,17 @@ Ours tracks those. It shrinks as the grid is refined -- 5.4e-4 at level 3 and
 2.6e-6 at level 9 for LDA -- because an exact quadrature does not depend on
 where its points are.
 
+The NLC grid of a ``-V`` functional is held fixed the same way, and here the
+two codes part company: PySCF's ``_get_vnlc_deriv1`` includes the NLC grid
+response unconditionally, with a comment warning that omitting it can shift
+the coupled-perturbed solution enough for ~1e-3 Hessian error on some systems
+(it names H2O2 and H2CO). mqc omits it for the same reason it omits the
+semilocal one -- a fixed-grid second derivative is exactly differentiable
+against a fixed-grid gradient, which is what every VV10 piece here was
+validated by. On water the whole disagreement is 2e-5 and dies with grid
+refinement, as the table above records; on a system where it does not, refine
+``keywords.dft.nlc_grid_level``.
+
 For frequencies this is small. If it matters for what you are doing, there are
 two ways to get it back. Refining the grid shrinks it, as the table above
 shows. Or take the semi-numerical path, which does **not** carry this omission:
@@ -158,15 +191,6 @@ What is missing, and why
 Each of these is refused rather than approximated. A Hessian that silently
 drops a term is worse than one you cannot have: the frequencies come out
 plausible.
-
-**VV10 non-local correlation** (``b97m-v``, ``wb97m-v``). Not implemented. The
-*gradient* is -- and it turned out not to need new machinery, because the pair
-sum is spent producing ``vrho`` and ``vsigma`` and what follows is the ordinary
-GGA contraction. The second derivative is not the same story: it is a
-double-grid object. PySCF implements it in three parts behind
-dedicated kernels. On water the missing term is worth about 1.4e-3 in the
-Hessian -- small, but the functional exists for dispersion-bound systems and
-nothing says it stays small there.
 
 **Unrestricted references.** The response machinery is restricted-only. An
 open-shell Kohn-Sham Hessian needs both spin channels through every term and a
