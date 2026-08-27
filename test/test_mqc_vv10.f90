@@ -17,7 +17,13 @@
 module test_mqc_vv10
    use pic_types, only: dp
    use testdrive, only: new_unittest, unittest_type, error_type, check, test_failed
+   use mqc_error, only: error_t
    use mqc_libcint_vv10, only: vv10_nlc, VV10_RHO_THRESHOLD
+   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
+   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available, &
+                             ensure_nlc_grid
+   use mqc_libcint_ao, only: eval_ao_block, eval_rho
    implicit none
    private
 
@@ -67,9 +73,170 @@ contains
                   new_unittest("vv10 potential matches the reference", test_potential), &
                   new_unittest("vv10 integrates to the reference energy", test_energy), &
                   new_unittest("vv10 survives a vanishing gradient", test_zero_gradient), &
-                  new_unittest("vv10 ignores points below threshold", test_threshold) &
+                  new_unittest("vv10 ignores points below threshold", test_threshold), &
+                  new_unittest("vv10 hessian intermediates rebuild the potential", &
+                               test_rebuild_synthetic), &
+                  new_unittest("vv10 intermediates rebuild the potential on a real grid", &
+                               test_rebuild_real_grid) &
                   ]
    end subroutine collect_vv10
+
+   subroutine rebuild_check(b, c, coords, rho, sigma, weights, thr, thr_rel, what, error)
+      !! The identity that pins the intermediates' conventions
+      !!
+      !! PySCF's Hessian never touches `vrho` and `vsigma`; it rebuilds the
+      !! potential from the intermediates as
+      !!
+      !!     f_rho   = beta + E + rho*(dkappa_drho*U + domega_drho*W)
+      !!     f_gamma = rho*domega_dgamma*W
+      !!
+      !! and every later formula assumes those are the same numbers. So the
+      !! rebuild must reproduce the validated `vrho` and `vsigma` to rounding:
+      !! any normalisation or sign slip in U, W, E or the omega and kappa
+      !! derivatives lands here as a finite disagreement, before anything
+      !! downstream can inherit it.
+      real(dp), intent(in) :: b, c
+      real(dp), intent(in) :: coords(:, :), rho(:), sigma(:), weights(:)
+      real(dp), intent(in) :: thr, thr_rel
+      character(len=*), intent(in) :: what
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: beta, worst_rho, worst_gamma
+      real(dp), allocatable :: exc(:), vrho(:), vsigma(:)
+      real(dp), allocatable :: u(:), w(:), a(:), bb(:), cc(:), e(:)
+      real(dp), allocatable :: dodr(:), dodg(:), d2odr2(:), d2odg2(:), d2odrdg(:)
+      real(dp), allocatable :: dkdr(:), d2kdr2(:)
+      real(dp) :: f_rho, f_gamma
+      integer :: n, i, n_live
+
+      n = size(rho)
+      allocate (exc(n), vrho(n), vsigma(n))
+      allocate (u(n), w(n), a(n), bb(n), cc(n), e(n))
+      allocate (dodr(n), dodg(n), d2odr2(n), d2odg2(n), d2odrdg(n))
+      allocate (dkdr(n), d2kdr2(n))
+
+      call vv10_nlc(b, c, coords, rho, sigma, &
+                    coords, rho, sigma, weights, exc, vrho, vsigma, &
+                    hess_u=u, hess_w=w, hess_a=a, hess_b=bb, hess_c=cc, &
+                    hess_e=e, domega_drho=dodr, domega_dgamma=dodg, &
+                    d2omega_drho2=d2odr2, d2omega_dgamma2=d2odg2, &
+                    d2omega_drho_dgamma=d2odrdg, dkappa_drho=dkdr, &
+                    d2kappa_drho2=d2kdr2)
+
+      beta = ((3.0_dp/(b*b))**0.75_dp)/32.0_dp
+      worst_rho = 0.0_dp
+      worst_gamma = 0.0_dp
+      n_live = 0
+      do i = 1, n
+         ! Below the density threshold everything is zeroed, including vrho,
+         ! while the rebuild would still carry beta; the identity only holds
+         ! where the kernel is evaluated.
+         if (rho(i) < VV10_RHO_THRESHOLD) cycle
+         n_live = n_live + 1
+         f_rho = beta + e(i) + rho(i)*(dkdr(i)*u(i) + dodr(i)*w(i))
+         f_gamma = rho(i)*dodg(i)*w(i)
+         worst_rho = max(worst_rho, abs(f_rho - vrho(i)))
+         ! Relatively, as `test_potential` compares vsigma: near the density
+         ! threshold vsigma itself grows like rho**(-3), so a fixed absolute
+         ! band would be tight at a bond midpoint and vacuous at those points.
+         worst_gamma = max(worst_gamma, &
+                           abs(f_gamma - vsigma(i))/max(abs(vsigma(i)), tiny(1.0_dp)))
+      end do
+
+      call check(error, n_live > 0, what//": no points above the density threshold")
+      if (allocated(error)) return
+      ! Non-vacuous: the second derivative's own sums must be alive too, or a
+      ! future all-zero regression would sail through the identity above.
+      call check(error, maxval(abs(a)) > 0.0_dp .and. maxval(abs(cc)) > 0.0_dp &
+                 .and. maxval(abs(d2odr2)) > 0.0_dp .and. maxval(abs(d2kdr2)) > 0.0_dp, &
+                 what//": a hessian intermediate is identically zero")
+      if (allocated(error)) return
+      if (worst_rho > thr .or. worst_gamma > thr_rel) then
+         call test_failed(error, what//": rebuilt potential disagrees with vrho/vsigma")
+         print '(a,es24.16)', "  worst f_rho   deviation          ", worst_rho
+         print '(a,es24.16)', "  worst f_gamma relative deviation ", worst_gamma
+      end if
+   end subroutine rebuild_check
+
+   subroutine test_rebuild_synthetic(error)
+      !! The rebuild identity on the five reference points
+      type(error_type), allocatable, intent(out) :: error
+      call rebuild_check(B_VV, C_VV, COORDS, RHO, SIGMA, WEIGHTS, 1.0e-16_dp, &
+                         1.0e-13_dp, "synthetic", error)
+   end subroutine test_rebuild_synthetic
+
+   subroutine test_rebuild_real_grid(error)
+      !! The same identity on b97m-v's own NLC grid over a converged density
+      !!
+      !! The five synthetic points cannot reach what a molecular grid reaches
+      !! every time: densities across ten orders of magnitude, near-zero
+      !! gradients at the nuclei, and points that fall below the threshold
+      !! mid-grid. This is the grid and density the Hessian will actually run
+      !! on, so the conventions are pinned where they will be used.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: WATER_Z(3) = [8, 1, 1]
+      character(len=2), parameter :: WATER_SYM(3) = ["O ", "H ", "H "]
+      real(dp), parameter :: WATER(3, 3) = reshape([ &
+                                                   0.0000_dp, 0.0000_dp, 0.0000_dp, &
+                                                   0.0000_dp, 1.4300_dp, 1.1075_dp, &
+                                                   0.0000_dp, -1.4300_dp, 1.1075_dp], [3, 3])
+      integer, parameter :: BLK = 256
+
+      type(libcint_molecule_t) :: mol
+      type(xc_context_t) :: ctx
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: rho(:), sigma(:)
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
+      real(dp), allocatable :: rho_blk(:), rho_grad_blk(:, :)
+      integer :: npts, g0, g1, nb, ig
+
+      if (.not. xc_available()) return
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call check(error,.not. err%has_error(), "building water failed")
+      if (allocated(error)) return
+      call xc_context_create(mol, "b97m-v", ctx, err, level=3)
+      if (err%has_error()) then
+         call mol%destroy()
+         call check(error, .false., "creating the b97m-v context failed")
+         return
+      end if
+      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      if (.not. err%has_error()) call ensure_nlc_grid(ctx, mol, err)
+      if (err%has_error()) then
+         call mol%destroy()
+         call check(error, .false., "the b97m-v reference state failed")
+         return
+      end if
+
+      ! rho and sigma on the NLC grid, exactly as the potential path forms them
+      npts = ctx%nlc_grid%n_points
+      allocate (rho(npts), sigma(npts))
+      do g0 = 1, npts, BLK
+         g1 = min(g0 + BLK - 1, npts)
+         nb = g1 - g0 + 1
+         if (allocated(rho_blk)) deallocate (rho_blk, rho_grad_blk)
+         allocate (rho_blk(nb), rho_grad_blk(nb, 3))
+         call eval_ao_block(mol, ctx%nlc_grid%coords(:, g0:g1), ao, err, grad=ao_grad)
+         if (err%has_error()) then
+            call mol%destroy()
+            call check(error, .false., "evaluating the density on the grid failed")
+            return
+         end if
+         call eval_rho(ao, scf%density, rho_blk, ao_grad=ao_grad, rho_grad=rho_grad_blk)
+         do ig = 1, nb
+            rho(g0 + ig - 1) = rho_blk(ig)
+            sigma(g0 + ig - 1) = rho_grad_blk(ig, 1)**2 + rho_grad_blk(ig, 2)**2 &
+                                 + rho_grad_blk(ig, 3)**2
+         end do
+      end do
+      call mol%destroy()
+
+      call rebuild_check(ctx%nlc_b, ctx%nlc_c, ctx%nlc_grid%coords, rho, sigma, &
+                         ctx%nlc_grid%weights, 1.0e-14_dp, 1.0e-13_dp, "real grid", error)
+   end subroutine test_rebuild_real_grid
 
    subroutine run(exc, vrho, vsigma)
       real(dp), intent(out) :: exc(NPT), vrho(NPT), vsigma(NPT)
