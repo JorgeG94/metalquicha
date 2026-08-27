@@ -38,6 +38,8 @@ module mqc_method_hf
          !! was read, validated, and then silently dropped for every one of them.
       character(len=32) :: basis_set = "sto-3g"
          !! Orbital basis set name
+      logical :: cartesian = .false.
+         !! `model.cartesian`; see `mqc_config_t`.
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
          !! Auxiliary (JKFIT) basis for the density-fitted J and K
       logical :: aux_basis_named = .false.
@@ -153,6 +155,7 @@ contains
          this%options%properties%bonding_restrict_localization
       settings%bonding_no_sharing_ci = this%options%properties%bonding_no_sharing_ci
       settings%basis_set = this%options%basis_set
+      settings%cartesian = this%options%cartesian
       settings%aux_basis_set = this%options%aux_basis_set
       settings%aux_basis_named = this%options%aux_basis_named
       settings%density_fitting = this%options%density_fitting

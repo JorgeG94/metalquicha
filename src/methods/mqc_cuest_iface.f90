@@ -36,6 +36,9 @@ module mqc_cuest_iface
       !! Method-independent description of one cuEST SCF calculation
       character(len=32) :: basis_set = "sto-3g"
          !! Orbital basis set name
+      logical :: cartesian = .false.
+         !! Read the basis in Cartesian form whatever its file declares; see
+         !! `mqc_config_t`. Only the libcint path acts on it.
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
       logical :: density_fitting = .false.
       ! Post-Hartree-Fock. Kept beside the SCF settings rather than inside

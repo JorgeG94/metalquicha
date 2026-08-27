@@ -199,6 +199,7 @@ contains
       call allow(keys, "basis")
       call allow(keys, "aux_basis")
       call allow(keys, "functional")
+      call allow(keys, "cartesian")
       call require(keys, "method")
    end function model_keys
 

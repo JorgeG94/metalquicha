@@ -25,7 +25,9 @@ contains
                   new_unittest("driver_nodes_per_group", test_driver_nodes_per_group), &
                   new_unittest("saddle_target_reaches_driver", test_saddle_target), &
                   new_unittest("saddle_needs_a_saddle_algorithm", test_saddle_algorithm), &
-                  new_unittest("unknown_target_refused", test_unknown_target) &
+                  new_unittest("unknown_target_refused", test_unknown_target), &
+                  new_unittest("driver_cartesian", test_driver_cartesian), &
+                  new_unittest("driver_cartesian_default", test_driver_cartesian_default) &
                   ]
    end subroutine collect_mqc_config_adapter_tests
 
@@ -145,6 +147,45 @@ contains
 
       call check(error, driver_config%nodes_per_group, 0, "nodes_per_group should default to 0")
    end subroutine test_driver_global_groups
+
+   subroutine test_driver_cartesian(error)
+      !! `model.cartesian` reaches the SCF settings the backend reads
+      !!
+      !! Worth a test of its own because the consequence of it *not* arriving
+      !! is silent: the run succeeds, converges and reports an energy in the
+      !! basis the file declared rather than the one the deck asked for. For a
+      !! shell above p those are different spaces, so it is a different answer
+      !! and not a different spelling of one.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver_config
+
+      config%method = METHOD_TYPE_GFN2
+      config%calc_type = CALC_TYPE_ENERGY
+      config%nfrag = 0
+      config%cartesian = .true.
+
+      call config_to_driver(config, driver_config)
+
+      call check(error, driver_config%method_config%scf%cartesian, &
+                 "model.cartesian should reach the SCF config")
+   end subroutine test_driver_cartesian
+
+   subroutine test_driver_cartesian_default(error)
+      !! Absent, it is false, so a deck that says nothing honours the file
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver_config
+
+      config%method = METHOD_TYPE_GFN2
+      config%calc_type = CALC_TYPE_ENERGY
+      config%nfrag = 0
+
+      call config_to_driver(config, driver_config)
+
+      call check(error,.not. driver_config%method_config%scf%cartesian, &
+                 "cartesian should default to false")
+   end subroutine test_driver_cartesian_default
 
    subroutine test_driver_nodes_per_group(error)
       !! Test nodes_per_group is copied into driver_config

@@ -757,7 +757,8 @@ contains
       ! difference meaningful.
       call build_libcint_molecule(fragment%element_numbers, symbols, &
                                   fragment%coordinates, trim(settings%basis_set), &
-                                  mol, error, ghost=ghost_of(fragment))
+                                  mol, error, ghost=ghost_of(fragment), &
+                                  force_cartesian=settings%cartesian)
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
          result%has_error = .true.
@@ -927,7 +928,8 @@ contains
          ! molecule from the one being fitted.
          call build_libcint_molecule(fragment%element_numbers, symbols, &
                                      fragment%coordinates, trim(settings%aux_basis_set), &
-                                     aux, error, ghost=ghost_of(fragment))
+                                     aux, error, ghost=ghost_of(fragment), &
+                                     force_cartesian=settings%cartesian)
          if (error%has_error()) then
             call result%error%set(ERROR_VALIDATION, "auxiliary basis '"// &
                                   trim(settings%aux_basis_set)//"': "//error%get_message())
@@ -2064,7 +2066,8 @@ contains
 
       call build_libcint_molecule(fragment%element_numbers, symbols, &
                                   fragment%coordinates, trim(settings%basis_set), &
-                                  mol, error, ghost=ghost_of(fragment))
+                                  mol, error, ghost=ghost_of(fragment), &
+                                  force_cartesian=settings%cartesian)
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
          result%has_error = .true.
@@ -2487,7 +2490,8 @@ contains
 
       call build_libcint_molecule(fragment%element_numbers, symbols, &
                                   fragment%coordinates, name, aux, error, &
-                                  ghost=ghost_of(fragment))
+                                  ghost=ghost_of(fragment), &
+                                  force_cartesian=settings%cartesian)
    end subroutine correlation_aux_basis
 
    pure function core_orbital_count(atomic_numbers) result(n_core)

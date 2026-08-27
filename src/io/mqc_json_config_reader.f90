@@ -196,6 +196,7 @@ contains
       config%mcscf_optimize_orbitals = .not. method_is_casci(text)
       call optional_string(json, "model.basis", config%basis)
       call optional_string(json, "model.aux_basis", config%aux_basis)
+      call optional_logical(json, "model.cartesian", config%cartesian)
       call optional_string(json, "model.functional", config%functional)
 
       ! ---- properties ------------------------------------------------------

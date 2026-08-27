@@ -88,6 +88,8 @@ module mqc_method_dft
       ! Density fitting
       logical :: use_density_fitting = .false.
          !! Use RI-J approximation
+      logical :: cartesian = .false.
+         !! `model.cartesian`; see `mqc_config_t`.
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
          !! Auxiliary (JKFIT) basis. Required by the cuEST backend.
       logical :: aux_basis_named = .false.
@@ -170,6 +172,7 @@ contains
       end if
 
       settings%basis_set = this%options%basis_set
+      settings%cartesian = this%options%cartesian
       settings%aux_basis_set = this%options%aux_basis_set
       settings%aux_basis_named = this%options%aux_basis_named
       settings%functional = this%options%functional

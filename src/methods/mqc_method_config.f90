@@ -25,6 +25,10 @@ module mqc_method_config
    !============================================================================
    type :: scf_config_t
       !! Shared SCF settings for HF and DFT methods
+      logical :: cartesian = .false.
+         !! `model.cartesian`; see `mqc_config_t`. Carried here rather than
+         !! beside the basis name because it reaches the backend by the same
+         !! route the rest of the SCF settings do.
       integer :: max_iter = 100
          !! Maximum SCF iterations
       real(dp) :: energy_convergence = 1.0e-8_dp
