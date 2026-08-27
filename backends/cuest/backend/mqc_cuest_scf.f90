@@ -312,7 +312,7 @@ contains
       type(diis_device_t) :: diis
       integer :: n_ao, n_mo, n_occ, iteration
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm
-      real(dp) :: xc_energy, pcm_energy, trace_h, trace_j, trace_k
+      real(dp) :: xc_energy, nlc_energy, pcm_energy, trace_h, trace_j, trace_k
       logical :: diis_ok
 
       character(len=MAX_LINE_LENGTH) :: line
@@ -377,6 +377,7 @@ contains
       call build_density_closed_shell(occupied, n_occ, density)
 
       xc_energy = 0.0_dp
+      nlc_energy = 0.0_dp
       pcm_energy = 0.0_dp
       if (use_diis) then
          ! The error vectors live in the orthogonal basis, the Fock matrices in the AO basis.
@@ -453,6 +454,14 @@ contains
          end if
 
          call system%xc_device(system%d_c_occ, system%d_xc, xc_energy, error)
+
+         ! VV10, for a `-V` functional. A second entry point in cuEST, so a
+         ! second call here: it adds its potential into the same matrix and its
+         ! energy into the same total, which is what keeps the Fock assembly and
+         ! the energy expression below unchanged. `nlc_device` returns zero and
+         ! touches nothing when the functional has no non-local term.
+         call system%nlc_device(system%d_c_occ, system%d_xc, nlc_energy, error)
+         xc_energy = xc_energy + nlc_energy
 
          ! The continuum. Solved from the current total density, so it belongs
          ! here beside the other density-dependent terms; the potential it leaves
@@ -685,6 +694,7 @@ contains
       integer :: n_ao, n_mo, n_alpha, n_beta, iteration
       integer :: n_fock_spin, n_err_spin
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm, xc_energy
+      real(dp) :: nlc_energy
       real(dp) :: pcm_energy
       real(dp) :: trace_h, trace_j, trace_ka, trace_kb
       logical :: diis_ok, occupations_ok, beta_exchange
@@ -771,6 +781,7 @@ contains
       end if
       d_error_beta = device_offset(system%d_error, int(n_err_spin, c_int64_t))
       xc_energy = 0.0_dp
+      nlc_energy = 0.0_dp
       pcm_energy = 0.0_dp
       previous_energy = 0.0_dp
       result%converged = .false.
@@ -839,6 +850,12 @@ contains
 
          call system%xc_uks_device(system%d_c_occ, system%d_c_occ_beta, max(n_beta, 1), &
                                    system%d_xc, system%d_xc_beta, xc_energy, error)
+
+         ! VV10 sees the total density only, so one call serves both spins: the
+         ! same matrix is added to each channel and the energy counted once.
+         call system%nlc_uks_device(system%d_c_occ, system%d_c_occ_beta, max(n_beta, 1), &
+                                    system%d_xc, system%d_xc_beta, nlc_energy, error)
+         xc_energy = xc_energy + nlc_energy
 
          ! The continuum sees the total density, so there is one solve and one
          ! potential for both spins -- `assemble_fock` adds it to each channel.

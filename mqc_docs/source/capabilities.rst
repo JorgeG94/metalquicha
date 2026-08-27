@@ -267,7 +267,9 @@ What has a gradient on the CPU backend, at a glance:
      - yes
      - ωB97X-V, ωB97M-V, B97M-V. Self-consistent, restricted and unrestricted,
        on a separate grid set by ``keywords.dft.nlc_grid_level``. **Energy only:
-       the nuclear gradient is refused.** CPU backend only
+       the nuclear gradient is refused**, on both backends. The GPU path calls
+       cuEST's own non-local entry points and is compiled but not yet run
+       against the library
    * - Kohn-Sham: range-separated hybrid
      - yes
      - **Needs an auxiliary basis.** The exact-ERI path builds no second

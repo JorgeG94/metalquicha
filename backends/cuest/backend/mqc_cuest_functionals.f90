@@ -37,32 +37,6 @@ module mqc_cuest_functionals
 
 contains
 
-   subroutine vv10_unsupported(name, error)
-      !! Refuse a `-V` functional on this backend
-      !!
-      !! **cuEST can do this and mqc does not ask it to.** The library exposes
-      !! `CUEST_XCINTPLAN_IS_VV10`, the `VV10_B`/`VV10_C`/`VV10_SCALE`
-      !! attributes and a separate `cuestNonlocalXCPotential*Compute` entry
-      !! point; this backend sets the exchange scales and nothing else, and
-      !! never calls that routine. The semilocal half alone converges and
-      !! prints a number 43 mHa wrong on water -- so before this refusal, a GPU
-      !! run of wb97x-v produced a confident wrong answer where the CPU path
-      !! produced an error.
-      !!
-      !! Refused by name rather than by querying IS_VV10, which would be the
-      !! better test and would cover functionals cuEST adds later, because it
-      !! has to hold on a machine with no GPU to check it on. Wiring the
-      !! nonlocal compute is the real fix and needs a card.
-      character(len=*), intent(in) :: name
-      type(error_t), intent(out) :: error
-
-      call error%set(ERROR_VALIDATION, "'"//name//"' carries a non-local correlation "// &
-                     "term (VV10). cuEST implements it, but this backend does not yet "// &
-                     "enable it, and the semilocal part alone is a different functional "// &
-                     "-- 43 mHa on water. Refused rather than evaluated without it; the "// &
-                     "CPU path runs this functional.")
-   end subroutine vv10_unsupported
-
    subroutine functional_name_to_id(name, functional_id, error)
       !! Translate a functional name into the cuEST XC plan identifier
       !!
@@ -100,18 +74,15 @@ contains
       case ("svwn5", "lda", "svwn")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_SVWN5
       case ("b97m-v", "b97mv")
-         call vv10_unsupported("b97m-v", error)
-         return
+         functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_B97MV
       case ("lc-wpbe", "lcwpbe")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_LCWPBE
       case ("wb97x")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_WB97X
       case ("wb97x-v", "wb97xv")
-         call vv10_unsupported("wb97x-v", error)
-         return
+         functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_WB97XV
       case ("wb97m-v", "wb97mv")
-         call vv10_unsupported("wb97m-v", error)
-         return
+         functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_WB97MV
       case ("lc-wpbeh", "lcwpbeh")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_LCWPBEH
       case ("cam-b3lyp", "camb3lyp")
