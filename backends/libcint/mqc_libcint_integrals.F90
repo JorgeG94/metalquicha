@@ -34,7 +34,7 @@ module mqc_libcint_integrals
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type, atomic_basis_type
    use mqc_ecp, only: molecular_ecp_type, ecp_shell_type
-   use mqc_libcint_ecp, only: ecp_matrix
+   use mqc_libcint_ecp, only: ecp_matrix, ECP_AVAILABLE
    use mqc_json_ecp_reader, only: build_molecular_ecp_json
    use mqc_basis_utils, only: find_basis_file
    use mqc_json_basis_reader, only: build_molecular_basis_json
@@ -402,6 +402,20 @@ contains
       have_ecp = .false.
       if (present(ecp_name)) then
          if (len_trim(ecp_name) > 0) then
+            ! Refused rather than left to the linker. The ECP integrals come
+            ! from libfint; libcint has no ECP code, so a build configured with
+            ! -DMQC_USE_LIBFINT=OFF cannot evaluate one. Before this check that
+            ! configuration did not fail here -- it failed at link time with two
+            ! undefined references and no indication that an ECP was the cause.
+            if (.not. ECP_AVAILABLE) then
+               call error%set(ERROR_VALIDATION, "model.ecp is set, but this build "// &
+                              "uses libcint for its integrals and libcint has no "// &
+                              "effective core potential code. Configure with "// &
+                              "-DMQC_USE_LIBFINT=ON, which is the default, or drop "// &
+                              "model.ecp.")
+               call basis%destroy()
+               return
+            end if
             call find_basis_file(ecp_name, ecp_path, read_error)
             if (read_error%has_error()) then
                call error%set(ERROR_VALIDATION, "no ECP file for '"//trim(ecp_name)// &

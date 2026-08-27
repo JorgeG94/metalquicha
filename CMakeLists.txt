@@ -770,8 +770,10 @@ endif()
 # no MPI harness. The ECP layout and the ECP matrix, against PySCF. Not a ctest
 # case yet: the reference comes from PySCF rather than from a number this
 # program printed earlier, so it belongs with the other validation programs that
-# need a second code to compare against.
-if(MQC_ENABLE_LIBCINT)
+# need a second code to compare against. libfint as well as libcint: the ECP
+# integrals are libfint's and libcint has none, so this cannot link in a
+# -DMQC_USE_LIBFINT=OFF build.
+if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
   add_executable(check_ecp ${PROJECT_SOURCE_DIR}/validation/check_ecp.f90)
   target_include_directories(check_ecp PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_ecp PRIVATE ${main_lib})

@@ -297,7 +297,10 @@ and the nuclear repulsion, and the SCF solves for **fewer electrons**. HI in
 def2-SVP with def2-ECP solves for 26 rather than 54.
 
 The integrals come from libfint rather than libcint, which has no ECP code at
-all. A build against a libfint without them fails to link.
+all. A build configured with ``-DMQC_USE_LIBFINT=OFF`` therefore cannot
+evaluate one, and refuses ``model.ecp`` saying so -- it used to fail at the
+linker with two undefined references and no mention of an ECP. libfint is the
+default, so this only affects a deliberately libcint build.
 
 **Where it is refused.** Every one of these is a refusal rather than a silent
 omission, and for one reason: an ECP that is quietly dropped produces a calculation that converges,

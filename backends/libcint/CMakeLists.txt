@@ -23,7 +23,7 @@ target_sources(
           mqc_libcint_xc_hessian.f90
           mqc_libcint_bridge.f90
           mqc_libcint_direct.f90
-          mqc_libcint_ecp.f90
+          mqc_libcint_ecp.F90
           mqc_libcint_integrals.F90
           mqc_libcint_multipole.f90
           mqc_libcint_avas.f90

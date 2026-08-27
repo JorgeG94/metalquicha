@@ -274,8 +274,9 @@ What has a gradient on the CPU backend, at a glance:
      - yes
      - ``model.ecp``, a separate file from the basis. Energies only: every
        nuclear derivative is refused, as are MCSCF, xTB and the GPU backend,
-       and an automatically counted frozen core. CPU backend only, through
-       libfint -- libcint has no ECP code
+       and an automatically counted frozen core. Needs libfint, which is the
+       default -- libcint has no ECP code, and a libcint build refuses
+       ``model.ecp`` rather than ignoring it
    * - Kohn-Sham: range-separated hybrid
      - yes
      - **Needs an auxiliary basis.** The exact-ERI path builds no second

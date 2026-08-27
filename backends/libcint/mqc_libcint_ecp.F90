@@ -36,9 +36,26 @@ module mqc_libcint_ecp
    private
 
    public :: ecp_matrix
+   public :: ECP_AVAILABLE
    public :: ecp_refuses_derivatives
    public :: ecp_refuses_auto_frozen_core
 
+   !> Whether this build can evaluate an ECP at all.
+   !>
+   !> The integrals come from libfint. libcint has no ECP code, so a build
+   !> configured with `-DMQC_USE_LIBFINT=OFF` has no `ECPscalar_sph` to link
+   !> against -- and before this was guarded, that configuration failed at the
+   !> linker with two undefined references and nothing to say why.
+   !>
+   !> Read by `build_libcint_molecule`, which refuses a deck naming a potential
+   !> rather than letting one reach an evaluator that is not there.
+#ifdef MQC_WITH_LIBFINT
+   logical, parameter :: ECP_AVAILABLE = .true.
+#else
+   logical, parameter :: ECP_AVAILABLE = .false.
+#endif
+
+#ifdef MQC_WITH_LIBFINT
    interface
       function cECPscalar_sph(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
                               cache) result(ret) bind(C, name="ECPscalar_sph")
@@ -64,6 +81,7 @@ module mqc_libcint_ecp
          integer(c_int) :: ret
       end function cECPscalar_cart
    end interface
+#endif
 
 contains
 
@@ -201,6 +219,7 @@ contains
             shls = int([ish - 1, jsh - 1], c_int)
             buf(1:di*dj) = 0.0_dp
 
+#ifdef MQC_WITH_LIBFINT
             if (cartesian) then
                ret = cECPscalar_cart(c_loc(buf), c_null_ptr, c_loc(shls), &
                                      c_loc(atm_c), int(natm, c_int), &
@@ -212,6 +231,13 @@ contains
                                     c_loc(bas_c), int(nbas, c_int), &
                                     c_loc(env_c), c_null_ptr, c_null_ptr)
             end if
+#else
+            ! Unreachable: `necpbas` is zero in a build without libfint,
+            ! because build_libcint_molecule refuses the deck that would set
+            ! it. Present so the loop compiles rather than being #ifdef'd
+            ! away, which would leave `ret` undefined.
+            ret = 0
+#endif
             ! Zero means the overlap screen rejected the pair and the library
             ! zeroed the block. Skipping the copy is an optimisation; the
             ! block is correct either way.
