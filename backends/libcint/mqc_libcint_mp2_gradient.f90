@@ -30,11 +30,14 @@ module mqc_libcint_mp2_gradient
    !!    would mean two things to keep in agreement.
    !! 6. The contraction with the differentiated integrals.
    !!
-   !! **Restricted, exact ERIs, no frozen core.** Each of those is a refusal
-   !! rather than an approximation: an unrestricted reference needs separate
-   !! alpha and beta amplitudes, a fitted one differentiates a different energy,
-   !! and a frozen core adds occupied-frozen and virtual-frozen blocks to the
-   !! relaxed density which are not built here.
+   !! **Restricted and exact ERIs.** Both are refusals rather than
+   !! approximations: an unrestricted reference needs separate alpha and beta
+   !! amplitudes, and a fitted one differentiates a different energy. A frozen
+   !! core is not a third refusal: the amplitudes and the two-particle density
+   !! span the active occupied space only, and the relaxed density gains an
+   !! occupied-frozen block resolved directly from the Lagrangian -- both
+   !! orbitals are occupied, so that rotation never enters the Z-vector, whose
+   !! occupied index nevertheless runs over the frozen orbitals too.
    use pic_types, only: dp, int64
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, max_block, atom_ao_blocks, &
@@ -114,6 +117,10 @@ contains
          !! solve, since scaling a linear system's right-hand side and scaling
          !! its solution are the same thing and doing both is the error to avoid.
       integer, intent(in), optional :: n_frozen
+         !! Core orbitals excluded from the correlation. The amplitudes and the
+         !! two-particle density span the active occupied space only; the
+         !! relaxed density, the Lagrangian and the Z-vector still span every
+         !! occupied orbital, which is where the occupied-frozen coupling lives.
       real(dp), intent(in), optional :: block_bytes
          !! Byte target for the block sizes, in place of `BLOCK_TARGET`. Small
          !! enough, it forces several blocks of both the first index and the
@@ -142,7 +149,7 @@ contains
       real(dp), allocatable :: doo(:, :), dvv(:, :), dm1mo(:, :), zeta(:, :)
       real(dp), allocatable, target :: gamma_ao(:, :, :, :)
       real(dp), allocatable :: imat_ao(:, :), imat(:, :), im1(:, :)
-      real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :), c_act(:, :)
       real(dp), allocatable :: hf_density(:, :), dm1(:, :), dm1_total(:, :), dm1p(:, :)
       real(dp), allocatable :: veff(:, :), xvo(:, :, :), zvec(:, :, :)
       real(dp), allocatable :: overlap(:, :), work(:, :), p_occ(:, :), vhf_s1occ(:, :)
@@ -157,7 +164,7 @@ contains
       real(dp), pointer :: eri_arg(:, :, :, :)
       real(dp), allocatable :: im1_t(:, :), work_t(:, :)
       integer, allocatable :: offsets(:), counts(:)
-      integer :: n_ao, n_mo, n_o, n_v, frozen, iatom, comp, p0, p1, p, q, i, a
+      integer :: n_ao, n_mo, n_o, n_oa, n_v, frozen, iatom, comp, p0, p1, p, q, i, a
       logical :: dense, fitted
       real(dp) :: target_bytes
       real(dp), allocatable :: bounds(:, :)
@@ -189,13 +196,12 @@ contains
 
       frozen = 0
       if (present(n_frozen)) frozen = n_frozen
-      if (frozen /= 0) then
-         call error%set(ERROR_VALIDATION, "the MP2 gradient does not implement a "// &
-                        "frozen core: the relaxed density gains occupied-frozen and "// &
-                        "virtual-frozen blocks, which are not built here. Run the "// &
-                        "gradient with freeze_core off.")
+      if (frozen < 0 .or. frozen >= n_occ) then
+         call error%set(ERROR_VALIDATION, "the MP2 gradient's frozen core must leave "// &
+                        "at least one occupied orbital to correlate")
          return
       end if
+      n_oa = n_o - frozen
       if (n_v < 1 .or. n_o < 1) then
          call error%set(ERROR_VALIDATION, "the MP2 gradient needs both occupied and "// &
                         "virtual orbitals")
@@ -221,23 +227,33 @@ contains
          if (force_blocked) dense = .false.
       end if
 
-      allocate (c_occ(n_ao, n_o), c_vir(n_ao, n_v))
+      ! Two occupied spaces from here on. The full one, `c_occ`, is what the
+      ! reference density, the response and every one-particle quantity run
+      ! over; the active one, `c_act`, is all the amplitudes ever see. With no
+      ! frozen core the two are the same columns.
+      allocate (c_occ(n_ao, n_o), c_vir(n_ao, n_v), c_act(n_ao, n_oa))
       c_occ = coeff(:, 1:n_o)
       c_vir = coeff(:, n_o + 1:n_mo)
+      c_act = coeff(:, frozen + 1:n_o)
 
       ! ---- amplitudes -------------------------------------------------------
       call mol%eris_packed(eri_packed)
       call transform_ovov(eri_packed, coeff, frozen, n_occ, n_ao, n_mo, ovov)
       deallocate (eri_packed)
 
-      call build_amplitudes(ovov, orbital_energies, n_o, n_v, n_occ, t2)
+      call build_amplitudes(ovov, orbital_energies, frozen, n_oa, n_v, n_occ, t2)
 
       ! ---- the unrelaxed one-particle correction ----------------------------
-      call gamma1_intermediates(t2, n_o, n_v, doo, dvv)
+      call gamma1_intermediates(t2, n_oa, n_v, doo, dvv)
 
+      ! The amplitude blocks land where the amplitudes live: `doo` in the
+      ! *active* occupied rows and columns, `dvv` in the virtuals. The frozen
+      ! rows and columns stay zero here -- their occupied-frozen block is not an
+      ! amplitude quantity and is filled from the Lagrangian below, once the
+      ! Lagrangian exists.
       allocate (dm1mo(n_mo, n_mo))
       dm1mo = 0.0_dp
-      dm1mo(1:n_o, 1:n_o) = doo + transpose(doo)
+      dm1mo(frozen + 1:n_o, frozen + 1:n_o) = doo + transpose(doo)
       dm1mo(n_o + 1:n_mo, n_o + 1:n_mo) = dvv + transpose(dvv)
 
       ! ---- the two-particle density, and what it contracts against ----------
@@ -285,7 +301,7 @@ contains
       ! correlation uses the true interaction whatever the functional does with
       ! exchange.
       if (dense) then
-         call build_two_particle_density(t2, c_occ, c_vir, n_ao, n_o, n_v, &
+         call build_two_particle_density(t2, c_act, c_vir, n_ao, n_oa, n_v, &
                                          target_bytes, gamma_ao)
          call mol%eris(eri)
          call contract_gamma_eri(eri, gamma_ao, n_ao, imat_ao)
@@ -293,7 +309,7 @@ contains
                                      k_scale=kf, with_reference=.not. fitted)
          deallocate (gamma_ao)
       else
-         call blocked_two_electron_terms(mol, t2, c_occ, c_vir, n_ao, n_o, n_v, &
+         call blocked_two_electron_terms(mol, t2, c_act, c_vir, n_ao, n_oa, n_v, &
                                          target_bytes, hf_density, imat_ao, de2, &
                                          vhf1, error, k_scale=kf, &
                                          with_reference=.not. fitted)
@@ -311,6 +327,21 @@ contains
       work = matmul(imat_ao, matmul(overlap, coeff(:, 1:n_mo)))
       imat = -matmul(transpose(coeff), work)
       deallocate (work)
+
+      ! The occupied-frozen block of the relaxed density. The amplitudes never
+      ! touch a frozen orbital, but the two-particle density's Lagrangian does,
+      ! and dividing its occupied-frozen elements by the orbital-energy gap is
+      ! that rotation's own first-order response -- resolved directly, in
+      ! `pyscf.grad.mp2`'s arrangement, because both orbitals are occupied and
+      ! the coupled equations below span only occupied-virtual. It has to land
+      ! before the `veff` build: the Z-vector's right-hand side is the response
+      ! of the reference to the whole unrelaxed density, this block included.
+      do i = frozen + 1, n_o
+         do p = 1, frozen
+            dm1mo(p, i) = imat(p, i)/(orbital_energies(p) - orbital_energies(i))
+            dm1mo(i, p) = dm1mo(p, i)
+         end do
+      end do
 
       allocate (dm1(n_ao, n_ao))
       dm1 = matmul(coeff, matmul(dm1mo, transpose(coeff)))
@@ -546,11 +577,16 @@ contains
 
    end subroutine libcint_mp2_gradient
 
-   subroutine build_amplitudes(ovov, orbital_energies, n_o, n_v, n_occ, t2)
+   subroutine build_amplitudes(ovov, orbital_energies, frozen, n_o, n_v, n_occ, t2)
       !! `t2(i,j,a,b) = (ia|jb) / (e_i + e_j - e_a - e_b)`
+      !!
+      !! `i` and `j` count *active* occupied orbitals, which is why their
+      !! energies are read at `frozen + i`: the transform already dropped the
+      !! core, and the denominators have to drop the same orbitals or every
+      !! amplitude divides by the wrong gap.
       real(dp), intent(in) :: ovov(:, :, :, :)       !! (i, a, j, b)
       real(dp), intent(in) :: orbital_energies(:)
-      integer, intent(in) :: n_o, n_v, n_occ
+      integer, intent(in) :: frozen, n_o, n_v, n_occ
       real(dp), allocatable, intent(out) :: t2(:, :, :, :)   !! (i, j, a, b)
 
       integer :: i, j, a, b
@@ -561,7 +597,7 @@ contains
          do a = 1, n_v
             do j = 1, n_o
                do i = 1, n_o
-                  denom = orbital_energies(i) + orbital_energies(j) &
+                  denom = orbital_energies(frozen + i) + orbital_energies(frozen + j) &
                           - orbital_energies(n_occ + a) - orbital_energies(n_occ + b)
                   t2(i, j, a, b) = ovov(i, a, j, b)/denom
                end do
