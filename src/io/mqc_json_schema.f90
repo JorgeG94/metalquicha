@@ -197,6 +197,7 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "method")
       call allow(keys, "basis")
+      call allow(keys, "ecp")
       call allow(keys, "aux_basis")
       call allow(keys, "functional")
       call allow(keys, "cartesian")

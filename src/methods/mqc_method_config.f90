@@ -442,6 +442,8 @@ module mqc_method_config
          !! Enable verbose output
       character(len=32) :: basis_set = "sto-3g"
          !! Basis set name (HF, DFT, MCSCF)
+      character(len=32) :: ecp_set = ""
+         !! Effective core potential set, empty for an all-electron run
       logical :: use_spherical = .true.
          !! Spherical vs Cartesian basis functions
       character(len=16) :: backend = "auto"

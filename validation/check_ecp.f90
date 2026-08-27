@@ -121,11 +121,8 @@ program check_ecp
       bad = bad + 1
    end if
 
-   call ecp_matrix(mol, m, err)
-   if (err%has_error()) then
-      write (*, "(a,a)") "FAIL ecp_matrix: ", err%get_message()
-      stop 1
-   end if
+   call ecp_matrix(mol%nao, mol%nbas, mol%natm, mol%cartesian, mol%atm, &
+                   mol%bas_with_ecp, mol%env, mol%shell_offset, mol%necpbas, m)
 
    got_max = maxval(abs(m))
    got_trace = sum([(m(i, i), i=1, mol%nao)])

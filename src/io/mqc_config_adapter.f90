@@ -125,6 +125,9 @@ contains
          driver_config%method_config%basis_set = mqc_config%basis
       end if
       driver_config%method_config%scf%cartesian = mqc_config%cartesian
+      if (allocated(mqc_config%ecp)) then
+         driver_config%method_config%ecp_set = mqc_config%ecp
+      end if
       if (allocated(mqc_config%aux_basis)) then
          driver_config%method_config%scf%aux_basis_set = mqc_config%aux_basis
          driver_config%method_config%scf%aux_basis_named = .true.

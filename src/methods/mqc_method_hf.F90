@@ -37,6 +37,8 @@ module mqc_method_hf
          !! backend through this type, and leaving it off meant `keywords.pcm`
          !! was read, validated, and then silently dropped for every one of them.
       character(len=32) :: basis_set = "sto-3g"
+      character(len=32) :: ecp_set = ""
+         !! Effective core potential set, empty for an all-electron run
          !! Orbital basis set name
       logical :: cartesian = .false.
          !! `model.cartesian`; see `mqc_config_t`.
@@ -156,6 +158,7 @@ contains
       settings%bonding_no_sharing_ci = this%options%properties%bonding_no_sharing_ci
       settings%basis_set = this%options%basis_set
       settings%cartesian = this%options%cartesian
+      settings%ecp_set = this%options%ecp_set
       settings%aux_basis_set = this%options%aux_basis_set
       settings%aux_basis_named = this%options%aux_basis_named
       settings%density_fitting = this%options%density_fitting

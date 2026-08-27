@@ -34,6 +34,8 @@ module mqc_libcint_integrals
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type, atomic_basis_type
    use mqc_ecp, only: molecular_ecp_type, ecp_shell_type
+   use mqc_libcint_ecp, only: ecp_matrix
+   use mqc_json_ecp_reader, only: build_molecular_ecp_json
    use mqc_basis_utils, only: find_basis_file
    use mqc_json_basis_reader, only: build_molecular_basis_json
    use pic_lapack_interfaces, only: pic_syevd, pic_potrf
@@ -318,7 +320,7 @@ contains
 
    subroutine build_libcint_molecule(atomic_numbers, element_symbols, coordinates, &
                                      basis_name, mol, error, normalize_contractions, &
-                                     force_cartesian, ghost)
+                                     force_cartesian, ghost, ecp_name)
       !! A molecule from a basis set *name*, through the ordinary reader
       !!
       !! This is what makes the backend general rather than a demonstration:
@@ -351,6 +353,15 @@ contains
       character(len=*), intent(in) :: basis_name
       type(libcint_molecule_t), intent(out) :: mol
       type(error_t), intent(inout) :: error
+      character(len=*), intent(in), optional :: ecp_name
+         !! Effective core potential set, by name. Absent or empty is an
+         !! all-electron molecule.
+         !!
+         !! Taken as a name rather than as parsed data so that callers stay
+         !! symmetric with the basis: one string each, both resolved through
+         !! `find_basis_file`. An element the file does not cover is not an
+         !! error -- def2-ECP carries nothing below krypton, and a deck naming
+         !! it for a light molecule should run all-electron rather than fail.
       logical, intent(in), optional :: ghost(:)
          !! Atoms keeping their basis and losing their nuclear charge; see
          !! `molecule_build`.
@@ -366,7 +377,9 @@ contains
          !! be measured rather than argued about.
 
       type(molecular_basis_type) :: basis
-      character(len=:), allocatable :: path
+      character(len=:), allocatable :: path, ecp_path
+      type(molecular_ecp_type) :: ecp
+      logical :: have_ecp
       type(error_t) :: read_error
 
       call find_basis_file(basis_name, path, read_error)
@@ -383,16 +396,53 @@ contains
          return
       end if
 
+      ! The potential, if one was named. An element the file does not carry
+      ! comes back with no channels rather than as an error, so a set that
+      ! covers only the heavy atoms is the ordinary case and not a special one.
+      have_ecp = .false.
+      if (present(ecp_name)) then
+         if (len_trim(ecp_name) > 0) then
+            call find_basis_file(ecp_name, ecp_path, read_error)
+            if (read_error%has_error()) then
+               call error%set(ERROR_VALIDATION, "no ECP file for '"//trim(ecp_name)// &
+                              "': "//read_error%get_message())
+               call basis%destroy()
+               return
+            end if
+            call build_molecular_ecp_json(ecp_path, element_symbols, ecp, read_error)
+            if (read_error%has_error()) then
+               call error%set(ERROR_VALIDATION, "could not read "//trim(ecp_name)//": "// &
+                              read_error%get_message())
+               call basis%destroy()
+               return
+            end if
+            have_ecp = .true.
+         end if
+      end if
+
       if (present(ghost)) then
-         call mol%build(atomic_numbers, coordinates, basis, error, &
-                        normalize_contractions=normalize_contractions, &
-                        force_cartesian=force_cartesian, ghost=ghost)
+         if (have_ecp) then
+            call mol%build(atomic_numbers, coordinates, basis, error, &
+                           normalize_contractions=normalize_contractions, &
+                           force_cartesian=force_cartesian, ghost=ghost, ecp=ecp)
+         else
+            call mol%build(atomic_numbers, coordinates, basis, error, &
+                           normalize_contractions=normalize_contractions, &
+                           force_cartesian=force_cartesian, ghost=ghost)
+         end if
       else
-         call mol%build(atomic_numbers, coordinates, basis, error, &
-                        normalize_contractions=normalize_contractions, &
-                        force_cartesian=force_cartesian)
+         if (have_ecp) then
+            call mol%build(atomic_numbers, coordinates, basis, error, &
+                           normalize_contractions=normalize_contractions, &
+                           force_cartesian=force_cartesian, ecp=ecp)
+         else
+            call mol%build(atomic_numbers, coordinates, basis, error, &
+                           normalize_contractions=normalize_contractions, &
+                           force_cartesian=force_cartesian)
+         end if
       end if
       call basis%destroy()
+      if (have_ecp) call ecp%destroy()
    end subroutine build_libcint_molecule
 
    function contraction_group_size(atom_basis, first) result(nctr)
@@ -1032,7 +1082,13 @@ contains
    end subroutine molecule_kinetic
 
    subroutine molecule_core_hamiltonian(this, h)
-      !! H = T + V, the one-electron part of the Fock matrix
+      !! H = T + V + U_ECP, the one-electron part of the Fock matrix
+      !!
+      !! The ECP term is added here rather than by the caller, and
+      !! unconditionally: `ecp_matrix` returns zeros for a molecule with no
+      !! potential, so there is no flag to test and no caller that can forget.
+      !! A missing ECP term is not a crash but a converged wrong answer, which
+      !! is the kind of thing that must not depend on anyone remembering.
       class(libcint_molecule_t), intent(in) :: this
       real(dp), allocatable, intent(out) :: h(:, :)
 
@@ -1040,6 +1096,10 @@ contains
 
       call one_electron(this, h, 2)   ! kinetic
       call one_electron(this, v, 3)   ! nuclear attraction
+      h = h + v
+      call ecp_matrix(this%nao, this%nbas, this%natm, this%cartesian, &
+                      this%atm, this%bas_with_ecp, this%env, &
+                      this%shell_offset, this%necpbas, v)
       h = h + v
    end subroutine molecule_core_hamiltonian
 

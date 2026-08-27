@@ -31,8 +31,6 @@ module mqc_libcint_ecp
    !! twice.
    use pic_types, only: dp
    use, intrinsic :: iso_c_binding, only: c_int, c_ptr, c_loc, c_null_ptr
-   use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim
    implicit none
    private
 
@@ -66,22 +64,35 @@ module mqc_libcint_ecp
 
 contains
 
-   subroutine ecp_matrix(mol, matrix, error)
+   subroutine ecp_matrix(nao, nbas, natm, cartesian, atm, bas, env, &
+                         shell_offset, necpbas, matrix)
       !! The ECP contribution to the core Hamiltonian, (nao, nao)
       !!
-      !! Comes back zero for a molecule with no ECP, rather than refusing:
-      !! `core_hamiltonian` adds this unconditionally and a zero matrix is the
-      !! correct answer when no atom carries a potential.
+      !! Comes back zero when `necpbas` is zero, rather than refusing: the
+      !! caller adds this unconditionally and a zero matrix is the right answer
+      !! for a molecule no potential touches.
+      !!
+      !! **Plain arrays rather than `libcint_molecule_t`**, which is not a
+      !! style preference. `molecule_core_hamiltonian` has to add this term,
+      !! and taking the type here would make the two modules mutually
+      !! dependent -- so the molecule passes its own arrays and this module
+      !! depends on nothing of mqc's.
+      !!
+      !! `bas` is the table *with* the ECP rows appended, while `nbas` is the
+      !! orbital count alone. Those disagreeing is the whole convention.
       !!
       !! The loop mirrors `one_electron` in `mqc_libcint_integrals` -- same
       !! shell-pair walk, same column-major block, same "return zero means
-      !! screened" convention. It is not shared with it because the entry
-      !! point takes a different set of arguments and reaches a different
-      !! library, and folding a fourth case into that `select` would tie the
-      !! two together for the sake of one loop.
-      type(libcint_molecule_t), intent(in) :: mol
+      !! screened" reading. Shell extents come from `shell_offset` differences
+      !! rather than from `shell_dim`, which keeps this free of that module.
+      integer, intent(in) :: nao, nbas, natm
+      logical, intent(in) :: cartesian
+      integer, intent(in) :: atm(:, :)
+      integer, intent(in) :: bas(:, :)     !! (BAS_SLOTS, nbas + necpbas)
+      real(dp), intent(in) :: env(:)
+      integer, intent(in) :: shell_offset(:)  !! (nbas + 1), first AO per shell
+      integer, intent(in) :: necpbas
       real(dp), allocatable, intent(out) :: matrix(:, :)
-      type(error_t), intent(inout) :: error
 
       real(dp), allocatable, target :: buf(:)
       integer(c_int), allocatable, target :: shls(:)
@@ -89,47 +100,47 @@ contains
       real(dp), allocatable, target :: env_c(:)
       integer :: ish, jsh, di, dj, i, j, io, jo, ret, nmax
 
-      allocate (matrix(mol%nao, mol%nao))
+      allocate (matrix(nao, nao))
       matrix = 0.0_dp
-      if (mol%necpbas <= 0) return
+      if (necpbas <= 0) return
 
-      ! Blocks are di*dj, so the bound is the square of the largest shell.
+      ! A block is di*dj, so the bound is the square of the largest shell and
+      ! not the largest shell -- the distinction only shows up once a shell
+      ! beyond s is present, by which time it is heap corruption.
       nmax = 0
-      do ish = 1, mol%nbas
-         nmax = max(nmax, shell_dim(mol%cartesian, ish - 1, mol%bas))
+      do ish = 1, nbas
+         nmax = max(nmax, shell_offset(ish + 1) - shell_offset(ish))
       end do
       allocate (buf(nmax*nmax))
       allocate (shls(2))
 
-      ! Flattened copies, because the C wants contiguous arrays and `bas` here
-      ! is (BAS_SLOTS, nbas + necpbas) -- the ECP rows are already in it.
-      atm_c = reshape(int(mol%atm, c_int), [size(mol%atm)])
-      bas_c = reshape(int(mol%bas_with_ecp, c_int), [size(mol%bas_with_ecp)])
-      env_c = mol%env
+      atm_c = reshape(int(atm, c_int), [size(atm)])
+      bas_c = reshape(int(bas, c_int), [size(bas)])
+      env_c = env
 
-      do ish = 1, mol%nbas
-         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
-         io = mol%shell_offset(ish)
-         do jsh = 1, mol%nbas
-            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
-            jo = mol%shell_offset(jsh)
+      do ish = 1, nbas
+         di = shell_offset(ish + 1) - shell_offset(ish)
+         io = shell_offset(ish)
+         do jsh = 1, nbas
+            dj = shell_offset(jsh + 1) - shell_offset(jsh)
+            jo = shell_offset(jsh)
             shls = int([ish - 1, jsh - 1], c_int)
             buf(1:di*dj) = 0.0_dp
 
-            if (mol%cartesian) then
+            if (cartesian) then
                ret = cECPscalar_cart(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                     c_loc(atm_c), int(mol%natm, c_int), &
-                                     c_loc(bas_c), int(mol%nbas, c_int), &
+                                     c_loc(atm_c), int(natm, c_int), &
+                                     c_loc(bas_c), int(nbas, c_int), &
                                      c_loc(env_c), c_null_ptr, c_null_ptr)
             else
                ret = cECPscalar_sph(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                    c_loc(atm_c), int(mol%natm, c_int), &
-                                    c_loc(bas_c), int(mol%nbas, c_int), &
+                                    c_loc(atm_c), int(natm, c_int), &
+                                    c_loc(bas_c), int(nbas, c_int), &
                                     c_loc(env_c), c_null_ptr, c_null_ptr)
             end if
-            ! Zero means the overlap screen rejected the pair, and the block
-            ! has been zeroed by the library. Skipping the copy is an
-            ! optimisation; the block is already correct either way.
+            ! Zero means the overlap screen rejected the pair and the library
+            ! zeroed the block. Skipping the copy is an optimisation; the
+            ! block is correct either way.
             if (ret == 0) cycle
 
             do j = 1, dj

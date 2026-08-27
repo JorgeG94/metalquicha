@@ -34,6 +34,8 @@ module mqc_method_dft
    type :: dft_options_t
       !! DFT calculation options
       character(len=32) :: basis_set = "sto-3g"
+      character(len=32) :: ecp_set = ""
+         !! Effective core potential set, empty for an all-electron run
          !! Basis set name
       character(len=32) :: functional = "b3lyp"
          !! Exchange-correlation functional
@@ -173,6 +175,7 @@ contains
 
       settings%basis_set = this%options%basis_set
       settings%cartesian = this%options%cartesian
+      settings%ecp_set = this%options%ecp_set
       settings%aux_basis_set = this%options%aux_basis_set
       settings%aux_basis_named = this%options%aux_basis_named
       settings%functional = this%options%functional
