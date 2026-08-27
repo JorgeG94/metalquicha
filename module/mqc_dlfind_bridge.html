@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for modules and submodules.">29 statements</a>
+                 title=" 0.2% of total for modules and submodules.">43 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -157,6 +157,7 @@
       </a>
       <div id="subs-0" class="collapse">
         <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_dlfind_bridge.html#proc-dlfind_connected_minima">dlfind_connected_minima</a>
             <a class="list-group-item" href="../module/mqc_dlfind_bridge.html#proc-dlfind_optimize">dlfind_optimize</a>
         </div>
       </div>
@@ -538,6 +539,121 @@ large graphs.</div>
         <section>
           <h2>Subroutines</h2>
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-dlfind_connected_minima"></span> <h3>public  subroutine <a href='../proc/dlfind_connected_minima.html'>dlfind_connected_minima</a>(a, energy_first, b, energy_second, found, e_saddle)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Nothing ran, so nothing was connected</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-a~7"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>a</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energy_first"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>energy_first</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-b~5"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>b</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energy_second"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>energy_second</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-found~38"></span>
+              logical,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>found</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-e_saddle"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>e_saddle</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-dlfind_optimize"></span> <h3>public  subroutine <a href='../proc/dlfind_optimize.html'>dlfind_optimize</a>(opt_settings, natoms, znuc, residues, coords, energy_gradient, step_taken, final_energy, error, hessian, endpoint)  
 </h3></div>
     <div class="card-body">
@@ -602,7 +718,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-residues~3"></span>
+              <span class="anchor" id="variable-residues"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -617,7 +733,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~8"></span>
+              <span class="anchor" id="variable-coords~5"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -662,7 +778,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-final_energy~6"></span>
+              <span class="anchor" id="variable-final_energy"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -677,7 +793,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~59"></span>
+              <span class="anchor" id="variable-error~83"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -692,7 +808,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~7"></span>
+              <span class="anchor" id="variable-hessian~4"></span>
               procedure(<a href='../interface/hessian_i.html'>hessian_i</a>),
             </td>
 <td></td>
@@ -750,7 +866,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-26 17:45 +0000             </p>
+ on 2026-08-27 01:21 +0000             </p>
           </div>
         </div>
         <br>

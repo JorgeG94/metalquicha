@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.5% of total for procedures.">106 statements</a>
+                 title=" 0.6% of total for procedures.">120 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/set_optimization_vocabulary.html#variable-want~4">want</a>
+            <a class="list-group-item" href="../proc/set_optimization_vocabulary.html#variable-want~3">want</a>
         </div>
       </div>
     </div>
@@ -344,7 +344,7 @@ that still has the string the user typed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~108"></span>
+              <span class="anchor" id="variable-error~135"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -952,7 +952,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-want~4"></span>
+              <span class="anchor" id="variable-want~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1134,6 +1134,42 @@ large graphs.</div>
 <span class="k">         end if</span>
 <span class="k">      end if</span>
 
+<span class="k">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">connect</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_connect</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">connect_distort</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_connect_distort</span>
+
+<span class="w">      </span><span class="c">! Following a saddle downhill needs a saddle to follow. Asked for</span>
+<span class="w">      </span><span class="c">! alongside a minimisation it describes something that cannot happen, and</span>
+<span class="w">      </span><span class="c">! running the minimisation and ignoring the request would report success</span>
+<span class="w">      </span><span class="c">! for half of what the deck asked.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_connect</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">          </span><span class="n">driver_config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="k">target</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">OPT_TARGET_SADDLE</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">error</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"keywords.optimization.connect asks for the minima on either "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"side of a transition state, but target is 'minimum'. Set "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"target to 'saddle'."</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         return</span>
+<span class="k">      end if</span>
+
+<span class="w">      </span><span class="c">! A connect run does not stop at the saddle -- it carries on downhill</span>
+<span class="w">      </span><span class="c">! twice -- so the geometry it finishes with is the second minimum. A</span>
+<span class="w">      </span><span class="c">! Hessian there describes that minimum and reports, correctly and</span>
+<span class="w">      </span><span class="c">! uselessly, that it has no imaginary frequencies. Refused rather than</span>
+<span class="w">      </span><span class="c">! run, because the output would read as the saddle having been checked</span>
+<span class="w">      </span><span class="c">! and failed.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_connect</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_hess_end</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">error</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"keywords.optimization sets both connect and hess_end. A "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"connect run ends at one of the minima rather than at the "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"saddle, so the final Hessian would describe the wrong "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"structure. Run the saddle search with hess_end first, then "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"connect from the geometry it found."</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         return</span>
+<span class="k">      end if</span>
+
 <span class="w">      </span><span class="c">! A saddle is not something every algorithm can look for. Steepest</span>
 <span class="w">      </span><span class="c">! descent and the quasi-Newton minimisers go downhill by construction and</span>
 <span class="w">      </span><span class="c">! will report a minimum however the target is spelled, so asking them for</span>
@@ -1225,7 +1261,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-26 17:45 +0000             </p>
+ on 2026-08-27 01:21 +0000             </p>
           </div>
         </div>
         <br>

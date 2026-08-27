@@ -39,7 +39,9 @@ module mqc_geometry_optimizer
    use mqc_method_types, only: method_type_to_string, METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
    use mqc_error, only: error_t, ERROR_GENERIC, ERROR_VALIDATION
    use mqc_elements, only: element_number_to_symbol
-   use mqc_dlfind_bridge, only: dlfind_available, dlfind_optimize
+   use mqc_physical_constants, only: HARTREE_TO_KCALMOL
+   use mqc_dlfind_bridge, only: dlfind_available, dlfind_optimize, &
+                                dlfind_connected_minima
    use mqc_optimization_output, only: optimization_record_t, write_optimization_json, &
                                       write_trajectory_xyz
    use mqc_frag_utils, only: generate_mbe_term_list
@@ -297,6 +299,9 @@ contains
             ! optimizer was still moving away from describes that point and
             ! not the minimum, and reporting it beside a "did not converge"
             ! line invites it to be read as the minimum's.
+            if (config%optimization%connect .and. converged .and. .not. error%has_error()) then
+               call report_connected_minima(sys_geom)
+            end if
             if (config%optimization%hess_end .and. converged .and. .not. error%has_error()) then
                call run_final_hessian(sys_geom, config%optimization%target)
             end if
@@ -786,6 +791,68 @@ contains
       call logger%info(" ")
 
    end subroutine run_final_hessian
+
+   subroutine report_connected_minima(sys_geom)
+      !! The two minima the saddle falls to, and the barrier from each side
+      !!
+      !! One imaginary frequency proves a first-order saddle. It does not prove
+      !! the saddle joins the two structures anybody had in mind, and a
+      !! transition state between the wrong pair of minima is a number that
+      !! looks entirely reasonable and describes a different reaction.
+      !!
+      !! Displacing along the imaginary mode and relaxing in each direction is
+      !! what settles it. It is not an intrinsic reaction coordinate -- the path
+      !! taken downhill is a minimisation path rather than the steepest-descent
+      !! one -- but the endpoints are the same, and the endpoints are the
+      !! question.
+      type(system_geometry_t), intent(in) :: sys_geom
+
+      real(dp), allocatable :: side_a(:, :), side_b(:, :)
+      real(dp) :: e_a, e_b, saddle_energy
+      logical :: found
+      character(len=LINE_LEN) :: line
+
+      call dlfind_connected_minima(side_a, e_a, side_b, e_b, found, saddle_energy)
+      if (.not. found) then
+         call logger%warning("  the downhill runs did not reach two minima, so what this "// &
+                             "saddle connects is unknown")
+         return
+      end if
+
+      call logger%info("  the saddle relaxes to two minima:")
+      write (line, "(a,f20.12,a)") "     forward   ", e_a, " Hartree"
+      call logger%info(trim(line))
+      write (line, "(a,f20.12,a)") "     backward  ", e_b, " Hartree"
+      call logger%info(trim(line))
+      write (line, "(a,f14.6,a,f14.6,a)") "     barrier from each side: ", &
+         (saddle_energy - e_a)*HARTREE_TO_KCALMOL, " and ", &
+         (saddle_energy - e_b)*HARTREE_TO_KCALMOL, " kcal/mol"
+      call logger%info(trim(line))
+      call write_side_xyz("connected_forward.xyz", sys_geom, side_a, e_a)
+      call write_side_xyz("connected_backward.xyz", sys_geom, side_b, e_b)
+      call logger%info("  written to connected_forward.xyz and connected_backward.xyz")
+      call logger%info(" ")
+   end subroutine report_connected_minima
+
+   subroutine write_side_xyz(filename, sys_geom, coords, energy)
+      !! One connected minimum, in Angstroms, for whatever opens it next
+      character(len=*), intent(in) :: filename
+      type(system_geometry_t), intent(in) :: sys_geom
+      real(dp), intent(in) :: coords(:, :)
+      real(dp), intent(in) :: energy
+
+      integer :: unit, stat, i
+
+      open (newunit=unit, file=filename, status="replace", action="write", iostat=stat)
+      if (stat /= 0) return
+      write (unit, "(i0)") size(sys_geom%element_numbers)
+      write (unit, "(a,f20.12,a)") "metalquicha connected minimum, E = ", energy, " Hartree"
+      do i = 1, size(sys_geom%element_numbers)
+         write (unit, "(a4,3f20.12)") element_number_to_symbol(sys_geom%element_numbers(i)), &
+            to_angstrom(coords(1, i)), to_angstrom(coords(2, i)), to_angstrom(coords(3, i))
+      end do
+      close (unit)
+   end subroutine write_side_xyz
 
    subroutine load_endpoint(path, atomic_numbers, endpoint, error)
       !! Read the second structure of a chain-of-states run
