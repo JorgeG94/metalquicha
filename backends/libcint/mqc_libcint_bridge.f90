@@ -611,7 +611,7 @@ contains
       ! Coupled cluster stops here: its gradient needs the Lambda equations,
       ! which do not exist on this side at all. MP2's does exist, and is taken
       ! below -- but only where the reference underneath it is one the relaxed
-      ! density was written for, which is the three refusals after this.
+      ! density was written for, which is the refusals after this.
       if (do_gradient .and. settings%run_cc) then
          call result%error%set(ERROR_VALIDATION, "a coupled cluster gradient needs the "// &
                                "Lambda amplitudes, which are not implemented. Run the "// &
@@ -620,31 +620,33 @@ contains
          result%has_error = .true.
          return
       end if
-      if (do_gradient .and. settings%run_mp2) then
-         ! Four combinations of what is fitted, each a different energy with a
-         ! different gradient, and all four implemented. Exact reference with
-         ! exact correlation is `libcint_mp2_gradient`; exact reference with
-         ! fitted correlation is an `ri-mp2` deck and is
-         ! `libcint_ri_mp2_gradient`. Adding `keywords.scf.density_fitting` to
-         ! either fits the reference too, which moves the response operator,
-         ! both potentials built from the relaxed density, and the reference's
-         ! two-electron derivative term onto the auxiliary basis.
-         !
-         ! What that last pair does *not* do is make the conventional gradient
-         ! cheap: its two-particle density stays four-index and contracts
-         ! against four-centre derivatives whatever the reference fitted. It
-         ! makes it consistent, which is the point -- differentiating an exact
-         ! reference under a fitted SCF is the derivative of an energy nothing
-         ! computed.
-         if (settings%freeze_core .and. settings%n_frozen_core /= 0) then
-            call result%error%set(ERROR_VALIDATION, "the MP2 gradient does not implement "// &
-                                  "a frozen core: the relaxed density gains "// &
-                                  "occupied-frozen and virtual-frozen blocks that are not "// &
-                                  "built. Run the MP2 gradient with freeze_core off.")
-            result%has_error = .true.
-            return
-         end if
-      end if
+      ! An MP2 gradient is not refused here any more, frozen core or not.
+      ! Four combinations of what is fitted, each a different energy with a
+      ! different gradient, and all four implemented. Exact reference with
+      ! exact correlation is `libcint_mp2_gradient`; exact reference with
+      ! fitted correlation is an `ri-mp2` deck and is
+      ! `libcint_ri_mp2_gradient`. Adding `keywords.scf.density_fitting` to
+      ! either fits the reference too, which moves the response operator,
+      ! both potentials built from the relaxed density, and the reference's
+      ! two-electron derivative term onto the auxiliary basis.
+      !
+      ! What that last pair does *not* do is make the conventional gradient
+      ! cheap: its two-particle density stays four-index and contracts
+      ! against four-centre derivatives whatever the reference fitted. It
+      ! makes it consistent, which is the point -- differentiating an exact
+      ! reference under a fitted SCF is the derivative of an energy nothing
+      ! computed.
+      !
+      ! A frozen core used to be refused here, fronting all four routines at
+      ! once, because neither assembly built the blocks it brings. Both do
+      ! now: the amplitudes and the two-particle density span the active
+      ! occupied space, and the relaxed density gains an occupied-frozen
+      ! block resolved directly from the Lagrangian. So a default deck --
+      ! `freeze_core` is on by default -- gets the gradient of the energy it
+      ! computed; the frozen count is resolved in the MP2 block below and
+      ! passed to whichever routine the deck selects. (No virtual-frozen
+      ! block ever existed to build, whatever the old message said:
+      ! `n_frozen_core` freezes leading core orbitals and no virtuals.)
 
       ! Same rule the GPU backend applies, so a deck does not change meaning
       ! when it moves between them: an odd electron count or a multiplicity
@@ -1264,14 +1266,23 @@ contains
             ! term comes off the auxiliary basis. What still holds is that the
             ! *correlation* is exact either way -- a double hybrid's PT2 term is
             ! a conventional MP2, and in a gradient run it stays one.
+            !
+            ! A frozen core, by contrast, is still refused -- and no longer
+            ! because the blocks are missing: the MP2 gradient routines
+            ! underneath build them, and a plain MP2 deck takes them. This
+            ! assembly never passes the frozen count, and the occupied-frozen
+            ! resolution has been validated over a Hartree-Fock reference
+            ! only, not against a Kohn-Sham operator with its kernel in the
+            ! response.
             if (settings%freeze_core .and. settings%n_frozen_core /= 0) then
                call result%error%set(ERROR_VALIDATION, "a double hybrid gradient is "// &
-                                     "all-electron: the relaxed density gains "// &
-                                     "occupied-frozen blocks that are not built. The "// &
-                                     "*energy* does honour freeze_core, so this refuses "// &
-                                     "rather than returning the all-electron gradient of "// &
-                                     "a frozen-core energy. Run the energy with it, or "// &
-                                     "the gradient with freeze_core off.")
+                                     "all-electron: the perturbative term's gradient "// &
+                                     "has not been taught, or validated with, a frozen "// &
+                                     "core over a Kohn-Sham reference -- plain MP2 has. "// &
+                                     "The *energy* does honour freeze_core, so this "// &
+                                     "refuses rather than returning the all-electron "// &
+                                     "gradient of a frozen-core energy. Run the energy "// &
+                                     "with it, or the gradient with freeze_core off.")
                result%has_error = .true.
                call mol%destroy()
                return

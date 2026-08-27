@@ -170,13 +170,21 @@ contains
       end if
       write (*, "(a,2es14.4)") "  dense against split, then blocked:        ", &
          maxval(abs(analytic - split)), maxval(abs(analytic - blocked))
-      ! Not bitwise: the blocked path screens its Fock builds and its response
-      ! solve on a Schwarz bound where the dense one reads a stored tensor, and
-      ! sums the two-electron terms in a different order. Both show up around
-      ! 1e-12 -- HCN is the worst of these five -- which is two orders below
-      ! where the gradient itself is validated.
+      ! Not bitwise, for two reasons. The blocked path screens its Fock builds
+      ! and its response solve on a Schwarz bound where the dense one reads a
+      ! stored tensor, and sums the two-electron terms in a different order --
+      ! around 1e-12, HCN the worst of these five. On top of that the whole
+      ! pipeline scatters run to run at more than one thread, from the
+      ! unordered `!$omp critical(mqc_direct_fock_accumulate)` merge of
+      ! thread-local accumulators in `mqc_libcint_direct.f90` -- correctly
+      ! synchronised, but the merge order, and so the summation order, varies
+      ! between runs. Single-threaded, repeated runs of this comparison land
+      ! on 3.4e-16 identically; threaded, twenty runs spread 1e-12 to 3e-11
+      ! with a tail seen as far as 5.2e-10. The bound sits above that tail --
+      ! a real blocking or offset bug shows up at 1e-5, four orders away --
+      ! and it is why bit-identity is only testable here at one thread.
       if (max(maxval(abs(analytic - blocked)), &
-              maxval(abs(analytic - split))) > 1.0e-10_dp) then
+              maxval(abs(analytic - split))) > 2.0e-9_dp) then
          write (*, "(a)") "  FAIL: a blocked pass disagrees with the whole one"
          n_bad = n_bad + 1
       end if

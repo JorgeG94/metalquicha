@@ -34,6 +34,22 @@ module mqc_libcint_ri_mp2_gradient
    !!    operator the conventional assembly uses.
    !! 3. Terms 3 and 4 stayed wrong through three revisions while translational
    !!    invariance held at 1e-15. It is blind to every one of these.
+   !!
+   !! **Reproducibility under OpenMP.** This pipeline carries ~5e-11 of
+   !! run-to-run scatter at more than one thread -- two 8-thread runs of
+   !! `validation/check_ri_mp2_gradient` differ by that much, two
+   !! single-threaded runs are bit-identical -- and the mechanism is known:
+   !! the unordered `!$omp critical(mqc_direct_fock_accumulate)` merge of
+   !! thread-local accumulators in `mqc_libcint_direct.f90`. Correctly
+   !! synchronised, but whichever thread reaches the merge first adds first,
+   !! so the summation order varies between runs. Measured, not guessed:
+   !! `MKL_NUM_THREADS=1 OMP_NUM_THREADS=8` still varies while
+   !! `OMP_NUM_THREADS=1 MKL_NUM_THREADS=8` is byte-identical, so it is our
+   !! OpenMP and not threaded BLAS; and eight runs land on five contiguous
+   !! values in the 11th digit, which is a handful of merge orders, not a
+   !! race. The practical consequence: bit-identity claims about this
+   !! gradient -- a refactor "changing nothing", a comparison "to rounding"
+   !! -- are testable only at one thread.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION

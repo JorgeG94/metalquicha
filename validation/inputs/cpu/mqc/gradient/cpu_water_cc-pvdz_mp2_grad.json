@@ -20,7 +20,8 @@
             "tolerance": 1e-12
         },
         "correlation": {
-            "freeze_core": false
+            "freeze_core": false,
+            "n_frozen_core": 0
         }
     },
     "system": {

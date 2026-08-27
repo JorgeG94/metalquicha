@@ -131,7 +131,18 @@ contains
       ! stored. Past the in-core limit that is the only path there is, and the
       ! limit is far above anything a test case reaches -- so it is forced here
       ! rather than waited for. The two differ only in where the integrals came
-      ! from, so they have to agree to rounding, not to a tolerance.
+      ! from, so single-threaded they agree to rounding. Threaded they do not,
+      ! and not from this comparison's own difference: the pipeline carries
+      ! ~5e-11 of run-to-run scatter from the unordered
+      ! `!$omp critical(mqc_direct_fock_accumulate)` merge of thread-local
+      ! accumulators in `mqc_libcint_direct.f90` -- our OpenMP, not threaded
+      ! BLAS (`MKL_NUM_THREADS=1 OMP_NUM_THREADS=8` still varies,
+      ! `OMP_NUM_THREADS=1 MKL_NUM_THREADS=8` is byte-identical), and not a
+      ! race: eight runs land on five contiguous values in the 11th digit,
+      ! a handful of merge orders. Two 8-thread runs of this whole program
+      ! differ by that much; two single-threaded runs are bit-identical, so
+      ! bit-identity is only testable at one thread. The bound sits above
+      ! the scatter's tail; a real integral-path bug is orders beyond it.
       call gradient_at(numbers, symbols, coords, basis, aux_basis, nelec, frozen, &
                        direct, .true., error)
       if (error%has_error()) then
@@ -141,7 +152,7 @@ contains
       end if
       write (*, "(a,es14.4)") "  stored against recomputed integrals:       ", &
          maxval(abs(analytic - direct))
-      if (maxval(abs(analytic - direct)) > 1.0e-10_dp) then
+      if (maxval(abs(analytic - direct)) > 2.0e-9_dp) then
          write (*, "(a)") "  FAIL: the two integral paths disagree"
          n_bad = n_bad + 1
       end if
