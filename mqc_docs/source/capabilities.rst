@@ -776,13 +776,13 @@ Current Limitations
 7. **AIMD**: keywords are defined and reach the driver config, but there is no
    propagator behind them
 8. **Analytic second derivatives**: restricted references only, and within
-   those, everything except range-separated hybrids, VV10 functionals and
-   density fitting -- so Hartree-Fock, LDA, GGA, meta-GGA and hybrids of each
-   are covered, and ``wb97x``, ``b97m-v`` and any open shell are not. What is
-   not covered falls back to the semi-numerical path rather than failing. The
-   grid response is omitted, as it is in the reference this is checked against.
-   See :doc:`analytic_hessians`, and note that none of it is reachable from a
-   deck yet
+   those, everything except VV10 functionals and density fitting -- so
+   Hartree-Fock, LDA, GGA, meta-GGA, hybrids and range-separated hybrids are
+   covered, and ``b97m-v`` and any open shell are not. What is not covered
+   falls back to the semi-numerical path rather than failing. The grid response
+   is omitted, as it is in the reference this is checked against. See
+   :doc:`analytic_hessians`, and note that none of it is reachable from a deck
+   yet
 9. **SCF convergence aids**: DIIS and level shifting, and no damping, Fermi
    smearing or second-order fallback. The shift is tapered off before
    convergence, so what it costs is iterations and not the orbital energies --
@@ -801,10 +801,11 @@ Planned Features
    - Unrestricted double hybrids, whose perturbative term keeps them closed-shell
    - F12 variants: these parse but have no implementation
 
-2. **Second derivatives beyond restricted Hartree-Fock**: Kohn-Sham,
-   unrestricted, density-fitted and MP2 Hessians. The exchange-correlation
-   kernel this needs at the GGA rung already exists, built and validated for the
-   double-hybrid gradient
+2. **Second derivatives beyond restricted Hartree-Fock**: unrestricted,
+   density-fitted and MP2 Hessians. The Kohn-Sham one is written and validated
+   against PySCF to 1e-8 for every rung through meta-GGA, hybrids and
+   range-separated hybrids included -- what is left there is wiring it to
+   ``driver: Hessian``, not the derivatives. See :doc:`analytic_hessians`
 
 3. **Advanced dynamics**:
 

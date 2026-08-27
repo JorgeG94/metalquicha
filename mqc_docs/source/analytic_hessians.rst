@@ -36,7 +36,7 @@ What is covered
      - yes
      - ``tpss``, ``m06-l``
    * - Range-separated hybrid
-     - **no**
+     - yes
      - ``wb97x``, ``cam-b3lyp``
    * - VV10 non-local correlation
      - **no**
@@ -75,6 +75,10 @@ Every covered functional is checked against ``pyscf.hessian.rks`` with
      - 1.46e-08
      - ``m06-l``
      - 6.56e-08
+   * - ``cam-b3lyp``
+     - 1.71e-08
+     - ``wb97x``
+     - 1.27e-08
 
 against Hessian elements of order one.
 
@@ -103,6 +107,20 @@ it are easy to get wrong and were each wrong once here:
 
 Each produces a Hessian that is symmetric, translationally invariant and wrong,
 which is why they are named here.
+
+A range-separated functional splits its exchange over an ``erf`` kernel, so
+every one of those places needs a *second* exchange pass at the screened
+:math:`\omega` on top of the full-range one. No new integrals are involved:
+libfint switches kernels through an environment slot rather than a separate
+entry point, so an attenuated pass is the same loop over a modified copy of the
+environment. That last word is the trap. Two routines here built the attenuated
+copy and then handed the integral the *unattenuated* one, so the long-range
+pass quietly returned full-range integrals scaled by the long-range
+coefficient. The result stayed symmetric and translationally invariant --
+full-range integrals are perfectly good integrals of the wrong operator -- and
+sat 2.1 from PySCF for wB97X. Neither bug was findable from the Hessian's
+shape; both fell out immediately once it was differenced against a gradient
+that had been validated first.
 
 .. _hessian-grid-response:
 
@@ -140,17 +158,6 @@ What is missing, and why
 Each of these is refused rather than approximated. A Hessian that silently
 drops a term is worse than one you cannot have: the frequencies come out
 plausible.
-
-**Range-separated hybrids** (``wb97x``, ``cam-b3lyp``). The plumbing is
-implemented: the second-derivative integrals take a range-separation
-parameter, and all five places a long-range exchange pass belongs have one.
-Three of those five were passing the unattenuated environment to libcint while
-building the attenuated one beside it, so they returned full-range integrals
-scaled by the long-range coefficient; that is fixed, and the discrepancies
-recorded here previously were measured before it was. The refusal stands until
-the assembled result has been checked against a reference again, which is what
-the range-separation branch does. See the comment at the refusal in
-``ks_hessian``.
 
 **VV10 non-local correlation** (``b97m-v``, ``wb97m-v``). Not implemented, and
 not a small job: VV10 is a double integral over the density, so its second
