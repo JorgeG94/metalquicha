@@ -182,10 +182,34 @@ there is no way to say whether a fitted one is converged or merely fast.
 **PCM.** A continuum's contribution to a second derivative is not implemented,
 and its interaction with the response terms has not been worked out.
 
-.. note::
+How a deck reaches it
+=====================
 
-   None of this is reachable from a deck yet. ``driver: Hessian`` still takes
-   the semi-numerical path for every method, and the analytic Kohn-Sham
-   Hessian is available only to callers inside the program. Wiring it up is a
-   small change; it is deliberately not made while the coverage above has holes
-   a keyword would not name.
+It does not ask. ``driver: Hessian`` requests the analytic Hessian, the backend
+takes it where the table above says yes, and everything else falls back to
+central differences of analytic gradients without saying so as an error --
+declining is not failing, because a Hessian has a second way to get one that is
+correct and merely slower. A run that took the analytic path logs
+``computing the analytic Hessian`` at verbose level, which is the only way to
+tell from the outside.
+
+There is no keyword to force either path. A deck that wants the fallback can
+have it by asking for something the analytic path declines -- density fitting,
+say -- but that is a side effect rather than a control, and if a real need for
+one appears it should be a keyword rather than a trick.
+
+Accuracy on larger bases
+========================
+
+The 1e-8 figures above are water at STO-3G, and they do not hold everywhere.
+Against PySCF, a functional agrees to 1e-9 relative at STO-3G, 8e-6 at 6-31G
+and 2e-5 at cc-pVDZ, while Hartree-Fock stays at 1e-8 on all three. The
+residual is the two codes' quadrature rather than the derivatives: it moves
+with the grid level and vanishes at STO-3G, where the density is compact enough
+that where the points sit stops mattering.
+
+In frequency terms the worst of it is 0.16 cm-1 on a mode at 3894 cm-1. That is
+below anything the underlying model resolves, but it is not the agreement the
+STO-3G numbers suggest, and it has not been chased further. ``check_hessian.py``
+in the validation suite carries both figures, one tolerance per case, rather
+than loosening every case to the worst one.

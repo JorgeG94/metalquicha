@@ -455,14 +455,15 @@ Hessian Calculations
 There are two, and the backend picks -- a request that cannot be honoured
 analytically is not refused, it falls back.
 
-- **Analytic**, for a restricted Hartree-Fock reference: second derivatives
-  without displacing anything, built in the pieces the standard decomposition
-  uses (nuclear repulsion, the per-atom perturbation, the coupled-perturbed
-  solve, the explicit second-derivative assembly) so it can be compared with
-  PySCF's ``hessian.rhf`` stage by stage rather than only at the end. Taken
-  whenever the calculation is restricted, not Kohn-Sham, not density fitted, has
-  no MP2 or coupled-cluster correlation, no continuum solvent and no hydrogen
-  caps.
+- **Analytic**, for a restricted Hartree-Fock or Kohn-Sham reference: second
+  derivatives without displacing anything, built in the pieces the standard
+  decomposition uses (nuclear repulsion, the per-atom perturbation, the
+  coupled-perturbed solve, the explicit second-derivative assembly) so it can be
+  compared with PySCF's ``hessian.rhf`` and ``hessian.rks`` stage by stage
+  rather than only at the end. Taken whenever the calculation is restricted, not
+  density fitted, has no VV10 non-local correlation, no MP2 or coupled-cluster
+  correlation, no continuum solvent and no hydrogen caps. See
+  :doc:`analytic_hessians` for which functionals qualify.
 - **Semi-numerical** otherwise: central differences of *analytic gradients*,
   ``H[i,j] = (g_j(x_i + h) - g_j(x_i - h)) / 2h``. Only one derivative is taken
   numerically, which keeps most of the digits that differencing energies twice
@@ -780,9 +781,10 @@ Current Limitations
    Hartree-Fock, LDA, GGA, meta-GGA, hybrids and range-separated hybrids are
    covered, and ``b97m-v`` and any open shell are not. What is not covered
    falls back to the semi-numerical path rather than failing. The grid response
-   is omitted, as it is in the reference this is checked against. See
-   :doc:`analytic_hessians`, and note that none of it is reachable from a deck
-   yet
+   is omitted, as it is in the reference this is checked against. Agreement
+   with PySCF is 1e-8 at STO-3G and loosens to 2e-5 on cc-pVDZ for a
+   functional, which is quadrature rather than the derivatives -- worth 0.16
+   cm-1 at worst. See :doc:`analytic_hessians`
 9. **SCF convergence aids**: DIIS and level shifting, and no damping, Fermi
    smearing or second-order fallback. The shift is tapered off before
    convergence, so what it costs is iterations and not the orbital energies --

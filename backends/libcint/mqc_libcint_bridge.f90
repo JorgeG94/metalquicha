@@ -36,7 +36,7 @@ module mqc_libcint_bridge
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_libcint_pcm, only: pcm_context_t
    use mqc_libcint_gradient, only: libcint_scf_gradient
-   use mqc_libcint_hessian, only: rhf_hessian, hessian_to_matrix
+   use mqc_libcint_hessian, only: rhf_hessian, ks_hessian, hessian_to_matrix
    use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
    use mqc_libcint_ri_mp2_gradient, only: libcint_ri_mp2_gradient
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2, &
@@ -1319,16 +1319,23 @@ contains
 
       ! ---- the analytic Hessian, where it applies ---------------------------
       !
-      ! Restricted Hartree-Fock over exact integrals and nothing else. Every
-      ! other case here reaches this same line and every one of them must fall
-      ! through: an unrestricted reference has two densities where `rhf_hessian`
-      ! assumes one carrying its factor of two; a fitted SCF converged a
-      ! different energy from the one these derivatives belong to; a functional
-      ! adds an exchange-correlation second derivative that does not exist on
-      ! this side; and a correlated method's Hessian needs its own response
-      ! entirely. None of those would fail loudly -- each would return a
-      ! plausible, converged, wrong matrix -- so the guard is a list of
-      ! positives rather than a list of refusals.
+      ! A restricted reference over exact integrals, Hartree-Fock or Kohn-Sham.
+      ! Every other case here reaches this same line and every one of them must
+      ! fall through: an unrestricted reference has two densities where these
+      ! assume one carrying its factor of two; a fitted SCF converged a
+      ! different energy from the one these derivatives belong to; and a
+      ! correlated method's Hessian needs its own response entirely. None of
+      ! those would fail loudly -- each would return a plausible, converged,
+      ! wrong matrix -- so the guard is a list of positives rather than a list
+      ! of refusals.
+      !
+      ! **A functional carrying VV10 falls through as well.** `ks_hessian`
+      ! refuses it, and a refusal reaching the error branch below would abort
+      ! the run rather than fall back, which is the opposite of what a
+      ! `-V` functional wants: its Hessian is available, just not from here.
+      ! Tested on the condition rather than on the refusal so that the
+      ! fallback is chosen deliberately instead of arrived at by way of an
+      ! error.
       !
       ! Hydrogen caps are excluded for a different reason: the shapes match and
       ! the numbers would be right, but a capped fragment's second derivatives
@@ -1338,18 +1345,25 @@ contains
       ! A solvated SCF also falls through: these second derivatives are the
       ! gas-phase operator's, and the finite-difference fallback is *correct*
       ! for the continuum -- each displaced energy rebuilds its own cavity.
-      if (do_hessian .and. .not. unrestricted .and. .not. kohn_sham &
+      if (do_hessian .and. .not. unrestricted &
           .and. .not. settings%density_fitting .and. .not. settings%run_mp2 &
           .and. .not. settings%run_cc .and. .not. settings%pcm%enabled &
-          .and. fragment%n_caps == 0) then
+          .and. fragment%n_caps == 0 &
+          .and. .not. (kohn_sham .and. xc%nlc_b > 0.0_dp)) then
          block
             real(dp), allocatable :: hess4(:, :, :, :)
             type(timer_type) :: hess_clock
 
             call logger%info("  computing the analytic Hessian")
             call hess_clock%start()
-            call rhf_hessian(mol, fragment%element_numbers, scf%density, scf%orbitals, &
-                             scf%orbital_energies, scf%n_occupied, hess4, error)
+            if (kohn_sham) then
+               call ks_hessian(mol, fragment%element_numbers, scf%density, scf%orbitals, &
+                               scf%orbital_energies, scf%n_occupied, xc, xc%exx_fraction, &
+                               hess4, error)
+            else
+               call rhf_hessian(mol, fragment%element_numbers, scf%density, scf%orbitals, &
+                                scf%orbital_energies, scf%n_occupied, hess4, error)
+            end if
             if (error%has_error()) then
                call result%error%set(ERROR_VALIDATION, "Hessian: "//error%get_message())
                result%has_error = .true.

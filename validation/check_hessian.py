@@ -57,8 +57,53 @@ DIMER = [("O", (-0.0702, -0.0227, 0.0)),
          ("H", (3.0208, -0.3971, -0.7602)),
          ("H", (3.0208, -0.3971, 0.7602))]
 
-CASES = [("water", WATER, ["sto-3g", "6-31g", "cc-pvdz"]),
-         ("dimer", DIMER, ["sto-3g", "6-31g"])]
+# `None` is Hartree-Fock; anything else is a functional, run restricted and
+# unfitted, which is what the analytic path covers. One per rung, plus both
+# range-separated forms -- their long-range exchange is a second pass at a
+# screened omega in five separate places, and a pass that silently ran
+# full-range is the bug this is here to catch again.
+# name, geometry, bases, functional, tolerance scale.
+#
+# `None` is Hartree-Fock; anything else is a functional, run restricted and
+# unfitted, which is what the analytic path covers. One per rung, plus both
+# range-separated forms -- their long-range exchange is a second pass at a
+# screened omega in five separate places, and a pass that silently ran
+# full-range is the bug this is here to catch again.
+#
+# **The scale is the honest part.** A quadrature functional does not reach the
+# agreement an exact-integral one does, and the gap grows with the basis: on
+# water, DFT matches PySCF to 1e-9 relative at STO-3G, 8e-6 at 6-31G and 2e-5
+# at cc-pVDZ, where Hartree-Fock holds 1e-8 on all three. That residual is the
+# two codes' grids, not the derivatives -- it moves when the grid level moves
+# and it is absent at STO-3G, where the density is compact enough that where
+# the points sit stops mattering. In frequency terms the worst of it is 0.16
+# cm-1 on a 3894 cm-1 mode. It has not been chased below that, so rather than
+# loosen every case to the worst one, each case carries the tolerance its own
+# size earns: STO-3G stays at the tight one for every functional, and only the
+# larger bases are given room.
+#
+# 6-31G* is deliberately absent. mqc reads it with Cartesian d functions, which
+# is the Pople convention and correct, while `mol.cart = False` below asks
+# PySCF for spherical -- 19 functions against 18, which is a different basis
+# and not a disagreement about Hessians.
+CASES = [("water", WATER, ["sto-3g", "6-31g", "cc-pvdz"], None, 1),
+         ("dimer", DIMER, ["sto-3g", "6-31g"], None, 1),
+         ("water", WATER, ["sto-3g"], "pbe", 1),
+         ("water", WATER, ["sto-3g"], "b3lyp", 1),
+         ("water", WATER, ["sto-3g"], "tpss", 1),
+         ("water", WATER, ["sto-3g"], "cam-b3lyp", 1),
+         ("water", WATER, ["sto-3g"], "wb97x", 1),
+         ("water", WATER, ["6-31g"], "pbe", 50),
+         ("water", WATER, ["6-31g"], "b3lyp", 50),
+         ("water", WATER, ["cc-pvdz"], "pbe", 50),
+         ("water", WATER, ["cc-pvdz"], "b3lyp", 50)]
+
+# Both sides quadrature on this. It has to be one number, not each code's
+# default, or the comparison measures the grids rather than the derivatives.
+GRID_LEVEL = 3
+
+# PySCF spells two of these without the hyphen.
+PYSCF_XC = {"cam-b3lyp": "camb3lyp"}
 
 # A thousandth of a wavenumber on modes of a few thousand, and a part in a
 # million on the norm. Both are far below the accuracy of the model itself and
@@ -68,17 +113,25 @@ FREQ_TOL = 1.0e-2      # cm-1
 NORM_REL_TOL = 1.0e-6
 
 
-def run_mqc(binary, atoms, basis, workdir):
+def run_mqc(binary, atoms, basis, workdir, functional=None):
     """One `driver: Hessian` deck through mqc; returns frequencies and the norm."""
     xyz = workdir / "geom.xyz"
     lines = [str(len(atoms)), ""]
     lines += [f"{s}  {c[0]:.10f} {c[1]:.10f} {c[2]:.10f}" for s, c in atoms]
     xyz.write_text("\n".join(lines) + "\n")
 
+    if functional is None:
+        model = {"method": "HF", "basis": basis}
+        keywords = {}
+    else:
+        model = {"method": "dft", "basis": basis, "functional": functional}
+        keywords = {"dft": {"grid_level": GRID_LEVEL}}
+
     deck = workdir / "case.json"
     deck.write_text(json.dumps({
         "schema": {"name": "case", "version": "1.0"},
-        "model": {"method": "HF", "basis": basis},
+        "model": model,
+        "keywords": keywords,
         "driver": "Hessian",
         "molecules": [{"xyz": "geom.xyz",
                        "molecular_charge": 0,
@@ -88,14 +141,15 @@ def run_mqc(binary, atoms, basis, workdir):
     proc = subprocess.run([str(binary), "case.json"], cwd=workdir,
                           capture_output=True, text=True)
     out = workdir / "output_case.json"
+    label = basis if functional is None else f"{functional}/{basis}"
     if proc.returncode != 0 or not out.exists():
-        raise SystemExit(f"mqc failed on {basis}:\n{proc.stdout[-2000:]}")
+        raise SystemExit(f"mqc failed on {label}:\n{proc.stdout[-2000:]}")
 
     # The analytic path announces itself; without that line this compared the
     # finite-difference Hessian to PySCF and would have passed while testing
     # nothing that this script exists to test.
     if "computing the analytic Hessian" not in proc.stdout:
-        raise SystemExit(f"{basis}: mqc fell back to finite differences, so there "
+        raise SystemExit(f"{label}: mqc fell back to finite differences, so there "
                          f"is no analytic Hessian here to check")
 
     data = json.load(open(out))
@@ -104,8 +158,8 @@ def run_mqc(binary, atoms, basis, workdir):
             block["hessian_frobenius_norm"])
 
 
-def run_pyscf(atoms, basis):
-    from pyscf import gto, scf
+def run_pyscf(atoms, basis, functional=None):
+    from pyscf import dft, gto, scf
     from pyscf.hessian import thermo
 
     mol = gto.Mole()
@@ -116,7 +170,12 @@ def run_pyscf(atoms, basis):
     mol.verbose = 0
     mol.build()
 
-    mf = scf.RHF(mol)
+    if functional is None:
+        mf = scf.RHF(mol)
+    else:
+        mf = dft.RKS(mol)
+        mf.xc = PYSCF_XC.get(functional, functional)
+        mf.grids.level = GRID_LEVEL
     mf.conv_tol = 1e-13
     mf.kernel()
 
@@ -139,14 +198,17 @@ def main():
         return 1
 
     failures = 0
-    for name, atoms, bases in CASES:
+    for name, atoms, bases, functional, scale in CASES:
         for basis in bases:
+            freq_tol = FREQ_TOL * scale
+            norm_tol = NORM_REL_TOL * scale
             with tempfile.TemporaryDirectory() as tmp:
-                ours_freq, ours_norm = run_mqc(binary, atoms, basis, pathlib.Path(tmp))
-            theirs_freq, theirs_norm = run_pyscf(atoms, basis)
+                ours_freq, ours_norm = run_mqc(binary, atoms, basis,
+                                               pathlib.Path(tmp), functional)
+            theirs_freq, theirs_norm = run_pyscf(atoms, basis, functional)
 
             dn = abs(ours_norm - theirs_norm) / theirs_norm
-            ok = dn <= NORM_REL_TOL
+            ok = dn <= norm_tol
             note = ""
 
             if np.iscomplexobj(theirs_freq) and np.abs(theirs_freq.imag).max() > 0:
@@ -158,18 +220,19 @@ def main():
                 real = np.real(theirs_freq)
                 k = len(real)
                 df = np.abs(np.sort(ours_freq)[-k:] - np.sort(real))
-                ok = ok and df.max() <= FREQ_TOL
+                ok = ok and df.max() <= freq_tol
 
-            head = f"  {'ok  ' if ok else 'FAIL'} {name:6s} {basis:10s} "
+            method = "hf" if functional is None else functional
+            head = f"  {'ok  ' if ok else 'FAIL'} {name:6s} {method:10s} {basis:10s} "
             if df is None:
-                print(head + f"|dnorm|/norm {dn:8.2e} (<= {NORM_REL_TOL:.0e}){note}")
+                print(head + f"|dnorm|/norm {dn:8.2e} (<= {norm_tol:.0e}){note}")
             else:
                 print(head + f"{k} modes  max |dnu| {df.max():8.2e} cm-1 "
-                             f"(<= {FREQ_TOL:.0e})  |dnorm|/norm {dn:8.2e} "
-                             f"(<= {NORM_REL_TOL:.0e})")
+                             f"(<= {freq_tol:.0e})  |dnorm|/norm {dn:8.2e} "
+                             f"(<= {norm_tol:.0e})")
             if not ok:
                 failures += 1
-                if df is not None and df.max() > FREQ_TOL:
+                if df is not None and df.max() > freq_tol:
                     worst = int(np.argmax(df))
                     print(f"       mode {worst}: {np.sort(ours_freq)[-k:][worst]:.4f} vs "
                           f"{np.sort(np.real(theirs_freq))[worst]:.4f} cm-1")
@@ -178,7 +241,7 @@ def main():
     if failures:
         print(f"[hessian] {failures} case(s) disagree with PySCF")
         return 1
-    print("[hessian] the analytic RHF Hessian matches PySCF's on every case")
+    print("[hessian] the analytic Hessian matches PySCF's on every case")
     return 0
 
 
