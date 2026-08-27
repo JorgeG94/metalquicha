@@ -19,11 +19,12 @@ module test_mqc_xc_hessian
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available, &
-                             xc_add_potential
+                             xc_add_potential, vv10_add_potential
    use mqc_libcint_hessian, only: ks_hessian
    use mqc_libcint_gradient, only: libcint_scf_gradient, vv10_gradient_fixed_grid
    use mqc_libcint_xc_hessian, only: xc_hessian, xc_gradient_fixed_grid, &
-                                     xc_potential_deriv, vv10_hessian
+                                     xc_potential_deriv, vv10_hessian, &
+                                     vv10_potential_deriv
    implicit none
    private
 
@@ -51,6 +52,8 @@ contains
                   new_unittest("vv10_hessian_differences_the_fixed_grid_gradient", &
                                test_vv10_hessian), &
                   new_unittest("xc_potential_derivative_matches_differences", test_vxc_deriv), &
+                  new_unittest("vv10_potential_derivative_matches_differences", &
+                               test_vv10_vxc_deriv), &
                   new_unittest("ks_hessian_differences_the_dft_gradient", test_ks_end_to_end) &
                   ]
    end subroutine collect_mqc_xc_hessian
@@ -526,6 +529,90 @@ contains
       call xc_add_potential(ctx, mol, dens, v, e, n, err)
       call mol%destroy()
    end subroutine vxc_at
+
+   subroutine test_vv10_vxc_deriv(error)
+      !! The VV10 potential's nuclear derivative, against central differences
+      !! of the VV10 potential matrix itself
+      !!
+      !! `test_vxc_deriv`'s comparison for the non-local term: the density
+      !! matrix and both grids held fixed by passing one context in and moving
+      !! only the molecule, so both sides omit the grid response and what
+      !! remains is the step error. The VV10 potential is isolated by calling
+      !! `vv10_add_potential` directly into a zeroed matrix -- the same routine
+      !! that adds VV10's term to `xc_add_potential`'s output -- so the
+      !! semilocal term, which has its own test above, never enters and a
+      !! failure localises to the non-local algebra.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: H = 1.0e-3_dp
+      real(dp), parameter :: TOL = 6.0e-8_dp
+         !! Six times the measured worst disagreement, 1.01e-8 at this step,
+         !! which is the step error and nothing else: it scales exactly as H^2
+         !! over a fourfold range of steps (2.52e-9 at 5e-4, 4.03e-8 at 2e-3,
+         !! ratios 4.00 and 4.00), which a missing term cannot do.
+      real(dp) :: shifted(3, 3), worst
+      real(dp), allocatable :: dens(:, :), h1(:, :, :, :), vp(:, :), vm(:, :)
+      type(xc_context_t) :: ctx
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      logical :: ok
+      integer :: ia, a, nao, u, v
+
+      if (.not. xc_available()) return
+
+      call reference_state("b97m-v", ctx, dens, err, ok)
+      call check(error, ok, "the b97m-v reference failed")
+      if (allocated(error)) return
+
+      nao = size(dens, 1)
+      allocate (h1(nao, nao, 3, size(WATER_Z)))
+      h1 = 0.0_dp
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call vv10_potential_deriv(ctx, mol, dens, h1, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the VV10 potential derivative failed")
+      if (allocated(error)) return
+
+      worst = 0.0_dp
+      do ia = 1, 3
+         do a = 1, 3
+            shifted = WATER
+            shifted(a, ia) = shifted(a, ia) + H
+            call vv10_vxc_at(ctx, shifted, dens, vp, err)
+            shifted = WATER
+            shifted(a, ia) = shifted(a, ia) - H
+            call vv10_vxc_at(ctx, shifted, dens, vm, err)
+            do v = 1, nao
+               do u = 1, nao
+                  worst = max(worst, abs(h1(u, v, a, ia) - (vp(u, v) - vm(u, v))/(2.0_dp*H)))
+               end do
+            end do
+         end do
+      end do
+
+      call check(error, worst < TOL, &
+                 "the VV10 potential derivative disagrees with differences "// &
+                 "of the VV10 potential")
+   end subroutine test_vv10_vxc_deriv
+
+   subroutine vv10_vxc_at(ctx, coords, dens, v, err)
+      !! The VV10 potential matrix alone, at a displaced geometry, on the NLC
+      !! grid the context already holds and against the reference density
+      type(xc_context_t), intent(inout) :: ctx
+      real(dp), intent(in) :: coords(3, 3), dens(:, :)
+      real(dp), allocatable, intent(out) :: v(:, :)
+      type(error_t), intent(inout) :: err
+
+      type(libcint_molecule_t) :: mol
+      real(dp) :: e
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      if (allocated(v)) deallocate (v)
+      allocate (v(size(dens, 1), size(dens, 2)))
+      v = 0.0_dp
+      call vv10_add_potential(ctx, mol, dens, v, e, err)
+      call mol%destroy()
+   end subroutine vv10_vxc_at
 
    subroutine test_ks_end_to_end(error)
       !! The assembled Kohn-Sham Hessian against differences of the analytic

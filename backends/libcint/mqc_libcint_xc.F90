@@ -84,6 +84,7 @@ module mqc_libcint_xc
    public :: xc_kernel_apply
    public :: xc_grid_kernel_quantities
    public :: ensure_nlc_grid
+   public :: vv10_add_potential
 
    real(dp), parameter :: KERNEL_RHO_FLOOR = 1.0e-10_dp
       !! Grid points below this density contribute no *second* derivative.
