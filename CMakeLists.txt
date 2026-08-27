@@ -177,6 +177,13 @@ set_property(CACHE MQC_CODATA_YEAR PROPERTY STRINGS 2018 2010)
 
 option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
 option(MQC_ENABLE_CREST "Link to CREST for conformer and ensemble sampling" OFF)
+set(MQC_LIBFINT_REPOSITORY
+    "https://github.com/JorgeG94/libfint.git"
+    CACHE STRING "Where to fetch libfint from")
+set(MQC_LIBFINT_TAG
+    "feat/ecp"
+    CACHE STRING "libfint revision to build against")
+
 set(MQC_CREST_REPOSITORY
     "https://github.com/JorgeG94/crest.git"
     CACHE STRING "Where to fetch CREST from")
@@ -465,12 +472,26 @@ if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
   # release whose C ABI carries the second derivatives, which is what lets
   # `mqc_libcint_hess_abi` declare one set of entry points for both backends.
   # The other two fetches below pin by SHA rather than by name, which is the
-  # stronger form -- a tag can be moved and a SHA cannot.
+  # stronger form -- a tag can be moved and a SHA cannot. **Currently a branch,
+  # not a release, and that is temporary.**
+  #
+  # The comment above argues for pinning by SHA and it still holds -- a moving
+  # pin reddens the whole matrix on a metalquicha change that touched nothing,
+  # and the signal is indistinguishable from a real break. This branch needs the
+  # ECP integrals, which exist only on libfint's feat/ecp until that merges and
+  # releases. `MQC_LIBFINT_TAG` must go back to a release tag before this lands,
+  # and the ECP work here does not build without it.
+  #
+  # Overridable the same way CREST is, which is the point of doing it this way
+  # rather than editing the literal: `-DMQC_LIBFINT_TAG=v0.1.1` builds against
+  # the release and turns the ECP support off, so a bisect over an unrelated
+  # failure has a way back.
   FetchContent_Declare(
     libfint
-    GIT_REPOSITORY https://github.com/JorgeG94/libfint.git
-    GIT_TAG v0.1.1)
+    GIT_REPOSITORY ${MQC_LIBFINT_REPOSITORY}
+    GIT_TAG ${MQC_LIBFINT_TAG})
   FetchContent_MakeAvailable(libfint)
+  message(STATUS "libfint: ${MQC_LIBFINT_REPOSITORY}@${MQC_LIBFINT_TAG}")
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBCINT)
   # libfint carries L (sp) shells; libcint cannot represent one at all.
   #
