@@ -73,6 +73,7 @@ module mqc_libcint_gradient
       !! separable and contract exactly as a closed-shell reference does.
    public :: iprinv_deriv_at
    public :: xc_potential_gradient
+   public :: vv10_gradient_fixed_grid     !! The VV10 Hessian differences this
    public :: fitted_reference_gradient
    public :: DERIV_OVLP, DERIV_KIN, DERIV_NUC
 
@@ -633,6 +634,41 @@ contains
 
    subroutine vv10_gradient(ctx, mol, density, gradient, error)
       !! VV10's contribution to dE/dR, accumulated in place
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(inout) :: gradient(:, :)
+      type(error_t), intent(inout) :: error
+
+      call vv10_gradient_core(ctx, mol, density, gradient, error, .false.)
+   end subroutine vv10_gradient
+
+   subroutine vv10_gradient_fixed_grid(ctx, mol, density, gradient, error)
+      !! VV10's dE/dR with the grid held fixed
+      !!
+      !! The first derivative a VV10 *Hessian* is the second derivative of, in
+      !! the same sense `xc_gradient_fixed_grid` is for the semilocal term:
+      !! the points do not move, the partition does not respond, and the
+      !! kernel's dependence on where the points are drops out with them. Not
+      !! the physical gradient -- `vv10_gradient` is -- and differencing this
+      !! against the physical one disagrees by 4.5e-4 on water, which is the
+      !! size of exactly the terms it omits.
+      !!
+      !! It exists so the Hessian can be differenced against its own first
+      !! derivative with the same approximation on both sides. That is the
+      !! check that found every error in the gradient below it, and there is
+      !! no reason to build the harder object without it.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(inout) :: gradient(:, :)
+      type(error_t), intent(inout) :: error
+
+      call vv10_gradient_core(ctx, mol, density, gradient, error, .true.)
+   end subroutine vv10_gradient_fixed_grid
+
+   subroutine vv10_gradient_core(ctx, mol, density, gradient, error, fixed_grid)
+      !! The two above, which differ only in whether the grid is allowed to move
       !!
       !! **The non-locality is already inside `vrho` and `vsigma`.** VV10's
       !! energy is a double integral, which makes it sound as though its
@@ -665,6 +701,9 @@ contains
       real(dp), intent(in) :: density(:, :)
       real(dp), intent(inout) :: gradient(:, :)
       type(error_t), intent(inout) :: error
+      logical, intent(in) :: fixed_grid
+         !! Skip the moving points and the responding partition, leaving the
+         !! basis-function term alone.
 
       real(dp), allocatable :: rho(:), sigma(:), rho_grad(:, :)
       real(dp), allocatable :: exc(:), vrho(:), vsigma(:), gcoef(:, :)
@@ -717,10 +756,18 @@ contains
          end do
       end do
 
-      allocate (exc(npts), vrho(npts), vsigma(npts), dedw(npts), fexp(3, npts))
-      call vv10_nlc(ctx%nlc_b, ctx%nlc_c, ctx%nlc_grid%coords, rho, sigma, &
-                    ctx%nlc_grid%coords, rho, sigma, ctx%nlc_grid%weights, &
-                    exc, vrho, vsigma, dedw=dedw, fexp=fexp)
+      allocate (exc(npts), vrho(npts), vsigma(npts))
+      if (fixed_grid) then
+         allocate (dedw(0), fexp(3, 0))
+         call vv10_nlc(ctx%nlc_b, ctx%nlc_c, ctx%nlc_grid%coords, rho, sigma, &
+                       ctx%nlc_grid%coords, rho, sigma, ctx%nlc_grid%weights, &
+                       exc, vrho, vsigma)
+      else
+         allocate (dedw(npts), fexp(3, npts))
+         call vv10_nlc(ctx%nlc_b, ctx%nlc_c, ctx%nlc_grid%coords, rho, sigma, &
+                       ctx%nlc_grid%coords, rho, sigma, ctx%nlc_grid%weights, &
+                       exc, vrho, vsigma, dedw=dedw, fexp=fexp)
+      end if
 
       ! dE/d(grad rho) = 2 vsigma grad rho, the chain rule the semilocal path
       ! applies to its own sigma, written the same way so the two cannot
@@ -773,12 +820,16 @@ contains
                own = ctx%nlc_grid%atom(gg)
                wv = ctx%nlc_grid%weights(gg)*vrho(gg)
                call accumulate_channel(ao_grad, dchi, ig, n_sig, wv, scale, &
-                                       c_offsets, c_counts, natm, own, gradient)
+                                       c_offsets, c_counts, natm, own, gradient, &
+                                       moving=.not. fixed_grid)
                call accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, n_sig, &
                                            ctx%nlc_grid%weights(gg)*gcoef(gg, :), scale, &
-                                           c_offsets, c_counts, natm, own, gradient)
+                                           c_offsets, c_counts, natm, own, gradient, &
+                                           moving=.not. fixed_grid)
             end do
          end if
+
+         if (fixed_grid) cycle
 
          ! The partition-weight term, and the point-motion term that cancels
          ! most of it, written as `xc_gradient` writes them -- see there for
@@ -823,7 +874,7 @@ contains
             end do
          end do
       end do
-   end subroutine vv10_gradient
+   end subroutine vv10_gradient_core
 
    subroutine xc_potential_gradient(ctx, mol, density, pmat, gradient, error)
       !! `d/dR Tr(P V_xc[D])`, with both densities held fixed, accumulated in place
@@ -1237,7 +1288,7 @@ contains
    end subroutine density_times_ao
 
    subroutine accumulate_channel(ao_grad, dchi, ig, nao, wv, scale, &
-                                 offsets, counts, natm, own, gradient)
+                                 offsets, counts, natm, own, gradient, moving)
       !! One spin channel's basis-function and grid-point terms at one point
       !!
       !! Both are the same contraction of `grad chi` against `D chi`. They
@@ -1252,9 +1303,21 @@ contains
       real(dp), intent(in) :: wv, scale
       integer, intent(in) :: offsets(:), counts(:)
       real(dp), intent(inout) :: gradient(:, :)
+      logical, intent(in), optional :: moving
+         !! Whether the grid points travel with their owning atom. Default
+         !! true, which is the physical gradient. False leaves the
+         !! basis-function term alone, which is what a *fixed-grid* first
+         !! derivative is -- the object a Hessian that omits the grid response
+         !! is the second derivative of. Passing it here rather than writing a
+         !! second contraction keeps the two from disagreeing about the term
+         !! they share.
 
       integer :: ia, mu, comp, p0, p1
       real(dp) :: block_sum(3), total(3)
+      logical :: points_move
+
+      points_move = .true.
+      if (present(moving)) points_move = moving
 
       total = 0.0_dp
       do ia = 1, natm
@@ -1276,9 +1339,11 @@ contains
 
       ! The point travels with the atom that produced it, which is the same
       ! contraction over every function and with the opposite sign.
-      do comp = 1, 3
-         gradient(comp, own) = gradient(comp, own) + scale*wv*total(comp)
-      end do
+      if (points_move) then
+         do comp = 1, 3
+            gradient(comp, own) = gradient(comp, own) + scale*wv*total(comp)
+         end do
+      end if
    end subroutine accumulate_channel
 
    subroutine density_times_ao_grad(ao_grad, density, nb, nao, dgchi)
@@ -1378,7 +1443,7 @@ contains
    end subroutine accumulate_mgga_channel
 
    subroutine accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, nao, wg, scale, &
-                                     offsets, counts, natm, own, gradient)
+                                     offsets, counts, natm, own, gradient, moving)
       !! One spin channel's density-gradient term at one grid point
       !!
       !! A GGA reads `grad rho` as well as `rho`, so moving a nucleus moves that
@@ -1407,6 +1472,8 @@ contains
       real(dp), intent(in) :: dchi(:, :)
       real(dp), intent(in) :: dgchi(:, :, :)
       integer, intent(in) :: ig, nao, natm, own
+      logical, intent(in), optional :: moving
+         !! As `accumulate_channel`: false leaves the basis-function term alone.
       real(dp), intent(in) :: wg(3)
       real(dp), intent(in) :: scale
       integer, intent(in) :: offsets(:), counts(:)
@@ -1418,7 +1485,11 @@ contains
       integer :: ia, mu, j, k, p0, p1
       real(dp) :: block_sum(3)
       real(dp) :: total(3)
+      logical :: points_move
       real(dp) :: acc
+
+      points_move = .true.
+      if (present(moving)) points_move = moving
 
       total = 0.0_dp
       do ia = 1, natm
@@ -1451,7 +1522,7 @@ contains
       ! every basis function, with the opposite sign, exactly as the LDA term
       ! next door.
       do k = 1, 3
-         gradient(k, own) = gradient(k, own) + scale*total(k)
+         if (points_move) gradient(k, own) = gradient(k, own) + scale*total(k)
       end do
    end subroutine accumulate_gga_channel
 

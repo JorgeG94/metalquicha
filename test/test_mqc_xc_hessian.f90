@@ -21,7 +21,7 @@ module test_mqc_xc_hessian
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available, &
                              xc_add_potential
    use mqc_libcint_hessian, only: ks_hessian
-   use mqc_libcint_gradient, only: libcint_scf_gradient
+   use mqc_libcint_gradient, only: libcint_scf_gradient, vv10_gradient_fixed_grid
    use mqc_libcint_xc_hessian, only: xc_hessian, xc_gradient_fixed_grid, &
                                      xc_potential_deriv
    implicit none
@@ -46,6 +46,8 @@ contains
       testsuite = [ &
                   new_unittest("xc_hessian_differences_its_own_gradient", test_against_fd), &
                   new_unittest("xc_hessian_mgga_differences_its_gradient", test_gga_against_fd), &
+                  new_unittest("vv10_fixed_grid_gradient_differences_the_energy", &
+                               test_vv10_fixed_grid), &
                   new_unittest("xc_potential_derivative_matches_differences", test_vxc_deriv), &
                   new_unittest("ks_hessian_differences_the_dft_gradient", test_ks_end_to_end) &
                   ]
@@ -236,6 +238,116 @@ contains
          end do
       end do
    end subroutine test_gga_against_fd
+
+   subroutine test_vv10_fixed_grid(error)
+      !! The fixed-grid VV10 gradient against a difference of the fixed-grid energy
+      !!
+      !! This is scaffolding, and it is the scaffolding a VV10 Hessian cannot
+      !! be built without. `vv10_gradient_fixed_grid` is what that Hessian will
+      !! be differenced against, so an error in it would be inherited by every
+      !! check made with it and would read as agreement.
+      !!
+      !! Both grids and the density are held fixed, by passing one context in
+      !! and moving only the molecule -- the same trick `xc_at` uses, for the
+      !! same reason. The semilocal term rides along rather than being isolated:
+      !! it is validated already, so a failure here localises to the non-local
+      !! part anyway, and `xc_add_potential` reports one energy for both.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: H = 1.0e-4_dp
+      real(dp) :: shifted(3, 3), fd, worst, ep, em
+      real(dp) :: gradient(3, 3)
+      real(dp), allocatable :: density(:, :)
+      type(xc_context_t) :: ctx
+      type(error_t) :: err
+      logical :: ok
+      integer :: ia, a
+
+      if (.not. xc_available()) return
+
+      call reference_state("b97m-v", ctx, density, err, ok)
+      call check(error, ok, "the b97m-v reference failed")
+      if (allocated(error)) return
+
+      gradient = 0.0_dp
+      call xc_at(ctx, WATER, gradient=gradient, density=density, err=err, ok=ok)
+      call check(error, ok, "the fixed-grid semilocal gradient failed")
+      if (allocated(error)) return
+      call vv10_at(ctx, WATER, gradient, density, err, ok)
+      call check(error, ok, "the fixed-grid VV10 gradient failed")
+      if (allocated(error)) return
+
+      worst = 0.0_dp
+      do ia = 1, 3
+         do a = 1, 3
+            shifted = WATER
+            shifted(a, ia) = shifted(a, ia) + H
+            call exc_at(ctx, shifted, density, ep, err, ok)
+            if (.not. ok) then
+               call check(error, .false., "a displaced exchange-correlation energy failed")
+               return
+            end if
+            shifted = WATER
+            shifted(a, ia) = shifted(a, ia) - H
+            call exc_at(ctx, shifted, density, em, err, ok)
+            if (.not. ok) then
+               call check(error, .false., "a displaced exchange-correlation energy failed")
+               return
+            end if
+            fd = (ep - em)/(2.0_dp*H)
+            worst = max(worst, abs(gradient(a, ia) - fd))
+         end do
+      end do
+
+      ! Exact rather than approximate: nothing is omitted on either side, so
+      ! what is left is the step error. Differencing the *physical* VV10
+      ! gradient here instead would miss by 6e-3, the size of the terms this
+      ! deliberately drops.
+      call check(error, worst < 1.0e-6_dp, &
+                 "the fixed-grid VV10 gradient disagrees with a difference of the energy")
+   end subroutine test_vv10_fixed_grid
+
+   subroutine vv10_at(ctx, coords, gradient, density, err, ok)
+      type(xc_context_t), intent(inout) :: ctx
+      real(dp), intent(in) :: coords(3, 3)
+      real(dp), intent(inout) :: gradient(3, 3)
+      real(dp), intent(in) :: density(:, :)
+      type(error_t), intent(inout) :: err
+      logical, intent(out) :: ok
+
+      type(libcint_molecule_t) :: mol
+
+      ok = .false.
+      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      if (err%has_error()) return
+      call vv10_gradient_fixed_grid(ctx, mol, density, gradient, err)
+      call mol%destroy()
+      ok = .not. err%has_error()
+   end subroutine vv10_at
+
+   subroutine exc_at(ctx, coords, density, e_xc, err, ok)
+      !! E_xc, non-local term included, on the grid the context already holds
+      type(xc_context_t), intent(inout) :: ctx
+      real(dp), intent(in) :: coords(3, 3)
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(out) :: e_xc
+      type(error_t), intent(inout) :: err
+      logical, intent(out) :: ok
+
+      type(libcint_molecule_t) :: mol
+      real(dp), allocatable :: v(:, :)
+      real(dp) :: n_elec
+
+      ok = .false.
+      e_xc = 0.0_dp
+      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      if (err%has_error()) return
+      allocate (v(mol%nao, mol%nao))
+      v = 0.0_dp
+      call xc_add_potential(ctx, mol, density, v, e_xc, n_elec, err)
+      call mol%destroy()
+      ok = .not. err%has_error()
+   end subroutine exc_at
 
    subroutine test_vxc_deriv(error)
       !! The exchange-correlation potential's nuclear derivative, against
