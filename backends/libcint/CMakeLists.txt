@@ -35,6 +35,7 @@ target_sources(
           mqc_libcint_localize.f90
           mqc_libcint_cphf.F90
           mqc_libcint_dma.f90
+          mqc_libcint_ecp.f90
           mqc_libcint_esp.f90
           mqc_libcint_pcm.f90
           mqc_libcint_charges.f90

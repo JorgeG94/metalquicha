@@ -767,7 +767,16 @@ endif()
 
 # Manual check that a session splits rank 0 from the workers. Not a ctest case:
 # it is only meaningful under mpirun with more than one rank, and ctest here has
-# no MPI harness.
+# no MPI harness. The ECP layout and the ECP matrix, against PySCF. Not a ctest
+# case yet: the reference comes from PySCF rather than from a number this
+# program printed earlier, so it belongs with the other validation programs that
+# need a second code to compare against.
+if(MQC_ENABLE_LIBCINT)
+  add_executable(check_ecp ${PROJECT_SOURCE_DIR}/validation/check_ecp.f90)
+  target_include_directories(check_ecp PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_ecp PRIVATE ${main_lib})
+endif()
+
 add_executable(check_run ${PROJECT_SOURCE_DIR}/validation/check_run.f90)
 target_include_directories(check_run PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(check_run PRIVATE ${main_lib})
