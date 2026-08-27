@@ -66,6 +66,21 @@ contains
       need_gradient = .false.
       if (present(want_gradient)) need_gradient = want_gradient
 
+      ! cuEST exposes ECP entry points -- cuestECPIntPlanCreate, cuestECPCompute
+      ! and their derivatives -- and this backend calls none of them. So an ECP
+      ! deck here would run all-electron with the full nuclear charge and the
+      ! full electron count, converge, and report a number hundreds of Hartree
+      ! from what was asked for. Refused by name until those are wired.
+      if (len_trim(settings%ecp_set) > 0) then
+         call error%set(ERROR_VALIDATION, "model.ecp is set, but the GPU backend does "// &
+                        "not apply effective core potentials: cuEST provides the entry "// &
+                        "points and this backend does not yet call them, so the "// &
+                        "calculation would silently run all-electron. Refused rather "// &
+                        "than answered wrongly; the CPU backend carries it.")
+         call record_failure(result, error)
+         return
+      end if
+
       ! ---- which functional, if any ----------------------------------------
       if (len_trim(settings%functional) == 0) then
          functional_id = -1   ! pure Hartree-Fock, no XC plan

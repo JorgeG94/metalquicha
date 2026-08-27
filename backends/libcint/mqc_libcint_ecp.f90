@@ -37,6 +37,7 @@ module mqc_libcint_ecp
 
    public :: ecp_matrix
    public :: ecp_refuses_derivatives
+   public :: ecp_refuses_auto_frozen_core
 
    interface
       function cECPscalar_sph(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
@@ -65,6 +66,39 @@ module mqc_libcint_ecp
    end interface
 
 contains
+
+   function ecp_refuses_auto_frozen_core(core_electrons, error) result(refused)
+      !! Refuse an *automatically counted* frozen core when an ECP is present
+      !!
+      !! `core_orbital_count` counts filled shells below the valence one from
+      !! the atomic number. An ECP has already removed a core, so those
+      !! orbitals are not there to freeze and the count would freeze valence
+      !! instead -- silently, and by an amount that looks like a small energy
+      !! difference rather than a mistake.
+      !!
+      !! The two cores are not the same size either, which is why this refuses
+      !! rather than subtracting one from the other: iodine's def2-ECP replaces
+      !! 28 electrons while the usual frozen core for iodine is 36, and no
+      !! arithmetic on those two numbers is obviously right.
+      !!
+      !! An explicit `n_frozen_core` is honoured. The caller knows what its
+      !! potential replaced and this does not.
+      integer, allocatable, intent(in) :: core_electrons(:)
+      type(error_t), intent(inout) :: error
+      logical :: refused
+
+      refused = .false.
+      if (.not. allocated(core_electrons)) return
+      if (.not. any(core_electrons /= 0)) return
+
+      refused = .true.
+      call error%set(ERROR_VALIDATION, "a frozen core cannot be counted automatically "// &
+                     "for a calculation with an effective core potential: the potential "// &
+                     "has already replaced a core, and the two are not the same size -- "// &
+                     "iodine's def2-ECP replaces 28 electrons where the usual frozen "// &
+                     "core is 36. Set keywords.correlation.n_frozen_core explicitly, "// &
+                     "or turn freeze_core off.")
+   end function ecp_refuses_auto_frozen_core
 
    function ecp_refuses_derivatives(core_electrons, what, error) result(refused)
       !! Refuse a nuclear derivative when an ECP is present

@@ -26,6 +26,7 @@ module mqc_libcint_bridge
                                  ERI_CORE_BUDGET_CAP, ERI_CORE_BUDGET_SHARE, &
                                  ERI_CORE_BUDGET_BLIND, SAPT_CORE_BUDGET_SHARE
    use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_libcint_ecp, only: ecp_refuses_auto_frozen_core
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, &
                                     angular_form_name
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf, &
@@ -1164,7 +1165,14 @@ contains
             ! different core than the energy would report an IP that did not
             ! match the numbers beside it.
             fukui_frozen = settings%n_frozen_core
-            if (fukui_frozen < 0) fukui_frozen = core_orbital_count(fragment%element_numbers)
+            if (fukui_frozen < 0) then
+               if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then
+                  call result%error%set(ERROR_VALIDATION, error%get_message())
+                  result%has_error = .true.
+                  return
+               end if
+               fukui_frozen = core_orbital_count(fragment%element_numbers)
+            end if
             if (.not. settings%freeze_core) fukui_frozen = 0
             call fukui_indices(mol, nelec, fragment%multiplicity, scf%density, &
                                scf%energy, settings%fukui_population, settings%max_iter, &
@@ -1477,7 +1485,14 @@ contains
             integer :: frozen
 
             frozen = settings%n_frozen_core
-            if (frozen < 0) frozen = core_orbital_count(fragment%element_numbers)
+            if (frozen < 0) then
+               if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then
+                  call result%error%set(ERROR_VALIDATION, error%get_message())
+                  result%has_error = .true.
+                  return
+               end if
+               frozen = core_orbital_count(fragment%element_numbers)
+            end if
             if (.not. settings%freeze_core) frozen = 0
 
             if (settings%corr_density_fitting) then
@@ -1689,7 +1704,14 @@ contains
             ! a shared local would silently couple them if one ever wanted a
             ! different count.
             frozen = settings%n_frozen_core
-            if (frozen < 0) frozen = core_orbital_count(fragment%element_numbers)
+            if (frozen < 0) then
+               if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then
+                  call result%error%set(ERROR_VALIDATION, error%get_message())
+                  result%has_error = .true.
+                  return
+               end if
+               frozen = core_orbital_count(fragment%element_numbers)
+            end if
             if (.not. settings%freeze_core) frozen = 0
 
             ! Which formulation. Both are exact for a closed shell and agree to
@@ -1829,7 +1851,14 @@ contains
                integer :: dh_frozen
 
                dh_frozen = settings%n_frozen_core
-               if (dh_frozen < 0) dh_frozen = core_orbital_count(fragment%element_numbers)
+               if (dh_frozen < 0) then
+               if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then
+                  call result%error%set(ERROR_VALIDATION, error%get_message())
+                  result%has_error = .true.
+                  return
+               end if
+               dh_frozen = core_orbital_count(fragment%element_numbers)
+               end if
                if (.not. settings%freeze_core) dh_frozen = 0
 
                ! Fitted when the deck *named* an auxiliary basis, exact otherwise
