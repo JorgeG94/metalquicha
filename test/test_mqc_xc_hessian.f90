@@ -19,7 +19,8 @@ module test_mqc_xc_hessian
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available, &
-                             xc_add_potential, vv10_add_potential
+                             xc_add_potential, vv10_add_potential, &
+                             vv10_kernel_apply
    use mqc_libcint_hessian, only: ks_hessian
    use mqc_libcint_gradient, only: libcint_scf_gradient, vv10_gradient_fixed_grid
    use mqc_libcint_xc_hessian, only: xc_hessian, xc_gradient_fixed_grid, &
@@ -54,6 +55,8 @@ contains
                   new_unittest("xc_potential_derivative_matches_differences", test_vxc_deriv), &
                   new_unittest("vv10_potential_derivative_matches_differences", &
                                test_vv10_vxc_deriv), &
+                  new_unittest("vv10_kernel_differences_the_potential_in_density", &
+                               test_vv10_kernel_apply), &
                   new_unittest("ks_hessian_differences_the_dft_gradient", test_ks_end_to_end) &
                   ]
    end subroutine collect_mqc_xc_hessian
@@ -613,6 +616,86 @@ contains
       call vv10_add_potential(ctx, mol, dens, v, e, err)
       call mol%destroy()
    end subroutine vv10_vxc_at
+
+   subroutine test_vv10_kernel_apply(error)
+      !! The VV10 kernel applied to trial densities, against central
+      !! differences of the VV10 potential matrix in the *density*
+      !!
+      !! The Phase 4 comparison: `vv10_kernel_apply` is `dV/dD` contracted
+      !! against a trial `P`, so the check is `(V(D + h P) - V(D - h P))/2h`
+      !! with the geometry, the context and hence both grids never moving at
+      !! all -- only the density matrix handed to `vv10_add_potential` changes.
+      !! The VV10 potential is isolated exactly as `test_vv10_vxc_deriv`
+      !! isolates it, so the semilocal kernel, which has `xc_kernel_apply`'s
+      !! own tests, never enters.
+      !!
+      !! Three trials in one batched call, deliberately unlike each other: the
+      !! density itself, a smooth off-diagonal band, and a diagonally dominant
+      !! matrix -- a kernel wrong in only one channel has to disagree with at
+      !! least one of them.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: H = 1.0e-3_dp
+      real(dp), parameter :: TOL = 6.0e-10_dp
+         !! Six times the measured worst disagreement, 8.88e-11 at this step,
+         !! which is the step error and nothing else: it scales exactly as H^2
+         !! over a fourfold range of steps (2.22e-11 at 5e-4, 3.55e-10 at 2e-3,
+         !! ratios 4.00 and 4.00), which a missing term cannot do. A break test
+         !! dropping the `f_gamma grad drho` term misses by 4.67e-4,
+         !! step-independent -- six orders above this band.
+      integer, parameter :: N_TRIAL = 3
+      real(dp) :: worst
+      real(dp), allocatable :: dens(:, :), trial(:, :, :), vk(:, :, :)
+      real(dp), allocatable :: vp(:, :), vm(:, :)
+      type(xc_context_t) :: ctx
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      logical :: ok
+      integer :: nao, u, v, it
+
+      if (.not. xc_available()) return
+
+      call reference_state("b97m-v", ctx, dens, err, ok)
+      call check(error, ok, "the b97m-v reference failed")
+      if (allocated(error)) return
+
+      nao = size(dens, 1)
+      allocate (trial(nao, nao, N_TRIAL), vk(nao, nao, N_TRIAL))
+      trial(:, :, 1) = dens
+      do v = 1, nao
+         do u = 1, nao
+            trial(u, v, 2) = 0.1_dp*cos(real(u - v, dp))
+            trial(u, v, 3) = 0.05_dp*cos(real(u + v, dp))
+         end do
+         trial(v, v, 3) = trial(v, v, 3) + 0.2_dp
+      end do
+
+      ! Zeroed here because `vv10_kernel_apply` accumulates, as
+      ! `xc_kernel_apply` does -- the convention its callers already carry.
+      vk = 0.0_dp
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call vv10_kernel_apply(ctx, mol, dens, trial, vk, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the VV10 kernel apply failed")
+      if (allocated(error)) return
+
+      worst = 0.0_dp
+      do it = 1, N_TRIAL
+         call vv10_vxc_at(ctx, WATER, dens + H*trial(:, :, it), vp, err)
+         call vv10_vxc_at(ctx, WATER, dens - H*trial(:, :, it), vm, err)
+         do v = 1, nao
+            do u = 1, nao
+               worst = max(worst, abs(vk(u, v, it) - (vp(u, v) - vm(u, v))/(2.0_dp*H)))
+            end do
+         end do
+      end do
+      call check(error,.not. err%has_error(), "the displaced-density potentials failed")
+      if (allocated(error)) return
+
+      call check(error, worst < TOL, &
+                 "the VV10 kernel disagrees with differences of the VV10 "// &
+                 "potential in the density")
+   end subroutine test_vv10_kernel_apply
 
    subroutine test_ks_end_to_end(error)
       !! The assembled Kohn-Sham Hessian against differences of the analytic
