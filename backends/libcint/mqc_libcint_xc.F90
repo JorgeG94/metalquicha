@@ -83,6 +83,7 @@ module mqc_libcint_xc
    public :: xc_grid_gga_quantities
    public :: xc_kernel_apply
    public :: xc_grid_kernel_quantities
+   public :: ensure_nlc_grid
 
    real(dp), parameter :: KERNEL_RHO_FLOOR = 1.0e-10_dp
       !! Grid points below this density contribute no *second* derivative.
@@ -1926,23 +1927,12 @@ contains
       real(dp), allocatable :: exc(:), vrho(:), vsigma(:)
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), grad_coeff(:, :)
       real(dp), allocatable :: rho_blk(:), rho_grad_blk(:, :), vtau_none(:)
-      integer, allocatable :: numbers(:)
       integer :: npts, g0, g1, nb, ig, id
 
       e_nl = 0.0_dp
 
-      ! Built on first use rather than beside the exchange grid, because
-      ! whether it is needed at all is only known once the functional's
-      ! components have been read, which happens after that grid is made.
-      ! Nothing that is not a `-V` functional ever pays for it.
-      if (ctx%nlc_grid%n_points == 0) then
-         allocate (numbers(mol%natm))
-         numbers = nint(mol%charges)
-         call build_dft_grid(mol%coords, numbers, ctx%nlc_grid, error, &
-                             level=ctx%nlc_grid_level)
-         deallocate (numbers)
-         if (error%has_error()) return
-      end if
+      call ensure_nlc_grid(ctx, mol, error)
+      if (error%has_error()) return
 
       npts = ctx%nlc_grid%n_points
       if (npts == 0) return
@@ -1999,6 +1989,31 @@ contains
                                    vtau=vtau_none, any_gga=.true., any_mgga=.false.)
       end do
    end subroutine vv10_add_potential
+
+   subroutine ensure_nlc_grid(ctx, mol, error)
+      !! Build the non-local correlation grid, once, on first use
+      !!
+      !! Built on first use rather than beside the exchange grid, because
+      !! whether it is needed at all is only known once the functional's
+      !! components have been read, which happens after that grid is made.
+      !! Nothing that is not a `-V` functional ever pays for it.
+      !!
+      !! Shared by the potential and the gradient so that the two integrate and
+      !! differentiate the same quadrature. They would otherwise each build one
+      !! and agree only as long as the level and the partition defaults did.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: numbers(:)
+
+      if (ctx%nlc_grid%n_points > 0) return
+      allocate (numbers(mol%natm))
+      numbers = nint(mol%charges)
+      call build_dft_grid(mol%coords, numbers, ctx%nlc_grid, error, &
+                          level=ctx%nlc_grid_level)
+      deallocate (numbers)
+   end subroutine ensure_nlc_grid
 
    subroutine accumulate_xc_matrix(weights, ao, vrho, v, ao_grad, grad_coeff, vtau, &
                                    any_gga, any_mgga)

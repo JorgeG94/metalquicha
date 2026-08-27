@@ -34,9 +34,11 @@ module mqc_libcint_gradient
                                     metric_inverse_sqrt, eri_shell_table_t, &
                                     eri_shell_table, eri_schwarz_collapse
    use mqc_libcint_ao, only: eval_ao_block, AO_POINT_BLOCK, AO_HESS_COMP, &
-                             shell_extents, block_significant_aos
+                             shell_extents, block_significant_aos, eval_rho
    use mqc_libcint_xc, only: xc_context_t, xc_grid_lda_quantities, &
-                             xc_grid_gga_quantities, xc_grid_kernel_quantities
+                             xc_grid_gga_quantities, xc_grid_kernel_quantities, &
+                             ensure_nlc_grid
+   use mqc_libcint_vv10, only: vv10_nlc
    use mqc_dft_partition, only: becke_partition_derivatives
    use pic_blas_interfaces, only: pic_gemm
    use libcint_fortran, only: libcint_1e_ipovlp_sph, libcint_1e_ipovlp_cart, &
@@ -396,26 +398,26 @@ contains
       integer :: n_sig, isig, jsig
       logical :: unrestricted
 
-      ! A VV10 gradient is not the semilocal gradient. The non-local term
-      ! depends on the nuclear positions twice over -- through |r - r'| in the
-      ! kernel and through rho and grad rho at both points -- and none of that
-      ! is computed here.
-      !
-      ! Refused rather than omitted, because omitting it survives every check
-      ! a user can make: the SCF converges, the energy is right, and the
-      ! forces are quietly wrong, so an optimisation walks confidently to the
-      ! wrong minimum.
+      unrestricted = present(density_beta)
+
+      ! The non-local term, where the functional carries one. Refused for an
+      ! open shell rather than omitted: omitting it survives every check a user
+      ! can make -- the SCF converges, the energy is right, and the forces are
+      ! quietly wrong, so an optimisation walks confidently to the wrong
+      ! minimum. It is worth 43 mHartree in the energy on water/STO-3G.
       if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
-         call error%set(ERROR_VALIDATION, "this functional carries a non-local "// &
-                        "correlation term (VV10), whose contribution to the nuclear "// &
-                        "gradient is not implemented. Refused rather than returning a "// &
-                        "gradient missing it.")
-         return
+         if (unrestricted) then
+            call error%set(ERROR_VALIDATION, "this functional carries a non-local "// &
+                           "correlation term (VV10), whose nuclear gradient is "// &
+                           "implemented for a closed shell only. Refused rather than "// &
+                           "returning a gradient missing it.")
+            return
+         end if
+         call vv10_gradient(ctx, mol, density, gradient, error)
+         if (error%has_error()) return
       end if
 
       if (.not. ctx%active) return
-
-      unrestricted = present(density_beta)
       nao = mol%nao
       natm = mol%natm
       npts = ctx%grid%n_points
@@ -628,6 +630,200 @@ contains
          end do
       end do
    end subroutine xc_gradient
+
+   subroutine vv10_gradient(ctx, mol, density, gradient, error)
+      !! VV10's contribution to dE/dR, accumulated in place
+      !!
+      !! **The non-locality is already inside `vrho` and `vsigma`.** VV10's
+      !! energy is a double integral, which makes it sound as though its
+      !! derivative needs machinery a semilocal functional does not have. It
+      !! does not. `E_nl` is a functional of rho and sigma, so
+      !!
+      !!     dE/dR = int dr [ dE/drho(r) drho(r)/dR + dE/dsigma(r) dsigma(r)/dR ]
+      !!
+      !! and the pair sum over the second grid is spent entirely on producing
+      !! those two arrays -- the same two the Fock build already consumes. What
+      !! is left is the ordinary GGA contraction, term for term, which is why
+      !! this reads like `xc_gradient`'s GGA path with the quantities swapped.
+      !! PySCF reaches the same conclusion by the same route: `get_nlc_vxc`
+      !! calls `_vv10nlc` for the potential and then hands it to the shared
+      !! `_gga_grad_sum_`.
+      !!
+      !! **The grid response is kept, unlike PySCF's.** `get_nlc_vxc` stops at
+      !! the basis-function term; this carries the moving points and the moving
+      !! partition weights too, because the semilocal gradient next door does
+      !! and a total made of one of each would be neither. It also makes the
+      !! term checkable: against a difference of the energy the three-term
+      !! version agrees to the step error, where a basis-function-only version
+      !! sits about 1e-4 away -- small enough to read as a loose tolerance and
+      !! large enough to hide a sign error.
+      !!
+      !! Restricted only. The caller refuses an open shell before this is
+      !! reached.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(inout) :: gradient(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: rho(:), sigma(:), rho_grad(:, :)
+      real(dp), allocatable :: exc(:), vrho(:), vsigma(:), gcoef(:, :)
+      real(dp), allocatable :: dedw(:), fexp(:, :)
+      real(dp), allocatable :: rho_blk(:), rho_grad_blk(:, :)
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), ao_hess(:, :, :)
+      real(dp), allocatable :: dchi(:, :), dgchi(:, :, :)
+      real(dp), allocatable :: dpart(:, :, :)
+      real(dp), allocatable :: extents(:), d_sig(:, :)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer, allocatable :: c_offsets(:), c_counts(:)
+      real(dp) :: contrib, wv, scale
+      integer :: npts, nao, natm, g0, g1, nb, ig, id, gg, comp, ia, own
+      integer :: n_sig, isig, jsig
+
+      if (ctx%nlc_b == 0.0_dp .and. ctx%nlc_c == 0.0_dp) return
+
+      call ensure_nlc_grid(ctx, mol, error)
+      if (error%has_error()) return
+      npts = ctx%nlc_grid%n_points
+      if (npts == 0) return
+
+      nao = mol%nao
+      natm = mol%natm
+      scale = 2.0_dp
+
+      ! Sweep one: rho and its gradient over the whole grid at once. The pair
+      ! sum needs every point before it can produce any potential, so unlike
+      ! the semilocal path this cannot be done a block at a time.
+      allocate (rho(npts), sigma(npts), rho_grad(npts, 3))
+      rho = 0.0_dp
+      sigma = 0.0_dp
+      rho_grad = 0.0_dp
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
+         nb = g1 - g0 + 1
+         if (allocated(rho_blk)) deallocate (rho_blk, rho_grad_blk)
+         allocate (rho_blk(nb), rho_grad_blk(nb, 3))
+         call eval_ao_block(mol, ctx%nlc_grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+         if (error%has_error()) return
+         call eval_rho(ao, density, rho_blk, ao_grad=ao_grad, rho_grad=rho_grad_blk)
+         do ig = 1, nb
+            rho(g0 + ig - 1) = rho_blk(ig)
+            do id = 1, 3
+               rho_grad(g0 + ig - 1, id) = rho_grad_blk(ig, id)
+            end do
+            sigma(g0 + ig - 1) = rho_grad_blk(ig, 1)**2 + rho_grad_blk(ig, 2)**2 &
+                                 + rho_grad_blk(ig, 3)**2
+         end do
+      end do
+
+      allocate (exc(npts), vrho(npts), vsigma(npts), dedw(npts), fexp(3, npts))
+      call vv10_nlc(ctx%nlc_b, ctx%nlc_c, ctx%nlc_grid%coords, rho, sigma, &
+                    ctx%nlc_grid%coords, rho, sigma, ctx%nlc_grid%weights, &
+                    exc, vrho, vsigma, dedw=dedw, fexp=fexp)
+
+      ! dE/d(grad rho) = 2 vsigma grad rho, the chain rule the semilocal path
+      ! applies to its own sigma, written the same way so the two cannot
+      ! disagree about it.
+      allocate (gcoef(npts, 3))
+      do id = 1, 3
+         do ig = 1, npts
+            gcoef(ig, id) = 2.0_dp*vsigma(ig)*rho_grad(ig, id)
+         end do
+      end do
+
+      allocate (c_offsets(natm), c_counts(natm))
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
+      allocate (d_sig(nao, nao))
+      call shell_extents(mol, ctx%screen_tol, extents)
+
+      ! Sweep two: the three terms, on the grid the potential was built on.
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
+         nb = g1 - g0 + 1
+
+         call block_significant_aos(mol, ctx%nlc_grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig, &
+                                    atom_offsets=c_offsets, atom_counts=c_counts)
+
+         if (n_sig > 0) then
+            do jsig = 1, n_sig
+               do isig = 1, n_sig
+                  d_sig(isig, jsig) = density(ao_list(isig), ao_list(jsig))
+               end do
+            end do
+
+            ! Second derivatives, because the sigma channel pairs a basis
+            ! function's gradient with another derivative of it.
+            call eval_ao_block(mol, ctx%nlc_grid%coords(:, g0:g1), ao, error, &
+                               grad=ao_grad, hess=ao_hess, shell_mask=shell_mask, &
+                               ao_offset=ao_offset, n_ao_out=n_sig)
+            if (error%has_error()) return
+
+            if (allocated(dchi)) deallocate (dchi)
+            allocate (dchi(nb, n_sig))
+            call density_times_ao(ao, d_sig(1:n_sig, 1:n_sig), nb, n_sig, dchi)
+
+            if (allocated(dgchi)) deallocate (dgchi)
+            allocate (dgchi(nb, n_sig, 3))
+            call density_times_ao_grad(ao_grad, d_sig(1:n_sig, 1:n_sig), nb, n_sig, dgchi)
+
+            do ig = 1, nb
+               gg = g0 + ig - 1
+               own = ctx%nlc_grid%atom(gg)
+               wv = ctx%nlc_grid%weights(gg)*vrho(gg)
+               call accumulate_channel(ao_grad, dchi, ig, n_sig, wv, scale, &
+                                       c_offsets, c_counts, natm, own, gradient)
+               call accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, n_sig, &
+                                           ctx%nlc_grid%weights(gg)*gcoef(gg, :), scale, &
+                                           c_offsets, c_counts, natm, own, gradient)
+            end do
+         end if
+
+         ! The partition-weight term, and the point-motion term that cancels
+         ! most of it, written as `xc_gradient` writes them -- see there for
+         ! why the second is not optional.
+         !
+         ! **Two things differ from the semilocal version and neither is
+         ! optional.** The coefficient is `dE/dw` and not `rho*exc`, because a
+         ! point's weight multiplies it twice over; and the points carry an
+         ! explicit force of their own, because the kernel is a function of
+         ! where they are. Together they are worth 4.5e-4 on water, which is
+         ! not a tolerance question: it does not shrink when the grid is
+         ! refined, because it is not a quadrature error.
+         if (allocated(dpart)) deallocate (dpart)
+         allocate (dpart(3, natm, nb))
+         call becke_partition_derivatives(ctx%nlc_grid%coords(:, g0:g1), mol%coords, &
+                                          ctx%nlc_grid%numbers, ctx%nlc_grid%atom(g0:g1), &
+                                          ctx%nlc_grid%scheme, ctx%nlc_grid%adjust, &
+                                          dpart, error)
+         if (error%has_error()) return
+
+         do ig = 1, nb
+            gg = g0 + ig - 1
+            own = ctx%nlc_grid%atom(gg)
+
+            ! The point's own coordinate derivative, onto the atom it rides.
+            do comp = 1, 3
+               gradient(comp, own) = gradient(comp, own) &
+                                     + ctx%nlc_grid%weights(gg)*fexp(comp, gg)
+            end do
+
+            contrib = ctx%nlc_grid%quad_weights(gg)*dedw(gg)
+            do ia = 1, natm
+               do comp = 1, 3
+                  gradient(comp, ia) = gradient(comp, ia) + contrib*dpart(comp, ia, ig)
+               end do
+            end do
+            do ia = 1, natm
+               do comp = 1, 3
+                  gradient(comp, own) = gradient(comp, own) &
+                                        - contrib*dpart(comp, ia, ig)
+               end do
+            end do
+         end do
+      end do
+   end subroutine vv10_gradient
 
    subroutine xc_potential_gradient(ctx, mol, density, pmat, gradient, error)
       !! `d/dR Tr(P V_xc[D])`, with both densities held fixed, accumulated in place

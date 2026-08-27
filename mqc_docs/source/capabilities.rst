@@ -767,8 +767,9 @@ Current Limitations
    methods carry their own through tblite; a Kohn-Sham number from a functional
    that does not include dispersion itself does not get it from anywhere here.
    VV10 is the exception: the ``-V`` functionals carry their own non-local
-   correlation and it is evaluated, for the energy. Its nuclear gradient is not
-   implemented and is refused, so a ``-V`` functional cannot be optimized
+   correlation, and it is evaluated for both the energy and the nuclear
+   gradient, so a ``-V`` functional can be optimized. Its second derivative is
+   not implemented -- see :doc:`analytic_hessians`
 4. **Multireference dynamic correlation**: CASSCF and ORMAS-SCF give the
    reference, and there is no NEVPT2, CASPT2 or MRCI on top of it
 5. **Local correlation**: no DLPNO or equivalent, so coupled cluster is

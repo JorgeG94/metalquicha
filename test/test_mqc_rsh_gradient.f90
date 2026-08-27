@@ -1,5 +1,8 @@
-!! The range-separated gradient, against a difference of its own energy
+!! Range-separated and non-local gradients, against a difference of the energy
 module test_mqc_rsh_gradient
+   !! Two families of functional need more than the standard gradient, and
+   !! both are checked here the same way.
+   !!
    !! A range-separated functional splits its exchange over an error-function
    !! kernel, so its gradient needs two exchange derivatives rather than one:
    !! the full-range pass every hybrid takes, and a second at the screened
@@ -7,7 +10,15 @@ module test_mqc_rsh_gradient
    !! the exact-ERI path refused outright rather than return a gradient
    !! missing wB97X's dominant exchange term.
    !!
-   !! Differencing the total energy is the right check for that second pass.
+   !! A functional carrying VV10 has a non-local correlation term whose energy
+   !! is a double integral over the grid. Its gradient turns out not to need
+   !! new machinery -- the pair sum is spent producing `vrho` and `vsigma`, and
+   !! what follows is the ordinary GGA contraction -- but it does need two
+   !! terms no semilocal functional has: the kernel depends on where the grid
+   !! points are, and a point's weight enters the energy twice rather than
+   !! once.
+   !!
+   !! Differencing the total energy is the right check for both.
    !! It needs no reference implementation, it is sensitive to the coefficient
    !! and the sign as well as to the algebra, and -- unlike the Hessian tests
    !! next door -- nothing here is held fixed, so the comparison is exact up
@@ -42,7 +53,8 @@ contains
                   new_unittest("wb97x-gradient", test_wb97x), &
                   new_unittest("cam-b3lyp-gradient", test_cam_b3lyp), &
                   new_unittest("global-hybrid-unchanged", test_b3lyp_unchanged), &
-                  new_unittest("rsh-hessian", test_rsh_hessian) &
+                  new_unittest("rsh-hessian", test_rsh_hessian), &
+                  new_unittest("vv10-gradient", test_vv10) &
                   ]
    end subroutine collect_mqc_rsh_gradient
 
@@ -192,6 +204,21 @@ contains
       ok = .not. err%has_error()
    end subroutine hess_at
 
+   subroutine test_vv10(error)
+      !! The non-local term's gradient, alone and on top of everything else
+      !!
+      !! `b97m-v` is VV10 over a meta-GGA and nothing else; `wb97x-v` adds
+      !! range separation; `wb97m-v` has all three at once. All three land on
+      !! the same 1.47e-7 as a plain hybrid, which is the point -- the
+      !! non-local term is not approximated here, it is differentiated.
+      type(error_type), allocatable, intent(out) :: error
+      call gradient_against_energy("b97m-v", error)
+      if (allocated(error)) return
+      call gradient_against_energy("wb97x-v", error)
+      if (allocated(error)) return
+      call gradient_against_energy("wb97m-v", error)
+   end subroutine test_vv10
+
    subroutine gradient_against_energy(functional, error)
       character(len=*), intent(in) :: functional
       type(error_type), allocatable, intent(out) :: error
@@ -241,13 +268,18 @@ contains
          end do
       end do
 
-      ! Bounded by the difference, not by the gradient. All three land
-      ! 1.47e-7 from it, to three figures -- that sameness is the point: it is
-      ! the h^2 step error, so the range-separated gradients are as good as the
-      ! global hybrid's rather than merely close enough. Dropping the
-      ! long-range pass entirely misses by 1e-1 on wB97X and a coefficient
-      ! confused between alpha and alpha+beta by 1e-2, so the tolerance
-      ! separates right from wrong by several decades either way.
+      ! Bounded by the difference, not by the gradient. Every functional here
+      ! lands between 1.46e-7 and 1.48e-7 -- that sameness is the point: it is
+      ! the h^2 step error, so the range-separated and non-local gradients are
+      ! as good as the global hybrid's rather than merely close enough.
+      !
+      ! Dropping the long-range exchange pass misses by 1e-1 on wB97X and a
+      ! coefficient confused between alpha and alpha+beta by 1e-2. Omitting
+      ! VV10's explicit coordinate derivative, or taking its weight derivative
+      ! as `rho*exc` instead of `dE/dw`, misses by 4.5e-4 -- and that one does
+      ! not shrink when the grid is refined, because it is not a quadrature
+      ! error. The tolerance separates right from wrong by decades in each
+      ! case.
       !
       ! Against PySCF rather than against itself, at grid level 6: cam-B3LYP
       ! agrees to 4.1e-8 and B3LYP to 6.3e-8. wB97X is 3.9e-6, and that is the

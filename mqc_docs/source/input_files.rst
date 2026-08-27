@@ -547,6 +547,18 @@ dependence anywhere in the kernel, so an unrestricted calculation evaluates it
 once on :math:`\rho_\alpha + \rho_\beta` and adds the identical contribution
 to each spin's matrix.
 
+The **nuclear gradient** is available for a closed shell, so a ``-V`` functional
+can be optimized. It needs no new integrals: the pair sum is spent producing
+:math:`\delta E/\delta\rho` and :math:`\delta E/\delta\sigma`, the same two
+quantities the Fock build consumes, after which the contraction is the one a GGA
+uses. Two terms have no semilocal counterpart and are included -- the kernel
+depends on *where* the grid points are, through :math:`|\mathbf{r}-\mathbf{r}'|`,
+and a point's weight enters the energy twice rather than once. Leaving either
+out costs 4.5e-4 on water and does not shrink when the grid is refined, since
+neither is a quadrature error. The open shell is refused rather than
+approximated, and the second derivative is not implemented; see
+:doc:`analytic_hessians`.
+
 Why it needs its own grid
 """""""""""""""""""""""""
 
