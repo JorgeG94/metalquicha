@@ -503,6 +503,11 @@ contains
       ! against its serial stubs. Splitting the job again underneath would be
       ! two schedulers dividing the same ranks.
       ntasks = 1_c_int
+      if (settings%zero_modes >= 0) nzero = int(settings%zero_modes, c_int)
+      if (settings%soft_mode_threshold > 0.0_dp) then
+         soft = real(settings%soft_mode_threshold, c_double)
+      end if
+
       if (settings%connect) then
          task = DLF_TASK_TS_AND_DOWNHILL
          if (settings%connect_distort > 0.0_dp) then

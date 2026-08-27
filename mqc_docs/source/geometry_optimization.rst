@@ -305,6 +305,13 @@ All optional. Everything under ``keywords.optimization``:
    * - ``dimer_rotation_tolerance``
      - engine
      - Stop rotating below this angle
+   * - ``zero_modes``
+     - engine
+     - Hessian eigenvalues to treat as zero rather than as vibrations. 6 in
+       Cartesians (5 if linear), 0 in internals. See :ref:`zero-modes`
+   * - ``soft_mode_threshold``
+     - engine
+     - Eigenvalues smaller than this are soft; P-RFO damps steps along them
    * - ``connect``
      - ``false``
      - After the saddle, relax downhill both ways and report the two minima.
@@ -390,6 +397,57 @@ around on anything but a small system.
 and an update thereafter, rather than a fresh one per step. ``bofill`` is the
 usual choice for a saddle point, because it does not assume the matrix is
 positive definite -- which at a transition state it is not.
+
+.. _zero-modes:
+
+Telling P-RFO which modes are not vibrations
+---------------------------------------------
+
+P-RFO maximises along the lowest Hessian eigenvalue. In Cartesian coordinates
+the lowest six modes are translations and rotations at roughly zero, and far
+from a saddle -- where there is no negative eigenvalue yet -- the lowest one is
+one of those. The search then climbs a rotation, and wanders.
+
+``zero_modes`` says how many of them there are, so they are recognised rather
+than followed::
+
+    "keywords": {
+      "optimization": {
+        "target": "saddle", "algorithm": "prfo",
+        "coordinates": "cartesian",
+        "zero_modes": 6
+      }
+    }
+
+Six for a non-linear molecule, five for a linear one, and **zero for internal
+coordinates**, which have no rotational or translational degrees of freedom to
+begin with. That is why the default is the engine's own rather than 6: a value
+right for Cartesians is wrong in DLC, where saddle searches are usually run.
+
+The difference this makes on the ``HCN`` to ``HNC`` saddle, Cartesian
+coordinates, same guess and same analytic Hessian::
+
+    no zero_modes     60 steps, did not converge
+    zero_modes: 6     13 steps, converged
+
+Both reach the same saddle when they reach one at all -- C-N 1.187, H-C 1.209,
+H-N 1.400 Angstrom, one imaginary frequency. Declaring the zero modes is the
+alternative to switching coordinate systems, and the warning a Cartesian saddle
+search prints is suppressed once you have.
+
+``soft_mode_threshold`` is the related knob for eigenvalues that are small but
+not meant to be zero: steps along them are damped rather than trusted.
+
+.. note::
+
+   Neither of these chooses *which* eigenvector to follow -- they only decide
+   which are ignored. Genuine mode following, where the search tracks a
+   particular mode by overlap from step to step, is not reachable. DL-FIND
+   implements it (``follow=2`` and ``follow=3`` in ``dlf_formstep.f90``) but
+   ``follow`` is a local variable hardcoded to zero, with the comment "get from
+   global eventually", and there is no field on its global state to read it
+   from. Exposing it means adding a parameter to DL-FIND's own C interface,
+   which is a change to the vendored dependency rather than to this program.
 
 .. _connect:
 
@@ -623,8 +681,9 @@ which is L-BFGS -- so a saddle search has to say which optimizer runs it.
    search that never mentioned coordinates gets. The warning says so, and says
    that the run will spend all of ``max_steps`` before giving up. It is a
    warning rather than a refusal because a Cartesian saddle search can be made
-   to work, from a guess close enough that the reaction mode is already the
-   lowest eigenvalue, where a downhill algorithm cannot.
+   to work -- declare the zero modes, as below, or start from a guess close
+   enough that the reaction mode is already the lowest eigenvalue -- where a
+   downhill algorithm cannot. Declaring them also silences this warning.
 
 .. _opt-constraints:
 

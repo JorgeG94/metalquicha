@@ -59,9 +59,26 @@ contains
                   new_unittest("neb_endpoints_parse", test_neb_ends), &
                   new_unittest("neb_defaults_are_off", test_neb_defaults), &
                   new_unittest("saddle_method_parses", test_saddle_method), &
-                  new_unittest("connect_defaults_off", test_connect_defaults) &
+                  new_unittest("connect_defaults_off", test_connect_defaults), &
+                  new_unittest("mode_handling_defaults", test_mode_handling) &
                   ]
    end subroutine collect_mqc_optimizer_types_tests
+
+   subroutine test_mode_handling(error)
+      !! Zero and soft modes default to the engine's own choice
+      !!
+      !! Negative rather than a number, because the right value depends on the
+      !! coordinate system: six for a non-linear molecule in Cartesians, five
+      !! for a linear one, none at all in internal coordinates. A default of 6
+      !! would be wrong in DLC, which is where saddle searches are usually run.
+      type(error_type), allocatable, intent(out) :: error
+      type(optimizer_settings_t) :: settings
+
+      call check(error, settings%zero_modes < 0, &
+                 "the zero-mode count must default to the engine's, not to six")
+      if (allocated(error)) return
+      call check(error, settings%soft_mode_threshold < 0.0_dp)
+   end subroutine test_mode_handling
 
    subroutine test_connect_defaults(error)
       !! Following a saddle downhill is opt-in

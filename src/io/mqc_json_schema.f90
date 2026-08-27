@@ -522,6 +522,8 @@ contains
       call allow(keys, "dimer_separation")
       call allow(keys, "dimer_max_rotations")
       call allow(keys, "dimer_rotation_tolerance")
+      call allow(keys, "zero_modes")
+      call allow(keys, "soft_mode_threshold")
       call allow(keys, "connect")
       call allow(keys, "connect_distort")
       call allow(keys, "frozen_atoms")
