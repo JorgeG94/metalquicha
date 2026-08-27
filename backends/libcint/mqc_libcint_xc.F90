@@ -792,6 +792,12 @@ contains
       real(dp), allocatable :: frr_i(:), frs_i(:), fss_i(:)
       real(dp), allocatable :: vtau_i(:), frt_i(:), fst_i(:), ftt_i(:)
       real(dp), allocatable :: lapl_k(:), lscr(:), tau_k(:)
+      ! One buffer per unwanted output. libxc's derivatives are `intent(out)`
+      ! dummies through the bind(C) interface, and handing the same array to
+      ! four of them at once is aliasing the standard does not allow -- it
+      ! happens to work today because nothing wanted shares the buffer, which
+      ! is not a property to depend on.
+      real(dp), allocatable :: lscr_rl(:), lscr_sl(:), lscr_ll(:), lscr_lt(:)
       logical :: want_tau
       integer :: g0, g1, nb, i, ig, id, npts
 
@@ -870,8 +876,10 @@ contains
          allocate (sigma(nb), exc_i(nb), vrho_i(nb), vsigma_i(nb), &
                    frr_i(nb), frs_i(nb), fss_i(nb))
          if (want_tau) then
-            if (allocated(vtau_i)) deallocate (vtau_i, frt_i, fst_i, ftt_i, lapl_k, lscr)
-            allocate (vtau_i(nb), frt_i(nb), fst_i(nb), ftt_i(nb), lapl_k(nb), lscr(nb))
+            if (allocated(vtau_i)) deallocate (vtau_i, frt_i, fst_i, ftt_i, lapl_k, lscr, &
+                                               lscr_rl, lscr_sl, lscr_ll, lscr_lt)
+            allocate (vtau_i(nb), frt_i(nb), fst_i(nb), ftt_i(nb), lapl_k(nb), lscr(nb), &
+                      lscr_rl(nb), lscr_sl(nb), lscr_ll(nb), lscr_lt(nb))
             lapl_k = 0.0_dp
          end if
          do ig = 1, nb
@@ -894,9 +902,9 @@ contains
                call xc_f03_mgga_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, sigma, lapl_k, &
                                         tau_k, exc_i, vrho_i, vsigma_i, lscr, vtau_i)
                call xc_f03_mgga_fxc(ctx%func(i), int(nb, 8), rho_blk, sigma, lapl_k, tau_k, &
-                                    frr_i, frs_i, lscr, frt_i, &
-                                    fss_i, lscr, fst_i, &
-                                    lscr, lscr, ftt_i)
+                                    frr_i, frs_i, lscr_rl, frt_i, &
+                                    fss_i, lscr_sl, fst_i, &
+                                    lscr_ll, lscr_lt, ftt_i)
                do ig = 1, nb
                   vsigma(g0 + ig - 1) = vsigma(g0 + ig - 1) + ctx%weight(i)*vsigma_i(ig)
                   frs(g0 + ig - 1) = frs(g0 + ig - 1) + ctx%weight(i)*frs_i(ig)

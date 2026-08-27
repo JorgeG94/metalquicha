@@ -122,9 +122,15 @@ Ours tracks those. It shrinks as the grid is refined -- 5.4e-4 at level 3 and
 2.6e-6 at level 9 for LDA -- because an exact quadrature does not depend on
 where its points are.
 
-For frequencies this is small. If it matters for what you are doing, refine the
-grid rather than reaching for the semi-numerical path, which carries the same
-omission implicitly.
+For frequencies this is small. If it matters for what you are doing, there are
+two ways to get it back. Refining the grid shrinks it, as the table above
+shows. Or take the semi-numerical path, which does **not** carry this omission:
+it differences the physical ``xc_gradient``, and that gradient includes both
+the point-motion and the partition-weight terms explicitly. That is precisely
+why ``xc_gradient_fixed_grid`` had to be written to test this one -- the two
+gradients disagree by exactly the omitted term, so differencing the physical
+one is not the instrument for checking a fixed-grid Hessian, and is the better
+instrument for computing a responsive one.
 
 .. _hessian-missing:
 
@@ -136,13 +142,15 @@ drops a term is worse than one you cannot have: the frequencies come out
 plausible.
 
 **Range-separated hybrids** (``wb97x``, ``cam-b3lyp``). The plumbing is
-implemented -- the second-derivative integrals take a range-separation
-parameter, the attenuated integrals really do come back attenuated, and all
-five places a long-range exchange pass belongs have one. The assembled result
-still sits 2.1 from PySCF's for wB97X, where every other functional agrees to
-1e-8, and the fault has not been found. It is not any single pass, not the
-coefficients, and not the reference SCF, which matches PySCF to 3e-8. See the
-comment at the refusal in ``ks_hessian`` for the full diagnosis.
+implemented: the second-derivative integrals take a range-separation
+parameter, and all five places a long-range exchange pass belongs have one.
+Three of those five were passing the unattenuated environment to libcint while
+building the attenuated one beside it, so they returned full-range integrals
+scaled by the long-range coefficient; that is fixed, and the discrepancies
+recorded here previously were measured before it was. The refusal stands until
+the assembled result has been checked against a reference again, which is what
+the range-separation branch does. See the comment at the refusal in
+``ks_hessian``.
 
 **VV10 non-local correlation** (``b97m-v``, ``wb97m-v``). Not implemented, and
 not a small job: VV10 is a double integral over the density, so its second

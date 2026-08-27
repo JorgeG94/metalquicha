@@ -829,10 +829,6 @@ contains
       if (present(k_scale)) kx = k_scale
       jx = 1.0_dp
       if (present(j_scale)) jx = j_scale
-      ! A local copy so an omega pass can set the range-separation slot
-      ! without disturbing the molecule every other caller shares.
-      allocate (env_use(0:size(mol%env) - 1), source=mol%env)
-      if (present(omega)) env_use(LIBCINT_PTR_RANGE_OMEGA) = omega
 
       nao = mol%nao
       natm = mol%natm
@@ -858,6 +854,15 @@ contains
       ! density are indexed exactly as before and the deposits need no map.
       call eri_shell_table(mol, tab)
       mx = tab%block_max
+
+      ! A local copy so an omega pass can set the range-separation slot without
+      ! disturbing the environment every other caller shares. Copied from
+      ! `tab%env` and not `mol%env`, and only once the view above is chosen:
+      ! this loop drives the fused-sp table where the molecule has one, and
+      ! that view carries its own environment. The molecule's would be an
+      ! environment that does not match the shells libcint is handed.
+      env_use = tab%env
+      if (present(omega)) env_use(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
       atm_flat = reshape(mol%atm, [size(mol%atm)])
       bas_flat = reshape(tab%bas, [size(tab%bas)])
@@ -928,10 +933,10 @@ contains
 
                if (mol%cartesian) then
                   have = cint2e_ip1_cart(buf, shls, atm_flat, mol%natm, &
-                                         bas_flat, tab%nbas, tab%env, c_null_ptr) /= 0
+                                         bas_flat, tab%nbas, env_use, c_null_ptr) /= 0
                else
                   have = cint2e_ip1_sph(buf, shls, atm_flat, mol%natm, &
-                                        bas_flat, tab%nbas, tab%env, c_null_ptr) /= 0
+                                        bas_flat, tab%nbas, env_use, c_null_ptr) /= 0
                end if
                if (.not. have) cycle
 

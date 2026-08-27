@@ -1114,17 +1114,25 @@ contains
       !
       ! **Range separated.** The plumbing is here: `hess_2e_contract`,
       ! `h1_contract` and `build_fock_direct_many` all take `omega` and
-      ! `j_scale`, and the attenuated second derivatives do come back
-      ! attenuated -- the long-range exchange Hessian differs from the
-      ! full-range one by 0.48 on water/STO-3G, so `PTR_RANGE_OMEGA` is
-      ! reaching `ipip1` and its neighbours. The assembled result is still 2.1
-      ! from PySCF for wB97X and 0.53 for CAM-B3LYP, where every
-      ! non-separated functional agrees to 1e-8. It is not any one of the five
-      ! long-range passes: disabling them individually gives 2.29, 0.26, 2.76,
-      ! 1.93 and 0.30, and the best combination still leaves 0.13. The SCF
-      ! energies agree with PySCF to 3e-8 and the coefficients are right, so
-      ! the fault is in the second-derivative assembly rather than in the
-      ! functional. Shipping it would mean shipping plausible wrong frequencies.
+      ! `j_scale`, and they now all use it. Two of them did not. Both built a
+      ! local environment with `PTR_RANGE_OMEGA` set and then handed libcint
+      ! `tab%env` instead, so `build_fock_direct_many` and `h1_contract`
+      ! returned full-range integrals scaled by the long-range coefficient --
+      ! a long-range pass that was not long-range at all, in three of the five
+      ! places one belongs. `hess_2e_contract` was the only one attenuated,
+      ! which is why the attenuated-versus-full-range check passed: it was
+      ! measuring the one pass that worked.
+      !
+      ! That also explains why bisecting was uninformative. Disabling the five
+      ! passes individually gave 2.29, 0.26, 2.76, 1.93 and 0.30 against a
+      ! 2.1 baseline for wB97X, with the best combination still 0.13 out --
+      ! the readings of an experiment where two of the five arms were not
+      ! doing what the label said. Those numbers, and the 2.1 and 0.53, all
+      ! predate the fix and mean nothing now.
+      !
+      ! The refusal stands until the assembled result is checked against a
+      ! reference again, which is what the range-separation branch does.
+      ! Shipping it unchecked would mean shipping plausible wrong frequencies.
       !
       ! **VV10.** The second derivative of the non-local term is not
       ! implemented here, and it is a real piece of work rather than a gap in
@@ -1269,6 +1277,19 @@ contains
       natm = size(h1, 4)
       n_pert = 3*natm
 
+      ! `xc` and `reference` are one argument in two halves: the kernel apply
+      ! contracts the trial density against the functional's second derivative
+      ! *at* the reference density, so a caller supplying the context without
+      ! the density it was built at would reach `xc_kernel_apply` through
+      ! `nuclear_apply` with `operator%reference` unallocated. Refuse the pair
+      ! rather than index it.
+      if (present(xc) .neqv. present(reference)) then
+         call error%set(ERROR_VALIDATION, "the coupled-perturbed solver was given an "// &
+                        "exchange-correlation context without the reference density its "// &
+                        "kernel is evaluated at, or the reverse; it needs both or neither")
+         return
+      end if
+
       operator%mol => mol
       operator%orbitals = orbitals
       operator%c_occ = orbitals(:, 1:n_occ)
@@ -1377,6 +1398,17 @@ contains
       integer :: n_chunks, per_chunk
 
       if (error%has_error()) return
+
+      ! Both halves of the kernel or neither, as the coupled-perturbed solver
+      ! demands: with only one supplied the loop below would quietly build a
+      ! mean field without the exchange-correlation response, and `dW/dR` would
+      ! then disagree with the operator that produced the orbitals it uses.
+      if (present(xc) .neqv. present(reference)) then
+         call error%set(ERROR_VALIDATION, "the relaxed mean field was given an "// &
+                        "exchange-correlation context without the reference density its "// &
+                        "kernel is evaluated at, or the reverse; it needs both or neither")
+         return
+      end if
 
       nao = size(d1, 1)
       natm = size(d1, 4)

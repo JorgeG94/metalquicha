@@ -832,8 +832,12 @@ contains
             end if
 
             shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
+            ! `env_many`, not `tab%env`: the omega slot lives in the copy, and
+            ! handing the optimizer the attenuated environment while the quartet
+            ! call reads the unattenuated one gives full-range integrals scaled
+            ! by `k_scale` -- a long-range pass that is not long-range at all.
             ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
-                                     tab%bas, tab%nbas, tab%env, opt)
+                                     tab%bas, tab%nbas, env_many, opt)
             if (ret == 0) then
                n_screened = n_screened + 1_int64
                cycle
