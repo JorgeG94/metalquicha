@@ -32,20 +32,21 @@ from pyscf import df, gto, lib, scf
 # gradient claims to
 # --------------------------------------------------------------------------
 
-def ri_mp2_energy(mol, auxmol, conv_tol=1e-13):
+def ri_mp2_energy(mol, auxmol, conv_tol=1e-13, frozen=0):
     """Exact-ERI RHF plus a fitted MP2 correlation energy."""
     mf = scf.RHF(mol)
     mf.conv_tol = conv_tol
     mf.kernel()
     if not mf.converged:
         raise SystemExit("RHF did not converge")
-    b, _, _ = fitted_tensor(mol, auxmol, mf.mo_coeff, mol.nelectron // 2)
-    x, ovov = amplitudes(b, mf.mo_energy, mol.nelectron // 2)
+    b, _, _ = fitted_tensor(mol, auxmol, mf.mo_coeff, mol.nelectron // 2,
+                            frozen=frozen)
+    x, ovov = amplitudes(b, mf.mo_energy, mol.nelectron // 2, frozen=frozen)
     e_corr = np.einsum("ijab,ijab->", x, 2 * ovov - ovov.transpose(0, 1, 3, 2))
     return mf.e_tot + e_corr, mf
 
 
-def fitted_tensor(mol, auxmol, mo_coeff, nocc):
+def fitted_tensor(mol, auxmol, mo_coeff, nocc, frozen=0):
     """B^P_ia (eq 5), together with the metric and its inverse square root.
 
     The inverse square root is returned rather than rebuilt by the caller: a
@@ -53,7 +54,7 @@ def fitted_tensor(mol, auxmol, mo_coeff, nocc):
     gradient has to differentiate the one that was computed.
     """
     nao = mol.nao
-    orbo = mo_coeff[:, :nocc]
+    orbo = mo_coeff[:, frozen:nocc]
     orbv = mo_coeff[:, nocc:]
 
     three = df.incore.aux_e2(mol, auxmol, intor="int3c2e", aosym="s1")
@@ -74,9 +75,9 @@ def metric_inverse_sqrt(metric, threshold=1e-10):
     return (v[:, keep] / np.sqrt(w[keep])) @ v[:, keep].T
 
 
-def amplitudes(b, mo_energy, nocc):
+def amplitudes(b, mo_energy, nocc, frozen=0):
     """X^ab_ij (eq 9) and the fitted integrals it came from (eq 4)."""
-    e_o = mo_energy[:nocc]
+    e_o = mo_energy[frozen:nocc]
     e_v = mo_energy[nocc:]
     ovov = np.einsum("Pia,Pjb->iajb", b, b, optimize=True)
     ovov = ovov.transpose(0, 2, 1, 3)          # (i, j, a, b)
@@ -89,7 +90,7 @@ def amplitudes(b, mo_energy, nocc):
 # the gradient
 # --------------------------------------------------------------------------
 
-def ri_mp2_gradient(mol, auxmol, mf, verbose=False):
+def ri_mp2_gradient(mol, auxmol, mf, verbose=False, frozen=0):
     """dE/dR for exact RHF plus fitted MP2, in Hartree/Bohr.
 
     **The assembly is not a fresh expansion of eq 7.** Everything one-particle
@@ -114,8 +115,8 @@ def ri_mp2_gradient(mol, auxmol, mf, verbose=False):
     mo, e_mo = mf.mo_coeff, mf.mo_energy
     orbo, orbv = mo[:, :nocc], mo[:, nocc:]
 
-    b, metric, jm12 = fitted_tensor(mol, auxmol, mo, nocc)
-    x, _ = amplitudes(b, e_mo, nocc)
+    b, metric, jm12 = fitted_tensor(mol, auxmol, mo, nocc, frozen=frozen)
+    x, _ = amplitudes(b, e_mo, nocc, frozen=frozen)
 
     # ---- three- and two-index densities (eqs 8, 10) ----------------------
     xbar = 2 * x - x.transpose(0, 1, 3, 2)             # 2X^ab_ij - X^ba_ij
@@ -133,7 +134,8 @@ def ri_mp2_gradient(mol, auxmol, mf, verbose=False):
     # A factor slipped between the paper's `2X - X^swap` and the conventional
     # `4X - 2X^swap` shows up here and in no later quantity.
     if verbose:
-        ia_p = np.einsum("ui,uvP,va->iaP", orbo, three, orbv, optimize=True)
+        ia_p = np.einsum("ui,uvP,va->iaP", mo[:, frozen:nocc], three, orbv,
+                         optimize=True)
         print("  E_corr from Gamma^P (ia|P): %.12f   from gamma_PQ J_PQ: %.12f"
               % (np.einsum("Pia,iaP->", gamma, ia_p),
                  np.einsum("PQ,PQ->", gamma_pq, metric)))
@@ -149,7 +151,7 @@ def ri_mp2_gradient(mol, auxmol, mf, verbose=False):
            - np.einsum("ijca,ijbc->ba", x, x, optimize=True))
 
     dm1mo = np.zeros((nmo, nmo))
-    dm1mo[:nocc, :nocc] = doo + doo.T
+    dm1mo[frozen:nocc, frozen:nocc] = doo + doo.T
     dm1mo[nocc:, nocc:] = dvv + dvv.T
 
     # ---- the Lagrangian, from the fitted integrals (eqs 13, 14) ----------
@@ -163,7 +165,8 @@ def ri_mp2_gradient(mol, auxmol, mf, verbose=False):
     # `L''_ai - L'_ia`, so `Imat = -L`.
     pq_p = np.einsum("up,uvP,vq->pqP", mo, three, mo, optimize=True)
     lag_o = 2 * np.einsum("Pia,qaP->iq", gamma, pq_p[:, nocc:, :], optimize=True)
-    lag_v = 2 * np.einsum("Pia,iqP->aq", gamma, pq_p[:nocc, :, :], optimize=True)
+    lag_v = 2 * np.einsum("Pia,iqP->aq", gamma, pq_p[frozen:nocc, :, :],
+                          optimize=True)
 
     # Transposed into the slot. `L'_iq` and `L''_aq` are indexed with the
     # Lagrangian's own index first; the conventional assembly's `Imat` carries
@@ -173,8 +176,17 @@ def ri_mp2_gradient(mol, auxmol, mf, verbose=False):
     # matching diagonals and matching norms either way, so neither of those is
     # evidence.
     imat = np.zeros((nmo, nmo))
-    imat[:, :nocc] = -lag_o.T
+    imat[:, frozen:nocc] = -lag_o.T
     imat[:, nocc:] = -lag_v.T
+
+    # The occupied-frozen block of the relaxed density, resolved directly from
+    # the Lagrangian because both orbitals are occupied -- and before the veff
+    # build, so the Z-vector's right-hand side sees the whole unrelaxed
+    # density. pyscf.grad.mp2's dco, in its arrangement.
+    if frozen:
+        gap = e_mo[:frozen, None] - e_mo[None, frozen:nocc]
+        dm1mo[:frozen, frozen:nocc] = imat[:frozen, frozen:nocc] / gap
+        dm1mo[frozen:nocc, :frozen] = dm1mo[:frozen, frozen:nocc].T
 
     # ---- the Z-vector ----------------------------------------------------
     hf_dm = mf.make_rdm1()
@@ -211,7 +223,7 @@ def ri_mp2_gradient(mol, auxmol, mf, verbose=False):
     aoslices = mol.aoslice_by_atom()
 
     de = np.zeros((mol.natm, 3))
-    de += gradient_three_centre(mol, auxmol, gamma, mo, nocc)
+    de += gradient_three_centre(mol, auxmol, gamma, mo, nocc, frozen=frozen)
     de += gradient_two_centre(auxmol, gamma_pq, mol)
     for a in range(mol.natm):
         p0, p1 = aoslices[a, 2], aoslices[a, 3]
@@ -298,10 +310,10 @@ def solve_z_vector(mol, mf, xvo, nocc, nvir):
 # the four gradient terms of eq 6
 # --------------------------------------------------------------------------
 
-def gradient_three_centre(mol, auxmol, gamma, mo, nocc):
+def gradient_three_centre(mol, auxmol, gamma, mo, nocc, frozen=0):
     """4 sum_{munuP} Gamma^P_munu (P|munu)^xi -- the first term of eq 6."""
     nao = mol.nao
-    orbo, orbv = mo[:, :nocc], mo[:, nocc:]
+    orbo, orbv = mo[:, frozen:nocc], mo[:, nocc:]
     gamma_ao = np.einsum("Pia,ui,va->Puv", gamma, orbo, orbv, optimize=True)
 
     de = np.zeros((mol.natm, 3))
@@ -343,7 +355,7 @@ def gradient_two_centre(auxmol, gamma_pq, mol):
 # checking
 # --------------------------------------------------------------------------
 
-def finite_difference(atoms, basis, auxbasis, step=2.5e-3):
+def finite_difference(atoms, basis, auxbasis, step=2.5e-3, frozen=0):
     """Central differences of the same energy the analytic gradient claims."""
     de = np.zeros((len(atoms), 3))
     for a in range(len(atoms)):
@@ -352,8 +364,10 @@ def finite_difference(atoms, basis, auxbasis, step=2.5e-3):
             minus = [list(x) for x in atoms]
             plus[a][1 + c] += step
             minus[a][1 + c] -= step
-            e_plus = ri_mp2_energy(*build(plus, basis, auxbasis))[0]
-            e_minus = ri_mp2_energy(*build(minus, basis, auxbasis))[0]
+            e_plus = ri_mp2_energy(*build(plus, basis, auxbasis),
+                                   frozen=frozen)[0]
+            e_minus = ri_mp2_energy(*build(minus, basis, auxbasis),
+                                    frozen=frozen)[0]
             de[a, c] = (e_plus - e_minus) / (2 * step)
     return de
 
@@ -402,21 +416,33 @@ def main():
     lib.num_threads(8)
     cases = [
         ("H2 / sto-3g", [["H", 0.0, 0.0, -0.7], ["H", 0.0, 0.0, 0.7]],
-         "sto-3g", "cc-pvdz-rifit"),
+         "sto-3g", "cc-pvdz-rifit", 0),
         ("H2O / sto-3g", [["O", 0.0, 0.0, 0.0], ["H", 0.0, -1.4308, 1.1078],
                           ["H", 0.0, 1.4308, 1.1078]],
-         "sto-3g", "cc-pvdz-rifit"),
+         "sto-3g", "cc-pvdz-rifit", 0),
         ("HCN / sto-3g", [["H", 0.0, 0.0, -2.0], ["C", 0.0, 0.0, 0.0],
                           ["N", 0.0, 0.0, 2.2]],
-         "sto-3g", "cc-pvdz-rifit"),
+         "sto-3g", "cc-pvdz-rifit", 0),
+        # The frozen finite difference freezes the same core: the relaxed
+        # density's occupied-frozen block comes from the Lagrangian rather
+        # than the amplitudes, and only a derivative of the frozen energy
+        # sees it as a derivative.
+        ("H2O / 6-31g, frozen 1", [["O", 0.0, 0.0, 0.0],
+                                   ["H", 0.0, -1.4308, 1.1078],
+                                   ["H", 0.0, 1.4308, 1.1078]],
+         "6-31g", "cc-pvtz-rifit", 1),
+        ("HCN / sto-3g, frozen 2", [["H", 0.0, 0.0, -2.0],
+                                    ["C", 0.0, 0.0, 0.0],
+                                    ["N", 0.0, 0.0, 2.2]],
+         "sto-3g", "cc-pvdz-rifit", 2),
     ]
 
     worst_overall = 0.0
-    for label, atoms, basis, auxbasis in cases:
+    for label, atoms, basis, auxbasis, frozen in cases:
         mol, auxmol = build(atoms, basis, auxbasis)
-        energy, mf = ri_mp2_energy(mol, auxmol)
-        analytic = ri_mp2_gradient(mol, auxmol, mf, verbose=True)
-        numeric = finite_difference(atoms, basis, auxbasis)
+        energy, mf = ri_mp2_energy(mol, auxmol, frozen=frozen)
+        analytic = ri_mp2_gradient(mol, auxmol, mf, verbose=True, frozen=frozen)
+        numeric = finite_difference(atoms, basis, auxbasis, frozen=frozen)
 
         print(f"== {label}   E(RI-MP2) = {energy:.12f}")
         for a in range(mol.natm):

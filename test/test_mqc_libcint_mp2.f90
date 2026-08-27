@@ -26,6 +26,7 @@ module test_mqc_libcint_mp2
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
    use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
+   use mqc_libcint_ri_mp2_gradient, only: libcint_ri_mp2_gradient
    implicit none
    private
    public :: collect_mqc_libcint_mp2_tests
@@ -61,7 +62,15 @@ contains
                   new_unittest("mp2_frozen_gradient_memory_paths_agree", &
                                test_frozen_gradient_paths), &
                   new_unittest("mp2_gradient_rejects_freezing_everything", &
-                               test_frozen_gradient_refusal) &
+                               test_frozen_gradient_refusal), &
+                  new_unittest("ri_mp2_frozen_gradient_matches_the_numpy_reference", &
+                               test_ri_frozen_gradient_reference), &
+                  new_unittest("ri_mp2_frozen_gradient_differences_the_energy", &
+                               test_ri_frozen_gradient_fd), &
+                  new_unittest("ri_mp2_frozen_gradient_integral_paths_agree", &
+                               test_ri_frozen_gradient_paths), &
+                  new_unittest("ri_mp2_gradient_rejects_freezing_everything", &
+                               test_ri_frozen_gradient_refusal) &
                   ]
    end subroutine collect_mqc_libcint_mp2_tests
 
@@ -428,6 +437,163 @@ contains
       call check(error, err%has_error(), &
                  "the gradient must refuse a core that freezes everything")
    end subroutine test_frozen_gradient_refusal
+
+   subroutine water_ri_gradient(basis, aux_basis, frozen, gradient, err, force_direct)
+      !! One converged SCF at `WATER_B`, then the frozen-core RI-MP2 gradient
+      character(len=*), intent(in) :: basis, aux_basis
+      integer, intent(in) :: frozen
+      real(dp), allocatable, intent(out) :: gradient(:, :)
+      type(error_t), intent(inout) :: err
+      logical, intent(in), optional :: force_direct
+
+      type(libcint_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+
+      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], WATER_B, basis, mol, err)
+      if (err%has_error()) return
+      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], WATER_B, aux_basis, &
+                                  aux, err)
+      if (err%has_error()) return
+      call run_libcint_rhf(mol, 10, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, err)
+      if (err%has_error()) return
+      call libcint_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
+                                   gradient, err, n_frozen=frozen, &
+                                   force_direct=force_direct)
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine water_ri_gradient
+
+   subroutine test_ri_frozen_gradient_reference(error)
+      !! Water/6-31G, oxygen core frozen, against the numpy RI-MP2 reference
+      !!
+      !! PySCF has no fitted MP2 nuclear gradient -- `mp.dfmp2.DFMP2`'s
+      !! `nuc_grad_method` raises NotImplementedError -- so the machine-precision
+      !! reference is `tools/cpu_validation/ri_mp2_gradient.py` with the same
+      !! frozen count, fed this repository's basis JSON and solving its
+      !! Z-vector densely. Against that the two codes agree to 7e-11, the same
+      !! floor the frozen=0 control shows, so the bound leaves room for the two
+      !! SCFs landing differently, not for any block being wrong. PySCF is
+      !! still in the chain where it can be: `pyscf.mp.dfmp2` reproduces the
+      !! frozen fitted correlation energy to 7e-15 from the same orbitals, and
+      !! central differences of that energy meet this gradient at O(h^2).
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), parameter :: REFERENCE(3, 3) = reshape( &
+                             [0.0_dp, 0.0_dp, 9.512385746353e-03_dp, &
+                              0.0_dp, 2.247565931183e-02_dp, -4.756192873177e-03_dp, &
+                              0.0_dp, -2.247565931183e-02_dp, -4.756192873176e-03_dp], &
+                             [3, 3])
+      real(dp), allocatable :: gradient(:, :)
+      type(error_t) :: err
+
+      call water_ri_gradient("6-31g", "cc-pvtz-rifit", 1, gradient, err)
+      call check(error,.not. err%has_error(), &
+                 "the frozen-core RI gradient must run: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, maxval(abs(gradient - REFERENCE)) < 2.0e-9_dp, &
+                 "the frozen-core RI-MP2 gradient must match the numpy reference")
+   end subroutine test_ri_frozen_gradient_reference
+
+   subroutine test_ri_frozen_gradient_fd(error)
+      !! The frozen-core RI gradient differences the frozen-core RI energy
+      !!
+      !! Independent of every external reference: both numbers come from this
+      !! code, with the *same* frozen count and the same auxiliary basis on
+      !! both sides. The tolerance is the central difference's own O(h^2)
+      !! truncation, not the gradient's error.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), parameter :: STEP = 2.0e-3_dp
+      real(dp), allocatable :: gradient(:, :)
+      real(dp) :: moved(3, 3), plus, minus, worst
+      type(error_t) :: err
+      integer :: iatom, comp
+
+      call water_ri_gradient("sto-3g", "cc-pvdz-rifit", 1, gradient, err)
+      call check(error,.not. err%has_error(), &
+                 "the frozen-core RI gradient must run: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      worst = 0.0_dp
+      do iatom = 1, 3
+         do comp = 1, 3
+            moved = WATER_B
+            moved(comp, iatom) = WATER_B(comp, iatom) + STEP
+            call ri_frozen_energy_at(moved, plus, err)
+            if (err%has_error()) exit
+            moved(comp, iatom) = WATER_B(comp, iatom) - STEP
+            call ri_frozen_energy_at(moved, minus, err)
+            if (err%has_error()) exit
+            worst = max(worst, abs((plus - minus)/(2.0_dp*STEP) - gradient(comp, iatom)))
+         end do
+      end do
+      call check(error,.not. err%has_error(), &
+                 "the displaced energies must converge: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, worst < 5.0e-6_dp, &
+                 "the frozen-core RI gradient must difference the frozen-core RI energy")
+   end subroutine test_ri_frozen_gradient_fd
+
+   subroutine ri_frozen_energy_at(coords, energy, err)
+      !! One frozen-core RI-MP2 total energy at a displaced geometry
+      real(dp), intent(in) :: coords(3, 3)
+      real(dp), intent(out) :: energy
+      type(error_t), intent(inout) :: err
+
+      type(libcint_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(mp2_result_t) :: mp2
+
+      energy = 0.0_dp
+      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], coords, "sto-3g", mol, err)
+      if (err%has_error()) return
+      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], coords, &
+                                  "cc-pvdz-rifit", aux, err)
+      if (err%has_error()) return
+      call run_libcint_rhf(mol, 10, 300, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      if (err%has_error()) return
+      call run_libcint_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
+                              scf%energy, mp2, err, n_frozen=1)
+      if (err%has_error()) return
+      energy = mp2%total
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine ri_frozen_energy_at
+
+   subroutine test_ri_frozen_gradient_paths(error)
+      !! Stored and recomputed reference integrals agree with a core frozen
+      !!
+      !! The two paths differ only in where the reference's integrals come
+      !! from, and neither touches the fitted correlation -- so under a frozen
+      !! core they still have to agree to rounding, which is what shows the
+      !! new occupied-frozen block feeds both the same numbers.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable :: stored(:, :), direct(:, :)
+      type(error_t) :: err
+
+      call water_ri_gradient("6-31g", "cc-pvdz-rifit", 1, stored, err)
+      call check(error,.not. err%has_error(), &
+                 "the stored path must run: "//err%get_full_trace())
+      if (allocated(error)) return
+      call water_ri_gradient("6-31g", "cc-pvdz-rifit", 1, direct, err, &
+                             force_direct=.true.)
+      call check(error,.not. err%has_error(), &
+                 "the direct path must run: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, maxval(abs(stored - direct)) < 1.0e-10_dp, &
+                 "recomputing the reference integrals must not move a frozen-core "// &
+                 "RI gradient")
+   end subroutine test_ri_frozen_gradient_paths
+
+   subroutine test_ri_frozen_gradient_refusal(error)
+      !! Freezing every occupied orbital leaves nothing to differentiate
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable :: gradient(:, :)
+      type(error_t) :: err
+
+      call water_ri_gradient("sto-3g", "cc-pvdz-rifit", 5, gradient, err)
+      call check(error, err%has_error(), &
+                 "the RI gradient must refuse a core that freezes everything")
+   end subroutine test_ri_frozen_gradient_refusal
 
 end module test_mqc_libcint_mp2
 

@@ -69,6 +69,11 @@ contains
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: n_frozen
+         !! Core orbitals excluded from the correlation, exactly the
+         !! conventional gradient's split: the fitted tensor, the amplitudes and
+         !! both fitted densities span the active occupied space only, while the
+         !! reference density, the response and every one-particle quantity keep
+         !! the full occupied space.
       logical, intent(in), optional :: force_direct
          !! Recompute the reference integrals rather than storing them, whatever
          !! the size. The check harness passes it so both paths are exercised on
@@ -120,7 +125,7 @@ contains
       real(dp), allocatable :: doo(:, :), dvv(:, :), dm1mo(:, :), zeta(:, :)
       real(dp), allocatable :: imat(:, :), im1(:, :), im1_t(:, :)
       real(dp), allocatable :: lag_o(:, :), lag_v(:, :), pq_p(:, :, :)
-      real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :), c_act(:, :)
       real(dp), allocatable :: hf_density(:, :), dm1(:, :), dm1_total(:, :), dm1p(:, :)
       real(dp), allocatable :: veff(:, :), xvo(:, :, :), zvec(:, :, :)
       real(dp), allocatable :: work(:, :), work_t(:, :), p_occ(:, :), vhf_s1occ(:, :)
@@ -134,7 +139,7 @@ contains
       real(dp), pointer :: bref_arg(:, :)
       real(dp), pointer :: eri_arg(:, :, :, :)
       integer, allocatable :: offsets(:), counts(:)
-      integer :: n_ao, n_mo, n_o, n_v, n_aux, n_ov, frozen
+      integer :: n_ao, n_mo, n_o, n_oa, n_v, n_aux, n_ov, frozen
       integer :: i, j, a, b, p, q, iatom, comp, p0, p1
       real(dp) :: denom, kf, cscale
       logical :: dense, fitted, dh
@@ -146,12 +151,12 @@ contains
 
       frozen = 0
       if (present(n_frozen)) frozen = n_frozen
-      if (frozen /= 0) then
-         call error%set(ERROR_VALIDATION, "the RI-MP2 gradient does not implement a "// &
-                        "frozen core: the relaxed density gains occupied-frozen and "// &
-                        "virtual-frozen blocks, which are not built here.")
+      if (frozen < 0 .or. frozen >= n_occ) then
+         call error%set(ERROR_VALIDATION, "the RI-MP2 gradient's frozen core must "// &
+                        "leave at least one occupied orbital to correlate")
          return
       end if
+      n_oa = n_o - frozen
       if (n_v < 1 .or. n_o < 1) then
          call error%set(ERROR_VALIDATION, "the RI-MP2 gradient needs both occupied "// &
                         "and virtual orbitals")
@@ -197,23 +202,29 @@ contains
       ! both are left empty rather than chosen between.
       if (fitted) dense = .false.
 
-      allocate (c_occ(n_ao, n_o), c_vir(n_ao, n_v))
+      ! Two occupied spaces from here on, the conventional gradient's split:
+      ! the full one, `c_occ`, is what the reference density, the response and
+      ! every one-particle quantity run over; the active one, `c_act`, is all
+      ! the fitted tensor and the amplitudes ever see. With no frozen core the
+      ! two are the same columns.
+      allocate (c_occ(n_ao, n_o), c_vir(n_ao, n_v), c_act(n_ao, n_oa))
       c_occ = coeff(:, 1:n_o)
       c_vir = coeff(:, n_o + 1:n_mo)
+      c_act = coeff(:, frozen + 1:n_o)
 
       ! ---- the fitted integrals, and the amplitudes over them --------------
       ! `build_df_mo_tensor` lays its result out `(a, P, i)`, the shape the
       ! energy's gemms want. Everything below indexes `(i, a, P)` instead,
       ! matching the equations and the numpy reference, so it is repacked once
       ! here rather than transposed at every use.
-      call build_df_mo_tensor(mol, aux, c_occ, c_vir, bia_raw, error)
+      call build_df_mo_tensor(mol, aux, c_act, c_vir, bia_raw, error)
       if (error%has_error()) return
       n_aux = size(bia_raw, 2)
-      n_ov = n_o*n_v
+      n_ov = n_oa*n_v
       allocate (bmat(n_ov, n_aux))
       do p = 1, n_aux
-         do i = 1, n_o
-            bmat(i:n_ov:n_o, p) = bia_raw(:, p, i)
+         do i = 1, n_oa
+            bmat(i:n_ov:n_oa, p) = bia_raw(:, p, i)
          end do
       end do
       deallocate (bia_raw)
@@ -244,14 +255,18 @@ contains
       allocate (ovov(n_ov, n_ov))
       call pic_gemm(bmat, bmat, ovov, transb="T")
 
-      allocate (t2(n_o, n_o, n_v, n_v))
+      ! `i` and `j` count *active* occupied orbitals, which is why their
+      ! energies are read at `frozen + i`: the fitted tensor already dropped
+      ! the core, and the denominators have to drop the same orbitals or every
+      ! amplitude divides by the wrong gap.
+      allocate (t2(n_oa, n_oa, n_v, n_v))
       do b = 1, n_v
          do a = 1, n_v
-            do j = 1, n_o
-               do i = 1, n_o
-                  denom = orbital_energies(i) + orbital_energies(j) &
+            do j = 1, n_oa
+               do i = 1, n_oa
+                  denom = orbital_energies(frozen + i) + orbital_energies(frozen + j) &
                           - orbital_energies(n_occ + a) - orbital_energies(n_occ + b)
-                  t2(i, j, a, b) = ovov(i + (a - 1)*n_o, j + (b - 1)*n_o)/denom
+                  t2(i, j, a, b) = ovov(i + (a - 1)*n_oa, j + (b - 1)*n_oa)/denom
                end do
             end do
          end do
@@ -264,26 +279,31 @@ contains
       allocate (xm(n_ov, n_ov))
       do b = 1, n_v
          do a = 1, n_v
-            do j = 1, n_o
-               do i = 1, n_o
-                  xm(i + (a - 1)*n_o, j + (b - 1)*n_o) = &
+            do j = 1, n_oa
+               do i = 1, n_oa
+                  xm(i + (a - 1)*n_oa, j + (b - 1)*n_oa) = &
                      2.0_dp*t2(i, j, a, b) - t2(i, j, b, a)
                end do
             end do
          end do
       end do
 
-      call build_gamma(xm, bmat, jm12, n_o, n_v, n_aux, gamma)
-      call build_gamma_metric(gamma, bmat, jm12, n_o, n_v, n_aux, gamma_pq)
+      call build_gamma(xm, bmat, jm12, n_oa, n_v, n_aux, gamma)
+      call build_gamma_metric(gamma, bmat, jm12, n_oa, n_v, n_aux, gamma_pq)
       deallocate (xm)
 
       ! ---- the unrelaxed one-particle blocks -------------------------------
-      call gamma1_intermediates(t2, n_o, n_v, doo, dvv)
+      call gamma1_intermediates(t2, n_oa, n_v, doo, dvv)
       deallocate (t2)
 
+      ! The amplitude blocks land where the amplitudes live: `doo` in the
+      ! *active* occupied rows and columns, `dvv` in the virtuals. The frozen
+      ! rows and columns stay zero here -- their occupied-frozen block is not an
+      ! amplitude quantity and is filled from the Lagrangian below, once the
+      ! Lagrangian exists.
       allocate (dm1mo(n_mo, n_mo))
       dm1mo = 0.0_dp
-      dm1mo(1:n_o, 1:n_o) = doo + transpose(doo)
+      dm1mo(frozen + 1:n_o, frozen + 1:n_o) = doo + transpose(doo)
       dm1mo(n_o + 1:n_mo, n_o + 1:n_mo) = dvv + transpose(dvv)
 
       ! ---- the Lagrangian (eqs 13, 14) -------------------------------------
@@ -293,30 +313,53 @@ contains
       allocate (pq_p(n_mo, n_mo, n_aux))
       call transform_three_centre(three_ao, coeff, n_ao, n_mo, n_aux, pq_p)
 
-      allocate (lag_o(n_o, n_mo), lag_v(n_v, n_mo))
+      ! `gamma`'s occupied index counts active orbitals, so the occupied
+      ! Lagrangian has active rows and its `(iq|P)` reads at `frozen + i` --
+      ! while the free index `q` still runs over every molecular orbital,
+      ! which is where the occupied-frozen rows of `imat` come from.
+      allocate (lag_o(n_oa, n_mo), lag_v(n_v, n_mo))
       lag_o = 0.0_dp
       lag_v = 0.0_dp
       do q = 1, n_mo
          do a = 1, n_v
-            do i = 1, n_o
+            do i = 1, n_oa
                lag_o(i, q) = lag_o(i, q) &
                              + 2.0_dp*sum(gamma(:, i, a)*pq_p(q, n_o + a, :))
             end do
          end do
          do a = 1, n_v
-            do i = 1, n_o
+            do i = 1, n_oa
                lag_v(a, q) = lag_v(a, q) &
-                             + 2.0_dp*sum(gamma(:, i, a)*pq_p(i, q, :))
+                             + 2.0_dp*sum(gamma(:, i, a)*pq_p(frozen + i, q, :))
             end do
          end do
       end do
       deallocate (pq_p)
 
       ! Transposed into the slot: the paper indexes the Lagrangian's own index
-      ! first, the assembly below carries it second.
+      ! first, the assembly below carries it second. `imat`'s column is the
+      ! fitted density's own MO index, so its frozen columns are zero --
+      ! exactly what the conventional gradient's AO back-transform produces,
+      ! where the two-particle density has no frozen component to land there.
       allocate (imat(n_mo, n_mo))
-      imat(:, 1:n_o) = -transpose(lag_o)
+      imat = 0.0_dp
+      imat(:, frozen + 1:n_o) = -transpose(lag_o)
       imat(:, n_o + 1:n_mo) = -transpose(lag_v)
+
+      ! The occupied-frozen block of the relaxed density, the conventional
+      ! gradient's construction verbatim. The amplitudes never touch a frozen
+      ! orbital, but the Lagrangian does, and dividing its occupied-frozen
+      ! elements by the orbital-energy gap is that rotation's own first-order
+      ! response -- resolved directly because both orbitals are occupied and
+      ! the coupled equations below span only occupied-virtual. It has to land
+      ! before the `veff` build: the Z-vector's right-hand side is the response
+      ! of the reference to the whole unrelaxed density, this block included.
+      do i = frozen + 1, n_o
+         do p = 1, frozen
+            dm1mo(p, i) = imat(p, i)/(orbital_energies(p) - orbital_energies(i))
+            dm1mo(i, p) = dm1mo(p, i)
+         end do
+      end do
 
       ! ---- the Z-vector ----------------------------------------------------
       allocate (hf_density(n_ao, n_ao))
@@ -479,7 +522,7 @@ contains
                                      with_gamma=.false., k_scale=kf)
       end if
 
-      call build_gamma_ao(gamma, c_occ, c_vir, n_ao, n_o, n_v, n_aux, gamma_ao)
+      call build_gamma_ao(gamma, c_act, c_vir, n_ao, n_oa, n_v, n_aux, gamma_ao)
       call fitted_two_particle_gradient(mol, aux, gamma_ao, gamma_pq, gradient)
 
       call one_electron_deriv(mol, s1, DERIV_OVLP)
