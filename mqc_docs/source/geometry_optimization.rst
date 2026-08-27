@@ -65,6 +65,11 @@ which backends have gradients, not about the optimizer:
    * - libcint (CPU ``ccsd``, ``ccsd(t)``)
      - **no**
      - Refused: a coupled cluster gradient needs the Lambda amplitudes
+   * - anything with ``model.ecp``
+     - **no**
+     - Refused whatever the method: the potential's contribution to the
+       derivative is not implemented. Energies are unaffected, so a single
+       point is still correct. See :doc:`input_files`
    * - cuEST (GPU ``hf``, ``dft``)
      - yes
      - Expected to work; needs an sm_80 card

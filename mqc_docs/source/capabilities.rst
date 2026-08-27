@@ -270,6 +270,12 @@ What has a gradient on the CPU backend, at a glance:
        is restricted only, like the meta-GGAs, and CPU backend only: the GPU
        path calls cuEST's own non-local entry points and is compiled but not
        yet run against the library
+   * - Effective core potentials
+     - yes
+     - ``model.ecp``, a separate file from the basis. Energies only: every
+       nuclear derivative is refused, as are MCSCF, xTB and the GPU backend,
+       and an automatically counted frozen core. CPU backend only, through
+       libfint -- libcint has no ECP code
    * - Kohn-Sham: range-separated hybrid
      - yes
      - **Needs an auxiliary basis.** The exact-ERI path builds no second
@@ -769,7 +775,11 @@ Current Limitations
    handles an electric-field perturbation, which is the piece such a method
    would build on, but nothing consumes it yet
 2. **Relativistic Hamiltonians**: none -- no ZORA, DKH or X2C, and no spin-orbit
-   coupling operator
+   coupling operator. An effective core potential is the nearest thing
+   available and is a real one: a set fitted to a relativistic reference
+   carries much of the effect for the valence, which is why ECPs are used on
+   heavy elements as much for that as for the cost. It is not a relativistic
+   Hamiltonian and does not become one
 3. **Dispersion corrections**: no D3 or D4 for the ab initio path. The xTB
    methods carry their own through tblite; a Kohn-Sham number from a functional
    that does not include dispersion itself does not get it from anywhere here.
