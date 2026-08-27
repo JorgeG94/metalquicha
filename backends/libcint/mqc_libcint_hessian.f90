@@ -34,6 +34,7 @@ module mqc_libcint_hessian
                                  schwarz_bounds, direct_stats_t
    use mqc_libcint_response, only: response_operator_t, solve_response
    use pic_blas_interfaces, only: pic_gemm
+   use mqc_libcint_ecp, only: ecp_refuses_derivatives
    implicit none
    private
 
@@ -1049,6 +1050,7 @@ contains
       integer :: i, nao
 
       if (error%has_error()) return
+      if (ecp_refuses_derivatives(mol%core_electrons, "nuclear Hessian", error)) return
 
       nao = mol%nao
       allocate (weighted(nao, nao))

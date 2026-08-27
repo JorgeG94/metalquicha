@@ -29,6 +29,7 @@ module mqc_libcint_gradient
    use pic_types, only: dp
    use mqc_nuclear_repulsion, only: add_nuclear_repulsion_gradient
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_libcint_ecp, only: ecp_refuses_derivatives
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, max_block, atom_ao_blocks, &
                                     build_df_shell_table, three_centre, two_centre, &
                                     metric_inverse_sqrt, eri_shell_table_t, &
@@ -155,6 +156,8 @@ contains
       integer :: nao, iatom, comp, p0, p1
       logical :: unrestricted
       logical :: fitted
+
+      if (ecp_refuses_derivatives(mol%core_electrons, "nuclear gradient", error)) return
 
       unrestricted = present(density_beta)
       nao = mol%nao

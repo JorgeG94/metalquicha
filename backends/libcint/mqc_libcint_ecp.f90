@@ -31,10 +31,12 @@ module mqc_libcint_ecp
    !! twice.
    use pic_types, only: dp
    use, intrinsic :: iso_c_binding, only: c_int, c_ptr, c_loc, c_null_ptr
+   use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
    private
 
    public :: ecp_matrix
+   public :: ecp_refuses_derivatives
 
    interface
       function cECPscalar_sph(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
@@ -63,6 +65,44 @@ module mqc_libcint_ecp
    end interface
 
 contains
+
+   function ecp_refuses_derivatives(core_electrons, what, error) result(refused)
+      !! Refuse a nuclear derivative when an ECP is present
+      !!
+      !! The potential depends on the nuclear positions through |r - R| and
+      !! through the projectors on both sides, and none of that is
+      !! differentiated anywhere in this program -- libfint carries the energy
+      !! integrals only, not PySCF's `nr_ecp_deriv.c`.
+      !!
+      !! **Why refuse rather than omit.** Every check a user can make passes:
+      !! the SCF converges, the energy agrees with PySCF to 1e-12, and the
+      !! forces are simply missing a term. An optimisation on those walks
+      !! confidently to a geometry that is not a stationary point of the energy
+      !! it reports, and a frequency built from them is wrong in a way that
+      !! looks like a physical result.
+      !!
+      !! One function rather than the same `if` in four places, because there
+      !! are four derivative paths -- SCF, MP2, RI-MP2 and the analytic RHF
+      !! Hessian -- and a fifth added later should fail to compile against a
+      !! missing call rather than silently return a wrong number. It takes the
+      !! per-atom core count rather than the molecule, for the same reason
+      !! `ecp_matrix` takes arrays.
+      integer, allocatable, intent(in) :: core_electrons(:)
+      character(len=*), intent(in) :: what   !! Named in the message, e.g. "MP2 gradient"
+      type(error_t), intent(inout) :: error
+      logical :: refused
+
+      refused = .false.
+      if (.not. allocated(core_electrons)) return
+      if (.not. any(core_electrons /= 0)) return
+
+      refused = .true.
+      call error%set(ERROR_VALIDATION, "this calculation uses an effective core "// &
+                     "potential, whose contribution to the "//what//" is not "// &
+                     "implemented. Refused rather than returning a derivative "// &
+                     "missing it -- energies are unaffected, so a single point is "// &
+                     "still correct.")
+   end function ecp_refuses_derivatives
 
    subroutine ecp_matrix(nao, nbas, natm, cartesian, atm, bas, env, &
                          shell_offset, necpbas, matrix)
