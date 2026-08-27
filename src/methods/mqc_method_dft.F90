@@ -248,6 +248,16 @@ contains
       ! said `cuest` and got libcint would report a provenance that was not true.
       select case (settings%backend)
       case (BACKEND_CUEST)
+         if (settings%cartesian) then
+            call result%error%set(ERROR_VALIDATION, "backend 'cuest' was asked for, but "// &
+                                  "'model.cartesian' is on and the GPU path builds its "// &
+                                  "AO shells spherical whatever the basis says. Running "// &
+                                  "it would answer with a different basis than the deck "// &
+                                  "asked for and say nothing. Ask for backend 'libcint', "// &
+                                  "or drop 'model.cartesian'.")
+            result%has_error = .true.
+            return
+         end if
          if (settings%run_mp2 .or. settings%run_cc) then
             call result%error%set(ERROR_VALIDATION, "backend 'cuest' was asked for, but "// &
                                   "MP2 and coupled cluster have no GPU implementation "// &
@@ -261,6 +271,15 @@ contains
          call run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
       case default
 #ifdef MQC_WITH_CUEST
+         if (settings%cartesian) then
+            call result%error%set(ERROR_VALIDATION, "'model.cartesian' is on and this "// &
+                                  "build resolves 'auto' to the GPU backend, which "// &
+                                  "builds its AO shells spherical whatever the basis "// &
+                                  "says. Ask for backend 'libcint', or drop "// &
+                                  "'model.cartesian'.")
+            result%has_error = .true.
+            return
+         end if
          call run_cuest_scf(settings, fragment, result, want_gradient)
 #else
          call run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)

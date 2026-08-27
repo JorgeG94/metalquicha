@@ -264,6 +264,14 @@ three-centre integral is built in one angular form, so a spherical fitting
 basis over a Cartesian orbital basis is not a mixture the integrals can
 express.
 
+It is a CPU-path keyword. cuEST builds its AO shells spherical whatever the
+basis says, so asking for both is refused rather than quietly answered in the
+other form -- ``backend: cuest`` with ``cartesian`` on is an error, and so is
+leaving the backend at ``auto`` on a build that resolves it to the GPU. Ask for
+``backend: libcint``, which honours the file and this keyword both. A basis
+whose *file* is Cartesian, such as 6-31G*, was already refused on the GPU path
+for the same reason.
+
 Kohn-Sham DFT, on the CPU through libcint and libxc:
 
 - ``DFT`` (also ``KS``, ``Kohn-Sham``) selects the method; **which** functional is
