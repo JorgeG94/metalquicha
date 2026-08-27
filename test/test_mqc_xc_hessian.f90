@@ -23,7 +23,7 @@ module test_mqc_xc_hessian
    use mqc_libcint_hessian, only: ks_hessian
    use mqc_libcint_gradient, only: libcint_scf_gradient, vv10_gradient_fixed_grid
    use mqc_libcint_xc_hessian, only: xc_hessian, xc_gradient_fixed_grid, &
-                                     xc_potential_deriv
+                                     xc_potential_deriv, vv10_hessian
    implicit none
    private
 
@@ -48,6 +48,8 @@ contains
                   new_unittest("xc_hessian_mgga_differences_its_gradient", test_gga_against_fd), &
                   new_unittest("vv10_fixed_grid_gradient_differences_the_energy", &
                                test_vv10_fixed_grid), &
+                  new_unittest("vv10_hessian_differences_the_fixed_grid_gradient", &
+                               test_vv10_hessian), &
                   new_unittest("xc_potential_derivative_matches_differences", test_vxc_deriv), &
                   new_unittest("ks_hessian_differences_the_dft_gradient", test_ks_end_to_end) &
                   ]
@@ -306,6 +308,83 @@ contains
       call check(error, worst < 1.0e-6_dp, &
                  "the fixed-grid VV10 gradient disagrees with a difference of the energy")
    end subroutine test_vv10_fixed_grid
+
+   subroutine test_vv10_hessian(error)
+      !! The VV10 Hessian against differences of the fixed-grid VV10 gradient
+      !!
+      !! The comparison is exact in the sense that matters: both sides hold the
+      !! density matrix and both grids fixed by passing one context in, and
+      !! both omit the grid response, so nothing is approximated on one side
+      !! only and what remains is the step error of the central difference.
+      !! The VV10 term is isolated -- `vv10_hessian` against differences of
+      !! `vv10_gradient_fixed_grid` alone -- because the semilocal term has its
+      !! own test above and a failure here should localise to the non-local
+      !! algebra, not to whichever term happens to be larger.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: H = 2.5e-4_dp
+      real(dp), parameter :: TOL = 1.0e-7_dp
+         !! Six times the measured worst disagreement, 1.63e-8, which is the
+         !! step error and nothing else: it scales exactly as H^2 over an
+         !! eightfold range of steps (2.6e-7 at 1e-3, 1.04e-6 at 2e-3), which
+         !! a missing term cannot do. The nearest real mistake is six orders
+         !! away -- dropping the kernel's diagonal, the term where omega and
+         !! kappa feel their own point's density, leaves every off-diagonal
+         !! pair term intact and still misses by 4.6e-2 here.
+      real(dp) :: hess(3, 3, 3, 3), plus(3, 3), minus(3, 3), shifted(3, 3)
+      real(dp) :: fd, worst
+      real(dp), allocatable :: density(:, :)
+      type(xc_context_t) :: ctx
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      logical :: ok
+      integer :: ia, a, ja, b
+
+      if (.not. xc_available()) return
+
+      call reference_state("b97m-v", ctx, density, err, ok)
+      call check(error, ok, "the b97m-v reference failed")
+      if (allocated(error)) return
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      hess = 0.0_dp
+      call vv10_hessian(ctx, mol, density, hess, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the analytic VV10 Hessian failed")
+      if (allocated(error)) return
+
+      worst = 0.0_dp
+      do ia = 1, 3
+         do a = 1, 3
+            shifted = WATER
+            shifted(a, ia) = shifted(a, ia) + H
+            plus = 0.0_dp
+            call vv10_at(ctx, shifted, plus, density, err, ok)
+            if (.not. ok) then
+               call check(error, .false., "a displaced fixed-grid VV10 gradient failed")
+               return
+            end if
+            shifted = WATER
+            shifted(a, ia) = shifted(a, ia) - H
+            minus = 0.0_dp
+            call vv10_at(ctx, shifted, minus, density, err, ok)
+            if (.not. ok) then
+               call check(error, .false., "a displaced fixed-grid VV10 gradient failed")
+               return
+            end if
+            do ja = 1, 3
+               do b = 1, 3
+                  fd = (plus(b, ja) - minus(b, ja))/(2.0_dp*H)
+                  worst = max(worst, abs(hess(a, b, ia, ja) - fd))
+               end do
+            end do
+         end do
+      end do
+
+      call check(error, worst < TOL, &
+                 "the VV10 Hessian disagrees with a difference of the "// &
+                 "fixed-grid VV10 gradient")
+   end subroutine test_vv10_hessian
 
    subroutine vv10_at(ctx, coords, gradient, density, err, ok)
       type(xc_context_t), intent(inout) :: ctx

@@ -45,14 +45,17 @@ module mqc_libcint_xc_hessian
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t
    use mqc_libcint_ao, only: eval_ao_block, shell_extents, block_significant_aos, &
-                             AO_DERIV3_COMP
-   use mqc_libcint_xc, only: xc_context_t, xc_grid_kernel_quantities
+                             AO_DERIV3_COMP, eval_rho
+   use mqc_libcint_xc, only: xc_context_t, xc_grid_kernel_quantities, &
+                             ensure_nlc_grid
+   use mqc_libcint_vv10, only: vv10_nlc, vv10_hessian_kernel
    implicit none
    private
 
    public :: xc_hessian
    public :: xc_gradient_fixed_grid
    public :: xc_potential_deriv
+   public :: vv10_hessian
 
 contains
 
@@ -391,6 +394,321 @@ contains
          end do
       end do
    end subroutine xc_hessian
+
+   subroutine vv10_hessian(ctx, mol, density, hess, error)
+      !! VV10's second derivative with the density matrix and both grids fixed
+      !!
+      !! The non-local counterpart of `xc_hessian`, on the NLC grid, and the
+      !! second derivative of exactly what `vv10_gradient_fixed_grid` is the
+      !! first derivative of. The same two-term shape holds, because `E_nl` is
+      !! still a functional of rho and gamma alone:
+      !!
+      !!     d2 E / dA dB = int [ f_rho d2rho/dAdB + f_gamma d2gamma/dAdB ]
+      !!                  + int int [ dA(rho,gamma) . f'' . dB(rho,gamma) ]
+      !!
+      !! The first term is the semilocal GGA contraction with `vrho` and
+      !! `vsigma` swapped for VV10's -- Phase 1 pinned that its `f_rho` and
+      !! `f_gamma` *are* our `vrho` and `vsigma` -- so it is `xc_hessian`'s
+      !! potential machinery verbatim, minus the semilocal kernel. The second
+      !! is where the non-locality lives: the kernel `f''` is a pair operator,
+      !! so it is applied to all `3*natm` first derivatives at once by
+      !! `vv10_hessian_kernel` and contracted here, following PySCF's
+      !! `_get_enlc_deriv2` and the Liang, Feng, Liu & Head-Gordon paper it
+      !! implements.
+      !!
+      !! The grid does not respond, deliberately, as in `xc_hessian` and as in
+      !! PySCF's `grid_response=False` default -- which is why the check is a
+      !! difference of the *fixed-grid* gradient and not the physical one.
+      !! Restricted only, like the gradient upstream of it.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(inout) :: hess(:, :, :, :)   !! (3, 3, natm, natm), in place
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: rho(:), sigma(:), rho_grad(:, :)
+      real(dp), allocatable :: rho_blk(:), rho_grad_blk(:, :)
+      real(dp), allocatable :: exc(:), vrho(:), vsigma(:)
+      real(dp), allocatable :: pu(:), pw(:), pa(:), pb(:), pc(:)
+      real(dp), allocatable :: dodr(:), dodg(:), d2odr2(:), d2odg2(:), d2odrdg(:)
+      real(dp), allocatable :: dkdr(:), d2kdr2(:)
+      real(dp), allocatable :: drho_da(:, :), dgamma_da(:, :)
+      real(dp), allocatable :: f_rho_t(:, :), f_gamma_t(:, :)
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), ao_hess(:, :, :)
+      real(dp), allocatable :: ao_d3(:, :, :)
+      real(dp), allocatable :: extents(:), d_sig(:, :)
+      real(dp), allocatable :: dmu(:, :), dmu_d(:, :, :)
+      real(dp), allocatable :: dgrad(:, :, :), wsig(:, :)
+      real(dp), allocatable :: zmat(:, :), ymat(:, :), wg(:)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_offset(:), ao_list(:), c_offsets(:), c_counts(:)
+      integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig
+      integer :: ia, ja, a, b, i, j, ig, gg, p, q, c, d, e
+      real(dp) :: acc
+      integer, parameter :: PAIR(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
+      integer, parameter :: TRIP(3, 3, 3) = reshape( &
+                            [1, 2, 3, 2, 4, 5, 3, 5, 6, &
+                             2, 4, 5, 4, 7, 8, 5, 8, 9, &
+                             3, 5, 6, 5, 8, 9, 6, 9, 10], [3, 3, 3])
+
+      if (error%has_error()) return
+      if (ctx%nlc_b == 0.0_dp .and. ctx%nlc_c == 0.0_dp) return
+
+      call ensure_nlc_grid(ctx, mol, error)
+      if (error%has_error()) return
+      npts = ctx%nlc_grid%n_points
+      if (npts == 0) return
+
+      natm = size(mol%coords, 2)
+      nao = mol%nao
+
+      ! Sweep one: rho, its gradient and sigma over the whole NLC grid, as the
+      ! gradient does it -- the pair sums need every point before any output.
+      allocate (rho(npts), sigma(npts), rho_grad(npts, 3))
+      rho = 0.0_dp
+      sigma = 0.0_dp
+      rho_grad = 0.0_dp
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
+         nb = g1 - g0 + 1
+         if (allocated(rho_blk)) deallocate (rho_blk, rho_grad_blk)
+         allocate (rho_blk(nb), rho_grad_blk(nb, 3))
+         call eval_ao_block(mol, ctx%nlc_grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+         if (error%has_error()) return
+         call eval_rho(ao, density, rho_blk, ao_grad=ao_grad, rho_grad=rho_grad_blk)
+         do ig = 1, nb
+            rho(g0 + ig - 1) = rho_blk(ig)
+            do d = 1, 3
+               rho_grad(g0 + ig - 1, d) = rho_grad_blk(ig, d)
+            end do
+            sigma(g0 + ig - 1) = rho_grad_blk(ig, 1)**2 + rho_grad_blk(ig, 2)**2 &
+                                 + rho_grad_blk(ig, 3)**2
+         end do
+      end do
+
+      ! One pair sweep for the potential and every kernel intermediate. The
+      ! potential this returns *is* PySCF's `f_rho`/`f_gamma` -- Phase 1's test
+      ! pins that identity -- so no rebuild happens here.
+      allocate (exc(npts), vrho(npts), vsigma(npts))
+      allocate (pu(npts), pw(npts), pa(npts), pb(npts), pc(npts))
+      allocate (dodr(npts), dodg(npts), d2odr2(npts), d2odg2(npts), d2odrdg(npts))
+      allocate (dkdr(npts), d2kdr2(npts))
+      call vv10_nlc(ctx%nlc_b, ctx%nlc_c, ctx%nlc_grid%coords, rho, sigma, &
+                    ctx%nlc_grid%coords, rho, sigma, ctx%nlc_grid%weights, &
+                    exc, vrho, vsigma, &
+                    hess_u=pu, hess_w=pw, hess_a=pa, hess_b=pb, hess_c=pc, &
+                    domega_drho=dodr, domega_dgamma=dodg, &
+                    d2omega_drho2=d2odr2, d2omega_dgamma2=d2odg2, &
+                    d2omega_drho_dgamma=d2odrdg, &
+                    dkappa_drho=dkdr, d2kappa_drho2=d2kdr2)
+
+      ! The first derivatives of rho and gamma for all 3*natm perturbations,
+      ! over the whole grid -- the kernel term consumes them globally, so they
+      ! are stored rather than used and dropped per block as in `xc_hessian`.
+      allocate (drho_da(3*natm, npts), dgamma_da(3*natm, npts))
+      drho_da = 0.0_dp
+      dgamma_da = 0.0_dp
+
+      allocate (extents(mol%nbas))
+      call shell_extents(mol, ctx%screen_tol, extents)
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
+      allocate (c_offsets(natm), c_counts(natm))
+      allocate (d_sig(nao, nao))
+
+      ! Sweep two: term one -- the potential against the second derivatives of
+      ! rho and gamma, `xc_hessian`'s machinery with its semilocal kernel
+      ! removed -- and the storage of the first derivatives for term two.
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
+         nb = g1 - g0 + 1
+
+         call block_significant_aos(mol, ctx%nlc_grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig, &
+                                    atom_offsets=c_offsets, atom_counts=c_counts)
+         if (n_sig == 0) cycle
+
+         do jsig = 1, n_sig
+            do isig = 1, n_sig
+               d_sig(isig, jsig) = density(ao_list(isig), ao_list(jsig))
+            end do
+         end do
+
+         call eval_ao_block(mol, ctx%nlc_grid%coords(:, g0:g1), ao, error, &
+                            grad=ao_grad, hess=ao_hess, deriv3=ao_d3, &
+                            shell_mask=shell_mask, ao_offset=ao_offset, n_ao_out=n_sig)
+         if (error%has_error()) return
+
+         if (allocated(wg)) deallocate (wg)
+         allocate (wg(nb))
+         wg = ctx%nlc_grid%weights(g0:g1)
+
+         if (allocated(dmu)) deallocate (dmu)
+         allocate (dmu(nb, n_sig))
+         call pic_gemm(ao(1:nb, 1:n_sig), d_sig(1:n_sig, 1:n_sig), dmu, beta=0.0_dp)
+         if (allocated(dmu_d)) deallocate (dmu_d)
+         allocate (dmu_d(nb, n_sig, 3))
+         do d = 1, 3
+            call pic_gemm(ao_grad(1:nb, 1:n_sig, d), d_sig(1:n_sig, 1:n_sig), &
+                          dmu_d(:, :, d), beta=0.0_dp)
+         end do
+
+         ! d rho / dA_c, straight into the global array.
+         do ia = 1, natm
+            if (c_counts(ia) == 0) cycle
+            do a = 1, 3
+               do ig = 1, nb
+                  acc = 0.0_dp
+                  do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                     acc = acc + ao_grad(ig, i, a)*dmu(ig, i)
+                  end do
+                  drho_da(3*(ia - 1) + a, g0 + ig - 1) = -2.0_dp*acc
+               end do
+            end do
+         end do
+
+         ! d(grad rho)/dA, and from it d gamma / dA.
+         if (allocated(dgrad)) deallocate (dgrad)
+         allocate (dgrad(3*natm, 3, nb))
+         dgrad = 0.0_dp
+         do ia = 1, natm
+            if (c_counts(ia) == 0) cycle
+            do c = 1, 3
+               do d = 1, 3
+                  do ig = 1, nb
+                     acc = 0.0_dp
+                     do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                        acc = acc + ao_hess(ig, i, PAIR(c, d))*dmu(ig, i) &
+                              + ao_grad(ig, i, c)*dmu_d(ig, i, d)
+                     end do
+                     dgrad(3*(ia - 1) + c, d, ig) = -2.0_dp*acc
+                  end do
+               end do
+            end do
+         end do
+         do ig = 1, nb
+            do p = 1, 3*natm
+               acc = 0.0_dp
+               do d = 1, 3
+                  acc = acc + rho_grad(g0 + ig - 1, d)*dgrad(p, d, ig)
+               end do
+               dgamma_da(p, g0 + ig - 1) = 2.0_dp*acc
+            end do
+         end do
+
+         ! Potential term against the second derivative of gamma, first half:
+         ! the product of two first derivatives of grad rho.
+         do ig = 1, nb
+            do p = 1, 3*natm
+               do q = 1, 3*natm
+                  acc = 0.0_dp
+                  do d = 1, 3
+                     acc = acc + dgrad(p, d, ig)*dgrad(q, d, ig)
+                  end do
+                  hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) = &
+                     hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) &
+                     + 2.0_dp*wg(ig)*vsigma(g0 + ig - 1)*acc
+               end do
+            end do
+         end do
+
+         ! Potential term against d2rho, off-diagonal piece: one derivative on
+         ! each centre.
+         if (allocated(zmat)) deallocate (zmat)
+         allocate (zmat(n_sig, n_sig))
+         do a = 1, 3
+            do b = 1, 3
+               call weighted_overlap(ao_grad(1:nb, 1:n_sig, a), ao_grad(1:nb, 1:n_sig, b), &
+                                     wg*vrho(g0:g1), zmat)
+               do ja = 1, natm
+                  if (c_counts(ja) == 0) cycle
+                  do ia = 1, natm
+                     if (c_counts(ia) == 0) cycle
+                     acc = 0.0_dp
+                     do j = c_offsets(ja) + 1, c_offsets(ja) + c_counts(ja)
+                        do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                           acc = acc + d_sig(i, j)*zmat(i, j)
+                        end do
+                     end do
+                     hess(a, b, ia, ja) = hess(a, b, ia, ja) + 2.0_dp*acc
+                  end do
+               end do
+            end do
+         end do
+
+         ! Second half of the gamma term: `grad rho` against `d2(grad rho)`,
+         ! third basis-function derivatives on the diagonal atom block.
+         if (allocated(wsig)) deallocate (wsig)
+         allocate (wsig(nb, 3))
+         do d = 1, 3
+            wsig(:, d) = 2.0_dp*wg*vsigma(g0:g1)*rho_grad(g0:g1, d)
+         end do
+         do d = 1, 3
+            do c = 1, 3
+               do e = 1, 3
+                  call weighted_overlap(ao_d3(1:nb, 1:n_sig, TRIP(c, e, d)), &
+                                        ao(1:nb, 1:n_sig), wsig(:, d), zmat)
+                  call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+                                  natm, n_sig, c, e, 2.0_dp, diagonal=.true.)
+                  call weighted_overlap(ao_hess(1:nb, 1:n_sig, PAIR(c, e)), &
+                                        ao_grad(1:nb, 1:n_sig, d), wsig(:, d), zmat)
+                  call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+                                  natm, n_sig, c, e, 2.0_dp, diagonal=.true.)
+                  call weighted_overlap(ao_hess(1:nb, 1:n_sig, PAIR(c, d)), &
+                                        ao_grad(1:nb, 1:n_sig, e), wsig(:, d), zmat)
+                  call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+                                  natm, n_sig, c, e, 2.0_dp, diagonal=.false.)
+                  call weighted_overlap(ao_grad(1:nb, 1:n_sig, c), &
+                                        ao_hess(1:nb, 1:n_sig, PAIR(e, d)), wsig(:, d), zmat)
+                  call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+                                  natm, n_sig, c, e, 2.0_dp, diagonal=.false.)
+               end do
+            end do
+         end do
+
+         ! Potential term against d2rho, diagonal piece: both derivatives on
+         ! the same function.
+         if (allocated(ymat)) deallocate (ymat)
+         allocate (ymat(n_sig, n_sig))
+         do p = 1, 6
+            call hess_component(p, a, b)
+            call weighted_overlap(ao_hess(1:nb, 1:n_sig, p), ao(1:nb, 1:n_sig), &
+                                  wg*vrho(g0:g1), ymat)
+            do ia = 1, natm
+               if (c_counts(ia) == 0) cycle
+               acc = 0.0_dp
+               do j = 1, n_sig
+                  do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                     acc = acc + d_sig(i, j)*ymat(i, j)
+                  end do
+               end do
+               hess(a, b, ia, ia) = hess(a, b, ia, ia) + 2.0_dp*acc
+               if (a /= b) hess(b, a, ia, ia) = hess(b, a, ia, ia) + 2.0_dp*acc
+            end do
+         end do
+      end do
+
+      ! Term two: the kernel applied to every perturbation's first derivatives,
+      ! then contracted against every other's -- one pair sweep for all 3*natm
+      ! columns, then a weighted outer product over the grid. The inner
+      ! quadrature weight lives inside the kernel; the outer one is applied
+      ! here, exactly as PySCF splits them.
+      allocate (f_rho_t(3*natm, npts), f_gamma_t(3*natm, npts))
+      call vv10_hessian_kernel(ctx%nlc_b, ctx%nlc_c, ctx%nlc_grid%coords, &
+                               rho, sigma, ctx%nlc_grid%weights, &
+                               pu, pw, pa, pb, pc, dodr, dodg, dkdr, &
+                               d2odr2, d2odg2, d2odrdg, d2kdr2, &
+                               drho_da, dgamma_da, f_rho_t, f_gamma_t)
+      do gg = 1, npts
+         do q = 1, 3*natm
+            do p = 1, 3*natm
+               hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) = &
+                  hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) &
+                  + ctx%nlc_grid%weights(gg) &
+                  *(drho_da(p, gg)*f_rho_t(q, gg) + dgamma_da(p, gg)*f_gamma_t(q, gg))
+            end do
+         end do
+      end do
+   end subroutine vv10_hessian
 
    subroutine xc_potential_deriv(ctx, mol, density, h1, error)
       !! The skeleton nuclear derivative of the exchange-correlation potential
