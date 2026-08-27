@@ -8,6 +8,7 @@ module mqc_cuest_driver
    use pic_types, only: dp
    use mqc_string_utils, only: int_to_text
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
+   use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_cgto, only: molecular_basis_type
    use mqc_elements, only: element_number_to_symbol
@@ -22,7 +23,9 @@ module mqc_cuest_driver
    use mqc_cuest_functionals, only: functional_name_to_id
    use mqc_cuest_scf, only: scf_result_t, run_rhf_scf, run_uks_scf, spin_occupations, &
                             SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC
-   use mqc_cuest_atomic_guess, only: build_sac_guess
+   use mqc_cuest_atomic_guess, only: build_sac_guess, atom_ao_counts
+   use mqc_population_analysis, only: ao_owner_from_counts, mulliken_atomic_charges, &
+                                      mulliken_atomic_spin_populations
    use mqc_cuest_gradient, only: compute_scf_gradient
    use mqc_cuest_iface, only: cuest_scf_settings_t
    implicit none
@@ -267,6 +270,76 @@ contains
       if (scf%has_dipole) then
          result%dipole = scf%dipole
          result%has_dipole = .true.
+      end if
+
+      ! Atomic charges, from the density this calculation converged to.
+      !
+      ! Done here rather than in the SCF because `system` is still alive and
+      ! owns the overlap, and done before the gradient for no reason other than
+      ! that both need the same live objects.
+      !
+      ! The arithmetic is `mqc_population_analysis`, the same code the CPU path
+      ! runs. Only the AO-to-atom map is built differently: cuEST lays its AO
+      ! basis out per atom in atom order, so a count per atom is the whole of
+      ! it.
+      if (allocated(settings%charges_scheme)) then
+         block
+            real(dp), allocatable :: q(:), q_spin(:), s_ao(:, :), spin_density(:, :)
+            integer, allocatable :: counts(:), owner(:)
+            type(error_t) :: analysis_error
+            logical :: open_shell
+
+            call analysis_error%clear()
+            open_shell = allocated(scf%density_beta)
+
+            select case (trim(settings%charges_scheme))
+            case ("mulliken")
+               allocate (counts(size(fragment%element_numbers)))
+               call atom_ao_counts(orbital_basis,.not. orbital_basis%is_cartesian(), counts)
+               call ao_owner_from_counts(counts, owner)
+               call system%compute_overlap(s_ao, analysis_error)
+
+               if (.not. analysis_error%has_error()) then
+                  ! `scf%density` is already the total on this backend -- the
+                  ! unrestricted path stores density_a + density_b there, where
+                  ! the CPU path stores alpha alone. So the spin density is
+                  ! total - 2*beta, and not the difference of the two stored
+                  ! matrices.
+                  call mulliken_atomic_charges(owner, real(fragment%element_numbers, dp), &
+                                               scf%density, s_ao, q, analysis_error)
+               end if
+               if (open_shell .and. .not. analysis_error%has_error()) then
+                  spin_density = scf%density - 2.0_dp*scf%density_beta
+                  call mulliken_atomic_spin_populations(owner, size(fragment%element_numbers), &
+                                                        spin_density, s_ao, q_spin, &
+                                                        analysis_error)
+               end if
+            case ("chelpg")
+               ! Not a refusal that can be lifted by wiring one more call: the
+               ! fit needs the electrostatic potential at points off the atoms,
+               ! which this backend has no integral for. Named rather than
+               ! silently answered with Mulliken, because the two schemes
+               ! disagree by design.
+               call analysis_error%set(ERROR_GENERIC, "CHELPG charges are not implemented "// &
+                                       "on the GPU backend; it builds no electrostatic "// &
+                                       "potential integrals. Use 'mulliken' here, or run "// &
+                                       "CHELPG on the CPU backend.")
+            case default
+               call analysis_error%set(ERROR_GENERIC, "unknown charge scheme '"// &
+                                       trim(settings%charges_scheme)// &
+                                       "'; expected 'mulliken' or 'chelpg'.")
+            end select
+
+            if (analysis_error%has_error()) then
+               call logger%warning("  atomic charges could not be computed: "// &
+                                   analysis_error%get_message())
+            else
+               call move_alloc(q, result%atomic_charges)
+               if (allocated(q_spin)) call move_alloc(q_spin, result%spin_populations)
+               result%charge_scheme = trim(settings%charges_scheme)
+               result%has_charges = .true.
+            end if
+         end block
       end if
 
       if (need_gradient) then
