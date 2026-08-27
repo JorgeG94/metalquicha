@@ -185,7 +185,7 @@ If result_out is present, returns result instead of writing JSON</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~23"></span>
+              <span class="anchor" id="variable-world_comm~28"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -200,7 +200,7 @@ If result_out is present, returns result instead of writing JSON</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~55"></span>
+              <span class="anchor" id="variable-sys_geom~72"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -215,7 +215,7 @@ If result_out is present, returns result instead of writing JSON</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~25"></span>
+              <span class="anchor" id="variable-config~37"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -230,7 +230,7 @@ If result_out is present, returns result instead of writing JSON</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result_out~3"></span>
+              <span class="anchor" id="variable-result_out~4"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out),</td>
@@ -245,7 +245,7 @@ If result_out is present, returns result instead of writing JSON</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~22"></span>
+              <span class="anchor" id="variable-json_data~27"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2050,31 +2050,31 @@ large graphs.</div>
 <g id="proc~~run_unfragmented_calculation~~CalledByGraph_node13" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~run_unfragmented_calculation~~CalledByGraph_node13"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="637,-24 559,-24 559,0 637,0 637,-24"/>
-<text text-anchor="middle" x="598" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
-<g id="proc~~run_unfragmented_calculation~~CalledByGraph_edge15" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
-<path fill="none" stroke="#0000ff" d="M637.13,-19.9C668.49,-26.4 713.03,-35.63 746.29,-42.53"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="745.73,-45.98 756.23,-44.59 747.15,-39.13 745.73,-45.98"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~run_unfragmented_calculation~~CalledByGraph_node14" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~run_unfragmented_calculation~~CalledByGraph_node14"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="438.5,-230 360.5,-230 360.5,-206 438.5,-206 438.5,-230"/>
 <text text-anchor="middle" x="399.5" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
 <g id="proc~~run_unfragmented_calculation~~CalledByGraph_edge12" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
 <path fill="none" stroke="#00ff00" d="M438.75,-215.95C513.57,-211.93 678.52,-203.09 753.52,-199.06"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="754.11,-202.54 763.91,-198.51 753.74,-195.55 754.11,-202.54"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~run_unfragmented_calculation~~CalledByGraph_node14" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~run_unfragmented_calculation~~CalledByGraph_node14"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="637,-24 559,-24 559,0 637,0 637,-24"/>
+<text text-anchor="middle" x="598" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~run_unfragmented_calculation~~CalledByGraph_edge15" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0000ff" d="M637.13,-19.9C668.49,-26.4 713.03,-35.63 746.29,-42.53"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="745.73,-45.98 756.23,-44.59 747.15,-39.13 745.73,-45.98"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~run_unfragmented_calculation~~CalledByGraph_node15" class="node">
@@ -2112,11 +2112,11 @@ large graphs.</div>
 <path fill="none" stroke="#00ff91" d="M250.02,-230.03C270.17,-233.38 292.44,-236.71 313,-239 389.3,-247.5 477.63,-251.94 535.26,-254.12"/>
 <polygon fill="#00ff91" stroke="#00ff91" points="535.18,-257.62 545.3,-254.49 535.44,-250.63 535.18,-257.62"/>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~run_unfragmented_calculation~~CalledByGraph_edge19" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#4800ff" d="M263.27,-218C292.39,-218 324.52,-218 350.14,-218"/>
-<polygon fill="#4800ff" stroke="#4800ff" points="350.34,-221.5 360.34,-218 350.34,-214.5 350.34,-221.5"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
+<g id="proc~~run_unfragmented_calculation~~CalledByGraph_edge18" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#0091ff" d="M263.27,-218C292.39,-218 324.52,-218 350.14,-218"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="350.34,-221.5 360.34,-218 350.34,-214.5 350.34,-221.5"/>
 </g>
 <!-- proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point -->
 <g id="proc~~run_unfragmented_calculation~~CalledByGraph_edge20" class="edge">
@@ -2139,11 +2139,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
-<g id="proc~~run_unfragmented_calculation~~CalledByGraph_edge18" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#0091ff" d="M486.12,-12C507.58,-12 529.87,-12 548.78,-12"/>
-<polygon fill="#0091ff" stroke="#0091ff" points="548.91,-15.5 558.91,-12 548.91,-8.5 548.91,-15.5"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~run_unfragmented_calculation~~CalledByGraph_edge19" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#4800ff" d="M486.12,-12C507.58,-12 529.87,-12 548.78,-12"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="548.91,-15.5 558.91,-12 548.91,-8.5 548.91,-15.5"/>
 </g>
 <!-- proc~mqc_session_begin -->
 <g id="proc~~run_unfragmented_calculation~~CalledByGraph_node19" class="node">
@@ -2326,7 +2326,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-27 01:21 +0000             </p>
+ on 2026-08-27 01:44 +0000             </p>
           </div>
         </div>
         <br>

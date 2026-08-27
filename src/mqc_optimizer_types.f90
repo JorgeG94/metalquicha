@@ -209,6 +209,16 @@ module mqc_optimizer_types
       real(dp) :: dimer_rotation_tolerance = -1.0_dp
          !! Stop rotating once the angle falls below this. Negative is the
          !! engine default.
+      integer :: zero_modes = -1
+         !! How many Hessian eigenvalues to treat as zero rather than as
+         !! vibrations. Negative is the engine default. Six for a non-linear
+         !! molecule in Cartesian coordinates -- three translations and three
+         !! rotations -- and five for a linear one. Internal coordinates have
+         !! none, which is why this is off by default.
+      real(dp) :: soft_mode_threshold = -1.0_dp
+         !! Eigenvalues smaller than this in magnitude are soft: P-RFO steps
+         !! along them are damped rather than trusted. Negative is the engine
+         !! default.
       logical :: connect = .false.
          !! After the saddle is found, follow its imaginary mode downhill in
          !! both directions and report the two minima it falls to. One

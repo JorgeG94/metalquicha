@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 2.3% of total for derived types.</p>Including implementation: 31 statements,  0.8% of total for derived types.">31 statements</a>
+                 title="<p> 2.5% of total for derived types.</p>Including implementation: 33 statements,  0.9% of total for derived types.">33 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-algorithm">algorithm</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-algorithm~2">algorithm</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-connect">connect</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-connect_distort">connect_distort</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-constraints">constraints</a>
-            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-coordinates~7">coordinates</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-coordinates~2">coordinates</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-dimer_max_rotations">dimer_max_rotations</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-dimer_rotation_tolerance">dimer_rotation_tolerance</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-dimer_separation">dimer_separation</a>
@@ -151,7 +151,7 @@
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-friction_factor">friction_factor</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-friction_rising">friction_rising</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-frozen_atoms">frozen_atoms</a>
-            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-gradient_tolerance">gradient_tolerance</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-gradient_tolerance~2">gradient_tolerance</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-hess_end">hess_end</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-hessian_update">hessian_update</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-lbfgs_memory">lbfgs_memory</a>
@@ -162,9 +162,11 @@
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-neb_spring">neb_spring</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-print_level">print_level</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-saddle_method">saddle_method</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-soft_mode_threshold">soft_mode_threshold</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-target">target</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-timestep">timestep</a>
-            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-trajectory">trajectory</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-trajectory~2">trajectory</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-zero_modes">zero_modes</a>
         </div>
       </div>
     </div>
@@ -364,7 +366,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~fmo_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~optimizer_settings_t~~InheritedByGraph_edge5" class="edge">
+<g id="type~~optimizer_settings_t~~InheritedByGraph_edge4" class="edge">
 <title>type~fmo_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#ff0000" d="M597.74,-83.84C592.59,-81.29 587.49,-78.33 583,-75 573.13,-67.67 577.29,-54 565,-54"/>
 </g>
@@ -378,7 +380,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~gmbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~optimizer_settings_t~~InheritedByGraph_edge4" class="edge">
+<g id="type~~optimizer_settings_t~~InheritedByGraph_edge5" class="edge">
 <title>type~gmbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#ff0000" d="M582.92,-54C576.89,-54 570.8,-54 565,-54"/>
 </g>
@@ -471,7 +473,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-algorithm"></span>
+              <span class="anchor" id="variable-algorithm~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -546,7 +548,7 @@ system to hold them in &ndash; see <code>mqc_dlfind_bridge</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~7"></span>
+              <span class="anchor" id="variable-coordinates~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -745,7 +747,7 @@ so a frozen pair contributes no coordinates at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient_tolerance"></span>
+              <span class="anchor" id="variable-gradient_tolerance~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -945,6 +947,25 @@ the engine default.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-soft_mode_threshold"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>soft_mode_threshold</strong></td>
+<td> =</td>
+                <td>-1.0_dp</td>
+            <td>
+                <p>Eigenvalues smaller than this in magnitude are soft: P-RFO steps
+along them are damped rather than trusted. Negative is the engine
+default.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-target"></span>
               integer,
             </td>
@@ -980,7 +1001,7 @@ Independent of <code>algorithm</code> on purpose &ndash; see <code>OPT_TARGET_SA
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-trajectory"></span>
+              <span class="anchor" id="variable-trajectory~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -996,6 +1017,27 @@ Independent of <code>algorithm</code> on purpose &ndash; see <code>OPT_TARGET_SA
 Worth turning off for a large system optimized over many steps:
 the geometries are held until the run ends so they can be written
 as one document, which is 3N doubles per step of memory.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-zero_modes"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>zero_modes</strong></td>
+<td> =</td>
+                <td>-1</td>
+            <td>
+                <p>How many Hessian eigenvalues to treat as zero rather than as
+vibrations. Negative is the engine default. Six for a non-linear
+molecule in Cartesian coordinates &ndash; three translations and three
+rotations &ndash; and five for a linear one. Internal coordinates have
+none, which is why this is off by default.</p>
             </td>
         </tr>
     </tbody>
@@ -1061,6 +1103,16 @@ as one document, which is 3N doubles per step of memory.</p>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dimer_rotation_tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mf">1.0_dp</span>
 <span class="w">         </span><span class="c">!! Stop rotating once the angle falls below this. Negative is the</span>
 <span class="w">         </span><span class="c">!! engine default.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">zero_modes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span>
+<span class="w">         </span><span class="c">!! How many Hessian eigenvalues to treat as zero rather than as</span>
+<span class="w">         </span><span class="c">!! vibrations. Negative is the engine default. Six for a non-linear</span>
+<span class="w">         </span><span class="c">!! molecule in Cartesian coordinates -- three translations and three</span>
+<span class="w">         </span><span class="c">!! rotations -- and five for a linear one. Internal coordinates have</span>
+<span class="w">         </span><span class="c">!! none, which is why this is off by default.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">soft_mode_threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mf">1.0_dp</span>
+<span class="w">         </span><span class="c">!! Eigenvalues smaller than this in magnitude are soft: P-RFO steps</span>
+<span class="w">         </span><span class="c">!! along them are damped rather than trusted. Negative is the engine</span>
+<span class="w">         </span><span class="c">!! default.</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">connect</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">         </span><span class="c">!! After the saddle is found, follow its imaginary mode downhill in</span>
 <span class="w">         </span><span class="c">!! both directions and report the two minima it falls to. One</span>
@@ -1133,7 +1185,7 @@ as one document, which is 3N doubles per step of memory.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-27 01:21 +0000             </p>
+ on 2026-08-27 01:44 +0000             </p>
           </div>
         </div>
         <br>

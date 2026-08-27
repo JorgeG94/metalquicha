@@ -426,6 +426,8 @@ module mqc_config_types
       real(dp) :: opt_dimer_separation = -1.0_dp       !! <0 = engine default
       integer :: opt_dimer_max_rotations = -1          !! <0 = engine default
       real(dp) :: opt_dimer_rot_tol = -1.0_dp          !! <0 = engine default
+      integer :: opt_zero_modes = -1                   !! <0 = engine default
+      real(dp) :: opt_soft_modes = -1.0_dp             !! <0 = engine default
       logical :: opt_connect = .false.                 !! Relax downhill from the saddle
       real(dp) :: opt_connect_distort = -1.0_dp        !! <0 = engine default
       real(dp) :: opt_timestep = -1.0_dp               !! Damped dynamics step

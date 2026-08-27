@@ -543,6 +543,8 @@ contains
          end if
       end if
 
+      driver_config%optimization%zero_modes = mqc_config%opt_zero_modes
+      driver_config%optimization%soft_mode_threshold = mqc_config%opt_soft_modes
       driver_config%optimization%connect = mqc_config%opt_connect
       driver_config%optimization%connect_distort = mqc_config%opt_connect_distort
 
@@ -629,7 +631,8 @@ contains
          ! lands here, which is why the warning says what it will cost rather
          ! than only what it is.
          if (driver_config%optimization%coordinates == OPT_COORDS_CARTESIAN .and. &
-             driver_config%optimization%saddle_method == SADDLE_METHOD_PRFO) then
+             driver_config%optimization%saddle_method == SADDLE_METHOD_PRFO .and. &
+             driver_config%optimization%zero_modes < 0) then
             if (allocated(mqc_config%opt_coordinates)) then
                call logger%warning("  keywords.optimization: a saddle search in Cartesian "// &
                                    "coordinates follows a rotation, not the reaction mode.")
@@ -641,8 +644,10 @@ contains
             call logger%warning("     Expect it to wander for all "// &
                                 to_char(driver_config%optimization%max_steps)// &
                                 " steps without converging.")
-            call logger%warning("     Use coordinates 'dlc' (or 'hdlc' for a cluster) "// &
-                                "unless you have a reason not to.")
+            call logger%warning("     Use coordinates 'dlc' (or 'hdlc' for a cluster), or "// &
+                                "set zero_modes to 6 (5 if linear) so the")
+            call logger%warning("     translations and rotations are recognised as zero "// &
+                                "rather than followed.")
          end if
       end if
 
