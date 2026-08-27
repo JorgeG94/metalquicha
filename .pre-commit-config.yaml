@@ -39,6 +39,16 @@ repos:
         language: system
         types: [file]
         files: '\.(f|F|f90|F90)$'
+      - id: mqc-no-naked-mpi-blas
+        name: no naked MPI or BLAS
+        # pic-mpi is the only layer that knows whether this build has
+        # `mpi_f08` or the legacy `mpi` module, and some compilers ship only
+        # one. A direct call compiles here and breaks someone else's build,
+        # which is a class of failure no test catches.
+        entry: tools/lint/no_naked_mpi_or_blas.sh
+        language: system
+        types: [file]
+        files: '\.(f|F|f90|F90)$'
       - id: fprettify
         name: fprettify
         entry: fprettify --silent -i 3 -l 122
