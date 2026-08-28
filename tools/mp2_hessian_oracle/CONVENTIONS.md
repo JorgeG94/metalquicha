@@ -65,6 +65,53 @@ choice here. Step 2, the bra↔ket symmetrisation, is *not* optional on our side
 either: it is what makes the density contract correctly against raw derivative
 integrals with no completion step.
 
+## 4a. The three reconciliations, measured
+
+Unit 1.1. Each of the gradient's three quantities is the same physics as pycc's
+counterpart and none of them is the same array. Measured 2026-08-27 on
+water/6-31G all-electron, at one thread.
+
+**Relaxed density** — direct, after aligning the MO phase (a sign per orbital,
+§7): `relaxed_density_mo` against `Drel`, **1.75e-11**.
+
+**Energy-weighted density.** `imat` is *not* the Lagrangian, and comparing it to
+pycc's `I` is comparing a part to a whole — its own assembly comment says the
+two-particle density's share is there and the unrelaxed one-particle correction
+is in `veff`. What both codes mean is the matrix multiplying `dS/dR`, exposed as
+`energy_weighted_ao`:
+
+```
+W_ours(AO) = 2 C I_pycc C^T  -  4 sum_{i in occ} eps_i C_i C_i^T     (1.92e-10)
+```
+
+The second term because our gradient returns the *total*: our W carries the
+reference's energy-weighted density too, which is most of its norm (81.98
+against 0.33 for the correlation part). Compared without it, the disagreement is
+a factor of 245, which reads like a broken routine rather than a different
+decomposition.
+
+**Two-particle density.** The two differ in index *placement*, not just
+convention. pycc's `_mp2_tpdm` is `Gamma_ijab = 2 t2_ijab - t2_ijba` in the
+`oovv`/`vvoo` blocks — order `(o,o,v,v)`. Ours carries the energy's coefficient
+`4 t2_ijab - 2 t2_ijba` = `2 u` and back-transforms with
+`C_occ, C_vir, C_vir, C_occ` — order `(o,v,v,o)`. So in chemist pairs ours is
+`(ia|bj)` where pycc's is `(ia|jb)`: the **ket pair is reversed**. Then ours is
+symmetrised `1<->2` (summed, not averaged) where pycc's effective density is
+symmetrised bra<->ket. With `u = 2 t2 - t2.transpose(0,1,3,2)`:
+
+```
+T[m,n,l,k] = sum_ijab 2 u_ijab C_o[m,i] C_v[n,a] C_v[l,b] C_o[k,j]
+gamma_ours = T + T.transpose(1,0,2,3)                                (9.27e-12)
+```
+
+**Why this matters beyond the gate.** The `1<->2` symmetrisation is there because
+the first-order contraction exploits `(grad i j|k l) = (grad i j|l k)`; pycc's
+bra<->ket one is there so the density contracts against a bra<->ket-doubled
+*second*-derivative integral. They are not interchangeable. `Gamma_eff` for the
+Hessian has to be built with the bra<->ket symmetrisation rather than inherited
+from `gamma_ao`, which is the plan's Unit 1.2 and is more work than reusing what
+the gradient already builds.
+
 ## 5. Storage and architecture
 
 pycc hold `nmo⁴` MO-basis tensors and stream the per-perturbation ones from a
