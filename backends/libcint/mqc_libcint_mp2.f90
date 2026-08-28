@@ -225,7 +225,10 @@ contains
       ! times over.
       call clk%start()
       call clk%begin("B tensor (3c/2c fit)")
-      call build_df_mo_tensor(mol, aux, c_occ, c_vir, bia, error)
+      ! Energy only: `bia` is contracted with another `bia` and nothing
+      ! else, so the cheap factor is safe here. The RI-MP2 *gradient*
+      ! builds its own and must not.
+      call build_df_mo_tensor(mol, aux, c_occ, c_vir, bia, error, fast_factor=.true.)
       deallocate (c_occ, c_vir)
       if (error%has_error()) return
       call clk%lap()
@@ -420,9 +423,9 @@ contains
 
       call clk%start()
       call clk%begin("B tensors (3c/2c fit, both spins)")
-      call build_df_mo_tensor(mol, aux, ca_o, ca_v, b_a, error)
+      call build_df_mo_tensor(mol, aux, ca_o, ca_v, b_a, error, fast_factor=.true.)
       if (error%has_error()) return
-      call build_df_mo_tensor(mol, aux, cb_o, cb_v, b_b, error)
+      call build_df_mo_tensor(mol, aux, cb_o, cb_v, b_b, error, fast_factor=.true.)
       if (error%has_error()) return
       deallocate (ca_o, ca_v, cb_o, cb_v)
       call clk%lap()

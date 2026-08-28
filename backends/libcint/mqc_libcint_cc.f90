@@ -1097,11 +1097,12 @@ contains
       ! `build_df_mo_block` lays the compound index out left-fastest, so
       ! `b_ov` is (i,a) with i fastest -- which is the ordering every block
       ! below is indexed in.
-      call build_df_mo_block(mol, aux, c_occ, c_occ, b_oo, error)
+      ! Every block is consumed as `B B^T`, so the cheap factor is safe.
+      call build_df_mo_block(mol, aux, c_occ, c_occ, b_oo, error, fast_factor=.true.)
       if (error%has_error()) return
-      call build_df_mo_block(mol, aux, c_occ, c_vir, b_ov, error)
+      call build_df_mo_block(mol, aux, c_occ, c_vir, b_ov, error, fast_factor=.true.)
       if (error%has_error()) return
-      call build_df_mo_block(mol, aux, c_vir, c_vir, b_vv_pq, error)
+      call build_df_mo_block(mol, aux, c_vir, c_vir, b_vv_pq, error, fast_factor=.true.)
       if (error%has_error()) return
 
       allocate (chem%oooo(n_o, n_o, n_o, n_o), chem%ooov(n_o, n_o, n_o, n_v))

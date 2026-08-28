@@ -28,14 +28,14 @@ module mqc_libcint_integrals
    !! else. Direct or density-fitted assembly is a different backend.
    use pic_types, only: dp
    use mqc_nuclear_repulsion, only: nuclear_repulsion
-   use pic_blas_interfaces, only: pic_gemm
-   use mqc_program_limits, only: DF_AUX_CHUNK
+   use pic_blas_interfaces, only: pic_gemm, pic_trsm
+   use mqc_program_limits, only: DF_METRIC_PANEL_BYTES
    use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type, atomic_basis_type
    use mqc_basis_utils, only: find_basis_file
    use mqc_json_basis_reader, only: build_molecular_basis_json
-   use pic_lapack_interfaces, only: pic_syev
+   use pic_lapack_interfaces, only: pic_syevd, pic_potrf
    use libcint_fortran, only: libcint_1e_ovlp_sph, libcint_1e_kin_sph, &
                               libcint_3c2e_sph, libcint_2c2e_sph, &
                               libcint_1e_nuc_sph, libcint_2e_sph, &
@@ -944,6 +944,7 @@ contains
       real(dp), parameter :: NULL_THRESHOLD = 1.0e-10_dp
       real(dp), allocatable :: metric(:, :), vectors(:, :), values(:), half(:, :)
       real(dp), allocatable :: three(:, :)
+      logical :: cholesky
       integer :: naux, nao, i, j, kept, info
 
       ! (mu nu | P) has orbital shells on two centres and auxiliary shells on
@@ -981,61 +982,153 @@ contains
       end if
       call clk%lap()
 
-      call clk%begin("metric^-1/2")
-      call metric_inverse_sqrt(metric, half, error)
+      call clk%begin("metric factor")
+      call fit_metric_factor(metric, half, cholesky, error)
       call clk%lap()
       if (error%has_error()) return
+      deallocate (metric)
 
       call clk%begin("B = (mn|Q) J^-1/2")
-      allocate (b(nao*nao, naux))
-      call apply_fit_metric(three, half, b)
+      call apply_fit(three, half, cholesky, b)
       call clk%lap()
       call clk%finish()
       call clk%report("density fitting")
    end subroutine build_df_tensor
 
-   subroutine apply_fit_metric(left, half, out)
-      !! out = left J^(-1/2), threaded over the auxiliary index
+   subroutine fit_metric_factor(metric, factor, cholesky, error)
+      !! Factor the fitting metric, the cheap way if it will take one
       !!
-      !! The single largest item in a fitted setup, and it was one `pic_gemm`.
-      !! The BLAS here is sequential on purpose -- fragment paths pin themselves
-      !! to one thread and parallelise over MPI instead -- so a lone call is a
-      !! lone core: 38 s of a 43 s density-fitting setup on a water 20-mer in
-      !! cc-pVDZ, while the other twenty-five sat idle.
+      !! Two ways to spend J on a fit, and they cost very differently. The
+      !! inverse square root is an eigendecomposition, about 9 n^3, and leaves
+      !! a full matrix that the fit multiplies by at 2 m n^2. A Cholesky is
+      !! n^3/3 and leaves a triangle that the fit *solves against* at m n^2 --
+      !! an order less to form and half as much to apply.
       !!
-      !! Split over *columns* of the result rather than rows. A column block of
-      !! `half` and of `out` is a contiguous section, so each thread hands BLAS
-      !! a view; blocking over rows would slice against the leading dimension
-      !! and the compiler would copy the whole left operand per block to make
-      !! it contiguous, which at n^2 by n_aux is gigabytes.
-      real(dp), intent(in) :: left(:, :)    !! (npair, naux)
-      real(dp), intent(in) :: half(:, :)    !! (naux, naux)
-      real(dp), intent(out) :: out(:, :)    !! (npair, naux)
-      contiguous :: left, half, out
-         !! Declared apart from the type so that a column block reaches
-         !! BLAS as a view rather than a copy. On its own line because
-         !! `fortitude` loses track of the argument list when `contiguous`
-         !! shares a declaration with `intent`, and reports the next local
-         !! of that name anywhere in the file as a dummy missing intent.
+      !! The catch is that a fitting basis is close to linearly dependent by
+      !! construction, and a Cholesky of a near-singular matrix stops rather
+      !! than degrading. So it is attempted and its `info` believed: the
+      !! eigendecomposition, which drops the offending modes, is still there
+      !! for the sets that need it. Which one ran is not a detail the caller
+      !! can ignore -- the two factors are applied differently -- so it is
+      !! returned rather than inferred.
+      real(dp), intent(in) :: metric(:, :)
+      real(dp), allocatable, intent(out) :: factor(:, :)
+      logical, intent(out) :: cholesky
+         !! True: `factor` holds U with J = U^T U, upper triangle only.
+         !! False: `factor` holds J^(-1/2) in full.
+      type(error_t), intent(inout) :: error
 
-      integer :: q0, q1, naux
+      real(dp), allocatable :: trial(:, :)
+      integer :: info
 
-      naux = size(half, 2)
-      !$omp parallel do default(none) &
-      !$omp    shared(left, half, out, naux) private(q0, q1) schedule(static)
-      do q0 = 1, naux, DF_AUX_CHUNK
-         q1 = min(q0 + DF_AUX_CHUNK - 1, naux)
-         call pic_gemm(left, half(:, q0:q1), out(:, q0:q1))
-      end do
-      !$omp end parallel do
-   end subroutine apply_fit_metric
+      ! On a copy, because a failed factorisation leaves the matrix partly
+      ! overwritten and the fallback needs it intact.
+      trial = metric
+      call pic_potrf(trial, uplo="U", info=info)
+      cholesky = (info == 0)
+      if (cholesky) then
+         call move_alloc(trial, factor)
+         return
+      end if
+
+      deallocate (trial)
+      call metric_inverse_sqrt(metric, factor, error)
+   end subroutine fit_metric_factor
+
+   subroutine apply_fit(three, factor, cholesky, b)
+      !! B = (mn|Q) J^(-1/2), however the metric was factored
+      !!
+      !! The single largest item in a fitted setup, and it used to be one
+      !! `pic_gemm` -- which is one core against the sequential BLAS this
+      !! project links on purpose.
+      !!
+      !! **Split over rows, not columns.** The obvious decomposition -- a block
+      !! of the auxiliary index per thread -- is a bandwidth disaster, because
+      !! `out(:, q0:q1)` needs *all* of the three-centre tensor for every
+      !! block. At 560 functions and n_aux near 2700 that is eighty-odd passes
+      !! over 6.7 GB, and a measured 280 GFLOP/s against a 4.5 TFLOP problem is
+      !! what streaming 290 GB looks like. Splitting the pair index instead
+      !! gives each thread its own slice, so the tensor is read once.
+      !!
+      !! A row panel is strided -- the pair index is the leading dimension --
+      !! so each is packed on the way into BLAS and unpacked on the way out.
+      !! Two more passes over the tensor, against the eighty it replaces.
+      !!
+      !! Correct whether or not the BLAS is itself threaded: OpenMP nesting is
+      !! off by default, so a threaded MKL called from inside this region runs
+      !! sequential and the parallelism is the loop's either way.
+      !!
+      !! The Cholesky path solves **in place** and hands the tensor on. Nothing
+      !! is allocated, where the other path needs a second array the size of
+      !! the first -- gigabytes, at the sizes fitting is chosen for.
+      real(dp), allocatable, intent(inout) :: three(:, :)
+         !! (npair, naux). Consumed either way: moved to `b` on the Cholesky
+         !! path, deallocated on the other.
+      real(dp), intent(in) :: factor(:, :)
+      logical, intent(in) :: cholesky
+      real(dp), allocatable, intent(out) :: b(:, :)
+
+      integer :: r0, r1, npair, naux, rows
+
+      npair = size(three, 1)
+      naux = size(factor, 2)
+      rows = metric_panel_rows(naux, npair)
+
+      if (cholesky) then
+         ! B U = (mn|Q), so B B^T = (mn|Q) (U^T U)^-1 (Q|rs) = (mn|Q) J^-1 (Q|rs),
+         ! which is the fitted integral. Only the upper triangle is read, and
+         ! `potrf` left the rest as the metric was.
+         !$omp parallel do default(none) &
+         !$omp    shared(three, factor, npair, rows) private(r0, r1) schedule(static)
+         do r0 = 1, npair, rows
+            r1 = min(r0 + rows - 1, npair)
+            call pic_trsm(factor, three(r0:r1, :), side="R", uplo="U")
+         end do
+         !$omp end parallel do
+         call move_alloc(three, b)
+      else
+         allocate (b(npair, naux))
+         !$omp parallel do default(none) &
+         !$omp    shared(three, factor, b, npair, rows) private(r0, r1) schedule(static)
+         do r0 = 1, npair, rows
+            r1 = min(r0 + rows - 1, npair)
+            call pic_gemm(three(r0:r1, :), factor, b(r0:r1, :))
+         end do
+         !$omp end parallel do
+         deallocate (three)
+      end if
+   end subroutine apply_fit
+
+   pure function metric_panel_rows(naux, npair) result(rows)
+      !! How many pair functions to fit the metric for at once
+      !!
+      !! Two pulls in opposite directions. A panel is packed and unpacked
+      !! around its GEMM, so a large one amortises that over more arithmetic;
+      !! but the packed copy is per-thread and live for the whole call, so a
+      !! large one times a hundred threads is gigabytes of scratch. The budget
+      !! is per panel and deliberately small: the packing is two passes over
+      !! the tensor whatever the panel size, and what is being bought here is
+      !! only the GEMM's shape.
+      integer, intent(in) :: naux, npair
+      integer :: rows
+
+      rows = int(max(1.0_dp, DF_METRIC_PANEL_BYTES/(8.0_dp*real(max(naux, 1), dp))))
+      rows = max(1, min(rows, npair))
+   end function metric_panel_rows
 
    subroutine metric_inverse_sqrt(metric, half, error)
       !! J^(-1/2) = U s^(-1/2) U^T over the modes that survive the threshold
       !!
-      !! Through the eigendecomposition rather than a Cholesky. A JKFIT or
-      !! RIFIT set is close to linearly dependent by construction, and a
-      !! Cholesky of a near-singular metric fails outright where this degrades.
+      !! **The fallback, not the usual path.** `fit_metric_factor` tries a
+      !! Cholesky first, which is an order cheaper and turns the fit itself
+      !! from a GEMM into a triangular solve. This is what happens when that
+      !! fails: a JKFIT or RIFIT set is close to linearly dependent by
+      !! construction, and a Cholesky of a near-singular metric stops outright
+      !! where this degrades, dropping the offending modes and carrying on.
+      !!
+      !! Divide-and-conquer rather than the QR iteration. Same eigenvectors to
+      !! within the tolerance that matters here, several times faster at the
+      !! two-to-three thousand auxiliary functions this is reached with.
       real(dp), intent(in) :: metric(:, :)
       real(dp), allocatable, intent(out) :: half(:, :)
       type(error_t), intent(inout) :: error
@@ -1047,7 +1140,7 @@ contains
       naux = size(metric, 1)
       allocate (vectors(naux, naux), values(naux))
       vectors = metric
-      call pic_syev(vectors, values, jobz="V", uplo="U", info=info)
+      call pic_syevd(vectors, values, jobz="V", uplo="U", info=info)
       if (info /= 0) then
          call error%set(ERROR_VALIDATION, "density fitting: the metric would not diagonalise")
          return
@@ -1078,7 +1171,7 @@ contains
       deallocate (scaled)
    end subroutine metric_inverse_sqrt
 
-   subroutine build_df_mo_tensor(orb, aux, c_occ, c_vir, bia, error)
+   subroutine build_df_mo_tensor(orb, aux, c_occ, c_vir, bia, error, fast_factor)
       !! B^P_ia directly, transforming to MO before fitting rather than after
       !!
       !! `build_df_tensor` fits first and hands back B(mu nu, P), which is what
@@ -1101,6 +1194,8 @@ contains
       real(dp), intent(in) :: c_vir(:, :)   !! (nao, n_vir)
       real(dp), allocatable, intent(out) :: bia(:, :, :)
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: fast_factor
+         !! Passed to `build_df_mo_block`; see there. Off by default.
 
       real(dp), allocatable :: fitted(:, :)
       integer :: naux, n_o, n_v, p_index, i
@@ -1108,7 +1203,7 @@ contains
       n_o = size(c_occ, 2)
       n_v = size(c_vir, 2)
 
-      call build_df_mo_block(orb, aux, c_occ, c_vir, fitted, error)
+      call build_df_mo_block(orb, aux, c_occ, c_vir, fitted, error, fast_factor=fast_factor)
       if (error%has_error()) return
       naux = size(fitted, 2)
 
@@ -1123,7 +1218,7 @@ contains
       deallocate (fitted)
    end subroutine build_df_mo_tensor
 
-   subroutine build_df_mo_block(orb, aux, c_left, c_right, b, error)
+   subroutine build_df_mo_block(orb, aux, c_left, c_right, b, error, fast_factor)
       !! B^P_pq for any two coefficient blocks, laid out (pq, P)
       !!
       !! The general form of `build_df_mo_tensor`, which assumed
@@ -1138,8 +1233,19 @@ contains
       real(dp), intent(in) :: c_left(:, :), c_right(:, :)   !! (nao, n_left), (nao, n_right)
       real(dp), allocatable, intent(out) :: b(:, :)         !! (n_left*n_right, naux)
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: fast_factor
+         !! Allow the Cholesky factor, which is much cheaper to form and to
+         !! apply. **Off by default, and that is not timidity.** The two
+         !! factors agree in `B B^T` and in nothing else, so a caller that only
+         !! ever contracts B with another B may have it, and one that pairs B
+         !! with a separately built `J^(-1/2)` may not -- the RI-MP2 gradient
+         !! does exactly that, and taking the fast factor there produced
+         !! gradients wrong in the first figure while the energies stayed right
+         !! to 1e-11. Naming the safe callers means a new one is merely slower
+         !! until someone checks it, rather than silently wrong.
 
       real(dp), allocatable :: metric(:, :), half(:, :), three(:, :)
+      logical :: cholesky, allow_fast
       real(dp), allocatable :: ovl(:, :), tmp(:, :), full(:)
       integer :: nao, naux, n_l, n_r, p_index
 
@@ -1158,7 +1264,14 @@ contains
       n_r = size(c_right, 2)
 
       call two_centre(aux, metric)
-      call metric_inverse_sqrt(metric, half, error)
+      allow_fast = .false.
+      if (present(fast_factor)) allow_fast = fast_factor
+      if (allow_fast) then
+         call fit_metric_factor(metric, half, cholesky, error)
+      else
+         cholesky = .false.
+         call metric_inverse_sqrt(metric, half, error)
+      end if
       if (error%has_error()) return
       deallocate (metric)
 
@@ -1193,9 +1306,8 @@ contains
       !$omp end parallel
       deallocate (three)
 
-      allocate (b(n_l*n_r, naux))
-      call apply_fit_metric(ovl, half, b)
-      deallocate (ovl, half)
+      call apply_fit(ovl, half, cholesky, b)
+      deallocate (half)
    end subroutine build_df_mo_block
 
    subroutine df_mo_slice(three_p, c_left, c_right, tmp, full, nao, n_l, n_r)

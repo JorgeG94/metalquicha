@@ -194,11 +194,12 @@ contains
       no = size(c_occ, 2)
       nv = size(c_vir, 2)
 
-      call build_df_mo_block(mol, aux, c_occ, c_occ, b_oo, error)
+      ! Every block is consumed as `B B^T`, so the cheap factor is safe.
+      call build_df_mo_block(mol, aux, c_occ, c_occ, b_oo, error, fast_factor=.true.)
       if (error%has_error()) return
-      call build_df_mo_block(mol, aux, c_occ, c_vir, b_ov, error)
+      call build_df_mo_block(mol, aux, c_occ, c_vir, b_ov, error, fast_factor=.true.)
       if (error%has_error()) return
-      call build_df_mo_block(mol, aux, c_vir, c_vir, b_vv_pq, error)
+      call build_df_mo_block(mol, aux, c_vir, c_vir, b_vv_pq, error, fast_factor=.true.)
       if (error%has_error()) return
 
       allocate (eris%oooo(no, no, no, no), eris%ooov(no, no, no, nv))

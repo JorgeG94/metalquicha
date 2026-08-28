@@ -125,6 +125,16 @@ module mqc_program_limits
    ! Density Fitting
    !---------------------------------------------------------------------------
 
+   real(dp), parameter, public :: DF_METRIC_PANEL_BYTES = 8.0e6_dp
+      !! Working size of one row panel of the fitted-tensor metric contraction.
+      !!
+      !! `B = (mn|Q) J^(-1/2)` is split over the pair index so that each thread
+      !! reads its own slice of the three-centre tensor rather than all of it,
+      !! and this is how tall a slice is. Two megabytes because the panel is
+      !! packed per thread and lives for the whole call: a hundred threads
+      !! holding it is two hundred megabytes, where a panel sized for GEMM
+      !! efficiency alone would be gigabytes for a few per cent more throughput.
+
    integer, parameter, public :: DF_AUX_CHUNK = 32
       !! Auxiliary functions per thread chunk in the fitted Coulomb build.
       !!
