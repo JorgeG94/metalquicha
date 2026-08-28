@@ -1345,10 +1345,22 @@ contains
       ! A solvated SCF also falls through: these second derivatives are the
       ! gas-phase operator's, and the finite-difference fallback is *correct*
       ! for the continuum -- each displaced energy rebuilds its own cavity.
+      ! The double hybrid is on this list for the same reason VV10 is, and
+      ! `settings%run_mp2` does not stand in for it: a double hybrid's PT2
+      ! correlation is driven from `xc%pt2_fraction` further down and never
+      ! sets that flag. None of the second derivatives below carries it, so
+      ! `b2plyp` taken analytically returns its underlying hybrid's Hessian --
+      ! a Frobenius norm of 2.146683 against a true 2.120638 on water at
+      ! STO-3G, printed beside the double hybrid's own "PT2 x 0.270" energy
+      ! line with nothing to say the Hessian excludes what the energy includes.
+      ! That is the failure the *gradient* guard above this one already
+      ! prevents, where the hybrid's number came back against the double
+      ! hybrid's energy, right in shape and wrong by a third.
       if (do_hessian .and. .not. unrestricted &
           .and. .not. settings%density_fitting .and. .not. settings%run_mp2 &
           .and. .not. settings%run_cc .and. .not. settings%pcm%enabled &
           .and. fragment%n_caps == 0 &
+          .and. .not. (kohn_sham .and. xc%pt2_fraction /= 0.0_dp) &
           .and. .not. (kohn_sham .and. xc%nlc_b > 0.0_dp)) then
          block
             real(dp), allocatable :: hess4(:, :, :, :)
