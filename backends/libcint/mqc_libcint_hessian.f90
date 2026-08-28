@@ -27,6 +27,8 @@ module mqc_libcint_hessian
                                     HESS_OVLP_II, HESS_OVLP_IJ, HESS_KIN_II, HESS_KIN_IJ, &
                                     HESS_NUC_II, HESS_NUC_IJ, HESS_RINV_II, HESS_RINV_IJ, &
                                     HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
+   use mqc_libcint_xc, only: xc_context_t, xc_kernel_apply, xc_add_potential
+   use mqc_libcint_xc_hessian, only: xc_potential_deriv
    use mqc_libcint_direct, only: build_fock_direct, build_fock_direct_many, &
                                  schwarz_bounds, direct_stats_t
    use mqc_libcint_response, only: response_operator_t, solve_response
@@ -44,6 +46,7 @@ module mqc_libcint_hessian
    public :: partial_hessian
    public :: response_hessian
    public :: rhf_hessian
+   public :: ks_hessian
    public :: hessian_to_matrix
 
    type, extends(response_operator_t) :: nuclear_response_t
@@ -71,6 +74,22 @@ module mqc_libcint_hessian
          !! `n_mo` by `n_occ` by this, and the whole point of it being more
          !! than one is that a Fock build costs an integral pass whether it
          !! contracts one density or a dozen.
+      type(xc_context_t), pointer :: xc => null()
+         !! The exchange-correlation context when the reference was Kohn-Sham.
+         !! Null for Hartree-Fock, which is what makes the kernel term opt-in
+         !! rather than a branch on the functional name.
+      real(dp), allocatable :: reference(:, :)
+         !! The converged density the kernel is evaluated at. The kernel is a
+         !! second derivative of the energy, so it has a point to be taken at,
+         !! and it is not the trial density being contracted.
+      real(dp) :: k_scale = 1.0_dp
+      real(dp) :: rs_k_lr = 0.0_dp
+      real(dp) :: rs_omega = 0.0_dp
+         !! A range-separated functional's second exchange term:
+         !! `rs_k_lr` of the exchange built against `erf(omega r)/r`. Zero
+         !! omega is the ordinary case and costs nothing.
+         !! Exact exchange in the response operator. One for Hartree-Fock, zero
+         !! for a pure functional, the mixing fraction for a hybrid.
    contains
       procedure :: apply => nuclear_apply
       procedure :: length => nuclear_length
@@ -336,6 +355,8 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: mo1(:, :, :), half(:, :), dens(:, :, :), g(:, :, :)
+      real(dp), allocatable :: vxc(:, :)
+      real(dp), allocatable :: g_lr(:, :, :)
       real(dp), allocatable :: work(:, :), gmo(:, :)
       type(direct_stats_t) :: stats
       integer :: n_ao, i, a, p
@@ -367,7 +388,40 @@ contains
       ! a batch is bit-for-bit what the same densities give one at a time --
       ! which matters here, because a response density is not a density and
       ! screening on its magnitude would be wrong.
-      call build_fock_direct_many(this%mol, this%zero_h, dens, this%bounds, g, stats, error)
+      call build_fock_direct_many(this%mol, this%zero_h, dens, this%bounds, g, stats, error, &
+                                  k_scale=this%k_scale)
+      if (error%has_error()) return
+
+      ! The long-range half of a range-separated functional's exchange. No
+      ! Coulomb: the full-range pass above already supplied it.
+      if (this%rs_omega > 0.0_dp) then
+         if (.not. allocated(g_lr)) allocate (g_lr(size(g, 1), size(g, 2), size(g, 3)))
+         call build_fock_direct_many(this%mol, this%zero_h, dens, this%bounds, g_lr, &
+                                     stats, error, k_scale=this%rs_k_lr, j_scale=0.0_dp, &
+                                     omega=this%rs_omega)
+         if (error%has_error()) return
+         g = g + g_lr
+      end if
+
+      ! The exchange-correlation kernel, for a Kohn-Sham reference. `J - K/2`
+      ! above is the whole two-electron response of a Hartree-Fock operator; a
+      ! functional's response also contains the second derivative of E_xc with
+      ! respect to the density, which is what `xc_kernel_apply` contracts
+      ! against the trial density. Leaving it out does not fail -- the solve
+      ! still converges -- it converges to the wrong orbital response, and the
+      ! Hessian is then wrong by a few percent with nothing to object.
+      if (associated(this%xc)) then
+         if (.not. allocated(vxc)) allocate (vxc(size(dens, 1), size(dens, 2)))
+         do p = 1, size(dens, 3)
+            ! Zeroed per perturbation: `xc_kernel_apply` accumulates into its
+            ! output rather than assigning, so a shared buffer carries the
+            ! previous perturbation's kernel into this one.
+            vxc = 0.0_dp
+            call xc_kernel_apply(this%xc, this%mol, this%reference, dens(:, :, p), vxc, error)
+            if (error%has_error()) return
+            g(:, :, p) = g(:, :, p) + vxc
+         end do
+      end if
       if (error%has_error()) return
 
       ! Back to the molecular basis, occupied columns only.
@@ -543,7 +597,8 @@ contains
       end do
    end subroutine nuclear_repulsion_hessian
 
-   subroutine partial_hessian(mol, density, weighted, hess, error)
+   subroutine partial_hessian(mol, density, weighted, hess, error, k_scale, &
+                              rs_k_lr, rs_omega)
       !! The Hessian of the energy expression with the orbitals held fixed
       !!
       !! Everything in `d2E/dRdR` that survives when the density is not allowed
@@ -584,6 +639,9 @@ contains
       real(dp), intent(in) :: density(:, :)    !! Closed shell, carrying its factor of two
       real(dp), intent(in) :: weighted(:, :)   !! `2 sum_i eps_i C_i C_i^T`
       real(dp), allocatable, intent(out) :: hess(:, :, :, :)   !! (3, 3, natm, natm)
+      real(dp), intent(in), optional :: k_scale
+         !! Exact-exchange fraction; one (Hartree-Fock) by default.
+      real(dp), intent(in), optional :: rs_k_lr, rs_omega
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: s2(:, :, :), sab(:, :, :)
@@ -722,13 +780,22 @@ contains
       ! then read back: the three arrays this would otherwise form are `nao^4`
       ! times nine each. The deposit rules live there with the loop that uses
       ! them.
-      call hess_2e_contract(mol, density, hess, error)
+      call hess_2e_contract(mol, density, hess, error, k_scale=k_scale)
+      if (error%has_error()) return
+      if (present(rs_omega)) then
+         if (rs_omega > 0.0_dp) then
+            ! The attenuated exchange, with no Coulomb of its own.
+            call hess_2e_contract(mol, density, hess, error, k_scale=rs_k_lr, &
+                                  j_scale=0.0_dp, omega=rs_omega)
+         end if
+      end if
       if (error%has_error()) return
 
       deallocate (owner, offsets, counts)
    end subroutine partial_hessian
 
    subroutine response_hessian(mol, density, orbitals, energies, n_occ, hess, error, &
+                               xc, reference, k_scale, rs_k_lr, rs_omega, &
                                max_iter, tol)
       !! What the Hessian gains from letting the density relax
       !!
@@ -760,6 +827,10 @@ contains
       real(dp), intent(in) :: energies(:)
       integer, intent(in) :: n_occ
       real(dp), allocatable, intent(out) :: hess(:, :, :, :)   !! (3, 3, natm, natm)
+      type(xc_context_t), intent(inout), optional, target :: xc
+      real(dp), intent(in), optional :: reference(:, :)
+      real(dp), intent(in), optional :: k_scale
+      real(dp), intent(in), optional :: rs_k_lr, rs_omega
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
@@ -768,6 +839,9 @@ contains
       real(dp), allocatable :: d1(:, :, :, :), w1(:, :, :, :)
       real(dp), allocatable :: mo1(:, :, :, :), s1a(:, :, :), hcore_a(:, :, :)
       real(dp), allocatable :: hcore(:, :), fock(:, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: vxc_ref(:, :), fock_lr(:, :)
+      real(dp), allocatable :: h1_lr(:, :, :, :)
+      real(dp) :: e_xc_ref, n_xc_ref
       real(dp), allocatable :: g1all(:, :, :), f1(:, :), half(:, :), c_occ(:, :)
       real(dp), allocatable :: tmp(:, :), work(:, :)
       real(dp), allocatable :: outer(:, :), middle(:, :)
@@ -786,15 +860,60 @@ contains
       if (error%has_error()) return
       allocate (fock(nao, nao), zero_h(nao, nao))
       zero_h = 0.0_dp
+      ! The converged Fock, and for a Kohn-Sham reference that means *its* Fock:
+      ! exact exchange at the functional's fraction and the exchange-correlation
+      ! potential added on. `W = D F D / 2` is built from this, so a
+      ! Hartree-Fock matrix here gives a wrong energy-weighted density and an
+      ! error spread across every atom pair -- large, smooth, and symmetric
+      ! enough to look like physics.
       call build_fock_direct(mol, hcore, density, bounds, fock, stats, error, &
-                             density_screen=.false.)
+                             density_screen=.false., k_scale=k_scale)
       if (error%has_error()) return
+      if (present(rs_omega)) then
+         if (rs_omega > 0.0_dp) then
+            allocate (fock_lr(nao, nao))
+            call build_fock_direct(mol, zero_h, density, bounds, fock_lr, stats, error, &
+                                   density_screen=.false., k_scale=rs_k_lr, &
+                                   j_scale=0.0_dp, omega=rs_omega)
+            if (error%has_error()) return
+            fock = fock + fock_lr
+            deallocate (fock_lr)
+         end if
+      end if
+      if (present(xc)) then
+         allocate (vxc_ref(nao, nao))
+         vxc_ref = 0.0_dp
+         call xc_add_potential(xc, mol, density, vxc_ref, e_xc_ref, n_xc_ref, error)
+         if (error%has_error()) return
+         fock = fock + vxc_ref
+         deallocate (vxc_ref)
+      end if
 
       ! Every atom's two-electron perturbation in one pass over the shell
       ! quartets, rather than `make_h1_atom` per atom over a stored `nao^4`
       ! array. The core Hamiltonian derivative is per-atom either way and is
       ! added below.
-      call h1_contract(mol, density, h1, error)
+      call h1_contract(mol, density, h1, error, k_scale=k_scale)
+      if (error%has_error()) return
+      if (present(rs_omega)) then
+         if (rs_omega > 0.0_dp) then
+            ! Into a temporary and added: `h1_contract` allocates its output and
+            ! zeroes it, so a second call in place would discard the full-range
+            ! pass rather than adding to it. `hess_2e_contract` next door
+            ! accumulates, which is exactly the asymmetry that makes this easy
+            ! to get wrong.
+            call h1_contract(mol, density, h1_lr, error, k_scale=rs_k_lr, &
+                             j_scale=0.0_dp, omega=rs_omega)
+            if (error%has_error()) return
+            h1 = h1 + h1_lr
+            deallocate (h1_lr)
+         end if
+      end if
+      if (error%has_error()) return
+      ! For a Kohn-Sham reference the Fock derivative also carries the
+      ! exchange-correlation potential's own, which `h1_contract` does not
+      ! produce -- it knows only about integrals.
+      if (present(xc)) call xc_potential_deriv(xc, mol, density, h1, error)
       if (error%has_error()) return
 
       allocate (s1(nao, nao, 3, natm))
@@ -814,6 +933,8 @@ contains
       ! Every perturbation at once, in chunks, so the Fock builds inside the
       ! iteration are shared rather than repeated `3 natm` times.
       call solve_mo1_batch(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
+                           xc=xc, reference=reference, k_scale=k_scale, &
+                           rs_k_lr=rs_k_lr, rs_omega=rs_omega, &
                            max_iter=max_iter, tol=tol)
       if (error%has_error()) return
 
@@ -831,7 +952,9 @@ contains
       ! Their mean fields in one batch, chunked the same way and for the same
       ! reason as the solve above: `3 natm` separate builds pay for the same
       ! integrals `3 natm` times.
-      call mean_field_batch(mol, d1, bounds, zero_h, g1all, error)
+      call mean_field_batch(mol, d1, bounds, zero_h, g1all, error, &
+                            xc=xc, reference=reference, k_scale=k_scale, &
+                            rs_k_lr=rs_k_lr, rs_omega=rs_omega)
       if (error%has_error()) return
 
       do ia = 1, natm
@@ -924,6 +1047,149 @@ contains
       deallocate (weighted, part, resp)
    end subroutine rhf_hessian
 
+   subroutine ks_hessian(mol, atomic_numbers, density, orbitals, energies, n_occ, &
+                         xc, k_scale, hess, error, max_iter, tol)
+      !! The analytic Hessian of a converged Kohn-Sham energy
+      !!
+      !! `rhf_hessian` with the exchange-correlation parts put back. Three
+      !! things change and each is a place a Kohn-Sham Hessian is commonly got
+      !! wrong:
+      !!
+      !! **Exact exchange is scaled.** A pure functional has none, so the
+      !! exchange half of the explicit two-electron term and of the response
+      !! operator both vanish; a hybrid keeps its mixing fraction. Left at one,
+      !! the Hessian is a Hartree-Fock one with a functional's density in it.
+      !!
+      !! **The exchange-correlation second derivatives are added** -- the
+      !! explicit term, `xc_hessian`.
+      !!
+      !! **The response operator gains the kernel.** Without it the
+      !! coupled-perturbed solve still converges, to the wrong orbital
+      !! response, and the result is wrong by a few percent with nothing to
+      !! object to it.
+      !!
+      !! The grid is held fixed throughout, as `xc_hessian` sets out.
+      !!
+      !! Validated against `pyscf.hessian.rks` with `grid_response = False`:
+      !! water at STO-3G and LDA exchange agrees to **1.8e-8** on every entry.
+      !!
+      !! Three bugs were found getting there, and all three produce a Hessian
+      !! that is symmetric, translationally invariant and wrong -- so they are
+      !! worth naming rather than leaving in the history:
+      !!
+      !!   * The relaxed mean field feeding `dW/dR` needed the same kernel and
+      !!     exchange fraction as the response operator. Without it the two
+      !!     halves of the response disagree about what the Fock operator is.
+      !!   * `xc_kernel_apply` accumulates into its output rather than
+      !!     assigning. A buffer shared across perturbations carried each one's
+      !!     kernel into the next: 0.49 of translational-invariance violation on
+      !!     its own.
+      !!   * **The converged Fock that `W = D F D / 2` is built from was a
+      !!     Hartree-Fock matrix** -- full exact exchange, no `V_xc`. That was
+      !!     the last 0.12, spread smoothly across every atom pair.
+      !!
+      !! LDA, GGA, meta-GGA and hybrids of each. Range-separated hybrids and
+      !! VV10 are refused; the refusal below records what is known.
+      use mqc_libcint_xc_hessian, only: xc_hessian
+      type(libcint_molecule_t), intent(in), target :: mol
+      integer, intent(in) :: atomic_numbers(:)
+      real(dp), intent(in) :: density(:, :)
+      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: energies(:)
+      integer, intent(in) :: n_occ
+      type(xc_context_t), intent(inout) :: xc
+      real(dp), intent(in) :: k_scale   !! Exact-exchange fraction of the functional
+      real(dp), allocatable, intent(out) :: hess(:, :, :, :)
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: max_iter
+      real(dp), intent(in), optional :: tol
+
+      real(dp), allocatable :: weighted(:, :), part(:, :, :, :), resp(:, :, :, :)
+      integer :: i, nao
+
+      if (error%has_error()) return
+
+      ! Range separation and VV10 are refused rather than approximated, for
+      ! different reasons.
+      !
+      ! **Range separated.** The plumbing is here: `hess_2e_contract`,
+      ! `h1_contract` and `build_fock_direct_many` all take `omega` and
+      ! `j_scale`, and they now all use it. Two of them did not. Both built a
+      ! local environment with `PTR_RANGE_OMEGA` set and then handed libcint
+      ! `tab%env` instead, so `build_fock_direct_many` and `h1_contract`
+      ! returned full-range integrals scaled by the long-range coefficient --
+      ! a long-range pass that was not long-range at all, in three of the five
+      ! places one belongs. `hess_2e_contract` was the only one attenuated,
+      ! which is why the attenuated-versus-full-range check passed: it was
+      ! measuring the one pass that worked.
+      !
+      ! That also explains why bisecting was uninformative. Disabling the five
+      ! passes individually gave 2.29, 0.26, 2.76, 1.93 and 0.30 against a
+      ! 2.1 baseline for wB97X, with the best combination still 0.13 out --
+      ! the readings of an experiment where two of the five arms were not
+      ! doing what the label said. Those numbers, and the 2.1 and 0.53, all
+      ! predate the fix and mean nothing now.
+      !
+      ! The refusal stands until the assembled result is checked against a
+      ! reference again, which is what the range-separation branch does.
+      ! Shipping it unchecked would mean shipping plausible wrong frequencies.
+      !
+      ! **VV10.** The second derivative of the non-local term is not
+      ! implemented here, and it is a real piece of work rather than a gap in
+      ! the plumbing: PySCF implements all three parts of it --
+      ! `_get_enlc_deriv2` for the energy, `_get_vnlc_deriv1` for the Fock
+      ! derivative and `get_vnlc_resp` for the orbital-Hessian response --
+      ! behind dedicated C kernels (`VXC_vv10nlc_hessian_eval_*`), because
+      ! VV10 is a double integral over the density and its second derivative is
+      ! a double-grid object.
+      !
+      ! On water/STO-3G the term is small: our `b97m-v` Hessian sits 1.4e-3
+      ! from PySCF's, which is the size of the missing contribution and also
+      ! the size of meta-GGA grid noise. That it is small here is not a reason
+      ! to omit it silently -- it is worth 43 mHartree in the energy, and
+      ! nothing says it stays small on a dispersion-bound system, which is what
+      ! VV10 is for.
+      if (xc%range_separated) then
+         call error%set(ERROR_VALIDATION, "an analytic Hessian for a range-separated "// &
+                        "functional is not available yet: the long-range exchange passes "// &
+                        "are implemented but the assembled result does not reproduce a "// &
+                        "reference. Use the semi-numerical path.")
+         return
+      end if
+      if (xc%nlc_b > 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "an analytic Hessian for a functional with "// &
+                        "VV10 non-local correlation is not available: the second "// &
+                        "derivative of the non-local term is not implemented, and "// &
+                        "omitting it would give a plausible wrong answer. Use the "// &
+                        "semi-numerical path.")
+         return
+      end if
+
+      nao = mol%nao
+      allocate (weighted(nao, nao))
+      weighted = 0.0_dp
+      do i = 1, n_occ
+         weighted = weighted + 2.0_dp*energies(i) &
+                    *matmul(reshape(orbitals(:, i), [nao, 1]), &
+                            reshape(orbitals(:, i), [1, nao]))
+      end do
+
+      call nuclear_repulsion_hessian(atomic_numbers, mol%coords, hess, error)
+      call partial_hessian(mol, density, weighted, part, error, k_scale=k_scale, &
+                           rs_k_lr=xc%rs_k_lr, rs_omega=xc%rs_omega)
+      if (error%has_error()) return
+      call xc_hessian(xc, mol, density, part, error)
+      if (error%has_error()) return
+      call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
+                            xc=xc, reference=density, k_scale=k_scale, &
+                            rs_k_lr=xc%rs_k_lr, rs_omega=xc%rs_omega, &
+                            max_iter=max_iter, tol=tol)
+      if (error%has_error()) return
+
+      hess = hess + part + resp
+      deallocate (weighted, part, resp)
+   end subroutine ks_hessian
+
    subroutine hessian_to_matrix(hess, matrix)
       !! `(3, 3, natm, natm)` to the `(3N, 3N)` a vibrational analysis reads
       !!
@@ -959,6 +1225,7 @@ contains
    end subroutine hessian_to_matrix
 
    subroutine solve_mo1_batch(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
+                              xc, reference, k_scale, rs_k_lr, rs_omega, &
                               max_iter, tol)
       !! The first-order orbitals for every atom, a dozen perturbations at a time
       !!
@@ -987,6 +1254,10 @@ contains
       real(dp), intent(in) :: h1(:, :, :, :)   !! (n_ao, n_ao, 3, natm)
       real(dp), intent(in) :: s1(:, :, :, :)
       real(dp), allocatable, intent(out) :: mo1(:, :, :, :)  !! (n_mo, n_occ, 3, natm)
+      type(xc_context_t), intent(inout), optional, target :: xc
+      real(dp), intent(in), optional :: reference(:, :)
+      real(dp), intent(in), optional :: k_scale
+      real(dp), intent(in), optional :: rs_k_lr, rs_omega
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
@@ -1006,6 +1277,19 @@ contains
       natm = size(h1, 4)
       n_pert = 3*natm
 
+      ! `xc` and `reference` are one argument in two halves: the kernel apply
+      ! contracts the trial density against the functional's second derivative
+      ! *at* the reference density, so a caller supplying the context without
+      ! the density it was built at would reach `xc_kernel_apply` through
+      ! `nuclear_apply` with `operator%reference` unallocated. Refuse the pair
+      ! rather than index it.
+      if (present(xc) .neqv. present(reference)) then
+         call error%set(ERROR_VALIDATION, "the coupled-perturbed solver was given an "// &
+                        "exchange-correlation context without the reference density its "// &
+                        "kernel is evaluated at, or the reverse; it needs both or neither")
+         return
+      end if
+
       operator%mol => mol
       operator%orbitals = orbitals
       operator%c_occ = orbitals(:, 1:n_occ)
@@ -1014,6 +1298,11 @@ contains
       operator%n_mo = n_mo
       allocate (operator%zero_h(n_ao, n_ao))
       operator%zero_h = 0.0_dp
+      if (present(xc)) operator%xc => xc
+      if (present(reference)) operator%reference = reference
+      if (present(k_scale)) operator%k_scale = k_scale
+      if (present(rs_k_lr)) operator%rs_k_lr = rs_k_lr
+      if (present(rs_omega)) operator%rs_omega = rs_omega
       call schwarz_bounds(mol, operator%bounds, error)
       if (error%has_error()) return
 
@@ -1076,7 +1365,8 @@ contains
       deallocate (h1mo, s1mo, work, rhs)
    end subroutine solve_mo1_batch
 
-   subroutine mean_field_batch(mol, d1, bounds, zero_h, g1, error)
+   subroutine mean_field_batch(mol, d1, bounds, zero_h, g1, error, xc, reference, &
+                               k_scale, rs_k_lr, rs_omega)
       !! `G(D')` for every first-order density, a chunk at a time
       !!
       !! Flattens `(n_ao, n_ao, 3, natm)` to `(n_ao, n_ao, 3*natm)` and hands
@@ -1089,15 +1379,36 @@ contains
       real(dp), intent(in) :: zero_h(:, :)
       real(dp), allocatable, intent(out) :: g1(:, :, :)
       type(error_t), intent(inout) :: error
+      type(xc_context_t), intent(inout), optional :: xc
+      real(dp), intent(in), optional :: reference(:, :)
+      real(dp), intent(in), optional :: k_scale
+         !! As the response operator's. The relaxed mean field entering
+         !! `dW/dR` is the same object the coupled-perturbed operator
+         !! applies, so it needs the same exchange fraction and the same
+         !! kernel -- getting one right and not the other is a Hessian
+         !! that is wrong while looking symmetric and plausible.
+      real(dp), intent(in), optional :: rs_k_lr, rs_omega
 
       integer, parameter :: MAX_BATCH = 12
 
-      real(dp), allocatable :: chunk(:, :, :), out(:, :, :)
+      real(dp), allocatable :: chunk(:, :, :), out(:, :, :), vxc_chunk(:, :)
+      real(dp), allocatable :: out_lr(:, :, :)
       type(direct_stats_t) :: stats
-      integer :: nao, natm, n_pert, first, last, wide, p, q, ia, a
+      integer :: nao, natm, n_pert, first, last, wide, p, q, ia, a, ic
       integer :: n_chunks, per_chunk
 
       if (error%has_error()) return
+
+      ! Both halves of the kernel or neither, as the coupled-perturbed solver
+      ! demands: with only one supplied the loop below would quietly build a
+      ! mean field without the exchange-correlation response, and `dW/dR` would
+      ! then disagree with the operator that produced the orbitals it uses.
+      if (present(xc) .neqv. present(reference)) then
+         call error%set(ERROR_VALIDATION, "the relaxed mean field was given an "// &
+                        "exchange-correlation context without the reference density its "// &
+                        "kernel is evaluated at, or the reverse; it needs both or neither")
+         return
+      end if
 
       nao = size(d1, 1)
       natm = size(d1, 4)
@@ -1118,8 +1429,33 @@ contains
             a = p - 3*(ia - 1)
             chunk(:, :, q) = d1(:, :, a, ia)
          end do
-         call build_fock_direct_many(mol, zero_h, chunk, bounds, out, stats, error)
+         call build_fock_direct_many(mol, zero_h, chunk, bounds, out, stats, error, &
+                                     k_scale=k_scale)
          if (error%has_error()) return
+         if (present(rs_omega)) then
+            if (rs_omega > 0.0_dp) then
+               if (.not. allocated(out_lr)) allocate (out_lr, mold=out)
+               call build_fock_direct_many(mol, zero_h, chunk, bounds, out_lr, stats, &
+                                           error, k_scale=rs_k_lr, j_scale=0.0_dp, &
+                                           omega=rs_omega)
+               if (error%has_error()) return
+               out = out + out_lr
+            end if
+         end if
+
+         ! The same kernel the response operator applies. `dW/dR` is built from
+         ! this mean field, so leaving it out here while including it there
+         ! makes the two halves of the response disagree about what the Fock
+         ! operator is.
+         if (present(xc) .and. present(reference)) then
+            if (.not. allocated(vxc_chunk)) allocate (vxc_chunk(size(chunk, 1), size(chunk, 2)))
+            do ic = 1, size(chunk, 3)
+               vxc_chunk = 0.0_dp
+               call xc_kernel_apply(xc, mol, reference, chunk(:, :, ic), vxc_chunk, error)
+               if (error%has_error()) return
+               out(:, :, ic) = out(:, :, ic) + vxc_chunk
+            end do
+         end if
          g1(:, :, first:last) = out
          deallocate (chunk, out)
          first = last + 1

@@ -5,7 +5,10 @@ module test_mqc_dft_partition
    use mqc_error, only: error_t
    use mqc_dft_partition, only: becke_partition_weights, partition_scheme_name, &
                                 PARTITION_BECKE, PARTITION_STRATMANN, &
-                                ADJUST_NONE, ADJUST_BECKE, ADJUST_TREUTLER
+                                ADJUST_NONE, ADJUST_BECKE, ADJUST_TREUTLER, &
+                                becke_cutoff_derivative, stratmann_cutoff_derivative, &
+                                becke_cutoff_second_derivative, &
+                                stratmann_cutoff_second_derivative
    implicit none
    private
 
@@ -26,7 +29,8 @@ contains
                   new_unittest("partition_size_adjustment_favours_the_larger", test_adjust), &
                   new_unittest("partition_stratmann_saturates_far_away", test_stratmann_cutoff), &
                   new_unittest("partition_scheme_names", test_names), &
-                  new_unittest("partition_rejects_bad_input", test_bad_input) &
+                  new_unittest("partition_rejects_bad_input", test_bad_input), &
+                  new_unittest("cutoff_second_derivatives", test_cutoff_second) &
                   ]
    end subroutine collect_mqc_dft_partition
 
@@ -39,6 +43,55 @@ contains
                         0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3])
       z = [8, 1, 1]
    end subroutine water
+
+   subroutine test_cutoff_second_helper(error, becke, x, tag)
+      !! One cutoff, one point: the analytic second derivative against a central
+      !! difference of the analytic first
+      type(error_type), allocatable, intent(out) :: error
+      logical, intent(in) :: becke
+      real(dp), intent(in) :: x
+      character(len=*), intent(in) :: tag
+
+      real(dp), parameter :: H = 1.0e-4_dp
+      real(dp) :: fd, exact
+
+      if (becke) then
+         fd = (becke_cutoff_derivative(x + H) - becke_cutoff_derivative(x - H))/(2.0_dp*H)
+         exact = becke_cutoff_second_derivative(x)
+      else
+         fd = (stratmann_cutoff_derivative(x + H) - stratmann_cutoff_derivative(x - H))/(2.0_dp*H)
+         exact = stratmann_cutoff_second_derivative(x)
+      end if
+      call check(error, exact, fd, thr=1.0e-5_dp, more=tag)
+   end subroutine test_cutoff_second_helper
+
+   subroutine test_cutoff_second(error)
+      !! Second derivatives of both cutoffs, against differences of the first
+      !!
+      !! These are the innermost scalars of a partition-weight Hessian: every
+      !! term above them carries a chain factor built from these, so a sign
+      !! error here is invisible until a whole Hessian is wrong by a few
+      !! percent. Differencing the *analytic first derivative* rather than the
+      !! value is deliberate -- it tests the new code against code that is
+      !! already validated against finite differences itself, so a disagreement
+      !! localises to the second derivative rather than to either.
+      type(error_type), allocatable, intent(out) :: error
+
+      call test_cutoff_second_helper(error, .true., 0.3_dp, "becke at nu = 0.3")
+      if (allocated(error)) return
+      call test_cutoff_second_helper(error, .true., -0.7_dp, "becke at nu = -0.7")
+      if (allocated(error)) return
+      call test_cutoff_second_helper(error, .true., 0.0_dp, "becke at nu = 0")
+      if (allocated(error)) return
+      call test_cutoff_second_helper(error, .false., 0.2_dp, "stratmann at mu = 0.2")
+      if (allocated(error)) return
+      call test_cutoff_second_helper(error, .false., -0.4_dp, "stratmann at mu = -0.4")
+      if (allocated(error)) return
+      ! Outside the support both derivatives are identically zero, and staying
+      ! zero there is what keeps the far field from contributing noise.
+      call check(error, stratmann_cutoff_second_derivative(1.0_dp) == 0.0_dp, &
+                 "the Stratmann cutoff must be flat outside its support")
+   end subroutine test_cutoff_second
 
    subroutine test_unity(error)
       !! The defining property: the cells partition space, so summing the

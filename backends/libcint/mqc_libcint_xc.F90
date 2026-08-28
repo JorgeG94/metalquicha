@@ -747,7 +747,8 @@ contains
    end subroutine xc_grid_gga_quantities
 
    subroutine xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, &
-                                        vsigma, frr, frs, fss, error)
+                                        vsigma, frr, frs, fss, error, &
+                                        tau, vtau, frt, fst, ftt)
       !! First *and* second functional derivatives at every grid point
       !!
       !! What `xc_grid_gga_quantities` is to the exchange-correlation gradient,
@@ -777,17 +778,44 @@ contains
       real(dp), allocatable, intent(out) :: vrho(:), vsigma(:)
       real(dp), allocatable, intent(out) :: frr(:), frs(:), fss(:)
          !! d2E/drho2, d2E/drho dsigma and d2E/dsigma2
+      real(dp), allocatable, intent(out), optional :: tau(:)
+      real(dp), allocatable, intent(out), optional :: vtau(:)
+      real(dp), allocatable, intent(out), optional :: frt(:), fst(:), ftt(:)
+         !! The kinetic-energy-density channel: `tau` itself, `dE/dtau`, and
+         !! the three second derivatives that touch it. Absent for anything but
+         !! a meta-GGA, where they are zero and the caller has no use for them.
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
       real(dp), allocatable :: rho_blk(:), grad_blk(:, :), sigma(:)
       real(dp), allocatable :: exc_i(:), vrho_i(:), vsigma_i(:)
       real(dp), allocatable :: frr_i(:), frs_i(:), fss_i(:)
+      real(dp), allocatable :: vtau_i(:), frt_i(:), fst_i(:), ftt_i(:)
+      real(dp), allocatable :: lapl_k(:), lscr(:), tau_k(:)
+      ! One buffer per unwanted output. libxc's derivatives are `intent(out)`
+      ! dummies through the bind(C) interface, and handing the same array to
+      ! four of them at once is aliasing the standard does not allow -- it
+      ! happens to work today because nothing wanted shares the buffer, which
+      ! is not a property to depend on.
+      real(dp), allocatable :: lscr_rl(:), lscr_sl(:), lscr_ll(:), lscr_lt(:)
+      logical :: want_tau
       integer :: g0, g1, nb, i, ig, id, npts
 
       npts = ctx%grid%n_points
       allocate (rho(npts), rho_grad(npts, 3), vrho(npts), vsigma(npts), &
                 frr(npts), frs(npts), fss(npts))
+      ! All five tau outputs travel together: a caller that wants one wants the
+      ! set, and a meta-GGA is the only thing that makes any of them non-zero.
+      want_tau = present(tau) .and. present(vtau) .and. present(frt) &
+                 .and. present(fst) .and. present(ftt)
+      if (want_tau) then
+         allocate (tau(npts), vtau(npts), frt(npts), fst(npts), ftt(npts))
+         tau = 0.0_dp
+         vtau = 0.0_dp
+         frt = 0.0_dp
+         fst = 0.0_dp
+         ftt = 0.0_dp
+      end if
       rho = 0.0_dp
       rho_grad = 0.0_dp
       vrho = 0.0_dp
@@ -801,11 +829,14 @@ contains
          call error%set(ERROR_VALIDATION, "no libxc in this build")
          return
       end if
-      if (ctx%any_mgga) then
-         call error%set(ERROR_VALIDATION, "the derivative of the exchange-correlation "// &
-                        "potential is not implemented for meta-GGA functionals: they "// &
-                        "bring second derivatives in tau. Refused rather than "// &
-                        "approximated by the GGA part.")
+      ! Meta-GGA is served through the optional tau outputs. A caller that does
+      ! not ask for them gets the LDA and GGA channels and would be silently
+      ! missing tau, so asking is the thing that is checked rather than the
+      ! functional family.
+      if (ctx%any_mgga .and. .not. want_tau) then
+         call error%set(ERROR_VALIDATION, "this is a meta-GGA, so the kinetic-energy "// &
+                        "density channel is needed: ask for tau, vtau, frt, fst and ftt. "// &
+                        "Refused rather than returned with those terms missing.")
          return
       end if
       if (ctx%polarized) then
@@ -825,7 +856,12 @@ contains
          if (ctx%any_gga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
             if (error%has_error()) return
-            call eval_rho(ao, density, rho_blk, ao_grad=ao_grad, rho_grad=grad_blk)
+            if (want_tau) then
+               call eval_rho(ao, density, rho_blk, ao_grad=ao_grad, &
+                             rho_grad=grad_blk, tau=tau_k)
+            else
+               call eval_rho(ao, density, rho_blk, ao_grad=ao_grad, rho_grad=grad_blk)
+            end if
          else
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error)
             if (error%has_error()) return
@@ -839,6 +875,13 @@ contains
                                            frr_i, frs_i, fss_i)
          allocate (sigma(nb), exc_i(nb), vrho_i(nb), vsigma_i(nb), &
                    frr_i(nb), frs_i(nb), fss_i(nb))
+         if (want_tau) then
+            if (allocated(vtau_i)) deallocate (vtau_i, frt_i, fst_i, ftt_i, lapl_k, lscr, &
+                                               lscr_rl, lscr_sl, lscr_ll, lscr_lt)
+            allocate (vtau_i(nb), frt_i(nb), fst_i(nb), ftt_i(nb), lapl_k(nb), lscr(nb), &
+                      lscr_rl(nb), lscr_sl(nb), lscr_ll(nb), lscr_lt(nb))
+            lapl_k = 0.0_dp
+         end if
          do ig = 1, nb
             sigma(ig) = grad_blk(ig, 1)**2 + grad_blk(ig, 2)**2 + grad_blk(ig, 3)**2
          end do
@@ -854,6 +897,22 @@ contains
                   vsigma(g0 + ig - 1) = vsigma(g0 + ig - 1) + ctx%weight(i)*vsigma_i(ig)
                   frs(g0 + ig - 1) = frs(g0 + ig - 1) + ctx%weight(i)*frs_i(ig)
                   fss(g0 + ig - 1) = fss(g0 + ig - 1) + ctx%weight(i)*fss_i(ig)
+               end do
+            case (XC_FAMILY_MGGA, XC_FAMILY_HYB_MGGA)
+               call xc_f03_mgga_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, sigma, lapl_k, &
+                                        tau_k, exc_i, vrho_i, vsigma_i, lscr, vtau_i)
+               call xc_f03_mgga_fxc(ctx%func(i), int(nb, 8), rho_blk, sigma, lapl_k, tau_k, &
+                                    frr_i, frs_i, lscr_rl, frt_i, &
+                                    fss_i, lscr_sl, fst_i, &
+                                    lscr_ll, lscr_lt, ftt_i)
+               do ig = 1, nb
+                  vsigma(g0 + ig - 1) = vsigma(g0 + ig - 1) + ctx%weight(i)*vsigma_i(ig)
+                  frs(g0 + ig - 1) = frs(g0 + ig - 1) + ctx%weight(i)*frs_i(ig)
+                  fss(g0 + ig - 1) = fss(g0 + ig - 1) + ctx%weight(i)*fss_i(ig)
+                  vtau(g0 + ig - 1) = vtau(g0 + ig - 1) + ctx%weight(i)*vtau_i(ig)
+                  frt(g0 + ig - 1) = frt(g0 + ig - 1) + ctx%weight(i)*frt_i(ig)
+                  fst(g0 + ig - 1) = fst(g0 + ig - 1) + ctx%weight(i)*fst_i(ig)
+                  ftt(g0 + ig - 1) = ftt(g0 + ig - 1) + ctx%weight(i)*ftt_i(ig)
                end do
             case default
                call xc_f03_lda_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, exc_i, vrho_i)
@@ -875,10 +934,16 @@ contains
             ! the *second* derivatives are floored -- `vrho` and `vsigma` stay
             ! finite there, and they are what the reference's own potential is
             ! built from, so zeroing them would perturb a converged quantity.
+            if (want_tau) tau(g0 + ig - 1) = tau_k(ig)
             if (rho_blk(ig) < KERNEL_RHO_FLOOR) then
                frr(g0 + ig - 1) = 0.0_dp
                frs(g0 + ig - 1) = 0.0_dp
                fss(g0 + ig - 1) = 0.0_dp
+               if (want_tau) then
+                  frt(g0 + ig - 1) = 0.0_dp
+                  fst(g0 + ig - 1) = 0.0_dp
+                  ftt(g0 + ig - 1) = 0.0_dp
+               end if
             end if
          end do
       end do

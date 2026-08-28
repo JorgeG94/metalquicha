@@ -24,7 +24,8 @@ module test_mqc_libcint_ao
    use mqc_error, only: error_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_ao, only: eval_ao_block, eval_rho, max_ao_l, &
-                             shell_extents, block_significant_aos
+                             shell_extents, block_significant_aos, &
+                             AO_HESS_COMP, AO_DERIV3_COMP
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    implicit none
@@ -49,7 +50,8 @@ contains
                   new_unittest("shell_extent_really_bounds_the_shell", test_extent_bound), &
                   new_unittest("screening_off_keeps_every_function", test_screen_off), &
                   new_unittest("screened_block_matches_the_full_one", test_screen_matches), &
-                  new_unittest("compressed_atom_ranges_are_contiguous", test_atom_ranges) &
+                  new_unittest("compressed_atom_ranges_are_contiguous", test_atom_ranges), &
+                  new_unittest("ao_third_derivatives_match_differences", test_ao_deriv3) &
                   ]
    end subroutine collect_mqc_libcint_ao_tests
 
@@ -519,6 +521,76 @@ contains
       call check(error, worst < 1.0e-6_dp, "AO gradients disagree with finite differences")
       call mol%destroy()
    end subroutine test_ao_grad
+
+   subroutine test_ao_deriv3(error)
+      !! Third derivatives against central differences of the analytic second
+      !!
+      !! Differenced against the *second* derivatives rather than the values,
+      !! for the same reason the partition cutoffs are: `hess` is already
+      !! checked against finite differences of `grad`, so a disagreement here
+      !! localises to the third derivative instead of being shared between two
+      !! candidates. Every one of the ten packed components is reached, and on
+      !! cc-pVDZ that means d functions -- where a transposed exponent in the
+      !! angular part shows up and an s or p basis would not notice.
+      !!
+      !! The packing is the other thing being tested. `deriv3` claims
+      !! `GTOval_sph_deriv3` order, and the mapping from a component index to
+      !! its three Cartesian axes has to agree with the mapping used to
+      !! differentiate -- a permutation there is silent on the diagonal
+      !! components and wrong on the mixed ones.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: ao(:, :), hess(:, :, :), d3(:, :, :)
+      real(dp), allocatable :: hplus(:, :, :), hminus(:, :, :), tmp(:, :)
+      real(dp) :: pts(3, 3), shifted(3, 3), fd, worst
+      real(dp), parameter :: H = 1.0e-4_dp
+      ! Which packed second-derivative component each third-derivative
+      ! component reduces to once one axis is differenced numerically, and
+      ! which axis that is.
+      integer, parameter :: PAIR(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
+      integer, parameter :: DI(AO_DERIV3_COMP) = [1, 1, 1, 1, 1, 1, 2, 2, 2, 3]
+      integer, parameter :: DJ(AO_DERIV3_COMP) = [1, 1, 1, 2, 2, 3, 2, 2, 3, 3]
+      integer, parameter :: DK(AO_DERIV3_COMP) = [1, 2, 3, 2, 3, 3, 2, 3, 3, 3]
+      integer :: ih, ig, mu, ax
+
+      call water(mol, err, "cc-pvdz")
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      pts = reshape([0.31_dp, 0.17_dp, -0.23_dp, &
+                     -0.44_dp, 0.62_dp, 0.11_dp, &
+                     1.30_dp, -0.85_dp, 0.47_dp], [3, 3])
+
+      call eval_ao_block(mol, pts, ao, err, hess=hess, deriv3=d3)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      call check(error, size(d3, 3) == AO_DERIV3_COMP, "deriv3 has the wrong component count")
+      if (allocated(error)) return
+
+      worst = 0.0_dp
+      do ih = 1, AO_DERIV3_COMP
+         ! Difference along the first of the three axes and compare against the
+         ! second derivative in the remaining two.
+         ax = DI(ih)
+         shifted = pts
+         shifted(ax, :) = pts(ax, :) + H
+         call eval_ao_block(mol, shifted, tmp, err, hess=hplus)
+         shifted(ax, :) = pts(ax, :) - H
+         call eval_ao_block(mol, shifted, tmp, err, hess=hminus)
+         do mu = 1, mol%nao
+            do ig = 1, 3
+               fd = (hplus(ig, mu, PAIR(DJ(ih), DK(ih))) &
+                     - hminus(ig, mu, PAIR(DJ(ih), DK(ih))))/(2.0_dp*H)
+               worst = max(worst, abs(fd - d3(ig, mu, ih)))
+            end do
+         end do
+      end do
+
+      call check(error, worst < 1.0e-4_dp, &
+                 "AO third derivatives disagree with differences of the second")
+      call mol%destroy()
+   end subroutine test_ao_deriv3
 
 end module test_mqc_libcint_ao
 

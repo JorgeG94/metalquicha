@@ -620,7 +620,7 @@ contains
    end subroutine build_fock_direct
 
    subroutine build_fock_direct_many(mol, h, densities, bounds, focks, stats, error, &
-                                     screen_tol)
+                                     screen_tol, k_scale, j_scale, omega)
       !! F = H + J - K/2 for many densities, over one pass of the integrals
       !!
       !! **Why this exists.** In a direct scheme the integral evaluation dominates
@@ -672,6 +672,15 @@ contains
       type(direct_stats_t), intent(out) :: stats
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: screen_tol
+      real(dp), intent(in), optional :: k_scale
+         !! Fraction of exact exchange, one by default. A pure density
+         !! functional's response operator has none; a hybrid's has its
+         !! mixing fraction. The Coulomb term is the same either way.
+      real(dp), intent(in), optional :: j_scale
+         !! Fraction of Coulomb, one by default. A long-range exchange pass
+         !! passes zero: the full-range pass has already supplied it.
+      real(dp), intent(in), optional :: omega
+         !! Range separation, through `env(PTR_RANGE_OMEGA)`.
 
       real(dp), allocatable :: buf(:), g(:, :, :), g_local(:, :, :), d_half(:, :, :)
       real(dp), allocatable :: bq(:, :)
@@ -685,7 +694,8 @@ contains
       integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:), order(:)
       integer :: itask
       integer(int64) :: n_total, n_computed, n_screened
-      real(dp) :: tol, deg, value, scaled
+      real(dp) :: tol, deg, value, scaled, kx, jxm
+      real(dp), allocatable :: env_many(:)
 
       n = mol%nao
       n_set = size(densities, 3)
@@ -745,12 +755,21 @@ contains
       ! without its factor of two. `build_density` produces D = 2 C_occ C_occ^T,
       ! so halve it here. Skipping this makes both J and K exactly twice too
       ! large -- an error that still converges, to a badly wrong energy.
+      kx = 1.0_dp
+      if (present(k_scale)) kx = k_scale
+      jxm = 1.0_dp
+      if (present(j_scale)) jxm = j_scale
       d_half = 0.5_dp*densities
 
       ! Created once and reused for every quartet in this build.
       opt = c_null_ptr
+      ! As `build_fock_direct`: a local environment so the attenuated pass is
+      ! the same quartets with the range-separation slot set.
+      env_many = tab%env
+      if (present(omega)) env_many(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
+
       call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, tab%bas, &
-                                  tab%nbas, tab%env)
+                                  tab%nbas, env_many)
 
       n_total = 0_int64
       n_computed = 0_int64
@@ -777,7 +796,7 @@ contains
       ! thousands of times the first, and a static split would leave most
       ! threads idle waiting for the tail.
       !$omp parallel default(none) &
-      !$omp    shared(mol, tab, bq, d_half, g, dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
+      !$omp    shared(kx, jxm, env_many, mol, tab, bq, d_half, g, dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
       !$omp           block_max, n_set) &
       !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, &
@@ -813,8 +832,12 @@ contains
             end if
 
             shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
+            ! `env_many`, not `tab%env`: the omega slot lives in the copy, and
+            ! handing the optimizer the attenuated environment while the quartet
+            ! call reads the unattenuated one gives full-range integrals scaled
+            ! by `k_scale` -- a long-range pass that is not long-range at all.
             ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
-                                     tab%bas, tab%nbas, tab%env, opt)
+                                     tab%bas, tab%nbas, env_many, opt)
             if (ret == 0) then
                n_screened = n_screened + 1_int64
                cycle
@@ -845,17 +868,17 @@ contains
                         ! integral above was computed once and every set reuses it.
                         do iset = 1, n_set
                            g_local(b1, b2, iset) = g_local(b1, b2, iset) &
-                                                   + d_half(b3, b4, iset)*scaled
+                                                   + jxm*d_half(b3, b4, iset)*scaled
                            g_local(b3, b4, iset) = g_local(b3, b4, iset) &
-                                                   + d_half(b1, b2, iset)*scaled
+                                                   + jxm*d_half(b1, b2, iset)*scaled
                            g_local(b1, b3, iset) = g_local(b1, b3, iset) &
-                                                   - 0.25_dp*d_half(b2, b4, iset)*scaled
+                                                   - kx*0.25_dp*d_half(b2, b4, iset)*scaled
                            g_local(b2, b4, iset) = g_local(b2, b4, iset) &
-                                                   - 0.25_dp*d_half(b1, b3, iset)*scaled
+                                                   - kx*0.25_dp*d_half(b1, b3, iset)*scaled
                            g_local(b1, b4, iset) = g_local(b1, b4, iset) &
-                                                   - 0.25_dp*d_half(b2, b3, iset)*scaled
+                                                   - kx*0.25_dp*d_half(b2, b3, iset)*scaled
                            g_local(b2, b3, iset) = g_local(b2, b3, iset) &
-                                                   - 0.25_dp*d_half(b1, b4, iset)*scaled
+                                                   - kx*0.25_dp*d_half(b1, b4, iset)*scaled
                         end do
                      end do
                   end do
