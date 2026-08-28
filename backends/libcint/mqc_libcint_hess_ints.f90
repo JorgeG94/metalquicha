@@ -829,7 +829,6 @@ contains
       if (present(k_scale)) kx = k_scale
       jx = 1.0_dp
       if (present(j_scale)) jx = j_scale
-
       nao = mol%nao
       natm = mol%natm
 
@@ -856,13 +855,14 @@ contains
       mx = tab%block_max
 
       ! A local copy so an omega pass can set the range-separation slot without
-      ! disturbing the environment every other caller shares. Copied from
-      ! `tab%env` and not `mol%env`, and only once the view above is chosen:
-      ! this loop drives the fused-sp table where the molecule has one, and
-      ! that view carries its own environment. The molecule's would be an
-      ! environment that does not match the shells libcint is handed.
-      env_use = tab%env
-      if (present(omega)) env_use(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
+      ! disturbing the table every other caller shares. **From `tab%env` and
+      ! not `mol%env`**: this loop walks the fused-sp view, whose `bas` points
+      ! into its own `env`, so a copy of the molecule's is the wrong array to
+      ! hand the integral. It was also made before `tab` existed and then never
+      ! passed to a call, so the omega was set on an array nothing read and the
+      ! long-range pass quietly returned full-range integrals.
+      allocate (env_use(0:size(tab%env) - 1), source=tab%env)
+      if (present(omega)) env_use(LIBCINT_PTR_RANGE_OMEGA) = omega
 
       atm_flat = reshape(mol%atm, [size(mol%atm)])
       bas_flat = reshape(tab%bas, [size(tab%bas)])

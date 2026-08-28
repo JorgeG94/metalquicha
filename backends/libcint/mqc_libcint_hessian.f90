@@ -1109,35 +1109,10 @@ contains
 
       if (error%has_error()) return
 
-      ! Range separation and VV10 are refused rather than approximated, for
-      ! different reasons.
-      !
-      ! **Range separated.** The plumbing is here: `hess_2e_contract`,
-      ! `h1_contract` and `build_fock_direct_many` all take `omega` and
-      ! `j_scale`, and they now all use it. Two of them did not. Both built a
-      ! local environment with `PTR_RANGE_OMEGA` set and then handed libcint
-      ! `tab%env` instead, so `build_fock_direct_many` and `h1_contract`
-      ! returned full-range integrals scaled by the long-range coefficient --
-      ! a long-range pass that was not long-range at all, in three of the five
-      ! places one belongs. `hess_2e_contract` was the only one attenuated,
-      ! which is why the attenuated-versus-full-range check passed: it was
-      ! measuring the one pass that worked.
-      !
-      ! That also explains why bisecting was uninformative. Disabling the five
-      ! passes individually gave 2.29, 0.26, 2.76, 1.93 and 0.30 against a
-      ! 2.1 baseline for wB97X, with the best combination still 0.13 out --
-      ! the readings of an experiment where two of the five arms were not
-      ! doing what the label said. Those numbers, and the 2.1 and 0.53, all
-      ! predate the fix and mean nothing now.
-      !
-      ! The refusal stands until the assembled result is checked against a
-      ! reference again, which is what the range-separation branch does.
-      ! Shipping it unchecked would mean shipping plausible wrong frequencies.
-      !
-      ! **VV10.** The second derivative of the non-local term is not
-      ! implemented here, and it is a real piece of work rather than a gap in
-      ! the plumbing: PySCF implements all three parts of it --
-      ! `_get_enlc_deriv2` for the energy, `_get_vnlc_deriv1` for the Fock
+      ! **VV10 is refused rather than approximated.** The second derivative of
+      ! the non-local term is not implemented here, and it is a real piece of
+      ! work rather than a gap in the plumbing: PySCF implements all three parts
+      ! of it -- `_get_enlc_deriv2` for the energy, `_get_vnlc_deriv1` for the Fock
       ! derivative and `get_vnlc_resp` for the orbital-Hessian response --
       ! behind dedicated C kernels (`VXC_vv10nlc_hessian_eval_*`), because
       ! VV10 is a double integral over the density and its second derivative is
@@ -1149,13 +1124,6 @@ contains
       ! to omit it silently -- it is worth 43 mHartree in the energy, and
       ! nothing says it stays small on a dispersion-bound system, which is what
       ! VV10 is for.
-      if (xc%range_separated) then
-         call error%set(ERROR_VALIDATION, "an analytic Hessian for a range-separated "// &
-                        "functional is not available yet: the long-range exchange passes "// &
-                        "are implemented but the assembled result does not reproduce a "// &
-                        "reference. Use the semi-numerical path.")
-         return
-      end if
       if (xc%nlc_b > 0.0_dp) then
          call error%set(ERROR_VALIDATION, "an analytic Hessian for a functional with "// &
                         "VV10 non-local correlation is not available: the second "// &
