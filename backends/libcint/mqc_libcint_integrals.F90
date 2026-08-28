@@ -29,6 +29,7 @@ module mqc_libcint_integrals
    use pic_types, only: dp
    use mqc_nuclear_repulsion, only: nuclear_repulsion
    use pic_blas_interfaces, only: pic_gemm
+   use mqc_program_limits, only: DF_AUX_CHUNK
    use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type, atomic_basis_type
@@ -965,29 +966,69 @@ contains
       naux = aux%nao
 
       call clk%start()
+      call clk%begin("2-centre metric")
       if (present(omega)) then
          call two_centre(aux, metric, omega=omega)
       else
          call two_centre(aux, metric)
       end if
-      call clk%lap("2-centre metric")
+      call clk%lap()
+      call clk%begin("3-centre integrals")
       if (present(omega)) then
          call three_centre(orb, aux, three, omega=omega)
       else
          call three_centre(orb, aux, three)
       end if
-      call clk%lap("3-centre integrals")
+      call clk%lap()
 
+      call clk%begin("metric^-1/2")
       call metric_inverse_sqrt(metric, half, error)
-      call clk%lap("metric^-1/2")
+      call clk%lap()
       if (error%has_error()) return
 
+      call clk%begin("B = (mn|Q) J^-1/2")
       allocate (b(nao*nao, naux))
-      call pic_gemm(three, half, b)
-      call clk%lap("B = (mn|Q) J^-1/2")
+      call apply_fit_metric(three, half, b)
+      call clk%lap()
       call clk%finish()
       call clk%report("density fitting")
    end subroutine build_df_tensor
+
+   subroutine apply_fit_metric(left, half, out)
+      !! out = left J^(-1/2), threaded over the auxiliary index
+      !!
+      !! The single largest item in a fitted setup, and it was one `pic_gemm`.
+      !! The BLAS here is sequential on purpose -- fragment paths pin themselves
+      !! to one thread and parallelise over MPI instead -- so a lone call is a
+      !! lone core: 38 s of a 43 s density-fitting setup on a water 20-mer in
+      !! cc-pVDZ, while the other twenty-five sat idle.
+      !!
+      !! Split over *columns* of the result rather than rows. A column block of
+      !! `half` and of `out` is a contiguous section, so each thread hands BLAS
+      !! a view; blocking over rows would slice against the leading dimension
+      !! and the compiler would copy the whole left operand per block to make
+      !! it contiguous, which at n^2 by n_aux is gigabytes.
+      real(dp), intent(in) :: left(:, :)    !! (npair, naux)
+      real(dp), intent(in) :: half(:, :)    !! (naux, naux)
+      real(dp), intent(out) :: out(:, :)    !! (npair, naux)
+      contiguous :: left, half, out
+         !! Declared apart from the type so that a column block reaches
+         !! BLAS as a view rather than a copy. On its own line because
+         !! `fortitude` loses track of the argument list when `contiguous`
+         !! shares a declaration with `intent`, and reports the next local
+         !! of that name anywhere in the file as a dummy missing intent.
+
+      integer :: q0, q1, naux
+
+      naux = size(half, 2)
+      !$omp parallel do default(none) &
+      !$omp    shared(left, half, out, naux) private(q0, q1) schedule(static)
+      do q0 = 1, naux, DF_AUX_CHUNK
+         q1 = min(q0 + DF_AUX_CHUNK - 1, naux)
+         call pic_gemm(left, half(:, q0:q1), out(:, q0:q1))
+      end do
+      !$omp end parallel do
+   end subroutine apply_fit_metric
 
    subroutine metric_inverse_sqrt(metric, half, error)
       !! J^(-1/2) = U s^(-1/2) U^T over the modes that survive the threshold
@@ -1099,7 +1140,7 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: metric(:, :), half(:, :), three(:, :)
-      real(dp), allocatable :: ovl(:, :), bp(:, :), tmp(:, :), full(:, :)
+      real(dp), allocatable :: ovl(:, :), tmp(:, :), full(:)
       integer :: nao, naux, n_l, n_r, p_index
 
       if (orb%cartesian .neqv. aux%cartesian) then
@@ -1126,20 +1167,57 @@ contains
       ! (mu nu|P) -> (pq|P), one auxiliary function at a time. Transforming
       ! before fitting rather than after, which is the ordering PySCF uses and
       ! the one that keeps the metric contraction off the AO pair space.
+      !
+      ! Threaded over P, which needs no reduction: an auxiliary function owns
+      ! its column of `ovl` outright. The scratch is what has to be private, so
+      ! it is allocated inside the region rather than around it.
+      !
+      ! The `reshape` of a column of `three` that used to open this loop is
+      ! gone. It copied nao^2 doubles -- 2.5 MB at 560 functions -- once per
+      ! auxiliary function, so a fitted MP2 moved five gigabytes through memory
+      ! to reinterpret an array it already had. `df_mo_slice` takes the column
+      ! through an explicit-shape dummy instead, which is sequence association
+      ! and costs nothing.
       allocate (ovl(n_l*n_r, naux))
-      allocate (bp(nao, nao), tmp(n_l, nao), full(n_l, n_r))
+      !$omp parallel default(none) &
+      !$omp    shared(three, c_left, c_right, ovl, nao, n_l, n_r, naux) &
+      !$omp    private(p_index, tmp, full)
+      allocate (tmp(n_l, nao), full(n_l*n_r))
+      !$omp do schedule(static)
       do p_index = 1, naux
-         bp = reshape(three(:, p_index), [nao, nao])
-         call pic_gemm(c_left, bp, tmp, transa="T")
-         call pic_gemm(tmp, c_right, full)
-         ovl(:, p_index) = reshape(full, [n_l*n_r])
+         call df_mo_slice(three(:, p_index), c_left, c_right, tmp, full, nao, n_l, n_r)
+         ovl(:, p_index) = full
       end do
-      deallocate (bp, tmp, full, three)
+      !$omp end do
+      deallocate (tmp, full)
+      !$omp end parallel
+      deallocate (three)
 
       allocate (b(n_l*n_r, naux))
-      call pic_gemm(ovl, half, b)
+      call apply_fit_metric(ovl, half, b)
       deallocate (ovl, half)
    end subroutine build_df_mo_block
+
+   subroutine df_mo_slice(three_p, c_left, c_right, tmp, full, nao, n_l, n_r)
+      !! (mu nu|P) -> (pq|P) for one auxiliary function
+      !!
+      !! Exists so that a column of the three-centre tensor can be seen as the
+      !! (nao, nao) matrix it already is. `three_p` is explicit-shape against a
+      !! contiguous rank-1 actual argument -- sequence association -- where the
+      !! `reshape` it replaces materialised the whole block on every pass.
+      !!
+      !! `full` is rank-1 for the same reason in the other direction: the
+      !! caller wants it as a column of `ovl`, so shaping it (n_l, n_r) here
+      !! and flat there saves a second temporary.
+      integer, intent(in) :: nao, n_l, n_r
+      real(dp), intent(in) :: three_p(nao, nao)
+      real(dp), intent(in) :: c_left(:, :), c_right(:, :)
+      real(dp), intent(inout) :: tmp(:, :)
+      real(dp), intent(inout) :: full(n_l, n_r)
+
+      call pic_gemm(c_left, three_p, tmp, transa="T")
+      call pic_gemm(tmp, c_right, full)
+   end subroutine df_mo_slice
 
    subroutine two_centre(aux, metric, omega)
       !! (P|Q) over the auxiliary basis

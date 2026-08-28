@@ -29,6 +29,7 @@ module mqc_libcint_rhf
    use mqc_libcint_integrals, only: libcint_molecule_t, build_df_tensor
    use mqc_libcint_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks
    use mqc_libcint_pcm, only: pcm_context_t
+   use mqc_program_limits, only: DF_AUX_CHUNK
    implicit none
    private
 
@@ -1764,7 +1765,9 @@ contains
       !! 800 MB, and n^3 rather than n^4.
       !!
       !! J is two contractions with the density: c_P = sum_uv B(uv,P) D_uv, then
-      !! J_uv = sum_P B(uv,P) c_P.
+      !! J_uv = sum_P B(uv,P) c_P. Both are BLAS-2 against the flattened tensor,
+      !! blocked over P so each thread owns a slice of the output and nothing
+      !! but the final merge is shared.
       !!
       !! K goes through the occupied orbitals rather than the density. Writing
       !! D = 2 sum_i C_ui C_vi and substituting,
@@ -1776,7 +1779,32 @@ contains
       !! contracting the full density. The saving is a factor of n/n_occ, and it
       !! grows with basis size at fixed electron count -- which is the regime
       !! density fitting is used in. On water/cc-pVDZ that is already 4.8x.
-      real(dp), intent(in) :: h(:, :), b(:, :), density(:, :)
+      !!
+      !! **Threaded over P, not collapsed into one GEMM.** Stacking every W^P
+      !! side by side turns sum_P W^P (W^P)^T into a single large product, which
+      !! is the right move against a threaded BLAS and the wrong one here: this
+      !! project links a sequential BLAS on purpose, so one GEMM is one core no
+      !! matter how large it is. Measured, that version ran the exchange 2.2x
+      !! faster on sixteen threads where the per-P loop below runs it 12x. An
+      !! auxiliary function owns a private partial K instead, and the partials
+      !! are merged once at the end.
+      !!
+      !! Every loop here is threaded. It was written as three serial loops over
+      !! n_aux with a `reshape` of a column of B inside each, which is where a
+      !! fitted SCF spent nearly all of its time: at 560 functions and n_aux
+      !! near 2000 that is six thousand 2.5 MB array temporaries per iteration,
+      !! evaluated on one core while the rest of the node idled. The reshapes
+      !! are gone -- a column of B reaches the GEMM through an explicit-shape
+      !! dummy, which is sequence association and copies nothing.
+      real(dp), intent(in) :: h(:, :), density(:, :)
+      real(dp), intent(in) :: b(:, :)
+      contiguous :: b
+         !! So that a column block `b(:, p0:p1)` reaches BLAS as a view, and
+         !! `b(:, p)` reaches `df_exchange_slice` as one. Without it the
+         !! compiler is entitled to copy 2.5 MB per auxiliary function --
+         !! reinstating, per call, the very temporaries this removed.
+         !! On its own line because `fortitude` mis-scopes the argument list
+         !! when `contiguous` shares a declaration with `intent`.
       real(dp), intent(in) :: coeff(:, :)   !! MO coefficients; only the occupied block is read
       integer, intent(in) :: n_occ
       real(dp), intent(out) :: fock(:, :)
@@ -1789,42 +1817,103 @@ contains
          !! pass.
 
       real(dp) :: kf, jf
-      real(dp), allocatable :: c(:), j(:, :), k(:, :), w(:, :), c_occ(:, :)
-      integer :: n, naux, p
+      real(dp), allocatable :: c(:), j_flat(:), j_local(:), k(:, :), w(:, :), c_occ(:, :)
+      real(dp), allocatable :: d_flat(:), k_local(:, :)
+      integer :: n, naux, p, p0, p1
 
       n = size(h, 1)
       naux = size(b, 2)
-      allocate (c(naux), j(n, n), k(n, n), w(n, n_occ), c_occ(n, n_occ))
-
-      c_occ = coeff(:, 1:n_occ)
-
-      do p = 1, naux
-         c(p) = sum(reshape(b(:, p), [n, n])*density)
-      end do
-
-      j = 0.0_dp
-      do p = 1, naux
-         j = j + c(p)*reshape(b(:, p), [n, n])
-      end do
-
-      k = 0.0_dp
-      do p = 1, naux
-         ! `associate` gives a view of the column rather than a copy: b(:,p) is
-         ! contiguous, so reshaping it is free as long as nothing forces a
-         ! temporary, and going through gemm keeps it out of matmul's hands.
-         associate (b_p => reshape(b(:, p), [n, n]))
-            w = 0.0_dp
-            call pic_gemm(b_p, c_occ, w)
-            call pic_gemm(w, w, k, transb="T", alpha=2.0_dp, beta=1.0_dp)
-         end associate
-      end do
 
       kf = 0.5_dp
       if (present(k_scale)) kf = 0.5_dp*k_scale
       jf = 1.0_dp
       if (present(j_scale)) jf = j_scale
-      fock = h + jf*j - kf*k
+
+      fock = h
+
+      ! Coulomb. Skipped outright when it is scaled away, which is the
+      ! long-range exchange pass of a range-separated functional: two full
+      ! passes over B is not a cheap way to compute something discarded.
+      if (jf /= 0.0_dp) then
+         allocate (c(naux), j_flat(n*n), d_flat(n*n))
+         d_flat = reshape(density, [n*n])
+
+         !$omp parallel do default(none) &
+         !$omp    shared(b, d_flat, c, naux) private(p0, p1) schedule(static)
+         do p0 = 1, naux, DF_AUX_CHUNK
+            p1 = min(p0 + DF_AUX_CHUNK - 1, naux)
+            call pic_gemv(b(:, p0:p1), d_flat, c(p0:p1), trans_a="T")
+         end do
+         !$omp end parallel do
+
+         j_flat = 0.0_dp
+         !$omp parallel default(none) &
+         !$omp    shared(b, c, j_flat, naux, n) private(p0, p1, j_local)
+         allocate (j_local(n*n))
+         j_local = 0.0_dp
+         !$omp do schedule(static)
+         do p0 = 1, naux, DF_AUX_CHUNK
+            p1 = min(p0 + DF_AUX_CHUNK - 1, naux)
+            call pic_gemv(b(:, p0:p1), c(p0:p1), j_local, beta=1.0_dp)
+         end do
+         !$omp end do
+         !$omp critical(mqc_build_fock_df_coulomb)
+         j_flat = j_flat + j_local
+         !$omp end critical(mqc_build_fock_df_coulomb)
+         deallocate (j_local)
+         !$omp end parallel
+
+         fock = fock + jf*reshape(j_flat, [n, n])
+         deallocate (c, j_flat, d_flat)
+      end if
+
+      ! Exchange. Skipped when there is none to build -- a pure functional
+      ! carries no exact exchange, and this is the whole cost of it.
+      if (kf /= 0.0_dp .and. n_occ > 0) then
+         allocate (c_occ(n, n_occ), k(n, n))
+         c_occ = coeff(:, 1:n_occ)
+         k = 0.0_dp
+
+         !$omp parallel default(none) &
+         !$omp    shared(b, c_occ, k, n, n_occ, naux) private(p, w, k_local)
+         allocate (w(n, n_occ), k_local(n, n))
+         k_local = 0.0_dp
+         !$omp do schedule(static)
+         do p = 1, naux
+            call df_exchange_slice(b(:, p), c_occ, w, k_local, n)
+         end do
+         !$omp end do
+         !$omp critical(mqc_build_fock_df_exchange)
+         k = k + k_local
+         !$omp end critical(mqc_build_fock_df_exchange)
+         deallocate (w, k_local)
+         !$omp end parallel
+
+         fock = fock - kf*k
+         deallocate (c_occ, k)
+      end if
    end subroutine build_fock_df
+
+   subroutine df_exchange_slice(b_p, c_occ, w, k_local, n)
+      !! One auxiliary function's contribution to K
+      !!
+      !! Exists so that a column of B can be seen as the (n, n) matrix it
+      !! already is. `b_p` is explicit-shape against a contiguous rank-1 actual
+      !! argument, so this is sequence association: the reinterpretation is
+      !! free, where the `reshape` it replaces materialised the whole block --
+      !! 2.5 MB at 560 functions, once per auxiliary function, per iteration.
+      !!
+      !! Both halves in one place because `w` is scratch that never leaves:
+      !! W^P is formed and consumed here, so nothing outside needs the stack.
+      integer, intent(in) :: n
+      real(dp), intent(in) :: b_p(n, n)
+      real(dp), intent(in) :: c_occ(:, :)
+      real(dp), intent(inout) :: w(:, :)
+      real(dp), intent(inout) :: k_local(:, :)
+
+      call pic_gemm(b_p, c_occ, w, beta=0.0_dp)
+      call pic_gemm(w, w, k_local, transb="T", alpha=2.0_dp, beta=1.0_dp)
+   end subroutine df_exchange_slice
 
    pure subroutine build_fock_uhf(h, eri, d_alpha, d_beta, fock_a, fock_b, k_scale)
       !! F_sigma = H + J(D_alpha + D_beta) - K(D_sigma), straight from the ERIs

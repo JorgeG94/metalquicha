@@ -89,6 +89,13 @@ set(MQC_COVERAGE_OPT
     "-O0"
     CACHE STRING "Optimisation level for Coverage-mqc builds")
 
+# `-auto` on the Intel branches below is not a tuning choice. Their default is
+# `-auto-scalar`, which leaves CHARACTER and array locals in static storage --
+# shared between threads. The pic-blas wrappers keep a CHARACTER(1) transpose
+# flag as exactly such a local, so two threads calling GEMM at once corrupt each
+# other's arguments and MKL reports `DGEMM Parameter 8 had an illegal value`
+# from a call that is perfectly well formed. Every threaded region that calls
+# BLAS depends on it.
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   set(FLAGS_STANDARD "-ffree-line-length-none -fbacktrace")
   set(FLAGS_DEBUG "-ffpe-trap=invalid,zero,overflow -fcheck=all")
@@ -97,14 +104,14 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   set(FLAGS_COVERAGE "${MQC_COVERAGE_OPT} -g --coverage")
 
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
-  set(FLAGS_STANDARD "-traceback")
+  set(FLAGS_STANDARD "-traceback -auto")
   set(FLAGS_DEBUG "-check all -fpe0")
   set(FLAGS_RELEASE "-xHost")
   set(FLAGS_WARNINGS "-warn all")
   set(FLAGS_COVERAGE "")
 
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
-  set(FLAGS_STANDARD "-traceback")
+  set(FLAGS_STANDARD "-traceback -auto")
   set(FLAGS_DEBUG "-check all -fpe0")
   set(FLAGS_RELEASE "-xHost")
   set(FLAGS_WARNINGS "-warn all")

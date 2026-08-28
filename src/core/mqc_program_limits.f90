@@ -122,6 +122,19 @@ module mqc_program_limits
       !! genuinely cannot run.
 
    !---------------------------------------------------------------------------
+   ! Density Fitting
+   !---------------------------------------------------------------------------
+
+   integer, parameter, public :: DF_AUX_CHUNK = 32
+      !! Auxiliary functions per thread chunk in the fitted Coulomb build.
+      !!
+      !! Both halves of J are BLAS-2 over a column block of B, and this is how
+      !! wide a block is. Small enough that a few thousand auxiliary functions
+      !! still make many more chunks than there are threads -- the balance a
+      !! static schedule needs -- and large enough that the per-call overhead of
+      !! BLAS is amortised rather than paid n_aux times.
+
+   !---------------------------------------------------------------------------
    ! Numerical Differentiation Defaults
    !---------------------------------------------------------------------------
 
