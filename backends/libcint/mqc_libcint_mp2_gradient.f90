@@ -66,6 +66,8 @@ module mqc_libcint_mp2_gradient
    public :: gamma1_intermediates
    public :: two_electron_potential
    public :: two_electron_mp2_terms
+   public :: build_effective_2pdm_ao
+   public :: build_amplitudes
 
    real(dp), parameter :: BLOCK_TARGET = 5.0e8_dp
       !! Bytes the blocked path aims to hold in its two live block arrays. Not a
@@ -916,6 +918,124 @@ contains
          j_lo = j_hi + 1
       end do
    end subroutine build_gamma_block
+
+   subroutine build_effective_2pdm_ao(t2, relaxed_density_mo, coeff, n_ao, n_mo, &
+                                      n_occ, n_frozen, gamma_eff_ao)
+      !! The effective two-particle density in the AO basis, bra-ket symmetric
+      !!
+      !! **Not the gradient's `gamma_ao`.** That one carries the energy's
+      !! coefficient `4 t2 - 2 t2^T`, places its indices `(o,v,v,o)` -- chemist
+      !! pairs `(ia|bj)`, ket reversed -- and is symmetrised `1<->2`, because
+      !! its consumer exploits `(grad i j|k l) = (grad i j|l k)`. A second
+      !! derivative has no such permutation, and what makes a density contract
+      !! correctly against the raw derivative integral is bra-ket symmetry
+      !! instead. The two symmetrisations are not interchangeable, so this
+      !! builds its own rather than reusing what the gradient already has.
+      !! See `tools/mp2_hessian_oracle/CONVENTIONS.md` s.4a.
+      !!
+      !! **The fold is what removes `f^{XY}`.** Adding the two-electron half of
+      !! `D_rel f^{XY}` into the cumulant turns the whole two-electron skeleton
+      !! into one density contraction, so no Fock build is needed per atom pair:
+      !!
+      !!     Gam_D[a,b,c,d] = 2 D[a,c] P[b,d] - D[a,d] P[b,c]   (physicist)
+      !!     Gam_eff        = Gam + Gam_D
+      !!
+      !! with `P` the projector onto the **full** occupied space, core included
+      !! -- the frozen orbitals carry the reference's density even though the
+      !! amplitudes never see them. The one-electron remainder
+      !! `D_rel h^{XY} + W S^{XY}` stays separate and is not folded here.
+      real(dp), intent(in) :: t2(:, :, :, :)      !! Active amplitudes, (o,o,v,v)
+      real(dp), intent(in) :: relaxed_density_mo(:, :)
+      real(dp), intent(in) :: coeff(:, :)         !! C, (n_ao, n_mo)
+      integer, intent(in) :: n_ao, n_mo, n_occ, n_frozen
+      real(dp), allocatable, intent(out) :: gamma_eff_ao(:, :, :, :)
+
+      real(dp), allocatable :: g(:, :, :, :), swap(:, :, :, :)
+      real(dp), allocatable :: cur(:, :), nxt(:, :)
+      integer :: i, j, a, b, p, q, r, s, n_oa, n_v, step
+      integer :: dims(4)
+      real(dp) :: u
+
+      n_oa = size(t2, 1)
+      n_v = size(t2, 3)
+
+      ! ---- the cumulant, physicist (o,o,v,v) with its (v,v,o,o) transpose ----
+      allocate (g(n_mo, n_mo, n_mo, n_mo))
+      g = 0.0_dp
+      do b = 1, n_v
+         do a = 1, n_v
+            do j = 1, n_oa
+               do i = 1, n_oa
+                  u = 2.0_dp*t2(i, j, a, b) - t2(i, j, b, a)
+                  g(n_frozen + i, n_frozen + j, n_occ + a, n_occ + b) = u
+                  g(n_occ + a, n_occ + b, n_frozen + i, n_frozen + j) = u
+               end do
+            end do
+         end do
+      end do
+
+      ! ---- fold in the two-electron half of D_rel f^{XY} --------------------
+      do q = 1, n_occ                     ! P is diagonal: only b = d = q survives
+         do s = 1, n_mo
+            do p = 1, n_mo
+               g(p, q, s, q) = g(p, q, s, q) + 2.0_dp*relaxed_density_mo(p, s)
+            end do
+         end do
+      end do
+      do q = 1, n_occ                     ! and the exchange term, b = c = q
+         do s = 1, n_mo
+            do p = 1, n_mo
+               g(p, q, q, s) = g(p, q, q, s) - relaxed_density_mo(p, s)
+            end do
+         end do
+      end do
+
+      ! ---- physicist -> chemist, then bra-ket symmetrise --------------------
+      allocate (swap(n_mo, n_mo, n_mo, n_mo))
+      do s = 1, n_mo
+         do r = 1, n_mo
+            do q = 1, n_mo
+               do p = 1, n_mo
+                  swap(p, q, r, s) = g(p, r, q, s)
+               end do
+            end do
+         end do
+      end do
+      do s = 1, n_mo
+         do r = 1, n_mo
+            do q = 1, n_mo
+               do p = 1, n_mo
+                  g(p, q, r, s) = 0.5_dp*(swap(p, q, r, s) + swap(r, s, p, q))
+               end do
+            end do
+         end do
+      end do
+      deallocate (swap)
+
+      ! ---- back-transform, one index at a time, cycling it to the back ------
+      ! Each pass contracts the leading index with C and sends it to the end, so
+      ! after four the array is in the AO basis with its original index order.
+      ! `dims` tracks the shape because the leading extent stays `n_mo` while
+      ! the trailing ones turn into `n_ao` one at a time.
+      dims = n_mo
+      allocate (cur(dims(1), dims(2)*dims(3)*dims(4)))
+      cur = reshape(g, shape(cur))
+      deallocate (g)
+      do step = 1, 4
+         allocate (nxt(dims(2)*dims(3)*dims(4), n_ao))
+         nxt = transpose(matmul(coeff, cur))
+         deallocate (cur)
+         dims = [dims(2), dims(3), dims(4), n_ao]
+         allocate (cur(dims(1), dims(2)*dims(3)*dims(4)))
+         cur = reshape(nxt, shape(cur))
+         deallocate (nxt)
+      end do
+
+      ! Chemist AO, ket pair as libcint hands it over.
+      allocate (gamma_eff_ao(n_ao, n_ao, n_ao, n_ao))
+      gamma_eff_ao = reshape(cur, shape(gamma_eff_ao))
+      deallocate (cur)
+   end subroutine build_effective_2pdm_ao
 
    subroutine build_two_particle_density(t2, c_occ, c_vir, n_ao, n_o, n_v, &
                                          target_bytes, gamma_ao)
