@@ -112,12 +112,37 @@ only the first is a general fact:
 * Cartesian `p` is `x, y, z` on both sides;
 * normalisation matches, which the unit overlap diagonal confirms on both.
 
-A basis with d or higher breaks the second and third points at once: psi4's
-*spherical* ordering runs `m = 0, +1, -1, +2, -2`, which is not how libcint's
-table is laid out, and the Cartesian d orders need checking rather than
-assuming. Since the whole ladder is pinned to 6-31G through Phases 1 and 2,
-identity holds throughout; **re-measure before the first case with d functions**
-(Phase 3, or any move to cc-pVDZ).
+### 6-31G\*: the ordering survives d functions, the normalisation does not
+
+Measured the same way, 2026-08-27. 6-31G\* puts a Cartesian d shell on oxygen
+(`function_type: gto_cartesian`, so 6d), nao = 19 on both sides.
+
+* **Shell layout is identical** — psi4 builds S,S,P,S,P,D on O and S,S on each
+  H, which is our layout exactly; the SP shells expand in file order on both.
+* **Cartesian component order is identical.** Both overlap diagonals carry the
+  `1, 1/3, 1/3, 1, 1/3, 1` pattern position for position, which is
+  `xx, xy, xz, yy, yz, zz` in both.
+* **The d block is scaled.** Our d functions are `sqrt(4*pi/5)` = 1.58533092
+  times psi4's — libcint does not normalise individual Cartesian components,
+  psi4 does. Raw, `max |S_ours - S_psi4| = 1.51`; after a diagonal rescale
+  `N = diag(1..1, sqrt(4pi/5) x6, 1..1)`, `max |S_ours - N S_psi4 N| = 6.66e-16`.
+
+**This is a convention, not a bug.** A uniform scaling of a subset of basis
+functions is a change of basis and the SCF is invariant under it, which is why
+our 6-31G\* energies validate against PySCF — PySCF is libcint-based and shares
+our convention. psi4 is the outlier.
+
+**The rule for AO-basis gates.** Comparing an AO-basis dump element-wise
+(`GeffAO`, `ao_eri2`) for any basis with d or higher needs the diagonal rescale
+applied first — a permutation is not the correction, a similarity transform by
+`N` is, and for a rank-4 object that is one factor of `N` per index. The pattern
+looks like `sqrt(4*pi/(2l+1))` per shell, but only `l = 2` has been measured;
+f has not been checked (`6-31g(2df,p)` is extracted and would settle it).
+
+None of this touches Phases 1 and 2, which are pinned to 6-31G and have no d
+functions at all. It is written down because the first basis upgrade will hit
+it, and a factor of 1.585 on part of a tensor looks far more like a bug in a new
+Hessian contraction than like a basis convention.
 
 The measurement was made with a throwaway dump, deliberately not committed as a
 test: `test_mqc_hess_ints`' own header records why — a stored comparison against
