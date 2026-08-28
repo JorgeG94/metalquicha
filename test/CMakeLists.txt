@@ -116,6 +116,10 @@ if(MQC_ENABLE_LIBCINT)
   # against pycc's analytic column on the basis we read.
   addtest(mqc_mp2_hessian_fd)
   target_link_libraries(test_mqc_mp2_hessian_fd PRIVATE cint_fortran cint)
+  # The fixed-density second-derivative skeleton: its SCF reference block
+  # against rhf_hessian, and the pair symmetry its deposit map has to earn.
+  addtest(mqc_mp2_hessian_skeleton)
+  target_link_libraries(test_mqc_mp2_hessian_skeleton PRIVATE cint_fortran cint)
   # Regrouping the kinetic energy onto atoms and atom pairs.
   addtest(mqc_ieda)
   target_link_libraries(test_mqc_ieda PRIVATE cint_fortran cint)
