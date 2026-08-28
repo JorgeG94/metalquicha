@@ -1,14 +1,15 @@
 !! The fixed-density second-derivative skeleton of the MP2 correlation Hessian
 module mqc_libcint_mp2_hessian
-   !! Unit 1.3 of the MP2 Hessian ladder (`mp2-hessian-phased-plan.md`): the
-   !! per-atom-pair scalar
+   !! Units 1.3-1.6 of the MP2 Hessian ladder (`mp2-hessian-phased-plan.md`).
+   !!
+   !! Unit 1.3, `mp2_skeleton_hessian`: the per-atom-pair scalar
    !!
    !!     s = Gamma_eff . (mu nu|la si)^{XY} + D_rel . h^{XY} + I . S^{XY}
    !!
    !! contracted against the **unperturbed** densities -- pass 1 of the
    !! two-pass assembly, mirrored from pycc's `_hessian_blocks` (`route ==
-   !! 'aod'`). The orbital response and the perturbed densities are later
-   !! units and deliberately absent here.
+   !! 'aod'`). The perturbed densities are later units and deliberately
+   !! absent here.
    !!
    !! **The reference skeleton rides in the same sweep.** The second-derivative
    !! two-electron integrals dominate the cost of a correlated Hessian, and the
@@ -16,17 +17,31 @@ module mqc_libcint_mp2_hessian
    !! density. Generating them once and depositing into two accumulators is
    !! pycc's `Href` fold, and it is also what makes the reference block
    !! checkable against `partial_hessian`, which walks its own quartets.
+   !!
+   !! Units 1.4-1.6: the per-perturbation first-order skeletons `f^(X)`,
+   !! `S^(X)`, `<pq|rs>^(X)`; the skeleton Lagrangian `I'^(X)` and its
+   !! orbital-response carriers; and the orbital-response term of pass 2.
+   !!
+   !! **MO tensors here are physicist-ordered, `<pq|rs>`.** The gradient's AO
+   !! side is chemist because the integrals are; these routines transcribe
+   !! pycc's `_skeleton_lagrangian` and `_augment_with_canonical_pair_rotations`
+   !! index for index, and holding the MO tensors in that code's order is what
+   !! makes the transcription checkable line against line rather than through a
+   !! layer of swaps. `<pq|rs> = (pr|qs)`; the reorder happens once, where the
+   !! AO transform lands (`tools/mp2_hessian_oracle/CONVENTIONS.md` s.1-2).
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, atom_ao_blocks
    use mqc_libcint_hess_ints, only: hess_1e_block, hess_rinv_block, &
-                                    hess_2e_skeleton_contract, &
+                                    hess_2e_skeleton_contract, eri_ip1_block, &
                                     HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
                                     HESS_OVLP_II, HESS_OVLP_IJ, HESS_RINV_II, HESS_RINV_IJ
+   use mqc_libcint_hessian, only: hcore_deriv_atom, overlap_deriv_atom
    implicit none
    private
 
    public :: mp2_skeleton_hessian
+   public :: mp2_first_order_skeletons
 
 contains
 
@@ -244,5 +259,158 @@ contains
 
       deallocate (drel_ao, wcorr, wref, dref, owner, offsets, counts)
    end subroutine mp2_skeleton_hessian
+
+   subroutine ao_to_mo_chem(a_ao, coeff, a_mo)
+      !! Four-index MO transform of a chemist-ordered AO tensor
+      !!
+      !! Dense and unblocked on purpose: every Phase 1 tensor fits with room
+      !! to spare (s.5 of the conventions note), and the blocked analog
+      !! belongs to the unit that first needs it, not here.
+      real(dp), intent(in) :: a_ao(:, :, :, :)
+      real(dp), intent(in) :: coeff(:, :)
+      real(dp), allocatable, intent(out) :: a_mo(:, :, :, :)
+
+      real(dp), allocatable :: half(:, :, :, :)
+      integer :: n_ao, n_mo, la, si, p, q
+
+      n_ao = size(coeff, 1)
+      n_mo = size(coeff, 2)
+      allocate (half(n_mo, n_mo, n_ao, n_ao), a_mo(n_mo, n_mo, n_mo, n_mo))
+      do si = 1, n_ao
+         do la = 1, n_ao
+            half(:, :, la, si) = matmul(transpose(coeff), &
+                                        matmul(a_ao(:, :, la, si), coeff))
+         end do
+      end do
+      do q = 1, n_mo
+         do p = 1, n_mo
+            a_mo(p, q, :, :) = matmul(transpose(coeff), &
+                                      matmul(half(p, q, :, :), coeff))
+         end do
+      end do
+      deallocate (half)
+   end subroutine ao_to_mo_chem
+
+   subroutine mp2_first_order_skeletons(mol, coeff, n_occ, fx, sx, erix, error)
+      !! Unit 1.4: the per-perturbation first-order skeleton derivatives
+      !!
+      !! For every nuclear perturbation `X = (atom, component)`, at **fixed**
+      !! MO coefficients:
+      !!
+      !!     S^(X)_pq   = C^T dS/dX C
+      !!     f^(X)_pq   = C^T dh/dX C + sum_m [2 <pm|qm>^(X) - <pm|mq>^(X)]
+      !!     <pq|rs>^(X)
+      !!
+      !! with `m` over the **full** occupied space, core included -- pycc's
+      !! `fX` (`_hessian_blocks`), whose trace convention frozen-core work
+      !! inherits. The perturbations stack as `x = 3*(atom-1) + component`,
+      !! matching the oracle's `[3*atom + cart]`.
+      !!
+      !! The AO derivative is assembled the way `make_h1_atom` does it: the
+      !! library puts the nabla on the bra's first index, so each of the four
+      !! positions is permuted into first place in turn and kept when its
+      !! function sits on the perturbed atom, with the library's sign.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coeff(:, :)            !! C, (n_ao, n_mo)
+      integer, intent(in) :: n_occ                   !! Full doubly-occupied count
+      real(dp), allocatable, intent(out) :: fx(:, :, :)   !! (n_mo, n_mo, 3*natm)
+      real(dp), allocatable, intent(out) :: sx(:, :, :)   !! (n_mo, n_mo, 3*natm)
+      real(dp), allocatable, intent(out) :: erix(:, :, :, :, :)
+         !! `<pq|rs>^(X)`, physicist, (n_mo, n_mo, n_mo, n_mo, 3*natm)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: ip1(:, :, :, :, :), dao(:, :, :, :), chem(:, :, :, :)
+      real(dp), allocatable :: h1(:, :, :), s1(:, :, :)
+      integer, allocatable :: owner(:), offsets(:), counts(:)
+      real(dp) :: acc
+      integer :: n_ao, n_mo, natm, a, comp, x, c
+      integer :: mu, nu, la, si, p, q, r, s, m
+
+      if (error%has_error()) return
+
+      n_ao = mol%nao
+      n_mo = size(coeff, 2)
+      natm = mol%natm
+      if (size(coeff, 1) /= n_ao .or. n_occ < 1 .or. n_occ > n_mo) then
+         call error%set(ERROR_VALIDATION, "the first-order skeletons were asked "// &
+                        "for with coefficients that do not fit the basis.")
+         return
+      end if
+
+      call eri_ip1_block(mol, ip1, error)
+      if (error%has_error()) return
+
+      allocate (offsets(natm), counts(natm), owner(n_ao))
+      call atom_ao_blocks(mol, offsets, counts)
+      owner = 0
+      do c = 1, natm
+         do mu = offsets(c) + 1, offsets(c) + counts(c)
+            owner(mu) = c
+         end do
+      end do
+
+      allocate (fx(n_mo, n_mo, 3*natm), sx(n_mo, n_mo, 3*natm))
+      allocate (erix(n_mo, n_mo, n_mo, n_mo, 3*natm))
+      allocate (dao(n_ao, n_ao, n_ao, n_ao))
+
+      do a = 1, natm
+         call hcore_deriv_atom(mol, a, h1, error)
+         call overlap_deriv_atom(mol, a, s1, error)
+         if (error%has_error()) return
+
+         do comp = 1, 3
+            x = 3*(a - 1) + comp
+            sx(:, :, x) = matmul(transpose(coeff), matmul(s1(:, :, comp), coeff))
+            fx(:, :, x) = matmul(transpose(coeff), matmul(h1(:, :, comp), coeff))
+
+            dao = 0.0_dp
+            do si = 1, n_ao
+               do la = 1, n_ao
+                  do nu = 1, n_ao
+                     do mu = 1, n_ao
+                        if (owner(mu) == a) dao(mu, nu, la, si) = &
+                           dao(mu, nu, la, si) - ip1(mu, nu, la, si, comp)
+                        if (owner(nu) == a) dao(mu, nu, la, si) = &
+                           dao(mu, nu, la, si) - ip1(nu, mu, la, si, comp)
+                        if (owner(la) == a) dao(mu, nu, la, si) = &
+                           dao(mu, nu, la, si) - ip1(la, si, mu, nu, comp)
+                        if (owner(si) == a) dao(mu, nu, la, si) = &
+                           dao(mu, nu, la, si) - ip1(si, la, mu, nu, comp)
+                     end do
+                  end do
+               end do
+            end do
+
+            call ao_to_mo_chem(dao, coeff, chem)
+
+            ! The Fock skeleton's two-electron half, traced over the full
+            ! occupied space: L^(X) folded on the spot rather than stored.
+            do q = 1, n_mo
+               do p = 1, n_mo
+                  acc = 0.0_dp
+                  do m = 1, n_occ
+                     acc = acc + 2.0_dp*chem(p, q, m, m) - chem(p, m, m, q)
+                  end do
+                  fx(p, q, x) = fx(p, q, x) + acc
+               end do
+            end do
+
+            ! Chemist to physicist, `<pq|rs> = (pr|qs)`, once and here only.
+            do s = 1, n_mo
+               do r = 1, n_mo
+                  do q = 1, n_mo
+                     do p = 1, n_mo
+                        erix(p, q, r, s, x) = chem(p, r, q, s)
+                     end do
+                  end do
+               end do
+            end do
+            deallocate (chem)
+         end do
+         deallocate (h1, s1)
+      end do
+
+      deallocate (ip1, dao, owner, offsets, counts)
+   end subroutine mp2_first_order_skeletons
 
 end module mqc_libcint_mp2_hessian
