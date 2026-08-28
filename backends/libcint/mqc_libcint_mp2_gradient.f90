@@ -78,7 +78,8 @@ contains
    subroutine libcint_mp2_gradient(mol, coeff, orbital_energies, n_occ, gradient, &
                                    error, n_frozen, block_bytes, force_blocked, &
                                    xc, scf_density, pt2_scale, aux, &
-                                   relaxed_density_mo, lagrangian_mo, two_particle_ao)
+                                   relaxed_density_mo, lagrangian_mo, two_particle_ao, &
+                                   energy_weighted_ao)
       !! dE(MP2)/dR for a closed-shell reference, in Hartree/Bohr
       !!
       !! **With `xc`, this returns something else**: the correlation part alone,
@@ -144,6 +145,12 @@ contains
          !! ordered. **Only on the dense path** -- the blocked one never
          !! materialises it, and asking for it there returns it unallocated
          !! rather than forcing `n_ao^4` into memory behind the caller's back.
+      real(dp), allocatable, intent(out), optional :: energy_weighted_ao(:, :)
+         !! The energy-weighted density in the AO basis: precisely the matrix
+         !! that multiplies `dS/dR` in the assembly below, which is the object
+         !! a Hessian needs and the one an external code calls `I` or `W`.
+         !! Not `lagrangian_mo` transformed -- that is only the two-particle
+         !! density's share of it, as the comment at its assembly says.
       type(libcint_molecule_t), intent(in), optional :: aux
          !! Present, the reference was density fitted and this differentiates
          !! that one. Only the reference moves: the response operator, both
@@ -552,6 +559,12 @@ contains
       allocate (im1_t(n_ao, n_ao), work_t(n_ao, n_ao))
       im1_t = transpose(im1)
       work_t = transpose(work)
+
+      ! The whole coefficient of `s1`, assembled once here rather than left
+      ! implicit in the three contractions below.
+      if (present(energy_weighted_ao)) then
+         energy_weighted_ao = im1 + im1_t - work - work_t - 2.0_dp*vhf_s1occ
+      end if
 
       do iatom = 1, mol%natm
          p0 = offsets(iatom) + 1
