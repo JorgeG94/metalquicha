@@ -57,11 +57,12 @@ the physics needs them — their docstring says so outright ("so Psi4's raw,
 bra↔ket-doubled `ao_tei_deriv2` is exact without `_complete_deriv2`", "invert
 `mo_eri_helper`'s internal reorder").
 
-**Consequence for Gate 1.2a.** The dumped `GeffAO` is a psi4-convention object.
-Our Unit 1.3 quartet walk consumes libcint's layout, so the comparison is
-against `GeffAO.transpose(0, 1, 3, 2)` — step 4 undone — unless our own walk is
-written to want the swapped form. Decide which before gating, and record the
-choice here. Step 2, the bra↔ket symmetrisation, is *not* optional on our side
+**Consequence for Gate 1.2a — settled 2026-08-27.** The dumped `GeffAO` is a
+psi4-convention object, and the comparison is against
+`GeffAO.transpose(0, 1, 3, 2)`: step 4 undone. Measured, our
+`build_effective_2pdm_ao` against the dump — raw **8.4e-2**, ket-swapped
+**2.09e-11**. libcint hands the ket pair in the natural order, so our builder
+must not carry that step, and it does not. Step 2, the bra↔ket symmetrisation, is *not* optional on our side
 either: it is what makes the density contract correctly against raw derivative
 integrals with no completion step.
 
