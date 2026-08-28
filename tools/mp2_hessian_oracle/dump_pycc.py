@@ -77,6 +77,7 @@ GEOM_ASYM = np.array(
 )
 
 BASIS_NAME = "6-31g"
+ELEMENT_Z = {"H": 1, "O": 8}
 ANGULAR = "SPDFGH"
 
 
@@ -103,10 +104,13 @@ def bse_gbs(basis_json):
     """
     data = json.loads(pathlib.Path(basis_json).read_text())
     lines = ["cartesian", "****"]
-    for symbol in SYMBOLS:
-        z = str({"H": 1, "O": 8}[symbol])
-        if z in [str(k) for k in lines]:  # pragma: no cover - symbols are unique here
-            continue
+    # Once per *element*, not once per atom. Emitting a block twice does not
+    # fail: psi4 concatenates it, the extra functions are linearly dependent,
+    # and the SCF drops them again -- so the span, the energy and every
+    # MO-basis quantity come out right while nao is silently wrong and every
+    # AO-basis array is a different size. Ask this file for unique symbols.
+    for symbol in dict.fromkeys(SYMBOLS):
+        z = str(ELEMENT_Z[symbol])
         lines.append(f"{symbol}     0")
         for shell in data["elements"][z]["electron_shells"]:
             momenta = shell["angular_momentum"]
