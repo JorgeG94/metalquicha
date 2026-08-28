@@ -92,12 +92,42 @@ For the pinned case this reduces to shell ordering plus p-component order:
 water/6-31G has s and p shells only, and no d, so the Cartesian-vs-spherical
 question does not arise at all.
 
-**Status: not yet measured.** The map is to be established empirically, not
-reasoned about — compare the AO overlap matrix from both codes at the pinned
-geometry and read off the permutation (and any sign, though for s/p with a real
-transform there should be none). Fill in the result here before the first
-AO-basis element-wise gate. Until then, treat Gate 1.2a as diagnostic, which is
-what the plan already says it is.
+**Measured 2026-08-27: the map is the identity.** Comparing the AO overlap
+matrix at the pinned geometry — `mol%overlap(s)` on our side against
+`MintsHelper.ao_overlap()` on psi4's, both fed `basis_sets/6-31g.json` —
+
+```
+nao 13 both;   max |S_ours - S_psi4| = 5.55e-16     (identity ordering)
+```
+
+so no permutation and no sign. AO-basis dumps can be compared element-wise as
+they stand.
+
+**Why, and where it stops being true.** Four things happen to agree here, and
+only the first is a general fact:
+
+* both expand an `SP` shell into an S then a P in file order;
+* **no d functions**, so Cartesian-versus-spherical never arises — 6-31G on
+  water is s and p only;
+* Cartesian `p` is `x, y, z` on both sides;
+* normalisation matches, which the unit overlap diagonal confirms on both.
+
+A basis with d or higher breaks the second and third points at once: psi4's
+*spherical* ordering runs `m = 0, +1, -1, +2, -2`, which is not how libcint's
+table is laid out, and the Cartesian d orders need checking rather than
+assuming. Since the whole ladder is pinned to 6-31G through Phases 1 and 2,
+identity holds throughout; **re-measure before the first case with d functions**
+(Phase 3, or any move to cc-pVDZ).
+
+The measurement was made with a throwaway dump, deliberately not committed as a
+test: `test_mqc_hess_ints`' own header records why — a stored comparison against
+an external library pins our layout to that library's conventions rather than to
+anything true. The recipe is two lines (`build_libcint_molecule` then
+`mol%overlap`), so re-running it costs less than maintaining it.
+
+**This does not settle Gate 1.2a.** The AO *ordering* being the identity is a
+different question from the ket-swap in §4, which is a tensor-layout convention
+inside `_effective_2pdm_ao` and still has to be decided there.
 
 ## 7. MO phase alignment
 
