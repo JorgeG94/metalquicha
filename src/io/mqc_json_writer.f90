@@ -50,6 +50,43 @@ contains
 
    end subroutine add_gradient
 
+   subroutine add_hessian(json, parent, hessian)
+      !! Second derivatives, as the Frobenius norm and as the matrix itself
+      !!
+      !! The norm went in first and is kept, because it is what a manifest of
+      !! many systems can afford to carry. It is not what a Hessian should be
+      !! validated on: it is one number out of `9N^2`, invariant under any
+      !! orthogonal mixing, so a transposed block, a swapped atom pair or a
+      !! sign flip in an off-diagonal element all leave it unchanged. Every
+      !! one of those is a real way to get a Hessian wrong here -- the
+      !! assembly is `(3, 3, natm, natm)` collapsed to `(3N, 3N)` -- and none
+      !! would move the norm at all.
+      !!
+      !! One row per array row, in the `(3N, 3N)` order the vibrational
+      !! analysis reads, atom-major with `x, y, z` inside each atom. Hartree
+      !! per Bohr squared, the internal unit.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      real(dp), intent(in) :: hessian(:, :)  !! (3*natoms, 3*natoms)
+
+      type(json_value), pointer :: hess_arr, row_arr
+      integer :: i, j
+
+      call json%add(parent, "hessian_frobenius_norm", sqrt(sum(hessian**2)))
+      call json%add(parent, "hessian_units", "hartree/bohr^2")
+
+      call json%create_array(hess_arr, "hessian")
+      call json%add(parent, hess_arr)
+      do i = 1, size(hessian, 1)
+         call json%create_array(row_arr, "")
+         call json%add(hess_arr, row_arr)
+         do j = 1, size(hessian, 2)
+            call json%add(row_arr, "", hessian(i, j))
+         end do
+      end do
+
+   end subroutine add_hessian
+
    subroutine write_json_output(output_data)
       !! THE single entry point for all JSON output
       !!
@@ -143,7 +180,7 @@ contains
          call add_gradient(json, main_obj, data%gradient)
       end if
       if (data%has_hessian .and. allocated(data%hessian)) then
-         call json%add(main_obj, "hessian_frobenius_norm", sqrt(sum(data%hessian**2)))
+         call add_hessian(json, main_obj, data%hessian)
       end if
 
       call logger%info("Writing JSON output to "//trim(output_file))
@@ -266,7 +303,7 @@ contains
       end if
 
       if (data%has_hessian .and. allocated(data%hessian)) then
-         call json%add(main_obj, "hessian_frobenius_norm", sqrt(sum(data%hessian**2)))
+         call add_hessian(json, main_obj, data%hessian)
       end if
 
       ! Write to file
@@ -493,7 +530,7 @@ contains
          call add_gradient(json, main_obj, data%gradient)
       end if
       if (data%has_hessian .and. allocated(data%hessian)) then
-         call json%add(main_obj, "hessian_frobenius_norm", sqrt(sum(data%hessian**2)))
+         call add_hessian(json, main_obj, data%hessian)
       end if
 
       ! Count non-zero coefficient terms
@@ -615,7 +652,7 @@ contains
       end if
       if (data%has_hessian .and. allocated(data%hessian)) then
          hess_norm = sqrt(sum(data%hessian**2))
-         call json%add(main_obj, "hessian_frobenius_norm", hess_norm)
+         call add_hessian(json, main_obj, data%hessian)
       end if
 
       ! Vibrational analysis section

@@ -48,6 +48,8 @@ contains
       testsuite = [ &
                   new_unittest("xc_hessian_differences_its_own_gradient", test_against_fd), &
                   new_unittest("xc_hessian_mgga_differences_its_gradient", test_gga_against_fd), &
+                  new_unittest("xc_hessian_on_d_functions_differences_its_gradient", &
+                               test_d_functions), &
                   new_unittest("vv10_fixed_grid_gradient_differences_the_energy", &
                                test_vv10_fixed_grid), &
                   new_unittest("vv10_hessian_differences_the_fixed_grid_gradient", &
@@ -61,7 +63,7 @@ contains
                   ]
    end subroutine collect_mqc_xc_hessian
 
-   subroutine xc_at(ctx, coords, gradient, hess, density, err, ok)
+   subroutine xc_at(ctx, coords, gradient, hess, density, err, ok, basis)
       !! A derivative at `coords`, on a grid that was built somewhere else
       !!
       !! Two things are held fixed and both matter. **The density matrix**,
@@ -80,6 +82,7 @@ contains
       !! what makes the comparison exact instead of approximate.
       type(xc_context_t), intent(inout) :: ctx
       real(dp), intent(in) :: coords(3, 3)
+      character(len=*), intent(in), optional :: basis
       real(dp), intent(out), optional :: gradient(3, 3)
       real(dp), intent(out), optional :: hess(3, 3, 3, 3)
       real(dp), intent(in) :: density(:, :)
@@ -87,9 +90,12 @@ contains
       logical, intent(out) :: ok
 
       type(libcint_molecule_t) :: mol
+      character(len=32) :: use_basis
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      use_basis = "sto-3g"
+      if (present(basis)) use_basis = basis
+      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, trim(use_basis), mol, err)
       if (err%has_error()) return
       if (present(gradient)) then
          gradient = 0.0_dp
@@ -103,9 +109,12 @@ contains
       ok = .not. err%has_error()
    end subroutine xc_at
 
-   subroutine reference_state(functional, ctx, density, err, ok)
+   subroutine reference_state(functional, ctx, density, err, ok, basis)
       !! One converged reference: the grid and the density everything below uses
       character(len=*), intent(in) :: functional
+      character(len=*), intent(in), optional :: basis
+         !! STO-3G unless asked otherwise, which is what every caller here
+         !! wanted until d functions needed covering.
       type(xc_context_t), intent(out) :: ctx
       real(dp), allocatable, intent(out) :: density(:, :)
       type(error_t), intent(inout) :: err
@@ -113,9 +122,12 @@ contains
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
+      character(len=32) :: use_basis
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      use_basis = "sto-3g"
+      if (present(basis)) use_basis = basis
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, trim(use_basis), mol, err)
       if (err%has_error()) return
       call xc_context_create(mol, functional, ctx, err, level=3)
       if (err%has_error()) then
@@ -186,6 +198,95 @@ contains
          end do
       end do
    end subroutine test_against_fd
+
+   subroutine test_d_functions(error)
+      !! The same exact comparison on a basis that has d functions
+      !!
+      !! Every check in this file ran on STO-3G, which is s and p only, so the
+      !! angular part of a second derivative was never exercised past l = 1 and
+      !! a term right for s and p and wrong for d would have passed all of it.
+      !!
+      !! **A meta-GGA is deliberately not here**, and the reason looks exactly
+      !! like a bug if you meet it cold. On a level-3 grid `tpss`/cc-pVDZ
+      !! appears to disagree with a difference of its own gradient by 4e-2 on
+      !! the oxygen diagonal block. It does not. Swept over five step sizes
+      !! from 1e-2 down to 6.25e-4 the difference returns 0.589, 0.792, 0.740,
+      !! 0.768 and 0.748 -- scattering by 0.03 and converging on nothing, where
+      !! a central difference of a smooth function converges as h^2. A second
+      !! difference of the exchange-correlation *energy* scatters the same way,
+      !! so it is the underlying function that is not smooth at this grid and
+      !! not either derivative. M06-L is worse: 4.04, -0.30, 0.67, 0.53, 0.63.
+      !!
+      !! The tau channel is the most grid-sensitive of the three and d
+      !! functions make it worse, so level 3 is simply too coarse to
+      !! differentiate twice -- the Hessian itself is not grid-converged until
+      !! level 7, where level 3 is 5.7e-3 out. At levels 7 and 9 the sweep does
+      !! converge, and converges to this Hessian. Running it here at level 7
+      !! would cost eighteen fine-grid gradients for a check the validation
+      !! suite already makes better, against `pyscf.hessian.rks` element by
+      !! element.
+      type(error_type), allocatable, intent(out) :: error
+
+      if (.not. xc_available()) return
+
+      call d_function_fd_for("lda_x", error)
+      if (allocated(error)) return
+      call d_function_fd_for("pbe", error)
+   end subroutine test_d_functions
+
+   subroutine d_function_fd_for(functional, error)
+      !! One functional on cc-pVDZ, `xc_hessian` against a difference of
+      !! `xc_gradient_fixed_grid`
+      character(len=*), intent(in) :: functional
+      type(error_type), allocatable, intent(out) :: error
+
+      character(len=*), parameter :: BASIS = "cc-pvdz"
+      real(dp), parameter :: H = 1.0e-3_dp
+      real(dp), parameter :: TOL = 5.0e-4_dp
+      real(dp) :: hess(3, 3, 3, 3), plus(3, 3), minus(3, 3), shifted(3, 3)
+      real(dp) :: fd
+      real(dp), allocatable :: dens(:, :)
+      type(xc_context_t) :: ctx
+      type(error_t) :: err
+      logical :: ok
+      integer :: ia, a, ja, b
+
+      call reference_state(functional, ctx, dens, err, ok, basis=BASIS)
+      call check(error, ok, "the reference Kohn-Sham state failed for "//functional)
+      if (allocated(error)) return
+
+      call xc_at(ctx, WATER, hess=hess, density=dens, err=err, ok=ok, basis=BASIS)
+      call check(error, ok, "the analytic Hessian failed for "//functional)
+      if (allocated(error)) return
+
+      do ia = 1, 3
+         do a = 1, 3
+            shifted = WATER
+            shifted(a, ia) = shifted(a, ia) + H
+            call xc_at(ctx, shifted, gradient=plus, density=dens, err=err, ok=ok, basis=BASIS)
+            if (.not. ok) then
+               call check(error, .false., "a displaced gradient failed")
+               return
+            end if
+            shifted = WATER
+            shifted(a, ia) = shifted(a, ia) - H
+            call xc_at(ctx, shifted, gradient=minus, density=dens, err=err, ok=ok, basis=BASIS)
+            if (.not. ok) then
+               call check(error, .false., "a displaced gradient failed")
+               return
+            end if
+            do ja = 1, 3
+               do b = 1, 3
+                  fd = (plus(b, ja) - minus(b, ja))/(2.0_dp*H)
+                  call check(error, hess(a, b, ia, ja), fd, thr=TOL, &
+                             more="exchange-correlation Hessian entry disagrees with "// &
+                             "a difference of its own gradient for "//functional//"/cc-pVDZ")
+                  if (allocated(error)) return
+               end do
+            end do
+         end do
+      end do
+   end subroutine d_function_fd_for
 
    subroutine test_gga_against_fd(error)
       !! The same comparison for a GGA, where the sigma channel is
@@ -730,6 +831,10 @@ contains
       call ks_end_to_end_for("b3lyp", error)
       if (allocated(error)) return
       call ks_end_to_end_for("tpss", error)
+      if (allocated(error)) return
+      ! Named in the coverage table and, until this line, not exercised by
+      ! anything.
+      call ks_end_to_end_for("m06-l", error)
       if (allocated(error)) return
       ! The `-V` case exercises all three VV10 pieces through the assembled
       ! Hessian: the explicit second derivative, the perturbed Fock and the

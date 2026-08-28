@@ -323,8 +323,8 @@ with `../../../`. The CPU suite is **generated** - edit
 under `cpu/mqc/` is deleted by the next regeneration.
 
 Validation categories under `cpu/mqc/` are `ccsd dft dh efp fmo fukui gradient
-mcscf mp2 pcm quao rhf sapt udft uhf` -- worth checking against before assuming
-something is untested.
+hessian mcscf mp2 pcm quao rhf sapt udft uhf` -- worth checking against before
+assuming something is untested.
 
 Examples, all under `validation/inputs/cpu/tblite/gfn1/`:
 - `h3o.json` - Unfragmented hydronium

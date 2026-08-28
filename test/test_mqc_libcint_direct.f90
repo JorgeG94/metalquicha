@@ -38,6 +38,22 @@ module test_mqc_libcint_direct
    !> comparison and put a floor under the tolerances for no reason.
    real(dp), parameter :: NO_SCREENING = 0.0_dp
 
+   !> Both limits of `erf(omega r)/r`, which is what an omega pass is.
+   !>
+   !> `omega` reaches libcint through a slot in `env`, not through a separate
+   !> entry point, so handing the routine the shared environment instead of the
+   !> local copy the omega was written into is completely silent: full-range
+   !> integrals come back scaled by the long-range coefficient, nothing raises,
+   !> and the Fock matrix is the right shape and the wrong operator. This build
+   !> was one of the three places in the tree that did exactly that.
+   !>
+   !> Neither limit is sufficient alone. At `OMEGA_OFF` the kernel vanishes, so
+   !> an ignored omega returns the full-range answer and fails; at `OMEGA_FULL`
+   !> the kernel is `1/r`, which an ignored omega also satisfies -- but a
+   !> short-range kernel, the sign convention inverted, fails it.
+   real(dp), parameter :: OMEGA_OFF = 1.0e-6_dp
+   real(dp), parameter :: OMEGA_FULL = 5.0e2_dp
+
 contains
 
    subroutine collect_mqc_libcint_direct_tests(testsuite)
@@ -51,7 +67,9 @@ contains
                   new_unittest("coulomb_vanishes_for_an_antisymmetric_density", &
                                test_coulomb_vanishes), &
                   new_unittest("the_fast_build_is_wrong_on_an_antisymmetric_density", &
-                               test_fast_build_is_unsafe) &
+                               test_fast_build_is_unsafe), &
+                  new_unittest("an_omega_pass_is_actually_attenuated", &
+                               test_attenuation_is_real) &
                   ]
    end subroutine collect_mqc_libcint_direct_tests
 
@@ -278,6 +296,53 @@ contains
                  "the fast build did not return a symmetric matrix, so its final "// &
                  "symmetrisation is not what makes it unusable here")
    end subroutine test_fast_build_is_unsafe
+
+   subroutine test_attenuation_is_real(error)
+      !! A long-range exchange pass must be long-range
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: eri(:, :, :, :), bounds(:, :)
+      real(dp), allocatable :: zero_h(:, :), sym(:, :), anti(:, :)
+      real(dp), allocatable :: dens(:, :, :)
+      real(dp), allocatable :: full(:, :, :), faint(:, :, :), most(:, :, :)
+      real(dp) :: scale
+
+      call setup(mol, eri, bounds, zero_h, sym, anti, err)
+      call check(error,.not. err%has_error(), "the molecule failed to build")
+      if (allocated(error)) return
+
+      ! Exchange only, which is the shape a long-range pass is always called
+      ! in -- `j_scale = 0` because the full-range pass has already supplied
+      ! the Coulomb term. It also keeps the norms below measuring the thing
+      ! under test rather than a Coulomb matrix that dwarfs it.
+      allocate (dens(size(sym, 1), size(sym, 2), 1))
+      dens(:, :, 1) = sym
+
+      call build_fock_direct_many(mol, zero_h, dens, bounds, full, stats, err, &
+                                  screen_tol=NO_SCREENING, j_scale=0.0_dp)
+      call build_fock_direct_many(mol, zero_h, dens, bounds, faint, stats, err, &
+                                  screen_tol=NO_SCREENING, j_scale=0.0_dp, omega=OMEGA_OFF)
+      call build_fock_direct_many(mol, zero_h, dens, bounds, most, stats, err, &
+                                  screen_tol=NO_SCREENING, j_scale=0.0_dp, omega=OMEGA_FULL)
+      call check(error,.not. err%has_error(), "the Fock build failed")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      scale = maxval(abs(full))
+      call check(error, scale > 1.0e-2_dp, "the full-range exchange build is empty")
+      if (.not. allocated(error)) &
+         call check(error, maxval(abs(faint)) < 1.0e-4_dp*scale, &
+                    "an omega pass through build_fock_direct_many is not attenuated")
+      if (.not. allocated(error)) &
+         call check(error, maxval(abs(most - full)) < 1.0e-2_dp*scale, &
+                    "build_fock_direct_many at large omega does not recover full-range exchange")
+      call mol%destroy()
+   end subroutine test_attenuation_is_real
 
 end module test_mqc_libcint_direct
 

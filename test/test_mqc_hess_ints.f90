@@ -17,7 +17,7 @@ module test_mqc_hess_ints
                                     HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
                                     hess_2e_block, HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK, &
                                     hess_rinv_block, HESS_RINV_II, HESS_RINV_IJ, &
-                                    h1_contract
+                                    h1_contract, hess_2e_contract
    use mqc_libcint_hessian, only: hcore_deriv_atom, make_h1_atom, overlap_deriv_atom, &
                                   solve_mo1_atom, nuclear_repulsion_hessian, partial_hessian, &
                                   response_hessian, rhf_hessian, hessian_to_matrix
@@ -37,6 +37,9 @@ module test_mqc_hess_ints
                           [0.0_dp, 0.0_dp, 0.0_dp, &
                            0.0_dp, 1.4308_dp, 1.1078_dp, &
                            0.0_dp, -1.4308_dp, 1.1078_dp], [3, 3])
+
+   real(dp), parameter :: OMEGA_OFF = 1.0e-6_dp    !! Attenuated to nothing
+   real(dp), parameter :: OMEGA_FULL = 5.0e2_dp    !! Attenuated to everything
 
 contains
 
@@ -59,7 +62,10 @@ contains
                   new_unittest("partial_hessian_against_finite_difference", partial_hessian_fd), &
                   new_unittest("partial_hessian_is_translationally_invariant", partial_hessian_translates), &
                   new_unittest("rhf_hessian_against_finite_difference", rhf_hessian_fd), &
-                  new_unittest("one_pass_h1_matches_the_per_atom_one", h1_contract_matches) &
+                  new_unittest("one_pass_h1_matches_the_per_atom_one", h1_contract_matches), &
+                  new_unittest("an_h1_omega_pass_is_actually_attenuated", h1_attenuation_is_real), &
+                  new_unittest("a_two_electron_omega_pass_is_actually_attenuated", &
+                               hess_2e_attenuation_is_real) &
                   ]
    end subroutine collect_mqc_hess_ints_tests
 
@@ -359,6 +365,112 @@ contains
                  "the one-pass perturbation disagrees with the per-atom one")
       call mol%destroy()
    end subroutine h1_contract_matches
+
+   ! ---------------------------------------------------------------------
+   ! Range separation
+   !
+   ! `omega` reaches libcint through a slot in `env` rather than through a
+   ! different entry point, which makes getting it wrong completely silent:
+   ! hand the routine the shared environment instead of the local copy the
+   ! omega was written into and it returns full-range integrals, scaled by
+   ! whatever coefficient the long-range pass carries. Nothing raises, nothing
+   ! is NaN, and the assembled Hessian is symmetric and translationally
+   ! invariant and wrong. That is not hypothetical: three of the five places a
+   ! long-range pass belongs did exactly this, and the attenuated-versus-full
+   ! check that was supposed to catch it happened to be reading the one pass
+   ! that worked.
+   !
+   ! So each routine that takes `omega` is pinned by both limits of
+   ! `erf(omega r)/r`, and the pair is what makes it decisive:
+   !
+   !   * omega -> 0 the kernel vanishes, so the pass must return nothing.
+   !     An ignored omega returns the full-range answer here and fails loudly.
+   !   * omega -> infinity the kernel is `1/r`, so the pass must return the
+   !     full-range answer. An ignored omega passes this one -- which is why
+   !     it cannot be the only check -- but a *short*-range kernel, the sign
+   !     convention flipped, fails it while also failing the first.
+   !
+   ! Exchange only (`j_scale = 0`), because that is the shape a long-range
+   ! pass is always called in and the Coulomb term would otherwise dominate
+   ! the norms both checks are measured against.
+   ! ---------------------------------------------------------------------
+
+   subroutine h1_attenuation_is_real(error)
+      !! The skeleton derivative Fock, at both limits of the attenuation
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: full(:, :, :, :), faint(:, :, :, :), most(:, :, :, :)
+      real(dp) :: scale
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      call check(error,.not. err%has_error(), "the reference did not converge")
+      if (allocated(error)) return
+
+      call h1_contract(mol, scf%density, full, err, j_scale=0.0_dp)
+      call h1_contract(mol, scf%density, faint, err, j_scale=0.0_dp, omega=OMEGA_OFF)
+      call h1_contract(mol, scf%density, most, err, j_scale=0.0_dp, omega=OMEGA_FULL)
+      call check(error,.not. err%has_error(), "the perturbation failed")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      scale = maxval(abs(full))
+      call check(error, scale > 1.0e-2_dp, "the full-range perturbation is empty")
+      if (.not. allocated(error)) &
+         call check(error, maxval(abs(faint)) < 1.0e-4_dp*scale, &
+                    "an omega pass through h1_contract is not attenuated")
+      if (.not. allocated(error)) &
+         call check(error, maxval(abs(most - full)) < 1.0e-2_dp*scale, &
+                    "h1_contract at large omega does not recover the full-range exchange")
+      call mol%destroy()
+   end subroutine h1_attenuation_is_real
+
+   subroutine hess_2e_attenuation_is_real(error)
+      !! The two-electron second derivatives, at both limits of the attenuation
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: full(:, :, :, :), faint(:, :, :, :), most(:, :, :, :)
+      real(dp) :: scale
+      integer :: natm
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      call check(error,.not. err%has_error(), "the reference did not converge")
+      if (allocated(error)) return
+
+      natm = mol%natm
+      allocate (full(3, 3, natm, natm), faint(3, 3, natm, natm), most(3, 3, natm, natm))
+      full = 0.0_dp
+      faint = 0.0_dp
+      most = 0.0_dp
+
+      call hess_2e_contract(mol, scf%density, full, err, j_scale=0.0_dp)
+      call hess_2e_contract(mol, scf%density, faint, err, j_scale=0.0_dp, omega=OMEGA_OFF)
+      call hess_2e_contract(mol, scf%density, most, err, j_scale=0.0_dp, omega=OMEGA_FULL)
+      call check(error,.not. err%has_error(), "the two-electron second derivatives failed")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      scale = maxval(abs(full))
+      call check(error, scale > 1.0e-2_dp, "the full-range second derivatives are empty")
+      if (.not. allocated(error)) &
+         call check(error, maxval(abs(faint)) < 1.0e-4_dp*scale, &
+                    "an omega pass through hess_2e_contract is not attenuated")
+      if (.not. allocated(error)) &
+         call check(error, maxval(abs(most - full)) < 1.0e-2_dp*scale, &
+                    "hess_2e_contract at large omega does not recover the full-range exchange")
+      call mol%destroy()
+   end subroutine hess_2e_attenuation_is_real
 
    subroutine scf_energy_at(geo, energy, err)
       !! A converged restricted Hartree-Fock energy at one geometry
