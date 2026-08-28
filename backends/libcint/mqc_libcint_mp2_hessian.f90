@@ -19,10 +19,10 @@ module mqc_libcint_mp2_hessian
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, atom_ao_blocks
-   use mqc_libcint_hess_ints, only: hess_1e_block, hess_rinv_block, hess_2e_block, &
+   use mqc_libcint_hess_ints, only: hess_1e_block, hess_rinv_block, &
+                                    hess_2e_skeleton_contract, &
                                     HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
-                                    HESS_OVLP_II, HESS_OVLP_IJ, HESS_RINV_II, HESS_RINV_IJ, &
-                                    HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
+                                    HESS_OVLP_II, HESS_OVLP_IJ, HESS_RINV_II, HESS_RINV_IJ
    implicit none
    private
 
@@ -71,12 +71,10 @@ contains
       real(dp), allocatable :: h2(:, :, :), hab(:, :, :), s2(:, :, :), sab(:, :, :)
       real(dp), allocatable :: tmp(:, :, :), r2(:, :, :), rab(:, :, :)
       real(dp), allocatable :: cross_c(:, :, :), cross_r(:, :, :)
-      real(dp), allocatable :: eri_ii(:, :, :, :, :), eri_ij(:, :, :, :, :)
-      real(dp), allocatable :: eri_ik(:, :, :, :, :)
       integer, allocatable :: owner(:), offsets(:), counts(:)
       real(dp) :: total_c(3, 3), total_r(3, 3)
-      real(dp) :: wc, wr, w4c, w8c, gref, zc
-      integer :: n_ao, n_mo, natm, iao, jao, kao, lao, ia, ja, ka, la
+      real(dp) :: wc, wr, zc
+      integer :: n_ao, n_mo, natm, iao, jao, ia, ja
       integer :: a, b, comp, c, i
 
       if (error%has_error()) return
@@ -236,64 +234,14 @@ contains
 
       ! ---- two electron -----------------------------------------------------
       !
-      ! The sixteen ordered derivative placements of `d2(mn|ls)/dX dY` fold
-      ! onto the three integrals libcint provides, once the loop runs over
-      ! every quartet in every order. For a weight with the integral's full
-      ! eightfold symmetry the folded coefficients are the familiar 4, 4 and 8;
-      ! `Gamma_eff` only has bra-ket symmetry, so the general fold is written
-      ! out instead: the four orbit terms below multiply `ipip1` and `ipvip1`,
-      ! all eight multiply `ip1ip2`. Setting every orbit term equal recovers
-      ! 4/4/8, which is the check that the fold is the same one
-      ! `hess_2e_contract` uses.
-      !
-      ! Materialised whole for now: at the sizes the ladder gates on, the three
-      ! arrays are a few megabytes, and the quartet-driven version that
-      ! evaluates and forgets is the follow-up commit, not this one.
-      call hess_2e_block(mol, HESS_ERI_II, eri_ii, error)
-      call hess_2e_block(mol, HESS_ERI_IJ, eri_ij, error)
-      call hess_2e_block(mol, HESS_ERI_IK, eri_ik, error)
+      ! Quartet-driven: evaluate, deposit, forget. The general orbit-weight
+      ! fold lives with the integrals in `hess_2e_skeleton_contract`, and the
+      ! reference deposits from the same buffers, so the second-derivative
+      ! ERIs -- the dominant cost -- are generated exactly once.
+      call hess_2e_skeleton_contract(mol, gamma_eff_ao, dref, owner, &
+                                     hess_corr, hess_ref, error)
       if (error%has_error()) return
 
-      do lao = 1, n_ao
-         la = owner(lao)
-         do kao = 1, n_ao
-            ka = owner(kao)
-            do jao = 1, n_ao
-               ja = owner(jao)
-               do iao = 1, n_ao
-                  ia = owner(iao)
-                  w4c = gamma_eff_ao(iao, jao, kao, lao) &
-                        + gamma_eff_ao(jao, iao, kao, lao) &
-                        + gamma_eff_ao(kao, lao, iao, jao) &
-                        + gamma_eff_ao(kao, lao, jao, iao)
-                  w8c = w4c + gamma_eff_ao(iao, jao, lao, kao) &
-                        + gamma_eff_ao(jao, iao, lao, kao) &
-                        + gamma_eff_ao(lao, kao, iao, jao) &
-                        + gamma_eff_ao(lao, kao, jao, iao)
-                  gref = 0.5_dp*dref(iao, jao)*dref(kao, lao) &
-                         - 0.125_dp*(dref(iao, lao)*dref(kao, jao) &
-                                     + dref(iao, kao)*dref(jao, lao))
-                  do comp = 1, 9
-                     a = (comp - 1)/3 + 1
-                     b = comp - 3*(a - 1)
-                     hess_corr(a, b, ia, ia) = hess_corr(a, b, ia, ia) &
-                                               + w4c*eri_ii(iao, jao, kao, lao, comp)
-                     hess_corr(a, b, ia, ja) = hess_corr(a, b, ia, ja) &
-                                               + w4c*eri_ij(iao, jao, kao, lao, comp)
-                     hess_corr(a, b, ia, ka) = hess_corr(a, b, ia, ka) &
-                                               + w8c*eri_ik(iao, jao, kao, lao, comp)
-                     hess_ref(a, b, ia, ia) = hess_ref(a, b, ia, ia) &
-                                              + 4.0_dp*gref*eri_ii(iao, jao, kao, lao, comp)
-                     hess_ref(a, b, ia, ja) = hess_ref(a, b, ia, ja) &
-                                              + 4.0_dp*gref*eri_ij(iao, jao, kao, lao, comp)
-                     hess_ref(a, b, ia, ka) = hess_ref(a, b, ia, ka) &
-                                              + 8.0_dp*gref*eri_ik(iao, jao, kao, lao, comp)
-                  end do
-               end do
-            end do
-         end do
-      end do
-      deallocate (eri_ii, eri_ij, eri_ik)
       deallocate (drel_ao, wcorr, wref, dref, owner, offsets, counts)
    end subroutine mp2_skeleton_hessian
 
