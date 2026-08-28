@@ -112,6 +112,10 @@ if(MQC_ENABLE_LIBCINT)
   # Unrestricted MP2, whose closed-shell limit is the restricted one.
   addtest(mqc_ump2)
   target_link_libraries(test_mqc_ump2 PRIVATE cint_fortran cint)
+  # The MP2 correlation Hessian by difference of our own correlation gradient,
+  # against pycc's analytic column on the basis we read.
+  addtest(mqc_mp2_hessian_fd)
+  target_link_libraries(test_mqc_mp2_hessian_fd PRIVATE cint_fortran cint)
   # Regrouping the kinetic energy onto atoms and atom pairs.
   addtest(mqc_ieda)
   target_link_libraries(test_mqc_ieda PRIVATE cint_fortran cint)
