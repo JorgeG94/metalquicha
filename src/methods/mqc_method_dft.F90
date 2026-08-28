@@ -144,12 +144,16 @@ contains
       call dft_run(this, fragment, result, want_gradient=.false.)
    end subroutine dft_calc_energy
 
-   subroutine dft_run(this, fragment, result, want_gradient)
+   subroutine dft_run(this, fragment, result, want_gradient, want_hessian)
       !! Run a density-fitted Kohn-Sham calculation through cuEST
       class(dft_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
       logical, intent(in) :: want_gradient
+      logical, intent(in), optional :: want_hessian
+         !! Only the CPU backend has an analytic Hessian, and only for some of
+         !! what reaches it. Passed along rather than decided here: which cases
+         !! qualify is a fact about that backend.
 
       type(cuest_scf_settings_t) :: settings
       type(error_t) :: backend_error
@@ -251,12 +255,12 @@ contains
          end if
          call run_cuest_scf(settings, fragment, result, want_gradient)
       case (BACKEND_LIBCINT)
-         call run_libcint_hf(settings, fragment, result, want_gradient)
+         call run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
       case default
 #ifdef MQC_WITH_CUEST
          call run_cuest_scf(settings, fragment, result, want_gradient)
 #else
-         call run_libcint_hf(settings, fragment, result, want_gradient)
+         call run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
 #endif
       end select
    end subroutine dft_run
@@ -271,11 +275,31 @@ contains
    end subroutine dft_calc_gradient
 
    subroutine dft_calc_hessian(this, fragment, result)
-      !! Hessian by central differences of the analytic gradients
+      !! The analytic Hessian where there is one, central differences otherwise
+      !!
+      !! The same shape as `hf_calc_hessian`, and for the same reason: whether
+      !! an analytic Hessian applies depends on what the backend knows -- which
+      !! rung the functional sits on, whether it carries VV10, whether the SCF
+      !! converged restricted and unfitted -- and not on anything visible here.
+      !! The request goes down and `has_hessian` comes back: true means it was
+      !! computed, false with no error means it was declined and finite
+      !! differences take over.
+      !!
+      !! Declining is not failing. A backend that cannot honour a *gradient*
+      !! refuses loudly, because there is no other way to get one; a Hessian
+      !! has a second way that is correct and merely slower.
       class(dft_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
+      call dft_run(this, fragment, result, want_gradient=.true., want_hessian=.true.)
+      if (result%has_error) return
+      if (result%has_hessian) return
+
+      ! Declined. Nothing computed above is reusable -- the finite-difference
+      ! path runs its own reference point -- so this starts over rather than
+      ! trying to keep the SCF that just ran.
+      call result%destroy()
       call finite_difference_hessian(this, fragment, result, verbose=this%options%verbose)
    end subroutine dft_calc_hessian
 
