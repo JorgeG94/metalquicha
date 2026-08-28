@@ -36,7 +36,9 @@ module mqc_libcint_bridge
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_libcint_pcm, only: pcm_context_t
    use mqc_libcint_gradient, only: libcint_scf_gradient
-   use mqc_libcint_hessian, only: rhf_hessian, ks_hessian, hessian_to_matrix
+   use mqc_libcint_hessian, only: rhf_hessian, ks_hessian, hessian_to_matrix, &
+                                  nuclear_repulsion_hessian, response_hessian
+   use mqc_libcint_mp2_hessian, only: mp2_correlation_hessian
    use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
    use mqc_libcint_ri_mp2_gradient, only: libcint_ri_mp2_gradient
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2, &
@@ -1572,6 +1574,71 @@ contains
                if (settings%verbose) then
                   write (line, "(a,f20.12)") "  |gradient|     ", sqrt(sum(result%gradient**2))
                   call logger%info(trim(line))
+               end if
+            end if
+
+            ! ---- the analytic Hessian, where it applies ------------------
+            !
+            ! The same positive-list shape as the reference gate above, for
+            ! the same reason: everything not on the list would return a
+            ! plausible, converged, wrong matrix rather than fail loudly. A
+            ! restricted reference over exact integrals, unscaled MP2,
+            ! all-electron. A frozen core is declined here, explicitly --
+            ! the analytic assembly is all-electron until the Phase 2 core
+            ! rotations land, and `mp2_correlation_hessian` refuses one
+            ! itself, so a branch opened by mistake cannot compute it
+            ! quietly wrong. Declining leaves `has_hessian` false and the
+            ! semi-numerical path takes over, which differences the
+            ! frozen-core gradient this file already serves and is correct,
+            ! merely slower.
+            if (do_hessian .and. .not. unrestricted &
+                .and. .not. settings%density_fitting &
+                .and. .not. settings%corr_density_fitting &
+                .and. .not. settings%pcm%enabled .and. fragment%n_caps == 0 &
+                .and. settings%scs_ss == 1.0_dp .and. settings%scs_os == 1.0_dp) then
+               if (frozen /= 0) then
+                  call logger%info("  frozen core requested: the analytic MP2 "// &
+                                   "Hessian is all-electron for now, declining "// &
+                                   "to central differences")
+               else
+                  block
+                     real(dp), allocatable :: hcorr(:, :, :, :), href(:, :, :, :)
+                     real(dp), allocatable :: hnuc(:, :, :, :), hresp(:, :, :, :)
+                     type(timer_type) :: hess_clock
+
+                     call logger%info("  computing the analytic MP2 Hessian")
+                     call hess_clock%start()
+                     ! The correlation block plus the reference's AO-dependent
+                     ! skeleton come from one shared integral sweep; the
+                     ! reference's CPHF response and the nuclear repulsion
+                     ! complete the total, which is `rhf_hessian`'s own split
+                     ! (the assembly test holds the identity at 2.5e-14).
+                     call mp2_correlation_hessian(mol, scf%orbitals, &
+                                                  scf%orbital_energies, scf%density, &
+                                                  scf%n_occupied, 0, hcorr, href, error)
+                     if (.not. error%has_error()) then
+                        call nuclear_repulsion_hessian(fragment%element_numbers, &
+                                                       mol%coords, hnuc, error)
+                     end if
+                     if (.not. error%has_error()) then
+                        call response_hessian(mol, scf%density, scf%orbitals, &
+                                              scf%orbital_energies, scf%n_occupied, &
+                                              hresp, error)
+                     end if
+                     if (error%has_error()) then
+                        call result%error%set(ERROR_VALIDATION, "MP2 Hessian: "// &
+                                              error%get_message())
+                        result%has_error = .true.
+                        call mol%destroy()
+                        return
+                     end if
+                     hcorr = hcorr + href + hresp + hnuc
+                     call hessian_to_matrix(hcorr, result%hessian)
+                     result%has_hessian = .true.
+                     write (line, "(a,f10.2,a)") "  Hessian done in ", &
+                        hess_clock%get_elapsed_time(), " s"
+                     call logger%info(trim(line))
+                  end block
                end if
             end if
 

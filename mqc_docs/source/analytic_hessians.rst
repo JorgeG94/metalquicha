@@ -41,6 +41,18 @@ What is covered
    * - VV10 non-local correlation
      - yes
      - ``b97m-v``, ``wb97m-v``
+   * - MP2, all-electron
+     - yes
+     - ``mp2`` with ``keywords.correlation.freeze_core: false``
+   * - MP2, frozen core
+     - **no**
+     - the default -- ``freeze_core`` is on unless the deck turns it off
+   * - Spin-scaled or fitted MP2
+     - **no**
+     - ``scs-mp2``, ``sos-mp2``, ``ri-mp2``
+   * - Coupled cluster
+     - **no**
+     - ``ccsd``, ``ccsd(t)``
    * - Unrestricted (UKS)
      - **no**
      - any open shell
@@ -51,6 +63,13 @@ What is covered
 Anything not covered falls back to the semi-numerical path rather than
 failing, so a deck that asks for a Hessian gets one either way. The difference
 is how long it takes.
+
+Note what the MP2 rows imply together: a plain ``mp2`` Hessian deck freezes
+its core by default and therefore takes the semi-numerical path, silently
+correct and slow. The analytic path is taken only when the deck says
+``freeze_core: false``, and the run that took it logs
+``computing the analytic MP2 Hessian``; a frozen-core run logs its decline in
+the same place rather than saying nothing.
 
 Every covered functional is checked against ``pyscf.hessian.rks`` with
 ``grid_response = False``, water at STO-3G, on every element of the Hessian:
@@ -120,6 +139,21 @@ it are easy to get wrong and were each wrong once here:
 
 Each produces a Hessian that is symmetric, translationally invariant and wrong,
 which is why they are named here.
+
+An MP2 Hessian adds a fourth piece on top of those three: the **correlation
+block**, itself three groups -- the second-derivative integrals contracted
+against the unperturbed relaxed densities, the orbital response through the
+skeleton Lagrangian, and the 2n+1 density response, which is one perturbed
+Z-vector solve per nuclear coordinate on top of the coupled-perturbed
+equations the reference already solves. The second-derivative two-electron
+integrals dominate the cost and are generated once, feeding the correlation
+block and the reference skeleton from the same sweep. The assembled block is
+checked element by element against pycc's analytic MP2 Hessian
+(water/6-31G, symmetric and asymmetric geometries, agreement at ~5e-12) and
+transitively against a seven-point finite difference of our own correlation
+gradient; the symmetry and translational sum rules it must earn, and the
+identity between its reference skeleton and the standalone Hartree-Fock
+Hessian, are pinned in ``test_mqc_mp2_hessian_assembly``.
 
 A ``-V`` functional's non-local correlation contributes in the same three
 places -- an explicit second derivative, a Fock-derivative term, and a kernel
@@ -207,6 +241,23 @@ there is no way to say whether a fitted one is converged or merely fast.
 
 **PCM.** A continuum's contribution to a second derivative is not implemented,
 and its interaction with the response terms has not been worked out.
+
+**Frozen-core MP2.** With a core frozen, the core--active block of the orbital
+response is no longer the simple overlap condition: it takes the canonical
+Brillouin divide with its coupling terms, and the perturbed core--active
+rotation is a Sylvester relation whose off-diagonal Fock derivatives the
+all-electron divide never needs. Running the all-electron assembly with fewer
+amplitudes would be quietly wrong -- pycc measured the dropped term at ~7e-7
+on this very molecule -- so the analytic path declines a frozen core
+explicitly (and the assembly routine refuses one outright, as a second guard),
+and central differences of the frozen-core gradient take over.
+
+**Spin-scaled MP2.** The same reason its gradient is refused: a scaled MP2 is
+a different energy, and its derivatives are not the unscaled ones rescaled --
+the amplitudes enter the relaxed density and the response equations unscaled.
+
+**RI-MP2.** The fitted correlation Hessian does not exist yet, and the fitted
+reference is excluded for the same reason as everywhere else in this table.
 
 How a deck reaches it
 =====================
