@@ -77,7 +77,8 @@ contains
 
    subroutine libcint_mp2_gradient(mol, coeff, orbital_energies, n_occ, gradient, &
                                    error, n_frozen, block_bytes, force_blocked, &
-                                   xc, scf_density, pt2_scale, aux)
+                                   xc, scf_density, pt2_scale, aux, &
+                                   relaxed_density_mo, lagrangian_mo, two_particle_ao)
       !! dE(MP2)/dR for a closed-shell reference, in Hartree/Bohr
       !!
       !! **With `xc`, this returns something else**: the correlation part alone,
@@ -130,6 +131,19 @@ contains
          !! Take the blocked path whatever the size. Separate from the target
          !! on purpose -- the dense path blocks over the occupied index too,
          !! and a knob that forced the other path would leave that untested.
+      real(dp), allocatable, intent(out), optional :: relaxed_density_mo(:, :)
+         !! The relaxed one-particle density in the MO basis, after the
+         !! core-active divide and the Z-vector -- what a Hessian differentiates
+         !! rather than reassembles. Handed out here because it is built here;
+         !! see `tools/mp2_hessian_oracle/` for the ladder that gates it.
+      real(dp), allocatable, intent(out), optional :: lagrangian_mo(:, :)
+         !! The orbital Lagrangian in the MO basis, with the virtual-occupied
+         !! block already filled from its transpose.
+      real(dp), allocatable, intent(out), optional :: two_particle_ao(:, :, :, :)
+         !! The non-separable two-particle density in the AO basis, chemist
+         !! ordered. **Only on the dense path** -- the blocked one never
+         !! materialises it, and asking for it there returns it unallocated
+         !! rather than forcing `n_ao^4` into memory behind the caller's back.
       type(libcint_molecule_t), intent(in), optional :: aux
          !! Present, the reference was density fitted and this differentiates
          !! that one. Only the reference moves: the response operator, both
@@ -307,6 +321,7 @@ contains
          call contract_gamma_eri(eri, gamma_ao, n_ao, imat_ao)
          call two_electron_mp2_terms(mol, gamma_ao, hf_density, de2, vhf1, &
                                      k_scale=kf, with_reference=.not. fitted)
+         if (present(two_particle_ao)) two_particle_ao = gamma_ao
          deallocate (gamma_ao)
       else
          call blocked_two_electron_terms(mol, t2, c_act, c_vir, n_ao, n_oa, n_v, &
@@ -415,6 +430,12 @@ contains
       ! Lagrangian defined; the virtual-occupied block is its transpose by
       ! construction rather than by computation.
       imat(n_o + 1:n_mo, 1:n_o) = transpose(imat(1:n_o, n_o + 1:n_mo))
+
+      ! Both are final here: `dm1mo` has taken the Z-vector just above and
+      ! nothing below writes to it, and `imat`'s last block is the line above.
+      if (present(relaxed_density_mo)) relaxed_density_mo = dm1mo
+      if (present(lagrangian_mo)) lagrangian_mo = imat
+
       allocate (im1(n_ao, n_ao))
       im1 = matmul(coeff, matmul(imat, transpose(coeff)))
 

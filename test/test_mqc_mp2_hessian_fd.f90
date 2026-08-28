@@ -34,6 +34,7 @@ module test_mqc_mp2_hessian_fd
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_gradient, only: libcint_scf_gradient
    use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
+   use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    implicit none
    private
 
@@ -138,7 +139,16 @@ contains
       integer, parameter :: OFFSET(6) = [-3, -2, -1, 1, 2, 3]
       real(dp), allocatable :: gradient(:, :)
       real(dp) :: coords(3, 3), accumulated(3, 3)
-      integer :: point
+      integer :: point, threads
+
+      ! One thread, restored afterwards. The stencil divides by 60h = 0.12, so
+      ! it multiplies gradient-level noise by about eight: measured here, the
+      ! residual is 2.778e-10 and bit-reproducible at one thread but scatters
+      ! between 8e-10 and 3.1e-9 over repeat runs at four, because the
+      ! unordered OpenMP critical merges do not sum in a fixed order. A gate
+      ! this tight has to be handed a deterministic number.
+      threads = omp_get_max_threads()
+      call omp_set_num_threads(1)
 
       ok = .false.
       accumulated = 0.0_dp
@@ -147,10 +157,14 @@ contains
          coords(PERT_CART, PERT_ATOM) = coords(PERT_CART, PERT_ATOM) &
                                         + real(OFFSET(point), dp)*STEP
          call correlation_gradient_at(coords, gradient, err)
-         if (err%has_error()) return
+         if (err%has_error()) then
+            call omp_set_num_threads(threads)
+            return
+         end if
          accumulated = accumulated + WEIGHT(point)*gradient
       end do
       column = reshape(accumulated/(60.0_dp*STEP), [9])
+      call omp_set_num_threads(threads)
       ok = .true.
    end subroutine fd_column
 
