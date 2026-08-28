@@ -42,6 +42,11 @@ module mqc_libcint_mp2_hessian
 
    public :: mp2_skeleton_hessian
    public :: mp2_first_order_skeletons
+   public :: mp2_mo_eri_physicist
+   public :: mp2_cumulant_2pdm
+   public :: mp2_mo_lagrangian
+   public :: mp2_skeleton_lagrangian
+   public :: mp2_pair_rotation_augment
 
 contains
 
@@ -412,5 +417,349 @@ contains
 
       deallocate (ip1, dao, owner, offsets, counts)
    end subroutine mp2_first_order_skeletons
+
+   subroutine mp2_mo_eri_physicist(mol, coeff, eri_mo, error)
+      !! The unperturbed MO integrals, physicist order, `<pq|rs> = (pr|qs)`
+      !!
+      !! The unperturbed companion of `mp2_first_order_skeletons`' `erix`:
+      !! what the Lagrangian and the pair-rotation augmentation contract.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coeff(:, :)
+      real(dp), allocatable, intent(out) :: eri_mo(:, :, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: ao(:, :, :, :), chem(:, :, :, :)
+      integer :: n_mo, p, q, r, s
+
+      if (error%has_error()) return
+      if (size(coeff, 1) /= mol%nao) then
+         call error%set(ERROR_VALIDATION, "the MO integral transform was handed "// &
+                        "coefficients that do not fit the basis.")
+         return
+      end if
+
+      call mol%eris(ao)
+      call ao_to_mo_chem(ao, coeff, chem)
+      deallocate (ao)
+
+      n_mo = size(coeff, 2)
+      allocate (eri_mo(n_mo, n_mo, n_mo, n_mo))
+      do s = 1, n_mo
+         do r = 1, n_mo
+            do q = 1, n_mo
+               do p = 1, n_mo
+                  eri_mo(p, q, r, s) = chem(p, r, q, s)
+               end do
+            end do
+         end do
+      end do
+      deallocate (chem)
+   end subroutine mp2_mo_eri_physicist
+
+   subroutine mp2_cumulant_2pdm(t2, n_frozen, n_occ, n_mo, gam)
+      !! pycc's cumulant two-particle density, full MO, physicist order
+      !!
+      !!     Gamma_ijab = 2 t2_ijab - t2_ijba,   Gamma_abij = Gamma_ijab
+      !!
+      !! Only the oovv/vvoo blocks are nonzero for MP2 (`_mp2_tpdm`). This is
+      !! **not** the gradient's `gamma_ao` and must not be conflated with it:
+      !! that one carries the energy's coefficient and a different
+      !! symmetrisation (conventions note, s.4a). Active amplitudes land at
+      !! the active slices, so frozen rows and columns stay zero.
+      real(dp), intent(in) :: t2(:, :, :, :)   !! (i, j, a, b), active occupied
+      integer, intent(in) :: n_frozen, n_occ, n_mo
+      real(dp), allocatable, intent(out) :: gam(:, :, :, :)
+
+      real(dp) :: u
+      integer :: i, j, a, b, n_o, n_v
+
+      n_o = size(t2, 1)
+      n_v = size(t2, 3)
+      allocate (gam(n_mo, n_mo, n_mo, n_mo))
+      gam = 0.0_dp
+      do b = 1, n_v
+         do a = 1, n_v
+            do j = 1, n_o
+               do i = 1, n_o
+                  u = 2.0_dp*t2(i, j, a, b) - t2(i, j, b, a)
+                  gam(n_frozen + i, n_frozen + j, n_occ + a, n_occ + b) = u
+                  gam(n_occ + a, n_occ + b, n_frozen + i, n_frozen + j) = u
+               end do
+            end do
+         end do
+      end do
+   end subroutine mp2_cumulant_2pdm
+
+   subroutine mp2_mo_lagrangian(eri_mo, orbital_energies, drel, gam, n_occ, imat)
+      !! The generalized-Fock orbital Lagrangian `I'`, pycc's `I`
+      !!
+      !!     I'_pq = -1/2 [ eps_p (D_pq + D_qp)
+      !!                    + delta_{q occ} D_rs (L_rpsq + L_rqsp)
+      !!                    + 4 <pr|st> Gamma_qrst ]
+      !!
+      !! Transcribed from `_spatial_lagrangian`. This is the correlation-only
+      !! matrix that multiplies `dS/dR`; the gradient's `imat` is a *part* of
+      !! it and its `energy_weighted_ao` is the total including the
+      !! reference's share -- the reconciliations are in the conventions note,
+      !! s.4a, and `test_mqc_mp2_hessian_response` checks this routine against
+      !! that reconstruction.
+      real(dp), intent(in) :: eri_mo(:, :, :, :)   !! Physicist, unperturbed
+      real(dp), intent(in) :: orbital_energies(:)
+      real(dp), intent(in) :: drel(:, :)           !! Relaxed 1-PDM, MO
+      real(dp), intent(in) :: gam(:, :, :, :)      !! From `mp2_cumulant_2pdm`
+      integer, intent(in) :: n_occ                 !! Full occupied count
+      real(dp), allocatable, intent(out) :: imat(:, :)
+
+      real(dp) :: acc
+      integer :: n_mo, p, q, r, s, t
+
+      n_mo = size(drel, 1)
+      allocate (imat(n_mo, n_mo))
+
+      do q = 1, n_mo
+         do p = 1, n_mo
+            acc = orbital_energies(p)*(drel(p, q) + drel(q, p))
+            do t = 1, n_mo
+               do s = 1, n_mo
+                  do r = 1, n_mo
+                     acc = acc + 4.0_dp*eri_mo(p, r, s, t)*gam(q, r, s, t)
+                  end do
+               end do
+            end do
+            imat(p, q) = acc
+         end do
+      end do
+      do q = 1, n_occ
+         do p = 1, n_mo
+            acc = 0.0_dp
+            do s = 1, n_mo
+               do r = 1, n_mo
+                  acc = acc + drel(r, s)* &
+                        (2.0_dp*eri_mo(r, p, s, q) - eri_mo(r, p, q, s) &
+                         + 2.0_dp*eri_mo(r, q, s, p) - eri_mo(r, q, p, s))
+               end do
+            end do
+            imat(p, q) = imat(p, q) + acc
+         end do
+      end do
+      imat = -0.5_dp*imat
+   end subroutine mp2_mo_lagrangian
+
+   subroutine mp2_skeleton_lagrangian(fx1, sx1, erix1, drel, gam, imat, n_occ, &
+                                      ip, xov, i2)
+      !! Unit 1.5: the skeleton-perturbed orbital Lagrangian for one `X`
+      !!
+      !! `_skeleton_lagrangian`, transcribed at fixed unperturbed densities:
+      !!
+      !!     I'^(X)_pq = -1/2 [ D_qr f^(X)_pr + D_rq f^(X)_rp
+      !!                        + delta_{q occ} D_rs (L^(X)_rpsq + L^(X)_rqsp)
+      !!                        + 4 <pr|st>^(X) Gamma_qrst
+      !!                        + I_qr S^(X)_pr + I_rq S^(X)_rp ]
+      !!
+      !! with `X^(X) = I'^(X)T - I'^(X)` the orbital-response driver and
+      !! `I''^(X)` the energy-weighted rewrite -- `I'^(X)` with its
+      !! virtual-occupied block replaced by the transposed occupied-virtual
+      !! one. All-electron non-canonical work uses these as they are; a frozen
+      !! core or the canonical gauge sends them through
+      !! `mp2_pair_rotation_augment` first.
+      real(dp), intent(in) :: fx1(:, :), sx1(:, :)   !! One perturbation's f^(X), S^(X)
+      real(dp), intent(in) :: erix1(:, :, :, :)      !! `<pq|rs>^(X)`, physicist
+      real(dp), intent(in) :: drel(:, :)             !! Relaxed 1-PDM, MO
+      real(dp), intent(in) :: gam(:, :, :, :)        !! From `mp2_cumulant_2pdm`
+      real(dp), intent(in) :: imat(:, :)             !! From `mp2_mo_lagrangian`
+      integer, intent(in) :: n_occ                   !! Full occupied count
+      real(dp), allocatable, intent(out) :: ip(:, :)
+      real(dp), allocatable, intent(out) :: xov(:, :)
+      real(dp), allocatable, intent(out) :: i2(:, :)
+
+      real(dp) :: acc
+      integer :: n_mo, p, q, r, s, t
+
+      n_mo = size(drel, 1)
+      allocate (ip(n_mo, n_mo), xov(n_mo, n_mo), i2(n_mo, n_mo))
+
+      ! One- and two-particle terms with both derivative placements; the
+      ! occupied-column two-electron term folds L^(X) on the spot, as the
+      ! Fock skeleton build does.
+      do q = 1, n_mo
+         do p = 1, n_mo
+            acc = 0.0_dp
+            do r = 1, n_mo
+               acc = acc + drel(q, r)*fx1(p, r) + drel(r, q)*fx1(r, p) &
+                     + imat(q, r)*sx1(p, r) + imat(r, q)*sx1(r, p)
+            end do
+            do t = 1, n_mo
+               do s = 1, n_mo
+                  do r = 1, n_mo
+                     acc = acc + 4.0_dp*erix1(p, r, s, t)*gam(q, r, s, t)
+                  end do
+               end do
+            end do
+            ip(p, q) = acc
+         end do
+      end do
+      do q = 1, n_occ
+         do p = 1, n_mo
+            acc = 0.0_dp
+            do s = 1, n_mo
+               do r = 1, n_mo
+                  acc = acc + drel(r, s)* &
+                        (2.0_dp*erix1(r, p, s, q) - erix1(r, p, q, s) &
+                         + 2.0_dp*erix1(r, q, s, p) - erix1(r, q, p, s))
+               end do
+            end do
+            ip(p, q) = ip(p, q) + acc
+         end do
+      end do
+      ip = -0.5_dp*ip
+
+      xov = transpose(ip) - ip
+      i2 = ip
+      i2(n_occ + 1:n_mo, 1:n_occ) = transpose(ip(1:n_occ, n_occ + 1:n_mo))
+   end subroutine mp2_skeleton_lagrangian
+
+   subroutine mp2_pair_rotation_augment(ip, xov, i2, l_mo, orbital_energies, &
+                                        n_occ, n_frozen, canonical, xt, it, pf)
+      !! The closed-form pair rotations folded into the skeleton carriers
+      !!
+      !! `_augment_with_canonical_pair_rotations`, transcribed. Two rotations
+      !! the occupied-virtual solve does not provide, both from the divide
+      !! `P^(X)_pq = (I'^(X)_pq - I'^(X)_qp) / (eps_p - eps_q)`:
+      !!
+      !! * the **independent** core<->active-occupied block, always present
+      !!   with a frozen core -- an ungated direct divide, its gap never small;
+      !! * the **redundant** active oo/vv blocks, canonical gauge only --
+      !!   gap-gated at 1e-8 (`_dependent_pairs`), because near a degeneracy
+      !!   the numerator vanishes by the same symmetry that makes the divide
+      !!   ill-conditioned.
+      !!
+      !! All-electron non-canonical, this is arithmetically the identity --
+      !! both guards skip and `xt`, `it` copy through. It exists now, written
+      !! against pycc while the structure is fresh, because Phase 2's frozen
+      !! core reaches it (the plan's Unit 1.5 note); nothing in Phase 1 does.
+      real(dp), intent(in) :: ip(:, :), xov(:, :), i2(:, :)
+      real(dp), intent(in) :: l_mo(:, :, :, :)
+         !! Unperturbed orbital-Hessian weight `L_pqrs = 2 <pq|rs> - <pq|sr>`
+      real(dp), intent(in) :: orbital_energies(:)
+      integer, intent(in) :: n_occ                   !! Full occupied count
+      integer, intent(in) :: n_frozen
+      logical, intent(in) :: canonical
+      real(dp), allocatable, intent(out) :: xt(:, :)
+      real(dp), allocatable, intent(out) :: it(:, :)
+      real(dp), allocatable, intent(out) :: pf(:, :)
+
+      real(dp), allocatable :: pof(:, :), pvv(:, :), aug(:, :)
+      real(dp) :: acc
+      integer :: n_mo, n_vir, p, q, k, l, a, i
+
+      n_mo = size(ip, 1)
+      n_vir = n_mo - n_occ
+      allocate (pof(n_occ, n_occ), pvv(n_vir, n_vir), pf(n_mo, n_mo))
+      pof = 0.0_dp
+      pvv = 0.0_dp
+
+      if (n_frozen > 0) then
+         ! Independent core<->active-occupied rotation: rows core, columns
+         ! active, then mirrored -- `P` is symmetric.
+         do q = n_frozen + 1, n_occ
+            do p = 1, n_frozen
+               pof(p, q) = (ip(p, q) - ip(q, p)) &
+                           /(orbital_energies(p) - orbital_energies(q))
+               pof(q, p) = pof(p, q)
+            end do
+         end do
+      end if
+      if (canonical) then
+         call dependent_pairs(ip(n_frozen + 1:n_occ, n_frozen + 1:n_occ), &
+                              orbital_energies(n_frozen + 1:n_occ), aug)
+         pof(n_frozen + 1:n_occ, n_frozen + 1:n_occ) = aug
+         deallocate (aug)
+         call dependent_pairs(ip(n_occ + 1:n_mo, n_occ + 1:n_mo), &
+                              orbital_energies(n_occ + 1:n_mo), aug)
+         pvv = aug
+         deallocate (aug)
+      end if
+
+      pf = 0.0_dp
+      pf(1:n_occ, 1:n_occ) = pof
+      pf(n_occ + 1:n_mo, n_occ + 1:n_mo) = pvv
+
+      ! X~^(X)_ai: the occupied pair sums run over the full occupied space.
+      xt = xov
+      do i = 1, n_occ
+         do a = n_occ + 1, n_mo
+            acc = 0.0_dp
+            do l = 1, n_occ
+               do k = 1, n_occ
+                  acc = acc + pof(k, l)*(l_mo(k, a, l, i) + l_mo(k, i, l, a))
+               end do
+            end do
+            do l = 1, n_vir
+               do k = 1, n_vir
+                  acc = acc + pvv(k, l)*(l_mo(n_occ + k, a, n_occ + l, i) &
+                                         + l_mo(n_occ + k, i, n_occ + l, a))
+               end do
+            end do
+            xt(a, i) = xt(a, i) + 0.5_dp*acc
+         end do
+      end do
+
+      ! I~''^(X): the occupied block picks up the rotation's energy weight and
+      ! the same pair sums; the virtual block only the energy weight.
+      it = i2
+      do q = 1, n_occ
+         do p = 1, n_occ
+            acc = 0.0_dp
+            do l = 1, n_occ
+               do k = 1, n_occ
+                  acc = acc + pof(k, l)*(l_mo(k, p, l, q) + l_mo(k, q, l, p))
+               end do
+            end do
+            do l = 1, n_vir
+               do k = 1, n_vir
+                  acc = acc + pvv(k, l)*(l_mo(n_occ + k, p, n_occ + l, q) &
+                                         + l_mo(n_occ + k, q, n_occ + l, p))
+               end do
+            end do
+            it(p, q) = it(p, q) - pof(p, q)*orbital_energies(q) - 0.5_dp*acc
+         end do
+      end do
+      do q = 1, n_vir
+         do p = 1, n_vir
+            it(n_occ + p, n_occ + q) = it(n_occ + p, n_occ + q) &
+                                       - pvv(p, q)*orbital_energies(n_occ + q)
+         end do
+      end do
+
+      deallocate (pof, pvv)
+   end subroutine mp2_pair_rotation_augment
+
+   subroutine dependent_pairs(iblock, eps_block, p)
+      !! `P_mn = (I_mn - I_nm) / (eps_m - eps_n)`, gap-gated
+      !!
+      !! The gate is on the **gap**, not the numerator: a numerator gate would
+      !! zero small-but-nonzero rotations whose derivative is not zero,
+      !! leaving `P` and `dP` inconsistent -- pycc's `_dependent_pairs`
+      !! records that as a genuine low-symmetry Hessian error, not a style
+      !! choice.
+      real(dp), intent(in) :: iblock(:, :)
+      real(dp), intent(in) :: eps_block(:)
+      real(dp), allocatable, intent(out) :: p(:, :)
+
+      real(dp), parameter :: GAP_THRESH = 1.0e-8_dp
+      real(dp) :: gap
+      integer :: m, n
+
+      allocate (p(size(iblock, 1), size(iblock, 2)))
+      p = 0.0_dp
+      do n = 1, size(iblock, 2)
+         do m = 1, size(iblock, 1)
+            gap = eps_block(m) - eps_block(n)
+            if (abs(gap) > GAP_THRESH) then
+               p(m, n) = (iblock(m, n) - iblock(n, m))/gap
+            end if
+         end do
+      end do
+   end subroutine dependent_pairs
 
 end module mqc_libcint_mp2_hessian
