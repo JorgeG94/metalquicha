@@ -22,6 +22,18 @@ module mqc_libcint_mp2_hessian
    !! `S^(X)`, `<pq|rs>^(X)`; the skeleton Lagrangian `I'^(X)` and its
    !! orbital-response carriers; and the orbital-response term of pass 2.
    !!
+   !! Unit 1.7: the perturbed amplitudes. The full CPHF-folded derivatives
+   !! `d_Y f` and `d_Y <pq|rs>` -- skeleton plus all four `U^Y` rotations --
+   !! feed the closed-form perturbed amplitudes.
+   !!
+   !! **Storage, decided rather than inherited.** pycc persist every `nmo^4`
+   !! perturbed quantity and stream them back one perturbation at a time. Here
+   !! the per-perturbation `d_Y <pq|rs>` lives one at a time inside the
+   !! caller's loop and is gone when it moves on, so nothing `nmo^4` is ever
+   !! `3N`-resident. The exception is the *skeleton* stack
+   !! `erix` inherited from Unit 1.4, which is dense `nmo^4 x 3N` and already
+   !! flagged there as what a blocked analog replaces.
+   !!
    !! **MO tensors here are physicist-ordered, `<pq|rs>`.** The gradient's AO
    !! side is chemist because the integrals are; these routines transcribe
    !! pycc's `_skeleton_lagrangian` and `_augment_with_canonical_pair_rotations`
@@ -48,6 +60,10 @@ module mqc_libcint_mp2_hessian
    public :: mp2_skeleton_lagrangian
    public :: mp2_pair_rotation_augment
    public :: mp2_orbital_response_term
+   public :: mp2_full_u
+   public :: mp2_perturbed_fock
+   public :: mp2_perturbed_eri
+   public :: mp2_perturbed_t2
 
 contains
 
@@ -807,5 +823,167 @@ contains
          end do
       end do
    end subroutine mp2_orbital_response_term
+
+   subroutine mp2_full_u(mo1_x, sx1, n_occ, u)
+      !! The full `nmo x nmo` orbital rotation `U^X` for one perturbation
+      !!
+      !! pycc's non-canonical `full_U`: `solve_mo1_batch`'s first-order
+      !! orbitals already carry the whole occupied-column block -- the solved
+      !! virtual rows and the `-S^(X)/2` occupied rows the orthonormality
+      !! fixes -- so only the virtual columns are assembled here:
+      !!
+      !!     U^X_ab = -1/2 S^(X)_ab
+      !!     U^X_ia = -S^(X)_ia - U^X_ai      (U + U^T = -S^(X))
+      !!
+      !! The frozen-core core<->active rewrite of the occupied block (pycc
+      !! `full_U`'s `if ncore:` branch) is Phase 2's and deliberately absent;
+      !! `mp2_perturbed_response` guards it.
+      real(dp), intent(in) :: mo1_x(:, :)   !! (n_mo, n_occ), one perturbation
+      real(dp), intent(in) :: sx1(:, :)     !! S^(X), MO, (n_mo, n_mo)
+      integer, intent(in) :: n_occ
+      real(dp), allocatable, intent(out) :: u(:, :)
+
+      integer :: n_mo, i, a
+
+      n_mo = size(mo1_x, 1)
+      allocate (u(n_mo, n_mo))
+      u(:, 1:n_occ) = mo1_x
+      u(n_occ + 1:n_mo, n_occ + 1:n_mo) = -0.5_dp*sx1(n_occ + 1:n_mo, n_occ + 1:n_mo)
+      do a = n_occ + 1, n_mo
+         do i = 1, n_occ
+            u(i, a) = -sx1(i, a) - mo1_x(a, i)
+         end do
+      end do
+   end subroutine mp2_full_u
+
+   subroutine mp2_perturbed_fock(fx1, sx1, u, l_mo, orbital_energies, n_occ, df)
+      !! The full first derivative of the MO Fock matrix, `d_X f`
+      !!
+      !! pycc's `CPHF.perturbed_fock`: the skeleton plus the orbital response,
+      !!
+      !!     d_X f_pq = f^(X)_pq + U^X_pq eps_p + U^X_qp eps_q
+      !!                - 1/2 S^(X)_nm (L_pnqm + L_pmqn)
+      !!                + U^X_cm (L_pcqm + L_pmqc)
+      !!
+      !! with `n, m` over the full occupied space and `c` over the virtuals.
+      !! The oo/vv blocks of this matrix are the non-canonical coupling the
+      !! perturbed amplitudes fold in; its diagonal is `d_X eps` -- but it is
+      !! the **whole matrix** the perturbed Lagrangian multiplies, never just
+      !! that diagonal (design plan s.4b).
+      real(dp), intent(in) :: fx1(:, :), sx1(:, :)   !! f^(X), S^(X), MO
+      real(dp), intent(in) :: u(:, :)                !! From `mp2_full_u`
+      real(dp), intent(in) :: l_mo(:, :, :, :)
+         !! Unperturbed `L_pqrs = 2 <pq|rs> - <pq|sr>`
+      real(dp), intent(in) :: orbital_energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), allocatable, intent(out) :: df(:, :)
+
+      real(dp) :: acc
+      integer :: n_mo, p, q, m, n, c
+
+      n_mo = size(fx1, 1)
+      allocate (df(n_mo, n_mo))
+      do q = 1, n_mo
+         do p = 1, n_mo
+            acc = fx1(p, q) + u(p, q)*orbital_energies(p) + u(q, p)*orbital_energies(q)
+            do m = 1, n_occ
+               do n = 1, n_occ
+                  acc = acc - 0.5_dp*sx1(n, m)*(l_mo(p, n, q, m) + l_mo(p, m, q, n))
+               end do
+            end do
+            do m = 1, n_occ
+               do c = n_occ + 1, n_mo
+                  acc = acc + u(c, m)*(l_mo(p, c, q, m) + l_mo(p, m, q, c))
+               end do
+            end do
+            df(p, q) = acc
+         end do
+      end do
+   end subroutine mp2_perturbed_fock
+
+   subroutine mp2_perturbed_eri(erix1, u, eri_mo, deri)
+      !! The full first derivative of the MO integrals, `d_X <pq|rs>`
+      !!
+      !! pycc's `CPHF.perturbed_eri`: the skeleton plus all four rotations,
+      !!
+      !!     d_X <pq|rs> = <pq|rs>^(X) + U^X_tp <tq|rs> + U^X_tq <pt|rs>
+      !!                              + U^X_tr <pq|ts> + U^X_ts <pq|rt>
+      !!
+      !! Nothing else on the ladder builds the rotated `nmo^4` derivative.
+      !! Each rotation is one matrix product over a reshaped view; the caller
+      !! holds one perturbation's tensor at a time (module header, storage).
+      real(dp), intent(in) :: erix1(:, :, :, :)   !! `<pq|rs>^(X)`, physicist
+      real(dp), intent(in) :: u(:, :)
+      real(dp), intent(in) :: eri_mo(:, :, :, :)  !! Unperturbed, physicist
+      real(dp), allocatable, intent(out) :: deri(:, :, :, :)
+
+      integer :: n, r, s
+
+      n = size(eri_mo, 1)
+      allocate (deri(n, n, n, n))
+      ! First index: (t, [qrs]) -> (p, [qrs]).
+      deri = reshape(matmul(transpose(u), reshape(eri_mo, [n, n*n*n])), [n, n, n, n])
+      ! Second index, per ket pair; third index, per ket component.
+      do s = 1, n
+         do r = 1, n
+            deri(:, :, r, s) = deri(:, :, r, s) + matmul(eri_mo(:, :, r, s), u)
+         end do
+      end do
+      do s = 1, n
+         deri(:, :, :, s) = deri(:, :, :, s) &
+                            + reshape(matmul(reshape(eri_mo(:, :, :, s), [n*n, n]), u), [n, n, n])
+      end do
+      ! Fourth index: ([pqr], t) -> ([pqr], s).
+      deri = deri + reshape(matmul(reshape(eri_mo, [n*n*n, n]), u), [n, n, n, n])
+      deri = deri + erix1
+   end subroutine mp2_perturbed_eri
+
+   subroutine mp2_perturbed_t2(deri, df, t2, orbital_energies, n_frozen, n_occ, dt2)
+      !! Unit 1.7: the first-order response of the MP2 amplitudes, `d_X t2`
+      !!
+      !! Closed form, pycc's `_perturbed_t2` -- the amplitudes are not
+      !! iterative, so their response is a divide:
+      !!
+      !!     d_X t2_ijab = [ d_X<ij|ab> + d_X f_ac t2_ijcb + d_X f_bc t2_ijac
+      !!                     - d_X f_ik t2_kjab - d_X f_jk t2_ikab ] / D_ijab
+      !!
+      !! with `D_ijab = eps_i + eps_j - eps_a - eps_b`. The Fock blocks are
+      !! the full oo/vv matrices of `d_X f`: the diagonal alone recovers the
+      !! `-t2 d_X D` of a canonical gauge, and the off-diagonal rows are the
+      !! non-canonical coupling this gauge carries instead.
+      real(dp), intent(in) :: deri(:, :, :, :)   !! From `mp2_perturbed_eri`
+      real(dp), intent(in) :: df(:, :)           !! From `mp2_perturbed_fock`
+      real(dp), intent(in) :: t2(:, :, :, :)     !! (i, j, a, b), active
+      real(dp), intent(in) :: orbital_energies(:)
+      integer, intent(in) :: n_frozen, n_occ
+      real(dp), allocatable, intent(out) :: dt2(:, :, :, :)
+
+      real(dp) :: acc
+      integer :: n_o, n_v, i, j, a, b, c, k
+
+      n_o = size(t2, 1)
+      n_v = size(t2, 3)
+      allocate (dt2(n_o, n_o, n_v, n_v))
+      do b = 1, n_v
+         do a = 1, n_v
+            do j = 1, n_o
+               do i = 1, n_o
+                  acc = deri(n_frozen + i, n_frozen + j, n_occ + a, n_occ + b)
+                  do c = 1, n_v
+                     acc = acc + df(n_occ + a, n_occ + c)*t2(i, j, c, b) &
+                           + df(n_occ + b, n_occ + c)*t2(i, j, a, c)
+                  end do
+                  do k = 1, n_o
+                     acc = acc - df(n_frozen + i, n_frozen + k)*t2(k, j, a, b) &
+                           - df(n_frozen + j, n_frozen + k)*t2(i, k, a, b)
+                  end do
+                  dt2(i, j, a, b) = acc &
+                                    /(orbital_energies(n_frozen + i) + orbital_energies(n_frozen + j) &
+                                      - orbital_energies(n_occ + a) - orbital_energies(n_occ + b))
+               end do
+            end do
+         end do
+      end do
+   end subroutine mp2_perturbed_t2
 
 end module mqc_libcint_mp2_hessian

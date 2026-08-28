@@ -187,7 +187,8 @@ def collect(drv, Perturbation):
 
     pert = [Perturbation("nuclear", (a, ct)) for a in range(natom) for ct in range(3)]
     cphf = drv._full_occ_cphf()
-    stacks = {k: [] for k in ("fX", "SX", "erix", "Ip", "Xx", "I2x", "U", "dDrel", "dI", "dGam")}
+    stacks = {k: [] for k in ("fX", "SX", "erix", "Ip", "Xx", "I2x", "U", "dfock", "deri",
+                              "dt2", "dDrel", "dI", "dGam")}
     pf_x = []
     for p in pert:
         atom, ct = p.comp
@@ -210,6 +211,13 @@ def collect(drv, Perturbation):
         stacks["Xx"].append(np.asarray(xt))
         stacks["I2x"].append(np.asarray(it))
         stacks["U"].append(np.asarray(cphf.full_U(p, ncore, canonical=canonical)))
+        # Unit 1.7's inputs and output: the full CPHF-folded perturbed Fock and
+        # ERI (skeleton plus all four U rotations) and the closed-form perturbed
+        # amplitudes they feed. Dumping the integrals too is deliberate -- when
+        # dt2 misses, they say whether the miss is in the rotation or the divide.
+        stacks["dfock"].append(np.asarray(cphf.perturbed_fock(p, ncore, canonical=canonical)))
+        stacks["deri"].append(np.asarray(cphf.perturbed_eri(p, ncore, canonical=canonical)))
+        stacks["dt2"].append(np.asarray(drv._perturbed_t2(p)))
         stacks["dDrel"].append(np.asarray(response.dDrel))
         stacks["dI"].append(np.asarray(response.dI))
         stacks["dGam"].append(np.asarray(response.dGam))
@@ -218,7 +226,6 @@ def collect(drv, Perturbation):
         out[key] = np.stack(value)
     if any(p is not None for p in pf_x):
         out["Pf_x"] = np.stack([np.asarray(p) for p in pf_x])
-    out["dt2_pert2"] = np.asarray(drv._perturbed_t2(pert[2]))
 
     reference, correlation = drv._hessian_blocks()
     out["H_correlation"] = np.asarray(correlation)

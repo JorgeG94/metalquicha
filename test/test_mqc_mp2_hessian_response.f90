@@ -39,7 +39,9 @@ module test_mqc_mp2_hessian_response
    use mqc_libcint_mp2_hessian, only: mp2_first_order_skeletons, mp2_mo_eri_physicist, &
                                       mp2_cumulant_2pdm, mp2_mo_lagrangian, &
                                       mp2_skeleton_lagrangian, mp2_pair_rotation_augment, &
-                                      mp2_orbital_response_term
+                                      mp2_orbital_response_term, mp2_full_u, &
+                                      mp2_perturbed_fock, mp2_perturbed_eri, &
+                                      mp2_perturbed_t2
    use mqc_libcint_hessian, only: make_h1_atom, overlap_deriv_atom, solve_mo1_batch
    use mqc_libcint_hess_ints, only: eri_ip1_block
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
@@ -69,7 +71,8 @@ contains
                   new_unittest("derivative_eri_keeps_its_pair_symmetries", eri_symmetries), &
                   new_unittest("lagrangian_agrees_with_the_gradient", lagrangian_agrees), &
                   new_unittest("pair_augmentation_is_the_allelectron_identity", augment_identity), &
-                  new_unittest("orbital_response_term_translates_to_nothing", response_translates) &
+                  new_unittest("orbital_response_term_translates_to_nothing", response_translates), &
+                  new_unittest("perturbed_amplitudes_translate_to_nothing", amplitudes_translate) &
                   ]
    end subroutine collect_mqc_mp2_hessian_response_tests
 
@@ -437,6 +440,102 @@ contains
                  "the orbital-response term does not cancel under rigid translation")
       call mol%destroy()
    end subroutine response_translates
+
+   !> Rigid translation leaves the orbitals, and so the amplitudes, exactly
+   !> where they were -- so the perturbed amplitudes summed over the atoms of
+   !> one Cartesian component cancel. This is earned across the whole of Unit
+   !> 1.7: the skeleton derivatives, the full `U^Y` rotation of the `nmo^4`
+   !> integrals, the perturbed Fock with its response fold, and the closed-form
+   !> divide all have to agree about their conventions for the sum to vanish,
+   !> and it runs through the CPHF solve on every perturbation, which is why
+   !> the bound is the solver's rather than machine epsilon.
+   !>
+   !> What this cannot see is a gauge error -- a perturbed quantity wrong by an
+   !> orbital rotation translates to zero just as well (the plan's Unit 1.7
+   !> warning). The cross-code gate against pycc's `dt2` dump was run when the
+   !> unit landed (sym 6.6e-12, asym 3.4e-11, one thread) and lives in the
+   !> commit message, per `test_mqc_hess_ints`' rule on external comparisons.
+   subroutine amplitudes_translate(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: fx(:, :, :), sx(:, :, :), erix(:, :, :, :, :)
+      real(dp), allocatable :: eri_packed(:, :), ovov(:, :, :, :), t2(:, :, :, :)
+      real(dp), allocatable :: eri_mo(:, :, :, :), l_mo(:, :, :, :)
+      real(dp), allocatable :: eip1(:, :, :, :, :), h1(:, :, :, :), s1(:, :, :, :)
+      real(dp), allocatable :: h1a(:, :, :), s1a(:, :, :), mo1(:, :, :, :)
+      real(dp), allocatable :: u(:, :), df(:, :), deri(:, :, :, :), ta(:, :, :, :)
+      real(dp), allocatable :: sum_t(:, :, :, :, :)
+      real(dp) :: worst
+      integer :: threads, n_ao, n_mo, n_o, natm, a, x, comp, p, q, r, s
+
+      threads = omp_get_max_threads()
+      call omp_set_num_threads(1)
+      call stage_at(mol, scf, fx, sx, erix, err)
+      n_o = WATER_NELEC/2
+      if (.not. err%has_error()) then
+         n_ao = mol%nao
+         n_mo = size(scf%orbitals, 2)
+         natm = mol%natm
+         call mol%eris_packed(eri_packed)
+         call transform_ovov(eri_packed, scf%orbitals, 0, n_o, n_ao, n_mo, ovov)
+         call build_amplitudes(ovov, scf%orbital_energies, 0, n_o, n_mo - n_o, &
+                               n_o, t2)
+         call mp2_mo_eri_physicist(mol, scf%orbitals, eri_mo, err)
+         allocate (l_mo(n_mo, n_mo, n_mo, n_mo))
+         do s = 1, n_mo
+            do r = 1, n_mo
+               do q = 1, n_mo
+                  do p = 1, n_mo
+                     l_mo(p, q, r, s) = 2.0_dp*eri_mo(p, q, r, s) - eri_mo(p, q, s, r)
+                  end do
+               end do
+            end do
+         end do
+         call eri_ip1_block(mol, eip1, err)
+         allocate (h1(n_ao, n_ao, 3, natm), s1(n_ao, n_ao, 3, natm))
+         do a = 1, natm
+            call make_h1_atom(mol, scf%density, eip1, a, h1a, err)
+            call overlap_deriv_atom(mol, a, s1a, err)
+            h1(:, :, :, a) = h1a
+            s1(:, :, :, a) = s1a
+            deallocate (h1a, s1a)
+         end do
+         call solve_mo1_batch(mol, scf%orbitals, scf%orbital_energies, n_o, h1, &
+                              s1, mo1, err, max_iter=200, tol=1.0e-13_dp)
+      end if
+      call omp_set_num_threads(threads)
+      call check(error,.not. err%has_error(), &
+                 "the perturbed-amplitude setup did not evaluate: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      allocate (sum_t(n_o, n_o, n_mo - n_o, n_mo - n_o, 3))
+      sum_t = 0.0_dp
+      do x = 1, 3*natm
+         a = (x - 1)/3 + 1
+         comp = x - 3*(a - 1)
+         call mp2_full_u(mo1(:, :, comp, a), sx(:, :, x), n_o, u)
+         call mp2_perturbed_fock(fx(:, :, x), sx(:, :, x), u, l_mo, &
+                                 scf%orbital_energies, n_o, df)
+         call mp2_perturbed_eri(erix(:, :, :, :, x), u, eri_mo, deri)
+         call mp2_perturbed_t2(deri, df, t2, scf%orbital_energies, 0, n_o, ta)
+         sum_t(:, :, :, :, comp) = sum_t(:, :, :, :, comp) + ta
+         deallocate (u, df, deri, ta)
+      end do
+      worst = maxval(abs(sum_t))
+      write (*, "(a, es10.2)") "        max translation residual = ", worst
+      ! Measured 6.0e-16 at one thread: as with the orbital-response term,
+      ! the translated right-hand side is already zero, so the solve never
+      ! gets to spend its tolerance. Room left for neither.
+      call check(error, worst < 1.0e-12_dp, &
+                 "the perturbed amplitudes do not cancel under rigid translation")
+      call mol%destroy()
+   end subroutine amplitudes_translate
 
 end module test_mqc_mp2_hessian_response
 
