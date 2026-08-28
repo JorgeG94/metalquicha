@@ -22,15 +22,19 @@ module mqc_libcint_mp2_hessian
    !! `S^(X)`, `<pq|rs>^(X)`; the skeleton Lagrangian `I'^(X)` and its
    !! orbital-response carriers; and the orbital-response term of pass 2.
    !!
-   !! Unit 1.7: the perturbed amplitudes. The full CPHF-folded derivatives
+   !! Units 1.7-1.8: the perturbed response. The full CPHF-folded derivatives
    !! `d_Y f` and `d_Y <pq|rs>` -- skeleton plus all four `U^Y` rotations --
-   !! feed the closed-form perturbed amplitudes.
+   !! feed the closed-form perturbed amplitudes, and those feed the perturbed
+   !! relaxed density, energy-weighted density and cumulant through one
+   !! perturbed Z-vector solve per perturbation (`mp2_perturbed_response`).
    !!
    !! **Storage, decided rather than inherited.** pycc persist every `nmo^4`
    !! perturbed quantity and stream them back one perturbation at a time. Here
-   !! the per-perturbation `d_Y <pq|rs>` lives one at a time inside the
-   !! caller's loop and is gone when it moves on, so nothing `nmo^4` is ever
-   !! `3N`-resident. The exception is the *skeleton* stack
+   !! the per-perturbation `d_Y <pq|rs>` and its spin-adapted `L` live one at
+   !! a time inside the response driver's loop and are gone when it moves on;
+   !! what the perturbed energy-weighted density will need after the batched
+   !! Z-vector solve is folded out *before* the tensor is dropped, so nothing
+   !! `nmo^4` is ever `3N`-resident. The exception is the *skeleton* stack
    !! `erix` inherited from Unit 1.4, which is dense `nmo^4 x 3N` and already
    !! flagged there as what a blocked analog replaces.
    !!
@@ -49,6 +53,7 @@ module mqc_libcint_mp2_hessian
                                     HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
                                     HESS_OVLP_II, HESS_OVLP_IJ, HESS_RINV_II, HESS_RINV_IJ
    use mqc_libcint_hessian, only: hcore_deriv_atom, overlap_deriv_atom
+   use mqc_libcint_cphf, only: cphf_solve
    implicit none
    private
 
@@ -64,6 +69,10 @@ module mqc_libcint_mp2_hessian
    public :: mp2_perturbed_fock
    public :: mp2_perturbed_eri
    public :: mp2_perturbed_t2
+   public :: mp2_perturbed_onepdm
+   public :: mp2_perturbed_lagrangian
+   public :: mp2_perturbed_zvector_rhs
+   public :: mp2_perturbed_response
 
 contains
 
@@ -985,5 +994,375 @@ contains
          end do
       end do
    end subroutine mp2_perturbed_t2
+
+   subroutine mp2_perturbed_onepdm(t2, dt2, n_frozen, n_occ, n_mo, dd)
+      !! The response of the unrelaxed one-particle density, `d_X gamma`
+      !!
+      !! The unrelaxed-density expressions differentiated by the product rule
+      !! (pycc `_perturbed_unrelaxed_densities`, spin-adapted):
+      !!
+      !!     d_X gamma_ij = -( ta_imef l2_jmef + t2_imef la_jmef )
+      !!     d_X gamma_ab =  ( ta_mnbe l2_mnae + t2_mnbe la_mnae )
+      !!
+      !! with `l2 = 2 (2 t2 - t2^{ab<->ba})` and `la` the same functional of
+      !! `ta = d_X t2`. The cumulant's response needs no routine of its own:
+      !! it is `mp2_cumulant_2pdm` evaluated at `ta`.
+      real(dp), intent(in) :: t2(:, :, :, :), dt2(:, :, :, :)
+      integer, intent(in) :: n_frozen, n_occ, n_mo
+      real(dp), allocatable, intent(out) :: dd(:, :)
+
+      real(dp), allocatable :: l2(:, :, :, :), la(:, :, :, :)
+      real(dp) :: acc
+      integer :: n_o, n_v, i, j, a, b, m, n, e, f
+
+      n_o = size(t2, 1)
+      n_v = size(t2, 3)
+      allocate (l2(n_o, n_o, n_v, n_v), la(n_o, n_o, n_v, n_v))
+      do b = 1, n_v
+         do a = 1, n_v
+            do j = 1, n_o
+               do i = 1, n_o
+                  l2(i, j, a, b) = 2.0_dp*(2.0_dp*t2(i, j, a, b) - t2(i, j, b, a))
+                  la(i, j, a, b) = 2.0_dp*(2.0_dp*dt2(i, j, a, b) - dt2(i, j, b, a))
+               end do
+            end do
+         end do
+      end do
+
+      allocate (dd(n_mo, n_mo))
+      dd = 0.0_dp
+      do j = 1, n_o
+         do i = 1, n_o
+            acc = 0.0_dp
+            do f = 1, n_v
+               do e = 1, n_v
+                  do m = 1, n_o
+                     acc = acc + dt2(i, m, e, f)*l2(j, m, e, f) &
+                           + t2(i, m, e, f)*la(j, m, e, f)
+                  end do
+               end do
+            end do
+            dd(n_frozen + i, n_frozen + j) = -acc
+         end do
+      end do
+      do b = 1, n_v
+         do a = 1, n_v
+            acc = 0.0_dp
+            do e = 1, n_v
+               do n = 1, n_o
+                  do m = 1, n_o
+                     acc = acc + dt2(m, n, b, e)*l2(m, n, a, e) &
+                           + t2(m, n, b, e)*la(m, n, a, e)
+                  end do
+               end do
+            end do
+            dd(n_occ + a, n_occ + b) = acc
+         end do
+      end do
+      deallocate (l2, la)
+   end subroutine mp2_perturbed_onepdm
+
+   subroutine mp2_perturbed_lagrangian(df, deri, dl, eri_mo, l_mo, orbital_energies, &
+                                       d, dd, gam, dgam, n_occ, dip)
+      !! The first-order response of the generalized-Fock Lagrangian, `d_X I'`
+      !!
+      !! pycc's `_perturbed_lagrangian`:
+      !!
+      !!     d_X I'_pq = -1/2 [ (d_X f (D + D^T))_pq + eps_p (dD_pq + dD_qp)
+      !!                        + delta_{q occ} ( dD_rs L_rpsq + D_rs dL_rpsq
+      !!                                        + dD_rs L_rqsp + D_rs dL_rqsp )
+      !!                        + 4 ( d_X<pr|st> Gam_qrst + <pr|st> dGam_qrst ) ]
+      !!
+      !! **The one-electron derivative is the full matrix product
+      !! `d_X f (D + D^T)`, never the diagonal `d_X eps` stencil** -- the
+      !! off-diagonal `d_X f` couples the ov block a relaxed density carries,
+      !! and the fixed-basis checks that would catch the diagonal shortcut
+      !! share its assumption and are blind to it (design plan s.4b).
+      !! Evaluated at the unrelaxed density and its response this drives the
+      !! perturbed Z-vector; at the relaxed pair it is `d_X I`.
+      real(dp), intent(in) :: df(:, :)             !! `d_X f`, full
+      real(dp), intent(in) :: deri(:, :, :, :)     !! `d_X <pq|rs>`, full
+      real(dp), intent(in) :: dl(:, :, :, :)       !! `2 deri - deri^{s<->r}`
+      real(dp), intent(in) :: eri_mo(:, :, :, :), l_mo(:, :, :, :)
+      real(dp), intent(in) :: orbital_energies(:)
+      real(dp), intent(in) :: d(:, :), dd(:, :)    !! Density and its response
+      real(dp), intent(in) :: gam(:, :, :, :), dgam(:, :, :, :)
+      integer, intent(in) :: n_occ
+      real(dp), allocatable, intent(out) :: dip(:, :)
+
+      real(dp) :: acc
+      integer :: n_mo, p, q, r, s, t
+
+      n_mo = size(df, 1)
+      allocate (dip(n_mo, n_mo))
+      do q = 1, n_mo
+         do p = 1, n_mo
+            acc = orbital_energies(p)*(dd(p, q) + dd(q, p))
+            do r = 1, n_mo
+               acc = acc + df(p, r)*(d(r, q) + d(q, r))
+            end do
+            do t = 1, n_mo
+               do s = 1, n_mo
+                  do r = 1, n_mo
+                     acc = acc + 4.0_dp*(deri(p, r, s, t)*gam(q, r, s, t) &
+                                         + eri_mo(p, r, s, t)*dgam(q, r, s, t))
+                  end do
+               end do
+            end do
+            dip(p, q) = acc
+         end do
+      end do
+      do q = 1, n_occ
+         do p = 1, n_mo
+            acc = 0.0_dp
+            do s = 1, n_mo
+               do r = 1, n_mo
+                  acc = acc + dd(r, s)*(l_mo(r, p, s, q) + l_mo(r, q, s, p)) &
+                        + d(r, s)*(dl(r, p, s, q) + dl(r, q, s, p))
+               end do
+            end do
+            dip(p, q) = dip(p, q) + acc
+         end do
+      end do
+      dip = -0.5_dp*dip
+   end subroutine mp2_perturbed_lagrangian
+
+   subroutine mp2_perturbed_zvector_rhs(dip, df, dl, z, n_occ, rhs)
+      !! The perturbed Z-vector right-hand side, `dX - G^X z`, solver-shaped
+      !!
+      !!     dX_ia  = d_X I'_ia - d_X I'_ai
+      !!     (G^X z)_ia = (dL_ajib + dL_abij) z_jb + d_X f_ab z_ib - d_X f_ij z_ja
+      !!
+      !! `G^X z` is the perturbed orbital Hessian acting on the *unperturbed*
+      !! Z-vector -- the term that lets the perturbed solve reuse the
+      !! unperturbed operator. Returned as `(n_vir, n_occ)` with the sign
+      !! `cphf_solve`'s internal negation expects: handing this stack to
+      !! `mo_rhs` makes the returned response exactly the block that is
+      !! **added** to `d_X D_rel`'s vo block, mirroring the gradient's own
+      !! Z-vector arrangement.
+      real(dp), intent(in) :: dip(:, :)      !! From `mp2_perturbed_lagrangian`
+      real(dp), intent(in) :: df(:, :)
+      real(dp), intent(in) :: dl(:, :, :, :)
+      real(dp), intent(in) :: z(:, :)        !! Unperturbed Z-vector, (n_occ, n_vir)
+      integer, intent(in) :: n_occ
+      real(dp), allocatable, intent(out) :: rhs(:, :)
+
+      real(dp) :: acc
+      integer :: n_mo, n_vir, i, a, j, b
+
+      n_mo = size(dip, 1)
+      n_vir = n_mo - n_occ
+      allocate (rhs(n_vir, n_occ))
+      do i = 1, n_occ
+         do a = 1, n_vir
+            acc = dip(i, n_occ + a) - dip(n_occ + a, i)
+            do b = 1, n_vir
+               do j = 1, n_occ
+                  acc = acc - (dl(n_occ + a, j, i, n_occ + b) &
+                               + dl(n_occ + a, n_occ + b, i, j))*z(j, b)
+               end do
+            end do
+            do b = 1, n_vir
+               acc = acc - df(n_occ + a, n_occ + b)*z(i, b)
+            end do
+            do j = 1, n_occ
+               acc = acc + df(i, j)*z(j, a)
+            end do
+            rhs(a, i) = acc
+         end do
+      end do
+   end subroutine mp2_perturbed_zvector_rhs
+
+   subroutine mp2_perturbed_response(mol, coeff, orbital_energies, n_occ, &
+                                     fx, sx, erix, mo1, t2, eri_mo, l_mo, gam, drel, &
+                                     dt2, ddrel, di, error, tol, zvec)
+      !! Units 1.7-1.8: the perturbed amplitudes, relaxed density and
+      !! energy-weighted density for every nuclear perturbation
+      !!
+      !! pycc's `_perturbed_relaxed_density`, non-canonical and all-electron
+      !! (a frozen core is refused: the core<->active rewrite of `U^X` and the
+      !! Sylvester divide are Phase 2's, and running this path without them
+      !! would be quietly wrong rather than unsupported). Per perturbation:
+      !!
+      !!     d_Y Drel = d_Y gamma - z^Y            (vo/ov from the solve)
+      !!     G z^Y    = dX - G^Y z
+      !!     d_Y I    = d_Y I'(Drel, d_Y Drel, Gam, d_Y Gam)
+      !!
+      !! Two passes around one batched CPHF call. Pass 1 holds one
+      !! perturbation's `nmo^4` derivative at a time and folds out everything
+      !! the second pass will need from it -- the Z-vector right-hand side and
+      !! `d_Y I` evaluated at the *pre-solve* density response. Pass 2 adds
+      !! the solved blocks; their share of `d_Y I` involves only the
+      !! unperturbed `L`, because the response enters the Lagrangian linearly
+      !! through terms that never touch the perturbed integrals. That
+      !! linearity is what lets the tensor be dropped before the solve instead
+      !! of being rebuilt after it (module header, storage).
+      !!
+      !! The cumulant's response is deliberately not stacked: it is
+      !! `mp2_cumulant_2pdm` evaluated at `dt2(:, :, :, :, y)`, and `o^2 v^2`
+      !! amplitudes are the compact carrier where `nmo^4` cumulants are not.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coeff(:, :)
+      real(dp), intent(in) :: orbital_energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), intent(in) :: fx(:, :, :), sx(:, :, :)   !! Unit 1.4 stacks
+      real(dp), intent(in) :: erix(:, :, :, :, :)
+      real(dp), intent(in) :: mo1(:, :, :, :)   !! (n_mo, n_occ, 3, natm)
+      real(dp), intent(in) :: t2(:, :, :, :)    !! Full-occupied amplitudes
+      real(dp), intent(in) :: eri_mo(:, :, :, :), l_mo(:, :, :, :)
+      real(dp), intent(in) :: gam(:, :, :, :)   !! From `mp2_cumulant_2pdm`
+      real(dp), intent(in) :: drel(:, :)        !! Relaxed 1-PDM, MO
+      real(dp), allocatable, intent(out) :: dt2(:, :, :, :, :)
+      real(dp), allocatable, intent(out) :: ddrel(:, :, :)
+      real(dp), allocatable, intent(out) :: di(:, :, :)
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: tol
+         !! Solver tolerance for both Z-vector solves. Defaults to 1e-13:
+         !! pycc's reference solve is dense, so the entire iterative floor in
+         !! any comparison is ours.
+      real(dp), allocatable, intent(out), optional :: zvec(:, :)
+         !! The unperturbed Z-vector `z_ia`, `(n_occ, n_vir)`, for a caller
+         !! that wants to cross-check it against the gradient's relaxed
+         !! density.
+
+      real(dp), allocatable :: d0(:, :), ip0(:, :), rhs0(:, :, :), zsol(:, :, :)
+      real(dp), allocatable :: z(:, :), u(:, :), df(:, :), deri(:, :, :, :)
+      real(dp), allocatable :: dl(:, :, :, :), ta(:, :, :, :), ddg(:, :)
+      real(dp), allocatable :: dgam_y(:, :, :, :), dip(:, :), rhs1(:, :)
+      real(dp), allocatable :: rhs(:, :, :), zx(:, :, :), zm(:, :)
+      real(dp) :: use_tol, acc
+      integer :: n_mo, n_vir, n_pert, y, atom, comp, i, j, a, b, m, e, f, p, q, r, s
+
+      if (error%has_error()) return
+
+      n_mo = size(coeff, 2)
+      n_vir = n_mo - n_occ
+      n_pert = size(sx, 3)
+      if (size(t2, 1) /= n_occ) then
+         call error%set(ERROR_VALIDATION, "the perturbed response is all-electron "// &
+                        "for now: a frozen core needs the Phase 2 core rotations, "// &
+                        "not this path with fewer amplitudes.")
+         return
+      end if
+      use_tol = 1.0e-13_dp
+      if (present(tol)) use_tol = tol
+
+      ! ---- the unperturbed pieces the response reuses ----------------------
+      ! The unrelaxed density from the amplitudes, its Lagrangian, and the
+      ! Z-vector in pycc's convention: z = G^-1 X, X_ia = I'_ia - I'_ai.
+      allocate (d0(n_mo, n_mo))
+      d0 = 0.0_dp
+      do j = 1, n_occ
+         do i = 1, n_occ
+            acc = 0.0_dp
+            do f = 1, n_vir
+               do e = 1, n_vir
+                  do m = 1, n_occ
+                     acc = acc + t2(i, m, e, f)*(2.0_dp*(2.0_dp*t2(j, m, e, f) - t2(j, m, f, e)))
+                  end do
+               end do
+            end do
+            d0(i, j) = -acc
+         end do
+      end do
+      do b = 1, n_vir
+         do a = 1, n_vir
+            acc = 0.0_dp
+            do e = 1, n_vir
+               do j = 1, n_occ
+                  do m = 1, n_occ
+                     acc = acc + t2(m, j, b, e)*(2.0_dp*(2.0_dp*t2(m, j, a, e) - t2(m, j, e, a)))
+                  end do
+               end do
+            end do
+            d0(n_occ + a, n_occ + b) = acc
+         end do
+      end do
+
+      call mp2_mo_lagrangian(eri_mo, orbital_energies, d0, gam, n_occ, ip0)
+      allocate (rhs0(n_vir, n_occ, 1))
+      do i = 1, n_occ
+         do a = 1, n_vir
+            rhs0(a, i, 1) = -(ip0(i, n_occ + a) - ip0(n_occ + a, i))
+         end do
+      end do
+      call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zsol, &
+                      error=error, mo_rhs=rhs0, tol=use_tol, max_iter=200)
+      if (error%has_error()) return
+      allocate (z(n_occ, n_vir))
+      z = transpose(zsol(:, :, 1))
+      deallocate (rhs0, zsol, ip0)
+      if (present(zvec)) zvec = z
+
+      ! ---- pass 1: one perturbation's derivative resident at a time --------
+      allocate (dt2(n_occ, n_occ, n_vir, n_vir, n_pert))
+      allocate (ddrel(n_mo, n_mo, n_pert), di(n_mo, n_mo, n_pert))
+      allocate (rhs(n_vir, n_occ, n_pert))
+      do y = 1, n_pert
+         atom = (y - 1)/3 + 1
+         comp = y - 3*(atom - 1)
+         call mp2_full_u(mo1(:, :, comp, atom), sx(:, :, y), n_occ, u)
+         call mp2_perturbed_fock(fx(:, :, y), sx(:, :, y), u, l_mo, &
+                                 orbital_energies, n_occ, df)
+         call mp2_perturbed_eri(erix(:, :, :, :, y), u, eri_mo, deri)
+         allocate (dl(n_mo, n_mo, n_mo, n_mo))
+         do s = 1, n_mo
+            do r = 1, n_mo
+               dl(:, :, r, s) = 2.0_dp*deri(:, :, r, s) - deri(:, :, s, r)
+            end do
+         end do
+         call mp2_perturbed_t2(deri, df, t2, orbital_energies, 0, n_occ, ta)
+         dt2(:, :, :, :, y) = ta
+         call mp2_perturbed_onepdm(t2, ta, 0, n_occ, n_mo, ddg)
+         call mp2_cumulant_2pdm(ta, 0, n_occ, n_mo, dgam_y)
+         ! The Z-vector right-hand side wants the Lagrangian's response at the
+         ! unrelaxed pair; the energy-weighted density wants it at the relaxed
+         ! one. Both while the derivative tensor is still here.
+         call mp2_perturbed_lagrangian(df, deri, dl, eri_mo, l_mo, orbital_energies, &
+                                       d0, ddg, gam, dgam_y, n_occ, dip)
+         call mp2_perturbed_zvector_rhs(dip, df, dl, z, n_occ, rhs1)
+         rhs(:, :, y) = rhs1
+         deallocate (dip)
+         call mp2_perturbed_lagrangian(df, deri, dl, eri_mo, l_mo, orbital_energies, &
+                                       drel, ddg, gam, dgam_y, n_occ, dip)
+         di(:, :, y) = dip
+         ddrel(:, :, y) = ddg
+         deallocate (u, df, deri, dl, ta, ddg, dgam_y, dip, rhs1)
+      end do
+
+      call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zx, &
+                      error=error, mo_rhs=rhs, tol=use_tol, max_iter=200)
+      if (error%has_error()) return
+      deallocate (rhs)
+
+      ! ---- pass 2: the solved blocks, and their linear share of d_Y I ------
+      allocate (zm(n_mo, n_mo))
+      do y = 1, n_pert
+         ddrel(n_occ + 1:n_mo, 1:n_occ, y) = ddrel(n_occ + 1:n_mo, 1:n_occ, y) + zx(:, :, y)
+         ddrel(1:n_occ, n_occ + 1:n_mo, y) = ddrel(1:n_occ, n_occ + 1:n_mo, y) &
+                                             + transpose(zx(:, :, y))
+         zm = 0.0_dp
+         zm(n_occ + 1:n_mo, 1:n_occ) = zx(:, :, y)
+         zm(1:n_occ, n_occ + 1:n_mo) = transpose(zx(:, :, y))
+         do q = 1, n_mo
+            do p = 1, n_mo
+               di(p, q, y) = di(p, q, y) &
+                             - 0.5_dp*orbital_energies(p)*(zm(p, q) + zm(q, p))
+            end do
+         end do
+         do q = 1, n_occ
+            do p = 1, n_mo
+               acc = 0.0_dp
+               do s = 1, n_mo
+                  do r = 1, n_mo
+                     acc = acc + zm(r, s)*(l_mo(r, p, s, q) + l_mo(r, q, s, p))
+                  end do
+               end do
+               di(p, q, y) = di(p, q, y) - 0.5_dp*acc
+            end do
+         end do
+      end do
+      deallocate (zm, zx, d0, z)
+   end subroutine mp2_perturbed_response
 
 end module mqc_libcint_mp2_hessian

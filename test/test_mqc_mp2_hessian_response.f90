@@ -41,7 +41,7 @@ module test_mqc_mp2_hessian_response
                                       mp2_skeleton_lagrangian, mp2_pair_rotation_augment, &
                                       mp2_orbital_response_term, mp2_full_u, &
                                       mp2_perturbed_fock, mp2_perturbed_eri, &
-                                      mp2_perturbed_t2
+                                      mp2_perturbed_t2, mp2_perturbed_response
    use mqc_libcint_hessian, only: make_h1_atom, overlap_deriv_atom, solve_mo1_batch
    use mqc_libcint_hess_ints, only: eri_ip1_block
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
@@ -72,7 +72,8 @@ contains
                   new_unittest("lagrangian_agrees_with_the_gradient", lagrangian_agrees), &
                   new_unittest("pair_augmentation_is_the_allelectron_identity", augment_identity), &
                   new_unittest("orbital_response_term_translates_to_nothing", response_translates), &
-                  new_unittest("perturbed_amplitudes_translate_to_nothing", amplitudes_translate) &
+                  new_unittest("perturbed_amplitudes_translate_to_nothing", amplitudes_translate), &
+                  new_unittest("perturbed_response_translates_to_nothing", perturbed_response_translates) &
                   ]
    end subroutine collect_mqc_mp2_hessian_response_tests
 
@@ -536,6 +537,130 @@ contains
                  "the perturbed amplitudes do not cancel under rigid translation")
       call mol%destroy()
    end subroutine amplitudes_translate
+
+   !> The perturbed relaxed density and energy-weighted density summed over
+   !> the atoms of one Cartesian component cancel, through both Z-vector
+   !> solves -- the unperturbed one and the batched perturbed one. And the
+   !> unperturbed Z-vector this driver solves in pycc's convention must agree
+   !> with the one the gradient buried in its relaxed density's ov block:
+   !> two of our own routines, two conventions, one number. As everywhere on
+   !> this ladder, translation is blind to a gauge error; the cross-code gate
+   !> against pycc's `dDrel`/`dI`/`dGam` dumps was run when the unit landed
+   !> and its residuals live in the commit message.
+   subroutine perturbed_response_translates(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: fx(:, :, :), sx(:, :, :), erix(:, :, :, :, :)
+      real(dp), allocatable :: gradient(:, :), dm1mo(:, :)
+      real(dp), allocatable :: eri_packed(:, :), ovov(:, :, :, :), t2(:, :, :, :)
+      real(dp), allocatable :: eri_mo(:, :, :, :), l_mo(:, :, :, :), gam(:, :, :, :)
+      real(dp), allocatable :: eip1(:, :, :, :, :), h1(:, :, :, :), s1(:, :, :, :)
+      real(dp), allocatable :: h1a(:, :, :), s1a(:, :, :), mo1(:, :, :, :)
+      real(dp), allocatable :: dt2(:, :, :, :, :), ddrel(:, :, :), di(:, :, :)
+      real(dp), allocatable :: zvec(:, :)
+      real(dp) :: worst_z, worst_d, worst_i
+      integer :: threads, n_ao, n_mo, n_o, natm, a, x, comp, i, p, q, r, s
+
+      threads = omp_get_max_threads()
+      call omp_set_num_threads(1)
+      call stage_at(mol, scf, fx, sx, erix, err)
+      n_o = WATER_NELEC/2
+      if (.not. err%has_error()) then
+         call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, n_o, &
+                                   gradient, err, n_frozen=0, relaxed_density_mo=dm1mo)
+      end if
+      if (.not. err%has_error()) then
+         n_ao = mol%nao
+         n_mo = size(scf%orbitals, 2)
+         natm = mol%natm
+         call mol%eris_packed(eri_packed)
+         call transform_ovov(eri_packed, scf%orbitals, 0, n_o, n_ao, n_mo, ovov)
+         call build_amplitudes(ovov, scf%orbital_energies, 0, n_o, n_mo - n_o, &
+                               n_o, t2)
+         call mp2_mo_eri_physicist(mol, scf%orbitals, eri_mo, err)
+         call mp2_cumulant_2pdm(t2, 0, n_o, n_mo, gam)
+         allocate (l_mo(n_mo, n_mo, n_mo, n_mo))
+         do s = 1, n_mo
+            do r = 1, n_mo
+               do q = 1, n_mo
+                  do p = 1, n_mo
+                     l_mo(p, q, r, s) = 2.0_dp*eri_mo(p, q, r, s) - eri_mo(p, q, s, r)
+                  end do
+               end do
+            end do
+         end do
+         call eri_ip1_block(mol, eip1, err)
+         allocate (h1(n_ao, n_ao, 3, natm), s1(n_ao, n_ao, 3, natm))
+         do a = 1, natm
+            call make_h1_atom(mol, scf%density, eip1, a, h1a, err)
+            call overlap_deriv_atom(mol, a, s1a, err)
+            h1(:, :, :, a) = h1a
+            s1(:, :, :, a) = s1a
+            deallocate (h1a, s1a)
+         end do
+         call solve_mo1_batch(mol, scf%orbitals, scf%orbital_energies, n_o, h1, &
+                              s1, mo1, err, max_iter=200, tol=1.0e-13_dp)
+      end if
+      if (.not. err%has_error()) then
+         call mp2_perturbed_response(mol, scf%orbitals, scf%orbital_energies, n_o, &
+                                     fx, sx, erix, mo1, t2, eri_mo, l_mo, gam, &
+                                     dm1mo, dt2, ddrel, di, err, zvec=zvec)
+      end if
+      call omp_set_num_threads(threads)
+      call check(error,.not. err%has_error(), &
+                 "the perturbed response did not evaluate: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      ! The gradient's relaxed density carries -z in its virtual-occupied
+      ! block and nothing else there for the all-electron case.
+      worst_z = 0.0_dp
+      do a = 1, n_mo - n_o
+         do i = 1, n_o
+            worst_z = max(worst_z, abs(zvec(i, a) + dm1mo(n_o + a, i)))
+         end do
+      end do
+      write (*, "(a, es10.2)") "        max |z + Drel_vo| = ", worst_z
+
+      worst_d = 0.0_dp
+      worst_i = 0.0_dp
+      do comp = 1, 3
+         block
+            real(dp), allocatable :: sum_d(:, :), sum_i(:, :)
+            allocate (sum_d(n_mo, n_mo), sum_i(n_mo, n_mo))
+            sum_d = 0.0_dp
+            sum_i = 0.0_dp
+            do a = 1, natm
+               x = 3*(a - 1) + comp
+               sum_d = sum_d + ddrel(:, :, x)
+               sum_i = sum_i + di(:, :, x)
+            end do
+            worst_d = max(worst_d, maxval(abs(sum_d)))
+            worst_i = max(worst_i, maxval(abs(sum_i)))
+         end block
+      end do
+      write (*, "(a, 2es10.2)") "        max translation residual dDrel/dI = ", &
+         worst_d, worst_i
+      ! Measured 8.8e-15 / 1.1e-14 / 5.5e-15 at one thread. The Z-vector
+      ! agreement is two solves at different tolerances (the gradient's 1e-12
+      ! against this driver's 1e-13), so its bound is the looser solver's;
+      ! the translation sums see a right-hand side that is already zero and
+      ! sit near the bottom, as the sibling tests do.
+      call check(error, worst_z < 1.0e-11_dp, &
+                 "the driver's Z-vector and the gradient's disagree")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      call check(error, worst_d < 1.0e-12_dp .and. worst_i < 1.0e-12_dp, &
+                 "the perturbed response does not cancel under rigid translation")
+      call mol%destroy()
+   end subroutine perturbed_response_translates
 
 end module test_mqc_mp2_hessian_response
 
