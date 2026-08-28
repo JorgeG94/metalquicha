@@ -52,8 +52,12 @@ module mqc_libcint_mp2_hessian
                                     hess_2e_skeleton_contract, eri_ip1_block, &
                                     HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
                                     HESS_OVLP_II, HESS_OVLP_IJ, HESS_RINV_II, HESS_RINV_IJ
-   use mqc_libcint_hessian, only: hcore_deriv_atom, overlap_deriv_atom
+   use mqc_libcint_hessian, only: hcore_deriv_atom, overlap_deriv_atom, &
+                                  make_h1_atom, solve_mo1_batch
    use mqc_libcint_cphf, only: cphf_solve
+   use mqc_libcint_mp2, only: transform_ovov
+   use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient, build_amplitudes, &
+                                       build_effective_2pdm_ao
    implicit none
    private
 
@@ -73,6 +77,7 @@ module mqc_libcint_mp2_hessian
    public :: mp2_perturbed_lagrangian
    public :: mp2_perturbed_zvector_rhs
    public :: mp2_perturbed_response
+   public :: mp2_correlation_hessian
 
 contains
 
@@ -1364,5 +1369,190 @@ contains
       end do
       deallocate (zm, zx, d0, z)
    end subroutine mp2_perturbed_response
+
+   subroutine mp2_correlation_hessian(mol, coeff, orbital_energies, density, &
+                                      n_occ, n_frozen, hess_corr, hess_ref, &
+                                      error, tol)
+      !! Unit 1.9: the analytic MP2 correlation Hessian, `(3, 3, natm, natm)`
+      !!
+      !! The three groups of pycc's `_hessian_blocks` (`route == 'aod'`)
+      !! combined: the fixed-density second skeletons (pass 1,
+      !! `mp2_skeleton_hessian`), the orbital response
+      !! (`mp2_orbital_response_term`), and the 2n+1 density response
+      !!
+      !!     d_Y D_rel . f^(X) + d_Y Gamma . <pq|rs>^(X) + d_Y I . S^(X)
+      !!
+      !! from `mp2_perturbed_response` (pass 2). **Two passes, not one fused
+      !! loop**: the second-derivative block never meets `erix`/`d_Y Gamma`
+      !! in a contraction, so the `nao^4` effective density is built, swept
+      !! and freed before any pass-2 tensor is allocated -- peak
+      !! `max(9, 6+6)` working sets instead of `9+6+6` (pycc's own comment,
+      !! and the plan's s.11.2).
+      !!
+      !! `hess_corr` is the correlation block alone. `hess_ref` is the SCF
+      !! reference's AO-dependent skeleton, deposited from pass 1's shared
+      !! integral sweep -- the caller completes the reference by delegating
+      !! its CPHF response to `response_hessian`, which is `rhf_hessian`'s
+      !! own split, and the total Hessian is
+      !!
+      !!     nuclear_repulsion_hessian + hess_ref + response_hessian + hess_corr
+      !!
+      !! All-electron only: a frozen core is refused here, explicitly, because
+      !! the core<->active rewrite of `U^X` and the Sylvester divide are
+      !! Phase 2's -- running this path with fewer amplitudes would be quietly
+      !! wrong rather than unsupported.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coeff(:, :)            !! C, (n_ao, n_mo)
+      real(dp), intent(in) :: orbital_energies(:)    !! (n_mo), Hartree
+      real(dp), intent(in) :: density(:, :)          !! Converged AO density
+      integer, intent(in) :: n_occ                   !! Doubly occupied count
+      integer, intent(in) :: n_frozen                !! Must be zero, checked
+      real(dp), allocatable, intent(out) :: hess_corr(:, :, :, :)
+      real(dp), allocatable, intent(out) :: hess_ref(:, :, :, :)
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: tol
+         !! Solver tolerance for the CPHF and both Z-vector solves. Defaults
+         !! to 1e-13, below the solvers' own defaults on purpose: the
+         !! references this assembly is gated against are dense solves, so
+         !! the entire iterative floor in any comparison is ours.
+
+      real(dp), allocatable :: gradient(:, :), dm1mo(:, :), w_ao(:, :)
+      real(dp), allocatable :: eri_packed(:, :), ovov(:, :, :, :), t2(:, :, :, :)
+      real(dp), allocatable :: gamma_eff(:, :, :, :)
+      real(dp), allocatable :: fx(:, :, :), sx(:, :, :), erix(:, :, :, :, :)
+      real(dp), allocatable :: eri_mo(:, :, :, :), l_mo(:, :, :, :)
+      real(dp), allocatable :: gam(:, :, :, :), imat(:, :)
+      real(dp), allocatable :: ip(:, :), xov(:, :), i2(:, :)
+      real(dp), allocatable :: xov_st(:, :, :), i2_st(:, :, :)
+      real(dp), allocatable :: eip1(:, :, :, :, :), h1(:, :, :, :), s1(:, :, :, :)
+      real(dp), allocatable :: h1a(:, :, :), s1a(:, :, :), mo1(:, :, :, :)
+      real(dp), allocatable :: orb(:, :), dt2(:, :, :, :, :)
+      real(dp), allocatable :: ddrel(:, :, :), di(:, :, :), dgam(:, :, :, :)
+      real(dp) :: use_tol, resp
+      integer :: n_ao, n_mo, natm, n_pert, a, x, ix, iy, ax, by, cx, cy
+      integer :: p, q, r, s
+
+      if (error%has_error()) return
+      if (n_frozen /= 0) then
+         call error%set(ERROR_VALIDATION, "the analytic MP2 Hessian is "// &
+                        "all-electron for now: a frozen core needs the Phase 2 "// &
+                        "core rotations, not this path with fewer amplitudes.")
+         return
+      end if
+      use_tol = 1.0e-13_dp
+      if (present(tol)) use_tol = tol
+
+      n_ao = mol%nao
+      n_mo = size(coeff, 2)
+      natm = mol%natm
+      n_pert = 3*natm
+
+      ! ---- the unperturbed ladder, from the gradient ------------------------
+      call libcint_mp2_gradient(mol, coeff, orbital_energies, n_occ, gradient, &
+                                error, n_frozen=0, relaxed_density_mo=dm1mo, &
+                                energy_weighted_ao=w_ao)
+      if (error%has_error()) return
+
+      call mol%eris_packed(eri_packed)
+      call transform_ovov(eri_packed, coeff, 0, n_occ, n_ao, n_mo, ovov)
+      call build_amplitudes(ovov, orbital_energies, 0, n_occ, n_mo - n_occ, &
+                            n_occ, t2)
+      deallocate (eri_packed, ovov)
+
+      ! ---- pass 1: the fixed-density second skeletons, both blocks ----------
+      call build_effective_2pdm_ao(t2, dm1mo, coeff, n_ao, n_mo, n_occ, 0, &
+                                   gamma_eff)
+      call mp2_skeleton_hessian(mol, gamma_eff, dm1mo, w_ao, coeff, &
+                                orbital_energies, n_occ, hess_corr, hess_ref, &
+                                error)
+      if (error%has_error()) return
+      ! Freed before any pass-2 tensor exists -- the two-pass memory shape.
+      deallocate (gamma_eff)
+
+      ! ---- pass 2 inputs: skeletons, carriers, and the CPHF ----------------
+      call mp2_first_order_skeletons(mol, coeff, n_occ, fx, sx, erix, error)
+      if (error%has_error()) return
+      call mp2_mo_eri_physicist(mol, coeff, eri_mo, error)
+      if (error%has_error()) return
+
+      allocate (l_mo(n_mo, n_mo, n_mo, n_mo))
+      do s = 1, n_mo
+         do r = 1, n_mo
+            do q = 1, n_mo
+               do p = 1, n_mo
+                  l_mo(p, q, r, s) = 2.0_dp*eri_mo(p, q, r, s) - eri_mo(p, q, s, r)
+               end do
+            end do
+         end do
+      end do
+
+      call mp2_cumulant_2pdm(t2, 0, n_occ, n_mo, gam)
+      call mp2_mo_lagrangian(eri_mo, orbital_energies, dm1mo, gam, n_occ, imat)
+
+      ! All-electron non-canonical: the bare carriers are the augmented ones
+      ! (the augmentation is the exact identity here, and the response test
+      ! pins that), so `mp2_pair_rotation_augment` is deliberately not called.
+      allocate (xov_st(n_mo, n_mo, n_pert), i2_st(n_mo, n_mo, n_pert))
+      do x = 1, n_pert
+         call mp2_skeleton_lagrangian(fx(:, :, x), sx(:, :, x), &
+                                      erix(:, :, :, :, x), dm1mo, gam, imat, &
+                                      n_occ, ip, xov, i2)
+         xov_st(:, :, x) = xov
+         i2_st(:, :, x) = i2
+         deallocate (ip, xov, i2)
+      end do
+
+      call eri_ip1_block(mol, eip1, error)
+      if (error%has_error()) return
+      allocate (h1(n_ao, n_ao, 3, natm), s1(n_ao, n_ao, 3, natm))
+      do a = 1, natm
+         call make_h1_atom(mol, density, eip1, a, h1a, error)
+         call overlap_deriv_atom(mol, a, s1a, error)
+         if (error%has_error()) return
+         h1(:, :, :, a) = h1a
+         s1(:, :, :, a) = s1a
+         deallocate (h1a, s1a)
+      end do
+      deallocate (eip1)
+      call solve_mo1_batch(mol, coeff, orbital_energies, n_occ, h1, s1, mo1, &
+                           error, max_iter=200, tol=use_tol)
+      if (error%has_error()) return
+      deallocate (h1, s1)
+
+      ! ---- group 2: the orbital response ------------------------------------
+      call mp2_orbital_response_term(mo1, sx, fx, xov_st, i2_st, orb)
+      deallocate (xov_st, i2_st)
+
+      ! ---- group 3: the 2n+1 density response -------------------------------
+      call mp2_perturbed_response(mol, coeff, orbital_energies, n_occ, &
+                                  fx, sx, erix, mo1, t2, eri_mo, l_mo, gam, &
+                                  dm1mo, dt2, ddrel, di, error, tol=use_tol)
+      if (error%has_error()) return
+      deallocate (mo1, eri_mo, l_mo, gam, imat)
+
+      ! ---- fold pass 2 into the correlation block ---------------------------
+      !
+      ! pycc's `_resp(ix, iy)`: the density responses carry the second
+      ! perturbation `Y`, the first-order skeletons the first `X`, and the
+      ! cumulant's response is `mp2_cumulant_2pdm` at `d_Y t2` -- built one
+      ! perturbation at a time so no `nmo^4 x 3N` response stack ever exists.
+      do iy = 1, n_pert
+         by = (iy - 1)/3 + 1
+         cy = iy - 3*(by - 1)
+         call mp2_cumulant_2pdm(dt2(:, :, :, :, iy), 0, n_occ, n_mo, dgam)
+         do ix = 1, n_pert
+            ax = (ix - 1)/3 + 1
+            cx = ix - 3*(ax - 1)
+            resp = sum(ddrel(:, :, iy)*fx(:, :, ix)) &
+                   + sum(dgam*erix(:, :, :, :, ix)) &
+                   + sum(di(:, :, iy)*sx(:, :, ix)) &
+                   + orb(ix, iy)
+            hess_corr(cx, cy, ax, by) = hess_corr(cx, cy, ax, by) + resp
+         end do
+         deallocate (dgam)
+      end do
+
+      deallocate (gradient, dm1mo, w_ao, t2, fx, sx, erix, orb, dt2, ddrel, di)
+   end subroutine mp2_correlation_hessian
 
 end module mqc_libcint_mp2_hessian

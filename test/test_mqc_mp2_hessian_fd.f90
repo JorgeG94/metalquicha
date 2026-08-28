@@ -34,6 +34,7 @@ module test_mqc_mp2_hessian_fd
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_gradient, only: libcint_scf_gradient
    use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
+   use mqc_libcint_mp2_hessian, only: mp2_correlation_hessian
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    implicit none
    private
@@ -79,7 +80,8 @@ contains
 
       testsuite = [ &
                   new_unittest("correlation_hessian_column_against_pycc", column_against_pycc), &
-                  new_unittest("correlation_hessian_column_sums_to_nothing", column_translates) &
+                  new_unittest("correlation_hessian_column_sums_to_nothing", column_translates), &
+                  new_unittest("analytic_column_against_the_same_literals", analytic_column) &
                   ]
    end subroutine collect_mqc_mp2_hessian_fd_tests
 
@@ -213,6 +215,56 @@ contains
          if (allocated(error)) return
       end do
    end subroutine column_translates
+
+   !> Gate 1.9b, closed transitively through the literals both sides of it
+   !> are measured against: the finite-difference column above sits 2.778e-10
+   !> from `PYCC_COL` (bit-reproducible at one thread), so the analytic
+   !> column agreeing with the same literals ties analytic to FD without
+   !> re-running the stencil -- which is the difference between a seconds
+   !> test and a minutes one. Measured 1.096e-12 when the assembly landed;
+   !> the shared `TOL` is the stencil comparison's and leaves three orders.
+   subroutine analytic_column(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: hess_corr(:, :, :, :), hess_ref(:, :, :, :)
+      real(dp) :: column(9)
+      integer :: threads, ia, a
+
+      threads = omp_get_max_threads()
+      call omp_set_num_threads(1)
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
+      if (.not. err%has_error()) then
+         call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                              .false., scf, err)
+      end if
+      if (.not. err%has_error()) then
+         call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &
+                                      scf%density, WATER_NELEC/2, 0, &
+                                      hess_corr, hess_ref, err)
+      end if
+      call omp_set_num_threads(threads)
+      call check(error,.not. err%has_error(), &
+                 "the analytic Hessian did not evaluate: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      do ia = 1, 3
+         do a = 1, 3
+            column(3*(ia - 1) + a) = hess_corr(a, PERT_CART, ia, PERT_ATOM)
+         end do
+      end do
+      write (*, "(a, es10.3)") "        max |analytic - pycc| = ", &
+         maxval(abs(column - PYCC_COL))
+      call check(error, maxval(abs(column - PYCC_COL)) < TOL, &
+                 "the analytic correlation Hessian column disagrees with the "// &
+                 "literals the FD column is measured against")
+      call mol%destroy()
+   end subroutine analytic_column
 
 end module test_mqc_mp2_hessian_fd
 

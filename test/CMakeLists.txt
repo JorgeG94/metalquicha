@@ -125,6 +125,10 @@ if(MQC_ENABLE_LIBCINT)
   # the gradient's energy-weighted density.
   addtest(mqc_mp2_hessian_response)
   target_link_libraries(test_mqc_mp2_hessian_response PRIVATE cint_fortran cint)
+  # The assembled correlation Hessian: its reference block against rhf_hessian,
+  # the symmetries it has to earn, and the frozen-core refusal.
+  addtest(mqc_mp2_hessian_assembly)
+  target_link_libraries(test_mqc_mp2_hessian_assembly PRIVATE cint_fortran cint)
   # Regrouping the kinetic energy onto atoms and atom pairs.
   addtest(mqc_ieda)
   target_link_libraries(test_mqc_ieda PRIVATE cint_fortran cint)
