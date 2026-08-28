@@ -225,8 +225,11 @@ def collect(drv, Perturbation):
     out["H_reference"] = np.asarray(reference)
 
     # The two pass-scalars that are locals in pycc, re-derived and kept per
-    # component so Units 1.3 and 1.6 can gate against them directly.
-    out["skel_s"], out["resp"] = _passes(drv, out, pert)
+    # component so Units 1.3 and 1.6 can gate against them directly -- the
+    # orbital-response share of the response also on its own (``resp_orb``),
+    # because Unit 1.6 gates that sub-term before anything sums it: a sum can
+    # hide two compensating sign errors.
+    out["skel_s"], out["resp"], out["resp_orb"] = _passes(drv, out, pert)
     return out, ncore, canonical
 
 
@@ -266,6 +269,7 @@ def _passes(drv, arr, pert):
                         skel[iy, ix] += s
 
     resp = np.zeros((nc, nc))
+    resp_orb = np.zeros((nc, nc))
     for atom in range(natom):
         erX = [np.asarray(m) for m in d.eri(atom)]
         for iy in range(nc):
@@ -276,13 +280,14 @@ def _passes(drv, arr, pert):
                 )
                 if Pf_x is not None:
                     orb += c("pq,pq->", Pf_x[ix], fX[iy])
+                resp_orb[ix, iy] = orb
                 resp[ix, iy] = (
                     c("pq,pq->", dDrel[iy], fX[ix])
                     + c("pqrs,pqrs->", dGam[iy], erX[cx])
                     + c("pq,pq->", dI[iy], SX[ix])
                     + orb
                 )
-    return skel, resp
+    return skel, resp, resp_orb
 
 
 def main():

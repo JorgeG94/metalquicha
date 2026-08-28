@@ -120,6 +120,11 @@ if(MQC_ENABLE_LIBCINT)
   # against rhf_hessian, and the pair symmetry its deposit map has to earn.
   addtest(mqc_mp2_hessian_skeleton)
   target_link_libraries(test_mqc_mp2_hessian_skeleton PRIVATE cint_fortran cint)
+  # The first-order skeletons and orbital-response carriers: translational sum
+  # rules, the derivative ERI's earned symmetries, and the Lagrangian against
+  # the gradient's energy-weighted density.
+  addtest(mqc_mp2_hessian_response)
+  target_link_libraries(test_mqc_mp2_hessian_response PRIVATE cint_fortran cint)
   # Regrouping the kinetic energy onto atoms and atom pairs.
   addtest(mqc_ieda)
   target_link_libraries(test_mqc_ieda PRIVATE cint_fortran cint)

@@ -47,6 +47,7 @@ module mqc_libcint_mp2_hessian
    public :: mp2_mo_lagrangian
    public :: mp2_skeleton_lagrangian
    public :: mp2_pair_rotation_augment
+   public :: mp2_orbital_response_term
 
 contains
 
@@ -761,5 +762,50 @@ contains
          end do
       end do
    end subroutine dependent_pairs
+
+   subroutine mp2_orbital_response_term(mo1, sx, fx, xt, i2t, orb, pf)
+      !! Unit 1.6: the orbital-response share of the pass-2 response
+      !!
+      !!     orb(X, Y) = 2 U^Y_ai X~^(X)_ai + S^(Y)_pq I~''^(X)_pq
+      !!                 [+ P^(X)_pq f^(Y)_pq when augmented]
+      !!
+      !! `U^Y` is `solve_mo1_batch`'s first-order orbitals: its virtual rows
+      !! are the solved response and its occupied rows the `-S/2` the
+      !! orthonormality fixes, which is exactly pycc's non-canonical `full_U`
+      !! -- only the virtual-occupied block is read here. `pf` accompanies the
+      !! augmented carriers and is meaningless without them; all-electron
+      !! non-canonical passes neither.
+      real(dp), intent(in) :: mo1(:, :, :, :)   !! (n_mo, n_occ, 3, natm)
+      real(dp), intent(in) :: sx(:, :, :)       !! (n_mo, n_mo, 3*natm)
+      real(dp), intent(in) :: fx(:, :, :)       !! Same layout; read only with `pf`
+      real(dp), intent(in) :: xt(:, :, :)       !! X~^(X) (or bare X^(X))
+      real(dp), intent(in) :: i2t(:, :, :)      !! I~''^(X) (or bare I''^(X))
+      real(dp), allocatable, intent(out) :: orb(:, :)   !! (3*natm, 3*natm)
+      real(dp), intent(in), optional :: pf(:, :, :)     !! P^(X), full MO
+
+      real(dp) :: acc
+      integer :: n_mo, n_occ, n_pert, ix, iy, ay, cy, a, i
+
+      n_mo = size(mo1, 1)
+      n_occ = size(mo1, 2)
+      n_pert = size(sx, 3)
+      allocate (orb(n_pert, n_pert))
+
+      do iy = 1, n_pert
+         ay = (iy - 1)/3 + 1
+         cy = iy - 3*(ay - 1)
+         do ix = 1, n_pert
+            acc = 0.0_dp
+            do i = 1, n_occ
+               do a = n_occ + 1, n_mo
+                  acc = acc + 2.0_dp*mo1(a, i, cy, ay)*xt(a, i, ix)
+               end do
+            end do
+            acc = acc + sum(sx(:, :, iy)*i2t(:, :, ix))
+            if (present(pf)) acc = acc + sum(pf(:, :, ix)*fx(:, :, iy))
+            orb(ix, iy) = acc
+         end do
+      end do
+   end subroutine mp2_orbital_response_term
 
 end module mqc_libcint_mp2_hessian
