@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.0% of total for procedures.">220 statements</a>
+                 title=" 1.0% of total for procedures.">221 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,13 +137,13 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/populate_config.html#variable-backend_named">backend_named</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-found~7">found</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-found~26">found</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-found_charges">found_charges</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-found_fukui">found_fukui</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-imol~2">imol</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-imol~6">imol</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-n_mol">n_mol</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-settings~6">settings</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-text~11">text</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-settings~11">settings</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-text~30">text</a>
         </div>
       </div>
     </div>
@@ -199,7 +199,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~14"></span>
+              <span class="anchor" id="variable-json~24"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -229,7 +229,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~26"></span>
+              <span class="anchor" id="variable-config~21"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -244,7 +244,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~78"></span>
+              <span class="anchor" id="variable-error~148"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -259,7 +259,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings_only"></span>
+              <span class="anchor" id="variable-settings_only~3"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -1854,7 +1854,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~7"></span>
+              <span class="anchor" id="variable-found~26"></span>
               logical,
             </td>
               <td>private</td>
@@ -1905,7 +1905,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imol~2"></span>
+              <span class="anchor" id="variable-imol~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -1939,7 +1939,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~6"></span>
+              <span class="anchor" id="variable-settings~11"></span>
               logical,
             </td>
               <td>private</td>
@@ -1956,7 +1956,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~11"></span>
+              <span class="anchor" id="variable-text~30"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -2041,6 +2041,7 @@ large graphs.</div>
 <span class="w">      </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf_optimize_orbitals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">method_is_casci</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"model.basis"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">basis</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"model.aux_basis"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">aux_basis</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"model.cartesian"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">cartesian</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"model.functional"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">functional</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! ---- properties ------------------------------------------------------</span>
@@ -2379,7 +2380,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-28 09:11 +0000             </p>
+ on 2026-08-29 05:18 +0000             </p>
           </div>
         </div>
         <br>

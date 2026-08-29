@@ -170,6 +170,14 @@ contains
          ! HF, DFT and anything else built on the SCF.
          call h%text(trim(config%basis_set))
          call h%flag(config%use_spherical)
+         ! The angular form the deck asked for, which `use_spherical` above is
+         ! not: that one is hardcoded true and is the flag cuEST builds its AO
+         ! shells with, so it hashes the same for every run. `scf%cartesian` is
+         ! the one that changes the answer -- above p the two forms span
+         ! different spaces, so water at cc-pVDZ is 24 functions and -76.420342
+         ! one way and 25 and -76.421536 the other. Two runs differing only in
+         ! this are two different energies and must not share a fingerprint.
+         call h%flag(config%scf%cartesian)
          call h%text(trim(config%scf%aux_basis_set))
          ! Whether it was asked for, not only what it is. A double hybrid fits
          ! its perturbative term when a deck names an auxiliary basis and not

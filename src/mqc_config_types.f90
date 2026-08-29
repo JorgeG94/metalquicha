@@ -171,6 +171,16 @@ module mqc_config_types
       integer(int32) :: method = METHOD_TYPE_GFN2
       character(len=:), allocatable :: basis
       character(len=:), allocatable :: aux_basis
+      logical :: cartesian = .false.
+         !! Read the basis in Cartesian form whatever its file declares.
+         !!
+         !! Not a preference: for a basis with a shell above p the two forms
+         !! span different spaces and give different energies, so this changes
+         !! the model rather than its representation. It exists because BSE is
+         !! inconsistent about the Pople sets -- 6-31G* is marked Cartesian and
+         !! cc-pVDZ spherical -- and because GAMESS assumes Cartesian for the
+         !! Pople sets throughout, so reproducing a GAMESS number needs a way
+         !! to say so. Defaults false, which honours the file.
       character(len=:), allocatable :: functional
       character(len=:), allocatable :: scf_guess
          !! Initial guess name from `keywords.scf.guess`.

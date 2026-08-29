@@ -38,6 +38,8 @@ module mqc_method_hf
          !! was read, validated, and then silently dropped for every one of them.
       character(len=32) :: basis_set = "sto-3g"
          !! Orbital basis set name
+      logical :: cartesian = .false.
+         !! `model.cartesian`; see `mqc_config_t`.
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
          !! Auxiliary (JKFIT) basis for the density-fitted J and K
       logical :: aux_basis_named = .false.
@@ -153,6 +155,7 @@ contains
          this%options%properties%bonding_restrict_localization
       settings%bonding_no_sharing_ci = this%options%properties%bonding_no_sharing_ci
       settings%basis_set = this%options%basis_set
+      settings%cartesian = this%options%cartesian
       settings%aux_basis_set = this%options%aux_basis_set
       settings%aux_basis_named = this%options%aux_basis_named
       settings%density_fitting = this%options%density_fitting
@@ -206,6 +209,16 @@ contains
       ! said `cuest` and got libcint would report a provenance that was not true.
       select case (settings%backend)
       case (BACKEND_CUEST)
+         if (settings%cartesian) then
+            call result%error%set(ERROR_VALIDATION, "backend 'cuest' was asked for, but "// &
+                                  "'model.cartesian' is on and the GPU path builds its "// &
+                                  "AO shells spherical whatever the basis says. Running "// &
+                                  "it would answer with a different basis than the deck "// &
+                                  "asked for and say nothing. Ask for backend 'libcint', "// &
+                                  "or drop 'model.cartesian'.")
+            result%has_error = .true.
+            return
+         end if
          if (settings%run_mp2 .or. settings%run_cc) then
             call result%error%set(ERROR_VALIDATION, "backend 'cuest' was asked for, but "// &
                                   "MP2 and coupled cluster have no GPU implementation "// &
@@ -219,6 +232,15 @@ contains
          call run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
       case default
 #ifdef MQC_WITH_CUEST
+         if (settings%cartesian) then
+            call result%error%set(ERROR_VALIDATION, "'model.cartesian' is on and this "// &
+                                  "build resolves 'auto' to the GPU backend, which "// &
+                                  "builds its AO shells spherical whatever the basis "// &
+                                  "says. Ask for backend 'libcint', or drop "// &
+                                  "'model.cartesian'.")
+            result%has_error = .true.
+            return
+         end if
          call run_cuest_scf(settings, fragment, result, want_gradient)
 #else
          call run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
