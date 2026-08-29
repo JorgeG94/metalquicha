@@ -192,6 +192,7 @@ contains
 
       ! Common settings
       m%options%basis_set = config%basis_set
+      m%options%ecp_set = config%ecp_set
       m%options%spherical = config%use_spherical
       m%options%verbose = config%verbose
       m%options%device_rank = config%device_rank
@@ -249,6 +250,7 @@ contains
 
       ! Common settings
       m%options%basis_set = config%basis_set
+      m%options%ecp_set = config%ecp_set
       m%options%spherical = config%use_spherical
       m%options%verbose = config%verbose
       m%options%device_rank = config%device_rank

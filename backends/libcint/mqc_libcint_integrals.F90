@@ -33,6 +33,9 @@ module mqc_libcint_integrals
    use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type, atomic_basis_type
+   use mqc_ecp, only: molecular_ecp_type, ecp_shell_type
+   use mqc_libcint_ecp, only: ecp_matrix, ECP_AVAILABLE
+   use mqc_json_ecp_reader, only: build_molecular_ecp_json
    use mqc_basis_utils, only: find_basis_file
    use mqc_json_basis_reader, only: build_molecular_basis_json
    use pic_lapack_interfaces, only: pic_syevd, pic_potrf
@@ -149,6 +152,25 @@ module mqc_libcint_integrals
          !! sentinel -- the map `eri_schwarz_collapse` re-blocks bounds through
       real(dp), allocatable :: charges(:)      !! Nuclear charges, for repulsion
       real(dp), allocatable :: coords(:, :)    !! (3, natm), Bohr
+
+      ! ---- effective core potentials ------------------------------------
+      integer :: necpbas = 0
+         !! ECP shells, appended to `bas_with_ecp` after the orbital ones.
+         !! Zero for a molecule with no ECP, which every consumer reads as
+         !! "skip the term" rather than needing a separate flag.
+      integer, allocatable :: bas_with_ecp(:, :)
+         !! `bas` with the ECP rows appended, (BAS_SLOTS, nbas + necpbas).
+         !!
+         !! A second table rather than growing `bas`, because `nbas` must stay
+         !! the orbital count -- every other integral loops over it, and an ECP
+         !! row handed to `int1e_ovlp` would be read as a basis shell with a
+         !! nonsense angular momentum. The two share `env`, so the pointers in
+         !! either remain valid against it.
+      integer, allocatable :: core_electrons(:)
+         !! Electrons each atom's ECP replaces, zero where there is none.
+         !! `charges` and `atm(CHARGE_OF)` already have this subtracted; this
+         !! is kept so the electron count can be reduced by the same amount,
+         !! which is the fragment's job rather than the molecule's.
    contains
       procedure :: build => molecule_build
       procedure :: overlap => molecule_overlap
@@ -175,6 +197,27 @@ module mqc_libcint_integrals
       integer, allocatable :: offs(:)          !! (nbas+1) first AO per shell, 0-based
       integer, allocatable :: dims(:)          !! (nbas) functions per shell
    end type eri_shell_table_t
+
+   !> Where the ECP shells are, in `env`.
+   !>
+   !> PySCF's extension to libcint's env layout rather than libcint's own:
+   !> slots 18 and 19 sit inside the reserved region below PTR_ENV_START and
+   !> libcint itself never writes them. libfint follows the same convention,
+   !> which is what lets an env built here be read by either.
+   !>
+   !> 0-based like every other slot number here, so both are used as `+ 1`.
+   !> Highest r exponent an ECP row can carry.
+   !>
+   !> Not a limit of the integrals -- libfint handles any power through its
+   !> general branch -- but of this loop, which walks the powers rather than
+   !> sorting. No ECP set in common use goes above 2; the ceiling is set well
+   !> clear of that and a primitive above it is dropped rather than
+   !> mis-assigned, which `molecule_build` then catches as a row-count
+   !> mismatch.
+   integer, parameter :: MAX_RADI_POWER = 6
+
+   integer, parameter :: LIBCINT_AS_ECPBAS_OFFSET = 18
+   integer, parameter :: LIBCINT_AS_NECPBAS = 19
 
 contains
 
@@ -277,7 +320,7 @@ contains
 
    subroutine build_libcint_molecule(atomic_numbers, element_symbols, coordinates, &
                                      basis_name, mol, error, normalize_contractions, &
-                                     force_cartesian, ghost)
+                                     force_cartesian, ghost, ecp_name)
       !! A molecule from a basis set *name*, through the ordinary reader
       !!
       !! This is what makes the backend general rather than a demonstration:
@@ -310,6 +353,15 @@ contains
       character(len=*), intent(in) :: basis_name
       type(libcint_molecule_t), intent(out) :: mol
       type(error_t), intent(inout) :: error
+      character(len=*), intent(in), optional :: ecp_name
+         !! Effective core potential set, by name. Absent or empty is an
+         !! all-electron molecule.
+         !!
+         !! Taken as a name rather than as parsed data so that callers stay
+         !! symmetric with the basis: one string each, both resolved through
+         !! `find_basis_file`. An element the file does not cover is not an
+         !! error -- def2-ECP carries nothing below krypton, and a deck naming
+         !! it for a light molecule should run all-electron rather than fail.
       logical, intent(in), optional :: ghost(:)
          !! Atoms keeping their basis and losing their nuclear charge; see
          !! `molecule_build`.
@@ -325,7 +377,9 @@ contains
          !! be measured rather than argued about.
 
       type(molecular_basis_type) :: basis
-      character(len=:), allocatable :: path
+      character(len=:), allocatable :: path, ecp_path
+      type(molecular_ecp_type) :: ecp
+      logical :: have_ecp
       type(error_t) :: read_error
 
       call find_basis_file(basis_name, path, read_error)
@@ -342,16 +396,67 @@ contains
          return
       end if
 
+      ! The potential, if one was named. An element the file does not carry
+      ! comes back with no channels rather than as an error, so a set that
+      ! covers only the heavy atoms is the ordinary case and not a special one.
+      have_ecp = .false.
+      if (present(ecp_name)) then
+         if (len_trim(ecp_name) > 0) then
+            ! Refused rather than left to the linker. The ECP integrals come
+            ! from libfint; libcint has no ECP code, so a build configured with
+            ! -DMQC_USE_LIBFINT=OFF cannot evaluate one. Before this check that
+            ! configuration did not fail here -- it failed at link time with two
+            ! undefined references and no indication that an ECP was the cause.
+            if (.not. ECP_AVAILABLE) then
+               call error%set(ERROR_VALIDATION, "model.ecp is set, but this build "// &
+                              "uses libcint for its integrals and libcint has no "// &
+                              "effective core potential code. Configure with "// &
+                              "-DMQC_USE_LIBFINT=ON, which is the default, or drop "// &
+                              "model.ecp.")
+               call basis%destroy()
+               return
+            end if
+            call find_basis_file(ecp_name, ecp_path, read_error)
+            if (read_error%has_error()) then
+               call error%set(ERROR_VALIDATION, "no ECP file for '"//trim(ecp_name)// &
+                              "': "//read_error%get_message())
+               call basis%destroy()
+               return
+            end if
+            call build_molecular_ecp_json(ecp_path, element_symbols, ecp, read_error)
+            if (read_error%has_error()) then
+               call error%set(ERROR_VALIDATION, "could not read "//trim(ecp_name)//": "// &
+                              read_error%get_message())
+               call basis%destroy()
+               return
+            end if
+            have_ecp = .true.
+         end if
+      end if
+
       if (present(ghost)) then
-         call mol%build(atomic_numbers, coordinates, basis, error, &
-                        normalize_contractions=normalize_contractions, &
-                        force_cartesian=force_cartesian, ghost=ghost)
+         if (have_ecp) then
+            call mol%build(atomic_numbers, coordinates, basis, error, &
+                           normalize_contractions=normalize_contractions, &
+                           force_cartesian=force_cartesian, ghost=ghost, ecp=ecp)
+         else
+            call mol%build(atomic_numbers, coordinates, basis, error, &
+                           normalize_contractions=normalize_contractions, &
+                           force_cartesian=force_cartesian, ghost=ghost)
+         end if
       else
-         call mol%build(atomic_numbers, coordinates, basis, error, &
-                        normalize_contractions=normalize_contractions, &
-                        force_cartesian=force_cartesian)
+         if (have_ecp) then
+            call mol%build(atomic_numbers, coordinates, basis, error, &
+                           normalize_contractions=normalize_contractions, &
+                           force_cartesian=force_cartesian, ecp=ecp)
+         else
+            call mol%build(atomic_numbers, coordinates, basis, error, &
+                           normalize_contractions=normalize_contractions, &
+                           force_cartesian=force_cartesian)
+         end if
       end if
       call basis%destroy()
+      if (have_ecp) call ecp%destroy()
    end subroutine build_libcint_molecule
 
    function contraction_group_size(atom_basis, first) result(nctr)
@@ -393,7 +498,7 @@ contains
    end function contraction_group_size
 
    subroutine molecule_build(this, atomic_numbers, coordinates, basis, error, &
-                             normalize_contractions, force_cartesian, ghost)
+                             normalize_contractions, force_cartesian, ghost, ecp)
       !! Pack atoms and shells into libcint's atm/bas/env
       class(libcint_molecule_t), intent(inout) :: this
       integer, intent(in) :: atomic_numbers(:)
@@ -403,6 +508,16 @@ contains
       logical, intent(in), optional :: force_cartesian  !! See the note below
       logical, intent(in), optional :: normalize_contractions
          !! See `build_libcint_molecule`. Default true.
+      type(molecular_ecp_type), intent(in), optional :: ecp
+         !! Effective core potentials, one entry per atom.
+         !!
+         !! Present changes three things beyond adding a term to H: the ECP
+         !! shells go into `bas_with_ecp`, two `env` slots say where they are,
+         !! and every atom carrying one presents a *reduced* nuclear charge --
+         !! Z minus the electrons its potential replaces -- to the nuclear
+         !! attraction and the nuclear repulsion alike. That last part is the
+         !! one to get right: leaving the full charge in place gives a
+         !! calculation that converges and is wrong by hundreds of Hartree.
       logical, intent(in), optional :: ghost(:)
          !! Which atoms carry their basis functions but no nuclear charge.
          !!
@@ -415,6 +530,7 @@ contains
          !! contracted against each other.
 
       logical :: do_normalize
+      integer :: ecp_env, ncore, ecp_row
       integer :: jprim
       real(dp) :: norm2, scale, ai, aj
 
@@ -449,8 +565,34 @@ contains
       ! Count the shells libcint will see, which is fewer than the reader
       ! produced wherever a general contraction was split into one shell per
       ! coefficient column. See `contraction_group_size` for why they merge.
+      ! The ECP shells, and the env each of them needs: one exponent block
+      ! and one coefficient per primitive. Counted before the orbital shells
+      ! only so `env_size` can be settled in one place.
+      ! One row per (channel, r exponent), not per channel.
+      !
+      ! The two data models disagree here and it is the only place they do.
+      ! `ecp_shell_type` tabulates a radial power per *primitive*, the way a
+      ! BSE file lists them; an ecpbas row carries one power for the whole
+      ! row. So a channel mixing r^0, r^1 and r^2 -- which is the usual shape
+      ! -- becomes three rows. The library groups them straight back together
+      ! by (atom, l) and sums them in one pass over the radial grid, so the
+      ! split costs nothing; getting it wrong would put every primitive under
+      ! the first primitive's power.
+      this%necpbas = 0
+      ecp_env = 0
+      if (present(ecp)) then
+         do iatom = 1, min(this%natm, ecp%natoms)
+            if (.not. ecp%atoms(iatom)%has_ecp) cycle
+            call count_ecp_rows(ecp%atoms(iatom)%local, this%necpbas, ecp_env)
+            do ishell = 1, ecp%atoms(iatom)%n_projected
+               call count_ecp_rows(ecp%atoms(iatom)%projected(ishell), &
+                                   this%necpbas, ecp_env)
+            end do
+         end do
+      end if
+
       this%nbas = 0
-      env_size = LIBCINT_PTR_ENV_START + 3*this%natm
+      env_size = LIBCINT_PTR_ENV_START + 3*this%natm + ecp_env
       do iatom = 1, this%natm
          ishell = 1
          do while (ishell <= basis%elements(iatom)%nshells)
@@ -477,11 +619,29 @@ contains
       this%bas = 0
       this%env = 0.0_dp
 
+      allocate (this%core_electrons(this%natm))
+      this%core_electrons = 0
+      if (present(ecp)) then
+         do iatom = 1, min(this%natm, ecp%natoms)
+            if (ecp%atoms(iatom)%has_ecp) then
+               this%core_electrons(iatom) = ecp%atoms(iatom)%core_electrons
+            end if
+         end do
+      end if
+
       off = LIBCINT_PTR_ENV_START
       do iatom = 1, this%natm
-         z_eff = atomic_numbers(iatom)
+         ! The charge every other integral sees. An ECP has already accounted
+         ! for the core electrons, so leaving Z in place would attract them a
+         ! second time -- and a ghost has no charge at all, which takes
+         ! precedence because a ghost atom's ECP is not there either.
+         ncore = this%core_electrons(iatom)
+         z_eff = atomic_numbers(iatom) - ncore
          if (present(ghost)) then
-            if (ghost(iatom)) z_eff = 0
+            if (ghost(iatom)) then
+               z_eff = 0
+               this%core_electrons(iatom) = 0
+            end if
          end if
          this%atm(LIBCINT_CHARGE_OF, iatom) = z_eff
          this%atm(LIBCINT_PTR_COORD, iatom) = off
@@ -577,8 +737,114 @@ contains
          return
       end if
 
+      ! ---- the ECP shells, after the orbital ones ------------------------
+      !
+      ! `bas_with_ecp` always exists, even with no ECP, so a consumer can hand
+      ! it to the library without asking first; when necpbas is zero it is
+      ! simply a copy of `bas` and the entry point returns zero.
+      allocate (this%bas_with_ecp(LIBCINT_BAS_SLOTS, this%nbas + this%necpbas))
+      this%bas_with_ecp = 0
+      this%bas_with_ecp(:, 1:this%nbas) = this%bas
+
+      if (this%necpbas > 0) then
+         ecp_row = this%nbas
+         do iatom = 1, min(this%natm, ecp%natoms)
+            if (.not. ecp%atoms(iatom)%has_ecp) cycle
+            ! The local channel is l = -1, which is what tells the library to
+            ! treat it as the type-1 term rather than a projector.
+            call put_ecp_channel(this, ecp_row, iatom - 1, -1, &
+                                 ecp%atoms(iatom)%local, off)
+            do ishell = 1, ecp%atoms(iatom)%n_projected
+               call put_ecp_channel(this, ecp_row, iatom - 1, &
+                                    ecp%atoms(iatom)%projected(ishell)%ang_mom, &
+                                    ecp%atoms(iatom)%projected(ishell), off)
+            end do
+         end do
+
+         ! Where the ECP rows begin and how many, in the two env slots the
+         ! library reads. 0-based row index, and env is 1-based here, which is
+         ! why both are written with a `+ 1` on the slot and not on the value.
+         this%env(LIBCINT_AS_ECPBAS_OFFSET + 1) = real(this%nbas, dp)
+         this%env(LIBCINT_AS_NECPBAS + 1) = real(this%necpbas, dp)
+      end if
+
       call build_sp_view(this)
    end subroutine molecule_build
+
+   pure subroutine count_ecp_rows(shell, nrows, nenv)
+      !! How many ecpbas rows and env slots one channel needs
+      !!
+      !! Counted the same way `put_ecp_channel` emits, and deliberately by a
+      !! separate routine: the allocation and the fill have to agree, and the
+      !! way they stop agreeing is one of them learning about a case the other
+      !! does not.
+      type(ecp_shell_type), intent(in) :: shell
+      integer, intent(inout) :: nrows, nenv
+
+      integer :: k, p
+      integer :: seen(0:MAX_RADI_POWER)
+
+      if (shell%nprim <= 0) return
+      seen = 0
+      do k = 1, shell%nprim
+         p = shell%radial_powers(k)
+         if (p < 0 .or. p > MAX_RADI_POWER) cycle
+         seen(p) = seen(p) + 1
+      end do
+      do p = 0, MAX_RADI_POWER
+         if (seen(p) == 0) cycle
+         nrows = nrows + 1
+         nenv = nenv + 2*seen(p)      !! exponents and coefficients, one each
+      end do
+   end subroutine count_ecp_rows
+
+   subroutine put_ecp_channel(this, row, atom0, ang, shell, off)
+      !! One ECP channel into as many `bas_with_ecp` rows as it has r powers
+      !!
+      !! An ECP row reuses the basis-shell slot layout with one slot given
+      !! another meaning: NCTR_OF's position carries the r exponent instead of
+      !! a contraction count. That collision is not cosmetic -- it is the
+      !! reason libfint's own `ecp_env_len` had a bug, because reading that
+      !! slot as a contraction count is the natural mistake and the arrays are
+      !! shaped so it very nearly works.
+      !!
+      !! Coefficients are one per primitive: an ECP channel is never generally
+      !! contracted, so there is no `nprim*nctr` block here as there is for an
+      !! orbital shell.
+      type(libcint_molecule_t), intent(inout) :: this
+      integer, intent(inout) :: row      !! Rows used so far, 0-based; advanced
+      integer, intent(in) :: atom0       !! Atom index, 0-based
+      integer, intent(in) :: ang         !! l, or -1 for the local channel
+      type(ecp_shell_type), intent(in) :: shell
+      integer, intent(inout) :: off      !! Next free env slot, 0-based; advanced
+
+      integer :: k, p, n
+
+      if (shell%nprim <= 0) return
+
+      do p = 0, MAX_RADI_POWER
+         n = count(shell%radial_powers(1:shell%nprim) == p)
+         if (n == 0) cycle
+
+         row = row + 1
+         this%bas_with_ecp(LIBCINT_ATOM_OF, row) = atom0
+         this%bas_with_ecp(LIBCINT_ANG_OF, row) = ang
+         this%bas_with_ecp(LIBCINT_NPRIM_OF, row) = n
+         this%bas_with_ecp(LIBCINT_NCTR_OF, row) = p      !! RADI_POWER
+         this%bas_with_ecp(LIBCINT_PTR_EXP, row) = off
+         do k = 1, shell%nprim
+            if (shell%radial_powers(k) /= p) cycle
+            off = off + 1
+            this%env(off) = shell%exponents(k)
+         end do
+         this%bas_with_ecp(LIBCINT_PTR_COEFF, row) = off
+         do k = 1, shell%nprim
+            if (shell%radial_powers(k) /= p) cycle
+            off = off + 1
+            this%env(off) = shell%coefficients(k)
+         end do
+      end do
+   end subroutine put_ecp_channel
 
 #ifdef MQC_WITH_SP_SHELLS
    subroutine build_sp_view(this)
@@ -830,7 +1096,13 @@ contains
    end subroutine molecule_kinetic
 
    subroutine molecule_core_hamiltonian(this, h)
-      !! H = T + V, the one-electron part of the Fock matrix
+      !! H = T + V + U_ECP, the one-electron part of the Fock matrix
+      !!
+      !! The ECP term is added here rather than by the caller, and
+      !! unconditionally: `ecp_matrix` returns zeros for a molecule with no
+      !! potential, so there is no flag to test and no caller that can forget.
+      !! A missing ECP term is not a crash but a converged wrong answer, which
+      !! is the kind of thing that must not depend on anyone remembering.
       class(libcint_molecule_t), intent(in) :: this
       real(dp), allocatable, intent(out) :: h(:, :)
 
@@ -838,6 +1110,10 @@ contains
 
       call one_electron(this, h, 2)   ! kinetic
       call one_electron(this, v, 3)   ! nuclear attraction
+      h = h + v
+      call ecp_matrix(this%nao, this%nbas, this%natm, this%cartesian, &
+                      this%atm, this%bas_with_ecp, this%env, &
+                      this%shell_offset, this%necpbas, v)
       h = h + v
    end subroutine molecule_core_hamiltonian
 

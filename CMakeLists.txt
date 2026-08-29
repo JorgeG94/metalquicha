@@ -177,6 +177,13 @@ set_property(CACHE MQC_CODATA_YEAR PROPERTY STRINGS 2018 2010)
 
 option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
 option(MQC_ENABLE_CREST "Link to CREST for conformer and ensemble sampling" OFF)
+set(MQC_LIBFINT_REPOSITORY
+    "https://github.com/JorgeG94/libfint.git"
+    CACHE STRING "Where to fetch libfint from")
+set(MQC_LIBFINT_TAG
+    "v0.1.3"
+    CACHE STRING "libfint revision to build against")
+
 set(MQC_CREST_REPOSITORY
     "https://github.com/JorgeG94/crest.git"
     CACHE STRING "Where to fetch CREST from")
@@ -461,16 +468,32 @@ if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
   # would redden the whole matrix on a metalquicha change that touched nothing,
   # and the signal would be indistinguishable from a real break.
   #
-  # v0.1.1 is bcd444ed8bdb1e207d09943f1a2637b006cd6623 today. It is the first
-  # release whose C ABI carries the second derivatives, which is what lets
-  # `mqc_libcint_hess_abi` declare one set of entry points for both backends.
+  # v0.1.3 is 9a9926aacf8a4fe2fb364454dd45fbb39cf82dbf today. It is the first
+  # release carrying the scalar ECP integrals, which nothing else provides:
+  # libcint has no ECP code at all, so `mqc_libcint_ecp` refuses `model.ecp`
+  # outright in a `-DMQC_USE_LIBFINT=OFF` build rather than failing at the
+  # linker. It also succeeds v0.1.1, the first release whose C ABI carries the
+  # second derivatives -- which is what lets `mqc_libcint_hess_abi` declare one
+  # set of entry points for both backends -- and v0.1.2, the first whose F12
+  # integrals build. Both are ancestors of it, so neither is given up here.
+  #
   # The other two fetches below pin by SHA rather than by name, which is the
-  # stronger form -- a tag can be moved and a SHA cannot.
+  # stronger form: a tag can be moved and a SHA cannot. This one is a tag
+  # because it was a *branch* for the length of the ECP work, and a moving pin
+  # reddens the whole matrix on a metalquicha change that touched nothing, with
+  # a signal indistinguishable from a real break. A release is the fixed point
+  # that ends that, and the SHA is written above so a moved tag is detectable.
+  #
+  # Overridable the same way CREST is, which is the point of doing it this way
+  # rather than editing the literal: `-DMQC_LIBFINT_TAG=v0.1.2` builds against
+  # the previous release and turns the ECP support off, so a bisect over an
+  # unrelated failure has a way back.
   FetchContent_Declare(
     libfint
-    GIT_REPOSITORY https://github.com/JorgeG94/libfint.git
-    GIT_TAG v0.1.1)
+    GIT_REPOSITORY ${MQC_LIBFINT_REPOSITORY}
+    GIT_TAG ${MQC_LIBFINT_TAG})
   FetchContent_MakeAvailable(libfint)
+  message(STATUS "libfint: ${MQC_LIBFINT_REPOSITORY}@${MQC_LIBFINT_TAG}")
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBCINT)
   # libfint carries L (sp) shells; libcint cannot represent one at all.
   #
@@ -746,7 +769,18 @@ endif()
 
 # Manual check that a session splits rank 0 from the workers. Not a ctest case:
 # it is only meaningful under mpirun with more than one rank, and ctest here has
-# no MPI harness.
+# no MPI harness. The ECP layout and the ECP matrix, against PySCF. Not a ctest
+# case yet: the reference comes from PySCF rather than from a number this
+# program printed earlier, so it belongs with the other validation programs that
+# need a second code to compare against. libfint as well as libcint: the ECP
+# integrals are libfint's and libcint has none, so this cannot link in a
+# -DMQC_USE_LIBFINT=OFF build.
+if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
+  add_executable(check_ecp ${PROJECT_SOURCE_DIR}/validation/check_ecp.f90)
+  target_include_directories(check_ecp PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_ecp PRIVATE ${main_lib})
+endif()
+
 add_executable(check_run ${PROJECT_SOURCE_DIR}/validation/check_run.f90)
 target_include_directories(check_run PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(check_run PRIVATE ${main_lib})

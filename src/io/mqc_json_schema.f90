@@ -107,6 +107,7 @@ contains
       call check_grandchild_object(core, root, "properties", "bonding_analysis", &
                                    bonding_analysis_keys(), error)
       call check_bonding_analysis(core, root, error)
+      call check_ecp_supported(core, root, error)
       if (error%has_error()) return
       call check_grandchild_object(core, root, "system", "logger", logger_keys(), error)
       if (error%has_error()) return
@@ -197,6 +198,7 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "method")
       call allow(keys, "basis")
+      call allow(keys, "ecp")
       call allow(keys, "aux_basis")
       call allow(keys, "functional")
       call allow(keys, "cartesian")
@@ -805,6 +807,74 @@ contains
          return
       end if
    end subroutine check_ormas_group
+
+   pure function lowered(text) result(out)
+      !! ASCII lowercase, so a method name matches however a deck spells it
+      character(len=*), intent(in) :: text
+      character(len=len(text)) :: out
+      integer :: i, c
+
+      out = text
+      do i = 1, len(text)
+         c = iachar(text(i:i))
+         if (c >= iachar("A") .and. c <= iachar("Z")) then
+            out(i:i) = achar(c + 32)
+         end if
+      end do
+   end function lowered
+
+   subroutine check_ecp_supported(core, root, error)
+      !! `model.ecp` only reaches the methods that were wired for it
+      !!
+      !! Checked here rather than left to each method because the failure is
+      !! silence: `ecp_set` is threaded into the Hartree-Fock and DFT builders
+      !! and nowhere else, so a CASSCF or xTB deck naming a potential today
+      !! runs all-electron and reports a number with nothing to say it ignored
+      !! half the request. That is the failure mode the ECP work exists to
+      !! prevent, so it must not be the one the deck layer has.
+      !!
+      !! Correlated methods built on Hartree-Fock -- MP2, RI-MP2, coupled
+      !! cluster, the double hybrids -- are not listed: they take their
+      !! integrals from the SCF, which does carry the potential. Their nuclear
+      !! derivatives refuse separately, in the backend.
+      type(json_core), intent(inout) :: core
+      type(json_value), pointer, intent(in) :: root
+      type(error_t), intent(inout) :: error
+
+      type(json_value), pointer :: model, entry
+      character(len=:), allocatable :: ecp, method
+      logical :: found
+
+      if (error%has_error()) return
+      call core%get(root, "model", model, found)
+      if (.not. found .or. .not. associated(model)) return
+      call core%get(model, "ecp", entry, found)
+      if (.not. found .or. .not. associated(entry)) return
+      call core%get(model, "ecp", ecp)
+      if (len_trim(ecp) == 0) return
+
+      call core%get(model, "method", entry, found)
+      if (.not. found .or. .not. associated(entry)) return
+      call core%get(model, "method", method)
+
+      select case (lowered(trim(adjustl(method))))
+      case ("gfn1", "gfn2", "gfn0", "xtb")
+         call error%set(ERROR_VALIDATION, "model.ecp is set, but '"//trim(method)// &
+                        "' is a semiempirical method with its own parameterised "// &
+                        "core -- there is no all-electron basis for a potential to "// &
+                        "replace. Remove model.ecp, or choose an ab initio method.")
+      case ("casscf", "casci", "ormas", "ormas-scf", "ormasscf")
+         call error%set(ERROR_VALIDATION, "model.ecp is set, but the MCSCF path does "// &
+                        "not carry an effective core potential yet: it would be "// &
+                        "ignored and the calculation would run all-electron without "// &
+                        "saying so. Refused rather than silently dropped. Hartree-Fock "// &
+                        "and DFT, and the correlated methods built on them, do carry it.")
+      case default
+         ! Everything else carries the potential, or is refused nearer the
+         ! calculation: the GPU backend refuses it in its own driver, since
+         ! which backend runs is not a `model` key and cannot be seen here.
+      end select
+   end subroutine check_ecp_supported
 
    subroutine check_bonding_analysis(core, root, error)
       !! The value of `properties.bonding_analysis` names an analysis we have

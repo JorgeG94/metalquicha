@@ -247,7 +247,16 @@ contains
       end if
 
       allocate (numbers(mol%natm))
-      numbers = nint(mol%charges)
+      ! The *element*, not the charge it presents. `mol%charges` has the ECP's
+      ! core subtracted, and every table the grid reaches for is an element
+      ! property: the radial count and Lebedev order come from the period, the
+      ! Treutler-Ahlrichs xi and the Becke radii are per element. Handing it the
+      ! reduced charge builds iodine's grid as though it were manganese --
+      ! 53 - 28 = 25, one period too low -- which is worth about 1e-06 Hartree
+      ! on HI/def2-SVP and converges to a different limit rather than to PySCF's.
+      ! `core_electrons` is zero for an all-electron atom and for a ghost, so
+      ! this is the identity everywhere an ECP is not involved.
+      numbers = nint(mol%charges) + mol%core_electrons
       call build_dft_grid(mol%coords, numbers, ctx%grid, error, level=grid_level)
       if (error%has_error()) return
       deallocate (numbers)
@@ -2179,7 +2188,8 @@ contains
 
       if (ctx%nlc_grid%n_points > 0) return
       allocate (numbers(mol%natm))
-      numbers = nint(mol%charges)
+      ! The *element*, not the charge it presents -- see the exchange grid above.
+      numbers = nint(mol%charges) + mol%core_electrons
       call build_dft_grid(mol%coords, numbers, ctx%nlc_grid, error, &
                           level=ctx%nlc_grid_level)
       deallocate (numbers)

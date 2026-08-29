@@ -18,9 +18,13 @@ module test_mqc_ecp_reader
    implicit none
    private
    public :: collect_mqc_ecp_reader_tests
+   public :: remove_scratch_ecp  !! Tidy the synthetic file away
 
    character(len=*), parameter :: ECP_FILE = "../basis_sets/def2-ecp.json"
       !! Tests run with their source directory as the working directory
+
+   character(len=*), parameter :: SCRATCH_ECP = "test_ecp_ascending_scratch.json"
+      !! A synthetic potential, written by the one test that needs it
 
 contains
 
@@ -34,7 +38,8 @@ contains
                   new_unittest("light_element_has_no_ecp", test_light_element), &
                   new_unittest("molecular_set_is_per_atom", test_molecular), &
                   new_unittest("core_electrons_sum_over_atoms", test_core_sum), &
-                  new_unittest("missing_file_is_an_error", test_missing_file) &
+                  new_unittest("missing_file_is_an_error", test_missing_file), &
+                  new_unittest("ascending_channel_order", test_ascending_order) &
                   ]
    end subroutine collect_mqc_ecp_reader_tests
 
@@ -223,7 +228,78 @@ contains
                  "a missing ECP file should be an error")
    end subroutine test_missing_file
 
+   subroutine test_ascending_order(error)
+      !! The local channel is chosen by angular momentum, not by position
+      !!
+      !! This is the one rule in the reader that **no shipped file can test.**
+      !! def2-ECP lists every element's channels highest-l first -- 3, 0, 1, 2
+      !! -- so taking the first entry and taking the largest l agree on all
+      !! fifty elements, and `test_local_is_highest` above passes either way.
+      !! Replacing `maxloc` with `1` was measured to change nothing in the whole
+      !! suite.
+      !!
+      !! A tabulation written the other way round would then hand back a
+      !! potential with its local and projected parts exchanged, which is wrong
+      !! everywhere and reports nothing. So the case has to be built rather than
+      !! found: four channels in ascending order, where the local one is last.
+      type(error_type), allocatable, intent(out) :: error
+      type(atomic_ecp_type) :: ecp
+      type(error_t) :: read_error
+      integer :: iproj
+
+      call write_ascending_ecp()
+      call read_json_ecp_element(SCRATCH_ECP, "I", ecp, read_error)
+      call check(error,.not. read_error%has_error(), read_error%get_message())
+      if (allocated(error)) return
+
+      call check(error, ecp%has_ecp, "the synthetic element should carry an ECP")
+      if (allocated(error)) return
+      call check(error, ecp%local%ang_mom, 3, &
+                 "the local channel is the highest l, which is listed last here")
+      if (allocated(error)) return
+      call check(error, ecp%n_projected, 3, "three channels should remain projected")
+      if (allocated(error)) return
+      do iproj = 1, ecp%n_projected
+         call check(error, ecp%projected(iproj)%ang_mom < 3, &
+                    "a projected channel has l >= the local one")
+         if (allocated(error)) return
+      end do
+      call ecp%destroy()
+   end subroutine test_ascending_order
+
    ! ---- helpers -------------------------------------------------------------
+
+   subroutine write_ascending_ecp()
+      !! One element whose channels are tabulated l = 0, 1, 2, 3
+      integer :: unit, l
+
+      open (newunit=unit, file=SCRATCH_ECP, status="replace", action="write")
+      write (unit, "(a)") '{"elements": {"53": {"ecp_electrons": 28,'
+      write (unit, "(a)") '  "ecp_potentials": ['
+      do l = 0, 3
+         write (unit, "(a,i0,a)") '    {"angular_momentum": [', l, '],'
+         write (unit, "(a)") '     "r_exponents": [2],'
+         write (unit, "(a)") '     "gaussian_exponents": ["1.5"],'
+         write (unit, "(a,i0,a)") '     "coefficients": [["', l + 1, '.0"]]}'//merge(",", " ", l < 3)
+      end do
+      write (unit, "(a)") '  ]}}}'
+      close (unit)
+   end subroutine write_ascending_ecp
+
+   subroutine remove_scratch_ecp()
+      !! Delete the synthetic file
+      !!
+      !! From the driver rather than the test, so it runs whether or not the
+      !! test returned early -- a stray JSON file trips the repository's
+      !! check-json hook.
+      integer :: unit
+      logical :: exists
+
+      inquire (file=SCRATCH_ECP, exist=exists)
+      if (.not. exists) return
+      open (newunit=unit, file=SCRATCH_ECP, status="old")
+      close (unit, status="delete")
+   end subroutine remove_scratch_ecp
 
    pure function projected_of(ecp, ang_mom) result(index)
       !! Which projected channel carries a given l, or 0
@@ -252,7 +328,7 @@ end module test_mqc_ecp_reader
 program tester
    use, intrinsic :: iso_fortran_env, only: error_unit
    use testdrive, only: run_testsuite, new_testsuite, testsuite_type
-   use test_mqc_ecp_reader, only: collect_mqc_ecp_reader_tests
+   use test_mqc_ecp_reader, only: collect_mqc_ecp_reader_tests, remove_scratch_ecp
    implicit none
    integer :: stat, is
    type(testsuite_type), allocatable :: testsuites(:)
@@ -268,6 +344,8 @@ program tester
       write (*, fmt) "Testing:", testsuites(is)%name
       call run_testsuite(testsuites(is)%collect, error_unit, stat)
    end do
+
+   call remove_scratch_ecp()
 
    if (stat > 0) then
       write (error_unit, "(i0, 1x, a)") stat, "test(s) failed!"

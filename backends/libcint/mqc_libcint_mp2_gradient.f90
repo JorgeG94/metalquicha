@@ -57,6 +57,7 @@ module mqc_libcint_mp2_gradient
                               libcint_2e_ip1_sph_optimizer, libcint_2e_ip1_cart_optimizer, &
                               libcint_del_optimizer
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
+   use mqc_libcint_ecp, only: ecp_refuses_derivatives
    implicit none
    private
 
@@ -193,6 +194,8 @@ contains
       real(dp), allocatable :: bounds(:, :)
       logical :: dh
       real(dp) :: kf, cscale
+
+      if (ecp_refuses_derivatives(mol%core_electrons, "MP2 gradient", error)) return
 
       n_ao = mol%nao
       n_mo = size(coeff, 2)

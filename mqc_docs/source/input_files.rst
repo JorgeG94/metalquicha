@@ -202,6 +202,7 @@ Specifies the quantum chemistry method:
    "model": {
      "method": "XTB-GFN1",
      "basis": "cc-pVDZ",
+     "ecp": "def2-ecp",
      "aux_basis": "cc-pVDZ-RIFIT"
    }
 
@@ -271,6 +272,94 @@ leaving the backend at ``auto`` on a build that resolves it to the GPU. Ask for
 ``backend: libcint``, which honours the file and this keyword both. A basis
 whose *file* is Cartesian, such as 6-31G*, was already refused on the GPU path
 for the same reason.
+
+Effective core potentials
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``ecp`` names a potential set, in its own file, resolved the same way ``basis``
+is. It is a separate key rather than implied by the basis because the two are
+separate choices: def2-SVP is used *with* def2-ECP above krypton and *without*
+it below, and the same orbital basis serves both.
+
+.. code-block:: json
+
+   "model": { "method": "hf", "basis": "def2-svp", "ecp": "def2-ecp" }
+
+An element the file does not cover is **not** an error. def2-ECP carries nothing
+below krypton, so the deck above applied to water gives exactly the
+all-electron energy, to the last bit. That is the ordinary case for a mixed
+molecule -- the potential applies to the heavy atoms and the light ones stay
+all-electron -- rather than something to be worked around.
+
+What an ECP changes, beyond adding a term to the core Hamiltonian: every atom
+carrying one presents a **reduced nuclear charge** to the nuclear attraction
+and the nuclear repulsion, and the SCF solves for **fewer electrons**. HI in
+def2-SVP with def2-ECP solves for 26 rather than 54.
+
+The integrals come from libfint rather than libcint, which has no ECP code at
+all. A build configured with ``-DMQC_USE_LIBFINT=OFF`` therefore cannot
+evaluate one, and refuses ``model.ecp`` saying so -- it used to fail at the
+linker with two undefined references and no mention of an ECP. libfint is the
+default, so this only affects a deliberately libcint build.
+
+**Where it is refused.** Every one of these is a refusal rather than a silent
+omission, and for one reason: an ECP that is quietly dropped produces a calculation that converges,
+looks entirely normal, and is wrong by hundreds of Hartree. There is nothing in
+the output to notice.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 32 68
+
+   * - Asking for
+     - What happens
+   * - a nuclear gradient, Hessian, or geometry optimisation
+     - Refused. The potential's contribution to the derivative is not
+       implemented -- the energy integrals were ported and
+       ``nr_ecp_deriv.c`` was not. The energy is unaffected, so a single
+       point is still correct.
+   * - MP2 or RI-MP2 gradients
+     - Refused, separately: they do not share code with the SCF gradient.
+   * - CASSCF, CASCI or ORMAS
+     - Refused. The MCSCF path does not carry a potential yet and would run
+       all-electron without saying so.
+   * - GFN1, GFN2 or any xTB method
+     - Refused. A semiempirical method has its own parameterised core and no
+       all-electron basis for a potential to replace, so naming one means the
+       deck is confused about something.
+   * - the GPU backend
+     - Refused. cuEST provides the entry points and this backend does not yet
+       call them.
+   * - an automatically counted frozen core
+     - Refused. See below.
+
+**Frozen cores need saying explicitly.** The automatic count works from the
+atomic number, counting filled shells below the valence one. An ECP has already
+removed a core, so those orbitals are not there to freeze and the count would
+freeze *valence* orbitals instead -- silently, and by an amount that reads as a
+small energy difference rather than a mistake.
+
+The two cores are not the same size, which is why this refuses rather than
+subtracting one from the other: iodine's def2-ECP replaces 28 electrons where
+the conventional frozen core for iodine is 36, and no arithmetic relating those
+is obviously right. Set ``keywords.correlation.n_frozen_core`` yourself, or turn
+``freeze_core`` off.
+
+Energies are correct wherever they are not refused. HF on HI in def2-SVP with
+def2-ECP gives ``-297.231531663358`` against PySCF's ``-297.231531663360``, and
+MP2 with ``n_frozen_core`` set agrees to 4e-09.
+
+Nineteen cases in the CPU validation suite hold that, under
+``validation/inputs/cpu/mqc/ecp/``: Hartree-Fock, Kohn-Sham, MP2, RI-MP2 and a
+density-fitted reference, over all three core sizes def2-ECP tabulates. Water is
+among them, with ``ecp`` named and no element carrying one -- it reproduces the
+all-electron number exactly, which is the case that would fail if naming a
+potential perturbed a molecule that has none.
+
+The lanthanide local channel, the one case at l = 5 rather than l = 3, is
+checked at the integral rather than through an SCF -- ytterbium is 81 basis
+functions with a g shell, and too slow to sit in this suite. See
+``test/test_mqc_ecp_matrix.f90``.
 
 Kohn-Sham DFT, on the CPU through libcint and libxc:
 

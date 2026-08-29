@@ -39,6 +39,14 @@ module mqc_cuest_iface
       logical :: cartesian = .false.
          !! Read the basis in Cartesian form whatever its file declares; see
          !! `mqc_config_t`. Only the libcint path acts on it.
+      character(len=32) :: ecp_set = ""
+         !! `model.ecp`, the effective core potential set, empty for none.
+         !!
+         !! Named separately from `basis_set` because the two are separate
+         !! files and a basis does not imply a potential: def2-SVP is used with
+         !! def2-ECP above krypton and with nothing below it, and asking for
+         !! the potential on a light element is not an error -- the reader
+         !! returns no channels and the term is zero.
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
       logical :: density_fitting = .false.
       ! Post-Hartree-Fock. Kept beside the SCF settings rather than inside

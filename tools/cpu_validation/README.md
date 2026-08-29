@@ -74,6 +74,7 @@ that `hf_water_*.json` already points at.
 | def2-TZVP, all of H-Ar | Karlsruhe, f shells on B-Ne and Al-Ar |
 | 6-31G\*, 6-31G\*\*, all of H-Ar | the Cartesian convention |
 | four density-fitted cases | the three- and two-centre path, both conventions |
+| nineteen ECP cases | effective core potentials; see below |
 
 Closed-shell singlets and energies only: the libcint CPU path is RHF and has no
 gradients, so anything else fails by design.
@@ -113,7 +114,77 @@ orbital basis has no shipped auxiliary it can legally pair with. metalquicha
 refuses that pairing by name; `pyscf_rhf` refuses it too, rather than quietly
 generating a number for a calculation the code will not run.
 
-**Transition metals.** They need ECPs, which are unimplemented.
+**Transition metals.** They need ECPs, which the all-electron sweeps above do
+not use. They have their own section below.
+
+## Effective core potentials
+
+`ECP_CASES` and the three tables after it. Every deck names `model.ecp:
+def2-ecp`, the one potential file shipped, and lives under
+`inputs/cpu/mqc/ecp/`.
+
+The reference is PySCF fed **our** `basis_sets/def2-ecp.json`, converted by
+`bse_ecp_to_pyscf`, for the same reason the orbital bases are: a potential our
+own reader had mangled would otherwise reach PySCF intact, and the disagreement
+would be chased through the integrals rather than through the file. The
+converter reproduces PySCF's own def2 tables element for element where PySCF
+ships one -- it does not for the lanthanides, which is why Yb has to be fed
+ours.
+
+The heavy elements are otherwise interchangeable to look at, so what each is
+there for:
+
+| case | what it covers |
+| --- | --- |
+| Sr | one ECP centre and nothing else -- the atomic term alone |
+| I2 | two potentials at bonding distance: the two-centre term, which vanishes for an atom and which HI cannot check because only one end carries a potential |
+| HI in def2-SVP and def2-TZVP | 31 functions against 56, `s p d` against `s p d f` -- the TZVP entry is where an f orbital shell meets the projectors |
+| RbH | the lightest element def2-ECP covers |
+| CsH | the 46-electron core |
+| AuH, PbH4, HgCl2 | the 60-electron core |
+| HgCl2, SnH4, TeH2 | a potential among all-electron neighbours |
+| iodine atom | unrestricted, doublet by electron count once the core is gone |
+| water | an ECP named where **no** element carries one |
+
+Three core sizes appear on purpose: def2-ECP removes 28 electrons from Rb-Lu, 46
+from Cs-La and 60 from Hf-Rn, and those are separate tabulations. A count taken
+from the wrong one still produces a converging SCF, with the wrong number of
+electrons in it and nothing in the output to say so.
+
+The water case is the one worth understanding. def2-ECP carries nothing below
+krypton, so naming it on water must reproduce the all-electron def2-SVP number
+in the RHF sweep *exactly* -- and it does, to all twelve digits the manifest
+carries. It is the case that fails if naming a potential perturbs a molecule
+that has none.
+
+**Frozen cores are written down, never counted.** The automatic count works from
+the atomic number, and an ECP has already removed a core, so counting would
+freeze *valence* orbitals instead. metalquicha refuses that outright, which is
+why the two correlated entries name `n_frozen_core` explicitly. Four is iodine's
+4s and 4p: the potential took everything through 3d, leaving 4s 4p 4d 5s 5p, and
+4d is shallow enough to want correlating.
+
+**Cost, and the two cases that are not here.** An ECP integral is steep in the
+*orbital* angular momentum, not only in the potential's. Seventeen of these run
+in under 1.5 s; HI/def2-TZVP takes 12 s, which is the price of the only f-shell
+case and worth paying once.
+
+Two candidates were too expensive to keep. Xenon is the bare-atom case in
+principle, but def2-SVP hands xenon the same f-containing table def2-TZVP does
+-- 50 functions, 11 s -- so strontium takes that slot at 23 functions and 0.4 s,
+over the same 28-electron core. Ytterbium is the only closed-shell lanthanide
+and so the only practical **l = 5 local channel**, at 81 functions with a g
+shell and half a minute per energy. That one moved to
+`test/test_mqc_ecp_matrix.f90`, which checks the same angular path against the
+same PySCF reference in 0.9 s. Neither the manifest nor CI is the right place
+for a 36-second case when a one-electron integral answers the question.
+
+**What is not here.** Nuclear derivatives, because they are refused -- libfint
+carries the energy integrals only, not libcint's `nr_ecp_deriv.c` -- along with
+MCSCF, xTB and the GPU backend. Those refusals are unit tests
+(`test/test_mqc_json_schema.f90` and `test/test_mqc_ecp_refusals.f90`) rather
+than manifest entries, because `run_validation.py` compares energies and has no
+way to express a deck that is supposed to fail.
 
 **cc-pVTZ on the second row.** Correct but slow: 30 s for SiH4, 20 s for PH3,
 18 s for AlH3, against a 4 s budget per case. Ar keeps one second-row general

@@ -66,6 +66,7 @@ module mqc_libcint_ri_mp2_gradient
    use mqc_libcint_direct, only: schwarz_bounds
    use mqc_libcint_mp2_gradient, only: gamma1_intermediates, two_electron_potential, &
                                        two_electron_mp2_terms
+   use mqc_libcint_ecp, only: ecp_refuses_derivatives
    implicit none
    private
 
@@ -159,6 +160,8 @@ contains
       integer :: i, j, a, b, p, q, iatom, comp, p0, p1
       real(dp) :: denom, kf, cscale
       logical :: dense, fitted, dh
+
+      if (ecp_refuses_derivatives(mol%core_electrons, "RI-MP2 gradient", error)) return
 
       n_ao = mol%nao
       n_mo = size(coeff, 2)

@@ -170,6 +170,11 @@ module mqc_config_types
       ! Model information
       integer(int32) :: method = METHOD_TYPE_GFN2
       character(len=:), allocatable :: basis
+      character(len=:), allocatable :: ecp
+         !! `model.ecp`. Unallocated means no potential, which is not the
+         !! same as an empty one: a deck that names a set gets it applied to
+         !! whichever atoms the file covers, and a deck that names none gets
+         !! an all-electron calculation.
       character(len=:), allocatable :: aux_basis
       logical :: cartesian = .false.
          !! Read the basis in Cartesian form whatever its file declares.

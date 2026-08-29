@@ -330,6 +330,38 @@ if(MQC_ENABLE_LIBCINT)
   # configuration that turns libcint off, because the test was unconditional and
   # the module it uses was not.
   addtest(mqc_vv10)
+
+  # The two guards that keep an effective core potential out of code that cannot
+  # carry it. Inside this guard for the same reason as mqc_vv10: mqc_libcint_ecp
+  # lives in backends/libcint/. The reader that parses the potential is
+  # registered unconditionally above -- it reads JSON and needs no backend --
+  # and these do not.
+  #
+  # Deliberately NOT inside MQC_USE_LIBFINT, unlike the matrix test below. Both
+  # predicates are plain Fortran over a per-atom core-electron count and reach
+  # no integral, so they mean the same thing in either configuration -- and a
+  # build that cannot evaluate an ECP is exactly where the refusals most want
+  # testing.
+  addtest(mqc_ecp_refusals)
+
+  # The ECP matrix for a lanthanide, whose local channel is l = 5 -- the path
+  # the l = 3 elements never reach. Here rather than in the validation manifest
+  # because ytterbium's SCF runs for half a minute against the tenth of a second
+  # that suite averages, and the one-electron integral settles the question on
+  # its own.
+  #
+  # Inside MQC_USE_LIBFINT as well, unlike the refusal test beside it. The ECP
+  # integrals are libfint's and libcint has none, and the failure mode is quiet
+  # rather than loud: `ecp_matrix` still compiles and links in a
+  # -DMQC_USE_LIBFINT=OFF build, with the C calls preprocessed out, and returns
+  # a zero matrix. So this would build there and then fail at runtime against a
+  # PySCF reference, which reads as a broken integral rather than as a
+  # configuration that was never asked to have one. `check_ecp` above carries
+  # the same pair of guards for the same reason.
+  if(MQC_USE_LIBFINT)
+    addtest(mqc_ecp_matrix)
+    target_link_libraries(test_mqc_ecp_matrix PRIVATE cint_fortran cint)
+  endif()
 endif()
 
 # Only meaningful with the cuEST backend compiled in.

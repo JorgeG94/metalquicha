@@ -26,6 +26,7 @@ module mqc_libcint_bridge
                                  ERI_CORE_BUDGET_CAP, ERI_CORE_BUDGET_SHARE, &
                                  ERI_CORE_BUDGET_BLIND, SAPT_CORE_BUDGET_SHARE
    use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_libcint_ecp, only: ecp_refuses_auto_frozen_core
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, &
                                     angular_form_name
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf, &
@@ -34,6 +35,7 @@ module mqc_libcint_bridge
    use mqc_libcint_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                        guess_display_name
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_libcint_ecp, only: ECP_AVAILABLE
    use mqc_libcint_pcm, only: pcm_context_t
    use mqc_libcint_gradient, only: libcint_scf_gradient
    use mqc_libcint_hessian, only: rhf_hessian, ks_hessian, hessian_to_matrix, &
@@ -67,6 +69,7 @@ module mqc_libcint_bridge
    public :: run_libcint_sapt2
    public :: libcint_backend_available
    public :: xc_available
+   public :: ecp_backend_available
       !! Re-exported so a caller that cannot see `mqc_libcint_xc` -- anything
       !! outside this backend, since the module is not compiled without it --
       !! can still ask whether a functional can be evaluated. `mqc_version`
@@ -83,6 +86,18 @@ module mqc_libcint_bridge
       !! reproduces.
 
 contains
+
+   pure function ecp_backend_available() result(available)
+      !! Whether this build can evaluate an effective core potential
+      !!
+      !! The ECP integrals are libfint's; libcint has none. A
+      !! `-DMQC_USE_LIBFINT=OFF` build therefore links and runs but returns a
+      !! zero potential, so this has to be askable from outside -- it is what
+      !! `run_validation.py` gates the ECP decks on, and the difference between
+      !! "not tested here" and "wrong by hundreds of Hartree".
+      logical :: available
+      available = ECP_AVAILABLE
+   end function ecp_backend_available
 
    function sapt_core_bytes(nao, want_sapt2) result(bytes)
       !! Roughly what the SAPT caches will ask for at their peak
@@ -613,6 +628,7 @@ contains
       type(error_t) :: error
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
       integer :: iatom, diis_size, guess_kind
+      integer :: nelec        !! Valence electrons: fragment%nelec less any ECP core
       logical :: unrestricted, do_gradient, do_hessian
       ! Left unallocated for the guesses that need no free-atom solutions. An
       ! unallocated allocatable passed to an optional dummy is an absent
@@ -792,10 +808,28 @@ contains
       call build_libcint_molecule(fragment%element_numbers, symbols, &
                                   fragment%coordinates, trim(settings%basis_set), &
                                   mol, error, ghost=ghost_of(fragment), &
-                                  force_cartesian=settings%cartesian)
+                                  force_cartesian=settings%cartesian, &
+                                  ecp_name=trim(settings%ecp_set))
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
          result%has_error = .true.
+         return
+      end if
+
+      ! The electrons the SCF actually solves for. An ECP replaced the core,
+      ! so they are not there to be solved for -- and `fragment` cannot know
+      ! that, because it is built before any basis or potential is read.
+      !
+      ! Every use below this point is the valence count. The parity test
+      ! further up is not, and does not need to be: a core is a closed shell,
+      ! so `core_electrons` is always even and the choice between RHF and UHF
+      ! is the same either way.
+      nelec = fragment%nelec - sum(mol%core_electrons)
+      if (nelec < 0) then
+         call result%error%set(ERROR_VALIDATION, "the effective core potential "// &
+                               "replaces more electrons than the fragment has")
+         result%has_error = .true.
+         call mol%destroy()
          return
       end if
 
@@ -805,7 +839,7 @@ contains
       ! see. Same integers the breakdown CSV carries.
       call logger%verbose("charge "//int_to_text(fragment%charge)// &
                           ", multiplicity "//int_to_text(fragment%multiplicity)// &
-                          ", electrons "//int_to_text(fragment%nelec))
+                          ", electrons "//int_to_text(nelec))
 
       diis_size = settings%diis_size
       if (.not. settings%use_diis) diis_size = 0
@@ -888,7 +922,7 @@ contains
             return
          end if
          call climb_basis_ladder(settings%guess_steps, fragment%element_numbers, symbols, &
-                                 fragment%coordinates, fragment%nelec, mol, guess_total, &
+                                 fragment%coordinates, nelec, mol, guess_total, &
                                  guess_error, verbose=settings%verbose)
          if (guess_error%has_error()) then
             ! The same reasoning the atomic guess uses: a guess that cannot be
@@ -996,7 +1030,7 @@ contains
          ! downstream will transform them.
          keep_fit = reuse_scf_fit(settings)
          if (keep_fit) then
-            call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
+            call run_libcint_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
                                  settings%density_tol, settings%verbose, scf, error, &
                                  aux=aux, diis_vectors=diis_size, guess=guess_kind, &
                                  guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
@@ -1004,7 +1038,7 @@ contains
                                  linear_dependence=settings%linear_dependence, &
                                  b_ao_out=scf_b_ao)
          else
-            call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
+            call run_libcint_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
                                  settings%density_tol, settings%verbose, scf, error, &
                                  aux=aux, diis_vectors=diis_size, guess=guess_kind, &
                                  guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
@@ -1014,7 +1048,7 @@ contains
          ! Kept alive: the gradient below has to be told the same auxiliary
          ! basis this SCF fitted with. Released once past it.
       else if (unrestricted) then
-         call run_libcint_uhf(mol, fragment%nelec, fragment%multiplicity, settings%max_iter, &
+         call run_libcint_uhf(mol, nelec, fragment%multiplicity, settings%max_iter, &
                               settings%energy_tol, settings%density_tol, settings%verbose, &
                               scf, error, diis_vectors=diis_size, guess=guess_kind, &
                               guess_density_alpha=guess_a, guess_density_beta=guess_b, xc=xc, &
@@ -1043,7 +1077,7 @@ contains
          ! one and the long-range exchange would be silently missing. Deciding
          ! that here keeps a functional like wB97X working -- it would otherwise
          ! have started failing the moment this became the default.
-         call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
+         call run_libcint_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
                               settings%density_tol, settings%verbose, scf, error, &
                               diis_vectors=diis_size, guess=guess_kind, &
                               guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
@@ -1145,9 +1179,16 @@ contains
             ! different core than the energy would report an IP that did not
             ! match the numbers beside it.
             fukui_frozen = settings%n_frozen_core
-            if (fukui_frozen < 0) fukui_frozen = core_orbital_count(fragment%element_numbers)
+            if (fukui_frozen < 0) then
+               if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then
+                  call result%error%set(ERROR_VALIDATION, error%get_message())
+                  result%has_error = .true.
+                  return
+               end if
+               fukui_frozen = core_orbital_count(fragment%element_numbers)
+            end if
             if (.not. settings%freeze_core) fukui_frozen = 0
-            call fukui_indices(mol, fragment%nelec, fragment%multiplicity, scf%density, &
+            call fukui_indices(mol, nelec, fragment%multiplicity, scf%density, &
                                scf%energy, settings%fukui_population, settings%max_iter, &
                                settings%energy_tol, settings%density_tol, fukui, &
                                fukui_error, functional=trim(settings%functional), &
@@ -1246,7 +1287,7 @@ contains
          ! silent run has been given nothing, and the natural reading is that
          ! the analysis found nothing to say.
          call run_quao_analysis(mol, fragment%element_numbers, symbols, &
-                                fragment%coordinates, scf%orbitals, fragment%nelec, &
+                                fragment%coordinates, scf%orbitals, nelec, &
                                 analysis_error, threshold=settings%bonding_threshold, &
                                 energy_decomposition=settings%bonding_energy, &
                                 no_sharing=settings%bonding_no_sharing, &
@@ -1458,7 +1499,14 @@ contains
             integer :: frozen
 
             frozen = settings%n_frozen_core
-            if (frozen < 0) frozen = core_orbital_count(fragment%element_numbers)
+            if (frozen < 0) then
+               if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then
+                  call result%error%set(ERROR_VALIDATION, error%get_message())
+                  result%has_error = .true.
+                  return
+               end if
+               frozen = core_orbital_count(fragment%element_numbers)
+            end if
             if (.not. settings%freeze_core) frozen = 0
 
             if (settings%corr_density_fitting) then
@@ -1471,11 +1519,11 @@ contains
                end if
                if (allocated(scf_b_ao)) then
                   call run_libcint_ri_mp2(mol, corr_aux, scf%orbitals, scf%orbital_energies, &
-                                          fragment%nelec/2, scf%energy, mp2, error, &
+                                          nelec/2, scf%energy, mp2, error, &
                                           n_frozen=frozen, b_ao_in=scf_b_ao)
                else
                   call run_libcint_ri_mp2(mol, corr_aux, scf%orbitals, scf%orbital_energies, &
-                                          fragment%nelec/2, scf%energy, mp2, error, &
+                                          nelec/2, scf%energy, mp2, error, &
                                           n_frozen=frozen)
                end if
                ! Released as soon as it has been transformed. It is gigabytes,
@@ -1484,7 +1532,7 @@ contains
                call corr_aux%destroy()
             else
                call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, &
-                                    fragment%nelec/2, scf%energy, mp2, error, &
+                                    nelec/2, scf%energy, mp2, error, &
                                     n_frozen=frozen)
             end if
             if (error%has_error()) then
@@ -1536,7 +1584,7 @@ contains
                   ! place a fitting set is named, so it is the only combination
                   ! a deck can express.
                   call libcint_ri_mp2_gradient(mol, corr_aux, scf%orbitals, &
-                                               scf%orbital_energies, fragment%nelec/2, &
+                                               scf%orbital_energies, nelec/2, &
                                                result%gradient, error, n_frozen=frozen, &
                                                fitted_reference=settings%density_fitting)
                   call corr_aux%destroy()
@@ -1553,12 +1601,12 @@ contains
                      return
                   end if
                   call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
-                                            fragment%nelec/2, result%gradient, error, &
+                                            nelec/2, result%gradient, error, &
                                             n_frozen=frozen, aux=corr_aux)
                   call corr_aux%destroy()
                else
                   call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
-                                            fragment%nelec/2, result%gradient, error, &
+                                            nelec/2, result%gradient, error, &
                                             n_frozen=frozen)
                end if
                if (error%has_error()) then
@@ -1670,7 +1718,14 @@ contains
             ! a shared local would silently couple them if one ever wanted a
             ! different count.
             frozen = settings%n_frozen_core
-            if (frozen < 0) frozen = core_orbital_count(fragment%element_numbers)
+            if (frozen < 0) then
+               if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then
+                  call result%error%set(ERROR_VALIDATION, error%get_message())
+                  result%has_error = .true.
+                  return
+               end if
+               frozen = core_orbital_count(fragment%element_numbers)
+            end if
             if (.not. settings%freeze_core) frozen = 0
 
             ! Which formulation. Both are exact for a closed shell and agree to
@@ -1686,8 +1741,8 @@ contains
             if (unrestricted) spin_adapted = .false.
             ! The same split the unrestricted SCF made: the excess spin is
             ! alpha, so multiplicity 2S+1 puts S more electrons there.
-            n_alpha = (fragment%nelec + fragment%multiplicity - 1)/2
-            n_beta = fragment%nelec - n_alpha
+            n_alpha = (nelec + fragment%multiplicity - 1)/2
+            n_beta = nelec - n_alpha
 
             if (settings%corr_density_fitting) then
                call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
@@ -1699,13 +1754,13 @@ contains
                end if
                if (spin_adapted) then
                   call run_libcint_rccsd(mol, scf%orbitals, scf%orbital_energies, &
-                                         fragment%nelec/2, frozen, settings%cc_max_iter, &
+                                         nelec/2, frozen, settings%cc_max_iter, &
                                          settings%cc_tolerance, settings%cc_triples, &
                                          settings%verbose, rcc, error, &
                                          diis_vectors=settings%cc_diis_size, aux=corr_aux)
                else
                   call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, &
-                                        fragment%nelec/2, frozen, settings%cc_max_iter, &
+                                        nelec/2, frozen, settings%cc_max_iter, &
                                         settings%cc_tolerance, settings%cc_triples, &
                                         settings%verbose, cc, error, &
                                         diis_vectors=settings%cc_diis_size, aux=corr_aux)
@@ -1714,7 +1769,7 @@ contains
             else
                if (spin_adapted) then
                   call run_libcint_rccsd(mol, scf%orbitals, scf%orbital_energies, &
-                                         fragment%nelec/2, frozen, settings%cc_max_iter, &
+                                         nelec/2, frozen, settings%cc_max_iter, &
                                          settings%cc_tolerance, settings%cc_triples, &
                                          settings%verbose, rcc, error, &
                                          diis_vectors=settings%cc_diis_size)
@@ -1729,7 +1784,7 @@ contains
                                         n_occ_b=n_beta)
                else
                   call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, &
-                                        fragment%nelec/2, frozen, settings%cc_max_iter, &
+                                        nelec/2, frozen, settings%cc_max_iter, &
                                         settings%cc_tolerance, settings%cc_triples, &
                                         settings%verbose, cc, error, &
                                         diis_vectors=settings%cc_diis_size)
@@ -1810,7 +1865,14 @@ contains
                integer :: dh_frozen
 
                dh_frozen = settings%n_frozen_core
-               if (dh_frozen < 0) dh_frozen = core_orbital_count(fragment%element_numbers)
+               if (dh_frozen < 0) then
+               if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then
+                  call result%error%set(ERROR_VALIDATION, error%get_message())
+                  result%has_error = .true.
+                  return
+               end if
+               dh_frozen = core_orbital_count(fragment%element_numbers)
+               end if
                if (.not. settings%freeze_core) dh_frozen = 0
 
                ! Fitted when the deck *named* an auxiliary basis, exact otherwise
@@ -1836,7 +1898,7 @@ contains
                ! density in the one place fitting was supposed to remove it.
                ! Four routines rather than two, because the reference decides
                ! the correlation treatment as much as the auxiliary basis does.
-               ! `fragment%nelec/2` is not an occupied count for an open shell,
+               ! `nelec/2` is not an occupied count for an open shell,
                ! so the unrestricted calls take the SCF's own per-spin counts
                ! rather than deriving one.
                if (settings%aux_basis_named) then
@@ -1855,7 +1917,7 @@ contains
                                               scf%energy, dh_mp2, error, n_frozen=dh_frozen)
                   else
                      call run_libcint_ri_mp2(mol, corr_aux, scf%orbitals, &
-                                             scf%orbital_energies, fragment%nelec/2, &
+                                             scf%orbital_energies, nelec/2, &
                                              scf%energy, dh_mp2, error, n_frozen=dh_frozen)
                   end if
                   call corr_aux%destroy()
@@ -1867,7 +1929,7 @@ contains
                                            scf%energy, dh_mp2, error, n_frozen=dh_frozen)
                   else
                      call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, &
-                                          fragment%nelec/2, scf%energy, dh_mp2, error, &
+                                          nelec/2, scf%energy, dh_mp2, error, &
                                           n_frozen=dh_frozen)
                   end if
                end if
@@ -1935,14 +1997,14 @@ contains
                      if (settings%aux_basis_named) then
                         call libcint_ri_mp2_gradient(mol, dh_aux, scf%orbitals, &
                                                      scf%orbital_energies, &
-                                                     fragment%nelec/2, dh_grad, error, &
+                                                     nelec/2, dh_grad, error, &
                                                      n_frozen=dh_frozen, &
                                                      fitted_reference=settings%density_fitting, &
                                                      xc=xc, scf_density=scf%density, &
                                                      pt2_scale=xc%pt2_fraction)
                      else
                         call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
-                                                  fragment%nelec/2, dh_grad, error, &
+                                                  nelec/2, dh_grad, error, &
                                                   xc=xc, scf_density=scf%density, &
                                                   pt2_scale=xc%pt2_fraction, aux=dh_aux_arg)
                      end if

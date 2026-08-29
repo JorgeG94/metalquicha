@@ -164,9 +164,39 @@ MOLECULES = {
     "w2dimer": Molecule(label="(H2O)2", element="O", xyz="sample_inputs/w2_dimer.xyz"),
     "o2": Molecule(label="O2", element="O", xyz="sample_inputs/o2.xyz"),
     "ar": _mol("Ar", "Ar", atom("Ar")),
+    # --- species carrying an effective core potential --------------------
+    # Everything below rubidium is all-electron in def2-ECP, so these are the
+    # only molecules in the file whose energy depends on the potential at all.
+    "rbh": _mol("RbH", "Rb", diatomic("Rb", "H", 2.3671)),
+    "agh": _mol("AgH", "Ag", diatomic("Ag", "H", 1.6179)),
+    "snh4": _mol("SnH4", "Sn", tetrahedral_ah4("Sn", "H", 1.7110)),
+    "teh2": _mol("TeH2", "Te", bent_ah2("Te", "H", 1.6580, 90.25)),
+    "hi": _mol("HI", "I", diatomic("I", "H", 1.6090)),
+    "i2": _mol("I2", "I", diatomic("I", "I", 2.6663)),
+    # Strontium rather than xenon for the bare-atom case. Both are closed shell
+    # over a 28-electron core; Sr is 23 basis functions where Xe is 50, because
+    # def2-SVP gives xenon the same f-containing table def2-TZVP does. That was
+    # 11 s against 0.4 s for coverage the two share.
+    "sr": _mol("Sr", "Sr", atom("Sr")),
+    "csh": _mol("CsH", "Cs", diatomic("Cs", "H", 2.4938)),
+    "auh": _mol("AuH", "Au", diatomic("Au", "H", 1.5237)),
+    "hgcl2": _mol("HgCl2", "Hg", linear_ah2("Hg", "Cl", 2.2520)),
+    "pbh4": _mol("PbH4", "Pb", tetrahedral_ah4("Pb", "H", 1.7500)),
+    # The iodine atom, for the unrestricted case. Twenty-five electrons once the
+    # potential has taken twenty-eight, so it is a doublet by the electron count
+    # rather than by the keyword -- which is how the CPU backend decides too.
+    "iatom": _mol("I", "I", atom("I")),
 }
 
-ALL = [m for m in MOLECULES if m not in ("oh", "o2", "ch3", "w2dimer")]
+#: Molecules that exist only for the ECP cases. Held out of ALL so that no
+#: all-electron sweep picks up an element whose basis assumes a potential:
+#: def2-SVP on iodine describes twenty-five electrons, and running it
+#: all-electron is not a harder calculation but a meaningless one.
+ECP_MOLECULES = ["rbh", "agh", "snh4", "teh2", "hi", "i2", "sr", "csh",
+                 "auh", "hgcl2", "pbh4", "iatom"]
+
+ALL = [m for m in MOLECULES
+       if m not in ("oh", "o2", "ch3", "w2dimer") and m not in ECP_MOLECULES]
 
 # --------------------------------------------------------------------------
 # the sweeps -- what each one is here to exercise
@@ -872,6 +902,117 @@ HESSIAN_CASES = [
     ("water", "cc-pvdz", "m06l"),   # meta-GGA on d functions, parametrised
 ]
 
+#: Effective core potentials, as (molecule, basis, method, multiplicity).
+#:
+#: What each entry is here for, since the heavy elements are otherwise
+#: interchangeable to look at:
+#:
+#: * **Three core sizes.** def2-ECP removes 28 electrons from Rb-Lu, 46 from
+#:   Cs-La and 60 from Hf-Rn. Those are three separate tabulations, and a count
+#:   taken from the wrong one still produces a converging SCF -- with the wrong
+#:   number of electrons in it, and nothing in the output to say so.
+#: * **One heavy centre, then two.** Sr is a single atom, so its potential is
+#:   the one-centre case with nothing to interfere. I2 puts a second one at a
+#:   bonding distance, which is the two-centre term: the part that vanishes for
+#:   an atom and cannot be checked by HI, where only one end carries a potential.
+#: * **Mixed heavy and light.** HgCl2 is a 60-electron core between two
+#:   all-electron chlorines, and SnH4 puts four light neighbours around one
+#:   potential. Both are the case the documentation calls ordinary: some atoms
+#:   carry a potential, the rest do not, and no deck says which.
+#: * **Water with an ECP named.** def2-ECP carries nothing below krypton, so
+#:   this has to reproduce the all-electron def2-SVP number in the RHF sweep
+#:   *exactly*. It is the case that fails if naming a potential perturbs a
+#:   molecule that has none.
+#: * **Both bases.** def2-SVP and def2-TZVP differ on iodine -- 31 functions
+#:   against 56, s p d against s p d f -- so the TZVP entry is the one where an
+#:   f orbital shell meets the projectors. It is also the one expensive case
+#:   here at 12 s, against under 1.5 s for every other: an ECP integral costs
+#:   steeply in the *orbital* angular momentum, not only in the potential's.
+#:
+#: **The l = 5 local channel is not here.** Ce-Lu tabulate a local channel two
+#: units above everything else, and the closed-shell one of the fourteen is
+#: ytterbium -- 81 basis functions with a g shell, and half a minute for one
+#: Hartree-Fock energy where this suite averages a tenth of a second. It is
+#: covered at the matrix level instead, in `test/test_mqc_ecp_matrix.f90`,
+#: which settles the same angular question in 0.9 s. What the SCF would have
+#: added is the rest of the program, and every case above already exercises that.
+ECP_CASES = [
+    ("sr", "def2-svp", "hf", 1),         # one centre, 28-electron core
+    ("hi", "def2-svp", "hf", 1),         # the case the documentation quotes
+    ("hi", "def2-tzvp", "hf", 1),        # f orbital shells against the projectors
+    ("i2", "def2-svp", "hf", 1),         # two potentials, two centres
+    ("rbh", "def2-svp", "hf", 1),        # the lightest element def2-ECP covers
+    ("agh", "def2-svp", "hf", 1),        # 4d transition metal
+    ("snh4", "def2-svp", "hf", 1),       # four light neighbours
+    ("teh2", "def2-svp", "hf", 1),       # bent, not linear
+    ("csh", "def2-svp", "hf", 1),        # 46-electron core
+    ("auh", "def2-svp", "hf", 1),        # 60-electron core, 5d transition metal
+    ("hgcl2", "def2-svp", "hf", 1),      # heavy between two all-electron atoms
+    ("pbh4", "def2-svp", "hf", 1),       # 60-electron core, tetrahedral
+    ("iatom", "def2-svp", "hf", 2),      # unrestricted over a potential
+    ("water", "def2-svp", "hf", 1),      # nothing here carries one: the no-op
+]
+
+#: The ECP set every case names. One file is shipped, and every def2 orbital
+#: basis above krypton is built for it.
+ECP_SET = "def2-ecp"
+
+#: Every entry below is emitted with `"requires": "ecp"`, which the runner reads
+#: off `mqc --version`. The integrals are libfint's and libcint has none, so a
+#: `-DMQC_USE_LIBFINT=OFF` build cannot produce these numbers -- and it does not
+#: fail loudly either: `ecp_matrix` still links there, with the C calls compiled
+#: out, and returns a zero potential. Skipping is the honest outcome for a build
+#: that cannot do the work; running them would report nineteen failures against
+#: a configuration that was never expected to pass.
+
+#: Kohn-Sham over an ECP reference, as (molecule, basis, functional, grid level).
+#: One semilocal functional and one hybrid: what is checked is that the ECP
+#: survives a different SCF, not the functionals, which the all-electron DFT
+#: cases already cover.
+#:
+#: The quadrature is *supposed* to be blind to the potential -- the ECP is a
+#: term in the core Hamiltonian and the grid is a property of the element -- and
+#: these two cases are here because it was not. The XC grid was built from the
+#: effective nuclear charge, so iodine under def2-ECP got element 25's grid
+#: rather than element 53's, one period too low. Worth about 1e-06 Hartree, and
+#: invisible to every other ECP case: Hartree-Fock, MP2 and the fitted reference
+#: all agreed to 1e-12 over the same potential, because none of them integrate
+#: on a grid.
+ECP_DFT_CASES = [
+    ("hi", "def2-svp", "pbe", 3),
+    ("hi", "def2-svp", "b3lyp", 3),
+]
+
+#: Correlated methods over an ECP reference, as
+#: (molecule, basis, method, aux, n_frozen_core).
+#:
+#: The frozen core is written down rather than counted. Automatic counting works
+#: from the atomic number, an ECP has already removed a core, and the count would
+#: therefore freeze *valence* orbitals -- which metalquicha refuses outright, and
+#: which is why every entry here names a number. Four is iodine's 4s and 4p: the
+#: potential took everything through 3d, leaving 4s 4p 4d 5s 5p behind, and 4d is
+#: shallow enough to want correlating.
+ECP_CORRELATED_CASES = [
+    ("hi", "def2-svp", "mp2", "", 4),
+    ("hi", "def2-svp", "ri-mp2", "def2-svp-rifit", 4),
+]
+
+#: A density-fitted reference over an ECP, as (molecule, basis, aux).
+#: Fitting rebuilds the two-electron term and the potential lives in the
+#: one-electron term, so this is the case that fails if the ECP is added to a
+#: core Hamiltonian the fitted path then assembles without it.
+#: The RI-MP2 entry above is compared against a conventional MP2, so what
+#: separates the two is the fitting error rather than any disagreement about the
+#: potential. It is a physical difference and nothing like the suite's 1e-9:
+#: measured at 1.3e-05 on this case. The bound below is loose enough to hold
+#: that across a change of BLAS and tight enough that losing the potential
+#: entirely -- worth hundreds of Hartree -- could not pass under it.
+ECP_RI_TOLERANCE = 2.0e-4
+
+ECP_DF_CASES = [
+    ("hi", "def2-svp", "def2-sv(p)-jkfit"),
+]
+
 DF_CASES = [
     ("water", "cc-pvdz", "cc-pvdz-rifit"),
     ("water", "def2-svp", "def2-universal-jkfit"),
@@ -1038,6 +1179,67 @@ def bse_to_pyscf(basis, symbol):
     return shells
 
 
+def bse_ecp_to_pyscf(ecp, symbol):
+    """Convert one element out of a BSE ECP JSON file into PySCF's ECP format.
+
+    Mirrors ``src/basis/mqc_json_ecp_reader.f90``, including the rule that picks
+    the local channel: it is the one with the **highest angular momentum**, not
+    the one listed first. PySCF spells that channel ``l = -1``. For every def2
+    element the two coincide -- the channels are tabulated 3, 0, 1, 2 -- so a
+    converter that took the first would agree here and silently exchange the
+    local and projected parts on any table written in ascending order.
+
+    PySCF's inner list is indexed by the r exponent, so a primitive with
+    ``r_exponents`` 2 lands at index 2. def2-ECP uses r^2 throughout.
+
+    An element the file does not carry yields ``None`` rather than an error --
+    def2-ECP starts at rubidium, and a molecule of heavy atoms and light ones is
+    the ordinary case rather than one to be worked around.
+    """
+    from pyscf import gto
+
+    z = gto.charge(symbol)
+    path = BASIS_DIR / f"{normalize_basis_name(ecp)}.json"
+    if not path.exists():
+        raise SystemExit(f"missing ECP file {path}; configure CMake to extract it")
+    with open(path) as fh:
+        data = json.load(fh)
+    element = data["elements"].get(str(z))
+    if element is None or not element.get("ecp_potentials"):
+        return None
+
+    channels = element["ecp_potentials"]
+    local = max(range(len(channels)),
+                key=lambda i: channels[i]["angular_momentum"][0])
+    out = []
+    for i, channel in enumerate(channels):
+        l = -1 if i == local else channel["angular_momentum"][0]
+        by_r = [[] for _ in range(7)]
+        # One coefficient column: unlike an orbital shell, an ECP channel is
+        # never generally contracted.
+        for r, exponent, coefficient in zip(channel["r_exponents"],
+                                            channel["gaussian_exponents"],
+                                            channel["coefficients"][0]):
+            by_r[r].append([float(exponent), float(coefficient)])
+        out.append([l, by_r])
+    out.sort(key=lambda entry: entry[0])
+    return [element["ecp_electrons"], out]
+
+
+def ecp_for(ecp, symbols):
+    """The ``mol.ecp`` dictionary for a molecule, or None if nothing carries one.
+
+    None rather than an empty dict on purpose: it is the difference between a
+    deck naming a potential no element here has and a deck naming none, and the
+    first has to reach PySCF as the all-electron calculation it is.
+    """
+    if not ecp:
+        return None
+    table = {s: bse_ecp_to_pyscf(ecp, s) for s in symbols}
+    table = {s: v for s, v in table.items() if v is not None}
+    return table or None
+
+
 # --------------------------------------------------------------------------
 # emitters
 # --------------------------------------------------------------------------
@@ -1060,8 +1262,13 @@ def write_xyz(path, mol):
 
 
 def deck_json(xyz_rel, basis, aux="", multiplicity=1, method="hf", correlation=None,
-              cc=None, aux_only=False, properties=None):
+              cc=None, aux_only=False, properties=None, ecp=""):
     model = {"method": method, "basis": basis}
+    if ecp:
+        # Its own key rather than something the basis implies: def2-SVP is used
+        # with def2-ECP above krypton and without it below, and the same orbital
+        # basis serves both.
+        model["ecp"] = ecp
     if aux:
         model["aux_basis"] = aux
     deck = {
@@ -1142,7 +1349,7 @@ def pyscf_ri_mp2(atoms, basis, aux, frozen):
     return float(escf + ecorr), mol.nao
 
 
-def pyscf_mp2(atoms, basis, method, frozen):
+def pyscf_mp2(atoms, basis, method, frozen, ecp=""):
     """Reference MP2 total energy, scaled the way the method name says."""
     from pyscf import gto, scf, mp
 
@@ -1151,6 +1358,9 @@ def pyscf_mp2(atoms, basis, method, frozen):
     mol.unit = "Angstrom"
     symbols = {a[0] for a in atoms}
     mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    table = ecp_for(ecp, symbols)
+    if table:
+        mol.ecp = table
     mol.charge = 0
     mol.spin = 0
     mol.cart = molecule_form(basis, symbols) == CARTESIAN
@@ -1577,7 +1787,7 @@ def pyscf_uks(atoms, basis, functional, level, multiplicity):
     return mf.kernel(), mol.nao_nr()
 
 
-def pyscf_rks(atoms, basis, functional, level, aux=""):
+def pyscf_rks(atoms, basis, functional, level, aux="", ecp=""):
     """Reference Kohn-Sham total energy, on the same grid level.
 
     `dft.RKS` builds its own grid from the same tables ours does, which is what
@@ -1595,6 +1805,9 @@ def pyscf_rks(atoms, basis, functional, level, aux=""):
     mol.unit = "Angstrom"
     symbols = {a[0] for a in atoms}
     mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    table = ecp_for(ecp, symbols)
+    if table:
+        mol.ecp = table
     mol.charge = 0
     mol.spin = 0
     mol.cart = molecule_form(basis, symbols) == CARTESIAN
@@ -2033,7 +2246,7 @@ def pyscf_mcscf_gradient(atoms, basis, nelecas, ncas):
     return energy, [list(map(float, row)) for row in gradient], note, mol.nao
 
 
-def pyscf_rhf(atoms, basis, aux="", multiplicity=1):
+def pyscf_rhf(atoms, basis, aux="", multiplicity=1, ecp=""):
     from pyscf import df, gto, scf
 
     mol = gto.Mole()
@@ -2041,6 +2254,9 @@ def pyscf_rhf(atoms, basis, aux="", multiplicity=1):
     mol.unit = "Angstrom"
     symbols = {a[0] for a in atoms}
     mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    table = ecp_for(ecp, symbols)
+    if table:
+        mol.ecp = table
     mol.charge = 0
     mol.spin = multiplicity - 1
     # The basis decides, exactly as it does on the Fortran side. Hardcoding this
@@ -2217,6 +2433,114 @@ def main():
                 "type": "unfragmented",
             })
             print(f"{mol.label:6s} {basis:12s} nao={nao:4d} E={energy:.12f}", flush=True)
+
+    # ---- effective core potentials --------------------------------------
+    # The reference is PySCF fed *our* def2-ecp.json, converted by
+    # bse_ecp_to_pyscf, for the same reason the orbital bases are: a potential
+    # our own reader had mangled would otherwise reach PySCF intact, and the
+    # disagreement would be chased through the integrals rather than the file.
+    for name, basis, method, multiplicity in ECP_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_rhf(mol.atoms, basis, multiplicity=multiplicity,
+                                ecp=ECP_SET)
+        stem = f"cpu_{name}_{normalize_basis_name(basis)}_ecp"
+        if multiplicity != 1:
+            stem += f"_m{multiplicity}"
+        deck = deck_for(f"{CPU_MQC}/ecp", stem)
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            _write_deck(VALIDATION / deck,
+                json.dumps(deck_json(xyz_for(mol), basis, ecp=ECP_SET,
+                                     multiplicity=multiplicity), indent=4) + "\n"
+            )
+        label = "UHF" if multiplicity != 1 else "RHF"
+        tests.append({
+            "name": f"{label} {mol.label} {basis} with {ECP_SET} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+            "requires": "ecp",
+        })
+        print(f"{mol.label:6s} {basis:12s} {ECP_SET:9s} nao={nao:4d} "
+              f"E={energy:.12f}", flush=True)
+
+    for name, basis, functional, level in ECP_DFT_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_rks(mol.atoms, basis, functional, level, ecp=ECP_SET)
+        tag = functional.replace("-", "")
+        deck = deck_for(f"{CPU_MQC}/ecp",
+                        f"cpu_{name}_{normalize_basis_name(basis)}_ecp_{tag}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, ecp=ECP_SET, method="dft")
+            d["model"]["functional"] = functional
+            d["keywords"]["dft"] = {"grid_level": level}
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"KS {functional.upper()} {mol.label} {basis} grid {level} "
+                    f"with {ECP_SET} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+            "requires": "ecp",
+        })
+        print(f"{mol.label:6s} {basis:12s} {functional:9s} ecp grid={level} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, method, aux, frozen in ECP_CORRELATED_CASES:
+        mol = MOLECULES[name]
+        # Both entries are checked against a *conventional* MP2, exactly as the
+        # all-electron RI-MP2 cases are: the fitting error is a separate question
+        # from whether the potential reaches the correlation step at all, and a
+        # fitted reference would fold the two together where neither is visible.
+        energy, nao = pyscf_mp2(mol.atoms, basis, "mp2", frozen, ecp=ECP_SET)
+        stem = (f"cpu_{name}_{normalize_basis_name(basis)}_ecp_"
+                f"{method.replace('-', '')}_f{frozen}")
+        deck = deck_for(f"{CPU_MQC}/ecp", stem)
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            _write_deck(VALIDATION / deck,
+                json.dumps(deck_json(xyz_for(mol), basis, aux=aux, ecp=ECP_SET,
+                                     method=method, aux_only=True,
+                                     correlation={"freeze_core": True,
+                                                  "n_frozen_core": frozen}),
+                           indent=4) + "\n"
+            )
+        tests.append({
+            "name": f"{method.upper()} {mol.label} {basis} with {ECP_SET}, "
+                    f"{frozen} frozen (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            # The RI entry carries the fitting error against that conventional
+            # reference. That is a physical difference rather than numerical
+            # noise, and nothing like the suite's 1e-9.
+            "tolerance": ECP_RI_TOLERANCE if method.startswith("ri-") else TOLERANCE,
+            "type": "unfragmented",
+            "requires": "ecp",
+        })
+        print(f"{mol.label:6s} {basis:12s} {method:9s} ecp f={frozen} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, aux in ECP_DF_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_rhf(mol.atoms, basis, aux=aux, ecp=ECP_SET)
+        deck = deck_for(f"{CPU_MQC}/ecp",
+                        f"cpu_{name}_{normalize_basis_name(basis)}_ecp_df")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            _write_deck(VALIDATION / deck,
+                json.dumps(deck_json(xyz_for(mol), basis, aux=aux,
+                                     ecp=ECP_SET), indent=4) + "\n"
+            )
+        tests.append({
+            "name": f"RHF {mol.label} {basis} with {ECP_SET}, fitted with {aux} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+            "requires": "ecp",
+        })
+        print(f"{mol.label:6s} {basis:12s} df={aux:22s} ecp E={energy:.12f}",
+              flush=True)
 
     for name, basis, aux in DF_CASES:
         mol = MOLECULES[name]
@@ -3066,7 +3390,17 @@ def main():
         if not deck.exists():
             continue
         if "functional" in json.loads(deck.read_text()).get("model", {}):
-            entry["requires"] = "libxc"
+            # Merged rather than assigned. A case can already need something
+            # else -- the Kohn-Sham ECP cases need libfint's ECP integrals too
+            # -- and overwriting silently ungated them, which is the one failure
+            # this whole mechanism exists to avoid: they then ran on a build
+            # that returns a zero potential and reported a wrong energy as a
+            # test failure. `run_validation.py` reads a list as "needs all of".
+            existing = entry.get("requires")
+            needed = [existing] if isinstance(existing, str) else list(existing or [])
+            if "libxc" not in needed:
+                needed.append("libxc")
+            entry["requires"] = needed[0] if len(needed) == 1 else needed
 
     MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
     print(f"\nwrote {MANIFEST} with {len(tests)} cases")
