@@ -48,6 +48,7 @@ module mqc_libcint_hess_ints
    public :: HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
    public :: hess_2e_block
    public :: hess_2e_contract
+   public :: hess_2e_skeleton_contract
    public :: eri_ip1_block
    public :: h1_contract
 
@@ -769,6 +770,206 @@ contains
       deallocate (atm_flat, bas_flat, owner, offsets, counts, sh_dim, sh_off)
       deallocate (bounds, dsh, sa)
    end subroutine hess_2e_contract
+
+   subroutine hess_2e_skeleton_contract(mol, gamma, dref, owner, hess_corr, &
+                                        hess_ref, error, screen_tol)
+      !! The two-electron second derivatives against a **general** four-index
+      !! density, contracted as they are computed
+      !!
+      !! What `hess_2e_contract` is to a separable density, this is to one that
+      !! is not: the MP2 Hessian's effective two-particle density has bra-ket
+      !! symmetry and nothing else, so the eightfold folding that collapses the
+      !! sixteen derivative placements to weights of 4, 4 and 8 does not apply.
+      !! The general fold does, and it is the same derivation run without the
+      !! symmetry: reindex each of the sixteen ordered placements so its
+      !! derivative sits on the slot the integral differentiates, and the loop
+      !! over every quartet in every order turns each into a weight built from
+      !! the density's permutation orbit --
+      !!
+      !!     w4 = G(m,n,l,s) + G(n,m,l,s) + G(l,s,m,n) + G(l,s,n,m)
+      !!     w8 = w4 + G(m,n,s,l) + G(n,m,s,l) + G(s,l,m,n) + G(s,l,n,m)
+      !!
+      !! with `w4` multiplying `ipip1` and `ipvip1` and `w8` multiplying
+      !! `ip1ip2`. A fully symmetric `G` makes every orbit term equal and the
+      !! weights collapse to `4 G` and `8 G`, which is the check that this is
+      !! `hess_2e_contract`'s rule and not a fourth one.
+      !!
+      !! **The SCF reference rides the same sweep.** These integrals are the
+      !! dominant cost of a correlated Hessian and the reference needs the same
+      !! ones against its separable density, so both densities deposit from
+      !! each buffer -- the reference with the closed-form 4/4/8 weights --
+      !! and the integrals are generated once. `hess_corr` and `hess_ref` are
+      !! accumulated into, matching `hess_2e_contract`.
+      !!
+      !! No ket restriction: `hess_2e_contract` halves its ket loop because a
+      !! symmetric weight lets one `ipvip1` call stand for two orderings, and a
+      !! general density grants no such thing.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: gamma(:, :, :, :)
+         !! Chemist ordered `(mn|ls)` slot layout, bra-ket symmetric -- the
+         !! effective two-particle density as `build_effective_2pdm_ao` hands
+         !! it over. Bra-ket symmetry is assumed by nothing below; it is
+         !! simply what the caller has.
+      real(dp), intent(in) :: dref(:, :)
+         !! The reference's separable AO density, factor of two included.
+      integer, intent(in) :: owner(:)   !! Owning atom per AO, 1-based
+      real(dp), intent(inout) :: hess_corr(:, :, :, :)   !! (3, 3, natm, natm)
+      real(dp), intent(inout) :: hess_ref(:, :, :, :)
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: screen_tol
+
+      real(dp), allocatable :: buf_ii(:), buf_ij(:), buf_ik(:)
+      real(dp), allocatable :: hloc_c(:, :, :, :), hloc_r(:, :, :, :)
+      integer, allocatable :: atm_flat(:), bas_flat(:)
+      integer, allocatable :: sh_dim(:), sh_off(:)
+      real(dp), allocatable :: bounds(:, :), dsh(:, :), gsh(:, :), sa(:)
+      real(dp) :: qq, wbound, est, tol, w4, w8, gref
+      integer :: dims(0:3), shls(0:3)
+      integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
+      integer :: io, jo, ko, lo, i, j, k, l, comp, mx, idx
+      integer :: natm, ia, ja, ka, a, b, pair, n_pairs
+      integer :: ig, jg, kg, lg
+      logical :: have_ii, have_ij, have_ik
+
+      if (error%has_error()) return
+
+      natm = mol%natm
+
+      allocate (sh_dim(mol%nbas), sh_off(mol%nbas))
+      mx = 0
+      do ish = 1, mol%nbas
+         sh_dim(ish) = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         sh_off(ish) = mol%shell_offset(ish)
+         mx = max(mx, sh_dim(ish))
+      end do
+
+      atm_flat = reshape(mol%atm, [size(mol%atm)])
+      bas_flat = reshape(mol%bas, [size(mol%bas)])
+      n_pairs = mol%nbas*mol%nbas
+
+      ! Screened as `hess_2e_contract` screens, with the weight bound adapted:
+      ! the reference's Coulomb-and-exchange bound is the same, and the
+      ! general density's orbit weights are bounded by per-shell-pair maxima
+      ! of `|gamma|` over its leading pair -- each orbit term places one of
+      ! the quartet's pairs in the leading slots, so four block maxima cover
+      ! `w4` and twice that covers `w8`.
+      tol = HESS_SCREEN_TOL
+      if (present(screen_tol)) tol = screen_tol
+      call schwarz_bounds(mol, bounds, error)
+      if (error%has_error()) return
+
+      allocate (dsh(mol%nbas, mol%nbas), gsh(mol%nbas, mol%nbas), sa(mol%nbas))
+      do ish = 1, mol%nbas
+         do jsh = 1, mol%nbas
+            dsh(ish, jsh) = maxval(abs(dref(sh_off(ish) + 1:sh_off(ish) + sh_dim(ish), &
+                                            sh_off(jsh) + 1:sh_off(jsh) + sh_dim(jsh))))
+            gsh(ish, jsh) = maxval(abs(gamma(sh_off(ish) + 1:sh_off(ish) + sh_dim(ish), &
+                                             sh_off(jsh) + 1:sh_off(jsh) + sh_dim(jsh), :, :)))
+         end do
+         sa(ish) = sqrt(maxval(mol%env(mol%bas(LIBCINT_PTR_EXP, ish) + 1: &
+                                       mol%bas(LIBCINT_PTR_EXP, ish) &
+                                       + mol%bas(LIBCINT_NPRIM_OF, ish))))
+      end do
+
+      !$omp parallel default(none) &
+      !$omp shared(mol, gamma, dref, owner, hess_corr, hess_ref, sh_dim, sh_off, &
+      !$omp        atm_flat, bas_flat, mx, natm, n_pairs, bounds, dsh, gsh, sa, tol) &
+      !$omp private(buf_ii, buf_ij, buf_ik, hloc_c, hloc_r, dims, shls, &
+      !$omp         ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, i, j, k, l, &
+      !$omp         comp, idx, ia, ja, ka, a, b, pair, ig, jg, kg, lg, &
+      !$omp         w4, w8, gref, have_ii, have_ij, have_ik, qq, wbound, est)
+      allocate (buf_ii(mx**4*N_COMPONENTS), buf_ij(mx**4*N_COMPONENTS), &
+                buf_ik(mx**4*N_COMPONENTS))
+      allocate (hloc_c(3, 3, natm, natm), hloc_r(3, 3, natm, natm))
+      hloc_c = 0.0_dp
+      hloc_r = 0.0_dp
+
+      !$omp do schedule(dynamic)
+      do pair = 1, n_pairs
+         ish = (pair - 1)/mol%nbas + 1
+         jsh = pair - mol%nbas*(ish - 1)
+         di = sh_dim(ish)
+         io = sh_off(ish)
+         dj = sh_dim(jsh)
+         jo = sh_off(jsh)
+         do ksh = 1, mol%nbas
+            dk = sh_dim(ksh)
+            ko = sh_off(ksh)
+            do lsh = 1, mol%nbas
+               dl = sh_dim(lsh)
+               lo = sh_off(lsh)
+               shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
+               dims = [di, dj, dk, dl]
+
+               wbound = 0.5_dp*dsh(ish, jsh)*dsh(ksh, lsh) &
+                        + 0.125_dp*(dsh(ish, lsh)*dsh(ksh, jsh) &
+                                    + dsh(ish, ksh)*dsh(jsh, lsh)) &
+                        + 2.0_dp*(gsh(ish, jsh) + gsh(jsh, ish) &
+                                  + gsh(ksh, lsh) + gsh(lsh, ksh))
+               qq = bounds(ish, jsh)*bounds(ksh, lsh)
+               est = 16.0_dp*wbound*qq*(sa(ish)*sa(ish) &
+                                        + sa(ish)*sa(jsh) &
+                                        + 2.0_dp*sa(ish)*sa(ksh))
+               if (est < tol) cycle
+
+               have_ii = drive_2e(mol, HESS_ERI_II, buf_ii, dims, shls, &
+                                  atm_flat, bas_flat, mol%env)
+               have_ij = drive_2e(mol, HESS_ERI_IJ, buf_ij, dims, shls, &
+                                  atm_flat, bas_flat, mol%env)
+               have_ik = drive_2e(mol, HESS_ERI_IK, buf_ik, dims, shls, &
+                                  atm_flat, bas_flat, mol%env)
+               if (.not. (have_ii .or. have_ij .or. have_ik)) cycle
+
+               do l = 1, dl
+                  lg = lo + l
+                  do k = 1, dk
+                     kg = ko + k
+                     ka = owner(kg)
+                     do j = 1, dj
+                        jg = jo + j
+                        ja = owner(jg)
+                        do i = 1, di
+                           ig = io + i
+                           ia = owner(ig)
+                           w4 = gamma(ig, jg, kg, lg) + gamma(jg, ig, kg, lg) &
+                                + gamma(kg, lg, ig, jg) + gamma(kg, lg, jg, ig)
+                           w8 = w4 + gamma(ig, jg, lg, kg) + gamma(jg, ig, lg, kg) &
+                                + gamma(lg, kg, ig, jg) + gamma(lg, kg, jg, ig)
+                           gref = 0.5_dp*dref(ig, jg)*dref(kg, lg) &
+                                  - 0.125_dp*(dref(ig, lg)*dref(kg, jg) &
+                                              + dref(ig, kg)*dref(jg, lg))
+                           do comp = 1, N_COMPONENTS
+                              a = (comp - 1)/3 + 1
+                              b = comp - 3*(a - 1)
+                              idx = i + di*(j - 1 + dj*(k - 1 + dk*(l - 1 + dl*(comp - 1))))
+                              hloc_c(a, b, ia, ia) = hloc_c(a, b, ia, ia) + w4*buf_ii(idx)
+                              hloc_c(a, b, ia, ja) = hloc_c(a, b, ia, ja) + w4*buf_ij(idx)
+                              hloc_c(a, b, ia, ka) = hloc_c(a, b, ia, ka) + w8*buf_ik(idx)
+                              hloc_r(a, b, ia, ia) = hloc_r(a, b, ia, ia) &
+                                                     + 4.0_dp*gref*buf_ii(idx)
+                              hloc_r(a, b, ia, ja) = hloc_r(a, b, ia, ja) &
+                                                     + 4.0_dp*gref*buf_ij(idx)
+                              hloc_r(a, b, ia, ka) = hloc_r(a, b, ia, ka) &
+                                                     + 8.0_dp*gref*buf_ik(idx)
+                           end do
+                        end do
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+
+      !$omp critical
+      hess_corr = hess_corr + hloc_c
+      hess_ref = hess_ref + hloc_r
+      !$omp end critical
+      deallocate (buf_ii, buf_ij, buf_ik, hloc_c, hloc_r)
+      !$omp end parallel
+
+      deallocate (atm_flat, bas_flat, sh_dim, sh_off, bounds, dsh, gsh, sa)
+   end subroutine hess_2e_skeleton_contract
 
    subroutine h1_contract(mol, density, h1, error, screen_tol, k_scale, &
                           j_scale, omega)

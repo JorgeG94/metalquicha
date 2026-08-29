@@ -112,6 +112,23 @@ if(MQC_ENABLE_LIBCINT)
   # Unrestricted MP2, whose closed-shell limit is the restricted one.
   addtest(mqc_ump2)
   target_link_libraries(test_mqc_ump2 PRIVATE cint_fortran cint)
+  # The MP2 correlation Hessian by difference of our own correlation gradient,
+  # against pycc's analytic column on the basis we read.
+  addtest(mqc_mp2_hessian_fd)
+  target_link_libraries(test_mqc_mp2_hessian_fd PRIVATE cint_fortran cint)
+  # The fixed-density second-derivative skeleton: its SCF reference block
+  # against rhf_hessian, and the pair symmetry its deposit map has to earn.
+  addtest(mqc_mp2_hessian_skeleton)
+  target_link_libraries(test_mqc_mp2_hessian_skeleton PRIVATE cint_fortran cint)
+  # The first-order skeletons and orbital-response carriers: translational sum
+  # rules, the derivative ERI's earned symmetries, and the Lagrangian against
+  # the gradient's energy-weighted density.
+  addtest(mqc_mp2_hessian_response)
+  target_link_libraries(test_mqc_mp2_hessian_response PRIVATE cint_fortran cint)
+  # The assembled correlation Hessian: its reference block against rhf_hessian,
+  # the symmetries it has to earn, and the frozen-core refusal.
+  addtest(mqc_mp2_hessian_assembly)
+  target_link_libraries(test_mqc_mp2_hessian_assembly PRIVATE cint_fortran cint)
   # Regrouping the kinetic energy onto atoms and atom pairs.
   addtest(mqc_ieda)
   target_link_libraries(test_mqc_ieda PRIVATE cint_fortran cint)
