@@ -181,7 +181,7 @@ set(MQC_LIBFINT_REPOSITORY
     "https://github.com/JorgeG94/libfint.git"
     CACHE STRING "Where to fetch libfint from")
 set(MQC_LIBFINT_TAG
-    "feat/ecp"
+    "v0.1.3"
     CACHE STRING "libfint revision to build against")
 
 set(MQC_CREST_REPOSITORY
@@ -468,24 +468,26 @@ if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
   # would redden the whole matrix on a metalquicha change that touched nothing,
   # and the signal would be indistinguishable from a real break.
   #
-  # v0.1.1 is bcd444ed8bdb1e207d09943f1a2637b006cd6623 today. It is the first
-  # release whose C ABI carries the second derivatives, which is what lets
-  # `mqc_libcint_hess_abi` declare one set of entry points for both backends.
-  # The other two fetches below pin by SHA rather than by name, which is the
-  # stronger form -- a tag can be moved and a SHA cannot. **Currently a branch,
-  # not a release, and that is temporary.**
+  # v0.1.3 is 9a9926aacf8a4fe2fb364454dd45fbb39cf82dbf today. It is the first
+  # release carrying the scalar ECP integrals, which nothing else provides:
+  # libcint has no ECP code at all, so `mqc_libcint_ecp` refuses `model.ecp`
+  # outright in a `-DMQC_USE_LIBFINT=OFF` build rather than failing at the
+  # linker. It also succeeds v0.1.1, the first release whose C ABI carries the
+  # second derivatives -- which is what lets `mqc_libcint_hess_abi` declare one
+  # set of entry points for both backends -- and v0.1.2, the first whose F12
+  # integrals build. Both are ancestors of it, so neither is given up here.
   #
-  # The comment above argues for pinning by SHA and it still holds -- a moving
-  # pin reddens the whole matrix on a metalquicha change that touched nothing,
-  # and the signal is indistinguishable from a real break. This branch needs the
-  # ECP integrals, which exist only on libfint's feat/ecp until that merges and
-  # releases. `MQC_LIBFINT_TAG` must go back to a release tag before this lands,
-  # and the ECP work here does not build without it.
+  # The other two fetches below pin by SHA rather than by name, which is the
+  # stronger form: a tag can be moved and a SHA cannot. This one is a tag
+  # because it was a *branch* for the length of the ECP work, and a moving pin
+  # reddens the whole matrix on a metalquicha change that touched nothing, with
+  # a signal indistinguishable from a real break. A release is the fixed point
+  # that ends that, and the SHA is written above so a moved tag is detectable.
   #
   # Overridable the same way CREST is, which is the point of doing it this way
-  # rather than editing the literal: `-DMQC_LIBFINT_TAG=v0.1.1` builds against
-  # the release and turns the ECP support off, so a bisect over an unrelated
-  # failure has a way back.
+  # rather than editing the literal: `-DMQC_LIBFINT_TAG=v0.1.2` builds against
+  # the previous release and turns the ECP support off, so a bisect over an
+  # unrelated failure has a way back.
   FetchContent_Declare(
     libfint
     GIT_REPOSITORY ${MQC_LIBFINT_REPOSITORY}
