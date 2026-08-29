@@ -1229,7 +1229,13 @@ contains
       if (error%has_error()) return
       naux = size(fitted, 2)
 
+      ! Threaded for the same reason the three-centre tensor's zeroing is: this
+      ! is the first touch of a multi-gigabyte array, so it is page faults
+      ! rather than arithmetic, and on a multi-socket node it also decides
+      ! which socket each page lives on.
       allocate (bia(n_v, naux, n_o))
+      !$omp parallel do default(none) shared(bia, fitted, naux, n_o) &
+      !$omp    private(p_index, i) schedule(static)
       do p_index = 1, naux
          do i = 1, n_o
             ! `fitted` is flattened (i, a), so one occupied orbital's virtuals
@@ -1237,6 +1243,7 @@ contains
             bia(:, p_index, i) = fitted(i::n_o, p_index)
          end do
       end do
+      !$omp end parallel do
       deallocate (fitted)
    end subroutine build_df_mo_tensor
 
@@ -1701,6 +1708,7 @@ contains
       real(dp), allocatable :: q_pair(:, :)
       real(dp) :: q_aux_max, q_bra
       logical :: screening
+      integer :: kcol
       type(c_ptr) :: opt
 
       nbas_orb = orb%nbas
@@ -1710,7 +1718,18 @@ contains
       if (present(omega)) env(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
       allocate (three(orb%nao*orb%nao, aux%nao))
-      three = 0.0_dp
+      ! Zeroed in parallel, and not only to go faster. This is the first touch
+      ! of the largest array in the calculation -- tens of gigabytes at a
+      ! thousand basis functions -- and on a multi-socket node first touch is
+      ! what decides which socket's memory each page lives on. Zeroing it from
+      ! one thread puts every page on one socket, and then every thread on the
+      ! other socket writes its integrals across the interconnect for the rest
+      ! of the run. Spreading the touch by column spreads the pages.
+      !$omp parallel do default(none) shared(three) private(kcol) schedule(static)
+      do kcol = 1, size(three, 2)
+         three(:, kcol) = 0.0_dp
+      end do
+      !$omp end parallel do
 
       ! (ij|K) is symmetric in i and j, so only the lower triangle of the
       ! orbital shell pairs is computed and each block is written into both
