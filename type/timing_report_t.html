@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 1.3% of total for derived types.</p>Including implementation: 118 statements,  3.1% of total for derived types.">17 statements</a>
+                 title="<p> 1.4% of total for derived types.</p>Including implementation: 135 statements,  3.6% of total for derived types.">19 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -139,6 +139,7 @@
             <a class="list-group-item" href="../type/timing_report_t.html#variable-lap_clock">lap_clock</a>
             <a class="list-group-item" href="../type/timing_report_t.html#variable-n_stages">n_stages</a>
             <a class="list-group-item" href="../type/timing_report_t.html#variable-overflowed">overflowed</a>
+            <a class="list-group-item" href="../type/timing_report_t.html#variable-pending">pending</a>
             <a class="list-group-item" href="../type/timing_report_t.html#variable-running">running</a>
             <a class="list-group-item" href="../type/timing_report_t.html#variable-stage">stage</a>
             <a class="list-group-item" href="../type/timing_report_t.html#variable-total_clock">total_clock</a>
@@ -169,12 +170,13 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../type/timing_report_t.html#boundprocedure-begin~2">begin</a>
             <a class="list-group-item" href="../type/timing_report_t.html#boundprocedure-finish">finish</a>
             <a class="list-group-item" href="../type/timing_report_t.html#boundprocedure-lap">lap</a>
             <a class="list-group-item" href="../type/timing_report_t.html#boundprocedure-report">report</a>
             <a class="list-group-item" href="../type/timing_report_t.html#boundprocedure-seconds_of">seconds_of</a>
-            <a class="list-group-item" href="../type/timing_report_t.html#boundprocedure-start">start</a>
-            <a class="list-group-item" href="../type/timing_report_t.html#boundprocedure-total~6">total</a>
+            <a class="list-group-item" href="../type/timing_report_t.html#boundprocedure-start~2">start</a>
+            <a class="list-group-item" href="../type/timing_report_t.html#boundprocedure-total~7">total</a>
         </div>
       </div>
     </div>
@@ -368,6 +370,23 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-pending"></span>
+              character(len=MAX_STAGE_NAME),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pending</strong></td>
+<td> =</td>
+                <td>&#34;&#34;</td>
+            <td>
+                <p>Stage opened by <code>begin</code> and not yet closed by <code>lap</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-running"></span>
               logical,
             </td>
@@ -444,6 +463,75 @@ large graphs.</div>
 
       <section>
         <h2>Type-Bound Procedures</h2>
+          <div class="row">
+              <div class="card mt-3">
+    <div class="card-header codesum">
+      <span class="anchor" id="boundprocedure-begin~2"></span>
+      <h3>
+          procedure, public ::
+  <strong>begin</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/report_begin.html'>report_begin</a>
+        
+      </h3>
+    </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+                    <h3>
+    private  subroutine <a href='../proc/report_begin.html'>report_begin</a>(self, name)  
+</h3>
+    
+
+  <p>Say that <code>name</code> is starting, and let the next <code>lap</code> close it</p><a href="../proc/report_begin.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              class(<a href='timing_report_t.html'>timing_report_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>self</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>name</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+          </li>
+      </ul>
+  </div>
+
+          </div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
@@ -548,14 +636,18 @@ large graphs.</div>
               <span class="anchor" ></span>
               character(len=*),
             </td>
-<td>intent(in)</td>
-              <td></td>            <td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
               
             </td>
             <td>::</td>
             <td><strong>name</strong></td>
             <td>
-
+<p>Omitted closes whatever <code>begin</code> last opened. A lap with neither a
+name nor a pending stage does not divide the timeline at all &ndash; the
+clock keeps running and the time lands in the next stage that is
+named. Attributing it to an invented stage would be worse: the
+table&rsquo;s value is that every row was asked for by someone.</p>
             </td>
         </tr>
     </tbody>
@@ -728,7 +820,7 @@ large graphs.</div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-start"></span>
+      <span class="anchor" id="boundprocedure-start~2"></span>
       <h3>
           procedure, public ::
   <strong>start</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/report_start.html'>report_start</a>
@@ -782,7 +874,7 @@ large graphs.</div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-total~6"></span>
+      <span class="anchor" id="boundprocedure-total~7"></span>
       <h3>
           procedure, public ::
   <strong>total</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/report_total.html'>report_total</a>
@@ -852,8 +944,11 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_seconds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">running</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">overflowed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="n">MAX_STAGE_NAME</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pending</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span>
+<span class="w">         </span><span class="c">!! Stage opened by `begin` and not yet closed by `lap`</span>
 <span class="w">   </span><span class="k">contains</span>
 <span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">report_start</span>
+<span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">begin</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">report_begin</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">lap</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">report_lap</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">finish</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">report_finish</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">report</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">report_emit</span>
@@ -882,7 +977,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-29 12:12 +0000             </p>
+ on 2026-08-29 12:50 +0000             </p>
           </div>
         </div>
         <br>
