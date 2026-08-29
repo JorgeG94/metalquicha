@@ -12,7 +12,7 @@ module mqc_libcint_rhf
    !! `mqc_diis` is shared, though. That one is already backend-neutral and
    !! there is nothing to learn from writing it twice.
    use pic_types, only: dp
-   use pic_blas_interfaces, only: pic_gemm, pic_gemv
+   use pic_blas_interfaces, only: pic_gemm, pic_gemv, pic_syrk
    use pic_lapack_interfaces, only: pic_syev
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -1897,6 +1897,14 @@ contains
          deallocate (w, k_local)
          !$omp end parallel
 
+         ! `pic_syrk` filled the lower triangle only. Mirroring it here costs
+         ! one pass over n^2 where doing it inside the loop would cost n_aux.
+         do p = 1, n
+            do p0 = 1, p - 1
+               k(p0, p) = k(p, p0)
+            end do
+         end do
+
          fock = fock - kf*k
          deallocate (c_occ, k)
       end if
@@ -1920,7 +1928,11 @@ contains
       real(dp), intent(inout) :: k_local(:, :)
 
       call pic_gemm(b_p, c_occ, w, beta=0.0_dp)
-      call pic_gemm(w, w, k_local, transb="T", alpha=2.0_dp, beta=1.0_dp)
+      ! A rank-k update, not a general product: W W^T is symmetric, so half of
+      ! what the GEMM computed was the other half's mirror image. Only the
+      ! lower triangle is written, and the caller mirrors it once at the end
+      ! rather than n_aux times here.
+      call pic_syrk(w, k_local, uplo="L", alpha=2.0_dp, beta=1.0_dp)
    end subroutine df_exchange_slice
 
    pure subroutine build_fock_uhf(h, eri, d_alpha, d_beta, fock_a, fock_b, k_scale)

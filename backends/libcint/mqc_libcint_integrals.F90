@@ -29,7 +29,7 @@ module mqc_libcint_integrals
    use pic_types, only: dp
    use mqc_nuclear_repulsion, only: nuclear_repulsion
    use pic_blas_interfaces, only: pic_gemm, pic_trsm
-   use mqc_program_limits, only: DF_METRIC_PANEL_BYTES
+   use mqc_program_limits, only: DF_METRIC_PANEL_BYTES, DF_PAIR_SCREEN
    use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type, atomic_basis_type
@@ -847,6 +847,16 @@ contains
       !! One routine rather than three copies: the only thing that differs is
       !! which libcint entry point is called, and three copies of a shell-pair
       !! loop is three places for an offset to be wrong in.
+      !!
+      !! **Half the pairs, and threaded.** All three of these matrices are
+      !! symmetric, so the loop ran every off-diagonal shell pair twice for the
+      !! same numbers, on one core, three times per calculation. Each shell
+      !! pair owns its block and its transpose, and no two pairs share either,
+      !! so the threads need nothing but a private buffer -- the same
+      !! arrangement `three_centre` uses.
+      !!
+      !! `schedule(dynamic)` because the inner loop runs to `ish`: the last
+      !! shell does nbas times the work of the first.
       type(libcint_molecule_t), intent(in) :: this
       real(dp), allocatable, intent(out) :: matrix(:, :)
       integer, intent(in) :: which   !! 1 overlap, 2 kinetic, 3 nuclear
@@ -862,12 +872,14 @@ contains
       ! di*dj is 1 and the wrong bound is indistinguishable from the right
       ! one; the first p shell writes nine doubles into three and corrupts
       ! the heap, which surfaces as a free() failure somewhere else later.
+      !$omp parallel default(none) shared(this, matrix, which) &
+      !$omp    private(ish, jsh, di, dj, io, jo, i, j, ret, shls, buf)
       allocate (buf(max_block(this)**2))
-
+      !$omp do schedule(dynamic)
       do ish = 1, this%nbas
          di = shell_dim(this%cartesian, ish - 1, this%bas)
          io = this%shell_offset(ish)
-         do jsh = 1, this%nbas
+         do jsh = 1, ish
             dj = shell_dim(this%cartesian, jsh - 1, this%bas)
             jo = this%shell_offset(jsh)
             shls = [ish - 1, jsh - 1]
@@ -904,11 +916,14 @@ contains
             do j = 1, dj
                do i = 1, di
                   matrix(io + i, jo + j) = buf(i + (j - 1)*di)
+                  matrix(jo + j, io + i) = buf(i + (j - 1)*di)
                end do
             end do
          end do
       end do
+      !$omp end do
       deallocate (buf)
+      !$omp end parallel
    end subroutine one_electron
 
    subroutine build_df_tensor(orb, aux, b, error, omega)
@@ -945,6 +960,7 @@ contains
       real(dp), allocatable :: metric(:, :), vectors(:, :), values(:), half(:, :)
       real(dp), allocatable :: three(:, :)
       logical :: cholesky
+      real(dp) :: aux_max
       integer :: naux, nao, i, j, kept, info
 
       ! (mu nu | P) has orbital shells on two centres and auxiliary shells on
@@ -975,10 +991,13 @@ contains
       end if
       call clk%lap()
       call clk%begin("3-centre integrals")
+      ! The metric's diagonal is the auxiliary half of the Schwarz bound, and
+      ! it is already in hand from the stage above.
+      aux_max = sqrt(maxval([(metric(i, i), i=1, naux)]))
       if (present(omega)) then
-         call three_centre(orb, aux, three, omega=omega)
+         call three_centre(orb, aux, three, omega=omega, aux_max=aux_max)
       else
-         call three_centre(orb, aux, three)
+         call three_centre(orb, aux, three, aux_max=aux_max)
       end if
       call clk%lap()
 
@@ -1267,8 +1286,9 @@ contains
 
       real(dp), allocatable :: metric(:, :), half(:, :), three(:, :)
       logical :: cholesky, allow_fast
+      real(dp) :: aux_max
       real(dp), allocatable :: ovl(:, :), tmp(:, :), full(:)
-      integer :: nao, naux, n_l, n_r, p_index
+      integer :: nao, naux, n_l, n_r, i, p_index
 
       if (orb%cartesian .neqv. aux%cartesian) then
          call error%set(ERROR_VALIDATION, "density fitting: the orbital basis is "// &
@@ -1291,6 +1311,8 @@ contains
       end if
 
       call two_centre(aux, metric)
+      ! Taken before the factorisation consumes it.
+      aux_max = sqrt(maxval([(metric(i, i), i=1, naux)]))
       allow_fast = .false.
       if (present(fast_factor)) allow_fast = fast_factor
       if (allow_fast) then
@@ -1302,7 +1324,7 @@ contains
       if (error%has_error()) return
       deallocate (metric)
 
-      call three_centre(orb, aux, three)
+      call three_centre(orb, aux, three, aux_max=aux_max)
 
       ! (mu nu|P) -> (pq|P), one auxiliary function at a time. Transforming
       ! before fitting rather than after, which is the ordering PySCF uses and
@@ -1380,6 +1402,48 @@ contains
       call pic_gemm(c_left, three_p, tmp, transa="T")
       call pic_gemm(tmp, c_right, full)
    end subroutine df_mo_slice
+
+   subroutine shell_pair_bounds(mol, q)
+      !! `Q_MN = sqrt(max |(MN|MN)|)` for every shell pair
+      !!
+      !! The Schwarz bound, in the form the three-centre screen wants it: one
+      !! number per shell pair, depending on the basis and the geometry and not
+      !! on the density, so a whole calculation reuses one set.
+      !!
+      !! A near-duplicate of `schwarz_bounds` in `mqc_libcint_direct`, and
+      !! deliberately not a call to it: that module depends on this one, so
+      !! using it here would close the loop. Threaded, where that one is not,
+      !! because this is on the critical path of every fitted setup.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), allocatable, intent(out) :: q(:, :)
+
+      real(dp), allocatable :: buf(:)
+      integer :: shls(4)
+      integer :: ish, jsh, di, dj, ret
+
+      allocate (q(mol%nbas, mol%nbas))
+      q = 0.0_dp
+
+      !$omp parallel default(none) shared(mol, q) &
+      !$omp    private(ish, jsh, di, dj, ret, shls, buf)
+      allocate (buf(max_block(mol)**4))
+      !$omp do schedule(dynamic)
+      do ish = 1, mol%nbas
+         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         do jsh = 1, ish
+            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+            shls = [ish - 1, jsh - 1, ish - 1, jsh - 1]
+            ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
+                                     mol%bas, mol%nbas, mol%env)
+            if (ret == 0) cycle
+            q(ish, jsh) = sqrt(maxval(abs(buf(1:(di*dj)**2))))
+            q(jsh, ish) = q(ish, jsh)
+         end do
+      end do
+      !$omp end do
+      deallocate (buf)
+      !$omp end parallel
+   end subroutine shell_pair_bounds
 
    subroutine two_centre(aux, metric, omega)
       !! (P|Q) over the auxiliary basis
@@ -1568,7 +1632,7 @@ contains
       env(size(env)) = 0.0_dp
    end subroutine build_df_shell_table
 
-   subroutine three_centre(orb, aux, three, omega)
+   subroutine three_centre(orb, aux, three, omega, aux_max)
       !! (mu nu | P), flattened to (nao*nao, naux)
       !!
       !! The orbital and auxiliary shells are concatenated into one bas array,
@@ -1585,6 +1649,13 @@ contains
          !! Attenuate the kernel to `erf(omega r)/r`, for the long-range
          !! exchange of a range-separated functional. See `two_centre` for why
          !! the slot index is what it is.
+      real(dp), intent(in), optional :: aux_max
+         !! `sqrt(max_P (P|P))`, which turns the Schwarz bound on a shell pair
+         !! into a bound on every three-centre integral that pair can produce.
+         !! Absent means no screening -- a caller that has not thought about it
+         !! gets every pair rather than a silently truncated tensor. Both
+         !! fitting paths have the two-centre metric in hand already, so the
+         !! diagonal is free to them.
 
       integer, allocatable :: bas(:, :)
       real(dp), allocatable :: env(:), buf(:)
@@ -1593,6 +1664,7 @@ contains
       integer :: ish, jsh, ksh, di, dj, dk, i, j, k, io, jo, ko, ret, idx
       integer :: npair, ipair
       integer, allocatable :: pair_i(:), pair_j(:)
+      real(dp), allocatable :: q_pair(:, :)
       type(c_ptr) :: opt
 
       nbas_orb = orb%nbas
@@ -1608,14 +1680,25 @@ contains
       ! orbital shell pairs is computed and each block is written into both
       ! halves. The loop ran the full square before, which evaluated every
       ! off-diagonal block twice for the same numbers.
-      npair = nbas_orb*(nbas_orb + 1)/2
-      allocate (pair_i(npair), pair_j(npair))
-      ipair = 0
+      !
+      ! Pairs that cannot contribute are dropped before the list is built.
+      ! `|(mn|P)| <= sqrt((mn|mn)) sqrt((P|P))`, so one bound per pair decides
+      ! it for every auxiliary function at once, and the shell triplet is never
+      ! entered. The bounds cost nbas^2 quartets against the nbas^2 * nbas_aux
+      ! triplets they screen.
+      allocate (pair_i(nbas_orb*(nbas_orb + 1)/2), pair_j(nbas_orb*(nbas_orb + 1)/2))
+      if (present(aux_max)) then
+         call shell_pair_bounds(orb, q_pair)
+      end if
+      npair = 0
       do ish = 1, nbas_orb
          do jsh = 1, ish
-            ipair = ipair + 1
-            pair_i(ipair) = ish
-            pair_j(ipair) = jsh
+            if (present(aux_max)) then
+               if (q_pair(ish, jsh)*aux_max < DF_PAIR_SCREEN) cycle
+            end if
+            npair = npair + 1
+            pair_i(npair) = ish
+            pair_j(npair) = jsh
          end do
       end do
 

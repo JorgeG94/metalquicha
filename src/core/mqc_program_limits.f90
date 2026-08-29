@@ -135,6 +135,20 @@ module mqc_program_limits
       !! holding it is two hundred megabytes, where a panel sized for GEMM
       !! efficiency alone would be gigabytes for a few per cent more throughput.
 
+   real(dp), parameter, public :: DF_PAIR_SCREEN = 1.0e-12_dp
+      !! Below this, a shell pair contributes no three-centre integral.
+      !!
+      !! Schwarz: `|(mn|P)| <= sqrt((mn|mn)) sqrt((P|P))`, so a pair whose
+      !! bound times the largest auxiliary diagonal falls under this cannot
+      !! reach it, for any P, and the whole shell triplet is skipped.
+      !!
+      !! 1e-12 rather than the 1e-10 the literature usually quotes, because
+      !! the validation suite compares total energies at 1e-9 and a fitted
+      !! energy has already spent its error budget on the fit. The cost of the
+      !! stricter threshold is small: the bound falls off exponentially with
+      !! pair separation, so two orders cost far less than two orders' worth
+      !! of pairs.
+
    integer, parameter, public :: DF_AUX_CHUNK = 32
       !! Auxiliary functions per thread chunk in the fitted Coulomb build.
       !!
