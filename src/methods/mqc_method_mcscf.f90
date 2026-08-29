@@ -171,7 +171,7 @@ contains
       settings%verbose = this%options%verbose
       settings%functional = ""        ! empty selects pure Hartree-Fock
       settings%max_iter = this%options%max_iter
-      settings%energy_tol = this%options%conv_tol
+      settings%energy_tol = this%options%energy_tol
       settings%density_tol = this%options%density_tol
       settings%level_shift = this%options%level_shift
       settings%linear_dependence = this%options%linear_dependence

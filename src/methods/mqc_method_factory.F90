@@ -8,7 +8,7 @@ module mqc_method_factory
                                METHOD_TYPE_DFT, METHOD_TYPE_MCSCF, METHOD_TYPE_MP2, &
                                METHOD_TYPE_CCSD, METHOD_TYPE_CCSD_T, &
                                method_type_to_string
-   use mqc_method_config, only: method_config_t
+   use mqc_method_config, only: scf_options_t, method_config_t
    use mqc_method_base, only: qc_method_t
    use mqc_method_hf, only: hf_method_t
    use mqc_method_dft, only: dft_method_t
@@ -176,6 +176,47 @@ contains
    end subroutine configure_xtb
 #endif
 
+   subroutine configure_scf(options, config)
+      !! Fill everything a self-consistent-field method shares, from the deck
+      !!
+      !! **The shared type was not enough on its own.** Making `hf_options_t`
+      !! and `dft_options_t` extend `scf_options_t` collapses the *declaration*
+      !! of a shared field, but each `configure_*` still had to assign it by
+      !! hand -- so a field could exist on both types and still be filled for
+      !! only one. That is precisely how `allow_crap_scf` reached the Kohn-Sham
+      !! options and stayed `.false.` whatever the deck said. Assigning them
+      !! here, once, is what removes the second copy; the caller then adds only
+      !! what is specific to its own reference.
+      class(scf_options_t), intent(inout) :: options
+      type(method_config_t), intent(in) :: config
+
+      options%basis_set = config%basis_set
+      options%ecp_set = config%ecp_set
+      options%spherical = config%use_spherical
+      options%verbose = config%verbose
+      options%device_rank = config%device_rank
+      options%backend = config%backend
+      options%freeze_core = config%corr%freeze_core
+      options%n_frozen_core = config%corr%n_frozen_core
+      options%cartesian = config%scf%cartesian
+      options%aux_basis_set = config%scf%aux_basis_set
+      options%aux_basis_named = config%scf%aux_basis_named
+      options%density_fitting = config%scf%density_fitting
+      options%unrestricted = config%scf%unrestricted
+      options%guess = config%scf%guess
+      if (allocated(config%scf%guess_steps)) options%guess_steps = config%scf%guess_steps
+      options%max_iter = config%scf%max_iter
+      options%allow_crap_scf = config%scf%allow_crap_scf
+      options%energy_tol = config%scf%energy_convergence
+      options%density_tol = config%scf%density_convergence
+      options%level_shift = config%scf%level_shift
+      options%linear_dependence = config%scf%linear_dependence
+      options%use_diis = config%scf%use_diis
+      options%diis_size = config%scf%diis_size
+      options%pcm = config%pcm
+      options%properties = config%properties
+   end subroutine configure_scf
+
    subroutine configure_hf(m, config, with_mp2, with_cc)
       !! Configure a Hartree-Fock method instance from config%scf (shared SCF settings)
       type(hf_method_t), intent(inout) :: m
@@ -191,14 +232,9 @@ contains
          !! reach the same code.
 
       ! Common settings
-      m%options%basis_set = config%basis_set
-      m%options%ecp_set = config%ecp_set
-      m%options%spherical = config%use_spherical
-      m%options%verbose = config%verbose
-      m%options%device_rank = config%device_rank
 
-      m%options%backend = config%backend
       ! SCF settings from shared config%scf
+      call configure_scf(m%options, config)
       if (present(with_mp2)) m%options%run_mp2 = with_mp2
       if (present(with_cc)) m%options%run_cc = with_cc
       m%options%cc_triples = config%cc%include_triples
@@ -210,8 +246,6 @@ contains
       if (.not. config%cc%use_diis) m%options%cc_diis_size = 0
       ! From config%corr, not config%scf: the reference and the correlation
       ! treatment are configured separately and may disagree.
-      m%options%freeze_core = config%corr%freeze_core
-      m%options%n_frozen_core = config%corr%n_frozen_core
       m%options%corr_density_fitting = config%corr%use_df
       ! One and one unless scaling was asked for, so an unscaled run cannot
       ! pick up factors that happen to be sitting in the config.
@@ -220,27 +254,10 @@ contains
          m%options%scs_os = config%corr%scs_os
       end if
 
-      m%options%cartesian = config%scf%cartesian
-      m%options%aux_basis_set = config%scf%aux_basis_set
-      m%options%aux_basis_named = config%scf%aux_basis_named
-      m%options%density_fitting = config%scf%density_fitting
-      m%options%unrestricted = config%scf%unrestricted
-      m%options%guess = config%scf%guess
-      if (allocated(config%scf%guess_steps)) m%options%guess_steps = config%scf%guess_steps
-      m%options%max_iter = config%scf%max_iter
-      m%options%allow_crap_scf = config%scf%allow_crap_scf
-      m%options%conv_tol = config%scf%energy_convergence
-      m%options%density_tol = config%scf%density_convergence
-      m%options%level_shift = config%scf%level_shift
-      m%options%linear_dependence = config%scf%linear_dependence
-      m%options%use_diis = config%scf%use_diis
-      m%options%diis_size = config%scf%diis_size
       ! Not from `config%dft`, and so easy to leave out: the continuum sits on
       ! the shared config beside the SCF settings precisely because it applies
       ! to any reference. `configure_dft` copied it and this did not, which made
       ! `keywords.pcm` a no-op for Hartree-Fock, MP2 and coupled cluster.
-      m%options%pcm = config%pcm
-      m%options%properties = config%properties
    end subroutine configure_hf
 
    subroutine configure_dft(m, config)
@@ -249,63 +266,40 @@ contains
       type(method_config_t), intent(in) :: config
 
       ! Common settings
-      m%options%basis_set = config%basis_set
-      m%options%ecp_set = config%ecp_set
-      m%options%spherical = config%use_spherical
-      m%options%verbose = config%verbose
-      m%options%device_rank = config%device_rank
 
       ! SCF settings from shared config%scf
-      m%options%unrestricted = config%scf%unrestricted
-      m%options%guess = config%scf%guess
-      if (allocated(config%scf%guess_steps)) m%options%guess_steps = config%scf%guess_steps
-      m%options%max_iter = config%scf%max_iter
-      m%options%energy_tol = config%scf%energy_convergence
-      m%options%density_tol = config%scf%density_convergence
-      m%options%level_shift = config%scf%level_shift
-      m%options%linear_dependence = config%scf%linear_dependence
-      m%options%use_diis = config%scf%use_diis
-      m%options%diis_size = config%scf%diis_size
 
       ! DFT-specific from config%dft
+      call configure_scf(m%options, config)
       m%options%functional = config%dft%functional
       m%options%grid_type = config%dft%grid_type
       m%options%grid_level = config%dft%grid_level
       m%options%nlc_grid_level = config%dft%nlc_grid_level
       m%options%screening_tolerance = config%dft%screening_tolerance
       m%options%block_size = config%dft%block_size
-      m%options%pcm = config%pcm
-      m%options%properties = config%properties
-      m%options%backend = config%backend
       m%options%radial_points = config%dft%radial_points
       m%options%angular_points = config%dft%angular_points
 
       ! Density fitting. The auxiliary basis normally comes from the shared
       ! SCF settings, which is what the %model `aux_basis` keyword fills; a
       ! DFT-specific override wins only when it was actually set.
-      ! From the *shared* SCF settings, which is what `keywords.scf.density_fitting`
-      ! fills and what Hartree-Fock reads a few lines above. `config%dft%use_density_fitting`
-      ! is never written by the reader or the adapter, so taking it here meant a
-      ! Kohn-Sham deck could not turn fitting on however it asked -- the flag was
-      ! read from a field nothing set. The DFT-specific auxiliary override below
-      ! still wins where it is given, because that one *is* filled.
-      m%options%use_density_fitting = config%scf%density_fitting .or. &
-                                      config%dft%use_density_fitting
+      ! `density_fitting` itself comes from the shared settings via
+      ! `configure_scf`. It used to be OR-ed here with
+      ! `config%dft%use_density_fitting`, which the reader and the adapter never
+      ! write -- its only assignment anywhere is to `.false.` in the defaults --
+      ! so that term was always false and the OR was reading a field nothing
+      ! set. The DFT-specific *auxiliary basis* override below is different: it
+      ! is filled, and it still wins where it is given.
       if (len_trim(config%dft%aux_basis_set) > 0) then
          m%options%aux_basis_set = config%dft%aux_basis_set
          m%options%aux_basis_named = .true.
       else
-         m%options%cartesian = config%scf%cartesian
-         m%options%aux_basis_set = config%scf%aux_basis_set
-         m%options%aux_basis_named = config%scf%aux_basis_named
       end if
 
       ! Correlation, which on this path means a double hybrid's perturbative
       ! term and nothing else. From `config%corr`, the same place Hartree-Fock
       ! reads it, so one deck keyword means one thing whichever method carries
       ! the MP2.
-      m%options%freeze_core = config%corr%freeze_core
-      m%options%n_frozen_core = config%corr%n_frozen_core
 
       ! Dispersion
       m%options%use_dispersion = config%dft%use_dispersion
@@ -357,7 +351,7 @@ contains
       ! reference-based method reads. A CASSCF starts from a closed-shell SCF,
       ! and a deck that tightened `keywords.scf` meant that one too.
       m%options%max_iter = config%scf%max_iter
-      m%options%conv_tol = config%scf%energy_convergence
+      m%options%energy_tol = config%scf%energy_convergence
       m%options%density_tol = config%scf%density_convergence
       m%options%level_shift = config%scf%level_shift
       m%options%linear_dependence = config%scf%linear_dependence

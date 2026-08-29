@@ -13,7 +13,7 @@ module mqc_method_hf
    use pic_types, only: dp
    use mqc_config_types, only: guess_step_t
    use mqc_method_base, only: qc_method_t
-   use mqc_method_config, only: pcm_config_t, properties_config_t
+   use mqc_method_config, only: scf_options_t, pcm_config_t, properties_config_t
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -27,32 +27,12 @@ module mqc_method_hf
 
    public :: hf_method_t, hf_options_t
 
-   type :: hf_options_t
+   type, extends(scf_options_t) :: hf_options_t
       !! Hartree-Fock calculation options
-      type(properties_config_t) :: properties
-      type(pcm_config_t) :: pcm
-         !! Continuum solvation. Carried here as well as on the Kohn-Sham
-         !! options because a continuum is a property of the reference, not of
-         !! the functional: Hartree-Fock, MP2 and coupled cluster all reach the
-         !! backend through this type, and leaving it off meant `keywords.pcm`
-         !! was read, validated, and then silently dropped for every one of them.
-      character(len=32) :: basis_set = "sto-3g"
-      character(len=32) :: ecp_set = ""
-         !! Effective core potential set, empty for an all-electron run
-         !! Orbital basis set name
-      logical :: cartesian = .false.
-         !! `model.cartesian`; see `mqc_config_t`.
-      character(len=32) :: aux_basis_set = "def2-universal-jkfit"
-         !! Auxiliary (JKFIT) basis for the density-fitted J and K
-      logical :: aux_basis_named = .false.
-         !! Whether the deck asked for `aux_basis_set`. See `scf_config_t`.
-      logical :: density_fitting = .false.
       logical :: run_mp2 = .false.
          !! Follow the reference with an MP2 correction. Set by the factory
          !! from the method name rather than by a keyword: "mp2" is a method,
          !! not an option on Hartree-Fock.
-      logical :: freeze_core = .false.
-      integer :: n_frozen_core = -1
       logical :: corr_density_fitting = .false.
       real(dp) :: scs_ss = 1.0_dp
       real(dp) :: scs_os = 1.0_dp
@@ -66,46 +46,6 @@ module mqc_method_hf
       integer :: cc_diis_size = 8
       logical :: cc_spin_adapted = .true.
          !! Spatial-orbital coupled cluster rather than spin orbitals
-         !! Fit J and K rather than computing exact integrals (CPU backend)
-      logical :: spherical = .true.
-         !! Use spherical (true) or Cartesian (false) basis
-      logical :: verbose = .false.
-         !! Print SCF iterations
-      integer :: device_rank = 0
-         !! Node-local MPI rank, for spreading ranks across a node's GPUs
-      logical :: unrestricted = .false.
-         !! Force UHF/UKS even for a closed shell
-      character(len=32) :: guess = "auto"
-         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection',
-         !! or 'auto'
-      type(guess_step_t), allocatable :: guess_steps(:)
-         !! The basis ladder for 'basis_set_projection', one entry per
-         !! preliminary SCF in order.
-         !!
-         !! 'auto' means the backend picks, because the best starting point
-         !! is a property of the backend rather than of the request: the CPU
-         !! path resolves it to 'sad', and cuEST to 'gwh', each having
-         !! measured its own. An explicit spelling always wins over both.
-
-      ! SCF settings (from shared scf_config_t)
-      logical :: allow_crap_scf = .false.  !! Keep a non-converged SCF instead of failing
-      integer :: max_iter = 100
-         !! Maximum SCF iterations
-      real(dp) :: conv_tol = 1.0e-8_dp
-         !! Energy convergence threshold
-      real(dp) :: density_tol = 1.0e-6_dp
-      real(dp) :: linear_dependence = 0.0_dp
-         !! Zero means the orthogonaliser's own cutoff. See `scf_config_t`.
-         !! Density matrix convergence threshold
-      real(dp) :: level_shift = 0.0_dp
-         !! Hartree added to the virtual block before each diagonalisation.
-         !! Zero is off. See `scf_config_t`.
-      logical :: use_diis = .true.
-         !! Use DIIS acceleration
-      integer :: diis_size = 8
-         !! Number of Fock matrices for DIIS
-      character(len=16) :: backend = "auto"
-         !! Integral backend request: "auto", "cuest"/"gpu", "libcint"/"cpu".
    end type hf_options_t
 
    type, extends(qc_method_t) :: hf_method_t
@@ -191,7 +131,7 @@ contains
       if (allocated(this%options%guess_steps)) settings%guess_steps = this%options%guess_steps
       settings%max_iter = this%options%max_iter
       settings%allow_crap_scf = this%options%allow_crap_scf
-      settings%energy_tol = this%options%conv_tol
+      settings%energy_tol = this%options%energy_tol
       settings%density_tol = this%options%density_tol
       settings%level_shift = this%options%level_shift
       settings%linear_dependence = this%options%linear_dependence

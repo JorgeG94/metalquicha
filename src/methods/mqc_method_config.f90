@@ -15,6 +15,7 @@ module mqc_method_config
 
    public :: method_config_t
    public :: scf_config_t, xtb_config_t, dft_config_t, mcscf_config_t
+   public :: scf_options_t
    public :: correlation_config_t, cc_config_t, f12_config_t
    public :: efp_config_t
    public :: pcm_config_t
@@ -273,6 +274,88 @@ module mqc_method_config
       character(len=32) :: bonding_no_sharing_ci = "transform"
       real(dp) :: bonding_threshold = 1.0_dp
    end type properties_config_t
+
+   type :: scf_options_t
+      !! What every self-consistent-field method carries, defined once
+      !!
+      !! **This exists because the copies drifted and one of them cost a bug.**
+      !! `hf_options_t` and `dft_options_t` each held these fields by hand,
+      !! and each had to be updated in three places -- the type, its
+      !! `configure_*` in the factory, and the `settings%... = options%...`
+      !! block in the method. Miss the third and a keyword is read from the
+      !! deck, passes the schema, reaches the config and is silently dropped:
+      !! that is what happened to `allow_crap_scf` on the Kohn-Sham path,
+      !! which was honoured for Hartree-Fock and ignored for DFT. The two
+      !! copies had also drifted in spelling -- `conv_tol` against
+      !! `energy_tol`, `density_fitting` against `use_density_fitting` -- for
+      !! fields meant to mean the same thing.
+      !!
+      !! Method options **extend** this rather than holding it as a component,
+      !! so `options%max_iter` keeps working and a method cannot forget a
+      !! field it does not own. Anything specific to one reference -- a
+      !! functional, a grid, coupled-cluster settings -- belongs in the
+      !! extending type, not here.
+      character(len=32) :: basis_set = "sto-3g"
+         !! Orbital basis set name
+      character(len=32) :: ecp_set = ""
+         !! Effective core potential set, empty for an all-electron run
+      character(len=32) :: aux_basis_set = "def2-universal-jkfit"
+         !! Auxiliary (JKFIT) basis for the density-fitted J and K
+      logical :: aux_basis_named = .false.
+         !! Whether the deck asked for `aux_basis_set`. See `scf_config_t`.
+      logical :: cartesian = .false.
+         !! `model.cartesian`; see `mqc_config_t`.
+      logical :: spherical = .true.
+         !! Use spherical (true) or Cartesian (false) basis
+      integer :: max_iter = 100
+         !! Maximum SCF iterations
+      real(dp) :: energy_tol = 1.0e-8_dp
+         !! Energy convergence threshold
+      real(dp) :: density_tol = 1.0e-6_dp
+         !! Density matrix convergence threshold
+      real(dp) :: linear_dependence = 0.0_dp
+         !! Zero means the orthogonaliser's own cutoff. See `scf_config_t`.
+      real(dp) :: level_shift = 0.0_dp
+         !! Hartree added to the virtual block before each diagonalisation.
+         !! Zero is off. See `scf_config_t`.
+      logical :: use_diis = .true.
+         !! Use DIIS acceleration
+      integer :: diis_size = 8
+         !! Number of Fock matrices for DIIS
+      logical :: allow_crap_scf = .false.
+         !! Keep a non-converged SCF instead of failing
+      character(len=32) :: guess = "auto"
+         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection',
+         !! or 'auto'. 'auto' means the backend picks, because the best
+         !! starting point is a property of the backend rather than of the
+         !! request: the CPU path resolves it to 'sad', and cuEST to 'gwh'.
+         !! An explicit spelling always wins over both.
+      type(guess_step_t), allocatable :: guess_steps(:)
+         !! The basis ladder for 'basis_set_projection', one entry per
+         !! preliminary SCF in order.
+      logical :: unrestricted = .false.
+         !! Force UHF/UKS even for a closed shell
+      logical :: density_fitting = .false.
+         !! Fit J and K rather than computing exact integrals
+      logical :: freeze_core = .false.
+         !! Exclude core orbitals from a post-SCF correlation treatment
+      integer :: n_frozen_core = -1
+         !! Core orbitals to freeze; -1 counts them from the elements
+      character(len=16) :: backend = "auto"
+         !! Which backend evaluates the integrals
+      integer :: device_rank = 0
+         !! Node-local MPI rank, for spreading ranks across a node's GPUs
+      logical :: verbose = .false.
+         !! Print SCF iterations
+      type(pcm_config_t) :: pcm
+         !! Continuum solvation. A property of the reference rather than of
+         !! the functional, which is why it sits here: Hartree-Fock, DFT, MP2
+         !! and coupled cluster all reach the backend through an extending
+         !! type, and leaving it off one of them meant `keywords.pcm` was read,
+         !! validated and then silently dropped for that path.
+      type(properties_config_t) :: properties
+         !! Population analysis and other post-SCF properties
+   end type scf_options_t
 
    type :: mcscf_config_t
       !! Configuration for MCSCF/CASSCF method
