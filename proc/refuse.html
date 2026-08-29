@@ -187,7 +187,7 @@ worst shape a failure can take here.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result_out~6"></span>
+              <span class="anchor" id="variable-result_out~7"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -202,7 +202,7 @@ worst shape a failure can take here.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-message~3"></span>
+              <span class="anchor" id="variable-message~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -605,31 +605,31 @@ large graphs.</div>
 <g id="proc~~refuse~~CalledByGraph_node16" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~refuse~~CalledByGraph_node16"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="324,-24 246,-24 246,0 324,0 324,-24"/>
-<text text-anchor="middle" x="285" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
-<g id="proc~~refuse~~CalledByGraph_edge20" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
-<path fill="none" stroke="#0000ff" d="M324.28,-15.95C358.12,-19.44 407.57,-24.55 443.55,-28.26"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="443.48,-31.77 453.78,-29.31 444.19,-24.81 443.48,-31.77"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~refuse~~CalledByGraph_node17" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~refuse~~CalledByGraph_node17"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="324,-150 246,-150 246,-126 324,-126 324,-150"/>
 <text text-anchor="middle" x="285" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
 <g id="proc~~refuse~~CalledByGraph_edge17" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
 <path fill="none" stroke="#00ff00" d="M324.28,-145.9C360.53,-153.38 414.7,-164.56 451.02,-172.06"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="450.72,-175.57 461.22,-174.16 452.13,-168.71 450.72,-175.57"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~refuse~~CalledByGraph_node17" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~refuse~~CalledByGraph_node17"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="324,-24 246,-24 246,0 324,0 324,-24"/>
+<text text-anchor="middle" x="285" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~refuse~~CalledByGraph_edge20" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0000ff" d="M324.28,-15.95C358.12,-19.44 407.57,-24.55 443.55,-28.26"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="443.48,-31.77 453.78,-29.31 444.19,-24.81 443.48,-31.77"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~refuse~~CalledByGraph_node18" class="node">
@@ -676,11 +676,11 @@ large graphs.</div>
 <path fill="none" stroke="#00ff91" d="M143.81,-150.04C168.44,-155.3 197.4,-161.49 222.58,-166.87"/>
 <polygon fill="#00ff91" stroke="#00ff91" points="221.88,-170.3 232.39,-168.97 223.34,-163.46 221.88,-170.3"/>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~refuse~~CalledByGraph_edge24" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#4800ff" d="M166.01,-138C189.51,-138 214.59,-138 235.55,-138"/>
-<polygon fill="#4800ff" stroke="#4800ff" points="235.79,-141.5 245.79,-138 235.79,-134.5 235.79,-141.5"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
+<g id="proc~~refuse~~CalledByGraph_edge23" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#0091ff" d="M166.01,-138C189.51,-138 214.59,-138 235.55,-138"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="235.79,-141.5 245.79,-138 235.79,-134.5 235.79,-141.5"/>
 </g>
 <!-- proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point -->
 <g id="proc~~refuse~~CalledByGraph_edge25" class="edge">
@@ -697,11 +697,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
-<g id="proc~~refuse~~CalledByGraph_edge23" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#0091ff" d="M173.12,-12C194.58,-12 216.87,-12 235.78,-12"/>
-<polygon fill="#0091ff" stroke="#0091ff" points="235.91,-15.5 245.91,-12 235.91,-8.5 235.91,-15.5"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~refuse~~CalledByGraph_edge24" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#4800ff" d="M173.12,-12C194.58,-12 216.87,-12 235.78,-12"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="235.91,-15.5 245.91,-12 235.91,-8.5 235.91,-15.5"/>
 </g>
 </g>
 </svg>
@@ -845,7 +845,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-29 10:58 +0000             </p>
+ on 2026-08-29 11:33 +0000             </p>
           </div>
         </div>
         <br>
