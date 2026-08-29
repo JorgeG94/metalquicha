@@ -107,7 +107,8 @@ contains
    subroutine fukui_indices(mol, nelec, multiplicity, neutral_density, neutral_energy, &
                             scheme, max_iter, energy_tol, density_tol, res, error, &
                             functional, grid_level, pt2_fraction, neutral_orbitals, &
-                            neutral_orbital_energies, aux, n_frozen, verbose, pcm)
+                            neutral_orbital_energies, aux, n_frozen, verbose, pcm, &
+                            level_shift, diis_vectors)
       !! Run the ions and condense the difference onto atoms
       !!
       !! The neutral density is handed in rather than recomputed, since the
@@ -148,6 +149,21 @@ contains
       integer, intent(in) :: multiplicity
       real(dp), intent(in) :: neutral_density(:, :)   !! Total density, both spins
       real(dp), intent(in) :: neutral_energy
+      integer, intent(in), optional :: diis_vectors
+         !! The DIIS subspace, for the same reason as the shift below: a deck
+         !! that widens it to help a stubborn SCF means the ions, which are
+         !! where the stubborn ones are.
+      real(dp), intent(in), optional :: level_shift
+         !! Passed to both ions, which is the whole point of it being here.
+         !! A level shift is asked for to stabilise a difficult SCF, and in a
+         !! Fukui run the difficult SCFs are the ions: they are open shell,
+         !! they start from the neutral's converged density, and a doublet is
+         !! exactly where an SCF slides into a state that is not the one being
+         !! asked for. Applying the shift to the closed-shell reference and not
+         !! to them spends it on the one calculation that did not need it, and
+         !! spends it silently -- a deck setting `keywords.scf.level_shift`
+         !! alongside `properties.fukui` got a shifted neutral and two
+         !! unshifted ions, with nothing in the output to say so.
       character(len=*), intent(in) :: scheme          !! "chelpg" or "mulliken"
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
@@ -335,6 +351,8 @@ contains
       end if
       call run_libcint_uhf(mol, nelec + 1, 2, max_iter, energy_tol, density_tol, &
                            loud, anion, error, xc=xc_arg, pcm=pcm, &
+                           diis_vectors=diis_vectors, &
+                           level_shift=level_shift, &
                            guess=guess_kind, guess_density_alpha=d_guess_a, &
                            guess_density_beta=d_guess_b)
       if (error%has_error()) then
@@ -374,6 +392,8 @@ contains
       end if
       call run_libcint_uhf(mol, nelec - 1, 2, max_iter, energy_tol, density_tol, &
                            loud, cation, error, xc=xc_arg, pcm=pcm, &
+                           diis_vectors=diis_vectors, &
+                           level_shift=level_shift, &
                            guess=guess_kind, guess_density_alpha=d_guess_a, &
                            guess_density_beta=d_guess_b)
       if (error%has_error()) then

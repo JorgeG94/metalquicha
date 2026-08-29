@@ -430,6 +430,7 @@ contains
          !! the constraint decides which determinant comes out, and the energy
          !! of that determinant is an expectation value of the real Hamiltonian.
 
+      character(len=LINE_LEN) :: line
       integer :: diis_size, guess_kind
       logical :: use_in_core
       real(dp), allocatable :: bounds(:, :)
@@ -614,6 +615,19 @@ contains
       taper = 100.0_dp*density_tol
       drms_prev = huge(1.0_dp)
       shift_now = 0.0_dp
+
+      ! Say so. A shift is asked for when an SCF is misbehaving, which is
+      ! exactly when the run is being read closely, and until this line there
+      ! was nothing between "the deck set one" and "the deck set one and it was
+      ! silently dropped on the way here" -- which is what happened to the
+      ! Fukui ions for as long as `fukui_indices` took no level shift. Printing
+      ! the taper alongside the value matters as much: a shift that is off by
+      ! iteration three is not the shift the reader thinks they applied.
+      if (shift > 0.0_dp) then
+         write (line, "(a,f8.4,a,es9.2)") "    level shift: ", shift, &
+            " hartree, tapered off below dD ", taper
+         call logger%info(trim(line))
+      end if
 
       do iter = 1, max_iter
          density_old = density
@@ -995,6 +1009,19 @@ contains
       taper = 100.0_dp*density_tol
       drms_prev = huge(1.0_dp)
       shift_now = 0.0_dp
+
+      ! Say so. A shift is asked for when an SCF is misbehaving, which is
+      ! exactly when the run is being read closely, and until this line there
+      ! was nothing between "the deck set one" and "the deck set one and it was
+      ! silently dropped on the way here" -- which is what happened to the
+      ! Fukui ions for as long as `fukui_indices` took no level shift. Printing
+      ! the taper alongside the value matters as much: a shift that is off by
+      ! iteration three is not the shift the reader thinks they applied.
+      if (shift > 0.0_dp) then
+         write (line, "(a,f8.4,a,es9.2)") "    level shift: ", shift, &
+            " hartree, tapered off below dD ", taper
+         call logger%info(trim(line))
+      end if
 
       do iter = 1, max_iter
          d_a_old = d_a

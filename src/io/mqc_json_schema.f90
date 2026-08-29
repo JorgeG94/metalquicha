@@ -344,6 +344,8 @@ contains
       call allow(keys, "allow_crap_scf")
       call allow(keys, "density_fitting")
       call allow(keys, "level_shift")
+      call allow(keys, "diis")
+      call allow(keys, "diis_size")
    end function scf_keys
 
    function efp_keys() result(keys)
