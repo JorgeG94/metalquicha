@@ -378,6 +378,18 @@ module mqc_config_types
          !! meaningful cutoff on its own, so nothing is lost by spending it.
       logical :: scf_density_tolerance_set = .false.
       real(dp) :: scf_level_shift = 0.0_dp
+      logical :: scf_use_diis = .true.
+         !! `keywords.scf.diis`. Off is a diagnostic rather than a setting: an
+         !! SCF without DIIS is how you find out whether DIIS is the thing
+         !! hiding a problem, not a way to run one.
+      integer :: scf_diis_size = 8
+         !! `keywords.scf.diis_size`, the subspace the extrapolation is drawn
+         !! from. Eight is the usual default and was, until this keyword, the
+         !! only value obtainable -- the field existed all the way down to
+         !! `scf_config_t` and nothing read it from a deck. Widening it to
+         !! 12-20 is the first thing to try on an open-shell SCF that converges
+         !! monotonically but slowly, where a level shift would only make it
+         !! slower.
          !! Hartree added to the virtual orbitals before each diagonalisation.
          !! Zero is off, which is the default: a shift costs iterations near the
          !! solution and only earns them far from it.

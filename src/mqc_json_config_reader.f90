@@ -263,6 +263,8 @@ contains
       call named(json, "keywords.scf.tolerance", config%scf_tolerance_set)
       call optional_real(json, "keywords.scf.density_tolerance", config%scf_density_tolerance)
       call optional_real(json, "keywords.scf.level_shift", config%scf_level_shift)
+      call optional_logical(json, "keywords.scf.diis", config%scf_use_diis)
+      call optional_int(json, "keywords.scf.diis_size", config%scf_diis_size)
       call optional_real(json, "keywords.scf.linear_dependence_threshold", &
                          config%scf_linear_dependence)
       call named(json, "keywords.scf.density_tolerance", config%scf_density_tolerance_set)
