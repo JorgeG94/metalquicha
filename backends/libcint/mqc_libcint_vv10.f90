@@ -44,7 +44,7 @@ contains
 
    subroutine vv10_nlc(b, c, coords, rho, sigma, &
                        inner_coords, inner_rho, inner_sigma, inner_weights, &
-                       exc, vrho, vsigma)
+                       exc, vrho, vsigma, dedw, fexp)
       !! VV10's energy density and potential at each outer grid point
       !!
       !! `exc` is the energy *per electron*, so the caller forms the energy the
@@ -67,10 +67,35 @@ contains
       real(dp), intent(out) :: exc(:)         !! (n_out)
       real(dp), intent(out) :: vrho(:)        !! (n_out), dE/drho
       real(dp), intent(out) :: vsigma(:)      !! (n_out), dE/dsigma
+      real(dp), intent(out), optional :: dedw(:)
+         !! (n_out), dE/dw_i -- the derivative with respect to the *weight* of
+         !! a point, which a nuclear gradient needs because the Becke partition
+         !! moves with the nuclei.
+         !!
+         !! **It is not `rho*exc`.** For a semilocal functional it would be:
+         !! the energy is a sum of independent per-point terms and the weight
+         !! of one multiplies one of them. Here point `k` appears twice, once
+         !! as the outer point and once inside every other point's inner sum,
+         !! and the kernel's symmetry makes those two contributions equal. So
+         !! this carries `beta + f` where `exc` carries `beta + f/2` -- the
+         !! same doubling that distinguishes `vrho` from `exc` just above.
+      real(dp), intent(out), optional :: fexp(:, :)
+         !! (3, n_out), dE/dr_i at fixed density and weights, per unit weight
+         !!
+         !! The energy depends on *where the points are* and not only on what
+         !! the density is there: `r^2` sits inside the kernel. Nothing in a
+         !! semilocal functional does this, which is why a gradient assembled
+         !! from the usual three terms is incomplete here by about 4e-4 on
+         !! water and does not converge away with the grid.
+         !!
+         !! Per unit weight, so the caller multiplies by `w_i` exactly as it
+         !! does for `exc`, and sums onto the atom that owns the point.
 
       real(dp) :: pi43, kvv, beta
       real(dp) :: w0, k_out, dw0_drho, dw0_dsigma, dk_drho, w0tmp
-      real(dp) :: dx, dy, dz, r2, g, gp, gt, t, tt
+      real(dp) :: dx, dy, dz, r2, g, gp, gt, t, tt, q
+      real(dp) :: fx, fy, fz
+      logical :: want_grad
       real(dp) :: f_sum, u_sum, w_sum
       real(dp) :: r_i, s_i
       real(dp), allocatable :: w0p(:), kp(:), rpw(:)
@@ -82,6 +107,9 @@ contains
       exc = 0.0_dp
       vrho = 0.0_dp
       vsigma = 0.0_dp
+      want_grad = present(dedw) .or. present(fexp)
+      if (present(dedw)) dedw = 0.0_dp
+      if (present(fexp)) fexp = 0.0_dp
 
       pi43 = 4.0_dp*PI/3.0_dp
       kvv = b*1.5_dp*PI*(9.0_dp*PI)**(-1.0_dp/6.0_dp)
@@ -117,9 +145,11 @@ contains
       ! disappear against it -- so it is the only thing here worth threading.
       !$omp parallel do default(none) &
       !$omp    shared(n_out, n_kept, rho, sigma, coords, inner_coords, keep, &
-      !$omp           w0p, kp, rpw, exc, vrho, vsigma, c, kvv, pi43, beta) &
+      !$omp           w0p, kp, rpw, exc, vrho, vsigma, c, kvv, pi43, beta, &
+      !$omp           want_grad, dedw, fexp) &
       !$omp    private(i, j, r_i, s_i, w0, w0tmp, dw0_drho, dw0_dsigma, k_out, &
-      !$omp            dk_drho, f_sum, u_sum, w_sum, dx, dy, dz, r2, g, gp, gt, t, tt) &
+      !$omp            dk_drho, f_sum, u_sum, w_sum, dx, dy, dz, r2, g, gp, gt, t, tt, &
+      !$omp            q, fx, fy, fz) &
       !$omp    schedule(dynamic, 64)
       do i = 1, n_out
          if (rho(i) < VV10_RHO_THRESHOLD) cycle
@@ -144,6 +174,9 @@ contains
          f_sum = 0.0_dp
          u_sum = 0.0_dp
          w_sum = 0.0_dp
+         fx = 0.0_dp
+         fy = 0.0_dp
+         fz = 0.0_dp
          do j = 1, n_kept
             dx = inner_coords(1, keep(j)) - coords(1, i)
             dy = inner_coords(2, keep(j)) - coords(2, i)
@@ -157,12 +190,29 @@ contains
             tt = t*(1.0_dp/g + 1.0_dp/gt)
             u_sum = u_sum + tt
             w_sum = w_sum + tt*r2
+            ! The kernel's own dependence on the separation. `g` and `gp` each
+            ! carry `r^2`, weighted by that end's `w0`, and `gt` carries both.
+            if (want_grad) then
+               q = t*(w0/g + w0p(j)/gp + (w0 + w0p(j))/gt)
+               fx = fx + q*dx
+               fy = fy + q*dy
+               fz = fz + q*dz
+            end if
          end do
          f_sum = -1.5_dp*f_sum
 
          exc(i) = beta + 0.5_dp*f_sum
          vrho(i) = beta + f_sum + 1.5_dp*(u_sum*dk_drho + w_sum*dw0_drho)
          vsigma(i) = 1.5_dp*w_sum*dw0_dsigma
+         if (present(dedw)) dedw(i) = r_i*(beta + f_sum)
+         if (present(fexp)) then
+            ! d/dr_i of the pair sum: two from differentiating a squared
+            ! separation, and another from the outer point appearing in both
+            ! roles, against `dx` which is measured inner minus outer.
+            fexp(1, i) = -3.0_dp*r_i*fx
+            fexp(2, i) = -3.0_dp*r_i*fy
+            fexp(3, i) = -3.0_dp*r_i*fz
+         end if
       end do
       !$omp end parallel do
    end subroutine vv10_nlc

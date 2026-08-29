@@ -159,9 +159,11 @@ Each of these is refused rather than approximated. A Hessian that silently
 drops a term is worse than one you cannot have: the frequencies come out
 plausible.
 
-**VV10 non-local correlation** (``b97m-v``, ``wb97m-v``). Not implemented, and
-not a small job: VV10 is a double integral over the density, so its second
-derivative is a double-grid object. PySCF implements it in three parts behind
+**VV10 non-local correlation** (``b97m-v``, ``wb97m-v``). Not implemented. The
+*gradient* is -- and it turned out not to need new machinery, because the pair
+sum is spent producing ``vrho`` and ``vsigma`` and what follows is the ordinary
+GGA contraction. The second derivative is not the same story: it is a
+double-grid object. PySCF implements it in three parts behind
 dedicated kernels. On water the missing term is worth about 1.4e-3 in the
 Hessian -- small, but the functional exists for dispersion-bound systems and
 nothing says it stays small there.
