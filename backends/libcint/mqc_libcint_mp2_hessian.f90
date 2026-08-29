@@ -46,6 +46,7 @@ module mqc_libcint_mp2_hessian
    !! layer of swaps. `<pq|rs> = (pr|qs)`; the reorder happens once, where the
    !! AO transform lands (`tools/mp2_hessian_oracle/CONVENTIONS.md` s.1-2).
    use pic_types, only: dp
+   use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, atom_ao_blocks
    use mqc_libcint_hess_ints, only: hess_1e_block, hess_rinv_block, &
@@ -1132,37 +1133,59 @@ contains
       !! Evaluated at the unrelaxed density and its response this drives the
       !! perturbed Z-vector; at the relaxed pair it is `d_X I`.
       real(dp), intent(in) :: df(:, :)             !! `d_X f`, full
-      real(dp), intent(in) :: deri(:, :, :, :)     !! `d_X <pq|rs>`, full
-      real(dp), intent(in) :: dl(:, :, :, :)       !! `2 deri - deri^{s<->r}`
-      real(dp), intent(in) :: eri_mo(:, :, :, :), l_mo(:, :, :, :)
+      real(dp), intent(in), target, contiguous :: deri(:, :, :, :)
+         !! `d_X <pq|rs>`, full
+      real(dp), intent(in), target, contiguous :: dl(:, :, :, :)
+         !! `2 deri - deri^{s<->r}`
+      real(dp), intent(in), target, contiguous :: eri_mo(:, :, :, :), l_mo(:, :, :, :)
       real(dp), intent(in) :: orbital_energies(:)
       real(dp), intent(in) :: d(:, :), dd(:, :)    !! Density and its response
-      real(dp), intent(in) :: gam(:, :, :, :), dgam(:, :, :, :)
+      real(dp), intent(in), target, contiguous :: gam(:, :, :, :), dgam(:, :, :, :)
       integer, intent(in) :: n_occ
       real(dp), allocatable, intent(out) :: dip(:, :)
 
+      real(dp), pointer :: deri2(:, :), gam2(:, :), eri2(:, :), dgam2(:, :)
+      real(dp), allocatable :: two_e(:, :), dsym(:, :)
       real(dp) :: acc
-      integer :: n_mo, p, q, r, s, t
+      integer :: n_mo, n_cube, p, q, r, s
 
       n_mo = size(df, 1)
-      allocate (dip(n_mo, n_mo))
+      n_cube = n_mo*n_mo*n_mo
+      allocate (dip(n_mo, n_mo), two_e(n_mo, n_mo), dsym(n_mo, n_mo))
+
+      ! The `4 (d_X<pr|st> Gam_qrst + <pr|st> dGam_qrst)` term is two matrix
+      ! products, not a loop nest: `p` and `q` lead their arrays and Fortran
+      ! stores columns first, so `(r,s,t)` is one contiguous trailing index and
+      ! each contraction is `A B^T` over it. Written out it was `n_mo^5` by
+      ! hand and 30 per cent of an MP2 Hessian run, measured; as a gemm the
+      ! same flops go through the BLAS. The remapping is a pointer view, so no
+      ! `n_mo^4` copy is made to get it.
+      deri2(1:n_mo, 1:n_cube) => deri
+      gam2(1:n_mo, 1:n_cube) => gam
+      eri2(1:n_mo, 1:n_cube) => eri_mo
+      dgam2(1:n_mo, 1:n_cube) => dgam
+      call pic_gemm(deri2, gam2, two_e, transb="T")
+      call pic_gemm(eri2, dgam2, two_e, transb="T", beta=1.0_dp)
+
+      ! `d_X f (D + D^T)` -- the full matrix product s.4b insists on, and it
+      ! was always a gemm wearing a loop.
+      dsym = d + transpose(d)
+      call pic_gemm(df, dsym, dip)
+
       do q = 1, n_mo
          do p = 1, n_mo
-            acc = orbital_energies(p)*(dd(p, q) + dd(q, p))
-            do r = 1, n_mo
-               acc = acc + df(p, r)*(d(r, q) + d(q, r))
-            end do
-            do t = 1, n_mo
-               do s = 1, n_mo
-                  do r = 1, n_mo
-                     acc = acc + 4.0_dp*(deri(p, r, s, t)*gam(q, r, s, t) &
-                                         + eri_mo(p, r, s, t)*dgam(q, r, s, t))
-                  end do
-               end do
-            end do
-            dip(p, q) = acc
+            dip(p, q) = dip(p, q) + orbital_energies(p)*(dd(p, q) + dd(q, p)) &
+                        + 4.0_dp*two_e(p, q)
          end do
       end do
+
+      ! This one stays a loop: `p` and `q` sit in the second and fourth slots
+      ! of `l_mo`, so the `(r,s)` pair it contracts is strided rather than
+      ! contiguous and no reshape makes it a gemm without a transpose that
+      ! costs more than the contraction. It is `n_mo^4` against the term above's
+      ! `n_mo^5`, so threading the independent `(p,q)` is the whole win.
+      !$omp parallel do collapse(2) default(none) schedule(static) &
+      !$omp    shared(dip, dd, d, l_mo, dl, n_mo, n_occ) private(p, q, r, s, acc)
       do q = 1, n_occ
          do p = 1, n_mo
             acc = 0.0_dp
@@ -1175,6 +1198,7 @@ contains
             dip(p, q) = dip(p, q) + acc
          end do
       end do
+      !$omp end parallel do
       dip = -0.5_dp*dip
    end subroutine mp2_perturbed_lagrangian
 
