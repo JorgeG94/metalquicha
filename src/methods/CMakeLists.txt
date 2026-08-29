@@ -9,6 +9,7 @@ target_sources(
           mqc_method_mcscf.f90
           mqc_cuest_iface.f90
           mqc_diis.f90
+          mqc_ediis.f90
           mqc_lebedev_data.f90
           mqc_lebedev.f90
           mqc_dft_radial_data.f90
