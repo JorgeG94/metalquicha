@@ -203,12 +203,12 @@ One rung of a basis-set-projection ladder</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
-                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -2037,7 +2037,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~9"></span>
+              <span class="anchor" id="variable-basis~7"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2071,7 +2071,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~5"></span>
+              <span class="anchor" id="variable-tolerance~12"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2121,7 +2121,7 @@ This is the parsed representation from the input file, not the computational fra
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~7"></span>
+              <span class="anchor" id="variable-charge~9"></span>
               integer,
             </td>
               <td>public</td>
@@ -2138,7 +2138,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~6"></span>
+              <span class="anchor" id="variable-indices~8"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2155,7 +2155,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~7"></span>
+              <span class="anchor" id="variable-multiplicity~8"></span>
               integer,
             </td>
               <td>public</td>
@@ -2201,7 +2201,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/input_fragment_t.html#boundprocedure-destroy~22'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/input_fragment_destroy.html'>input_fragment_destroy</a></td>
+  <strong><a href='../type/input_fragment_t.html#boundprocedure-destroy~15'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/input_fragment_destroy.html'>input_fragment_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -2234,7 +2234,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~12"></span>
+              <span class="anchor" id="variable-bonds~17"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
               <td>public,</td>
@@ -2251,7 +2251,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~8"></span>
+              <span class="anchor" id="variable-charge~10"></span>
               integer,
             </td>
               <td>public</td>
@@ -2268,7 +2268,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~8"></span>
+              <span class="anchor" id="variable-fragments~7"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
               <td>public,</td>
@@ -2285,7 +2285,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geometry~2"></span>
+              <span class="anchor" id="variable-geometry"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
               <td>public</td>
@@ -2302,7 +2302,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~8"></span>
+              <span class="anchor" id="variable-multiplicity~9"></span>
               integer,
             </td>
               <td>public</td>
@@ -2319,7 +2319,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~31"></span>
+              <span class="anchor" id="variable-name~21"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2418,7 +2418,7 @@ the wrong potential.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/molecule_t.html#boundprocedure-destroy~23'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecule_destroy.html'>molecule_destroy</a></td>
+  <strong><a href='../type/molecule_t.html#boundprocedure-destroy~16'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecule_destroy.html'>molecule_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -2519,7 +2519,7 @@ the wrong potential.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~5"></span>
+              <span class="anchor" id="variable-allow_crap_scf~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -2553,7 +2553,7 @@ the wrong potential.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis"></span>
+              <span class="anchor" id="variable-aux_basis~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2587,7 +2587,7 @@ the wrong potential.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~10"></span>
+              <span class="anchor" id="variable-basis~8"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2604,7 +2604,7 @@ the wrong potential.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bond_breaking~2"></span>
+              <span class="anchor" id="variable-bond_breaking~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2616,7 +2616,7 @@ the wrong potential.</p>
                 <td></td>
                 <td></td>
             <td>
-<p>How a fragment represents a covalent bond the partition cut.</p><a href="../type/mqc_config_t.html#variable-bond_breaking~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>How a fragment represents a covalent bond the partition cut.</p><a href="../type/mqc_config_t.html#variable-bond_breaking~3" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -2745,7 +2745,7 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~13"></span>
+              <span class="anchor" id="variable-bonds~18"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
               <td>public,</td>
@@ -2762,7 +2762,7 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~8"></span>
+              <span class="anchor" id="variable-calc_type~11"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -2779,7 +2779,7 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cap_scale~4"></span>
+              <span class="anchor" id="variable-cap_scale~5"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2791,7 +2791,7 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
 <td> =</td>
                 <td>1.0_dp</td>
             <td>
-<p>Where the cap goes along the cut bond: <code>R_H = R_kept + s (R_gone - R_kept)</code>.</p><a href="../type/mqc_config_t.html#variable-cap_scale~4" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Where the cap goes along the cut bond: <code>R_H = R_kept + s (R_gone - R_kept)</code>.</p><a href="../type/mqc_config_t.html#variable-cap_scale~5" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -2936,7 +2936,7 @@ absent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~9"></span>
+              <span class="anchor" id="variable-charge~11"></span>
               integer,
             </td>
               <td>public</td>
@@ -3095,7 +3095,7 @@ fingerprint disagrees with this run is refused, not overwritten.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-counterpoise~2"></span>
+              <span class="anchor" id="variable-counterpoise~4"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3108,12 +3108,12 @@ fingerprint disagrees with this run is refused, not overwritten.</p>
                 <td></td>
             <td>
 <p>How basis-set superposition error is handled: &ldquo;none&rdquo; (default) or
-&ldquo;vmfc&rdquo;.</p><a href="../type/mqc_config_t.html#variable-counterpoise~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+&ldquo;vmfc&rdquo;.</p><a href="../type/mqc_config_t.html#variable-counterpoise~4" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_nang~5"></span>
+              <span class="anchor" id="variable-cpcm_nang~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -3130,7 +3130,7 @@ fingerprint disagrees with this run is refused, not overwritten.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_rscale~5"></span>
+              <span class="anchor" id="variable-cpcm_rscale~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3281,7 +3281,7 @@ whole basis, which is how a run measures what the screen is worth.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~6"></span>
+              <span class="anchor" id="variable-dielectric~4"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3315,7 +3315,7 @@ whole basis, which is how a run measures what the screen is worth.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ecp~2"></span>
+              <span class="anchor" id="variable-ecp"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3598,7 +3598,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag_level~3"></span>
+              <span class="anchor" id="variable-frag_level"></span>
               integer,
             </td>
               <td>public</td>
@@ -3632,7 +3632,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_breakdown~3"></span>
+              <span class="anchor" id="variable-fragment_breakdown~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3666,7 +3666,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~9"></span>
+              <span class="anchor" id="variable-fragments~8"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
               <td>public,</td>
@@ -3722,7 +3722,7 @@ numbers enough that it should not be made by omission.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geometry~3"></span>
+              <span class="anchor" id="variable-geometry~2"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
               <td>public</td>
@@ -3910,7 +3910,7 @@ told apart: absent leaves <code>backend</code> alone, false pins it to the CPU.<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_intersection_level~3"></span>
+              <span class="anchor" id="variable-max_intersection_level~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -4140,7 +4140,7 @@ space, which is the one subspace covering everything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~9"></span>
+              <span class="anchor" id="variable-method~7"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -4157,7 +4157,7 @@ space, which is the one subspace covering everything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-molecules~2"></span>
+              <span class="anchor" id="variable-molecules"></span>
               type(<a href='../type/molecule_t.html'>molecule_t</a>),
             </td>
               <td>public,</td>
@@ -4174,7 +4174,7 @@ space, which is the one subspace covering everything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~9"></span>
+              <span class="anchor" id="variable-multiplicity~10"></span>
               integer,
             </td>
               <td>public</td>
@@ -5231,7 +5231,7 @@ hiding a problem, not a way to run one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvation_model~5"></span>
+              <span class="anchor" id="variable-solvation_model~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -5248,7 +5248,7 @@ hiding a problem, not a way to run one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvent~5"></span>
+              <span class="anchor" id="variable-solvent~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -5317,7 +5317,7 @@ hiding a problem, not a way to run one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_cds~5"></span>
+              <span class="anchor" id="variable-use_cds~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -5334,7 +5334,7 @@ hiding a problem, not a way to run one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_shift~5"></span>
+              <span class="anchor" id="variable-use_shift~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -5360,7 +5360,7 @@ hiding a problem, not a way to run one.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mqc_config_t.html#boundprocedure-destroy~24'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a></td>
+  <strong><a href='../type/mqc_config_t.html#boundprocedure-destroy~17'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -5394,7 +5394,7 @@ hiding a problem, not a way to run one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~117"></span>
+              <span class="anchor" id="variable-this~81"></span>
               class(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5434,7 +5434,7 @@ hiding a problem, not a way to run one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~118"></span>
+              <span class="anchor" id="variable-this~82"></span>
               class(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5474,7 +5474,7 @@ hiding a problem, not a way to run one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~116"></span>
+              <span class="anchor" id="variable-this~80"></span>
               class(<a href='../type/molecule_t.html'>molecule_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5517,7 +5517,7 @@ hiding a problem, not a way to run one.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-29 16:42 +0000             </p>
+ on 2026-08-29 17:34 +0000             </p>
           </div>
         </div>
         <br>
