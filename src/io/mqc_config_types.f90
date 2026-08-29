@@ -187,6 +187,11 @@ module mqc_config_types
          !! Pople sets throughout, so reproducing a GAMESS number needs a way
          !! to say so. Defaults false, which honours the file.
       character(len=:), allocatable :: functional
+      character(len=:), allocatable :: scf_accelerator
+         !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
+         !! 'ediis'. The energy-based pair runs only while the error is large
+         !! and hands over to DIIS below `ACCEL_SWITCH`, so naming one asks for
+         !! a different opening, not a different endgame.
       character(len=:), allocatable :: scf_guess
          !! Initial guess name from `keywords.scf.guess`.
          !!
