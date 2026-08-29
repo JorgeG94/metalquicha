@@ -38,7 +38,11 @@ contains
                   new_unittest("parallel_lists_must_match", test_list_lengths), &
                   new_unittest("geometry_given_two_ways", test_geometry_both), &
                   new_unittest("geometry_given_no_way", test_geometry_neither), &
-                  new_unittest("empty_molecules_array", test_empty_molecules) &
+                  new_unittest("empty_molecules_array", test_empty_molecules), &
+                  new_unittest("ecp_is_an_allowed_model_key", test_ecp_allowed), &
+                  new_unittest("ecp_refused_for_xtb", test_ecp_xtb), &
+                  new_unittest("ecp_refused_for_mcscf", test_ecp_mcscf), &
+                  new_unittest("empty_ecp_is_not_a_request", test_ecp_empty) &
                   ]
    end subroutine collect_mqc_json_schema_tests
 
@@ -235,6 +239,73 @@ contains
       call check(error,.not. read_error%has_error(), &
                  what//" should be accepted, but: "//read_error%get_message())
    end subroutine expect_accepted
+
+   ! ---- effective core potentials ------------------------------------------
+   !
+   ! `model.ecp` reaches the Hartree-Fock and DFT builders and nothing else, so
+   ! a deck naming one for a method that does not carry it would run
+   ! all-electron and report a number with nothing to say half the request was
+   ! dropped. Wrong by hundreds of Hartree, converged, and silent -- which is
+   ! the failure the whole ECP path exists to prevent, so it must not be the one
+   ! the deck layer has. Each case below is a refusal rather than an omission.
+
+   subroutine test_ecp_allowed(error)
+      !! The key itself validates: the allow-list rejects what it does not know,
+      !! so `ecp` being absent from it would refuse every ECP deck ever written.
+      type(error_type), allocatable, intent(out) :: error
+
+      call write_deck([character(len=200) :: &
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "hf", "basis": "def2-svp", "ecp": "def2-ecp"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"symbols": ["I", "H"], "geometry": [0,0,0, 0,0,1.609],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
+      call expect_accepted(error, "an ECP named on a Hartree-Fock deck")
+   end subroutine test_ecp_allowed
+
+   subroutine test_ecp_xtb(error)
+      !! A semiempirical method has its own parameterised core and no
+      !! all-electron basis for a potential to replace, so naming one means the
+      !! deck is confused rather than merely redundant.
+      type(error_type), allocatable, intent(out) :: error
+
+      call write_deck([character(len=200) :: &
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "GFN2", "ecp": "def2-ecp"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"symbols": ["H", "H"], "geometry": [0,0,0, 0.7,0,0],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
+      call expect_rejected(error, "semiempirical", "an ECP on an xTB deck")
+   end subroutine test_ecp_xtb
+
+   subroutine test_ecp_mcscf(error)
+      !! The MCSCF path does not carry a potential yet. Refused rather than
+      !! ignored, which is the difference between an error and a wrong answer.
+      type(error_type), allocatable, intent(out) :: error
+
+      call write_deck([character(len=200) :: &
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "casscf", "basis": "def2-svp", "ecp": "def2-ecp"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"symbols": ["I", "H"], "geometry": [0,0,0, 0,0,1.609],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
+      call expect_rejected(error, "MCSCF", "an ECP on a CASSCF deck")
+   end subroutine test_ecp_mcscf
+
+   subroutine test_ecp_empty(error)
+      !! An empty string is not a request for a potential, so it must not
+      !! refuse a method that has no ECP support. The check reads the value and
+      !! not merely the key's presence.
+      type(error_type), allocatable, intent(out) :: error
+
+      call write_deck([character(len=200) :: &
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "GFN2", "ecp": ""},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"symbols": ["H", "H"], "geometry": [0,0,0, 0.7,0,0],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
+      call expect_accepted(error, "an empty ecp on an xTB deck")
+   end subroutine test_ecp_empty
 
    subroutine expect_rejected(error, needle, what)
       !! Rejected, and the message names the thing that was wrong
