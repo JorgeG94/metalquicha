@@ -1469,7 +1469,8 @@ contains
       real(dp), allocatable :: eri_mo(:, :, :, :), l_mo(:, :, :, :)
       real(dp), allocatable :: gam(:, :, :, :), imat(:, :)
       real(dp), allocatable :: ip(:, :), xov(:, :), i2(:, :)
-      real(dp), allocatable :: xov_st(:, :, :), i2_st(:, :, :)
+      real(dp), allocatable :: xt(:, :), it(:, :), pf(:, :)
+      real(dp), allocatable :: xov_st(:, :, :), i2_st(:, :, :), pf_st(:, :, :)
       real(dp), allocatable :: eip1(:, :, :, :, :), h1(:, :, :, :), s1(:, :, :, :)
       real(dp), allocatable :: h1a(:, :, :), s1a(:, :, :), mo1(:, :, :, :)
       real(dp), allocatable :: orb(:, :), dt2(:, :, :, :, :)
@@ -1495,18 +1496,18 @@ contains
 
       ! ---- the unperturbed ladder, from the gradient ------------------------
       call libcint_mp2_gradient(mol, coeff, orbital_energies, n_occ, gradient, &
-                                error, n_frozen=0, relaxed_density_mo=dm1mo, &
+                                error, n_frozen=n_frozen, relaxed_density_mo=dm1mo, &
                                 energy_weighted_ao=w_ao)
       if (error%has_error()) return
 
       call mol%eris_packed(eri_packed)
-      call transform_ovov(eri_packed, coeff, 0, n_occ, n_ao, n_mo, ovov)
-      call build_amplitudes(ovov, orbital_energies, 0, n_occ, n_mo - n_occ, &
-                            n_occ, t2)
+      call transform_ovov(eri_packed, coeff, n_frozen, n_occ, n_ao, n_mo, ovov)
+      call build_amplitudes(ovov, orbital_energies, n_frozen, n_occ - n_frozen, &
+                            n_mo - n_occ, n_occ, t2)
       deallocate (eri_packed, ovov)
 
       ! ---- pass 1: the fixed-density second skeletons, both blocks ----------
-      call build_effective_2pdm_ao(t2, dm1mo, coeff, n_ao, n_mo, n_occ, 0, &
+      call build_effective_2pdm_ao(t2, dm1mo, coeff, n_ao, n_mo, n_occ, n_frozen, &
                                    gamma_eff)
       call mp2_skeleton_hessian(mol, gamma_eff, dm1mo, w_ao, coeff, &
                                 orbital_energies, n_occ, hess_corr, hess_ref, &
@@ -1532,19 +1533,32 @@ contains
          end do
       end do
 
-      call mp2_cumulant_2pdm(t2, 0, n_occ, n_mo, gam)
+      call mp2_cumulant_2pdm(t2, n_frozen, n_occ, n_mo, gam)
       call mp2_mo_lagrangian(eri_mo, orbital_energies, dm1mo, gam, n_occ, imat)
 
-      ! All-electron non-canonical: the bare carriers are the augmented ones
-      ! (the augmentation is the exact identity here, and the response test
-      ! pins that), so `mp2_pair_rotation_augment` is deliberately not called.
+      ! All-electron non-canonical, the bare carriers are the augmented ones
+      ! (the augmentation is the exact identity there, and the response test
+      ! pins that), so `mp2_pair_rotation_augment` is skipped. A frozen core
+      ! forces it -- pycc gate it `if canonical or ncore:` -- because the
+      ! independent core<->active rotation has no CPHF counterpart and its
+      ! `P^(X)` carrier must meet `f^(Y)` in the orbital response.
       allocate (xov_st(n_mo, n_mo, n_pert), i2_st(n_mo, n_mo, n_pert))
+      if (n_frozen > 0) allocate (pf_st(n_mo, n_mo, n_pert))
       do x = 1, n_pert
          call mp2_skeleton_lagrangian(fx(:, :, x), sx(:, :, x), &
                                       erix(:, :, :, :, x), dm1mo, gam, imat, &
                                       n_occ, ip, xov, i2)
-         xov_st(:, :, x) = xov
-         i2_st(:, :, x) = i2
+         if (n_frozen > 0) then
+            call mp2_pair_rotation_augment(ip, xov, i2, l_mo, orbital_energies, &
+                                           n_occ, n_frozen, .false., xt, it, pf)
+            xov_st(:, :, x) = xt
+            i2_st(:, :, x) = it
+            pf_st(:, :, x) = pf
+            deallocate (xt, it, pf)
+         else
+            xov_st(:, :, x) = xov
+            i2_st(:, :, x) = i2
+         end if
          deallocate (ip, xov, i2)
       end do
 
@@ -1566,7 +1580,12 @@ contains
       deallocate (h1, s1)
 
       ! ---- group 2: the orbital response ------------------------------------
-      call mp2_orbital_response_term(mo1, sx, fx, xov_st, i2_st, orb)
+      if (n_frozen > 0) then
+         call mp2_orbital_response_term(mo1, sx, fx, xov_st, i2_st, orb, pf=pf_st)
+         deallocate (pf_st)
+      else
+         call mp2_orbital_response_term(mo1, sx, fx, xov_st, i2_st, orb)
+      end if
       deallocate (xov_st, i2_st)
 
       ! ---- group 3: the 2n+1 density response -------------------------------
