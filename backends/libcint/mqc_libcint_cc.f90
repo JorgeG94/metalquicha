@@ -907,6 +907,7 @@ contains
       ! never both, and everything downstream is told which by which one is
       ! allocated.
       call clk%start()
+      call clk%begin("AO->MO integrals")
       allocate (c_act(n_ao, n_act))
       c_act = coeff(:, frozen + 1:n_mo)
       if (present(aux)) then
@@ -944,14 +945,15 @@ contains
       ! `mo` is kept afterwards because the ladder assembles its own from it in
       ! batches; on the fitted one the spatial blocks are finished with here and
       ! only `b_vv` outlives them.
-      call clk%lap("AO->MO integrals")
+      call clk%lap()
+      call clk%begin("CC integral blocks")
       if (present(aux)) then
          call build_cc_eris_fitted(chem, map, no, nv, eris)
          deallocate (chem%oooo, chem%ooov, chem%oovv, chem%ovov, chem%ovvv)
       else
          call build_cc_eris(src, map, no, nv, eris)
       end if
-      call clk%lap("CC integral blocks")
+      call clk%lap()
 
       ! Spin-orbital energies. Canonical, so the Fock matrix is this diagonal and
       ! nothing else -- which is what lets every denominator below be a sum of
@@ -966,10 +968,11 @@ contains
       end do
 
       ! ---- MP2, as the checkpoint before any amplitude equation --------------
+      call clk%begin("MP2 amplitudes")
       allocate (t1(nv, no), t2(nv, nv, no, no))
       t1 = 0.0_dp
       call mp2_amplitudes(eris, eps, no, nv, t2, result%e_mp2)
-      call clk%lap("MP2 amplitudes")
+      call clk%lap()
       if (verbose) then
          write (line, "(a,f20.12)") "  MP2 (spin orbital) = ", result%e_mp2
          call logger%info(trim(line))
@@ -1034,9 +1037,9 @@ contains
 
       ! ---- (T) --------------------------------------------------------------
       if (want_triples) then
-         if (verbose) call logger%info("  CCSD iterations done! beginning the perturbative triples (T)")
+         call clk%begin("(T) correction")
          call triples_correction(eris, eps, t1, t2, no, nv, result%e_triples)
-         call clk%lap("(T) correction")
+         call clk%lap()
          if (verbose) then
             write (line, "(a,f20.12)") "  (T) = ", result%e_triples
             call logger%info(trim(line))
@@ -1094,11 +1097,12 @@ contains
       ! `build_df_mo_block` lays the compound index out left-fastest, so
       ! `b_ov` is (i,a) with i fastest -- which is the ordering every block
       ! below is indexed in.
-      call build_df_mo_block(mol, aux, c_occ, c_occ, b_oo, error)
+      ! Every block is consumed as `B B^T`, so the cheap factor is safe.
+      call build_df_mo_block(mol, aux, c_occ, c_occ, b_oo, error, fast_factor=.true.)
       if (error%has_error()) return
-      call build_df_mo_block(mol, aux, c_occ, c_vir, b_ov, error)
+      call build_df_mo_block(mol, aux, c_occ, c_vir, b_ov, error, fast_factor=.true.)
       if (error%has_error()) return
-      call build_df_mo_block(mol, aux, c_vir, c_vir, b_vv_pq, error)
+      call build_df_mo_block(mol, aux, c_vir, c_vir, b_vv_pq, error, fast_factor=.true.)
       if (error%has_error()) return
 
       allocate (chem%oooo(n_o, n_o, n_o, n_o), chem%ooov(n_o, n_o, n_o, n_v))

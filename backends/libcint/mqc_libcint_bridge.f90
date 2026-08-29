@@ -138,6 +138,31 @@ contains
                      "-- use a smaller basis.")
    end subroutine check_sapt_fits_in_core
 
+   pure function reuse_scf_fit(settings) result(reuse)
+      !! Whether the SCF should hand its fitted tensor to the correlated step
+      !!
+      !! A fitted SCF followed by a fitted MP2 was building the same three-
+      !! centre integrals twice -- four hundred million of them at 560
+      !! functions. It need not build them even once more: the MO transform
+      !! acts on the pair index and the metric on the auxiliary one, so they
+      !! commute and the SCF's *fitted* tensor transforms into exactly the
+      !! tensor the correlation step would have built. See `build_df_mo_block`.
+      !!
+      !! Both halves have to be fitted for the question to arise, and they are
+      !! then necessarily the same auxiliary basis: `model.aux_basis` is the
+      !! only place a fitting set is named, so there is no deck that fits both
+      !! halves with different ones. If that ever stops being true this has to
+      !! start comparing the two basis names.
+      !!
+      !! Restricted only, and MP2 only, because those are the paths wired to
+      !! accept it. Carrying it further is plumbing rather than a new idea.
+      type(cuest_scf_settings_t), intent(in) :: settings
+      logical :: reuse
+
+      reuse = settings%density_fitting .and. settings%corr_density_fitting &
+              .and. settings%run_mp2 .and. .not. settings%unrestricted
+   end function reuse_scf_fit
+
    function eri_fits_in_core(nao) result(fits)
       !! Whether n^4 stored integrals fit in this rank's share of memory
       !!
@@ -600,6 +625,11 @@ contains
       type(xc_context_t), pointer :: xc_arg
       logical :: kohn_sham
       type(timer_type) :: grad_clock
+      real(dp), allocatable :: scf_b_ao(:, :)
+         !! The SCF's fitted tensor, taken over rather than freed when a fitted
+         !! correlated step follows and would otherwise rebuild the integrals
+         !! and refit them. See `reuse_scf_fit` for when that is.
+      logical :: keep_fit
 
       character(len=MAX_LINE_LENGTH) :: line
 
@@ -958,12 +988,27 @@ contains
             return
          end if
 
-         call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
-                              settings%density_tol, settings%verbose, scf, error, &
-                              aux=aux, diis_vectors=diis_size, guess=guess_kind, &
-                              guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
-                              level_shift=settings%level_shift, &
-                              linear_dependence=settings%linear_dependence)
+         ! Whether to carry the three-centre integrals out of the SCF. They
+         ! cost a full copy of the tensor to keep, and nothing at all if the
+         ! run ends at the reference -- so it is asked for only when something
+         ! downstream will transform them.
+         keep_fit = reuse_scf_fit(settings)
+         if (keep_fit) then
+            call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
+                                 settings%density_tol, settings%verbose, scf, error, &
+                                 aux=aux, diis_vectors=diis_size, guess=guess_kind, &
+                                 guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
+                                 level_shift=settings%level_shift, &
+                                 linear_dependence=settings%linear_dependence, &
+                                 b_ao_out=scf_b_ao)
+         else
+            call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
+                                 settings%density_tol, settings%verbose, scf, error, &
+                                 aux=aux, diis_vectors=diis_size, guess=guess_kind, &
+                                 guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
+                                 level_shift=settings%level_shift, &
+                                 linear_dependence=settings%linear_dependence)
+         end if
          ! Kept alive: the gradient below has to be told the same auxiliary
          ! basis this SCF fitted with. Released once past it.
       else if (unrestricted) then
@@ -1422,9 +1467,18 @@ contains
                   call mol%destroy()
                   return
                end if
-               call run_libcint_ri_mp2(mol, corr_aux, scf%orbitals, scf%orbital_energies, &
-                                       fragment%nelec/2, scf%energy, mp2, error, &
-                                       n_frozen=frozen)
+               if (allocated(scf_b_ao)) then
+                  call run_libcint_ri_mp2(mol, corr_aux, scf%orbitals, scf%orbital_energies, &
+                                          fragment%nelec/2, scf%energy, mp2, error, &
+                                          n_frozen=frozen, b_ao_in=scf_b_ao)
+               else
+                  call run_libcint_ri_mp2(mol, corr_aux, scf%orbitals, scf%orbital_energies, &
+                                          fragment%nelec/2, scf%energy, mp2, error, &
+                                          n_frozen=frozen)
+               end if
+               ! Released as soon as it has been transformed. It is gigabytes,
+               ! and the gradient below builds its own.
+               if (allocated(scf_b_ao)) deallocate (scf_b_ao)
                call corr_aux%destroy()
             else
                call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, &

@@ -19,8 +19,9 @@ module mqc_timing
    !! ```fortran
    !! type(timing_report_t) :: clk
    !! call clk%start()
+   !! call clk%begin("integrals")     ! says so before it takes the time
    !! call build_integrals(...)
-   !! call clk%lap("integrals")
+   !! call clk%lap()                  ! closes whatever `begin` opened
    !! do iter = 1, n
    !!    call amplitude_equations(...)
    !!    call clk%lap("amplitudes")     ! accumulates, one entry not n
@@ -28,6 +29,13 @@ module mqc_timing
    !! call clk%finish()
    !! call clk%report("CCSD", verbose)
    !! ```
+   !!
+   !! **`begin` is the announcement, `lap` is the measurement.** A table printed
+   !! at the end says where the time went; it cannot say where the time is
+   !! *going*, which is the question being asked by anyone watching a terminal
+   !! that has been silent for four minutes. `begin` names the stage on the way
+   !! in, and the matching `lap` needs no argument because the name is already
+   !! known -- so the announcement and the row it becomes cannot drift apart.
    !!
    !! Stages are created on first mention, so a caller adds one by naming it and
    !! nothing has to be declared up front. Laps accumulate, so a stage inside a
@@ -73,8 +81,11 @@ module mqc_timing
       real(dp) :: total_seconds = 0.0_dp
       logical :: running = .false.
       logical :: overflowed = .false.
+      character(len=MAX_STAGE_NAME) :: pending = ""
+         !! Stage opened by `begin` and not yet closed by `lap`
    contains
       procedure :: start => report_start
+      procedure :: begin => report_begin
       procedure :: lap => report_lap
       procedure :: finish => report_finish
       procedure :: report => report_emit
@@ -92,10 +103,28 @@ contains
       self%total_seconds = 0.0_dp
       self%overflowed = .false.
       self%stage = stage_t()
+      self%pending = ""
       call self%total_clock%start()
       call self%lap_clock%start()
       self%running = .true.
    end subroutine report_start
+
+   subroutine report_begin(self, name)
+      !! Say that `name` is starting, and let the next `lap` close it
+      !!
+      !! At `performance` level, the same level the table itself uses: a run
+      !! that wants to know where its wall clock goes wants both, and one
+      !! without the other is half an answer. That level is numerically below
+      !! `info`, so this shows by default.
+      !!
+      !! Announcing does not touch the lap clock. `begin` is free to be called
+      !! anywhere; only `lap` divides the timeline.
+      class(timing_report_t), intent(inout) :: self
+      character(len=*), intent(in) :: name
+
+      self%pending = name
+      call logger%performance("    "//trim(name)//" ...")
+   end subroutine report_begin
 
    subroutine report_lap(self, name)
       !! Attribute the time since the previous lap to `name`
@@ -104,14 +133,28 @@ contains
       !! call inside a loop reports the total for the loop and how many passes
       !! it took.
       class(timing_report_t), intent(inout) :: self
-      character(len=*), intent(in) :: name
+      character(len=*), intent(in), optional :: name
+         !! Omitted closes whatever `begin` last opened. A lap with neither a
+         !! name nor a pending stage does not divide the timeline at all -- the
+         !! clock keeps running and the time lands in the next stage that is
+         !! named. Attributing it to an invented stage would be worse: the
+         !! table's value is that every row was asked for by someone.
 
       real(dp) :: elapsed
       integer :: i, slot
+      character(len=MAX_STAGE_NAME) :: label
 
       ! A lap before start would read an unstarted clock, which pic_timer stops
       ! the program for. Silently doing nothing is the right failure here.
       if (.not. self%running) return
+
+      if (present(name)) then
+         label = name
+      else
+         label = self%pending
+      end if
+      self%pending = ""
+      if (label == "") return
 
       call self%lap_clock%stop()
       elapsed = self%lap_clock%get_elapsed_time()
@@ -119,7 +162,7 @@ contains
 
       slot = 0
       do i = 1, self%n_stages
-         if (self%stage(i)%name == name) then
+         if (self%stage(i)%name == label) then
             slot = i
             exit
          end if
@@ -134,7 +177,7 @@ contains
          end if
          self%n_stages = self%n_stages + 1
          slot = self%n_stages
-         self%stage(slot)%name = name
+         self%stage(slot)%name = label
       end if
 
       self%stage(slot)%seconds = self%stage(slot)%seconds + elapsed

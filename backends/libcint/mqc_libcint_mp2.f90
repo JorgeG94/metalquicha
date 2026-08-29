@@ -114,17 +114,20 @@ contains
       end if
 
       call clk%start()
+      call clk%begin("AO integrals")
       call mol%eris_packed(ao_eri)
-      call clk%lap("AO integrals")
+      call clk%lap()
+      call clk%begin("AO->MO transform")
       call transform_ovov(ao_eri, coeff, frozen, n_occ, n_ao, n_mo, ovov)
       deallocate (ao_eri)
-      call clk%lap("AO->MO transform")
+      call clk%lap()
 
       ! The denominators are all strictly negative for a stable reference, so a
       ! non-negative one means the SCF solution is not a minimum. Rather than
       ! guard every term, the sum is checked afterwards: MP2 correlation is
       ! negative, and a positive total says the reference was wrong, which is a
       ! more useful thing to report than a divide-by-near-zero here.
+      call clk%begin("energy denominators")
       e_ss = 0.0_dp
       e_os = 0.0_dp
       do i = 1, n_o
@@ -142,7 +145,7 @@ contains
          end do
       end do
 
-      call clk%lap("energy denominators")
+      call clk%lap()
       call clk%finish()
       call clk%report("MP2")
 
@@ -157,7 +160,7 @@ contains
    end subroutine run_libcint_mp2
 
    subroutine run_libcint_ri_mp2(mol, aux, coeff, orbital_energies, n_occ, scf_energy, &
-                                 result, error, n_frozen)
+                                 result, error, n_frozen, b_ao_in)
       !! E(2) from a fitted (ia|jb), never forming the four-index tensor
       !!
       !! `build_df_tensor` already returns B(mu nu, P) with the inverse-root
@@ -185,6 +188,11 @@ contains
       type(mp2_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: n_frozen
+      real(dp), intent(in), optional :: b_ao_in(:, :)
+         !! The AO-basis fitted tensor a fitted SCF already built with this
+         !! same auxiliary basis -- `model.aux_basis` names one fitting set, so
+         !! a fitted reference and a fitted correlation always share it. Given
+         !! it, this reduces to the MO transform: see `build_df_mo_block`.
 
       real(dp), allocatable :: bia(:, :, :), g(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
@@ -221,10 +229,15 @@ contains
       ! the occupied-virtual corner out of it costs the same answer several
       ! times over.
       call clk%start()
-      call build_df_mo_tensor(mol, aux, c_occ, c_vir, bia, error)
+      call clk%begin("B tensor (3c/2c fit)")
+      ! Energy only: `bia` is contracted with another `bia` and nothing
+      ! else, so the cheap factor is safe here. The RI-MP2 *gradient*
+      ! builds its own and must not.
+      call build_df_mo_tensor(mol, aux, c_occ, c_vir, bia, error, fast_factor=.true., &
+                              b_ao_in=b_ao_in)
       deallocate (c_occ, c_vir)
       if (error%has_error()) return
-      call clk%lap("B tensor (3c/2c fit)")
+      call clk%lap()
       n_aux = size(bia, 2)
 
       ! One gemm per occupied pair rebuilds that pair's whole (a,b) block:
@@ -234,9 +247,26 @@ contains
       ! the same integral -- so the (j,i) pair contributes exactly what (i,j)
       ! does and is counted by weight instead of by a second gemm. Half the
       ! work for the same sum, and the gemm is where the time is.
-      allocate (g(n_v, n_v))
+      !
+      ! Threaded over the occupied pairs, which is the whole of the cost: the
+      ! two energies are the only shared state and they are a reduction. `g` is
+      ! per-thread scratch, so it is allocated inside the region -- one
+      ! (n_v, n_v) block each rather than one shared block, which is why the
+      ! region is explicit instead of a bare `parallel do`.
+      !
+      ! `schedule(dynamic)` because the inner loop runs to `i`, so the last
+      ! occupied orbital does n_o times the work of the first. A static
+      ! schedule hands the high-numbered pairs to whichever threads drew them
+      ! and leaves the rest waiting.
+      call clk%begin("gemm + denominators")
       e_ss = 0.0_dp
       e_os = 0.0_dp
+      !$omp parallel default(none) &
+      !$omp    shared(bia, orbital_energies, n_o, n_v, n_occ, frozen) &
+      !$omp    private(i, j, a, bb, g, iajb, ibja, denom, weight) &
+      !$omp    reduction(+:e_ss, e_os)
+      allocate (g(n_v, n_v))
+      !$omp do schedule(dynamic)
       do i = 1, n_o
          do j = 1, i
             call pic_gemm(bia(:, :, i), bia(:, :, j), g, transb="T")
@@ -254,8 +284,11 @@ contains
             end do
          end do
       end do
-      deallocate (g, bia)
-      call clk%lap("gemm + denominators")
+      !$omp end do
+      deallocate (g)
+      !$omp end parallel
+      deallocate (bia)
+      call clk%lap()
       call clk%finish()
       call clk%report("RI-MP2")
 
@@ -325,9 +358,11 @@ contains
       cb_v = coeff_b(:, n_occ_b + 1:n_mo)
 
       call clk%start()
+      call clk%begin("AO integrals")
       call mol%eris_packed(ao_eri)
-      call clk%lap("AO integrals")
+      call clk%lap()
 
+      call clk%begin("AO->MO transform (3 blocks)")
       ! Three blocks, not one. The like-spin pair needs its own coefficients on
       ! both electrons; the mixed block needs alpha on one and beta on the
       ! other and is NOT antisymmetrised -- two electrons of different spin are
@@ -336,14 +371,15 @@ contains
       call transform_block(ao_eri, cb_o, cb_v, cb_o, cb_v, ovov_bb)
       call transform_block(ao_eri, ca_o, ca_v, cb_o, cb_v, ovov_ab)
       deallocate (ao_eri, ca_o, ca_v, cb_o, cb_v)
-      call clk%lap("AO->MO transform (3 blocks)")
+      call clk%lap()
 
+      call clk%begin("energy denominators")
       e_aa = like_spin_energy(ovov_aa, eps_a, frozen, n_occ_a, n_oa, n_va)
       e_bb = like_spin_energy(ovov_bb, eps_b, frozen, n_occ_b, n_ob, n_vb)
       e_ab = mixed_spin_energy(ovov_ab, eps_a, eps_b, frozen, n_occ_a, n_occ_b, &
                                n_oa, n_ob, n_va, n_vb)
       deallocate (ovov_aa, ovov_bb, ovov_ab)
-      call clk%lap("energy denominators")
+      call clk%lap()
       call clk%finish()
       call clk%report("UMP2")
 
@@ -392,13 +428,15 @@ contains
       cb_v = coeff_b(:, n_occ_b + 1:n_mo)
 
       call clk%start()
-      call build_df_mo_tensor(mol, aux, ca_o, ca_v, b_a, error)
+      call clk%begin("B tensors (3c/2c fit, both spins)")
+      call build_df_mo_tensor(mol, aux, ca_o, ca_v, b_a, error, fast_factor=.true.)
       if (error%has_error()) return
-      call build_df_mo_tensor(mol, aux, cb_o, cb_v, b_b, error)
+      call build_df_mo_tensor(mol, aux, cb_o, cb_v, b_b, error, fast_factor=.true.)
       if (error%has_error()) return
       deallocate (ca_o, ca_v, cb_o, cb_v)
-      call clk%lap("B tensors (3c/2c fit, both spins)")
+      call clk%lap()
 
+      call clk%begin("gemm + denominators")
       e_aa = ri_like_spin_energy(b_a, eps_a, frozen, n_occ_a, n_oa, n_va)
       e_bb = ri_like_spin_energy(b_b, eps_b, frozen, n_occ_b, n_ob, n_vb)
 
@@ -418,7 +456,7 @@ contains
          end do
       end do
       deallocate (g, b_a, b_b)
-      call clk%lap("gemm + denominators")
+      call clk%lap()
       call clk%finish()
       call clk%report("URI-MP2")
 

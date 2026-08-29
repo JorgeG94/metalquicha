@@ -163,15 +163,17 @@ contains
 
       real(dp), allocatable :: eri(:, :)
 
+      if (present(clk)) call clk%begin("AO integrals")
       call mol%eris_packed(eri)
-      if (present(clk)) call clk%lap("AO integrals")
+      if (present(clk)) call clk%lap()
+      if (present(clk)) call clk%begin("AO->MO transform")
       call transform_block(eri, c_occ, c_occ, c_occ, c_occ, eris%oooo)
       call transform_block(eri, c_occ, c_occ, c_occ, c_vir, eris%ooov)
       call transform_block(eri, c_occ, c_occ, c_vir, c_vir, eris%oovv)
       call transform_block(eri, c_occ, c_vir, c_occ, c_vir, eris%ovov)
       call transform_block(eri, c_occ, c_vir, c_vir, c_vir, eris%ovvv)
       call transform_block(eri, c_vir, c_vir, c_vir, c_vir, eris%vvvv)
-      if (present(clk)) call clk%lap("AO->MO transform")
+      if (present(clk)) call clk%lap()
       deallocate (eri)
    end subroutine build_rcc_eris_conventional
 
@@ -192,11 +194,12 @@ contains
       no = size(c_occ, 2)
       nv = size(c_vir, 2)
 
-      call build_df_mo_block(mol, aux, c_occ, c_occ, b_oo, error)
+      ! Every block is consumed as `B B^T`, so the cheap factor is safe.
+      call build_df_mo_block(mol, aux, c_occ, c_occ, b_oo, error, fast_factor=.true.)
       if (error%has_error()) return
-      call build_df_mo_block(mol, aux, c_occ, c_vir, b_ov, error)
+      call build_df_mo_block(mol, aux, c_occ, c_vir, b_ov, error, fast_factor=.true.)
       if (error%has_error()) return
-      call build_df_mo_block(mol, aux, c_vir, c_vir, b_vv_pq, error)
+      call build_df_mo_block(mol, aux, c_vir, c_vir, b_vv_pq, error, fast_factor=.true.)
       if (error%has_error()) return
 
       allocate (eris%oooo(no, no, no, no), eris%ooov(no, no, no, nv))
@@ -1687,11 +1690,12 @@ contains
       allocate (c_act(n_ao, n_act))
       c_act = coeff(:, frozen + 1:n_mo)
       if (present(aux)) then
+         ! One stage: the fitted path never forms an AO tensor to separate out.
+         call clk%begin("B tensor (3c/2c fit)")
          call build_rcc_eris_fitted(mol, aux, c_act(:, 1:no), c_act(:, no + 1:n_act), &
                                     eris, error)
          if (error%has_error()) return
-         ! One stage: the fitted path never forms an AO tensor to separate out.
-         call clk%lap("B tensor (3c/2c fit)")
+         call clk%lap()
       else
          ! Two stages, lapped inside: the AO build and the transform.
          call build_rcc_eris_conventional(mol, c_act(:, 1:no), c_act(:, no + 1:n_act), &
@@ -1708,10 +1712,11 @@ contains
       end do
 
       ! ---- MP2, the checkpoint before any amplitude equation ----------------
+      call clk%begin("MP2 amplitudes")
       allocate (t1(no, nv), t2(no, no, nv, nv))
       t1 = 0.0_dp
       call mp2_guess(eris, eps_o, eps_v, no, nv, t2, result%e_mp2)
-      call clk%lap("MP2 amplitudes")
+      call clk%lap()
       if (verbose) then
          write (line, "(a,f20.12)") "  MP2 (spin adapted) = ", result%e_mp2
          call logger%info(trim(line))
@@ -1770,8 +1775,9 @@ contains
       ! the fixed point, and taking it on amplitudes that are still moving would
       ! give a number with no meaning rather than a slightly worse one.
       if (want_triples) then
+         call clk%begin("(T) correction")
          call triples_correction(eris, eps_o, eps_v, t1, t2, no, nv, result%e_triples)
-         call clk%lap("(T) correction")
+         call clk%lap()
          if (verbose) then
             write (line, "(a,f20.12)") "  (T)                = ", result%e_triples
             call logger%info(trim(line))

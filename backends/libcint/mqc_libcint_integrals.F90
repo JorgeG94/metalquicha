@@ -28,13 +28,14 @@ module mqc_libcint_integrals
    !! else. Direct or density-fitted assembly is a different backend.
    use pic_types, only: dp
    use mqc_nuclear_repulsion, only: nuclear_repulsion
-   use pic_blas_interfaces, only: pic_gemm
+   use pic_blas_interfaces, only: pic_gemm, pic_trsm
+   use mqc_program_limits, only: DF_METRIC_PANEL_BYTES, DF_PAIR_SCREEN
    use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type, atomic_basis_type
    use mqc_basis_utils, only: find_basis_file
    use mqc_json_basis_reader, only: build_molecular_basis_json
-   use pic_lapack_interfaces, only: pic_syev
+   use pic_lapack_interfaces, only: pic_syevd, pic_potrf
    use libcint_fortran, only: libcint_1e_ovlp_sph, libcint_1e_kin_sph, &
                               libcint_3c2e_sph, libcint_2c2e_sph, &
                               libcint_1e_nuc_sph, libcint_2e_sph, &
@@ -846,6 +847,16 @@ contains
       !! One routine rather than three copies: the only thing that differs is
       !! which libcint entry point is called, and three copies of a shell-pair
       !! loop is three places for an offset to be wrong in.
+      !!
+      !! **Half the pairs, and threaded.** All three of these matrices are
+      !! symmetric, so the loop ran every off-diagonal shell pair twice for the
+      !! same numbers, on one core, three times per calculation. Each shell
+      !! pair owns its block and its transpose, and no two pairs share either,
+      !! so the threads need nothing but a private buffer -- the same
+      !! arrangement `three_centre` uses.
+      !!
+      !! `schedule(dynamic)` because the inner loop runs to `ish`: the last
+      !! shell does nbas times the work of the first.
       type(libcint_molecule_t), intent(in) :: this
       real(dp), allocatable, intent(out) :: matrix(:, :)
       integer, intent(in) :: which   !! 1 overlap, 2 kinetic, 3 nuclear
@@ -861,12 +872,14 @@ contains
       ! di*dj is 1 and the wrong bound is indistinguishable from the right
       ! one; the first p shell writes nine doubles into three and corrupts
       ! the heap, which surfaces as a free() failure somewhere else later.
+      !$omp parallel default(none) shared(this, matrix, which) &
+      !$omp    private(ish, jsh, di, dj, io, jo, i, j, ret, shls, buf)
       allocate (buf(max_block(this)**2))
-
+      !$omp do schedule(dynamic)
       do ish = 1, this%nbas
          di = shell_dim(this%cartesian, ish - 1, this%bas)
          io = this%shell_offset(ish)
-         do jsh = 1, this%nbas
+         do jsh = 1, ish
             dj = shell_dim(this%cartesian, jsh - 1, this%bas)
             jo = this%shell_offset(jsh)
             shls = [ish - 1, jsh - 1]
@@ -903,11 +916,14 @@ contains
             do j = 1, dj
                do i = 1, di
                   matrix(io + i, jo + j) = buf(i + (j - 1)*di)
+                  matrix(jo + j, io + i) = buf(i + (j - 1)*di)
                end do
             end do
          end do
       end do
+      !$omp end do
       deallocate (buf)
+      !$omp end parallel
    end subroutine one_electron
 
    subroutine build_df_tensor(orb, aux, b, error, omega)
@@ -943,6 +959,8 @@ contains
       real(dp), parameter :: NULL_THRESHOLD = 1.0e-10_dp
       real(dp), allocatable :: metric(:, :), vectors(:, :), values(:), half(:, :)
       real(dp), allocatable :: three(:, :)
+      logical :: cholesky
+      real(dp), allocatable :: aux_bound(:)
       integer :: naux, nao, i, j, kept, info
 
       ! (mu nu | P) has orbital shells on two centres and auxiliary shells on
@@ -965,36 +983,171 @@ contains
       naux = aux%nao
 
       call clk%start()
+      call clk%begin("2-centre metric")
       if (present(omega)) then
          call two_centre(aux, metric, omega=omega)
       else
          call two_centre(aux, metric)
       end if
-      call clk%lap("2-centre metric")
+      call clk%lap()
+      call clk%begin("3-centre integrals")
+      ! The metric's diagonal is the auxiliary half of the Schwarz bound, and
+      ! it is already in hand from the stage above.
+      aux_bound = aux_shell_bounds(aux, metric)
       if (present(omega)) then
-         call three_centre(orb, aux, three, omega=omega)
+         call three_centre(orb, aux, three, omega=omega, aux_bound=aux_bound)
       else
-         call three_centre(orb, aux, three)
+         call three_centre(orb, aux, three, aux_bound=aux_bound)
       end if
-      call clk%lap("3-centre integrals")
+      call clk%lap()
 
-      call metric_inverse_sqrt(metric, half, error)
-      call clk%lap("metric^-1/2")
+      call clk%begin("metric factor")
+      call fit_metric_factor(metric, half, cholesky, error)
+      call clk%lap()
       if (error%has_error()) return
+      deallocate (metric)
 
-      allocate (b(nao*nao, naux))
-      call pic_gemm(three, half, b)
-      call clk%lap("B = (mn|Q) J^-1/2")
+      call clk%begin("B = (mn|Q) J^-1/2")
+      call apply_fit(three, half, cholesky, b)
+      call clk%lap()
       call clk%finish()
       call clk%report("density fitting")
    end subroutine build_df_tensor
 
+   subroutine fit_metric_factor(metric, factor, cholesky, error)
+      !! Factor the fitting metric, the cheap way if it will take one
+      !!
+      !! Two ways to spend J on a fit, and they cost very differently. The
+      !! inverse square root is an eigendecomposition, about 9 n^3, and leaves
+      !! a full matrix that the fit multiplies by at 2 m n^2. A Cholesky is
+      !! n^3/3 and leaves a triangle that the fit *solves against* at m n^2 --
+      !! an order less to form and half as much to apply.
+      !!
+      !! The catch is that a fitting basis is close to linearly dependent by
+      !! construction, and a Cholesky of a near-singular matrix stops rather
+      !! than degrading. So it is attempted and its `info` believed: the
+      !! eigendecomposition, which drops the offending modes, is still there
+      !! for the sets that need it. Which one ran is not a detail the caller
+      !! can ignore -- the two factors are applied differently -- so it is
+      !! returned rather than inferred.
+      real(dp), intent(in) :: metric(:, :)
+      real(dp), allocatable, intent(out) :: factor(:, :)
+      logical, intent(out) :: cholesky
+         !! True: `factor` holds U with J = U^T U, upper triangle only.
+         !! False: `factor` holds J^(-1/2) in full.
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: trial(:, :)
+      integer :: info
+
+      ! On a copy, because a failed factorisation leaves the matrix partly
+      ! overwritten and the fallback needs it intact.
+      trial = metric
+      call pic_potrf(trial, uplo="U", info=info)
+      cholesky = (info == 0)
+      if (cholesky) then
+         call move_alloc(trial, factor)
+         return
+      end if
+
+      deallocate (trial)
+      call metric_inverse_sqrt(metric, factor, error)
+   end subroutine fit_metric_factor
+
+   subroutine apply_fit(three, factor, cholesky, b)
+      !! B = (mn|Q) J^(-1/2), however the metric was factored
+      !!
+      !! The single largest item in a fitted setup, and it used to be one
+      !! `pic_gemm` -- which is one core against the sequential BLAS this
+      !! project links on purpose.
+      !!
+      !! **Split over rows, not columns.** The obvious decomposition -- a block
+      !! of the auxiliary index per thread -- is a bandwidth disaster, because
+      !! `out(:, q0:q1)` needs *all* of the three-centre tensor for every
+      !! block. At 560 functions and n_aux near 2700 that is eighty-odd passes
+      !! over 6.7 GB, and a measured 280 GFLOP/s against a 4.5 TFLOP problem is
+      !! what streaming 290 GB looks like. Splitting the pair index instead
+      !! gives each thread its own slice, so the tensor is read once.
+      !!
+      !! A row panel is strided -- the pair index is the leading dimension --
+      !! so each is packed on the way into BLAS and unpacked on the way out.
+      !! Two more passes over the tensor, against the eighty it replaces.
+      !!
+      !! Correct whether or not the BLAS is itself threaded: OpenMP nesting is
+      !! off by default, so a threaded MKL called from inside this region runs
+      !! sequential and the parallelism is the loop's either way.
+      !!
+      !! The Cholesky path solves **in place** and hands the tensor on. Nothing
+      !! is allocated, where the other path needs a second array the size of
+      !! the first -- gigabytes, at the sizes fitting is chosen for.
+      real(dp), allocatable, intent(inout) :: three(:, :)
+         !! (npair, naux). Consumed either way: moved to `b` on the Cholesky
+         !! path, deallocated on the other.
+      real(dp), intent(in) :: factor(:, :)
+      logical, intent(in) :: cholesky
+      real(dp), allocatable, intent(out) :: b(:, :)
+
+      integer :: r0, r1, npair, naux, rows
+
+      npair = size(three, 1)
+      naux = size(factor, 2)
+      rows = metric_panel_rows(naux, npair)
+
+      if (cholesky) then
+         ! B U = (mn|Q), so B B^T = (mn|Q) (U^T U)^-1 (Q|rs) = (mn|Q) J^-1 (Q|rs),
+         ! which is the fitted integral. Only the upper triangle is read, and
+         ! `potrf` left the rest as the metric was.
+         !$omp parallel do default(none) &
+         !$omp    shared(three, factor, npair, rows) private(r0, r1) schedule(static)
+         do r0 = 1, npair, rows
+            r1 = min(r0 + rows - 1, npair)
+            call pic_trsm(factor, three(r0:r1, :), side="R", uplo="U")
+         end do
+         !$omp end parallel do
+         call move_alloc(three, b)
+      else
+         allocate (b(npair, naux))
+         !$omp parallel do default(none) &
+         !$omp    shared(three, factor, b, npair, rows) private(r0, r1) schedule(static)
+         do r0 = 1, npair, rows
+            r1 = min(r0 + rows - 1, npair)
+            call pic_gemm(three(r0:r1, :), factor, b(r0:r1, :))
+         end do
+         !$omp end parallel do
+         deallocate (three)
+      end if
+   end subroutine apply_fit
+
+   pure function metric_panel_rows(naux, npair) result(rows)
+      !! How many pair functions to fit the metric for at once
+      !!
+      !! Two pulls in opposite directions. A panel is packed and unpacked
+      !! around its GEMM, so a large one amortises that over more arithmetic;
+      !! but the packed copy is per-thread and live for the whole call, so a
+      !! large one times a hundred threads is gigabytes of scratch. The budget
+      !! is per panel and deliberately small: the packing is two passes over
+      !! the tensor whatever the panel size, and what is being bought here is
+      !! only the GEMM's shape.
+      integer, intent(in) :: naux, npair
+      integer :: rows
+
+      rows = int(max(1.0_dp, DF_METRIC_PANEL_BYTES/(8.0_dp*real(max(naux, 1), dp))))
+      rows = max(1, min(rows, npair))
+   end function metric_panel_rows
+
    subroutine metric_inverse_sqrt(metric, half, error)
       !! J^(-1/2) = U s^(-1/2) U^T over the modes that survive the threshold
       !!
-      !! Through the eigendecomposition rather than a Cholesky. A JKFIT or
-      !! RIFIT set is close to linearly dependent by construction, and a
-      !! Cholesky of a near-singular metric fails outright where this degrades.
+      !! **The fallback, not the usual path.** `fit_metric_factor` tries a
+      !! Cholesky first, which is an order cheaper and turns the fit itself
+      !! from a GEMM into a triangular solve. This is what happens when that
+      !! fails: a JKFIT or RIFIT set is close to linearly dependent by
+      !! construction, and a Cholesky of a near-singular metric stops outright
+      !! where this degrades, dropping the offending modes and carrying on.
+      !!
+      !! Divide-and-conquer rather than the QR iteration. Same eigenvectors to
+      !! within the tolerance that matters here, several times faster at the
+      !! two-to-three thousand auxiliary functions this is reached with.
       real(dp), intent(in) :: metric(:, :)
       real(dp), allocatable, intent(out) :: half(:, :)
       type(error_t), intent(inout) :: error
@@ -1006,7 +1159,7 @@ contains
       naux = size(metric, 1)
       allocate (vectors(naux, naux), values(naux))
       vectors = metric
-      call pic_syev(vectors, values, jobz="V", uplo="U", info=info)
+      call pic_syevd(vectors, values, jobz="V", uplo="U", info=info)
       if (info /= 0) then
          call error%set(ERROR_VALIDATION, "density fitting: the metric would not diagonalise")
          return
@@ -1037,7 +1190,7 @@ contains
       deallocate (scaled)
    end subroutine metric_inverse_sqrt
 
-   subroutine build_df_mo_tensor(orb, aux, c_occ, c_vir, bia, error)
+   subroutine build_df_mo_tensor(orb, aux, c_occ, c_vir, bia, error, fast_factor, b_ao_in)
       !! B^P_ia directly, transforming to MO before fitting rather than after
       !!
       !! `build_df_tensor` fits first and hands back B(mu nu, P), which is what
@@ -1060,6 +1213,10 @@ contains
       real(dp), intent(in) :: c_vir(:, :)   !! (nao, n_vir)
       real(dp), allocatable, intent(out) :: bia(:, :, :)
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: fast_factor
+         !! Passed to `build_df_mo_block`; see there. Off by default.
+      real(dp), intent(in), optional :: b_ao_in(:, :)
+         !! Passed to `build_df_mo_block`; see there.
 
       real(dp), allocatable :: fitted(:, :)
       integer :: naux, n_o, n_v, p_index, i
@@ -1067,11 +1224,18 @@ contains
       n_o = size(c_occ, 2)
       n_v = size(c_vir, 2)
 
-      call build_df_mo_block(orb, aux, c_occ, c_vir, fitted, error)
+      call build_df_mo_block(orb, aux, c_occ, c_vir, fitted, error, fast_factor=fast_factor, &
+                             b_ao_in=b_ao_in)
       if (error%has_error()) return
       naux = size(fitted, 2)
 
+      ! Threaded for the same reason the three-centre tensor's zeroing is: this
+      ! is the first touch of a multi-gigabyte array, so it is page faults
+      ! rather than arithmetic, and on a multi-socket node it also decides
+      ! which socket each page lives on.
       allocate (bia(n_v, naux, n_o))
+      !$omp parallel do default(none) shared(bia, fitted, naux, n_o) &
+      !$omp    private(p_index, i) schedule(static)
       do p_index = 1, naux
          do i = 1, n_o
             ! `fitted` is flattened (i, a), so one occupied orbital's virtuals
@@ -1079,10 +1243,11 @@ contains
             bia(:, p_index, i) = fitted(i::n_o, p_index)
          end do
       end do
+      !$omp end parallel do
       deallocate (fitted)
    end subroutine build_df_mo_tensor
 
-   subroutine build_df_mo_block(orb, aux, c_left, c_right, b, error)
+   subroutine build_df_mo_block(orb, aux, c_left, c_right, b, error, fast_factor, b_ao_in)
       !! B^P_pq for any two coefficient blocks, laid out (pq, P)
       !!
       !! The general form of `build_df_mo_tensor`, which assumed
@@ -1097,9 +1262,39 @@ contains
       real(dp), intent(in) :: c_left(:, :), c_right(:, :)   !! (nao, n_left), (nao, n_right)
       real(dp), allocatable, intent(out) :: b(:, :)         !! (n_left*n_right, naux)
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: b_ao_in(:, :)
+         !! An AO-basis fitted tensor `B(mu nu, P)` already built for this
+         !! orbital and auxiliary pair, from a fitted SCF.
+         !!
+         !! **The transform and the metric commute**, because one acts on the
+         !! pair index and the other on the auxiliary one:
+         !!
+         !!    sum_mn C_mi C_na [sum_Q (mn|Q) M_QP] = sum_Q (ia|Q) M_QP
+         !!
+         !! so transforming an already-fitted tensor gives exactly what
+         !! transforming and then fitting gives. Present means the integrals,
+         !! the metric and its factorisation are all already paid for and this
+         !! is reduced to the transform -- which is why a fitted MP2 over a
+         !! fitted reference no longer evaluates four hundred million
+         !! three-centre integrals a second time.
+         !!
+         !! Any factor `M` is fine, Cholesky included: what the caller
+         !! eventually contracts is `B B^T`, and `M M^T = J^-1` either way.
+      logical, intent(in), optional :: fast_factor
+         !! Allow the Cholesky factor, which is much cheaper to form and to
+         !! apply. **Off by default, and that is not timidity.** The two
+         !! factors agree in `B B^T` and in nothing else, so a caller that only
+         !! ever contracts B with another B may have it, and one that pairs B
+         !! with a separately built `J^(-1/2)` may not -- the RI-MP2 gradient
+         !! does exactly that, and taking the fast factor there produced
+         !! gradients wrong in the first figure while the energies stayed right
+         !! to 1e-11. Naming the safe callers means a new one is merely slower
+         !! until someone checks it, rather than silently wrong.
 
       real(dp), allocatable :: metric(:, :), half(:, :), three(:, :)
-      real(dp), allocatable :: ovl(:, :), bp(:, :), tmp(:, :), full(:, :)
+      logical :: cholesky, allow_fast
+      real(dp), allocatable :: aux_bound(:)
+      real(dp), allocatable :: ovl(:, :), tmp(:, :), full(:)
       integer :: nao, naux, n_l, n_r, p_index
 
       if (orb%cartesian .neqv. aux%cartesian) then
@@ -1116,30 +1311,172 @@ contains
       n_l = size(c_left, 2)
       n_r = size(c_right, 2)
 
+      if (present(b_ao_in)) then
+         allocate (b(n_l*n_r, naux))
+         call transform_pair_index(b_ao_in, c_left, c_right, b, nao, n_l, n_r)
+         return
+      end if
+
       call two_centre(aux, metric)
-      call metric_inverse_sqrt(metric, half, error)
+      ! Taken before the factorisation consumes it.
+      aux_bound = aux_shell_bounds(aux, metric)
+      allow_fast = .false.
+      if (present(fast_factor)) allow_fast = fast_factor
+      if (allow_fast) then
+         call fit_metric_factor(metric, half, cholesky, error)
+      else
+         cholesky = .false.
+         call metric_inverse_sqrt(metric, half, error)
+      end if
       if (error%has_error()) return
       deallocate (metric)
 
-      call three_centre(orb, aux, three)
+      call three_centre(orb, aux, three, aux_bound=aux_bound)
 
       ! (mu nu|P) -> (pq|P), one auxiliary function at a time. Transforming
       ! before fitting rather than after, which is the ordering PySCF uses and
       ! the one that keeps the metric contraction off the AO pair space.
+      !
+      ! Threaded over P, which needs no reduction: an auxiliary function owns
+      ! its column of `ovl` outright. The scratch is what has to be private, so
+      ! it is allocated inside the region rather than around it.
+      !
+      ! The `reshape` of a column of `three` that used to open this loop is
+      ! gone. It copied nao^2 doubles -- 2.5 MB at 560 functions -- once per
+      ! auxiliary function, so a fitted MP2 moved five gigabytes through memory
+      ! to reinterpret an array it already had. `df_mo_slice` takes the column
+      ! through an explicit-shape dummy instead, which is sequence association
+      ! and costs nothing.
       allocate (ovl(n_l*n_r, naux))
-      allocate (bp(nao, nao), tmp(n_l, nao), full(n_l, n_r))
-      do p_index = 1, naux
-         bp = reshape(three(:, p_index), [nao, nao])
-         call pic_gemm(c_left, bp, tmp, transa="T")
-         call pic_gemm(tmp, c_right, full)
-         ovl(:, p_index) = reshape(full, [n_l*n_r])
-      end do
-      deallocate (bp, tmp, full, three)
+      call transform_pair_index(three, c_left, c_right, ovl, nao, n_l, n_r)
+      deallocate (three)
 
-      allocate (b(n_l*n_r, naux))
-      call pic_gemm(ovl, half, b)
-      deallocate (ovl, half)
+      call apply_fit(ovl, half, cholesky, b)
+      deallocate (half)
    end subroutine build_df_mo_block
+
+   subroutine transform_pair_index(ao, c_left, c_right, mo, nao, n_l, n_r)
+      !! (mu nu | P) -> (pq | P), for every auxiliary function
+      !!
+      !! Threaded over P, which needs no reduction: an auxiliary function owns
+      !! its column of the result outright. The scratch is what has to be
+      !! private, so it is allocated inside the region rather than around it.
+      !!
+      !! Indifferent to whether the input has been fitted. The transform acts
+      !! on the pair index and a metric acts on the auxiliary one, so the two
+      !! commute -- which is what lets a fitted SCF hand its tensor straight to
+      !! a correlated step instead of the integrals being built twice.
+      integer, intent(in) :: nao, n_l, n_r
+      real(dp), intent(in) :: ao(:, :)        !! (nao*nao, naux)
+      real(dp), intent(in) :: c_left(:, :), c_right(:, :)
+      real(dp), intent(out) :: mo(:, :)       !! (n_l*n_r, naux)
+
+      real(dp), allocatable :: tmp(:, :), full(:)
+      integer :: p_index, naux
+
+      naux = size(ao, 2)
+      !$omp parallel default(none) &
+      !$omp    shared(ao, c_left, c_right, mo, nao, n_l, n_r, naux) &
+      !$omp    private(p_index, tmp, full)
+      allocate (tmp(n_l, nao), full(n_l*n_r))
+      !$omp do schedule(static)
+      do p_index = 1, naux
+         call df_mo_slice(ao(:, p_index), c_left, c_right, tmp, full, nao, n_l, n_r)
+         mo(:, p_index) = full
+      end do
+      !$omp end do
+      deallocate (tmp, full)
+      !$omp end parallel
+   end subroutine transform_pair_index
+
+   subroutine df_mo_slice(three_p, c_left, c_right, tmp, full, nao, n_l, n_r)
+      !! (mu nu|P) -> (pq|P) for one auxiliary function
+      !!
+      !! Exists so that a column of the three-centre tensor can be seen as the
+      !! (nao, nao) matrix it already is. `three_p` is explicit-shape against a
+      !! contiguous rank-1 actual argument -- sequence association -- where the
+      !! `reshape` it replaces materialised the whole block on every pass.
+      !!
+      !! `full` is rank-1 for the same reason in the other direction: the
+      !! caller wants it as a column of `ovl`, so shaping it (n_l, n_r) here
+      !! and flat there saves a second temporary.
+      integer, intent(in) :: nao, n_l, n_r
+      real(dp), intent(in) :: three_p(nao, nao)
+      real(dp), intent(in) :: c_left(:, :), c_right(:, :)
+      real(dp), intent(inout) :: tmp(:, :)
+      real(dp), intent(inout) :: full(n_l, n_r)
+
+      call pic_gemm(c_left, three_p, tmp, transa="T")
+      call pic_gemm(tmp, c_right, full)
+   end subroutine df_mo_slice
+
+   function aux_shell_bounds(aux, metric) result(q)
+      !! `sqrt(max_P (P|P))` within each auxiliary shell
+      !!
+      !! The auxiliary half of the Schwarz bound on `(mn|P)`, taken per shell
+      !! so the screen can distinguish a tight fitting function from a diffuse
+      !! one. The metric's diagonal is all it needs, and every caller has the
+      !! metric already.
+      type(libcint_molecule_t), intent(in) :: aux
+      real(dp), intent(in) :: metric(:, :)
+      real(dp), allocatable :: q(:)
+
+      integer :: ksh, k, k0, k1
+      real(dp) :: largest
+
+      allocate (q(aux%nbas))
+      do ksh = 1, aux%nbas
+         k0 = aux%shell_offset(ksh) + 1
+         k1 = aux%shell_offset(ksh + 1)
+         largest = 0.0_dp
+         do k = k0, k1
+            largest = max(largest, abs(metric(k, k)))
+         end do
+         q(ksh) = sqrt(largest)
+      end do
+   end function aux_shell_bounds
+
+   subroutine shell_pair_bounds(mol, q)
+      !! `Q_MN = sqrt(max |(MN|MN)|)` for every shell pair
+      !!
+      !! The Schwarz bound, in the form the three-centre screen wants it: one
+      !! number per shell pair, depending on the basis and the geometry and not
+      !! on the density, so a whole calculation reuses one set.
+      !!
+      !! A near-duplicate of `schwarz_bounds` in `mqc_libcint_direct`, and
+      !! deliberately not a call to it: that module depends on this one, so
+      !! using it here would close the loop. Threaded, where that one is not,
+      !! because this is on the critical path of every fitted setup.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), allocatable, intent(out) :: q(:, :)
+
+      real(dp), allocatable :: buf(:)
+      integer :: shls(4)
+      integer :: ish, jsh, di, dj, ret
+
+      allocate (q(mol%nbas, mol%nbas))
+      q = 0.0_dp
+
+      !$omp parallel default(none) shared(mol, q) &
+      !$omp    private(ish, jsh, di, dj, ret, shls, buf)
+      allocate (buf(max_block(mol)**4))
+      !$omp do schedule(dynamic)
+      do ish = 1, mol%nbas
+         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         do jsh = 1, ish
+            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+            shls = [ish - 1, jsh - 1, ish - 1, jsh - 1]
+            ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
+                                     mol%bas, mol%nbas, mol%env)
+            if (ret == 0) cycle
+            q(ish, jsh) = sqrt(maxval(abs(buf(1:(di*dj)**2))))
+            q(jsh, ish) = q(ish, jsh)
+         end do
+      end do
+      !$omp end do
+      deallocate (buf)
+      !$omp end parallel
+   end subroutine shell_pair_bounds
 
    subroutine two_centre(aux, metric, omega)
       !! (P|Q) over the auxiliary basis
@@ -1328,7 +1665,7 @@ contains
       env(size(env)) = 0.0_dp
    end subroutine build_df_shell_table
 
-   subroutine three_centre(orb, aux, three, omega)
+   subroutine three_centre(orb, aux, three, omega, aux_bound)
       !! (mu nu | P), flattened to (nao*nao, naux)
       !!
       !! The orbital and auxiliary shells are concatenated into one bas array,
@@ -1345,6 +1682,21 @@ contains
          !! Attenuate the kernel to `erf(omega r)/r`, for the long-range
          !! exchange of a range-separated functional. See `two_centre` for why
          !! the slot index is what it is.
+      real(dp), intent(in), optional :: aux_bound(:)
+         !! `sqrt(max_P (P|P))` over each auxiliary *shell*, which is the other
+         !! half of the Schwarz bound on `(mn|P)`.
+         !!
+         !! Per shell rather than one global maximum, and that is most of the
+         !! screening. The global maximum is set by the tightest core-like
+         !! fitting function, and using it asks only "can this pair reach *any*
+         !! auxiliary function", which almost every pair can. Asking it per
+         !! auxiliary shell instead skips the diffuse tail of the fitting set
+         !! for pairs that cannot reach it.
+         !!
+         !! Absent means no screening -- a caller that has not thought about it
+         !! gets every triplet rather than a silently truncated tensor. Both
+         !! fitting paths have the two-centre metric in hand already, so the
+         !! diagonal is free to them.
 
       integer, allocatable :: bas(:, :)
       real(dp), allocatable :: env(:), buf(:)
@@ -1353,6 +1705,10 @@ contains
       integer :: ish, jsh, ksh, di, dj, dk, i, j, k, io, jo, ko, ret, idx
       integer :: npair, ipair
       integer, allocatable :: pair_i(:), pair_j(:)
+      real(dp), allocatable :: q_pair(:, :)
+      real(dp) :: q_aux_max, q_bra
+      logical :: screening
+      integer :: kcol
       type(c_ptr) :: opt
 
       nbas_orb = orb%nbas
@@ -1362,20 +1718,47 @@ contains
       if (present(omega)) env(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
       allocate (three(orb%nao*orb%nao, aux%nao))
-      three = 0.0_dp
+      ! Zeroed in parallel, and not only to go faster. This is the first touch
+      ! of the largest array in the calculation -- tens of gigabytes at a
+      ! thousand basis functions -- and on a multi-socket node first touch is
+      ! what decides which socket's memory each page lives on. Zeroing it from
+      ! one thread puts every page on one socket, and then every thread on the
+      ! other socket writes its integrals across the interconnect for the rest
+      ! of the run. Spreading the touch by column spreads the pages.
+      !$omp parallel do default(none) shared(three) private(kcol) schedule(static)
+      do kcol = 1, size(three, 2)
+         three(:, kcol) = 0.0_dp
+      end do
+      !$omp end parallel do
 
       ! (ij|K) is symmetric in i and j, so only the lower triangle of the
       ! orbital shell pairs is computed and each block is written into both
       ! halves. The loop ran the full square before, which evaluated every
       ! off-diagonal block twice for the same numbers.
-      npair = nbas_orb*(nbas_orb + 1)/2
-      allocate (pair_i(npair), pair_j(npair))
-      ipair = 0
+      !
+      ! Pairs that cannot contribute are dropped before the list is built.
+      ! `|(mn|P)| <= sqrt((mn|mn)) sqrt((P|P))`, so one bound per pair decides
+      ! it for every auxiliary function at once, and the shell triplet is never
+      ! entered. The bounds cost nbas^2 quartets against the nbas^2 * nbas_aux
+      ! triplets they screen.
+      allocate (pair_i(nbas_orb*(nbas_orb + 1)/2), pair_j(nbas_orb*(nbas_orb + 1)/2))
+      screening = present(aux_bound)
+      if (screening) then
+         call shell_pair_bounds(orb, q_pair)
+         q_aux_max = maxval(aux_bound)
+      end if
+      npair = 0
       do ish = 1, nbas_orb
          do jsh = 1, ish
-            ipair = ipair + 1
-            pair_i(ipair) = ish
-            pair_j(ipair) = jsh
+            ! The pair level first, against the largest auxiliary shell: a pair
+            ! that cannot reach even that one is dropped outright and never
+            ! enters the loop below.
+            if (screening) then
+               if (q_pair(ish, jsh)*q_aux_max < DF_PAIR_SCREEN) cycle
+            end if
+            npair = npair + 1
+            pair_i(npair) = ish
+            pair_j(npair) = jsh
          end do
       end do
 
@@ -1397,8 +1780,9 @@ contains
       ! and the threads need nothing shared but a private buffer each. `opt` is
       ! shared and read-only, the same arrangement the Fock build uses.
       !$omp parallel default(none) &
-      !$omp    shared(orb, aux, bas, env, three, nbas_orb, nbas_aux, dummy, npair, pair_i, pair_j, opt) &
-      !$omp    private(ipair, ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, shls, ret, idx, buf)
+      !$omp    shared(orb, aux, bas, env, three, nbas_orb, nbas_aux, dummy, npair, pair_i, pair_j, opt, &
+      !$omp           screening, q_pair, aux_bound) &
+      !$omp    private(ipair, ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, shls, ret, idx, buf, q_bra)
       allocate (buf(max_block(orb)**2*max_block(aux)))
 
       !$omp do schedule(dynamic)
@@ -1409,8 +1793,16 @@ contains
          io = orb%shell_offset(ish)
          dj = shell_dim(orb%cartesian, jsh - 1, bas)
          jo = orb%shell_offset(jsh)
+         q_bra = 0.0_dp
+         if (screening) q_bra = q_pair(ish, jsh)
 
          do ksh = 1, nbas_aux
+            ! The auxiliary half of the bound, per shell. This is where most of
+            ! the screening is: the pair-level test above only asks whether the
+            ! pair reaches the *tightest* fitting function.
+            if (screening) then
+               if (q_bra*aux_bound(ksh) < DF_PAIR_SCREEN) cycle
+            end if
             dk = shell_dim(orb%cartesian, nbas_orb + ksh - 1, bas)
             ko = aux%shell_offset(ksh)
             shls = [ish - 1, jsh - 1, nbas_orb + ksh - 1, dummy - 1]
