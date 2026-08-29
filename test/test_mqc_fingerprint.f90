@@ -43,7 +43,8 @@ contains
                   new_unittest("functional_moves_it", test_functional), &
                   new_unittest("scf_threshold_moves_it", test_threshold), &
                   new_unittest("driver_moves_it", test_driver), &
-                  new_unittest("verbosity_does_not", test_verbosity) &
+                  new_unittest("verbosity_does_not", test_verbosity), &
+                  new_unittest("angular_form_moves_it", test_cartesian) &
                   ]
    end subroutine collect_mqc_fingerprint
 
@@ -191,6 +192,25 @@ contains
       b%basis_set = "def2-tzvp"
       call differ(error, sys, sys, a, b, "changing the basis")
    end subroutine test_basis
+
+   subroutine test_cartesian(error)
+      !! `model.cartesian` is a different model, not a different spelling
+      !!
+      !! Above p the Cartesian and spherical forms span different spaces, so
+      !! water at cc-pVDZ is 24 functions and -76.420342 one way and 25 and
+      !! -76.421536 the other. Nothing else in the deck distinguishes them --
+      !! same basis name, same functional, same thresholds -- so without this
+      !! in the hash two genuinely different energies share a fingerprint,
+      !! which is the shape a caching bug takes.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(method_config_t) :: a, b
+
+      call water_dimer(sys)
+      call dft(a); call dft(b)
+      b%scf%cartesian = .true.
+      call differ(error, sys, sys, a, b, "forcing a Cartesian basis")
+   end subroutine test_cartesian
 
    subroutine test_functional(error)
       !! The one with no other symptom

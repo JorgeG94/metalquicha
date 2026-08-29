@@ -241,6 +241,37 @@ the RI error it is meant to be. Naming an auxiliary basis does **not** by itself
 density-fit the reference -- that is ``keywords.scf.density_fitting``, asked for
 rather than inferred.
 
+``cartesian`` reads the basis in Cartesian form whatever its file declares --
+6d rather than 5d, 10f rather than 7f. It defaults to false, meaning the file
+decides, and it is a no-op for a basis with no shell above p, where the two
+forms are the same functions.
+
+It is not a preference. For a shell above p the two forms span different
+spaces, so this changes the answer rather than its representation: water at
+cc-pVDZ/B3LYP goes from 24 basis functions and -76.420342 Hartree to 25 and
+-76.421536. Both are correct, and they are correct for different models.
+
+It exists because the convention is not something a basis set *name* settles.
+BSE is inconsistent about it -- 6-31G* is marked Cartesian and cc-pVDZ
+spherical -- and GAMESS assumes Cartesian for the Pople sets throughout, so
+reproducing a GAMESS number, or comparing against a program whose default runs
+the other way, needs a way to say which was meant. Without it the run still
+succeeds and still converges; it just answers a different question than the one
+being compared against.
+
+An auxiliary basis follows the orbital basis rather than its own file: a
+three-centre integral is built in one angular form, so a spherical fitting
+basis over a Cartesian orbital basis is not a mixture the integrals can
+express.
+
+It is a CPU-path keyword. cuEST builds its AO shells spherical whatever the
+basis says, so asking for both is refused rather than quietly answered in the
+other form -- ``backend: cuest`` with ``cartesian`` on is an error, and so is
+leaving the backend at ``auto`` on a build that resolves it to the GPU. Ask for
+``backend: libcint``, which honours the file and this keyword both. A basis
+whose *file* is Cartesian, such as 6-31G*, was already refused on the GPU path
+for the same reason.
+
 Kohn-Sham DFT, on the CPU through libcint and libxc:
 
 - ``DFT`` (also ``KS``, ``Kohn-Sham``) selects the method; **which** functional is
@@ -1357,7 +1388,8 @@ is direct -- each ``%section`` becomes an object of the same name:
      - JSON
    * - ``%schema`` / ``name``, ``version``
      - ``"schema": {"name": ..., "version": ...}``
-   * - ``%model`` / ``method``, ``basis``, ``aux_basis``, ``functional``
+   * - ``%model`` / ``method``, ``basis``, ``aux_basis``, ``functional``,
+       ``cartesian``
      - ``"model": {...}``, same keys
    * - ``%driver`` / ``type = Energy``
      - ``"driver": "Energy"``

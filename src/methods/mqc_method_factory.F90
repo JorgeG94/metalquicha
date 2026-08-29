@@ -219,6 +219,7 @@ contains
          m%options%scs_os = config%corr%scs_os
       end if
 
+      m%options%cartesian = config%scf%cartesian
       m%options%aux_basis_set = config%scf%aux_basis_set
       m%options%aux_basis_named = config%scf%aux_basis_named
       m%options%density_fitting = config%scf%density_fitting
@@ -292,6 +293,7 @@ contains
          m%options%aux_basis_set = config%dft%aux_basis_set
          m%options%aux_basis_named = .true.
       else
+         m%options%cartesian = config%scf%cartesian
          m%options%aux_basis_set = config%scf%aux_basis_set
          m%options%aux_basis_named = config%scf%aux_basis_named
       end if
