@@ -1225,19 +1225,37 @@ contains
    end subroutine mp2_perturbed_zvector_rhs
 
    subroutine mp2_perturbed_response(mol, coeff, orbital_energies, n_occ, &
-                                     fx, sx, erix, mo1, t2, eri_mo, l_mo, gam, drel, &
-                                     dt2, ddrel, di, error, tol, zvec)
-      !! Units 1.7-1.8: the perturbed amplitudes, relaxed density and
+                                     n_frozen, fx, sx, erix, mo1, t2, eri_mo, &
+                                     l_mo, gam, drel, dt2, ddrel, di, error, &
+                                     tol, zvec)
+      !! Units 1.7-1.8 and 2.3: the perturbed amplitudes, relaxed density and
       !! energy-weighted density for every nuclear perturbation
       !!
-      !! pycc's `_perturbed_relaxed_density`, non-canonical and all-electron
-      !! (a frozen core is refused: the core<->active rewrite of `U^X` and the
-      !! Sylvester divide are Phase 2's, and running this path without them
-      !! would be quietly wrong rather than unsupported). Per perturbation:
+      !! pycc's `_perturbed_relaxed_density`, non-canonical, frozen-core
+      !! aware. Per perturbation:
       !!
-      !!     d_Y Drel = d_Y gamma - z^Y            (vo/ov from the solve)
+      !!     d_Y Drel = d_Y gamma + d_Y P_co - z^Y  (vo/ov from the solve)
       !!     G z^Y    = dX - G^Y z
       !!     d_Y I    = d_Y I'(Drel, d_Y Drel, Gam, d_Y Gam)
+      !!
+      !! **The core<->active derivative is a Sylvester relation, not a
+      !! quotient rule** (design plan s.4a; Baeck, Watts and Bartlett, JCP
+      !! 107, 3853 (1997), Eqs. 22-28). The gradient's divide
+      !! `P_co[c,i] = (I'[c,i] - I'[i,c])/(eps_c - eps_i)` is the canonical
+      !! collapse of `f P - P f = I' - I'^T`; a displacement leaves both
+      !! blocks non-canonical, so the derivative keeps the off-diagonal
+      !! `d_Y f` couplings:
+      !!
+      !!     d_Y P_co[c,i] = [ d_Y I'[c,i] - d_Y I'[i,c]
+      !!                       - Sum_d d_Y f[c,d] P_co[d,i]
+      !!                       + Sum_j P_co[c,j] d_Y f[j,i] ] / (eps_c - eps_i)
+      !!
+      !! `d` over the core, `j` over the active occupied. Dropping the
+      !! off-diagonal terms costs ~7e-7 on this molecule and basis (pycc's
+      !! measurement, the field case of the same relation); the perturbed
+      !! ov right-hand side picks up the derivative of the core<->active
+      !! coupling as well, both the rotation's response against `L` and the
+      !! unperturbed rotation against `d_Y L`.
       !!
       !! Two passes around one batched CPHF call. Pass 1 holds one
       !! perturbation's `nmo^4` derivative at a time and folds out everything
@@ -1256,10 +1274,11 @@ contains
       real(dp), intent(in) :: coeff(:, :)
       real(dp), intent(in) :: orbital_energies(:)
       integer, intent(in) :: n_occ
+      integer, intent(in) :: n_frozen
       real(dp), intent(in) :: fx(:, :, :), sx(:, :, :)   !! Unit 1.4 stacks
       real(dp), intent(in) :: erix(:, :, :, :, :)
       real(dp), intent(in) :: mo1(:, :, :, :)   !! (n_mo, n_occ, 3, natm)
-      real(dp), intent(in) :: t2(:, :, :, :)    !! Full-occupied amplitudes
+      real(dp), intent(in) :: t2(:, :, :, :)    !! Active-occupied amplitudes
       real(dp), intent(in) :: eri_mo(:, :, :, :), l_mo(:, :, :, :)
       real(dp), intent(in) :: gam(:, :, :, :)   !! From `mp2_cumulant_2pdm`
       real(dp), intent(in) :: drel(:, :)        !! Relaxed 1-PDM, MO
@@ -1281,47 +1300,53 @@ contains
       real(dp), allocatable :: dl(:, :, :, :), ta(:, :, :, :), ddg(:, :)
       real(dp), allocatable :: dgam_y(:, :, :, :), dip(:, :), rhs1(:, :)
       real(dp), allocatable :: rhs(:, :, :), zx(:, :, :), zm(:, :)
+      real(dp), allocatable :: pco(:, :), dpco(:, :)
       real(dp) :: use_tol, acc
-      integer :: n_mo, n_vir, n_pert, y, atom, comp, i, j, a, b, m, e, f, p, q, r, s
+      integer :: n_mo, n_vir, n_act, n_pert, y, atom, comp, i, j, a, b, c, d
+      integer :: m, e, f, p, q, r, s
 
       if (error%has_error()) return
 
       n_mo = size(coeff, 2)
       n_vir = n_mo - n_occ
+      n_act = n_occ - n_frozen
       n_pert = size(sx, 3)
-      if (size(t2, 1) /= n_occ) then
-         call error%set(ERROR_VALIDATION, "the perturbed response is all-electron "// &
-                        "for now: a frozen core needs the Phase 2 core rotations, "// &
-                        "not this path with fewer amplitudes.")
+      if (size(t2, 1) /= n_act) then
+         call error%set(ERROR_VALIDATION, "the perturbed response was handed "// &
+                        "amplitudes whose occupied count does not match "// &
+                        "n_occ - n_frozen.")
          return
       end if
       use_tol = 1.0e-13_dp
       if (present(tol)) use_tol = tol
 
       ! ---- the unperturbed pieces the response reuses ----------------------
-      ! The unrelaxed density from the amplitudes, its Lagrangian, and the
-      ! Z-vector in pycc's convention: z = G^-1 X, X_ia = I'_ia - I'_ai.
+      ! The unrelaxed density from the amplitudes (active blocks only -- the
+      ! core rows carry no correlation), its Lagrangian, the core<->active
+      ! divide, and the Z-vector in pycc's convention: z = G^-1 X,
+      ! X_ia = I'_ia - I'_ai over the full occupied space, minus the
+      ! core-rotation coupling when a core exists.
       allocate (d0(n_mo, n_mo))
       d0 = 0.0_dp
-      do j = 1, n_occ
-         do i = 1, n_occ
+      do j = 1, n_act
+         do i = 1, n_act
             acc = 0.0_dp
             do f = 1, n_vir
                do e = 1, n_vir
-                  do m = 1, n_occ
+                  do m = 1, n_act
                      acc = acc + t2(i, m, e, f)*(2.0_dp*(2.0_dp*t2(j, m, e, f) - t2(j, m, f, e)))
                   end do
                end do
             end do
-            d0(i, j) = -acc
+            d0(n_frozen + i, n_frozen + j) = -acc
          end do
       end do
       do b = 1, n_vir
          do a = 1, n_vir
             acc = 0.0_dp
             do e = 1, n_vir
-               do j = 1, n_occ
-                  do m = 1, n_occ
+               do j = 1, n_act
+                  do m = 1, n_act
                      acc = acc + t2(m, j, b, e)*(2.0_dp*(2.0_dp*t2(m, j, a, e) - t2(m, j, e, a)))
                   end do
                end do
@@ -1331,10 +1356,30 @@ contains
       end do
 
       call mp2_mo_lagrangian(eri_mo, orbital_energies, d0, gam, n_occ, ip0)
+      if (n_frozen > 0) then
+         allocate (pco(n_frozen, n_act))
+         do i = 1, n_act
+            do c = 1, n_frozen
+               pco(c, i) = (ip0(c, n_frozen + i) - ip0(n_frozen + i, c)) &
+                           /(orbital_energies(c) - orbital_energies(n_frozen + i))
+            end do
+         end do
+      end if
       allocate (rhs0(n_vir, n_occ, 1))
       do i = 1, n_occ
          do a = 1, n_vir
-            rhs0(a, i, 1) = -(ip0(i, n_occ + a) - ip0(n_occ + a, i))
+            acc = ip0(i, n_occ + a) - ip0(n_occ + a, i)
+            if (n_frozen > 0) then
+               ! The core rotation rides the ov right-hand side through the
+               ! orbital Hessian: z_jc = -P_co^T against the unperturbed L.
+               do c = 1, n_frozen
+                  do j = 1, n_act
+                     acc = acc + pco(c, j)*(l_mo(n_occ + a, n_frozen + j, i, c) &
+                                            + l_mo(n_occ + a, c, i, n_frozen + j))
+                  end do
+               end do
+            end if
+            rhs0(a, i, 1) = -acc
          end do
       end do
       call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zsol, &
@@ -1346,13 +1391,15 @@ contains
       if (present(zvec)) zvec = z
 
       ! ---- pass 1: one perturbation's derivative resident at a time --------
-      allocate (dt2(n_occ, n_occ, n_vir, n_vir, n_pert))
+      allocate (dt2(n_act, n_act, n_vir, n_vir, n_pert))
       allocate (ddrel(n_mo, n_mo, n_pert), di(n_mo, n_mo, n_pert))
       allocate (rhs(n_vir, n_occ, n_pert))
       do y = 1, n_pert
          atom = (y - 1)/3 + 1
          comp = y - 3*(atom - 1)
-         call mp2_full_u(mo1(:, :, comp, atom), sx(:, :, y), n_occ, u)
+         call mp2_full_u(mo1(:, :, comp, atom), sx(:, :, y), n_occ, u, &
+                         n_frozen=n_frozen, fx1=fx(:, :, y), l_mo=l_mo, &
+                         orbital_energies=orbital_energies)
          call mp2_perturbed_fock(fx(:, :, y), sx(:, :, y), u, l_mo, &
                                  orbital_energies, n_occ, df)
          call mp2_perturbed_eri(erix(:, :, :, :, y), u, eri_mo, deri)
@@ -1362,16 +1409,56 @@ contains
                dl(:, :, r, s) = 2.0_dp*deri(:, :, r, s) - deri(:, :, s, r)
             end do
          end do
-         call mp2_perturbed_t2(deri, df, t2, orbital_energies, 0, n_occ, ta)
+         call mp2_perturbed_t2(deri, df, t2, orbital_energies, n_frozen, n_occ, ta)
          dt2(:, :, :, :, y) = ta
-         call mp2_perturbed_onepdm(t2, ta, 0, n_occ, n_mo, ddg)
-         call mp2_cumulant_2pdm(ta, 0, n_occ, n_mo, dgam_y)
+         call mp2_perturbed_onepdm(t2, ta, n_frozen, n_occ, n_mo, ddg)
+         call mp2_cumulant_2pdm(ta, n_frozen, n_occ, n_mo, dgam_y)
          ! The Z-vector right-hand side wants the Lagrangian's response at the
          ! unrelaxed pair; the energy-weighted density wants it at the relaxed
          ! one. Both while the derivative tensor is still here.
          call mp2_perturbed_lagrangian(df, deri, dl, eri_mo, l_mo, orbital_energies, &
                                        d0, ddg, gam, dgam_y, n_occ, dip)
          call mp2_perturbed_zvector_rhs(dip, df, dl, z, n_occ, rhs1)
+         if (n_frozen > 0) then
+            ! The Sylvester derivative of the core<->active divide (header):
+            ! the off-diagonal d_Y f couplings within the core and active
+            ! blocks, then the rotation's response folded into the ov
+            ! right-hand side alongside the unperturbed rotation against d_Y L.
+            allocate (dpco(n_frozen, n_act))
+            do i = 1, n_act
+               do c = 1, n_frozen
+                  acc = dip(c, n_frozen + i) - dip(n_frozen + i, c)
+                  do d = 1, n_frozen
+                     acc = acc - df(c, d)*pco(d, i)
+                  end do
+                  do j = 1, n_act
+                     acc = acc + pco(c, j)*df(n_frozen + j, n_frozen + i)
+                  end do
+                  dpco(c, i) = acc/(orbital_energies(c) - orbital_energies(n_frozen + i))
+               end do
+            end do
+            do i = 1, n_occ
+               do a = 1, n_vir
+                  acc = 0.0_dp
+                  do c = 1, n_frozen
+                     do j = 1, n_act
+                        acc = acc + dpco(c, j)*(l_mo(n_occ + a, n_frozen + j, i, c) &
+                                                + l_mo(n_occ + a, c, i, n_frozen + j)) &
+                              + pco(c, j)*(dl(n_occ + a, n_frozen + j, i, c) &
+                                           + dl(n_occ + a, c, i, n_frozen + j))
+                     end do
+                  end do
+                  rhs1(a, i) = rhs1(a, i) + acc
+               end do
+            end do
+            do i = 1, n_act
+               do c = 1, n_frozen
+                  ddg(c, n_frozen + i) = ddg(c, n_frozen + i) + dpco(c, i)
+                  ddg(n_frozen + i, c) = ddg(n_frozen + i, c) + dpco(c, i)
+               end do
+            end do
+            deallocate (dpco)
+         end if
          rhs(:, :, y) = rhs1
          deallocate (dip)
          call mp2_perturbed_lagrangian(df, deri, dl, eri_mo, l_mo, orbital_energies, &
@@ -1414,6 +1501,7 @@ contains
          end do
       end do
       deallocate (zm, zx, d0, z)
+      if (allocated(pco)) deallocate (pco)
    end subroutine mp2_perturbed_response
 
    subroutine mp2_correlation_hessian(mol, coeff, orbital_energies, density, &
@@ -1589,7 +1677,7 @@ contains
       deallocate (xov_st, i2_st)
 
       ! ---- group 3: the 2n+1 density response -------------------------------
-      call mp2_perturbed_response(mol, coeff, orbital_energies, n_occ, &
+      call mp2_perturbed_response(mol, coeff, orbital_energies, n_occ, n_frozen, &
                                   fx, sx, erix, mo1, t2, eri_mo, l_mo, gam, &
                                   dm1mo, dt2, ddrel, di, error, tol=use_tol)
       if (error%has_error()) return
@@ -1604,7 +1692,7 @@ contains
       do iy = 1, n_pert
          by = (iy - 1)/3 + 1
          cy = iy - 3*(by - 1)
-         call mp2_cumulant_2pdm(dt2(:, :, :, :, iy), 0, n_occ, n_mo, dgam)
+         call mp2_cumulant_2pdm(dt2(:, :, :, :, iy), n_frozen, n_occ, n_mo, dgam)
          do ix = 1, n_pert
             ax = (ix - 1)/3 + 1
             cx = ix - 3*(ax - 1)

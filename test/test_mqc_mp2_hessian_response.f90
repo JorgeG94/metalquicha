@@ -606,7 +606,7 @@ contains
       end if
       if (.not. err%has_error()) then
          call mp2_perturbed_response(mol, scf%orbitals, scf%orbital_energies, n_o, &
-                                     fx, sx, erix, mo1, t2, eri_mo, l_mo, gam, &
+                                     0, fx, sx, erix, mo1, t2, eri_mo, l_mo, gam, &
                                      dm1mo, dt2, ddrel, di, err, zvec=zvec)
       end if
       call omp_set_num_threads(threads)
