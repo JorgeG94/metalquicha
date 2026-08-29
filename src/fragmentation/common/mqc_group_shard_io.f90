@@ -3,6 +3,8 @@ module mqc_group_shard_io
    use pic_types, only: int32, int64
    use pic_mpi_lib, only: comm_t, isend, irecv, recv, wait, request_t, MPI_Status
    use mqc_mpi_tags, only: TAG_GROUP_ASSIGN, TAG_GROUP_POLYMERS
+   use pic_logger, only: logger => global_logger
+   use pic_io, only: to_char
    implicit none
    private
 
@@ -12,6 +14,14 @@ contains
 
    subroutine send_group_assignment_matrix(world_comm, dest_rank, ids, matrix)
       !! Send shard-assignment ids and polymer matrix to a destination rank.
+      !!
+      !! **`matrix` is (task, width), one task per row.** The width is taken as
+      !! `size(matrix, 2)` and the receiver allocates `(size(ids), n_cols)`, so a
+      !! caller holding the transpose gets its task count read as the width. The
+      !! guard below turns that into an immediate stop instead of a wrong-shaped
+      !! matrix at the far end -- GMBE passed the transpose for as long as this
+      !! helper existed, and nothing noticed because the only shard that skips
+      !! the wire is group 0's own.
       type(comm_t), intent(in) :: world_comm
       integer, intent(in) :: dest_rank
       integer(int64), intent(in) :: ids(:)
@@ -24,6 +34,14 @@ contains
 
       n_rows = size(ids, kind=int64)
       n_cols = size(matrix, 2)
+
+      if (size(matrix, 1, kind=int64) /= n_rows) then
+         call logger%error("send_group_assignment_matrix: matrix has "// &
+                           to_char(size(matrix, 1))//" rows for "// &
+                           to_char(int(n_rows))//" ids. It must be "// &
+                           "(task, width); this looks like the transpose.")
+         error stop 1
+      end if
 
       call isend(world_comm, n_rows, dest_rank, TAG_GROUP_ASSIGN, req(1))
       call isend(world_comm, ids, dest_rank, TAG_GROUP_ASSIGN, req(2))
