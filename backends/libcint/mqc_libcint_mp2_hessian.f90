@@ -595,41 +595,50 @@ contains
       !! core or the canonical gauge sends them through
       !! `mp2_pair_rotation_augment` first.
       real(dp), intent(in) :: fx1(:, :), sx1(:, :)   !! One perturbation's f^(X), S^(X)
-      real(dp), intent(in) :: erix1(:, :, :, :)      !! `<pq|rs>^(X)`, physicist
+      real(dp), intent(in), target, contiguous :: erix1(:, :, :, :)
+         !! `<pq|rs>^(X)`, physicist
       real(dp), intent(in) :: drel(:, :)             !! Relaxed 1-PDM, MO
-      real(dp), intent(in) :: gam(:, :, :, :)        !! From `mp2_cumulant_2pdm`
+      real(dp), intent(in), target, contiguous :: gam(:, :, :, :)
+         !! From `mp2_cumulant_2pdm`
       real(dp), intent(in) :: imat(:, :)             !! From `mp2_mo_lagrangian`
       integer, intent(in) :: n_occ                   !! Full occupied count
       real(dp), allocatable, intent(out) :: ip(:, :)
       real(dp), allocatable, intent(out) :: xov(:, :)
       real(dp), allocatable, intent(out) :: i2(:, :)
 
+      real(dp), pointer :: erix2(:, :), gam2(:, :)
+      real(dp), allocatable :: two_e(:, :)
       real(dp) :: acc
-      integer :: n_mo, p, q, r, s, t
+      integer :: n_mo, n_cube, p, q, r, s
 
       n_mo = size(drel, 1)
-      allocate (ip(n_mo, n_mo), xov(n_mo, n_mo), i2(n_mo, n_mo))
+      n_cube = n_mo*n_mo*n_mo
+      allocate (ip(n_mo, n_mo), xov(n_mo, n_mo), i2(n_mo, n_mo), two_e(n_mo, n_mo))
 
-      ! One- and two-particle terms with both derivative placements; the
-      ! occupied-column two-electron term folds L^(X) on the spot, as the
-      ! Fock skeleton build does.
-      do q = 1, n_mo
-         do p = 1, n_mo
-            acc = 0.0_dp
-            do r = 1, n_mo
-               acc = acc + drel(q, r)*fx1(p, r) + drel(r, q)*fx1(r, p) &
-                     + imat(q, r)*sx1(p, r) + imat(r, q)*sx1(r, p)
-            end do
-            do t = 1, n_mo
-               do s = 1, n_mo
-                  do r = 1, n_mo
-                     acc = acc + 4.0_dp*erix1(p, r, s, t)*gam(q, r, s, t)
-                  end do
-               end do
-            end do
-            ip(p, q) = acc
-         end do
-      end do
+      ! One- and two-particle terms with both derivative placements. Every one
+      ! of these five sums is a matrix product; see the note in
+      ! `mp2_perturbed_lagrangian`, which had the identical shape and the same
+      ! treatment. The four one-electron terms differ only in which operand is
+      ! transposed, and the `4 <pr|st>^(X) Gamma_qrst` term contracts a
+      ! contiguous trailing `(r,s,t)` against `p` and `q` leading, so it is one
+      ! gemm rather than an `n_mo^5` nest.
+      call pic_gemm(fx1, drel, ip, transb="T")
+      call pic_gemm(fx1, drel, ip, transa="T", beta=1.0_dp)
+      call pic_gemm(sx1, imat, ip, transb="T", beta=1.0_dp)
+      call pic_gemm(sx1, imat, ip, transa="T", beta=1.0_dp)
+
+      erix2(1:n_mo, 1:n_cube) => erix1
+      gam2(1:n_mo, 1:n_cube) => gam
+      call pic_gemm(erix2, gam2, two_e, transb="T")
+      ip = ip + 4.0_dp*two_e
+
+      ! The occupied-column term folds L^(X) on the spot, as the Fock skeleton
+      ! build does. It stays a loop for the reason the sibling routine's second
+      ! nest does -- `p` and `q` are strided inside `erix1`, and it is one power
+      ! of `n_mo` cheaper than the term above -- so the independent `(p,q)` is
+      ! what gets parallelised.
+      !$omp parallel do collapse(2) default(none) schedule(static) &
+      !$omp    shared(ip, drel, erix1, n_mo, n_occ) private(p, q, r, s, acc)
       do q = 1, n_occ
          do p = 1, n_mo
             acc = 0.0_dp
@@ -643,6 +652,7 @@ contains
             ip(p, q) = ip(p, q) + acc
          end do
       end do
+      !$omp end parallel do
       ip = -0.5_dp*ip
 
       xov = transpose(ip) - ip
