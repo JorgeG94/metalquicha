@@ -26,6 +26,7 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    json_output
    validation
    scf_convergence
+   benchmarks
    vibrational_analysis
    analytic_hessians
    geometry_optimization

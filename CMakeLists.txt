@@ -314,6 +314,32 @@ find_package(
   COMPONENTS Fortran
   REQUIRED)
 
+# What this binary was built with, recorded where CMake still knows it.
+#
+# The BLAS choice alone moves a density functional run by a factor of five and
+# cannot be recovered from inside the program, so a benchmark that does not
+# report it is not reproducible. Emitted into the build tree rather than the
+# source tree: it is a product of the configuration, and two build directories
+# off one checkout legitimately disagree.
+set(MQC_BUILD_INFO_BLAS "${MQC_BLA_VENDOR}")
+if(NOT MQC_BUILD_INFO_BLAS)
+  set(MQC_BUILD_INFO_BLAS "cmake-default")
+endif()
+if(OpenMP_Fortran_FOUND)
+  set(MQC_BUILD_INFO_OPENMP "yes")
+else()
+  set(MQC_BUILD_INFO_OPENMP "no")
+endif()
+string(TOUPPER "${CMAKE_BUILD_TYPE}" _mqc_cfg)
+set(MQC_BUILD_INFO_FFLAGS
+    "${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${_mqc_cfg}}")
+string(STRIP "${MQC_BUILD_INFO_FFLAGS}" MQC_BUILD_INFO_FFLAGS)
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/templates/mqc_build_info.f90.in"
+  "${CMAKE_BINARY_DIR}/generated/mqc_build_info.f90" @ONLY)
+target_sources(${main_lib}
+               PRIVATE "${CMAKE_BINARY_DIR}/generated/mqc_build_info.f90")
+
 add_subdirectory(src)
 
 # The cuEST backend lives outside src/ on purpose: the fpm build globs all of
