@@ -57,6 +57,23 @@ module mqc_method_dft
       integer :: device_rank = 0
          !! Node-local MPI rank, for spreading ranks across a node's GPUs
       logical :: unrestricted = .false.
+      logical :: allow_crap_scf = .false.
+         !! Keep a non-converged SCF instead of failing.
+         !!
+         !! Here because it was *not* here: `keywords.scf.allow_crap_scf` was
+         !! read from the deck, passed the schema, reached the config, and was
+         !! then dropped for every DFT run -- this type had no such field,
+         !! `configure_dft` did not set it, and the block below did not copy
+         !! it. Hartree-Fock had all three. The backend and the workflow were
+         !! both correct and were simply never told, so the deck was obeyed for
+         !! HF and silently ignored for Kohn-Sham.
+         !!
+         !! **This type and `hf_options_t` share twenty-two of their
+         !! thirty-five fields**, hand-copied through three layers apiece, and
+         !! have already drifted: `conv_tol` here is `energy_tol` there, and
+         !! `density_fitting` is `use_density_fitting`. An SCF keyword added to
+         !! one and not the other fails exactly this way, with no error
+         !! anywhere. A shared `scf_options_t` would remove the class.
          !! Force UHF/UKS even for a closed shell
       character(len=32) :: guess = "auto"
          !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection',
@@ -194,6 +211,7 @@ contains
       settings%guess = this%options%guess
       if (allocated(this%options%guess_steps)) settings%guess_steps = this%options%guess_steps
       settings%max_iter = this%options%max_iter
+      settings%allow_crap_scf = this%options%allow_crap_scf
       settings%energy_tol = this%options%energy_tol
       settings%density_tol = this%options%density_tol
       settings%level_shift = this%options%level_shift
