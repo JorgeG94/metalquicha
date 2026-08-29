@@ -32,7 +32,7 @@ module mqc_libcint_xc
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_libcint_vv10, only: vv10_nlc
+   use mqc_libcint_vv10, only: vv10_nlc, vv10_hessian_kernel
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid, DEFAULT_GRID_LEVEL
    use mqc_xc_spec, only: xc_spec_t, xc_spec_from_name, MAX_XC_COMPONENTS
    use mqc_libcint_integrals, only: libcint_molecule_t
@@ -84,6 +84,8 @@ module mqc_libcint_xc
    public :: xc_kernel_apply
    public :: xc_grid_kernel_quantities
    public :: ensure_nlc_grid
+   public :: vv10_add_potential
+   public :: vv10_kernel_apply
 
    real(dp), parameter :: KERNEL_RHO_FLOOR = 1.0e-10_dp
       !! Grid points below this density contribute no *second* derivative.
@@ -1989,6 +1991,174 @@ contains
                                    vtau=vtau_none, any_gga=.true., any_mgga=.false.)
       end do
    end subroutine vv10_add_potential
+
+   subroutine vv10_kernel_apply(ctx, mol, density, dtilde, v_kernel, error)
+      !! The VV10 kernel applied to a batch of response densities
+      !!
+      !! `xc_kernel_apply`'s non-local counterpart, on the NLC grid: the second
+      !! functional derivative of `E_nl` contracted against each trial density,
+      !! which is the term a coupled-perturbed solve over a `-V` functional is
+      !! missing without this. The VV10 potential matrix has two pieces,
+      !! `f_rho chi_u chi_v` and `2 f_gamma grad rho . grad(chi_u chi_v)`, and
+      !! both respond to a trial density:
+      !!
+      !!     d f_rho, d f_gamma  --  `vv10_hessian_kernel`, the operator the
+      !!                             explicit Hessian and the Fock derivative
+      !!                             already validated, one pair sweep for the
+      !!                             whole batch
+      !!     d grad rho          --  `2 f_gamma grad drho . grad(chi_u chi_v)`,
+      !!                             the same term `xc_kernel_apply` carries as
+      !!                             `2 v_sigma grad drho`
+      !!
+      !! PySCF's `get_vnlc_resp`, term for term.
+      !!
+      !! **Batched, unlike `xc_kernel_apply`, and deliberately.** The pair
+      !! sweep is O(npts^2) whether it carries one trial or thirty, so a
+      !! response solve that applied this per perturbation would multiply the
+      !! only expensive part of the routine by `3*natm` every iteration.
+      !! `vv10_hessian_kernel` already takes the batch; this passes it through.
+      !!
+      !! **Accumulates into `v_kernel`**, exactly as `xc_kernel_apply` does --
+      !! the caller adds this to a response operator it has already partly
+      !! built, and the caller zeroes. Each trial must be symmetric, which is
+      !! what `eval_rho`'s gradient assumes and what every response density
+      !! here is. Restricted only, like everything upstream.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)      !! The converged SCF density
+      real(dp), intent(in) :: dtilde(:, :, :)    !! (nao, nao, n_trial), each symmetric
+      real(dp), intent(inout) :: v_kernel(:, :, :)  !! (nao, nao, n_trial), accumulated into
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: rho(:), sigma(:), rho_grad(:, :)
+      real(dp), allocatable :: rho_blk(:), rho_grad_blk(:, :)
+      real(dp), allocatable :: rho_t(:, :), gamma_t(:, :), grad_t(:, :, :)
+      real(dp), allocatable :: exc(:), vrho(:), vsigma(:)
+      real(dp), allocatable :: pu(:), pw(:), pa(:), pb(:), pc(:)
+      real(dp), allocatable :: dodr(:), dodg(:), d2odr2(:), d2odg2(:), d2odrdg(:)
+      real(dp), allocatable :: dkdr(:), d2kdr2(:)
+      real(dp), allocatable :: f_rho_t(:, :), f_gamma_t(:, :)
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
+      real(dp), allocatable :: grad_coeff(:, :), vtau_none(:), c_rho(:)
+      integer :: npts, n_trial, g0, g1, nb, ig, id, it, g
+
+      if (error%has_error()) return
+      if (ctx%nlc_b == 0.0_dp .and. ctx%nlc_c == 0.0_dp) return
+      if (ctx%polarized) then
+         call error%set(ERROR_VALIDATION, "the VV10 kernel is implemented for "// &
+                        "a restricted reference only")
+         return
+      end if
+
+      call ensure_nlc_grid(ctx, mol, error)
+      if (error%has_error()) return
+      npts = ctx%nlc_grid%n_points
+      if (npts == 0) return
+      n_trial = size(dtilde, 3)
+      if (n_trial == 0) return
+
+      ! Sweep one: the reference density and every trial's, gradients included,
+      ! over the whole NLC grid -- the pair sums read every point before any
+      ! output exists. No AO screening, matching `vv10_add_potential` and for
+      ! its reasons; and the kernel is non-local anyway, so no block could be
+      ! skipped on any per-atom argument.
+      allocate (rho(npts), sigma(npts), rho_grad(npts, 3))
+      allocate (rho_t(n_trial, npts), gamma_t(n_trial, npts))
+      allocate (grad_t(npts, 3, n_trial))
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
+         nb = g1 - g0 + 1
+         call eval_ao_block(mol, ctx%nlc_grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+         if (error%has_error()) return
+         call eval_rho(ao, density, rho_blk, ao_grad=ao_grad, rho_grad=rho_grad_blk)
+         do ig = 1, nb
+            rho(g0 + ig - 1) = rho_blk(ig)
+            do id = 1, 3
+               rho_grad(g0 + ig - 1, id) = rho_grad_blk(ig, id)
+            end do
+            sigma(g0 + ig - 1) = rho_grad_blk(ig, 1)**2 + rho_grad_blk(ig, 2)**2 &
+                                 + rho_grad_blk(ig, 3)**2
+         end do
+         do it = 1, n_trial
+            call eval_rho(ao, dtilde(:, :, it), rho_blk, ao_grad=ao_grad, &
+                          rho_grad=rho_grad_blk)
+            do ig = 1, nb
+               rho_t(it, g0 + ig - 1) = rho_blk(ig)
+               do id = 1, 3
+                  grad_t(g0 + ig - 1, id, it) = rho_grad_blk(ig, id)
+               end do
+            end do
+         end do
+      end do
+      ! gamma_t = 2 grad rho . grad drho -- the derivative of sigma along the
+      ! trial, the same contraction `xc_kernel_apply` calls `dsigma`.
+      do g = 1, npts
+         do it = 1, n_trial
+            gamma_t(it, g) = 2.0_dp*(rho_grad(g, 1)*grad_t(g, 1, it) &
+                                     + rho_grad(g, 2)*grad_t(g, 2, it) &
+                                     + rho_grad(g, 3)*grad_t(g, 3, it))
+         end do
+      end do
+
+      ! One pair sweep for the potential -- whose `vsigma` *is* PySCF's
+      ! `f_gamma`, the identity Phase 1's test pins -- and every kernel
+      ! intermediate the perturbed potential needs.
+      allocate (exc(npts), vrho(npts), vsigma(npts))
+      allocate (pu(npts), pw(npts), pa(npts), pb(npts), pc(npts))
+      allocate (dodr(npts), dodg(npts), d2odr2(npts), d2odg2(npts), d2odrdg(npts))
+      allocate (dkdr(npts), d2kdr2(npts))
+      call vv10_nlc(ctx%nlc_b, ctx%nlc_c, ctx%nlc_grid%coords, rho, sigma, &
+                    ctx%nlc_grid%coords, rho, sigma, ctx%nlc_grid%weights, &
+                    exc, vrho, vsigma, &
+                    hess_u=pu, hess_w=pw, hess_a=pa, hess_b=pb, hess_c=pc, &
+                    domega_drho=dodr, domega_dgamma=dodg, &
+                    d2omega_drho2=d2odr2, d2omega_dgamma2=d2odg2, &
+                    d2omega_drho_dgamma=d2odrdg, &
+                    dkappa_drho=dkdr, d2kappa_drho2=d2kdr2)
+
+      ! The kernel: every trial in, the perturbed potentials `d f_rho` and
+      ! `d f_gamma` out, in one pair sweep for the whole batch. The inner
+      ! quadrature weight lives inside; the outer one is applied below.
+      allocate (f_rho_t(n_trial, npts), f_gamma_t(n_trial, npts))
+      call vv10_hessian_kernel(ctx%nlc_b, ctx%nlc_c, ctx%nlc_grid%coords, &
+                               rho, sigma, ctx%nlc_grid%weights, &
+                               pu, pw, pa, pb, pc, dodr, dodg, dkdr, &
+                               d2odr2, d2odg2, d2odrdg, d2kdr2, &
+                               rho_t, gamma_t, f_rho_t, f_gamma_t)
+
+      ! Sweep two: contract each trial's perturbed potential on the grid it
+      ! was evaluated on, with the potential path's own assembly --
+      !
+      !     dV_uv = int w [ d f_rho chi_u chi_v
+      !                     + 2 (d f_gamma grad rho + f_gamma grad drho)
+      !                       . grad(chi_u chi_v) ]
+      !
+      ! which is `accumulate_xc_matrix` with the kernel's coefficients in
+      ! place of the potential's, exactly as the semilocal kernel reuses it.
+      allocate (vtau_none(0))
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
+         nb = g1 - g0 + 1
+         call eval_ao_block(mol, ctx%nlc_grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+         if (error%has_error()) return
+         if (allocated(grad_coeff)) deallocate (grad_coeff, c_rho)
+         allocate (grad_coeff(nb, 3), c_rho(nb))
+         do it = 1, n_trial
+            do ig = 1, nb
+               g = g0 + ig - 1
+               c_rho(ig) = f_rho_t(it, g)
+               do id = 1, 3
+                  grad_coeff(ig, id) = 2.0_dp*(f_gamma_t(it, g)*rho_grad(g, id) &
+                                               + vsigma(g)*grad_t(g, id, it))
+               end do
+            end do
+            call accumulate_xc_matrix(ctx%nlc_grid%weights(g0:g1), ao, c_rho, &
+                                      v_kernel(:, :, it), ao_grad=ao_grad, &
+                                      grad_coeff=grad_coeff, vtau=vtau_none, &
+                                      any_gga=.true., any_mgga=.false.)
+         end do
+      end do
+   end subroutine vv10_kernel_apply
 
    subroutine ensure_nlc_grid(ctx, mol, error)
       !! Build the non-local correlation grid, once, on first use

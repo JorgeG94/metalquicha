@@ -1331,13 +1331,10 @@ contains
       ! wrong matrix -- so the guard is a list of positives rather than a list
       ! of refusals.
       !
-      ! **A functional carrying VV10 falls through as well.** `ks_hessian`
-      ! refuses it, and a refusal reaching the error branch below would abort
-      ! the run rather than fall back, which is the opposite of what a
-      ! `-V` functional wants: its Hessian is available, just not from here.
-      ! Tested on the condition rather than on the refusal so that the
-      ! fallback is chosen deliberately instead of arrived at by way of an
-      ! error.
+      ! A functional carrying VV10 takes this path too: `ks_hessian` carries
+      ! the non-local term's second derivative, Fock derivative and response
+      ! kernel, so a `-V` functional no longer falls back to the
+      ! semi-numerical path.
       !
       ! Hydrogen caps are excluded for a different reason: the shapes match and
       ! the numbers would be right, but a capped fragment's second derivatives
@@ -1347,7 +1344,7 @@ contains
       ! A solvated SCF also falls through: these second derivatives are the
       ! gas-phase operator's, and the finite-difference fallback is *correct*
       ! for the continuum -- each displaced energy rebuilds its own cavity.
-      ! The double hybrid is on this list for the same reason VV10 is, and
+      ! The double hybrid stays on this list now VV10 has come off it, and
       ! `settings%run_mp2` does not stand in for it: a double hybrid's PT2
       ! correlation is driven from `xc%pt2_fraction` further down and never
       ! sets that flag. None of the second derivatives below carries it, so
@@ -1362,8 +1359,7 @@ contains
           .and. .not. settings%density_fitting .and. .not. settings%run_mp2 &
           .and. .not. settings%run_cc .and. .not. settings%pcm%enabled &
           .and. fragment%n_caps == 0 &
-          .and. .not. (kohn_sham .and. xc%pt2_fraction /= 0.0_dp) &
-          .and. .not. (kohn_sham .and. xc%nlc_b > 0.0_dp)) then
+          .and. .not. (kohn_sham .and. xc%pt2_fraction /= 0.0_dp)) then
          block
             real(dp), allocatable :: hess4(:, :, :, :)
             type(timer_type) :: hess_clock

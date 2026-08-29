@@ -196,6 +196,53 @@ def extract_hessian_norm(json_data: Dict) -> Optional[float]:
     return None
 
 
+def extract_hessian(json_data: Dict) -> Optional[List[List[float]]]:
+    """Extract the Hessian matrix (Hartree/Bohr^2), one list per row
+
+    Rows are the `(3N, 3N)` order the vibrational analysis reads: atom-major,
+    with x, y, z inside each atom.
+    """
+    if not json_data:
+        return None
+
+    top_key = list(json_data.keys())[0]
+    data = json_data[top_key]
+
+    if "hessian" not in data:
+        return None
+
+    return [[float(c) for c in row] for row in data["hessian"]]
+
+
+def compare_hessians(calculated: List[List[float]],
+                     expected: List[List[float]],
+                     tolerance: float) -> tuple:
+    """Compare two Hessians element by element
+
+    Returns (ok, max_diff, worst) where `worst` lists the offending
+    (row, column, expected, calculated, diff) tuples, largest first.
+
+    The Frobenius norm is checked separately and is not a substitute for this.
+    It is one number out of 9N^2 and invariant under any orthogonal mixing, so
+    a transposed block, a swapped pair of atoms and a sign flip in an
+    off-diagonal element all leave it exactly where it was -- and all three are
+    real ways to get this matrix wrong, since it is assembled as
+    `(3, 3, natm, natm)` and collapsed.
+    """
+    offenders = []
+    max_diff = 0.0
+
+    for i, (calc_row, exp_row) in enumerate(zip(calculated, expected)):
+        for j, (calc, exp) in enumerate(zip(calc_row, exp_row)):
+            diff = abs(calc - exp)
+            max_diff = max(max_diff, diff)
+            if diff >= tolerance:
+                offenders.append((i, j, exp, calc, diff))
+
+    offenders.sort(key=lambda row: row[4], reverse=True)
+    return (not offenders, max_diff, offenders)
+
+
 def extract_frequencies(json_data: Dict) -> Optional[List[float]]:
     """Extract vibrational frequencies from JSON output"""
     if not json_data:
@@ -656,6 +703,47 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                         failure_reasons.append(f"Hessian mismatch (diff: {hess_diff:.2e})")
                     elif verbose:
                         print(f"    Hessian norm: {calculated_hess:.12f} (diff: {hess_diff:.2e})")
+
+            # Validate the Hessian element by element if a reference is given
+            if "expected_hessian" in test:
+                expected_matrix = test["expected_hessian"]
+                calc_matrix = extract_hessian(output_data)
+                # Analytic second derivatives are held tighter than the
+                # semi-numerical path could be. A case that falls back to
+                # finite differences carries its own, looser value here.
+                hess_tol = test.get("hessian_tolerance", 1.0e-7)
+
+                if calc_matrix is None:
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - No Hessian in JSON")
+                    test_passed = False
+                    failure_reasons.append("Missing Hessian")
+                elif len(calc_matrix) != len(expected_matrix) or \
+                        any(len(r) != len(e) for r, e in zip(calc_matrix, expected_matrix)):
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Hessian shape mismatch")
+                    print(f"    Expected:   {len(expected_matrix)} rows")
+                    print(f"    Calculated: {len(calc_matrix)} rows")
+                    test_passed = False
+                    failure_reasons.append(
+                        f"Hessian shape mismatch ({len(calc_matrix)} vs {len(expected_matrix)} rows)")
+                else:
+                    ok, max_diff, offenders = compare_hessians(
+                        calc_matrix, expected_matrix, hess_tol)
+                    if not ok:
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Hessian mismatch "
+                              f"({len(offenders)} elements)")
+                        for i, j, exp_v, calc_v, diff in offenders[:3]:
+                            print(f"    ({i}, {j}): expected {exp_v:.12f}, "
+                                  f"got {calc_v:.12f} (diff: {diff:.2e})")
+                        if len(offenders) > 3:
+                            print(f"    ... and {len(offenders) - 3} more")
+                        print(f"    Tolerance: {hess_tol:.2e}")
+                        test_passed = False
+                        failure_reasons.append(
+                            f"Hessian mismatch ({len(offenders)} elements, "
+                            f"worst {max_diff:.2e})")
+                    elif verbose:
+                        print(f"    Hessian: {len(expected_matrix)} rows "
+                              f"(worst element {max_diff:.2e})")
 
             # Validate frequencies if present
             if "expected_frequencies" in test:

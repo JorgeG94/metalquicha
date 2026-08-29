@@ -758,6 +758,108 @@ RSH_FUNCTIONALS = {"wb97x", "cam-b3lyp"}
 DF_RSH_ENERGY_TOLERANCE = 1.0e-8
 GRADIENT_GRID_LEVEL = 3
 
+# The analytic Hessian, held element by element against `pyscf.hessian.rhf`
+# and `pyscf.hessian.rks`.
+#
+# **`grid_response` is off, and that is the opposite of the gradients above.**
+# Our gradient includes the derivative of the quadrature weights, so the
+# reference turns PySCF's on to match. Our Hessian deliberately omits both the
+# grid points moving with their owner and the partition weights being reset,
+# which is exactly what `pyscf.hessian.rks` omits by default. Turning it on
+# here would compare two different quantities and disagree by ~1e-3 with
+# nothing wrong on either side; see `hessian-grid-response` in
+# `mqc_docs/source/analytic_hessians.rst`.
+HESSIAN_GRID_LEVEL = 3
+
+# **These bounds are set by the reference, not by us, and that is measured.**
+# psi4's analytic RHF Hessian is exactly symmetric and sits 2.3e-9 from ours on
+# water/cc-pVDZ, while PySCF's sits 4.0e-8 from both -- so on that case the
+# disagreement with PySCF is PySCF's. Its size is visible without a third code:
+# a Hessian's same-atom 3x3 block must be symmetric, PySCF mirrors its
+# *inter*-atom blocks by construction (they are symmetric to 2e-16) and
+# computes the same-atom ones directly, and those come back asymmetric by
+# 9.3e-9 for Hartree-Fock and 1.06e-5 for PBE/cc-pVDZ. Ours are symmetric to
+# 2e-10. `pyscf.hessian.rhf.solve_mo1` also calls `cphf.solve` without passing
+# `tol`, so its coupled-perturbed threshold is the library default and no
+# attribute reaches it -- setting `max_cycle`, `conv_tol_cpscf` and
+# `mol.precision` leaves the result bit-identical.
+#
+# So the tolerances below are floors under the reference's own accuracy. What
+# they still catch is what they are for: the three assembly errors found while
+# this was written were 0.87, 0.26 and 0.12, and a missing term is a 1e-1
+# event. Even the loosest bound here has a thousandfold margin on that.
+
+# Small bases, s and p only: both codes land at 1e-10 or better, and the bound
+# is set by PySCF's same-atom blocks on the one basis that has d functions.
+HESSIAN_TOLERANCE = 1.0e-7
+# A functional adds the exchange-correlation quadrature, integrated on the same
+# grid level but not with the same block structure or summation order.
+# Measured on STO-3G: 2.5e-10 SVWN, 5.5e-10 PBE, 1.2e-8 B3LYP, 2.8e-10 TPSS,
+# 1.8e-8 M06-L, against elements of order one.
+HESSIAN_DFT_TOLERANCE = 1.0e-7
+# Kohn-Sham on a basis with d functions, where PySCF's same-atom blocks are
+# worth 1e-5 and there is no third code to arbitrate -- psi4 has no analytic
+# density-functional Hessian and silently differences gradients instead, which
+# reintroduces the grid response both of these omit and lands 7.1e-4 away.
+# Measured against PySCF: 1.2e-6 M06-L, 8.0e-6 TPSS, 1.7e-5 PBE, 6.7e-5 B3LYP,
+# tracking PySCF's own asymmetry on each. Kept rather than dropped: d-function
+# coverage of this assembly is worth more than a tightness the reference cannot
+# support, and 1e-4 is still three orders inside a missing term.
+HESSIAN_DFT_D_TOLERANCE = 1.0e-4
+
+#: Bases whose reference Hessian is limited by PySCF rather than by us.
+HESSIAN_LOOSE_BASES = {"cc-pvdz", "6-31g**"}
+
+
+def _hessian_tolerance(functional, basis):
+    """Which bound this case is held to, and why it might not be the default."""
+    if functional and basis in HESSIAN_LOOSE_BASES:
+        return HESSIAN_DFT_D_TOLERANCE
+    if functional:
+        return HESSIAN_DFT_TOLERANCE
+    return HESSIAN_TOLERANCE
+
+
+# Analytic Hessian cases, as (molecule, basis, functional).
+#
+# Only what the analytic path covers. What it does not -- unrestricted, density
+# fitted, PCM, a capped fragment, a correlated method, a double hybrid -- falls
+# back to differencing gradients, which is a different code path with a
+# different reference and is not what these are for.
+#
+# Range-separated hybrids and the VV10 `-V` functionals are *not* on that list
+# any more: both have analytic Hessians now, and neither has a case here yet.
+# They are the obvious next entries and were left out only because their
+# references had not been generated when these were -- adding
+# ("water", "sto-3g", "wb97x") and ("water", "sto-3g", "b97m-v") is the whole
+# change, and the sto-3g bound applies to both.
+HESSIAN_CASES = [
+    ("water", "sto-3g", ""),        # RHF, the smallest case there is
+    ("water", "cc-pvdz", ""),       # RHF, a real basis
+    ("ch4", "6-31g**", ""),         # RHF, Cartesian d functions, five atoms
+    ("nh3", "sto-3g", ""),          # RHF, a second molecule
+    ("water", "sto-3g", "svwn"),    # LDA
+    ("water", "sto-3g", "pbe"),     # GGA
+    ("water", "cc-pvdz", "pbe"),    # GGA, a real basis
+    ("water", "sto-3g", "b3lyp"),   # hybrid GGA -- exact exchange, scaled
+    ("water", "cc-pvdz", "b3lyp"),  # hybrid GGA, a real basis
+    # Both meta-GGAs, for the same reason the gradients carry both: TPSS is
+    # constraint-derived and M06-L heavily parametrised, so they load libxc's
+    # tau dependence differently rather than twice the same way. M06-L is also
+    # the loosest case in the set, which makes it the one that would notice a
+    # tolerance set by wishful thinking.
+    ("water", "sto-3g", "tpss"),    # meta-GGA
+    ("water", "sto-3g", "m06l"),    # meta-GGA, parametrised
+    ("nh3", "sto-3g", "pbe"),       # GGA, a second molecule
+    # The meta-GGAs on d functions. These are here rather than in
+    # `test_mqc_xc_hessian.f90` on purpose: differencing the tau channel needs
+    # a grid far finer than level 3 before the difference converges at all, so
+    # an independent analytic reference is the better instrument. See the note
+    # in `test_gga_against_fd`.
+    ("water", "cc-pvdz", "tpss"),   # meta-GGA on d functions
+    ("water", "cc-pvdz", "m06l"),   # meta-GGA on d functions, parametrised
+]
+
 DF_CASES = [
     ("water", "cc-pvdz", "cc-pvdz-rifit"),
     ("water", "def2-svp", "def2-universal-jkfit"),
@@ -1612,6 +1714,53 @@ def _gradient_tolerance(functional, aux):
     return GRADIENT_DFT_TOLERANCE
 
 
+def pyscf_hessian(atoms, basis, functional="", level=HESSIAN_GRID_LEVEL):
+    """Reference energy and analytic nuclear Hessian, in Hartree/Bohr^2.
+
+    Returned as `(3N, 3N)` -- the shape the vibrational analysis reads and the
+    shape the deck writes out -- rather than PySCF's `(natm, natm, 3, 3)`. The
+    transpose is the whole conversion: `(ia, a, ja, b)` collapsed with the
+    atom index outermost.
+
+    `grid_response` is left **off**, which is PySCF's default and, unlike the
+    gradients, is also ours. See the note at `HESSIAN_GRID_LEVEL`.
+
+    As with the gradients, the Hessian modules have to be imported by name --
+    `mf.Hessian()` raises NotImplementedError otherwise, which reads like the
+    method having no Hessian rather than a missing import.
+    """
+    from pyscf import dft, gto, scf
+    from pyscf.hessian import rhf as _rhf_hess, rks as _rks_hess  # noqa: F401
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    symbols = {a[0] for a in atoms}
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = 0
+    mol.spin = 0
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+
+    if functional:
+        mf = dft.RKS(mol)
+        mf.xc = functional
+        mf.grids.level = level
+    else:
+        mf = scf.RHF(mol)
+    mf.conv_tol = 1e-12
+    energy = mf.kernel()
+
+    hobj = mf.Hessian()
+    if functional:
+        hobj.grid_response = False
+    hess = hobj.kernel()
+    n = mol.natm * 3
+    hess = hess.transpose(0, 2, 1, 3).reshape(n, n)
+    return float(energy), hess.tolist(), mol.nao
+
+
 def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
                    level=GRADIENT_GRID_LEVEL):
     """Reference energy and analytic nuclear gradient, in Hartree/Bohr.
@@ -2333,6 +2482,36 @@ def main():
         tests.append(entry)
         norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
         print(f"{mol.label:6s} {basis:12s} {theory:8s} grad |g|={norm:.10f} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, functional in HESSIAN_CASES:
+        mol = MOLECULES[name]
+        energy, hessian, nao = pyscf_hessian(mol.atoms, basis, functional=functional)
+        tag = normalize_basis_name(basis)
+        if functional:
+            tag += "_" + functional.replace("-", "")
+        deck = deck_for(f"{CPU_MQC}/hessian", f"cpu_{name}_{tag}_hess")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis,
+                          method="dft" if functional else "hf")
+            if functional:
+                d["model"]["functional"] = functional
+                d["keywords"]["dft"] = {"grid_level": HESSIAN_GRID_LEVEL}
+            d["driver"] = "Hessian"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        theory = functional.upper() if functional else "RHF"
+        entry = {
+            "name": f"{theory} Hessian {mol.label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_hessian": [[round(c, 12) for c in row] for row in hessian],
+            "hessian_tolerance": _hessian_tolerance(functional, basis),
+            "type": "unfragmented",
+        }
+        tests.append(entry)
+        norm = math.sqrt(sum(c*c for row in hessian for c in row))
+        print(f"{mol.label:6s} {basis:12s} {theory:8s} hess |H|={norm:.10f} "
               f"nao={nao:4d} E={energy:.12f}", flush=True)
 
     for name, basis in GRADIENT_MP2_CASES:

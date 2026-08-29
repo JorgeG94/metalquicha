@@ -266,10 +266,10 @@ What has a gradient on the CPU backend, at a glance:
    * - Kohn-Sham: non-local correlation (``-V``)
      - yes
      - ωB97X-V, ωB97M-V, B97M-V. Self-consistent, restricted and unrestricted,
-       on a separate grid set by ``keywords.dft.nlc_grid_level``. **Energy only:
-       the nuclear gradient is refused**, on both backends. The GPU path calls
-       cuEST's own non-local entry points and is compiled but not yet run
-       against the library
+       on a separate grid set by ``keywords.dft.nlc_grid_level``. The gradient
+       is restricted only, like the meta-GGAs, and CPU backend only: the GPU
+       path calls cuEST's own non-local entry points and is compiled but not
+       yet run against the library
    * - Kohn-Sham: range-separated hybrid
      - yes
      - **Needs an auxiliary basis.** The exact-ERI path builds no second
@@ -461,9 +461,9 @@ analytically is not refused, it falls back.
   coupled-perturbed solve, the explicit second-derivative assembly) so it can be
   compared with PySCF's ``hessian.rhf`` and ``hessian.rks`` stage by stage
   rather than only at the end. Taken whenever the calculation is restricted, not
-  density fitted, has no VV10 non-local correlation, no MP2 or coupled-cluster
-  correlation, no continuum solvent and no hydrogen caps. See
-  :doc:`analytic_hessians` for which functionals qualify.
+  density fitted, and has no MP2 or coupled-cluster correlation, no continuum
+  solvent and no hydrogen caps. See :doc:`analytic_hessians` for which
+  functionals qualify.
 - **Semi-numerical** otherwise: central differences of *analytic gradients*,
   ``H[i,j] = (g_j(x_i + h) - g_j(x_i - h)) / 2h``. Only one derivative is taken
   numerically, which keeps most of the digits that differencing energies twice
@@ -767,9 +767,9 @@ Current Limitations
    methods carry their own through tblite; a Kohn-Sham number from a functional
    that does not include dispersion itself does not get it from anywhere here.
    VV10 is the exception: the ``-V`` functionals carry their own non-local
-   correlation, and it is evaluated for both the energy and the nuclear
-   gradient, so a ``-V`` functional can be optimized. Its second derivative is
-   not implemented -- see :doc:`analytic_hessians`
+   correlation, evaluated for the energy, the nuclear gradient and the
+   analytic Hessian, so a ``-V`` functional can be optimized and its
+   frequencies computed -- see :doc:`analytic_hessians`
 4. **Multireference dynamic correlation**: CASSCF and ORMAS-SCF give the
    reference, and there is no NEVPT2, CASPT2 or MRCI on top of it
 5. **Local correlation**: no DLPNO or equivalent, so coupled cluster is
@@ -778,14 +778,14 @@ Current Limitations
 7. **AIMD**: keywords are defined and reach the driver config, but there is no
    propagator behind them
 8. **Analytic second derivatives**: restricted references only, and within
-   those, everything except VV10 functionals and density fitting -- so
-   Hartree-Fock, LDA, GGA, meta-GGA, hybrids and range-separated hybrids are
-   covered, and ``b97m-v`` and any open shell are not. What is not covered
-   falls back to the semi-numerical path rather than failing. The grid response
-   is omitted, as it is in the reference this is checked against. Agreement
-   with PySCF is 1e-8 at STO-3G and loosens to 2e-5 on cc-pVDZ for a
-   functional, which is quadrature rather than the derivatives -- worth 0.16
-   cm-1 at worst. See :doc:`analytic_hessians`
+   those, everything except density fitting -- so Hartree-Fock, LDA, GGA,
+   meta-GGA, hybrids, range-separated hybrids and the VV10 ``-V`` functionals
+   are covered, and any open shell is not. What is not covered falls back to
+   the semi-numerical path rather than failing. The grid response is omitted,
+   as it is in the reference this is checked against. Agreement with PySCF is
+   1e-8 at STO-3G and loosens to 2e-5 on cc-pVDZ for a functional, which is
+   quadrature rather than the derivatives -- worth 0.16 cm-1 at worst. See
+   :doc:`analytic_hessians`
 9. **SCF convergence aids**: DIIS and level shifting, and no damping, Fermi
    smearing or second-order fallback. The shift is tapered off before
    convergence, so what it costs is iterations and not the orbital energies --
