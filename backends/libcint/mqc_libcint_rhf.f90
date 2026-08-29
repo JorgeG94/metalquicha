@@ -333,7 +333,7 @@ contains
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                               verbose, result, error, aux, diis_vectors, in_core, &
                               guess, guess_density, xc, h_extra, pcm, projector, &
-                              level_shift, linear_dependence)
+                              level_shift, linear_dependence, b_ao_out)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -345,6 +345,11 @@ contains
          !! diagonalisation. Absent or zero is off.
       type(rhf_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
+      real(dp), allocatable, intent(out), optional :: b_ao_out(:, :)
+         !! The fitted `B(mu nu, P)` this SCF used, handed on rather than
+         !! freed, for a correlated step that would otherwise rebuild the
+         !! integrals and refit them. Moved, not copied -- the SCF is finished
+         !! with it. Only meaningful alongside `aux`.
       type(libcint_molecule_t), intent(in), optional :: aux
          !! Auxiliary basis. Present means density-fitted J and K, which is
          !! what cuEST always does -- so a comparison against the GPU path
@@ -745,6 +750,9 @@ contains
       call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
                          fock, result%electronic, error, clk=clk, bmat_lr=bmat_lr)
       if (error%has_error()) return
+      ! Last use of the fitted tensor. A caller that asked for it takes the
+      ! allocation itself rather than a copy of several gigabytes.
+      if (present(b_ao_out) .and. allocated(bmat)) call move_alloc(bmat, b_ao_out)
       if (use_pcm) then
          call pcm%operator_matrix(mol, density, v_pcm, e_pcm, error)
          if (error%has_error()) return

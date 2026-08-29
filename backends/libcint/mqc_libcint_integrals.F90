@@ -1171,7 +1171,7 @@ contains
       deallocate (scaled)
    end subroutine metric_inverse_sqrt
 
-   subroutine build_df_mo_tensor(orb, aux, c_occ, c_vir, bia, error, fast_factor)
+   subroutine build_df_mo_tensor(orb, aux, c_occ, c_vir, bia, error, fast_factor, b_ao_in)
       !! B^P_ia directly, transforming to MO before fitting rather than after
       !!
       !! `build_df_tensor` fits first and hands back B(mu nu, P), which is what
@@ -1196,6 +1196,8 @@ contains
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: fast_factor
          !! Passed to `build_df_mo_block`; see there. Off by default.
+      real(dp), intent(in), optional :: b_ao_in(:, :)
+         !! Passed to `build_df_mo_block`; see there.
 
       real(dp), allocatable :: fitted(:, :)
       integer :: naux, n_o, n_v, p_index, i
@@ -1203,7 +1205,8 @@ contains
       n_o = size(c_occ, 2)
       n_v = size(c_vir, 2)
 
-      call build_df_mo_block(orb, aux, c_occ, c_vir, fitted, error, fast_factor=fast_factor)
+      call build_df_mo_block(orb, aux, c_occ, c_vir, fitted, error, fast_factor=fast_factor, &
+                             b_ao_in=b_ao_in)
       if (error%has_error()) return
       naux = size(fitted, 2)
 
@@ -1218,7 +1221,7 @@ contains
       deallocate (fitted)
    end subroutine build_df_mo_tensor
 
-   subroutine build_df_mo_block(orb, aux, c_left, c_right, b, error, fast_factor)
+   subroutine build_df_mo_block(orb, aux, c_left, c_right, b, error, fast_factor, b_ao_in)
       !! B^P_pq for any two coefficient blocks, laid out (pq, P)
       !!
       !! The general form of `build_df_mo_tensor`, which assumed
@@ -1233,6 +1236,24 @@ contains
       real(dp), intent(in) :: c_left(:, :), c_right(:, :)   !! (nao, n_left), (nao, n_right)
       real(dp), allocatable, intent(out) :: b(:, :)         !! (n_left*n_right, naux)
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: b_ao_in(:, :)
+         !! An AO-basis fitted tensor `B(mu nu, P)` already built for this
+         !! orbital and auxiliary pair, from a fitted SCF.
+         !!
+         !! **The transform and the metric commute**, because one acts on the
+         !! pair index and the other on the auxiliary one:
+         !!
+         !!    sum_mn C_mi C_na [sum_Q (mn|Q) M_QP] = sum_Q (ia|Q) M_QP
+         !!
+         !! so transforming an already-fitted tensor gives exactly what
+         !! transforming and then fitting gives. Present means the integrals,
+         !! the metric and its factorisation are all already paid for and this
+         !! is reduced to the transform -- which is why a fitted MP2 over a
+         !! fitted reference no longer evaluates four hundred million
+         !! three-centre integrals a second time.
+         !!
+         !! Any factor `M` is fine, Cholesky included: what the caller
+         !! eventually contracts is `B B^T`, and `M M^T = J^-1` either way.
       logical, intent(in), optional :: fast_factor
          !! Allow the Cholesky factor, which is much cheaper to form and to
          !! apply. **Off by default, and that is not timidity.** The two
@@ -1263,6 +1284,12 @@ contains
       n_l = size(c_left, 2)
       n_r = size(c_right, 2)
 
+      if (present(b_ao_in)) then
+         allocate (b(n_l*n_r, naux))
+         call transform_pair_index(b_ao_in, c_left, c_right, b, nao, n_l, n_r)
+         return
+      end if
+
       call two_centre(aux, metric)
       allow_fast = .false.
       if (present(fast_factor)) allow_fast = fast_factor
@@ -1292,23 +1319,46 @@ contains
       ! through an explicit-shape dummy instead, which is sequence association
       ! and costs nothing.
       allocate (ovl(n_l*n_r, naux))
-      !$omp parallel default(none) &
-      !$omp    shared(three, c_left, c_right, ovl, nao, n_l, n_r, naux) &
-      !$omp    private(p_index, tmp, full)
-      allocate (tmp(n_l, nao), full(n_l*n_r))
-      !$omp do schedule(static)
-      do p_index = 1, naux
-         call df_mo_slice(three(:, p_index), c_left, c_right, tmp, full, nao, n_l, n_r)
-         ovl(:, p_index) = full
-      end do
-      !$omp end do
-      deallocate (tmp, full)
-      !$omp end parallel
+      call transform_pair_index(three, c_left, c_right, ovl, nao, n_l, n_r)
       deallocate (three)
 
       call apply_fit(ovl, half, cholesky, b)
       deallocate (half)
    end subroutine build_df_mo_block
+
+   subroutine transform_pair_index(ao, c_left, c_right, mo, nao, n_l, n_r)
+      !! (mu nu | P) -> (pq | P), for every auxiliary function
+      !!
+      !! Threaded over P, which needs no reduction: an auxiliary function owns
+      !! its column of the result outright. The scratch is what has to be
+      !! private, so it is allocated inside the region rather than around it.
+      !!
+      !! Indifferent to whether the input has been fitted. The transform acts
+      !! on the pair index and a metric acts on the auxiliary one, so the two
+      !! commute -- which is what lets a fitted SCF hand its tensor straight to
+      !! a correlated step instead of the integrals being built twice.
+      integer, intent(in) :: nao, n_l, n_r
+      real(dp), intent(in) :: ao(:, :)        !! (nao*nao, naux)
+      real(dp), intent(in) :: c_left(:, :), c_right(:, :)
+      real(dp), intent(out) :: mo(:, :)       !! (n_l*n_r, naux)
+
+      real(dp), allocatable :: tmp(:, :), full(:)
+      integer :: p_index, naux
+
+      naux = size(ao, 2)
+      !$omp parallel default(none) &
+      !$omp    shared(ao, c_left, c_right, mo, nao, n_l, n_r, naux) &
+      !$omp    private(p_index, tmp, full)
+      allocate (tmp(n_l, nao), full(n_l*n_r))
+      !$omp do schedule(static)
+      do p_index = 1, naux
+         call df_mo_slice(ao(:, p_index), c_left, c_right, tmp, full, nao, n_l, n_r)
+         mo(:, p_index) = full
+      end do
+      !$omp end do
+      deallocate (tmp, full)
+      !$omp end parallel
+   end subroutine transform_pair_index
 
    subroutine df_mo_slice(three_p, c_left, c_right, tmp, full, nao, n_l, n_r)
       !! (mu nu|P) -> (pq|P) for one auxiliary function

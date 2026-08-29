@@ -160,7 +160,7 @@ contains
    end subroutine run_libcint_mp2
 
    subroutine run_libcint_ri_mp2(mol, aux, coeff, orbital_energies, n_occ, scf_energy, &
-                                 result, error, n_frozen)
+                                 result, error, n_frozen, b_ao_in)
       !! E(2) from a fitted (ia|jb), never forming the four-index tensor
       !!
       !! `build_df_tensor` already returns B(mu nu, P) with the inverse-root
@@ -188,6 +188,11 @@ contains
       type(mp2_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: n_frozen
+      real(dp), intent(in), optional :: b_ao_in(:, :)
+         !! The AO-basis fitted tensor a fitted SCF already built with this
+         !! same auxiliary basis -- `model.aux_basis` names one fitting set, so
+         !! a fitted reference and a fitted correlation always share it. Given
+         !! it, this reduces to the MO transform: see `build_df_mo_block`.
 
       real(dp), allocatable :: bia(:, :, :), g(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
@@ -228,7 +233,8 @@ contains
       ! Energy only: `bia` is contracted with another `bia` and nothing
       ! else, so the cheap factor is safe here. The RI-MP2 *gradient*
       ! builds its own and must not.
-      call build_df_mo_tensor(mol, aux, c_occ, c_vir, bia, error, fast_factor=.true.)
+      call build_df_mo_tensor(mol, aux, c_occ, c_vir, bia, error, fast_factor=.true., &
+                              b_ao_in=b_ao_in)
       deallocate (c_occ, c_vir)
       if (error%has_error()) return
       call clk%lap()
