@@ -85,6 +85,7 @@ contains
                   new_unittest("full_valence_space", test_full_valence), &
                   new_unittest("optimization_hess_end", test_hess_end), &
                   new_unittest("optimization_target", test_opt_target), &
+                  new_unittest("scf_diis_controls", test_diis_keywords), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -1843,6 +1844,49 @@ contains
       call check(error, parse_error%has_error(), &
                  "a misspelled setting inside the avas block should be refused")
    end subroutine test_avas_keywords
+
+   subroutine test_diis_keywords(error)
+      !! `keywords.scf.diis` and `keywords.scf.diis_size`
+      !!
+      !! Both fields existed all the way down to `scf_config_t` and nothing
+      !! read them, so every SCF ever run used a subspace of eight whatever the
+      !! deck said -- and a deck that said something got no error either, since
+      !! the schema simply did not know the keys. That is the failure this
+      !! guards: a keyword that is accepted, plumbed, and ignored.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"diis_size": 16}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%scf_diis_size == 16, "the subspace size should be read")
+      if (allocated(error)) return
+      call check(error, config%scf_use_diis, "DIIS should still be on")
+      if (allocated(error)) return
+
+      ! Off, which is a diagnostic rather than a setting.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"diis": false}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%scf_use_diis, "false should be read as false")
+      if (allocated(error)) return
+
+      ! Never mentioned: the defaults are the ones in the type, not a second
+      ! copy written into the reader.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"maxiter": 50}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%scf_use_diis, "DIIS defaults on")
+      if (allocated(error)) return
+      call check(error, config%scf_diis_size == 8, "the default subspace is eight")
+   end subroutine test_diis_keywords
 
    subroutine test_malformed(error)
       !! Broken JSON is a parse error, not a crash or a half-filled config
