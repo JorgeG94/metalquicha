@@ -1109,7 +1109,8 @@ contains
                                neutral_orbitals=scf%orbitals, &
                                neutral_orbital_energies=scf%orbital_energies, &
                                n_frozen=fukui_frozen, aux=fukui_aux_arg, &
-                               verbose=settings%verbose, pcm=pcm_ctx)
+                               verbose=settings%verbose, pcm=pcm_ctx, &
+                               level_shift=settings%level_shift)
             if (fukui_fitted) call fukui_aux%destroy()
             if (fukui_error%has_error()) then
                call logger%warning("  the Fukui analysis could not run: "// &
