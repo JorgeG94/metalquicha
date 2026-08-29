@@ -34,6 +34,16 @@ module mqc_libcint_vv10
    public :: VV10_RHO_THRESHOLD
 
    real(dp), parameter :: VV10_RHO_THRESHOLD = 1.0e-8_dp
+
+   !> Beyond this separation, in Bohr, an inner point is not summed. Negative
+   !> disables the cutoff and restores the full double sum.
+   !>
+   !> The kernel falls off as r^-6: at large separation `g -> r^2 w0`,
+   !> `gp -> r^2 w0p` and `gt -> r^2 (w0 + w0p)`, so `t = rpw/(g gp gt)` goes as
+   !> `rpw / r^6`. The number of points at a separation grows as r^2, so the
+   !> tail this drops integrates as r^-3 -- fast, but not so fast that the
+   !> radius can be picked by eye. It is measured, not assumed.
+   real(dp), parameter, public :: VV10_CUTOFF = -1.0_dp
       !! Points below this density are dropped from both grids.
       !!
       !! Not a tuning knob so much as the boundary of where the expression is
@@ -139,6 +149,8 @@ contains
       real(dp) :: rho_1, rho_3, rho_4, rho_5, gamma2, omega_1, omega_3
       real(dp) :: r_i, s_i
       real(dp), allocatable :: w0p(:), kp(:), rpw(:)
+      real(dp), allocatable :: cx(:), cy(:), cz(:)
+      real(dp) :: r2_cut
       integer :: n_out, n_in, i, j, n_kept
       integer, allocatable :: keep(:)
 
@@ -189,7 +201,12 @@ contains
       end do
       if (n_kept == 0) return
 
+      ! The coordinates are gathered alongside, rather than reached through
+      ! `keep` in the inner loop. That loop is the whole cost of VV10, and an
+      ! indirection inside it is an extra load per pair and a barrier to
+      ! vectorising the three differences.
       allocate (w0p(n_kept), kp(n_kept), rpw(n_kept))
+      allocate (cx(n_kept), cy(n_kept), cz(n_kept))
       do j = 1, n_kept
          r_i = inner_rho(keep(j))
          s_i = inner_sigma(keep(j))
@@ -197,7 +214,13 @@ contains
          w0p(j) = sqrt(w0tmp + pi43*r_i)
          kp(j) = kvv*r_i**(1.0_dp/6.0_dp)
          rpw(j) = r_i*inner_weights(keep(j))
+         cx(j) = inner_coords(1, keep(j))
+         cy(j) = inner_coords(2, keep(j))
+         cz(j) = inner_coords(3, keep(j))
       end do
+
+      r2_cut = huge(1.0_dp)
+      if (VV10_CUTOFF > 0.0_dp) r2_cut = VV10_CUTOFF*VV10_CUTOFF
 
       ! Every outer point is independent: it writes only its own three
       ! outputs and reads a shared inner grid that nothing mutates. The
@@ -206,7 +229,7 @@ contains
       ! disappear against it -- so it is the only thing here worth threading.
       !$omp parallel do default(none) &
       !$omp    shared(n_out, n_kept, rho, sigma, coords, inner_coords, keep, &
-      !$omp           w0p, kp, rpw, exc, vrho, vsigma, c, kvv, pi43, beta, &
+      !$omp           w0p, kp, rpw, cx, cy, cz, r2_cut, exc, vrho, vsigma, c, kvv, pi43, beta, &
       !$omp           want_grad, dedw, fexp, want_hess, want_curv, &
       !$omp           hess_u, hess_w, hess_a, hess_b, hess_c, hess_e, &
       !$omp           domega_drho, domega_dgamma, d2omega_drho2, &
@@ -247,10 +270,15 @@ contains
          fy = 0.0_dp
          fz = 0.0_dp
          do j = 1, n_kept
-            dx = inner_coords(1, keep(j)) - coords(1, i)
-            dy = inner_coords(2, keep(j)) - coords(2, i)
-            dz = inner_coords(3, keep(j)) - coords(3, i)
+            dx = cx(j) - coords(1, i)
+            dy = cy(j) - coords(2, i)
+            dz = cz(j) - coords(3, i)
             r2 = dx*dx + dy*dy + dz*dz
+            ! Three divisions and a dozen multiplies are skipped for the price
+            ! of a compare. Visiting the pair at all is still O(n^2); making it
+            ! sub-quadratic needs the inner list binned in space, which this is
+            ! the prerequisite for rather than a substitute for.
+            if (r2 > r2_cut) cycle
             gp = r2*w0p(j) + kp(j)
             g = r2*w0 + k_out
             gt = g + gp
