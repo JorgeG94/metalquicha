@@ -59,7 +59,7 @@ contains
                        hess_u, hess_w, hess_a, hess_b, hess_c, hess_e, &
                        domega_drho, domega_dgamma, d2omega_drho2, &
                        d2omega_dgamma2, d2omega_drho_dgamma, &
-                       dkappa_drho, d2kappa_drho2)
+                       dkappa_drho, d2kappa_drho2, n_inner_kept)
       !! VV10's energy density and potential at each outer grid point
       !!
       !! `exc` is the energy *per electron*, so the caller forms the energy the
@@ -129,6 +129,10 @@ contains
          !! (n_out). E = sum_j w_j rho_j Phi -- the inner sum itself, which is
          !! `2*(exc - beta)`. Returned anyway because PySCF's Hessian formulas
          !! consume it under this name and normalisation.
+      integer, intent(out), optional :: n_inner_kept
+         !! How many inner points survived the density threshold. The pair sum
+         !! is this times the outer count, so it is the one number that says
+         !! what the double integral actually costs.
       real(dp), intent(out), optional :: domega_drho(:), domega_dgamma(:)
       real(dp), intent(out), optional :: d2omega_drho2(:), d2omega_dgamma2(:)
       real(dp), intent(out), optional :: d2omega_drho_dgamma(:)
@@ -199,6 +203,7 @@ contains
             keep(n_kept) = j
          end if
       end do
+      if (present(n_inner_kept)) n_inner_kept = n_kept
       if (n_kept == 0) return
 
       ! The coordinates are gathered alongside, rather than reached through

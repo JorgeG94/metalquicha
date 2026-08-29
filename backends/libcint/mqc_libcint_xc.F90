@@ -30,6 +30,8 @@ module mqc_libcint_xc
    !! -- is factored into `accumulate_xc_matrix`, since that is the arithmetic worth
    !! having exactly one copy of.
    use pic_types, only: dp
+   use pic_logger, only: logger => global_logger
+   use pic_io, only: to_char
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_vv10, only: vv10_nlc, vv10_hessian_kernel
@@ -1939,6 +1941,7 @@ contains
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), grad_coeff(:, :)
       real(dp), allocatable :: rho_blk(:), rho_grad_blk(:, :), vtau_none(:)
       integer :: npts, g0, g1, nb, ig, id
+      integer :: n_kept
 
       e_nl = 0.0_dp
 
@@ -1975,7 +1978,18 @@ contains
       allocate (exc(npts), vrho(npts), vsigma(npts))
       call vv10_nlc(ctx%nlc_b, ctx%nlc_c, ctx%nlc_grid%coords, rho, sigma, &
                     ctx%nlc_grid%coords, rho, sigma, ctx%nlc_grid%weights, &
-                    exc, vrho, vsigma)
+                    exc, vrho, vsigma, n_inner_kept=n_kept)
+
+      ! What the double integral actually costs, which is otherwise invisible:
+      ! the pair count is the product of these two, and the term is the whole
+      ! expense of a `-V` functional. Both grids here are the non-local one --
+      ! see `nlc_grid_level`, which is a fixed level rather than a step below
+      ! `grid_level`, so a deck already running a coarse grid gets no
+      ! separation between the two unless it asks.
+      call logger%verbose("  VV10: "//to_char(npts)//" grid points, "// &
+                          to_char(n_kept)//" carry density, "// &
+                          to_char(real(npts, dp)*real(n_kept, dp)/1.0e6_dp)// &
+                          " million pairs")
 
       e_nl = sum(ctx%nlc_grid%weights*rho*exc)
 
