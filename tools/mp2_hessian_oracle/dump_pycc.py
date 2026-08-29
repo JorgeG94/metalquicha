@@ -77,7 +77,47 @@ GEOM_ASYM = np.array(
 )
 
 BASIS_NAME = "6-31g"
-ELEMENT_Z = {"H": 1, "O": 8}
+ELEMENT_Z = {"H": 1, "C": 6, "N": 7, "O": 8}
+
+# Extra validation cases, beyond the pinned water/6-31G the ladder was gated on.
+# Each exists to exercise something the pinned case cannot:
+#
+#   water_631gs  d functions on oxygen -- a shell type no Hessian here has
+#                carried. Note the AO *normalisation* of Cartesian d differs
+#                from psi4's by sqrt(4*pi/5) (CONVENTIONS s.6), but the Hessian
+#                is indexed by (atom, cartesian) and never by AO, so that
+#                convention cancels and the comparison below is unaffected.
+#   hcn_631g     two core orbitals, where every frozen-core check so far has
+#                had exactly one. Bent a little off the linear geometry the
+#                gradient harness uses, so the molecule is C1 with no
+#                degenerate pi pair -- degeneracy would break the per-orbital
+#                sign alignment that MO-basis comparisons rely on.
+EXTRA_CASES = (
+    {
+        "tag": "water631gs",
+        "symbols": ["O", "H", "H"],
+        "basis": "6-31g_st_",
+        "coords": np.array(
+            [
+                [0.0, 0.000000, 0.000000],
+                [0.0, 0.000000, 1.814137],
+                [0.0, 1.756000, -0.454300],
+            ]
+        ),
+    },
+    {
+        "tag": "hcn",
+        "symbols": ["H", "C", "N"],
+        "basis": "6-31g",
+        "coords": np.array(
+            [
+                [0.062000, -0.041000, -2.000000],
+                [0.000000, 0.000000, 0.000000],
+                [0.000000, 0.000000, 2.200000],
+            ]
+        ),
+    },
+)
 ANGULAR = "SPDFGH"
 
 
@@ -86,14 +126,14 @@ def sha(array):
     return hashlib.sha256(np.ascontiguousarray(array, dtype=np.float64).tobytes()).hexdigest()[:16]
 
 
-def geometry_block(coords):
+def geometry_block(coords, symbols=None):
     lines = ["units bohr", "symmetry c1", "no_com", "no_reorient"]
-    for symbol, xyz in zip(SYMBOLS, coords):
+    for symbol, xyz in zip(symbols or SYMBOLS, coords):
         lines.append(f"{symbol} {xyz[0]:.10f} {xyz[1]:.10f} {xyz[2]:.10f}")
     return "\n".join(lines) + "\n"
 
 
-def bse_gbs(basis_json):
+def bse_gbs(basis_json, symbols=None):
     """Convert the repository's BSE JSON to a psi4 ``.gbs`` string.
 
     One gbs shell block per ``electron_shells`` entry, with one coefficient
@@ -109,7 +149,7 @@ def bse_gbs(basis_json):
     # and the SCF drops them again -- so the span, the energy and every
     # MO-basis quantity come out right while nao is silently wrong and every
     # AO-basis array is a different size. Ask this file for unique symbols.
-    for symbol in dict.fromkeys(SYMBOLS):
+    for symbol in dict.fromkeys(symbols or SYMBOLS):
         z = str(ELEMENT_Z[symbol])
         lines.append(f"{symbol}     0")
         for shell in data["elements"][z]["electron_shells"]:
@@ -136,13 +176,13 @@ def bse_gbs(basis_json):
     return "\n".join(lines) + "\n"
 
 
-def make_driver(psi4, pycc, coords, freeze_core, gbs=None):
+def make_driver(psi4, pycc, coords, freeze_core, gbs=None, symbols=None, basis=None):
     """An MPderiv driver at one geometry, basis source and core treatment."""
     psi4.core.clean()
     psi4.core.clean_options()
-    psi4.geometry(geometry_block(coords))
+    psi4.geometry(geometry_block(coords, symbols))
     if gbs is None:
-        psi4.set_options({"basis": BASIS_NAME.upper()})
+        psi4.set_options({"basis": (basis or BASIS_NAME).upper()})
     else:
         psi4.basis_helper(gbs, name="mqcbse")
     psi4.set_options(
@@ -396,6 +436,60 @@ def main():
                     for atom in range(3)
                     for cart in range(3)
                 }
+
+    # ---- the extra validation cases -------------------------------------
+    # Same machinery, different molecule and basis. These carry no frozen
+    # literals -- they exist so the assembled Hessian can be checked somewhere
+    # other than the one case the whole ladder was gated on.
+    for case in EXTRA_CASES:
+        case_basis = pathlib.Path(args.repo) / "basis_sets" / f"{case['basis']}.json"
+        if not case_basis.exists():
+            print(f"[{case['tag']:11s}] SKIPPED -- {case_basis} not extracted")
+            continue
+        case_gbs = bse_gbs(case_basis, case["symbols"])
+        for fc_name, fc in (("ae", "false"), ("fc", "true")):
+            tag = f"{case['tag']}_{fc_name}"
+            energy, drv = make_driver(
+                psi4, pycc, case["coords"], fc, gbs=case_gbs,
+                symbols=case["symbols"], basis=case["basis"],
+            )
+            arrays, ncore, canonical = collect(drv, Perturbation)
+
+            target = out_root / tag
+            target.mkdir(exist_ok=True)
+            entries = {}
+            for name, array in arrays.items():
+                np.save(target / f"{name}.npy", array)
+                entries[name] = {"shape": list(array.shape), "sha256": sha(array)}
+            manifest["configurations"][tag] = {
+                "molecule": case["symbols"],
+                "geometry": case["coords"].tolist(),
+                "basis": case["basis"],
+                "basis_source": "bse",
+                "freeze_core": fc,
+                "ncore": int(ncore),
+                "gauge": drv.perturbed_mo_gauge,
+                "scf_energy": float(energy),
+                "arrays": entries,
+            }
+
+            H = arrays["H_correlation"]
+            checks = {
+                "reconstruction": float(np.max(np.abs(arrays["skel_s"] + arrays["resp"] - H))),
+                "symmetry": float(np.max(np.abs(H - H.T))),
+                "translational": float(
+                    np.max(np.abs(H.reshape(len(case["symbols"]), 3, len(case["symbols"]), 3).sum(axis=2)))
+                ),
+            }
+            manifest["gate_0_2"][tag] = checks
+            if checks["reconstruction"] != 0.0:
+                failures.append(f"{tag}: reconstruction {checks['reconstruction']:.3e} != 0")
+            print(
+                f"[{tag:14s}] {case['basis']:10s} nao={arrays['GeffAO'].shape[0]:3d} "
+                f"ncore={ncore} scf={energy:.10f}  "
+                f"reconstruction={checks['reconstruction']:.1e}  "
+                f"H=H^T {checks['symmetry']:.1e}  transl {checks['translational']:.1e}"
+            )
 
     if not args.no_check:
         # The literals were computed on psi4's internal tables; check them there
