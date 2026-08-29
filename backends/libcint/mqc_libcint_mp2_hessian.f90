@@ -665,9 +665,9 @@ contains
       !!   ill-conditioned.
       !!
       !! All-electron non-canonical, this is arithmetically the identity --
-      !! both guards skip and `xt`, `it` copy through. It exists now, written
-      !! against pycc while the structure is fresh, because Phase 2's frozen
-      !! core reaches it (the plan's Unit 1.5 note); nothing in Phase 1 does.
+      !! both guards skip and `xt`, `it` copy through. Written against pycc
+      !! in Phase 1 (the plan's Unit 1.5 note); a frozen core reaches it on
+      !! the live path through `mp2_correlation_hessian`.
       real(dp), intent(in) :: ip(:, :), xov(:, :), i2(:, :)
       real(dp), intent(in) :: l_mo(:, :, :, :)
          !! Unperturbed orbital-Hessian weight `L_pqrs = 2 <pq|rs> - <pq|sr>`
@@ -1531,16 +1531,16 @@ contains
       !!
       !!     nuclear_repulsion_hessian + hess_ref + response_hessian + hess_corr
       !!
-      !! All-electron only: a frozen core is refused here, explicitly, because
-      !! the core<->active rewrite of `U^X` and the Sylvester divide are
-      !! Phase 2's -- running this path with fewer amplitudes would be quietly
-      !! wrong rather than unsupported.
+      !! Frozen-core aware: `n_frozen > 0` runs the Unit 2.1 core<->active
+      !! rewrite of `U^X`, the Unit 2.2 pair augmentation and the Unit 2.3
+      !! Sylvester derivative; `n_frozen = 0` reproduces the all-electron
+      !! path verbatim.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coeff(:, :)            !! C, (n_ao, n_mo)
       real(dp), intent(in) :: orbital_energies(:)    !! (n_mo), Hartree
       real(dp), intent(in) :: density(:, :)          !! Converged AO density
       integer, intent(in) :: n_occ                   !! Doubly occupied count
-      integer, intent(in) :: n_frozen                !! Must be zero, checked
+      integer, intent(in) :: n_frozen                !! Frozen-core count
       real(dp), allocatable, intent(out) :: hess_corr(:, :, :, :)
       real(dp), allocatable, intent(out) :: hess_ref(:, :, :, :)
       type(error_t), intent(inout) :: error
@@ -1568,12 +1568,6 @@ contains
       integer :: p, q, r, s
 
       if (error%has_error()) return
-      if (n_frozen /= 0) then
-         call error%set(ERROR_VALIDATION, "the analytic MP2 Hessian is "// &
-                        "all-electron for now: a frozen core needs the Phase 2 "// &
-                        "core rotations, not this path with fewer amplitudes.")
-         return
-      end if
       use_tol = 1.0e-13_dp
       if (present(tol)) use_tol = tol
 

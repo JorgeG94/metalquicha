@@ -68,7 +68,8 @@ contains
                   new_unittest("reference_block_matches_rhf_hessian", reference_matches), &
                   new_unittest("correlation_hessian_symmetric_and_translates", &
                                symmetric_and_translates), &
-                  new_unittest("frozen_core_is_refused", frozen_core_refused) &
+                  new_unittest("frozen_core_symmetric_and_translates", &
+                               frozen_core_symmetric) &
                   ]
    end subroutine collect_mqc_mp2_hessian_assembly_tests
 
@@ -205,42 +206,92 @@ contains
                  "the assembly did not evaluate: "//err%get_message())
    end subroutine symmetric_and_translates
 
-   !> A frozen core must be refused before any work is done -- the Phase 2
-   !> core rotations are not here yet, and an answer computed without them
-   !> would be quietly wrong rather than unsupported. This pins the contract
-   !> the driver gate relies on.
-   subroutine frozen_core_refused(error)
+   !> The frozen-core assembly earns the same symmetries the all-electron
+   !> one does: `H = H^T` across the mixed second derivatives, and rigid
+   !> translation summing every atom of a Cartesian pair to nothing. Weak
+   !> alone -- the cross-code element-wise gates (pycc's frozen-core
+   !> `H_correlation`, both geometries, ~6e-12) ran when Phase 2 landed and
+   !> live in the commit messages; the finite-difference tie-out is
+   !> `test_mqc_mp2_hessian_fd`'s frozen column. What this pins in-tree is
+   !> that neither symmetry drifts, on the same two geometries the
+   !> all-electron test walks.
+   subroutine frozen_core_symmetric(error)
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: hess_corr(:, :, :, :), hess_ref(:, :, :, :)
-      integer :: threads
+      real(dp) :: coords(3, 3), worst_sym, worst_tr, acc
+      integer :: threads, g, natm, ia, ja, a, b
 
       threads = omp_get_max_threads()
       call omp_set_num_threads(1)
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
-      if (.not. err%has_error()) then
-         call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
-                              .false., scf, err)
-      end if
-      call check(error,.not. err%has_error(), &
-                 "the reference did not converge: "//err%get_message())
-      if (allocated(error)) then
-         call omp_set_num_threads(threads)
+      do g = 1, 2
+         coords = WATER
+         if (g == 2) then
+            coords(1, 2) = 0.031_dp
+            coords(2, 2) = -0.024_dp
+         end if
+         call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "6-31g", mol, err)
+         if (.not. err%has_error()) then
+            call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                                 .false., scf, err)
+         end if
+         if (.not. err%has_error()) then
+            call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &
+                                         scf%density, WATER_NELEC/2, 1, &
+                                         hess_corr, hess_ref, err)
+         end if
+         call check(error,.not. err%has_error(), &
+                    "the frozen-core assembly did not evaluate: "//err%get_message())
+         if (allocated(error)) then
+            call omp_set_num_threads(threads)
+            call mol%destroy()
+            return
+         end if
+         natm = size(hess_corr, 3)
+         worst_sym = 0.0_dp
+         worst_tr = 0.0_dp
+         do ja = 1, natm
+            do ia = 1, natm
+               do b = 1, 3
+                  do a = 1, 3
+                     worst_sym = max(worst_sym, abs(hess_corr(a, b, ia, ja) &
+                                                    - hess_corr(b, a, ja, ia)))
+                  end do
+               end do
+            end do
+         end do
+         do ja = 1, natm
+            do b = 1, 3
+               do a = 1, 3
+                  acc = 0.0_dp
+                  do ia = 1, natm
+                     acc = acc + hess_corr(a, b, ia, ja)
+                  end do
+                  worst_tr = max(worst_tr, abs(acc))
+                  acc = 0.0_dp
+                  do ia = 1, natm
+                     acc = acc + hess_corr(b, a, ja, ia)
+                  end do
+                  worst_tr = max(worst_tr, abs(acc))
+               end do
+            end do
+         end do
+         write (*, "(a, i0, a, 2es10.3)") "        geometry ", g, &
+            " symmetry / translation = ", worst_sym, worst_tr
+         call check(error, max(worst_sym, worst_tr) < 1.0e-12_dp, &
+                    "the frozen-core correlation Hessian lost a symmetry")
          call mol%destroy()
-         return
-      end if
-
-      call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &
-                                   scf%density, WATER_NELEC/2, 1, &
-                                   hess_corr, hess_ref, err)
+         if (allocated(error)) then
+            call omp_set_num_threads(threads)
+            return
+         end if
+         deallocate (hess_corr, hess_ref)
+      end do
       call omp_set_num_threads(threads)
-      call check(error, err%has_error(), &
-                 "a frozen core slipped past the analytic MP2 Hessian's guard")
-      call mol%destroy()
-   end subroutine frozen_core_refused
+   end subroutine frozen_core_symmetric
 
 end module test_mqc_mp2_hessian_assembly
 

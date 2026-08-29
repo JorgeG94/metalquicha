@@ -45,7 +45,7 @@ What is covered
      - yes
      - ``mp2`` with ``keywords.correlation.freeze_core: false``
    * - MP2, frozen core
-     - **no**
+     - yes
      - the default -- ``freeze_core`` is on unless the deck turns it off
    * - Spin-scaled or fitted MP2
      - **no**
@@ -65,11 +65,10 @@ failing, so a deck that asks for a Hessian gets one either way. The difference
 is how long it takes.
 
 Note what the MP2 rows imply together: a plain ``mp2`` Hessian deck freezes
-its core by default and therefore takes the semi-numerical path, silently
-correct and slow. The analytic path is taken only when the deck says
-``freeze_core: false``, and the run that took it logs
-``computing the analytic MP2 Hessian``; a frozen-core run logs its decline in
-the same place rather than saying nothing.
+its core by default and now takes the analytic path with it -- the frozen
+count flows into the correlation assembly, whose core rotations carry it.
+A run that took the analytic path logs
+``computing the analytic MP2 Hessian``.
 
 Every covered functional is checked against ``pyscf.hessian.rks`` with
 ``grid_response = False``, water at STO-3G, on every element of the Hessian:
@@ -149,11 +148,22 @@ equations the reference already solves. The second-derivative two-electron
 integrals dominate the cost and are generated once, feeding the correlation
 block and the reference skeleton from the same sweep. The assembled block is
 checked element by element against pycc's analytic MP2 Hessian
-(water/6-31G, symmetric and asymmetric geometries, agreement at ~5e-12) and
+(water/6-31G, symmetric and asymmetric geometries, agreement at ~5e-12
+all-electron and ~6e-12 frozen-core) and
 transitively against a seven-point finite difference of our own correlation
 gradient; the symmetry and translational sum rules it must earn, and the
 identity between its reference skeleton and the standalone Hartree-Fock
 Hessian, are pinned in ``test_mqc_mp2_hessian_assembly``.
+
+A frozen core changes the orbital response, not just the index ranges: the
+core--active block of the orbital rotation takes the canonical Brillouin
+divide with its coupling terms, the skeleton carriers gain the closed-form
+pair-rotation augmentation, and the perturbed core--active rotation is a
+Sylvester relation whose off-diagonal Fock-derivative couplings the naive
+quotient rule drops -- an error pycc measured at ~7e-7 on this molecule and
+basis. All three are in the assembly and gated against pycc's frozen-core
+reference intermediates, so the default ``freeze_core`` deck is served
+analytically.
 
 A ``-V`` functional's non-local correlation contributes in the same three
 places -- an explicit second derivative, a Fock-derivative term, and a kernel
@@ -241,16 +251,6 @@ there is no way to say whether a fitted one is converged or merely fast.
 
 **PCM.** A continuum's contribution to a second derivative is not implemented,
 and its interaction with the response terms has not been worked out.
-
-**Frozen-core MP2.** With a core frozen, the core--active block of the orbital
-response is no longer the simple overlap condition: it takes the canonical
-Brillouin divide with its coupling terms, and the perturbed core--active
-rotation is a Sylvester relation whose off-diagonal Fock derivatives the
-all-electron divide never needs. Running the all-electron assembly with fewer
-amplitudes would be quietly wrong -- pycc measured the dropped term at ~7e-7
-on this very molecule -- so the analytic path declines a frozen core
-explicitly (and the assembly routine refuses one outright, as a second guard),
-and central differences of the frozen-core gradient take over.
 
 **Spin-scaled MP2.** The same reason its gradient is refused: a scaled MP2 is
 a different energy, and its derivatives are not the unscaled ones rescaled --

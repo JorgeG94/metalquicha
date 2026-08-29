@@ -81,16 +81,20 @@ contains
       testsuite = [ &
                   new_unittest("correlation_hessian_column_against_pycc", column_against_pycc), &
                   new_unittest("correlation_hessian_column_sums_to_nothing", column_translates), &
-                  new_unittest("analytic_column_against_the_same_literals", analytic_column) &
+                  new_unittest("analytic_column_against_the_same_literals", analytic_column), &
+                  new_unittest("frozen_core_column_against_finite_difference", frozen_column) &
                   ]
    end subroutine collect_mqc_mp2_hessian_fd_tests
 
    !> The correlation gradient at one geometry: the MP2 total less the
    !> reference's own, over the same converged orbitals.
-   subroutine correlation_gradient_at(coords, gradient, err)
+   subroutine correlation_gradient_at(coords, gradient, err, n_frozen)
       real(dp), intent(in) :: coords(:, :)
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: err
+      integer, intent(in), optional :: n_frozen
+
+      integer :: use_frozen
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
@@ -108,8 +112,10 @@ contains
          return
       end if
 
+      use_frozen = 0
+      if (present(n_frozen)) use_frozen = n_frozen
       call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
-                                WATER_NELEC/2, total, err)
+                                WATER_NELEC/2, total, err, n_frozen=use_frozen)
       if (err%has_error()) then
          call mol%destroy()
          return
@@ -132,10 +138,11 @@ contains
    !>   (-g(-3h) + 9g(-2h) - 45g(-h) + 45g(h) - 9g(2h) + g(3h)) / (60h)
    !>
    !> No `g(0)` term, which is the formula and not an omission.
-   subroutine fd_column(column, err, ok)
+   subroutine fd_column(column, err, ok, n_frozen)
       real(dp), intent(out) :: column(9)
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
+      integer, intent(in), optional :: n_frozen
 
       real(dp), parameter :: WEIGHT(6) = [-1.0_dp, 9.0_dp, -45.0_dp, 45.0_dp, -9.0_dp, 1.0_dp]
       integer, parameter :: OFFSET(6) = [-3, -2, -1, 1, 2, 3]
@@ -158,7 +165,7 @@ contains
          coords = WATER
          coords(PERT_CART, PERT_ATOM) = coords(PERT_CART, PERT_ATOM) &
                                         + real(OFFSET(point), dp)*STEP
-         call correlation_gradient_at(coords, gradient, err)
+         call correlation_gradient_at(coords, gradient, err, n_frozen=n_frozen)
          if (err%has_error()) then
             call omp_set_num_threads(threads)
             return
@@ -265,6 +272,64 @@ contains
                  "literals the FD column is measured against")
       call mol%destroy()
    end subroutine analytic_column
+
+   !> The frozen-core tie-out, direct rather than through literals: the
+   !> same 7-point stencil over our own frozen-core correlation gradient
+   !> (n_frozen = 1) against the same column of the analytic frozen-core
+   !> assembly. Entirely in our own conventions -- the cross-code element-wise
+   !> gates ran when Phase 2 landed and live in the commit messages; what
+   !> this pins is that the analytic core rotations keep differentiating the
+   !> gradient actually shipped, and it is exactly the check that catches a
+   !> quotient-rule Sylvester block (a ~7e-7 signature against a 1e-8 gate).
+   subroutine frozen_column(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: hess_corr(:, :, :, :), hess_ref(:, :, :, :)
+      real(dp) :: fd(9), analytic(9)
+      logical :: ok
+      integer :: threads, ia, a
+
+      call fd_column(fd, err, ok, n_frozen=1)
+      call check(error, ok, "the frozen-core correlation gradient did not "// &
+                 "evaluate: "//err%get_message())
+      if (allocated(error)) return
+
+      threads = omp_get_max_threads()
+      call omp_set_num_threads(1)
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
+      if (.not. err%has_error()) then
+         call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                              .false., scf, err)
+      end if
+      if (.not. err%has_error()) then
+         call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &
+                                      scf%density, WATER_NELEC/2, 1, &
+                                      hess_corr, hess_ref, err)
+      end if
+      call omp_set_num_threads(threads)
+      call check(error,.not. err%has_error(), &
+                 "the frozen-core analytic Hessian did not evaluate: "// &
+                 err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      do ia = 1, 3
+         do a = 1, 3
+            analytic(3*(ia - 1) + a) = hess_corr(a, PERT_CART, ia, PERT_ATOM)
+         end do
+      end do
+      write (*, "(a, es10.3)") "        max |analytic - FD|   = ", &
+         maxval(abs(analytic - fd))
+      call check(error, maxval(abs(analytic - fd)) < TOL, &
+                 "the frozen-core analytic column disagrees with the finite "// &
+                 "difference of the frozen-core gradient")
+      call mol%destroy()
+   end subroutine frozen_column
 
 end module test_mqc_mp2_hessian_fd
 
