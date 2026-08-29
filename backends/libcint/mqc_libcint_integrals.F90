@@ -960,7 +960,7 @@ contains
       real(dp), allocatable :: metric(:, :), vectors(:, :), values(:), half(:, :)
       real(dp), allocatable :: three(:, :)
       logical :: cholesky
-      real(dp) :: aux_max
+      real(dp), allocatable :: aux_bound(:)
       integer :: naux, nao, i, j, kept, info
 
       ! (mu nu | P) has orbital shells on two centres and auxiliary shells on
@@ -993,11 +993,11 @@ contains
       call clk%begin("3-centre integrals")
       ! The metric's diagonal is the auxiliary half of the Schwarz bound, and
       ! it is already in hand from the stage above.
-      aux_max = sqrt(maxval([(metric(i, i), i=1, naux)]))
+      aux_bound = aux_shell_bounds(aux, metric)
       if (present(omega)) then
-         call three_centre(orb, aux, three, omega=omega, aux_max=aux_max)
+         call three_centre(orb, aux, three, omega=omega, aux_bound=aux_bound)
       else
-         call three_centre(orb, aux, three, aux_max=aux_max)
+         call three_centre(orb, aux, three, aux_bound=aux_bound)
       end if
       call clk%lap()
 
@@ -1286,9 +1286,9 @@ contains
 
       real(dp), allocatable :: metric(:, :), half(:, :), three(:, :)
       logical :: cholesky, allow_fast
-      real(dp) :: aux_max
+      real(dp), allocatable :: aux_bound(:)
       real(dp), allocatable :: ovl(:, :), tmp(:, :), full(:)
-      integer :: nao, naux, n_l, n_r, i, p_index
+      integer :: nao, naux, n_l, n_r, p_index
 
       if (orb%cartesian .neqv. aux%cartesian) then
          call error%set(ERROR_VALIDATION, "density fitting: the orbital basis is "// &
@@ -1312,7 +1312,7 @@ contains
 
       call two_centre(aux, metric)
       ! Taken before the factorisation consumes it.
-      aux_max = sqrt(maxval([(metric(i, i), i=1, naux)]))
+      aux_bound = aux_shell_bounds(aux, metric)
       allow_fast = .false.
       if (present(fast_factor)) allow_fast = fast_factor
       if (allow_fast) then
@@ -1324,7 +1324,7 @@ contains
       if (error%has_error()) return
       deallocate (metric)
 
-      call three_centre(orb, aux, three, aux_max=aux_max)
+      call three_centre(orb, aux, three, aux_bound=aux_bound)
 
       ! (mu nu|P) -> (pq|P), one auxiliary function at a time. Transforming
       ! before fitting rather than after, which is the ordering PySCF uses and
@@ -1402,6 +1402,32 @@ contains
       call pic_gemm(c_left, three_p, tmp, transa="T")
       call pic_gemm(tmp, c_right, full)
    end subroutine df_mo_slice
+
+   function aux_shell_bounds(aux, metric) result(q)
+      !! `sqrt(max_P (P|P))` within each auxiliary shell
+      !!
+      !! The auxiliary half of the Schwarz bound on `(mn|P)`, taken per shell
+      !! so the screen can distinguish a tight fitting function from a diffuse
+      !! one. The metric's diagonal is all it needs, and every caller has the
+      !! metric already.
+      type(libcint_molecule_t), intent(in) :: aux
+      real(dp), intent(in) :: metric(:, :)
+      real(dp), allocatable :: q(:)
+
+      integer :: ksh, k, k0, k1
+      real(dp) :: largest
+
+      allocate (q(aux%nbas))
+      do ksh = 1, aux%nbas
+         k0 = aux%shell_offset(ksh) + 1
+         k1 = aux%shell_offset(ksh + 1)
+         largest = 0.0_dp
+         do k = k0, k1
+            largest = max(largest, abs(metric(k, k)))
+         end do
+         q(ksh) = sqrt(largest)
+      end do
+   end function aux_shell_bounds
 
    subroutine shell_pair_bounds(mol, q)
       !! `Q_MN = sqrt(max |(MN|MN)|)` for every shell pair
@@ -1632,7 +1658,7 @@ contains
       env(size(env)) = 0.0_dp
    end subroutine build_df_shell_table
 
-   subroutine three_centre(orb, aux, three, omega, aux_max)
+   subroutine three_centre(orb, aux, three, omega, aux_bound)
       !! (mu nu | P), flattened to (nao*nao, naux)
       !!
       !! The orbital and auxiliary shells are concatenated into one bas array,
@@ -1649,11 +1675,19 @@ contains
          !! Attenuate the kernel to `erf(omega r)/r`, for the long-range
          !! exchange of a range-separated functional. See `two_centre` for why
          !! the slot index is what it is.
-      real(dp), intent(in), optional :: aux_max
-         !! `sqrt(max_P (P|P))`, which turns the Schwarz bound on a shell pair
-         !! into a bound on every three-centre integral that pair can produce.
+      real(dp), intent(in), optional :: aux_bound(:)
+         !! `sqrt(max_P (P|P))` over each auxiliary *shell*, which is the other
+         !! half of the Schwarz bound on `(mn|P)`.
+         !!
+         !! Per shell rather than one global maximum, and that is most of the
+         !! screening. The global maximum is set by the tightest core-like
+         !! fitting function, and using it asks only "can this pair reach *any*
+         !! auxiliary function", which almost every pair can. Asking it per
+         !! auxiliary shell instead skips the diffuse tail of the fitting set
+         !! for pairs that cannot reach it.
+         !!
          !! Absent means no screening -- a caller that has not thought about it
-         !! gets every pair rather than a silently truncated tensor. Both
+         !! gets every triplet rather than a silently truncated tensor. Both
          !! fitting paths have the two-centre metric in hand already, so the
          !! diagonal is free to them.
 
@@ -1665,6 +1699,8 @@ contains
       integer :: npair, ipair
       integer, allocatable :: pair_i(:), pair_j(:)
       real(dp), allocatable :: q_pair(:, :)
+      real(dp) :: q_aux_max, q_bra
+      logical :: screening
       type(c_ptr) :: opt
 
       nbas_orb = orb%nbas
@@ -1687,14 +1723,19 @@ contains
       ! entered. The bounds cost nbas^2 quartets against the nbas^2 * nbas_aux
       ! triplets they screen.
       allocate (pair_i(nbas_orb*(nbas_orb + 1)/2), pair_j(nbas_orb*(nbas_orb + 1)/2))
-      if (present(aux_max)) then
+      screening = present(aux_bound)
+      if (screening) then
          call shell_pair_bounds(orb, q_pair)
+         q_aux_max = maxval(aux_bound)
       end if
       npair = 0
       do ish = 1, nbas_orb
          do jsh = 1, ish
-            if (present(aux_max)) then
-               if (q_pair(ish, jsh)*aux_max < DF_PAIR_SCREEN) cycle
+            ! The pair level first, against the largest auxiliary shell: a pair
+            ! that cannot reach even that one is dropped outright and never
+            ! enters the loop below.
+            if (screening) then
+               if (q_pair(ish, jsh)*q_aux_max < DF_PAIR_SCREEN) cycle
             end if
             npair = npair + 1
             pair_i(npair) = ish
@@ -1720,8 +1761,9 @@ contains
       ! and the threads need nothing shared but a private buffer each. `opt` is
       ! shared and read-only, the same arrangement the Fock build uses.
       !$omp parallel default(none) &
-      !$omp    shared(orb, aux, bas, env, three, nbas_orb, nbas_aux, dummy, npair, pair_i, pair_j, opt) &
-      !$omp    private(ipair, ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, shls, ret, idx, buf)
+      !$omp    shared(orb, aux, bas, env, three, nbas_orb, nbas_aux, dummy, npair, pair_i, pair_j, opt, &
+      !$omp           screening, q_pair, aux_bound) &
+      !$omp    private(ipair, ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, shls, ret, idx, buf, q_bra)
       allocate (buf(max_block(orb)**2*max_block(aux)))
 
       !$omp do schedule(dynamic)
@@ -1732,8 +1774,16 @@ contains
          io = orb%shell_offset(ish)
          dj = shell_dim(orb%cartesian, jsh - 1, bas)
          jo = orb%shell_offset(jsh)
+         q_bra = 0.0_dp
+         if (screening) q_bra = q_pair(ish, jsh)
 
          do ksh = 1, nbas_aux
+            ! The auxiliary half of the bound, per shell. This is where most of
+            ! the screening is: the pair-level test above only asks whether the
+            ! pair reaches the *tightest* fitting function.
+            if (screening) then
+               if (q_bra*aux_bound(ksh) < DF_PAIR_SCREEN) cycle
+            end if
             dk = shell_dim(orb%cartesian, nbas_orb + ksh - 1, bas)
             ko = aux%shell_offset(ksh)
             shls = [ish - 1, jsh - 1, nbas_orb + ksh - 1, dummy - 1]
