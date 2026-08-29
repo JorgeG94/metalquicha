@@ -838,28 +838,52 @@ contains
       end do
    end subroutine mp2_orbital_response_term
 
-   subroutine mp2_full_u(mo1_x, sx1, n_occ, u)
+   subroutine mp2_full_u(mo1_x, sx1, n_occ, u, n_frozen, fx1, l_mo, &
+                         orbital_energies)
       !! The full `nmo x nmo` orbital rotation `U^X` for one perturbation
       !!
-      !! pycc's non-canonical `full_U`: `solve_mo1_batch`'s first-order
-      !! orbitals already carry the whole occupied-column block -- the solved
-      !! virtual rows and the `-S^(X)/2` occupied rows the orthonormality
-      !! fixes -- so only the virtual columns are assembled here:
+      !! pycc's `full_U`: `solve_mo1_batch`'s first-order orbitals already
+      !! carry the whole occupied-column block -- the solved virtual rows and
+      !! the `-S^(X)/2` occupied rows the orthonormality fixes -- so only the
+      !! virtual columns are assembled here:
       !!
       !!     U^X_ab = -1/2 S^(X)_ab
       !!     U^X_ia = -S^(X)_ia - U^X_ai      (U + U^T = -S^(X))
       !!
-      !! The frozen-core core<->active rewrite of the occupied block (pycc
-      !! `full_U`'s `if ncore:` branch) is Phase 2's and deliberately absent;
-      !! `mp2_perturbed_response` guards it.
+      !! With a frozen core the core<->active-occupied rotation is
+      !! **independent** -- it moves the frozen/active partition -- so that
+      !! block is not left at the orthonormality value but rewritten from the
+      !! canonical Brillouin condition `d_X f_ci = 0`, with `U_ic` eliminated
+      !! through `U_ic = -S^(X)_ci - U_ci` (pycc `full_U`'s `if ncore:`
+      !! branch, `cphf.py`):
+      !!
+      !!     U^X_ci = -[ f^(X)_ci - S^(X)_ci eps_i
+      !!                 - 1/2 S^(X)_nm (L_cnim + L_cmin)
+      !!                 + U^X_dm (L_cdim + L_cmid) ] / (eps_c - eps_i)
+      !!     U^X_ic = -S^(X)_ci - U^X_ci
+      !!
+      !! `n, m` over the full occupied space, `d` over the virtuals -- the
+      !! virtual sum reads the solved response already sitting in `u`. The
+      !! divide is ungated: the core-active gap is never small. The redundant
+      !! core-core, active-active and virtual-virtual blocks stay at
+      !! `-1/2 S^(X)`. `fx1`, `l_mo` and `orbital_energies` are read only
+      !! when `n_frozen > 0`.
       real(dp), intent(in) :: mo1_x(:, :)   !! (n_mo, n_occ), one perturbation
       real(dp), intent(in) :: sx1(:, :)     !! S^(X), MO, (n_mo, n_mo)
       integer, intent(in) :: n_occ
       real(dp), allocatable, intent(out) :: u(:, :)
+      integer, intent(in), optional :: n_frozen
+      real(dp), intent(in), optional :: fx1(:, :)   !! f^(X), MO, (n_mo, n_mo)
+      real(dp), intent(in), optional :: l_mo(:, :, :, :)
+         !! Unperturbed `L_pqrs = 2 <pq|rs> - <pq|sr>`
+      real(dp), intent(in), optional :: orbital_energies(:)
 
-      integer :: n_mo, i, a
+      real(dp) :: acc
+      integer :: n_mo, n_core, i, a, c, d, m, n
 
       n_mo = size(mo1_x, 1)
+      n_core = 0
+      if (present(n_frozen)) n_core = n_frozen
       allocate (u(n_mo, n_mo))
       u(:, 1:n_occ) = mo1_x
       u(n_occ + 1:n_mo, n_occ + 1:n_mo) = -0.5_dp*sx1(n_occ + 1:n_mo, n_occ + 1:n_mo)
@@ -868,6 +892,28 @@ contains
             u(i, a) = -sx1(i, a) - mo1_x(a, i)
          end do
       end do
+      if (n_core > 0) then
+         ! The Brillouin rewrite reads the solved virtual response out of the
+         ! occupied columns just assembled, so it runs after them and touches
+         ! only the core<->active sub-blocks.
+         do i = n_core + 1, n_occ
+            do c = 1, n_core
+               acc = fx1(c, i) - sx1(c, i)*orbital_energies(i)
+               do m = 1, n_occ
+                  do n = 1, n_occ
+                     acc = acc - 0.5_dp*sx1(n, m)*(l_mo(c, n, i, m) + l_mo(c, m, i, n))
+                  end do
+               end do
+               do m = 1, n_occ
+                  do d = n_occ + 1, n_mo
+                     acc = acc + u(d, m)*(l_mo(c, d, i, m) + l_mo(c, m, i, d))
+                  end do
+               end do
+               u(c, i) = -acc/(orbital_energies(c) - orbital_energies(i))
+               u(i, c) = -sx1(c, i) - u(c, i)
+            end do
+         end do
+      end if
    end subroutine mp2_full_u
 
    subroutine mp2_perturbed_fock(fx1, sx1, u, l_mo, orbital_energies, n_occ, df)
