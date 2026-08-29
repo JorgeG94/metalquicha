@@ -20,6 +20,17 @@ are checking. The conversion is imported from the oracle harness rather than
 rewritten, because writing it twice is how the element loop got emitted once per
 *atom* the first time.
 
+Measured 2026-08-29, every case in ``CASES``, norm difference and the largest
+disagreement over the real vibrations::
+
+    water/sto-3g              4.94e-09    1.78e-04 cm-1
+    water/sto-3g   frozen     4.94e-09    1.78e-04
+    water/6-31g               4.46e-09    1.53e-04
+    water/6-31g    frozen     4.46e-09    1.53e-04
+    water/6-31g*   frozen     1.44e-08    1.68e-04     Cartesian d on oxygen
+    ammonia/6-31g  frozen     4.35e-09    1.39e-04     four atoms, six modes
+    hcn/6-31g      frozen     2.18e-08    1.44e-04     two core orbitals
+
 Usage::
 
     source ~/dev/mqc_worktrees/mqc_env.sh
