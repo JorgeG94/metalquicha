@@ -108,7 +108,7 @@ contains
                             scheme, max_iter, energy_tol, density_tol, res, error, &
                             functional, grid_level, pt2_fraction, neutral_orbitals, &
                             neutral_orbital_energies, aux, n_frozen, verbose, pcm, &
-                            level_shift)
+                            level_shift, diis_vectors)
       !! Run the ions and condense the difference onto atoms
       !!
       !! The neutral density is handed in rather than recomputed, since the
@@ -149,6 +149,10 @@ contains
       integer, intent(in) :: multiplicity
       real(dp), intent(in) :: neutral_density(:, :)   !! Total density, both spins
       real(dp), intent(in) :: neutral_energy
+      integer, intent(in), optional :: diis_vectors
+         !! The DIIS subspace, for the same reason as the shift below: a deck
+         !! that widens it to help a stubborn SCF means the ions, which are
+         !! where the stubborn ones are.
       real(dp), intent(in), optional :: level_shift
          !! Passed to both ions, which is the whole point of it being here.
          !! A level shift is asked for to stabilise a difficult SCF, and in a
@@ -347,6 +351,7 @@ contains
       end if
       call run_libcint_uhf(mol, nelec + 1, 2, max_iter, energy_tol, density_tol, &
                            loud, anion, error, xc=xc_arg, pcm=pcm, &
+                           diis_vectors=diis_vectors, &
                            level_shift=level_shift, &
                            guess=guess_kind, guess_density_alpha=d_guess_a, &
                            guess_density_beta=d_guess_b)
@@ -387,6 +392,7 @@ contains
       end if
       call run_libcint_uhf(mol, nelec - 1, 2, max_iter, energy_tol, density_tol, &
                            loud, cation, error, xc=xc_arg, pcm=pcm, &
+                           diis_vectors=diis_vectors, &
                            level_shift=level_shift, &
                            guess=guess_kind, guess_density_alpha=d_guess_a, &
                            guess_density_beta=d_guess_b)
