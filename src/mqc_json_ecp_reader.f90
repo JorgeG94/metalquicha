@@ -323,9 +323,20 @@ contains
       type(ecp_shell_type), intent(in) :: source
       type(ecp_shell_type), intent(out) :: dest
 
-      dest%ang_mom = source%ang_mom
-      if (source%nprim <= 0) return
+      ! After allocate_arrays, not before. That call goes through `destroy`,
+      ! which resets `ang_mom` to -1 -- so setting it first sets it and then
+      ! wipes it, and every copied channel came out looking like the local
+      ! one. `read_channel` already orders these the same way round.
+      !
+      ! It survived because nothing consumed the reader: an ECP whose
+      ! projected channels all claim l = -1 is only wrong once something
+      ! integrates it.
+      if (source%nprim <= 0) then
+         dest%ang_mom = source%ang_mom
+         return
+      end if
       call dest%allocate_arrays(source%nprim)
+      dest%ang_mom = source%ang_mom
       dest%radial_powers = source%radial_powers
       dest%exponents = source%exponents
       dest%coefficients = source%coefficients
