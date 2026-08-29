@@ -247,17 +247,17 @@ contains
 
       if (kohn_sham) then
          call convergence_header(verbose, "SCF iterations", &
-                                 "    iter                 energy          dE          dD   diis"// &
-                                 "       Fock         XC       rest", 93)
+                                 "    iter                 energy          dE          dD"// &
+                                 "       |[F,DS]|   diis       Fock         XC       rest", 108)
       else
          call convergence_header(verbose, "SCF iterations", &
-                                 "    iter                 energy          dE          dD   diis"// &
-                                 "       Fock       rest", 82)
+                                 "    iter                 energy          dE          dD"// &
+                                 "       |[F,DS]|   diis       Fock       rest", 97)
       end if
    end subroutine scf_table_header
 
-   subroutine scf_table_row(verbose, iter, energy, de, drms, ndiis, t_fock, t_xc, t_rest, &
-                            kohn_sham)
+   subroutine scf_table_row(verbose, iter, energy, de, drms, gnorm, ndiis, t_fock, t_xc, &
+                            t_rest, kohn_sham)
       !! One iteration's line, with the time that iteration took
       !!
       !! **The quadrature has a column of its own, and needs one.** `STAGE_FOCK`
@@ -277,18 +277,18 @@ contains
       !! missing, which is exactly the case here.
       logical, intent(in) :: verbose
       integer, intent(in) :: iter, ndiis
-      real(dp), intent(in) :: energy, de, drms, t_fock, t_xc, t_rest
+      real(dp), intent(in) :: energy, de, drms, gnorm, t_fock, t_xc, t_rest
       logical, intent(in) :: kohn_sham   !! Print the quadrature column at all
 
       character(len=LINE_LEN) :: line
 
       if (.not. verbose) return
       if (kohn_sham) then
-         write (line, "(i8,f23.12,2es12.3,i7,3(f9.2,a))") &
-            iter, energy, de, drms, ndiis, t_fock, " s", t_xc, " s", t_rest, " s"
+         write (line, "(i8,f23.12,3es12.3,i7,3(f9.2,a))") &
+            iter, energy, de, drms, gnorm, ndiis, t_fock, " s", t_xc, " s", t_rest, " s"
       else
-         write (line, "(i8,f23.12,2es12.3,i7,2(f9.2,a))") &
-            iter, energy, de, drms, ndiis, t_fock, " s", t_rest, " s"
+         write (line, "(i8,f23.12,3es12.3,i7,2(f9.2,a))") &
+            iter, energy, de, drms, gnorm, ndiis, t_fock, " s", t_rest, " s"
       end if
       call logger%info(trim(line))
    end subroutine scf_table_row
@@ -736,7 +736,7 @@ contains
          ! when F and D commute, which is what convergence means, so it is the
          ! quantity worth extrapolating against.
          call commutator(fock, density, s, x, err)
-         gnorm = sqrt(sum(err*err)/real(size(err), dp))
+         gnorm = maxval(abs(err))
          fock_flat = reshape(fock, [n_ao*n_ao])
          call diis%push(fock_flat, reshape(err, [n_mo*n_mo]), &
                         density=reshape(density, [n_ao*n_ao]), energy=e_elec)
@@ -776,7 +776,7 @@ contains
 
          de = abs(e_elec - e_old)
          drms = sqrt(sum((density - density_old)**2)/real(n_ao*n_ao, dp))
-         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, &
+         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, gnorm, &
                             diis%count(), t_fock_iter, t_xc_iter, t_rest_iter, kohn_sham_run)
 
          e_old = e_elec
@@ -1148,7 +1148,7 @@ contains
          fock_flat(nsq + 1:2*nsq) = reshape(fock_b, [nsq])
          err_flat(1:msq) = reshape(err_a, [msq])
          err_flat(msq + 1:2*msq) = reshape(err_b, [msq])
-         gnorm = sqrt(sum(err_flat*err_flat)/real(size(err_flat), dp))
+         gnorm = maxval(abs(err_flat))
          dens_flat(1:nsq) = reshape(d_a, [nsq])
          dens_flat(nsq + 1:2*nsq) = reshape(d_b, [nsq])
          call diis%push(fock_flat, err_flat, density=dens_flat, energy=e_elec)
@@ -1192,7 +1192,7 @@ contains
 
          de = abs(e_elec - e_old)
          drms = sqrt((sum((d_a - d_a_old)**2) + sum((d_b - d_b_old)**2))/real(2*nsq, dp))
-         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, &
+         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, gnorm, &
                             diis%count(), t_fock_iter, t_xc_iter, t_rest_iter, kohn_sham_run)
 
          e_old = e_elec
