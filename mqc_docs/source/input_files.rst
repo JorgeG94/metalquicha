@@ -349,6 +349,18 @@ Energies are correct wherever they are not refused. HF on HI in def2-SVP with
 def2-ECP gives ``-297.231531663358`` against PySCF's ``-297.231531663360``, and
 MP2 with ``n_frozen_core`` set agrees to 4e-09.
 
+Nineteen cases in the CPU validation suite hold that, under
+``validation/inputs/cpu/mqc/ecp/``: Hartree-Fock, Kohn-Sham, MP2, RI-MP2 and a
+density-fitted reference, over all three core sizes def2-ECP tabulates. Water is
+among them, with ``ecp`` named and no element carrying one -- it reproduces the
+all-electron number exactly, which is the case that would fail if naming a
+potential perturbed a molecule that has none.
+
+The lanthanide local channel, the one case at l = 5 rather than l = 3, is
+checked at the integral rather than through an SCF -- ytterbium is 81 basis
+functions with a g shell, and too slow to sit in this suite. See
+``test/test_mqc_ecp_matrix.f90``.
+
 Kohn-Sham DFT, on the CPU through libcint and libxc:
 
 - ``DFT`` (also ``KS``, ``Kohn-Sham``) selects the method; **which** functional is

@@ -23,8 +23,15 @@ module mqc_libcint_bridge
    public :: run_libcint_sapt2
    public :: libcint_backend_available
    public :: xc_available
+   public :: ecp_backend_available
 
 contains
+
+   pure function ecp_backend_available() result(available)
+      !! No libcint means no integral backend at all, so no ECP either.
+      logical :: available
+      available = .false.
+   end function ecp_backend_available
 
    pure function xc_available() result(available)
       !! No libcint means no `mqc_libcint_xc`, and therefore no functionals --

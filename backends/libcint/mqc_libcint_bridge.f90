@@ -35,6 +35,7 @@ module mqc_libcint_bridge
    use mqc_libcint_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                        guess_display_name
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_libcint_ecp, only: ECP_AVAILABLE
    use mqc_libcint_pcm, only: pcm_context_t
    use mqc_libcint_gradient, only: libcint_scf_gradient
    use mqc_libcint_hessian, only: rhf_hessian, ks_hessian, hessian_to_matrix, &
@@ -68,6 +69,7 @@ module mqc_libcint_bridge
    public :: run_libcint_sapt2
    public :: libcint_backend_available
    public :: xc_available
+   public :: ecp_backend_available
       !! Re-exported so a caller that cannot see `mqc_libcint_xc` -- anything
       !! outside this backend, since the module is not compiled without it --
       !! can still ask whether a functional can be evaluated. `mqc_version`
@@ -84,6 +86,18 @@ module mqc_libcint_bridge
       !! reproduces.
 
 contains
+
+   pure function ecp_backend_available() result(available)
+      !! Whether this build can evaluate an effective core potential
+      !!
+      !! The ECP integrals are libfint's; libcint has none. A
+      !! `-DMQC_USE_LIBFINT=OFF` build therefore links and runs but returns a
+      !! zero potential, so this has to be askable from outside -- it is what
+      !! `run_validation.py` gates the ECP decks on, and the difference between
+      !! "not tested here" and "wrong by hundreds of Hartree".
+      logical :: available
+      available = ECP_AVAILABLE
+   end function ecp_backend_available
 
    function sapt_core_bytes(nao, want_sapt2) result(bytes)
       !! Roughly what the SAPT caches will ask for at their peak
