@@ -277,7 +277,13 @@ What has a gradient on the CPU backend, at a glance:
        only one
    * - MP2, restricted
      - yes
-     - All four combinations of fitted reference and fitted correlation
+     - All four combinations of fitted reference and fitted correlation,
+       with or without a frozen core -- ``freeze_core`` is on by default, and
+       the default deck gets the gradient of the energy it computed. The
+       amplitudes span the active occupied space; the relaxed density gains an
+       occupied-frozen block resolved directly from the Lagrangian. (No
+       virtual-frozen block exists to build: ``n_frozen_core`` freezes leading
+       core orbitals and no virtuals)
    * - Double hybrids (``b2plyp``, ``b2gp-plyp``, ``mpw2plyp``)
      - yes
      - Restricted, all-electron, GGA-based; exact or fitted reference
@@ -407,8 +413,6 @@ number computed from a formula that does not apply:
      - The fitted J and K are written for one density, so this is refused for
        the energy and therefore for the gradient. The fitted *gradient* does
        carry both spin channels already -- it is the SCF that is missing
-   * - Frozen-core MP2 and RI-MP2
-     - The relaxed density gains occupied-frozen and virtual-frozen blocks
    * - Spin-scaled MP2 (SCS, SOS)
      - The amplitudes enter the response equations, where the two spin cases
        are no longer separable, so the scaled gradient is not the unscaled one
@@ -424,9 +428,12 @@ number computed from a formula that does not apply:
        double hybrids carried here are all GGA-based, so this is reachable only
        by composing your own
    * - Frozen-core double hybrid
-     - The relaxed density gains occupied-frozen blocks that are not built.
-       The *energy* does honour ``freeze_core``, so this refuses rather than
-       returning the all-electron gradient of a frozen-core energy
+     - Not because the blocks are missing -- plain MP2 builds them and takes
+       its frozen-core gradient -- but because the perturbative term's
+       assembly has not been taught, or validated with, a frozen core over a
+       Kohn-Sham operator with its kernel in the response. The *energy* does
+       honour ``freeze_core``, so this refuses rather than returning the
+       all-electron gradient of a frozen-core energy
    * - Coupled cluster
      - Needs the Lambda amplitudes, which are not implemented
 

@@ -12,7 +12,7 @@
     ],
     "model": {
         "method": "ri-mp2",
-        "basis": "cc-pvdz",
+        "basis": "6-31g",
         "aux_basis": "cc-pvdz-rifit"
     },
     "keywords": {
@@ -21,8 +21,8 @@
             "tolerance": 1e-12
         },
         "correlation": {
-            "freeze_core": false,
-            "n_frozen_core": 0
+            "freeze_core": true,
+            "n_frozen_core": 1
         }
     },
     "system": {

@@ -59,6 +59,25 @@ program check_ri_mp2_gradient
                             0.0_dp, 0.0_dp, 2.2_dp], [N_DIM, 3]), &
                    "sto-3g", "cc-pvdz-rifit", 14, n_bad)
 
+   ! With a core frozen, the finite difference *must* freeze the same core:
+   ! the relaxed density's occupied-frozen block comes from the Lagrangian
+   ! rather than the amplitudes, and differencing the frozen energy is the one
+   ! check that sees it as a derivative rather than a number.
+   call check_case("H2O / 6-31g, frozen 1", [8, 1, 1], ["O", "H", "H"], &
+                   reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, -1.4308_dp, 1.1078_dp, &
+                            0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                   "6-31g", "cc-pvtz-rifit", 10, n_bad, n_frozen=1)
+
+   ! More than one frozen orbital, on an asymmetric molecule: two cores on two
+   ! different atoms, so an occupied-frozen block indexed off by one lands in
+   ! the wrong atom's terms rather than cancelling by symmetry.
+   call check_case("HCN / sto-3g, frozen 2", [1, 6, 7], ["H", "C", "N"], &
+                   reshape([0.0_dp, 0.0_dp, -2.0_dp, &
+                            0.0_dp, 0.0_dp, 0.0_dp, &
+                            0.0_dp, 0.0_dp, 2.2_dp], [N_DIM, 3]), &
+                   "sto-3g", "cc-pvdz-rifit", 14, n_bad, n_frozen=2)
+
    write (*, "(a)") ""
    if (n_bad == 0) then
       write (*, "(a)") "all RI-MP2 gradient checks passed"
@@ -69,7 +88,8 @@ program check_ri_mp2_gradient
 
 contains
 
-   subroutine check_case(label, numbers, symbols, coords, basis, aux_basis, nelec, n_bad)
+   subroutine check_case(label, numbers, symbols, coords, basis, aux_basis, nelec, &
+                         n_bad, n_frozen)
       character(len=*), intent(in) :: label
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
@@ -77,14 +97,20 @@ contains
       character(len=*), intent(in) :: basis, aux_basis
       integer, intent(in) :: nelec
       integer, intent(inout) :: n_bad
+      integer, intent(in), optional :: n_frozen
+         !! Core orbitals frozen on *both* sides of the comparison -- the
+         !! analytic gradient and the differenced energy have to be
+         !! derivatives of the same thing.
 
       real(dp), allocatable :: analytic(:, :), direct(:, :), numeric(:, :)
       real(dp) :: translation(3)
       real(dp) :: worst, energy
-      integer :: natm, ia, ic
+      integer :: natm, ia, ic, frozen
       type(error_t) :: error
 
       natm = size(numbers)
+      frozen = 0
+      if (present(n_frozen)) frozen = n_frozen
       if (len_trim(filter) > 0) then
          if (index(label, trim(filter)) == 0) return
       end if
@@ -93,8 +119,8 @@ contains
       write (*, "(a,a)") "== ", label
       flush (output_unit)
 
-      call gradient_at(numbers, symbols, coords, basis, aux_basis, nelec, analytic, &
-                       .false., error)
+      call gradient_at(numbers, symbols, coords, basis, aux_basis, nelec, frozen, &
+                       analytic, .false., error)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          n_bad = n_bad + 1
@@ -105,9 +131,20 @@ contains
       ! stored. Past the in-core limit that is the only path there is, and the
       ! limit is far above anything a test case reaches -- so it is forced here
       ! rather than waited for. The two differ only in where the integrals came
-      ! from, so they have to agree to rounding, not to a tolerance.
-      call gradient_at(numbers, symbols, coords, basis, aux_basis, nelec, direct, &
-                       .true., error)
+      ! from, so single-threaded they agree to rounding. Threaded they do not,
+      ! and not from this comparison's own difference: the pipeline carries
+      ! ~5e-11 of run-to-run scatter from the unordered
+      ! `!$omp critical(mqc_direct_fock_accumulate)` merge of thread-local
+      ! accumulators in `mqc_libcint_direct.f90` -- our OpenMP, not threaded
+      ! BLAS (`MKL_NUM_THREADS=1 OMP_NUM_THREADS=8` still varies,
+      ! `OMP_NUM_THREADS=1 MKL_NUM_THREADS=8` is byte-identical), and not a
+      ! race: eight runs land on five contiguous values in the 11th digit,
+      ! a handful of merge orders. Two 8-thread runs of this whole program
+      ! differ by that much; two single-threaded runs are bit-identical, so
+      ! bit-identity is only testable at one thread. The bound sits above
+      ! the scatter's tail; a real integral-path bug is orders beyond it.
+      call gradient_at(numbers, symbols, coords, basis, aux_basis, nelec, frozen, &
+                       direct, .true., error)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL (direct): ", error%get_message()
          n_bad = n_bad + 1
@@ -115,13 +152,13 @@ contains
       end if
       write (*, "(a,es14.4)") "  stored against recomputed integrals:       ", &
          maxval(abs(analytic - direct))
-      if (maxval(abs(analytic - direct)) > 1.0e-10_dp) then
+      if (maxval(abs(analytic - direct)) > 2.0e-9_dp) then
          write (*, "(a)") "  FAIL: the two integral paths disagree"
          n_bad = n_bad + 1
       end if
 
       call numeric_gradient(numbers, symbols, coords, basis, aux_basis, nelec, &
-                            numeric, error)
+                            frozen, numeric, error)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL (finite difference): ", error%get_message()
          n_bad = n_bad + 1
@@ -133,7 +170,8 @@ contains
       ! machine-precision reference there is. The energy goes with them: the
       ! two codes take their basis data from different places, and a gradient
       ! of an energy that differs in the ninth decimal differs in the eighth.
-      call energy_at(numbers, symbols, coords, basis, aux_basis, nelec, energy, error)
+      call energy_at(numbers, symbols, coords, basis, aux_basis, nelec, frozen, &
+                     energy, error)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL (energy): ", error%get_message()
          n_bad = n_bad + 1
@@ -166,12 +204,12 @@ contains
    end subroutine check_case
 
    subroutine gradient_at(numbers, symbols, coords, basis, aux_basis, nelec, &
-                          gradient, force_direct, error)
+                          frozen, gradient, force_direct, error)
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
       real(dp), intent(in) :: coords(:, :)
       character(len=*), intent(in) :: basis, aux_basis
-      integer, intent(in) :: nelec
+      integer, intent(in) :: nelec, frozen
       real(dp), allocatable, intent(out) :: gradient(:, :)
       logical, intent(in) :: force_direct
       type(error_t), intent(inout) :: error
@@ -186,18 +224,19 @@ contains
       call run_libcint_rhf(mol, nelec, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, error)
       if (error%has_error()) return
       call libcint_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, &
-                                   nelec/2, gradient, error, &
+                                   nelec/2, gradient, error, n_frozen=frozen, &
                                    force_direct=force_direct)
       call mol%destroy()
       call aux%destroy()
    end subroutine gradient_at
 
-   subroutine energy_at(numbers, symbols, coords, basis, aux_basis, nelec, energy, error)
+   subroutine energy_at(numbers, symbols, coords, basis, aux_basis, nelec, frozen, &
+                        energy, error)
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
       real(dp), intent(in) :: coords(:, :)
       character(len=*), intent(in) :: basis, aux_basis
-      integer, intent(in) :: nelec
+      integer, intent(in) :: nelec, frozen
       real(dp), intent(out) :: energy
       type(error_t), intent(inout) :: error
 
@@ -213,7 +252,7 @@ contains
       call run_libcint_rhf(mol, nelec, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, error)
       if (error%has_error()) return
       call run_libcint_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, nelec/2, &
-                              scf%energy, mp2, error)
+                              scf%energy, mp2, error, n_frozen=frozen)
       if (error%has_error()) return
       energy = mp2%total
       call mol%destroy()
@@ -221,12 +260,12 @@ contains
    end subroutine energy_at
 
    subroutine numeric_gradient(numbers, symbols, coords, basis, aux_basis, nelec, &
-                               gradient, error)
+                               frozen, gradient, error)
       integer, intent(in) :: numbers(:)
       character(len=*), intent(in) :: symbols(:)
       real(dp), intent(in) :: coords(:, :)
       character(len=*), intent(in) :: basis, aux_basis
-      integer, intent(in) :: nelec
+      integer, intent(in) :: nelec, frozen
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: error
 
@@ -242,10 +281,12 @@ contains
          do ic = 1, 3
             shifted = coords
             shifted(ic, ia) = coords(ic, ia) + STEP
-            call energy_at(numbers, symbols, shifted, basis, aux_basis, nelec, plus, error)
+            call energy_at(numbers, symbols, shifted, basis, aux_basis, nelec, &
+                           frozen, plus, error)
             if (error%has_error()) return
             shifted(ic, ia) = coords(ic, ia) - STEP
-            call energy_at(numbers, symbols, shifted, basis, aux_basis, nelec, minus, error)
+            call energy_at(numbers, symbols, shifted, basis, aux_basis, nelec, &
+                           frozen, minus, error)
             if (error%has_error()) return
             gradient(ic, ia) = (plus - minus)/(2.0_dp*STEP)
          end do

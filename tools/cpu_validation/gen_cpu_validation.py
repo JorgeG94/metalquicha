@@ -610,20 +610,28 @@ GRADIENT_CASES = [
     ("water", "cc-pvdz", "cc-pvdz-rifit", "cam-b3lyp", 1),  # DF + RSH
 ]
 
-# MP2 gradients, as (molecule, basis). Small on purpose: the relaxed density
-# is assembled as a dense `n_ao^4` two-particle density, which is a memory
-# ceiling long before it is a speed problem.
+# MP2 gradients, as (molecule, basis, frozen). Small on purpose: the relaxed
+# density is assembled as a dense `n_ao^4` two-particle density, which is a
+# memory ceiling long before it is a speed problem.
 #
 # The reference needs one thing that is not a default -- see `dense_zvector` --
 # and these are the only cases in the suite whose reference implementation had
 # to be corrected before it could be used at all.
+#
+# The frozen case is what a *default* deck computes -- `freeze_core` is on by
+# default and water resolves to one core -- and it exercises the
+# occupied-frozen block of the relaxed density at deck level, driver gate
+# included. Written into the deck explicitly all the same, the same policy as
+# `MP2_CASES`: a frozen energy against an unfrozen reference is a couple of
+# millihartree, inside no tolerance here.
 GRADIENT_MP2_CASES = [
-    ("water", "sto-3g"),
-    ("water", "cc-pvdz"),
-    ("nh3", "6-31g"),
+    ("water", "sto-3g", 0),
+    ("water", "cc-pvdz", 0),
+    ("nh3", "6-31g", 0),
+    ("water", "6-31g", 1),
 ]
 
-# RI-MP2 gradients, as (molecule, basis, aux). The reference for these is not
+# RI-MP2 gradients, as (molecule, basis, aux, frozen). The reference for these is not
 # PySCF: it implements no RI-MP2 gradient at all -- both
 # `pyscf.mp.dfmp2.DFMP2.nuc_grad_method` and `dfmp2_native`'s raise
 # NotImplementedError -- so `ri_mp2_gradient.py` next door is it. That is a
@@ -640,9 +648,13 @@ GRADIENT_MP2_CASES = [
 # auxiliary to pair with, and that refusal is exercised by the energy path
 # already.
 GRADIENT_RI_MP2_CASES = [
-    ("water", "sto-3g", "cc-pvdz-rifit"),
-    ("water", "cc-pvdz", "cc-pvdz-rifit"),
-    ("nh3", "def2-svp", "def2-svp-rifit"),   # a second auxiliary family
+    ("water", "sto-3g", "cc-pvdz-rifit", 0),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", 0),
+    ("nh3", "def2-svp", "def2-svp-rifit", 0),   # a second auxiliary family
+    # The frozen counterpart of the conventional list's frozen case, same
+    # geometry and orbital basis, so the two frozen gradients can be read
+    # against each other as well as against their references.
+    ("water", "6-31g", "cc-pvdz-rifit", 1),
 ]
 
 # The same, with the *reference* fitted as well -- as (molecule, basis, aux).
@@ -1662,7 +1674,7 @@ def dense_zvector(fvind, mo_energy, mo_occ, h1, s1=None, max_cycle=50, tol=1e-9,
     return numpy.linalg.solve(operator, -h1.ravel()).reshape(h1.shape), None
 
 
-def pyscf_mp2_gradient(atoms, basis):
+def pyscf_mp2_gradient(atoms, basis, frozen=0):
     """Reference MP2 energy and analytic nuclear gradient, in Hartree/Bohr."""
     from pyscf import gto, mp, scf
     from pyscf.grad import mp2 as mp2_grad
@@ -1685,12 +1697,12 @@ def pyscf_mp2_gradient(atoms, basis):
     mf.kernel()
     if not mf.converged:
         raise SystemExit(f"PySCF RHF did not converge for {basis}")
-    pt = mp.MP2(mf)
+    pt = mp.MP2(mf, frozen=frozen)
     pt.kernel()
     return float(mf.e_tot + pt.e_corr), pt.Gradients().kernel().tolist(), mol.nao
 
 
-def mqc_ri_mp2_gradient(atoms, basis, aux):
+def mqc_ri_mp2_gradient(atoms, basis, aux, frozen=0):
     """Reference RI-MP2 energy and analytic gradient, from `ri_mp2_gradient.py`.
 
     The one reference in this file that is not a third party's, because there
@@ -1700,8 +1712,8 @@ def mqc_ri_mp2_gradient(atoms, basis, aux):
     from ri_mp2_gradient import build, ri_mp2_energy, ri_mp2_gradient
 
     mol, auxmol = build(atoms, basis, aux, unit="Angstrom")
-    energy, mf = ri_mp2_energy(mol, auxmol)
-    gradient = ri_mp2_gradient(mol, auxmol, mf)
+    energy, mf = ri_mp2_energy(mol, auxmol, frozen=frozen)
+    gradient = ri_mp2_gradient(mol, auxmol, mf, frozen=frozen)
     return float(energy), gradient.tolist(), mol.nao
 
 
@@ -2514,19 +2526,22 @@ def main():
         print(f"{mol.label:6s} {basis:12s} {theory:8s} hess |H|={norm:.10f} "
               f"nao={nao:4d} E={energy:.12f}", flush=True)
 
-    for name, basis in GRADIENT_MP2_CASES:
+    for name, basis, frozen in GRADIENT_MP2_CASES:
         mol = MOLECULES[name]
-        energy, gradient, nao = pyscf_mp2_gradient(mol.atoms, basis)
-        deck = deck_for(f"{CPU_MQC}/gradient",
-                        f"cpu_{name}_{normalize_basis_name(basis)}_mp2_grad")
+        energy, gradient, nao = pyscf_mp2_gradient(mol.atoms, basis, frozen)
+        stem = f"cpu_{name}_{normalize_basis_name(basis)}_mp2"
+        if frozen:
+            stem += f"_f{frozen}"
+        deck = deck_for(f"{CPU_MQC}/gradient", stem + "_grad")
         written.add(str((VALIDATION / deck).relative_to(INPUTS)))
         if not args.dry_run:
             d = deck_json(xyz_for(mol), basis, method="mp2",
-                          correlation={"freeze_core": False})
+                          correlation={"freeze_core": frozen > 0,
+                                       "n_frozen_core": frozen})
             d["driver"] = "Gradient"
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
         tests.append({
-            "name": f"MP2 gradient {mol.label} {basis} (CPU)",
+            "name": f"MP2 gradient {mol.label} {basis} frozen {frozen} (CPU)",
             "input": deck,
             "expected_energy": round(energy, 12),
             "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
@@ -2536,24 +2551,27 @@ def main():
         })
         norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
         print(f"{mol.label:6s} {basis:12s} {'MP2':8s} grad |g|={norm:.10f} "
-              f"nao={nao:4d} E={energy:.12f}", flush=True)
+              f"frozen={frozen} nao={nao:4d} E={energy:.12f}", flush=True)
 
-    for name, basis, aux in GRADIENT_RI_MP2_CASES:
+    for name, basis, aux, frozen in GRADIENT_RI_MP2_CASES:
         mol = MOLECULES[name]
-        energy, gradient, nao = mqc_ri_mp2_gradient(mol.atoms, basis, aux)
-        deck = deck_for(f"{CPU_MQC}/gradient",
-                        f"cpu_{name}_{normalize_basis_name(basis)}_rimp2_grad")
+        energy, gradient, nao = mqc_ri_mp2_gradient(mol.atoms, basis, aux, frozen)
+        stem = f"cpu_{name}_{normalize_basis_name(basis)}_rimp2"
+        if frozen:
+            stem += f"_f{frozen}"
+        deck = deck_for(f"{CPU_MQC}/gradient", stem + "_grad")
         written.add(str((VALIDATION / deck).relative_to(INPUTS)))
         if not args.dry_run:
             # `aux_only`: the auxiliary fits the correlation and not the SCF.
             # Without it the deck asks for a fitted reference too, which the
             # gradient refuses -- correctly, and that is a different energy.
             d = deck_json(xyz_for(mol), basis, aux=aux, method="ri-mp2",
-                          correlation={"freeze_core": False}, aux_only=True)
+                          correlation={"freeze_core": frozen > 0,
+                                       "n_frozen_core": frozen}, aux_only=True)
             d["driver"] = "Gradient"
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
         tests.append({
-            "name": f"RI-MP2 gradient {mol.label} {basis}/{aux} (CPU)",
+            "name": f"RI-MP2 gradient {mol.label} {basis}/{aux} frozen {frozen} (CPU)",
             "input": deck,
             "expected_energy": round(energy, 12),
             "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
@@ -2563,7 +2581,7 @@ def main():
         })
         norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
         print(f"{mol.label:6s} {basis:12s} {'RI-MP2':8s} grad |g|={norm:.10f} "
-              f"nao={nao:4d} E={energy:.12f}", flush=True)
+              f"frozen={frozen} nao={nao:4d} E={energy:.12f}", flush=True)
 
     for name, basis, aux in GRADIENT_DF_REF_CASES:
         mol = MOLECULES[name]
