@@ -879,7 +879,7 @@ contains
       end do
    end subroutine vv10_gradient_core
 
-   subroutine xc_potential_gradient(ctx, mol, density, pmat, gradient, error)
+   subroutine xc_potential_gradient(ctx, mol, density, pmat, gradient, error, fixed_grid)
       !! `d/dR Tr(P V_xc[D])`, with both densities held fixed, accumulated in place
       !!
       !! **Why a double hybrid needs this and no gradient before it did.** Every
@@ -932,6 +932,20 @@ contains
       real(dp), intent(in) :: pmat(:, :)      !! The density `V_xc` is traced against
       real(dp), intent(inout) :: gradient(:, :)
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: fixed_grid
+         !! Hold the quadrature fixed, omitting the partition-weight response.
+         !!
+         !! Absent or false gives the physical derivative, which is what every
+         !! production caller wants. True gives the quantity a fixed-grid Hessian
+         !! is the second derivative *of*, so the two can be differenced against
+         !! each other with the same approximation on both sides --
+         !! `xc_gradient_fixed_grid` is the same idea for the energy term and
+         !! `vv10_gradient_fixed_grid` for the non-local one.
+         !!
+         !! Differencing the physical form against a fixed-grid Hessian instead
+         !! disagrees by exactly the omitted term: 5.5e-04 on b3lyp/cc-pVDZ water
+         !! at grid level 3, falling only to 6.5e-05 by level 5. Large enough to
+         !! swamp a real error and small enough to be mistaken for one.
 
       real(dp), allocatable :: rho(:), rho_grad(:, :), vrho(:), vsigma(:)
       real(dp), allocatable :: frr(:), frs(:), fss(:)
@@ -949,6 +963,7 @@ contains
       integer :: npts, nao, natm, g0, g1, nb, ig, gg, id, ia, comp, own
       integer :: n_sig, isig, jsig
       logical :: gga
+      logical :: hold_grid
 
       if (.not. ctx%active) return
 
@@ -960,6 +975,9 @@ contains
       call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, &
                                      vsigma, frr, frs, fss, error)
       if (error%has_error()) return
+
+      hold_grid = .false.
+      if (present(fixed_grid)) hold_grid = fixed_grid
 
       allocate (c_offsets(natm), c_counts(natm))
       allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
@@ -1079,6 +1097,9 @@ contains
          ! than on the energy density. Same two pieces as the energy gradient:
          ! every nucleus reweights the whole grid, and a point owned by A also
          ! moves with A.
+         ! This is the whole of the grid response for this term, which is what
+         ! lets `fixed_grid` be a single skip rather than a second code path.
+         if (hold_grid) cycle
          if (allocated(dpart)) deallocate (dpart)
          allocate (dpart(3, natm, nb))
          call becke_partition_derivatives(ctx%grid%coords(:, g0:g1), mol%coords, &
