@@ -48,6 +48,7 @@ module mqc_libcint_xc
                            xc_f03_functional_get_number, xc_f03_func_info_t, &
                            xc_f03_gga_exc_vxc, xc_f03_mgga_exc_vxc, &
                            xc_f03_lda_fxc, xc_f03_gga_fxc, xc_f03_mgga_fxc, &
+                           xc_f03_lda_kxc, xc_f03_gga_kxc, &
                            xc_f03_func_info_get_flags, XC_FLAGS_NEEDS_LAPLACIAN, &
                            XC_UNPOLARIZED, XC_POLARIZED, &
                            XC_FAMILY_LDA, XC_FAMILY_HYB_LDA, &
@@ -85,6 +86,7 @@ module mqc_libcint_xc
    public :: xc_grid_gga_quantities
    public :: xc_kernel_apply
    public :: xc_grid_kernel_quantities
+   public :: KERNEL_RHO_FLOOR   !! Where the kernel's divergence is cut off
    public :: ensure_nlc_grid
    public :: vv10_add_potential
    public :: vv10_kernel_apply
@@ -775,7 +777,8 @@ contains
 
    subroutine xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, &
                                         vsigma, frr, frs, fss, error, &
-                                        tau, vtau, frt, fst, ftt)
+                                        tau, vtau, frt, fst, ftt, &
+                                        grrr, grrs, grss, gsss)
       !! First *and* second functional derivatives at every grid point
       !!
       !! What `xc_grid_gga_quantities` is to the exchange-correlation gradient,
@@ -808,6 +811,21 @@ contains
       real(dp), allocatable, intent(out), optional :: tau(:)
       real(dp), allocatable, intent(out), optional :: vtau(:)
       real(dp), allocatable, intent(out), optional :: frt(:), fst(:), ftt(:)
+      real(dp), allocatable, intent(out), optional :: grrr(:), grrs(:), grss(:), gsss(:)
+         !! Third functional derivatives: `v3rho3`, `v3rho2sigma`, `v3rhosigma2`
+         !! and `v3sigma3`, weighted and summed over components exactly as the
+         !! second derivatives beside them.
+         !!
+         !! Asked for only by the double-hybrid Hessian, which is the first
+         !! thing here to differentiate the *kernel*. A double-hybrid gradient
+         !! stops at `f_xc`; its Hessian does not, because the perturbed
+         !! Z-vector's operator is the differentiated kernel and the pass-one
+         !! term `Tr(D_rel V_xc^(XY))` carries `g_xc rho^X rho^Y` at fixed
+         !! density. Omitting it is a 400 per cent error on that term, not a
+         !! correction to it.
+         !!
+         !! LDA and GGA. A meta-GGA would need the tau channels of the third
+         !! derivative too, and no double hybrid shipped here is one.
          !! The kinetic-energy-density channel: `tau` itself, `dE/dtau`, and
          !! the three second derivatives that touch it. Absent for anything but
          !! a meta-GGA, where they are zero and the caller has no use for them.
@@ -826,6 +844,8 @@ contains
       ! is not a property to depend on.
       real(dp), allocatable :: lscr_rl(:), lscr_sl(:), lscr_ll(:), lscr_lt(:)
       logical :: want_tau
+      logical :: want_kxc
+      real(dp), allocatable :: grrr_i(:), grrs_i(:), grss_i(:), gsss_i(:)
       integer :: g0, g1, nb, i, ig, id, npts
 
       npts = ctx%grid%n_points
@@ -835,6 +855,18 @@ contains
       ! set, and a meta-GGA is the only thing that makes any of them non-zero.
       want_tau = present(tau) .and. present(vtau) .and. present(frt) &
                  .and. present(fst) .and. present(ftt)
+      ! All four together or none: a caller with three of them has a bug, and
+      ! silently handing back an unallocated fourth would surface as a segfault
+      ! somewhere else entirely.
+      want_kxc = present(grrr) .and. present(grrs) .and. present(grss) &
+                 .and. present(gsss)
+      if (want_kxc) then
+         allocate (grrr(npts), grrs(npts), grss(npts), gsss(npts))
+         grrr = 0.0_dp
+         grrs = 0.0_dp
+         grss = 0.0_dp
+         gsss = 0.0_dp
+      end if
       if (want_tau) then
          allocate (tau(npts), vtau(npts), frt(npts), fst(npts), ftt(npts))
          tau = 0.0_dp
@@ -902,6 +934,14 @@ contains
                                            frr_i, frs_i, fss_i)
          allocate (sigma(nb), exc_i(nb), vrho_i(nb), vsigma_i(nb), &
                    frr_i(nb), frs_i(nb), fss_i(nb))
+         if (want_kxc) then
+            if (allocated(grrr_i)) deallocate (grrr_i, grrs_i, grss_i, gsss_i)
+            allocate (grrr_i(nb), grrs_i(nb), grss_i(nb), gsss_i(nb))
+            grrr_i = 0.0_dp
+            grrs_i = 0.0_dp
+            grss_i = 0.0_dp
+            gsss_i = 0.0_dp
+         end if
          if (want_tau) then
             if (allocated(vtau_i)) deallocate (vtau_i, frt_i, fst_i, ftt_i, lapl_k, lscr, &
                                                lscr_rl, lscr_sl, lscr_ll, lscr_lt)
@@ -920,11 +960,22 @@ contains
                                        exc_i, vrho_i, vsigma_i)
                call xc_f03_gga_fxc(ctx%func(i), int(nb, 8), rho_blk, sigma, &
                                    frr_i, frs_i, fss_i)
+               if (want_kxc) then
+                  call xc_f03_gga_kxc(ctx%func(i), int(nb, 8), rho_blk, sigma, &
+                                      grrr_i, grrs_i, grss_i, gsss_i)
+               end if
                do ig = 1, nb
                   vsigma(g0 + ig - 1) = vsigma(g0 + ig - 1) + ctx%weight(i)*vsigma_i(ig)
                   frs(g0 + ig - 1) = frs(g0 + ig - 1) + ctx%weight(i)*frs_i(ig)
                   fss(g0 + ig - 1) = fss(g0 + ig - 1) + ctx%weight(i)*fss_i(ig)
                end do
+               if (want_kxc) then
+                  do ig = 1, nb
+                     grrs(g0 + ig - 1) = grrs(g0 + ig - 1) + ctx%weight(i)*grrs_i(ig)
+                     grss(g0 + ig - 1) = grss(g0 + ig - 1) + ctx%weight(i)*grss_i(ig)
+                     gsss(g0 + ig - 1) = gsss(g0 + ig - 1) + ctx%weight(i)*gsss_i(ig)
+                  end do
+               end if
             case (XC_FAMILY_MGGA, XC_FAMILY_HYB_MGGA)
                call xc_f03_mgga_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, sigma, lapl_k, &
                                         tau_k, exc_i, vrho_i, vsigma_i, lscr, vtau_i)
@@ -944,11 +995,19 @@ contains
             case default
                call xc_f03_lda_exc_vxc(ctx%func(i), int(nb, 8), rho_blk, exc_i, vrho_i)
                call xc_f03_lda_fxc(ctx%func(i), int(nb, 8), rho_blk, frr_i)
+               if (want_kxc) then
+                  call xc_f03_lda_kxc(ctx%func(i), int(nb, 8), rho_blk, grrr_i)
+               end if
             end select
             do ig = 1, nb
                vrho(g0 + ig - 1) = vrho(g0 + ig - 1) + ctx%weight(i)*vrho_i(ig)
                frr(g0 + ig - 1) = frr(g0 + ig - 1) + ctx%weight(i)*frr_i(ig)
             end do
+            if (want_kxc) then
+               do ig = 1, nb
+                  grrr(g0 + ig - 1) = grrr(g0 + ig - 1) + ctx%weight(i)*grrr_i(ig)
+               end do
+            end if
          end do
 
          do ig = 1, nb
@@ -970,6 +1029,18 @@ contains
                   frt(g0 + ig - 1) = 0.0_dp
                   fst(g0 + ig - 1) = 0.0_dp
                   ftt(g0 + ig - 1) = 0.0_dp
+               end if
+               ! The third derivatives go the same way, and they have to: they
+               ! diverge faster than the second ones do, so a consumer contracting
+               ! them at the tail would be handed the largest numbers on the grid
+               ! from the region contributing least to anything. Flooring both
+               ! orders together is also what lets one be differenced against the
+               ! other: across this boundary an unfloored order meets a step.
+               if (want_kxc) then
+                  grrr(g0 + ig - 1) = 0.0_dp
+                  grrs(g0 + ig - 1) = 0.0_dp
+                  grss(g0 + ig - 1) = 0.0_dp
+                  gsss(g0 + ig - 1) = 0.0_dp
                end if
             end if
          end do

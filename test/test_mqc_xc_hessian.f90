@@ -20,7 +20,7 @@ module test_mqc_xc_hessian
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available, &
                              xc_add_potential, vv10_add_potential, &
-                             vv10_kernel_apply
+                             vv10_kernel_apply, xc_grid_kernel_quantities, KERNEL_RHO_FLOOR
    use mqc_libcint_hessian, only: ks_hessian
    use mqc_libcint_gradient, only: libcint_scf_gradient, vv10_gradient_fixed_grid
    use mqc_libcint_xc_hessian, only: xc_hessian, xc_gradient_fixed_grid, &
@@ -59,6 +59,8 @@ contains
                                test_vv10_vxc_deriv), &
                   new_unittest("vv10_kernel_differences_the_potential_in_density", &
                                test_vv10_kernel_apply), &
+                  new_unittest("third_derivative_differences_the_kernel_in_density", &
+                               test_kxc_against_fxc), &
                   new_unittest("ks_hessian_differences_the_dft_gradient", test_ks_end_to_end) &
                   ]
    end subroutine collect_mqc_xc_hessian
@@ -152,7 +154,7 @@ contains
       !! Every one of the nine by nine entries, against a central difference
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp), parameter :: H = 1.0e-3_dp
+      real(dp), parameter :: H = 1.0e-4_dp
       real(dp), parameter :: TOL = 1.0e-5_dp
          !! Ten times the step error of a central difference at this `H`, which
          !! measures about 1e-6 here, and far below anything a real mistake
@@ -249,7 +251,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       character(len=*), parameter :: BASIS = "cc-pvdz"
-      real(dp), parameter :: H = 1.0e-3_dp
+      real(dp), parameter :: H = 1.0e-4_dp
       real(dp), parameter :: TOL = 5.0e-4_dp
       real(dp) :: hess(3, 3, 3, 3), plus(3, 3), minus(3, 3), shifted(3, 3)
       real(dp) :: fd
@@ -307,7 +309,7 @@ contains
       !! would never reach it.
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp), parameter :: H = 1.0e-3_dp
+      real(dp), parameter :: H = 1.0e-4_dp
       real(dp), parameter :: TOL = 5.0e-4_dp
       real(dp) :: hess(3, 3, 3, 3), plus(3, 3), minus(3, 3), shifted(3, 3)
       real(dp) :: fd
@@ -437,7 +439,7 @@ contains
       !! algebra, not to whichever term happens to be larger.
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp), parameter :: H = 2.5e-4_dp
+      real(dp), parameter :: H = 1.0e-4_dp
       real(dp), parameter :: TOL = 1.0e-7_dp
          !! Six times the measured worst disagreement, 1.63e-8, which is the
          !! step error and nothing else: it scales exactly as H^2 over an
@@ -554,7 +556,7 @@ contains
       !! for the reasons the Hessian test above sets out.
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp), parameter :: H = 1.0e-3_dp
+      real(dp), parameter :: H = 1.0e-4_dp
       real(dp) :: shifted(3, 3), worst
       real(dp), allocatable :: dens(:, :), h1(:, :, :, :), vp(:, :), vm(:, :)
       type(xc_context_t) :: ctx
@@ -579,7 +581,7 @@ contains
       character(len=*), intent(in) :: functional
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp), parameter :: H = 1.0e-3_dp
+      real(dp), parameter :: H = 1.0e-4_dp
       real(dp) :: shifted(3, 3), worst
       real(dp), allocatable :: dens(:, :), h1(:, :, :, :), vp(:, :), vm(:, :)
       type(xc_context_t) :: ctx
@@ -656,7 +658,7 @@ contains
       !! failure localises to the non-local algebra.
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp), parameter :: H = 1.0e-3_dp
+      real(dp), parameter :: H = 1.0e-4_dp
       real(dp), parameter :: TOL = 6.0e-8_dp
          !! Six times the measured worst disagreement, 1.01e-8 at this step,
          !! which is the step error and nothing else: it scales exactly as H^2
@@ -744,7 +746,7 @@ contains
       !! least one of them.
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp), parameter :: H = 1.0e-3_dp
+      real(dp), parameter :: H = 1.0e-4_dp
       real(dp), parameter :: TOL = 6.0e-10_dp
          !! Six times the measured worst disagreement, 8.88e-11 at this step,
          !! which is the step error and nothing else: it scales exactly as H^2
@@ -806,6 +808,153 @@ contains
                  "potential in the density")
    end subroutine test_vv10_kernel_apply
 
+   subroutine test_kxc_against_fxc(error)
+      !! The third functional derivative against central differences of the
+      !! second, in the density -- the rung above `xc_kernel_apply`'s
+      !!
+      !! The double-hybrid Hessian is the first thing here to differentiate the
+      !! *kernel*, so `g_xc` is new and has nothing above it to be checked
+      !! against. It has something below it: `f_xc`, which the ladder in this
+      !! file already trusts. Perturbing the density matrix by a trial `P` moves
+      !! both of the functional's arguments,
+      !!
+      !!     d rho   = rho_P
+      !!     d sigma = 2 grad rho . grad rho_P
+      !!
+      !! so the chain rule ties every one of libxc's four third-derivative
+      !! channels to a difference of the second ones:
+      !!
+      !!     d(v2rho2)     = v3rho3        d rho + v3rho2sigma   d sigma
+      !!     d(v2rhosigma) = v3rho2sigma   d rho + v3rhosigma2   d sigma
+      !!     d(v2sigma2)   = v3rhosigma2   d rho + v3sigma3      d sigma
+      !!
+      !! All four appear, and each in two different equations, so a channel
+      !! transposed with its neighbour -- the mistake this bookkeeping invites --
+      !! cannot satisfy both. Both families are run: B88 exercises all four,
+      !! SVWN only `v3rho3`, which is the one an LDA-only implementation would
+      !! get right by accident while the sigma channels stayed zero.
+      !!
+      !! The grid never moves. This is a derivative in the density at fixed
+      !! geometry, so nothing here depends on the quadrature responding.
+      type(error_type), allocatable, intent(out) :: error
+
+      call kxc_for("gga_x_b88", error)
+      if (allocated(error)) return
+      call kxc_for("lda_x", error)
+   end subroutine test_kxc_against_fxc
+
+   subroutine kxc_for(functional, error)
+      !! One functional, all channels the family carries
+      character(len=*), intent(in) :: functional
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: H = 1.0e-4_dp
+      real(dp), parameter :: TOL = 5.0e-8_dp
+         !! Seven times the measured worst disagreement, 7.33e-09 for B88 and
+         !! 1.45e-09 for the LDA at this step. That is the step error and
+         !! nothing else: it scales exactly as H^2 -- 2.93e-08 at 2e-4 against
+         !! 7.33e-09 at 1e-4, a ratio of 4.00 -- which a missing or misplaced
+         !! term cannot do.
+         !!
+         !! A break test transposing `v3rho2sigma` with `v3rhosigma2`, which is
+         !! the mistake this bookkeeping invites, misses by 2.0 -- eight orders
+         !! above this band and step-independent.
+         !!
+         !! Relative rather than absolute, because these are third derivatives
+         !! of a functional that diverges at the tail of every atomic grid.
+      type(libcint_molecule_t) :: mol
+      type(xc_context_t) :: ctx
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: dens(:, :), trial(:, :)
+      real(dp), allocatable :: r0(:), g0(:, :), vr0(:), vs0(:), f0rr(:), f0rs(:), f0ss(:)
+      real(dp), allocatable :: krrr(:), krrs(:), krss(:), ksss(:)
+      real(dp), allocatable :: rp(:), gp(:, :), vrp(:), vsp(:), fprr(:), fprs(:), fpss(:)
+      real(dp), allocatable :: rm(:), gm(:, :), vrm(:), vsm(:), fmrr(:), fmrs(:), fmss(:)
+      real(dp) :: drho, dsig, want, got, scale, worst
+      integer :: n, i, j, ig, npts
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      if (err%has_error()) return
+      call xc_context_create(mol, functional, ctx, err, level=3)
+      if (err%has_error()) then
+         call mol%destroy()
+         return
+      end if
+      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      if (err%has_error()) then
+         call mol%destroy()
+         return
+      end if
+      dens = scf%density
+      n = size(dens, 1)
+
+      ! A trial that is not proportional to the density: a proportional one
+      ! moves rho and sigma together and cannot separate the channels.
+      allocate (trial(n, n))
+      do j = 1, n
+         do i = 1, n
+            trial(i, j) = 0.05_dp/(1.0_dp + real(abs(i - j), dp)) + 0.01_dp*dens(i, j)
+         end do
+      end do
+      trial = 0.5_dp*(trial + transpose(trial))
+
+      call xc_grid_kernel_quantities(ctx, mol, dens, r0, g0, vr0, vs0, f0rr, f0rs, f0ss, &
+                                     err, grrr=krrr, grrs=krrs, grss=krss, gsss=ksss)
+      if (err%has_error()) then
+         call mol%destroy()
+         return
+      end if
+      call xc_grid_kernel_quantities(ctx, mol, dens + H*trial, rp, gp, vrp, vsp, &
+                                     fprr, fprs, fpss, err)
+      if (err%has_error()) then
+         call mol%destroy()
+         return
+      end if
+      call xc_grid_kernel_quantities(ctx, mol, dens - H*trial, rm, gm, vrm, vsm, &
+                                     fmrr, fmrs, fmss, err)
+      if (err%has_error()) then
+         call mol%destroy()
+         return
+      end if
+
+      npts = size(r0)
+      worst = 0.0_dp
+      do ig = 1, npts
+         ! Skip the floored tail. Both orders are zeroed below the kernel's
+         ! density floor, so differencing across that boundary compares a
+         ! discontinuity against a derivative -- a comparison with no content.
+         ! Ten times the floor keeps the whole stencil clear of it.
+         if (min(r0(ig), rp(ig), rm(ig)) < 10.0_dp*KERNEL_RHO_FLOOR) cycle
+         drho = (rp(ig) - rm(ig))/(2.0_dp*H)
+         dsig = 0.0_dp
+         do i = 1, 3
+            dsig = dsig + 2.0_dp*g0(ig, i)*(gp(ig, i) - gm(ig, i))/(2.0_dp*H)
+         end do
+
+         ! Relative to the size of the terms being compared: at the tail of an
+         ! atomic grid these are enormous and their difference is meaningless.
+         want = (fprr(ig) - fmrr(ig))/(2.0_dp*H)
+         got = krrr(ig)*drho + krrs(ig)*dsig
+         scale = max(1.0_dp, abs(want), abs(got))
+         worst = max(worst, abs(want - got)/scale)
+
+         want = (fprs(ig) - fmrs(ig))/(2.0_dp*H)
+         got = krrs(ig)*drho + krss(ig)*dsig
+         scale = max(1.0_dp, abs(want), abs(got))
+         worst = max(worst, abs(want - got)/scale)
+
+         want = (fpss(ig) - fmss(ig))/(2.0_dp*H)
+         got = krss(ig)*drho + ksss(ig)*dsig
+         scale = max(1.0_dp, abs(want), abs(got))
+         worst = max(worst, abs(want - got)/scale)
+      end do
+
+      call mol%destroy()
+      call check(error, worst < TOL, trim(functional)// &
+                 ": the third derivative should difference the second")
+   end subroutine kxc_for
+
    subroutine test_ks_end_to_end(error)
       !! The assembled Kohn-Sham Hessian against differences of the analytic
       !! density-functional gradient
@@ -823,7 +972,7 @@ contains
       !! on this system, and a missing potential derivative 0.87.
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp), parameter :: H = 1.0e-3_dp
+      real(dp), parameter :: H = 1.0e-4_dp
       real(dp) :: shifted(3, 3), fd, worst, rowsum, wtrans
       real(dp), allocatable :: hess(:, :, :, :), plus(:, :), minus(:, :)
       type(error_t) :: err
@@ -859,7 +1008,7 @@ contains
       character(len=*), intent(in) :: functional
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp), parameter :: H = 1.0e-3_dp
+      real(dp), parameter :: H = 1.0e-4_dp
       real(dp) :: shifted(3, 3), fd, worst, rowsum, wtrans
       real(dp), allocatable :: hess(:, :, :, :), plus(:, :), minus(:, :)
       type(error_t) :: err
