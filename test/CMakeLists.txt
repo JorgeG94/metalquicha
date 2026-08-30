@@ -109,6 +109,10 @@ if(MQC_ENABLE_LIBCINT)
   # Fukui indices by difference in the electron count.
   addtest(mqc_fukui)
   target_link_libraries(test_mqc_fukui PRIVATE cint_fortran cint)
+  # Every field on the shared SCF options type reaches the backend's settings.
+  # The refactor removed three hand-copied blocks; this is what keeps them gone.
+  addtest(mqc_scf_options)
+
   # Unrestricted MP2, whose closed-shell limit is the restricted one.
   addtest(mqc_ump2)
   target_link_libraries(test_mqc_ump2 PRIVATE cint_fortran cint)

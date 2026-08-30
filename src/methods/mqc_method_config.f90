@@ -295,6 +295,14 @@ module mqc_method_config
       !! field it does not own. Anything specific to one reference -- a
       !! functional, a grid, coupled-cluster settings -- belongs in the
       !! extending type, not here.
+      !!
+      !! **Adding a field here means adding it in two more places**:
+      !! `configure_scf` in `mqc_method_factory`, which fills it from the deck,
+      !! and `apply_scf_settings` in `mqc_cuest_iface`, which hands it to the
+      !! backend. `test/test_mqc_scf_options.f90` asserts the second of those
+      !! for every field, so add it there too -- a field nothing asserts is a
+      !! field that can go missing again, and the way it goes missing is
+      !! silently.
       character(len=32) :: basis_set = "sto-3g"
          !! Orbital basis set name
       character(len=32) :: ecp_set = ""
