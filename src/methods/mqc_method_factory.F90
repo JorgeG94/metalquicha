@@ -194,6 +194,7 @@ contains
       options%ecp_set = config%ecp_set
       options%spherical = config%use_spherical
       options%verbose = config%verbose
+      options%hessian_displacement = config%hessian_displacement
       options%device_rank = config%device_rank
       options%backend = config%backend
       options%freeze_core = config%corr%freeze_core
