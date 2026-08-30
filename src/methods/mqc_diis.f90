@@ -43,9 +43,16 @@ module mqc_diis
       !! **This is a deliberate deviation from PySCF**, which has no handover:
       !! setting `mf.DIIS` to `ADIIS` or `EDIIS` there runs that class from the
       !! first iteration to the last. The deviation is measured rather than
-      !! assumed. On water/def2-SVP/PBE from a core guess, run to the same
-      !! energy: DIIS 10 iterations, ADIIS 43, EDIIS 92. Neither energy scheme
-      !! is usable alone, and the reason is structural rather than incidental
+      !! assumed. On water/def2-SVP/PBE from a core guess, all three landing on
+      !! -76.271664064937: DIIS 10 iterations, ADIIS 11, EDIIS 32 with the
+      !! handover, against ADIIS 43 and EDIIS 92 without it.
+      !!
+      !! Those counts drift by an iteration or two with anything that touches
+      !! the quadrature -- they read 10 / 10 / 25 before the ECP work changed
+      !! the exchange-correlation grid to be built from the element rather than
+      !! the effective charge. The energies do not move and the conclusion does
+      !! not either, so do not quote them more precisely than the gap they
+      !! show. Neither energy scheme is usable alone, and the reason is structural rather than incidental
       !! -- the convex constraint that keeps them inside the hull of the
       !! densities seen so far is exactly what stops them reaching a solution
       !! that lies outside it.
