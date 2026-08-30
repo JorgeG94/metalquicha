@@ -20,13 +20,15 @@ module test_mqc_xc_hessian
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available, &
                              xc_add_potential, vv10_add_potential, &
-                             vv10_kernel_apply, xc_grid_kernel_quantities, KERNEL_RHO_FLOOR
+                             vv10_kernel_apply, xc_grid_kernel_quantities, &
+                             KERNEL_RHO_FLOOR, xc_kernel_apply, xc_kernel2_apply
    use mqc_libcint_hessian, only: ks_hessian
    use mqc_libcint_gradient, only: libcint_scf_gradient, vv10_gradient_fixed_grid, &
                                    xc_potential_gradient
    use mqc_libcint_xc_hessian, only: xc_hessian, xc_gradient_fixed_grid, &
                                      xc_potential_deriv, vv10_hessian, &
-                                     vv10_potential_deriv, xc_potential_hessian
+                                     vv10_potential_deriv, xc_potential_hessian, &
+                                     xc_kernel_deriv
    implicit none
    private
 
@@ -40,6 +42,22 @@ module test_mqc_xc_hessian
                                                 0.0000_dp, 0.0000_dp, 0.0000_dp, &
                                                 0.0000_dp, 1.4300_dp, 1.1075_dp, &
                                                 0.0000_dp, -1.4300_dp, 1.1075_dp], [3, 3])
+
+   ! The water dimer `test_vxc_potential_hessian_dimer` introduced, at module
+   ! scope for the kernel tests that need the same things it was chosen for:
+   ! d functions on both oxygens and no symmetry plane. Planar water at STO-3G
+   ! zeroes every entry mixing an in-plane component with an out-of-plane one
+   ! by reflection, which is exactly where a wrong term hides.
+   integer, parameter :: DIMER_Z6(6) = [8, 1, 1, 8, 1, 1]
+   character(len=2), parameter :: DIMER_SYM6(6) = ["O ", "H ", "H ", "O ", "H ", "H "]
+   real(dp), parameter :: DIMER_XYZ6(3, 6) = reshape([ &
+                                                     0.8974_dp, -1.285111_dp, 1.375674_dp, &
+                                                     0.93366_dp, -1.620249_dp, 0.461291_dp, &
+                                                     1.538424_dp, -0.56327_dp, 1.325981_dp, &
+                                                     -1.559218_dp, -0.241778_dp, 1.423474_dp, &
+                                                     -2.064102_dp, -0.501966_dp, 2.197464_dp, &
+                                                     -0.677656_dp, -0.678646_dp, 1.525237_dp], &
+                                                     [3, 6])
 
 contains
 
@@ -68,6 +86,14 @@ contains
                                test_vxc_potential_hessian_dimer), &
                   new_unittest("potential_hessian_differences_the_potential_gradient", &
                                test_vxc_potential_hessian), &
+                  new_unittest("kernel_derivative_differences_the_kernel_apply", &
+                               test_kernel_deriv), &
+                  new_unittest("kernel_derivative_on_a_dimer_with_d_functions", &
+                               test_kernel_deriv_dimer), &
+                  new_unittest("second_kernel_differences_the_kernel_in_density", &
+                               test_kernel2), &
+                  new_unittest("second_kernel_on_a_dimer_with_d_functions", &
+                               test_kernel2_dimer), &
                   new_unittest("ks_hessian_differences_the_dft_gradient", test_ks_end_to_end) &
                   ]
    end subroutine collect_mqc_xc_hessian
@@ -1514,6 +1540,325 @@ contains
       call mol%destroy()
       ok = .not. err%has_error()
    end subroutine dft_gradient_at
+
+   subroutine test_kernel_deriv(error)
+      !! The kernel's nuclear derivative, against central differences of
+      !! `xc_kernel_apply` across geometry
+      !!
+      !! `xc_kernel_deriv` is `d/dR` of the kernel applied to a trial density,
+      !! with both matrices and the grid held fixed -- so differencing
+      !! `xc_kernel_apply` itself over displaced nuclei, on the one context
+      !! and the one pair of matrices, is exact up to step error. Every entry
+      !! of every `(3, natm)` component is compared; an aggregate would pass
+      !! on errors that cancel across components.
+      !!
+      !! Both families, because an LDA-only implementation gets the rho
+      !! channel right while every sigma channel stays silently zero: B88
+      !! exercises all of `g_xc`, `lda_x` only `v3rho3`.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: worst
+
+      if (.not. xc_available()) return
+
+      call kernel_deriv_case(WATER_Z, WATER_SYM, WATER, "sto-3g", "gga_x_b88", &
+                             1.0e-4_dp, worst, error)
+      if (allocated(error)) return
+      call check(error, worst < 1.0e-10_dp, &
+                 "gga_x_b88: the kernel derivative disagrees with differences "// &
+                 "of the kernel apply")
+         !! Eight times the measured worst, 1.27e-11 at H = 1e-4. That is step
+         !! error and nothing else: 3.16e-12 at 5e-5 and 5.08e-11 at 2e-4,
+         !! ratios 4.02 and 4.00. A break test zeroing the `g_xc` group misses
+         !! by 2.08e-2 at every step -- nine orders up and step-independent.
+      if (allocated(error)) return
+
+      call kernel_deriv_case(WATER_Z, WATER_SYM, WATER, "sto-3g", "lda_x", &
+                             1.0e-4_dp, worst, error)
+      if (allocated(error)) return
+      call check(error, worst < 1.0e-10_dp, &
+                 "lda_x: the kernel derivative disagrees with differences "// &
+                 "of the kernel apply")
+         !! Eight times the measured worst, 1.30e-11 at H = 1e-4, scaling as
+         !! H^2 (3.24e-12 at 5e-5 and 5.21e-11 at 2e-4, ratios 4.02 and 4.00).
+         !! The same break test misses by 1.95e-2 here, so the rho channel
+         !! alone pins `v3rho3` too.
+   end subroutine test_kernel_deriv
+
+   subroutine test_kernel_deriv_dimer(error)
+      !! The same rung on the water dimer in 6-31G(d): d functions, six atoms,
+      !! and no reflection plane for a wrong component to hide behind
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: worst
+
+      if (.not. xc_available()) return
+
+      call kernel_deriv_case(DIMER_Z6, DIMER_SYM6, DIMER_XYZ6, "6-31g*", &
+                             "gga_x_b88", 1.0e-4_dp, worst, error)
+      if (allocated(error)) return
+      call check(error, worst < 2.0e-9_dp, &
+                 "the kernel derivative disagrees with differences of the "// &
+                 "kernel apply on a dimer")
+         !! Eight times the measured worst, 2.62e-10 at H = 1e-4 across all
+         !! 18 x nao x nao entries; 6.54e-11 at 5e-5, ratio 4.01. The `g_xc`
+         !! break test misses by 8.31e-2 here, step-independent.
+   end subroutine test_kernel_deriv_dimer
+
+   subroutine kernel_deriv_case(z, sym, coords, basis, functional, hstep, worst, error)
+      !! One geometry and functional: every entry of `xc_kernel_deriv` against
+      !! a central difference of `xc_kernel_apply` over displaced nuclei
+      integer, intent(in) :: z(:)
+      character(len=2), intent(in) :: sym(:)
+      real(dp), intent(in) :: coords(:, :)
+      character(len=*), intent(in) :: basis, functional
+      real(dp), intent(in) :: hstep
+      real(dp), intent(out) :: worst
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(xc_context_t) :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: dens(:, :), ta(:, :), tb(:, :)
+      real(dp), allocatable :: h1(:, :, :, :), vp(:, :), vm(:, :), shifted(:, :)
+      logical :: ok
+      integer :: natm, nao, ia, a, u, v
+
+      worst = huge(1.0_dp)
+      natm = size(z)
+
+      call scf_for(z, sym, coords, basis, functional, ctx, dens, err, ok)
+      call check(error, ok, "the "//functional//" reference failed")
+      if (allocated(error)) return
+      nao = size(dens, 1)
+      call kernel_trials(dens, ta, tb)
+
+      allocate (h1(nao, nao, 3, natm))
+      h1 = 0.0_dp
+      call build_libcint_molecule(z, sym, coords, basis, mol, err)
+      if (.not. err%has_error()) call xc_kernel_deriv(ctx, mol, dens, ta, h1, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the kernel derivative failed")
+      if (allocated(error)) return
+
+      allocate (shifted(3, natm))
+      worst = 0.0_dp
+      do ia = 1, natm
+         do a = 1, 3
+            shifted = coords
+            shifted(a, ia) = coords(a, ia) + hstep
+            call kernel_matrix_at(ctx, z, sym, shifted, basis, dens, ta, vp, err)
+            shifted(a, ia) = coords(a, ia) - hstep
+            call kernel_matrix_at(ctx, z, sym, shifted, basis, dens, ta, vm, err)
+            if (err%has_error()) exit
+            do v = 1, nao
+               do u = 1, nao
+                  worst = max(worst, abs(h1(u, v, a, ia) &
+                                         - (vp(u, v) - vm(u, v))/(2.0_dp*hstep)))
+               end do
+            end do
+         end do
+         if (err%has_error()) exit
+      end do
+      call check(error,.not. err%has_error(), "a displaced kernel apply failed")
+   end subroutine kernel_deriv_case
+
+   subroutine test_kernel2(error)
+      !! The second kernel, against central differences of `xc_kernel_apply`
+      !! in the *density*
+      !!
+      !! `xc_kernel2_apply(D, ta, tb)` is the derivative of
+      !! `xc_kernel_apply(D, tb)` when `D` moves by `ta`, at fixed geometry --
+      !! so `(V[D + h ta](tb) - V[D - h ta](tb)) / 2h` with nothing else
+      !! moving is exact up to step error, entry by entry. The two trials are
+      !! deliberately unlike each other; a and b enter symmetrically, so a
+      !! transposed channel pairing has to disagree with an asymmetric pair.
+      !!
+      !! Both families, for the same reason as the derivative test above: an
+      !! LDA-only second kernel is right by accident on `lda_x` and wrong on
+      !! every sigma channel of B88.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: worst
+
+      if (.not. xc_available()) return
+
+      ! The step is 1e-3 where the geometric tests use 1e-4, because this
+      ! comparison is far more converged: at 1e-4 the disagreement bottoms out
+      ! at the roundoff floor, ~1e-13, and stops scaling -- there is no step
+      ! error left to measure down there.
+      call kernel2_case(WATER_Z, WATER_SYM, WATER, "sto-3g", "gga_x_b88", &
+                        1.0e-3_dp, worst, error)
+      if (allocated(error)) return
+      call check(error, worst < 1.0e-10_dp, &
+                 "gga_x_b88: the second kernel disagrees with differences "// &
+                 "of the kernel apply in the density")
+         !! Eight times the measured worst, 1.16e-11 at H = 1e-3, which is
+         !! step error and nothing else: 2.90e-12 at 5e-4 and 4.66e-11 at
+         !! 2e-3, ratios 4.02 and 4.00. A break test zeroing the `g_xc` group
+         !! misses by 5.67e-3 at every step -- eight orders up and
+         !! step-independent.
+      if (allocated(error)) return
+
+      call kernel2_case(WATER_Z, WATER_SYM, WATER, "sto-3g", "lda_x", &
+                        1.0e-3_dp, worst, error)
+      if (allocated(error)) return
+      call check(error, worst < 1.0e-10_dp, &
+                 "lda_x: the second kernel disagrees with differences "// &
+                 "of the kernel apply in the density")
+         !! Eight times the measured worst, 1.18e-11 at H = 1e-3, scaling as
+         !! H^2 (2.96e-12 at 5e-4 and 4.73e-11 at 2e-3, ratios 4.00 and 4.00).
+         !! The same break test misses by 4.22e-3 here: for an LDA the second
+         !! kernel *is* the `g_xc` term, so dropping it returns zero.
+   end subroutine test_kernel2
+
+   subroutine test_kernel2_dimer(error)
+      !! The second kernel on the water dimer in 6-31G(d), where d functions
+      !! and the absence of any symmetry plane leave an error nowhere to hide
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: worst
+
+      if (.not. xc_available()) return
+
+      call kernel2_case(DIMER_Z6, DIMER_SYM6, DIMER_XYZ6, "6-31g*", &
+                        "gga_x_b88", 1.0e-4_dp, worst, error)
+      if (allocated(error)) return
+      call check(error, worst < 1.5e-9_dp, &
+                 "the second kernel disagrees with differences of the kernel "// &
+                 "apply in the density on a dimer")
+         !! Seven times the measured worst, 2.21e-10 at H = 1e-4 across every
+         !! entry; 5.4-5.7e-11 at 5e-5 over repeated runs, ratio 3.9-4.1 --
+         !! the smaller step carries a few per cent of run-to-run scatter from
+         !! the threaded kernel's merge order, the 1e-4 figure repeats to four
+         !! digits. The `g_xc` break test misses by 1.16e-1 here,
+         !! step-independent.
+   end subroutine test_kernel2_dimer
+
+   subroutine kernel2_case(z, sym, coords, basis, functional, hstep, worst, error)
+      !! One geometry and functional: every entry of `xc_kernel2_apply`
+      !! against `(V[D + h ta](tb) - V[D - h ta](tb)) / 2h` at fixed geometry
+      integer, intent(in) :: z(:)
+      character(len=2), intent(in) :: sym(:)
+      real(dp), intent(in) :: coords(:, :)
+      character(len=*), intent(in) :: basis, functional
+      real(dp), intent(in) :: hstep
+      real(dp), intent(out) :: worst
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(xc_context_t) :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: dens(:, :), ta(:, :), tb(:, :)
+      real(dp), allocatable :: v2(:, :), vp(:, :), vm(:, :)
+      logical :: ok
+      integer :: nao, u, v
+
+      worst = huge(1.0_dp)
+
+      call scf_for(z, sym, coords, basis, functional, ctx, dens, err, ok)
+      call check(error, ok, "the "//functional//" reference failed")
+      if (allocated(error)) return
+      nao = size(dens, 1)
+      call kernel_trials(dens, ta, tb)
+
+      allocate (v2(nao, nao))
+      v2 = 0.0_dp
+      call build_libcint_molecule(z, sym, coords, basis, mol, err)
+      if (.not. err%has_error()) call xc_kernel2_apply(ctx, mol, dens, ta, tb, v2, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the second kernel apply failed")
+      if (allocated(error)) return
+
+      call kernel_matrix_at(ctx, z, sym, coords, basis, dens + hstep*ta, tb, vp, err)
+      call kernel_matrix_at(ctx, z, sym, coords, basis, dens - hstep*ta, tb, vm, err)
+      call check(error,.not. err%has_error(), "a displaced-density kernel apply failed")
+      if (allocated(error)) return
+
+      worst = 0.0_dp
+      do v = 1, nao
+         do u = 1, nao
+            worst = max(worst, abs(v2(u, v) - (vp(u, v) - vm(u, v))/(2.0_dp*hstep)))
+         end do
+      end do
+   end subroutine kernel2_case
+
+   subroutine kernel_matrix_at(ctx, z, sym, coords, basis, dens, dtilde, v, err)
+      !! `xc_kernel_apply` into a zeroed matrix: the quantity both kernel
+      !! tests difference, at whatever geometry and density they hand in --
+      !! the grid never moves because the context is passed in, not rebuilt
+      type(xc_context_t), intent(inout) :: ctx
+      integer, intent(in) :: z(:)
+      character(len=2), intent(in) :: sym(:)
+      real(dp), intent(in) :: coords(:, :)
+      character(len=*), intent(in) :: basis
+      real(dp), intent(in) :: dens(:, :), dtilde(:, :)
+      real(dp), allocatable, intent(out) :: v(:, :)
+      type(error_t), intent(inout) :: err
+
+      type(libcint_molecule_t) :: mol
+
+      if (err%has_error()) return
+      allocate (v(size(dens, 1), size(dens, 2)))
+      v = 0.0_dp
+      call build_libcint_molecule(z, sym, coords, basis, mol, err)
+      if (err%has_error()) return
+      call xc_kernel_apply(ctx, mol, dens, dtilde, v, err)
+      call mol%destroy()
+   end subroutine kernel_matrix_at
+
+   subroutine kernel_trials(dens, ta, tb)
+      !! Two symmetric trial densities, deliberately unlike each other and
+      !! neither proportional to the density -- a proportional trial moves rho
+      !! and sigma together and cannot separate the channels, and identical
+      !! trials would let a transposed a/b pairing pass unseen
+      real(dp), intent(in) :: dens(:, :)
+      real(dp), allocatable, intent(out) :: ta(:, :), tb(:, :)
+
+      integer :: n, i, j
+
+      n = size(dens, 1)
+      allocate (ta(n, n), tb(n, n))
+      do j = 1, n
+         do i = 1, n
+            ta(i, j) = 0.05_dp/(1.0_dp + real(abs(i - j), dp)) + 0.01_dp*dens(i, j)
+            tb(i, j) = 0.1_dp*cos(real(i - j, dp)) + 0.03_dp*sin(real(i + j, dp))
+         end do
+         tb(j, j) = tb(j, j) + 0.2_dp
+      end do
+      ta = 0.5_dp*(ta + transpose(ta))
+      tb = 0.5_dp*(tb + transpose(tb))
+   end subroutine kernel_trials
+
+   subroutine scf_for(z, sym, coords, basis, functional, ctx, dens, err, ok)
+      !! One converged Kohn-Sham reference on an arbitrary geometry: the grid
+      !! and the density the kernel tests hold fixed
+      integer, intent(in) :: z(:)
+      character(len=2), intent(in) :: sym(:)
+      real(dp), intent(in) :: coords(:, :)
+      character(len=*), intent(in) :: basis, functional
+      type(xc_context_t), intent(out) :: ctx
+      real(dp), allocatable, intent(out) :: dens(:, :)
+      type(error_t), intent(inout) :: err
+      logical, intent(out) :: ok
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+
+      ok = .false.
+      call build_libcint_molecule(z, sym, coords, basis, mol, err)
+      if (err%has_error()) return
+      call xc_context_create(mol, functional, ctx, err, level=3)
+      if (err%has_error()) then
+         call mol%destroy()
+         return
+      end if
+      call run_libcint_rhf(mol, sum(z), 100, 1.0e-12_dp, 1.0e-10_dp, .false., &
+                           scf, err, xc=ctx)
+      if (.not. err%has_error()) dens = scf%density
+      call mol%destroy()
+      ok = .not. err%has_error()
+   end subroutine scf_for
 
 end module test_mqc_xc_hessian
 

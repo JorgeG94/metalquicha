@@ -47,7 +47,7 @@ module mqc_libcint_xc_hessian
    use mqc_libcint_ao, only: eval_ao_block, shell_extents, block_significant_aos, &
                              AO_DERIV3_COMP, eval_rho
    use mqc_libcint_xc, only: xc_context_t, xc_grid_kernel_quantities, &
-                             ensure_nlc_grid
+                             ensure_nlc_grid, KERNEL_RHO_FLOOR
    use mqc_libcint_vv10, only: vv10_nlc, vv10_hessian_kernel
    implicit none
    private
@@ -56,6 +56,7 @@ module mqc_libcint_xc_hessian
    public :: xc_potential_hessian
    public :: xc_gradient_fixed_grid
    public :: xc_potential_deriv
+   public :: xc_kernel_deriv
    public :: vv10_hessian
    public :: vv10_potential_deriv
 
@@ -1468,6 +1469,406 @@ contains
          end do
       end do
    end subroutine xc_potential_deriv
+
+   subroutine xc_kernel_deriv(ctx, mol, density, dtilde, h1, error)
+      !! The skeleton nuclear derivative of the kernel applied to a trial density
+      !!
+      !! `xc_potential_deriv` one rung up: where that routine is `dV_xc/dR` at
+      !! fixed density matrix, this is
+      !!
+      !!     h1(:,:,c,A) += d/dA_c [ xc_kernel_apply(D, Dt) ]
+      !!
+      !! with both matrices and the grid held fixed, which is what the
+      !! second-order coupled-perturbed side of a double-hybrid Hessian
+      !! contracts. The same two families of terms appear, one order up:
+      !!
+      !!  * **the basis functions moving** under the kernel's own coefficients
+      !!    -- `c_rho = f_rr rho_t + f_rs sigma_t` on `chi_u chi_v` and
+      !!    `c_grad = alpha grad rho + beta grad rho_t` on `grad(chi_u chi_v)`,
+      !!    with `alpha = 2 (f_rs rho_t + f_ss sigma_t)` and
+      !!    `beta = 2 v_sigma`, exactly the coefficients `xc_kernel_apply`
+      !!    assembles;
+      !!  * **the coefficients themselves moving**, because `rho`, `sigma`,
+      !!    `rho_t` and `sigma_t` all follow the nuclei. Differentiating `f_xc`
+      !!    is what brings `g_xc` in: `d f_rr = g_rrr drho + g_rrs dsigma` and
+      !!    so on down the ladder, while `d v_sigma = f_rs drho + f_ss dsigma`
+      !!    stays one order lower. Dropping the `g_xc` group leaves a matrix
+      !!    that is plausible, converged, and wrong by orders.
+      !!
+      !! Only second derivatives of the basis functions are needed -- the third
+      !! ones belong to the energy's second derivative, not the kernel's first.
+      !!
+      !! `v_sigma` is floored at `KERNEL_RHO_FLOOR` here, unlike in
+      !! `xc_potential_deriv` next door: there it is a potential coefficient,
+      !! here it is a kernel one, and `xc_kernel_apply` -- the routine this is
+      !! the derivative of -- floors it, so the two must agree point by point.
+      !!
+      !! LDA and GGA; a meta-GGA is refused explicitly, as the rest of the
+      !! third-derivative machinery refuses it. `dtilde` must be symmetric --
+      !! its gradient on the grid carries the same symmetry factor `eval_rho`
+      !! documents for the reference.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)   !! The converged reference density
+      real(dp), intent(in) :: dtilde(:, :)    !! The trial density, symmetric
+      real(dp), intent(inout) :: h1(:, :, :, :)   !! (n_ao, n_ao, 3, natm), in place
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: rho(:), rho_grad(:, :), vrho(:), vsigma(:)
+      real(dp), allocatable :: frr(:), frs(:), fss(:)
+      real(dp), allocatable :: grrr(:), grrs(:), grss(:), gsss(:)
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), ao_hess(:, :, :)
+      real(dp), allocatable :: extents(:), d_sig(:, :), dt_sig(:, :)
+      real(dp), allocatable :: dmu(:, :), dmu_t(:, :), dmu_d(:, :, :), dmu_td(:, :, :)
+      real(dp), allocatable :: dchi(:, :), dchi_t(:, :)
+      real(dp), allocatable :: dgrad(:, :, :), dgrad_t(:, :, :)
+      real(dp), allocatable :: dsig(:, :), dsig_t(:, :)
+      real(dp), allocatable :: rho_t(:), rho_t_grad(:, :), sig_t(:)
+      real(dp), allocatable :: alpha(:), beta(:), crho_t(:)
+      real(dp), allocatable :: gdot(:, :), gtdot(:, :), hgdot(:, :), htgdot(:, :)
+      real(dp), allocatable :: dgdot(:, :), dgtdot(:, :)
+      real(dp), allocatable :: wcol(:), blk(:, :)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_offset(:), ao_list(:), c_offsets(:), c_counts(:)
+      integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig, ia, a, i, ig, d, k
+      real(dp) :: acc, acc_t
+      logical :: gga
+      integer, parameter :: PAIR(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
+
+      if (error%has_error()) return
+
+      if (ctx%any_mgga) then
+         call error%set(ERROR_VALIDATION, "the kernel's nuclear derivative is LDA "// &
+                        "and GGA only: a meta-GGA needs the tau channels of the third "// &
+                        "functional derivative, which nothing here provides. Refused "// &
+                        "rather than computed with those terms missing.")
+         return
+      end if
+      gga = ctx%any_gga
+
+      natm = size(mol%coords, 2)
+      nao = mol%nao
+      npts = size(ctx%grid%weights)
+
+      ! The whole ladder at once, floored together at KERNEL_RHO_FLOOR so no
+      ! order crosses a cutoff the others respect. `v_sigma` comes back
+      ! unfloored -- the potential's uses need it finite -- so the kernel's
+      ! floor is applied to it here.
+      call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
+                                     frr, frs, fss, error, &
+                                     grrr=grrr, grrs=grrs, grss=grss, gsss=gsss)
+      if (error%has_error()) return
+      do ig = 1, npts
+         if (rho(ig) < KERNEL_RHO_FLOOR) vsigma(ig) = 0.0_dp
+      end do
+
+      allocate (extents(mol%nbas))
+      call shell_extents(mol, ctx%screen_tol, extents)
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
+      allocate (c_offsets(natm), c_counts(natm), d_sig(nao, nao), dt_sig(nao, nao))
+
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
+         nb = g1 - g0 + 1
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig, &
+                                    atom_offsets=c_offsets, atom_counts=c_counts)
+         if (n_sig == 0) cycle
+         do jsig = 1, n_sig
+            do isig = 1, n_sig
+               d_sig(isig, jsig) = density(ao_list(isig), ao_list(jsig))
+               dt_sig(isig, jsig) = dtilde(ao_list(isig), ao_list(jsig))
+            end do
+         end do
+         if (gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad, &
+                               hess=ao_hess, shell_mask=shell_mask, ao_offset=ao_offset, &
+                               n_ao_out=n_sig)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad, &
+                               shell_mask=shell_mask, ao_offset=ao_offset, n_ao_out=n_sig)
+         end if
+         if (error%has_error()) return
+
+         ! (D chi) and (Dt chi): one gemm partner per density, as everywhere.
+         if (allocated(dmu)) deallocate (dmu, dmu_t)
+         allocate (dmu(nb, n_sig), dmu_t(nb, n_sig))
+         call pic_gemm(ao(1:nb, 1:n_sig), d_sig(1:n_sig, 1:n_sig), dmu, beta=0.0_dp)
+         call pic_gemm(ao(1:nb, 1:n_sig), dt_sig(1:n_sig, 1:n_sig), dmu_t, beta=0.0_dp)
+
+         ! The trial density on the grid. Its factor of two is the symmetry of
+         ! `dtilde`, the convention `eval_rho` documents for the reference.
+         if (allocated(rho_t)) deallocate (rho_t)
+         allocate (rho_t(nb))
+         do ig = 1, nb
+            acc = 0.0_dp
+            do i = 1, n_sig
+               acc = acc + ao(ig, i)*dmu_t(ig, i)
+            end do
+            rho_t(ig) = acc
+         end do
+
+         ! d rho / dA_c and d rho_t / dA_c on this block, one per density,
+         ! exactly as `xc_potential_deriv` builds its one.
+         if (allocated(dchi)) deallocate (dchi, dchi_t)
+         allocate (dchi(3*natm, nb), dchi_t(3*natm, nb))
+         dchi = 0.0_dp
+         dchi_t = 0.0_dp
+         do ia = 1, natm
+            if (c_counts(ia) == 0) cycle
+            do a = 1, 3
+               do ig = 1, nb
+                  acc = 0.0_dp
+                  acc_t = 0.0_dp
+                  do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                     acc = acc + ao_grad(ig, i, a)*dmu(ig, i)
+                     acc_t = acc_t + ao_grad(ig, i, a)*dmu_t(ig, i)
+                  end do
+                  dchi(3*(ia - 1) + a, ig) = -2.0_dp*acc
+                  dchi_t(3*(ia - 1) + a, ig) = -2.0_dp*acc_t
+               end do
+            end do
+         end do
+
+         if (gga) then
+            if (allocated(dmu_d)) deallocate (dmu_d, dmu_td)
+            allocate (dmu_d(nb, n_sig, 3), dmu_td(nb, n_sig, 3))
+            do d = 1, 3
+               call pic_gemm(ao_grad(1:nb, 1:n_sig, d), d_sig(1:n_sig, 1:n_sig), &
+                             dmu_d(:, :, d), beta=0.0_dp)
+               call pic_gemm(ao_grad(1:nb, 1:n_sig, d), dt_sig(1:n_sig, 1:n_sig), &
+                             dmu_td(:, :, d), beta=0.0_dp)
+            end do
+
+            ! grad rho_t and sigma_t = 2 grad rho . grad rho_t on this block.
+            if (allocated(rho_t_grad)) deallocate (rho_t_grad, sig_t)
+            allocate (rho_t_grad(nb, 3), sig_t(nb))
+            do d = 1, 3
+               do ig = 1, nb
+                  acc = 0.0_dp
+                  do i = 1, n_sig
+                     acc = acc + ao_grad(ig, i, d)*dmu_t(ig, i)
+                  end do
+                  rho_t_grad(ig, d) = 2.0_dp*acc
+               end do
+            end do
+            do ig = 1, nb
+               sig_t(ig) = 2.0_dp*(rho_grad(g0 + ig - 1, 1)*rho_t_grad(ig, 1) &
+                                   + rho_grad(g0 + ig - 1, 2)*rho_t_grad(ig, 2) &
+                                   + rho_grad(g0 + ig - 1, 3)*rho_t_grad(ig, 3))
+            end do
+
+            ! d(grad rho)/dA and d(grad rho_t)/dA, then the two sigmas'
+            ! derivatives: d sigma/dA = 2 grad rho . d(grad rho)/dA, and
+            ! d sigma_t/dA takes both gradients moving.
+            if (allocated(dgrad)) deallocate (dgrad, dgrad_t, dsig, dsig_t)
+            allocate (dgrad(3*natm, 3, nb), dgrad_t(3*natm, 3, nb), &
+                      dsig(3*natm, nb), dsig_t(3*natm, nb))
+            dgrad = 0.0_dp
+            dgrad_t = 0.0_dp
+            do ia = 1, natm
+               if (c_counts(ia) == 0) cycle
+               do a = 1, 3
+                  do d = 1, 3
+                     do ig = 1, nb
+                        acc = 0.0_dp
+                        acc_t = 0.0_dp
+                        do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                           acc = acc + ao_hess(ig, i, PAIR(a, d))*dmu(ig, i) &
+                                 + ao_grad(ig, i, a)*dmu_d(ig, i, d)
+                           acc_t = acc_t + ao_hess(ig, i, PAIR(a, d))*dmu_t(ig, i) &
+                                   + ao_grad(ig, i, a)*dmu_td(ig, i, d)
+                        end do
+                        dgrad(3*(ia - 1) + a, d, ig) = -2.0_dp*acc
+                        dgrad_t(3*(ia - 1) + a, d, ig) = -2.0_dp*acc_t
+                     end do
+                  end do
+               end do
+            end do
+            do ig = 1, nb
+               do i = 1, 3*natm
+                  acc = 0.0_dp
+                  acc_t = 0.0_dp
+                  do d = 1, 3
+                     acc = acc + rho_grad(g0 + ig - 1, d)*dgrad(i, d, ig)
+                     acc_t = acc_t + dgrad(i, d, ig)*rho_t_grad(ig, d) &
+                             + rho_grad(g0 + ig - 1, d)*dgrad_t(i, d, ig)
+                  end do
+                  dsig(i, ig) = 2.0_dp*acc
+                  dsig_t(i, ig) = 2.0_dp*acc_t
+               end do
+            end do
+
+            ! `gdot(g, u) = grad rho . grad chi_u` and its trial twin: the
+            ! factor `grad F . grad(chi_u chi_v)` reduces to once one index is
+            ! fixed, for each of the two gradients in `c_grad`.
+            if (allocated(gdot)) deallocate (gdot, gtdot)
+            allocate (gdot(nb, n_sig), gtdot(nb, n_sig))
+            gdot = 0.0_dp
+            gtdot = 0.0_dp
+            do d = 1, 3
+               do i = 1, n_sig
+                  do ig = 1, nb
+                     gdot(ig, i) = gdot(ig, i) + rho_grad(g0 + ig - 1, d)*ao_grad(ig, i, d)
+                     gtdot(ig, i) = gtdot(ig, i) + rho_t_grad(ig, d)*ao_grad(ig, i, d)
+                  end do
+               end do
+            end do
+         end if
+
+         ! The kernel's own coefficients on this block, as `xc_kernel_apply`
+         ! assembles them: `c_rho` on `chi_u chi_v`, and `c_grad` split into
+         ! its `grad rho` and `grad rho_t` halves so each keeps the wcol shape.
+         if (allocated(crho_t)) deallocate (crho_t, alpha, beta)
+         allocate (crho_t(nb), alpha(nb), beta(nb))
+         do ig = 1, nb
+            crho_t(ig) = frr(g0 + ig - 1)*rho_t(ig)
+         end do
+         alpha = 0.0_dp
+         beta = 0.0_dp
+         if (gga) then
+            do ig = 1, nb
+               crho_t(ig) = crho_t(ig) + frs(g0 + ig - 1)*sig_t(ig)
+               alpha(ig) = 2.0_dp*(frs(g0 + ig - 1)*rho_t(ig) &
+                                   + fss(g0 + ig - 1)*sig_t(ig))
+               beta(ig) = 2.0_dp*vsigma(g0 + ig - 1)
+            end do
+         end if
+
+         if (allocated(blk)) deallocate (blk, wcol)
+         allocate (blk(n_sig, n_sig), wcol(nb))
+         if (gga) then
+            if (allocated(hgdot)) deallocate (hgdot, htgdot, dgdot, dgtdot)
+            allocate (hgdot(nb, n_sig), htgdot(nb, n_sig), &
+                      dgdot(nb, n_sig), dgtdot(nb, n_sig))
+         end if
+
+         do ia = 1, natm
+            if (c_counts(ia) == 0) cycle
+            do a = 1, 3
+               k = 3*(ia - 1) + a
+
+               ! Basis-function motion under `c_rho`: minus the position
+               ! derivative, on the rows this atom owns, plus the transpose.
+               wcol = ctx%grid%weights(g0:g1)*crho_t(1:nb)
+               call weighted_overlap(ao_grad(1:nb, 1:n_sig, a), ao(1:nb, 1:n_sig), &
+                                     wcol, blk)
+               call deposit_rows(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                 c_offsets, c_counts)
+               call deposit_cols(h1, ao_list, n_sig, a, ia, transpose(blk), -1.0_dp, &
+                                 c_offsets, c_counts)
+
+               ! The coefficients following the densities. `c_rho`'s derivative
+               ! carries the kernel against the moving trial channels and the
+               ! third derivative against the moving reference ones.
+               wcol = ctx%grid%weights(g0:g1) &
+                      *(frr(g0:g1)*dchi_t(k, 1:nb) &
+                        + grrr(g0:g1)*dchi(k, 1:nb)*rho_t(1:nb))
+               if (gga) then
+                  wcol = wcol + ctx%grid%weights(g0:g1) &
+                         *(frs(g0:g1)*dsig_t(k, 1:nb) &
+                           + grrs(g0:g1)*(dsig(k, 1:nb)*rho_t(1:nb) &
+                                          + dchi(k, 1:nb)*sig_t(1:nb)) &
+                           + grss(g0:g1)*dsig(k, 1:nb)*sig_t(1:nb))
+               end if
+               call weighted_overlap(ao(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
+               call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
+
+               if (gga) then
+                  ! d alpha / dA, against `grad rho . grad(chi_u chi_v)`.
+                  wcol = 2.0_dp*ctx%grid%weights(g0:g1) &
+                         *(frs(g0:g1)*dchi_t(k, 1:nb) &
+                           + fss(g0:g1)*dsig_t(k, 1:nb) &
+                           + (grrs(g0:g1)*dchi(k, 1:nb) &
+                              + grss(g0:g1)*dsig(k, 1:nb))*rho_t(1:nb) &
+                           + (grss(g0:g1)*dchi(k, 1:nb) &
+                              + gsss(g0:g1)*dsig(k, 1:nb))*sig_t(1:nb))
+                  call weighted_overlap(gdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
+                  call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
+                  call deposit_full(h1, ao_list, n_sig, a, ia, transpose(blk), 1.0_dp)
+
+                  ! d beta / dA = 2 (f_rs drho + f_ss dsigma), against
+                  ! `grad rho_t . grad(chi_u chi_v)`.
+                  wcol = 2.0_dp*ctx%grid%weights(g0:g1) &
+                         *(frs(g0:g1)*dchi(k, 1:nb) + fss(g0:g1)*dsig(k, 1:nb))
+                  call weighted_overlap(gtdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
+                  call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
+                  call deposit_full(h1, ao_list, n_sig, a, ia, transpose(blk), 1.0_dp)
+
+                  ! `grad rho` itself moving under alpha, and `grad rho_t`
+                  ! under beta.
+                  dgdot = 0.0_dp
+                  dgtdot = 0.0_dp
+                  do d = 1, 3
+                     do i = 1, n_sig
+                        do ig = 1, nb
+                           dgdot(ig, i) = dgdot(ig, i) &
+                                          + dgrad(k, d, ig)*ao_grad(ig, i, d)
+                           dgtdot(ig, i) = dgtdot(ig, i) &
+                                           + dgrad_t(k, d, ig)*ao_grad(ig, i, d)
+                        end do
+                     end do
+                  end do
+                  wcol = ctx%grid%weights(g0:g1)*alpha(1:nb)
+                  call weighted_overlap(dgdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
+                  call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
+                  call deposit_full(h1, ao_list, n_sig, a, ia, transpose(blk), 1.0_dp)
+                  wcol = ctx%grid%weights(g0:g1)*beta(1:nb)
+                  call weighted_overlap(dgtdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
+                  call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
+                  call deposit_full(h1, ao_list, n_sig, a, ia, transpose(blk), 1.0_dp)
+
+                  ! The basis functions inside `grad(chi_u chi_v)` moving, once
+                  ! per half of `c_grad`. Four pieces each, two on each index,
+                  ! and only the rows or columns this atom owns.
+                  hgdot = 0.0_dp
+                  htgdot = 0.0_dp
+                  do d = 1, 3
+                     do i = 1, n_sig
+                        do ig = 1, nb
+                           hgdot(ig, i) = hgdot(ig, i) &
+                                          + rho_grad(g0 + ig - 1, d)*ao_hess(ig, i, PAIR(a, d))
+                           htgdot(ig, i) = htgdot(ig, i) &
+                                           + rho_t_grad(ig, d)*ao_hess(ig, i, PAIR(a, d))
+                        end do
+                     end do
+                  end do
+                  wcol = ctx%grid%weights(g0:g1)*alpha(1:nb)
+                  call weighted_overlap(hgdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
+                  call deposit_rows(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                    c_offsets, c_counts)
+                  call weighted_overlap(ao(1:nb, 1:n_sig), hgdot(1:nb, 1:n_sig), wcol, blk)
+                  call deposit_cols(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                    c_offsets, c_counts)
+                  call weighted_overlap(ao_grad(1:nb, 1:n_sig, a), gdot(1:nb, 1:n_sig), &
+                                        wcol, blk)
+                  call deposit_rows(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                    c_offsets, c_counts)
+                  call weighted_overlap(gdot(1:nb, 1:n_sig), ao_grad(1:nb, 1:n_sig, a), &
+                                        wcol, blk)
+                  call deposit_cols(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                    c_offsets, c_counts)
+
+                  wcol = ctx%grid%weights(g0:g1)*beta(1:nb)
+                  call weighted_overlap(htgdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
+                  call deposit_rows(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                    c_offsets, c_counts)
+                  call weighted_overlap(ao(1:nb, 1:n_sig), htgdot(1:nb, 1:n_sig), wcol, blk)
+                  call deposit_cols(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                    c_offsets, c_counts)
+                  call weighted_overlap(ao_grad(1:nb, 1:n_sig, a), gtdot(1:nb, 1:n_sig), &
+                                        wcol, blk)
+                  call deposit_rows(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                    c_offsets, c_counts)
+                  call weighted_overlap(gtdot(1:nb, 1:n_sig), ao_grad(1:nb, 1:n_sig, a), &
+                                        wcol, blk)
+                  call deposit_cols(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
+                                    c_offsets, c_counts)
+               end if
+            end do
+         end do
+      end do
+   end subroutine xc_kernel_deriv
 
    subroutine vv10_potential_deriv(ctx, mol, density, h1, error)
       !! The skeleton nuclear derivative of the VV10 potential matrix
