@@ -12,11 +12,12 @@ module mqc_cuest_iface
    !! the method files carry no preprocessor conditionals at all.
    use pic_types, only: dp
    use mqc_config_types, only: guess_step_t
-   use mqc_method_config, only: pcm_config_t, mcscf_config_t
+   use mqc_method_config, only: pcm_config_t, mcscf_config_t, scf_options_t
    implicit none
    private
 
    public :: cuest_scf_settings_t
+   public :: apply_scf_settings
    public :: BACKEND_AUTO, BACKEND_CUEST, BACKEND_LIBCINT
    public :: parse_backend_name
    public :: method_runs_on_cuest
@@ -169,6 +170,49 @@ module mqc_cuest_iface
    end type cuest_scf_settings_t
 
 contains
+
+   subroutine apply_scf_settings(settings, options)
+      !! Hand a backend everything the SCF half of a method decided
+      !!
+      !! **The third and last copy of the shared settings.** A field reaching
+      !! a backend crossed three hand-maintained layers: the options type, the
+      !! `configure_*` that fills it, and this block. `scf_options_t` and
+      !! `configure_scf` removed the first two; without this one a field could
+      !! be declared on both methods and filled on both and still never arrive,
+      !! which is exactly what `allow_crap_scf` did on the Kohn-Sham path --
+      !! the deck said true, the options object said true, and the backend was
+      !! never told.
+      !!
+      !! `backend` is deliberately not here: parsing its name can fail, and a
+      !! routine that copies fields should not also be the one that reports an
+      !! error. The caller keeps that line.
+      type(cuest_scf_settings_t), intent(inout) :: settings
+      class(scf_options_t), intent(in) :: options
+
+      settings%basis_set = options%basis_set
+      settings%ecp_set = options%ecp_set
+      settings%aux_basis_set = options%aux_basis_set
+      settings%aux_basis_named = options%aux_basis_named
+      settings%cartesian = options%cartesian
+      settings%spherical = options%spherical
+      settings%density_fitting = options%density_fitting
+      settings%freeze_core = options%freeze_core
+      settings%n_frozen_core = options%n_frozen_core
+      settings%unrestricted = options%unrestricted
+      settings%guess = options%guess
+      if (allocated(options%guess_steps)) settings%guess_steps = options%guess_steps
+      settings%max_iter = options%max_iter
+      settings%allow_crap_scf = options%allow_crap_scf
+      settings%energy_tol = options%energy_tol
+      settings%density_tol = options%density_tol
+      settings%level_shift = options%level_shift
+      settings%linear_dependence = options%linear_dependence
+      settings%use_diis = options%use_diis
+      settings%diis_size = options%diis_size
+      settings%verbose = options%verbose
+      settings%device_rank = options%device_rank
+      settings%pcm = options%pcm
+   end subroutine apply_scf_settings
 
    subroutine parse_backend_name(name, kind, error)
       !! A deck's backend name to one of BACKEND_*

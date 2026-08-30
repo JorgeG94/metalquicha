@@ -18,7 +18,7 @@ module mqc_method_hf
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_semi_numerical_hessian, only: finite_difference_hessian
-   use mqc_cuest_iface, only: cuest_scf_settings_t, parse_backend_name, &
+   use mqc_cuest_iface, only: apply_scf_settings, cuest_scf_settings_t, parse_backend_name, &
                               BACKEND_CUEST, BACKEND_LIBCINT
    use mqc_cuest_bridge, only: run_cuest_scf
    use mqc_libcint_bridge, only: run_libcint_hf
@@ -82,7 +82,7 @@ contains
       type(cuest_scf_settings_t) :: settings
       type(error_t) :: backend_error
 
-      settings%pcm = this%options%pcm
+      call apply_scf_settings(settings, this%options)
       settings%bonding_analysis = this%options%properties%bonding_analysis
       settings%bonding_threshold = this%options%properties%bonding_threshold
       settings%bonding_energy = this%options%properties%bonding_energy
@@ -96,15 +96,7 @@ contains
       settings%bonding_restrict_localization = &
          this%options%properties%bonding_restrict_localization
       settings%bonding_no_sharing_ci = this%options%properties%bonding_no_sharing_ci
-      settings%basis_set = this%options%basis_set
-      settings%cartesian = this%options%cartesian
-      settings%ecp_set = this%options%ecp_set
-      settings%aux_basis_set = this%options%aux_basis_set
-      settings%aux_basis_named = this%options%aux_basis_named
-      settings%density_fitting = this%options%density_fitting
       settings%run_mp2 = this%options%run_mp2
-      settings%freeze_core = this%options%freeze_core
-      settings%n_frozen_core = this%options%n_frozen_core
       settings%corr_density_fitting = this%options%corr_density_fitting
       settings%run_cc = this%options%run_cc
       settings%cc_triples = this%options%cc_triples
@@ -115,9 +107,6 @@ contains
       settings%scs_ss = this%options%scs_ss
       settings%scs_os = this%options%scs_os
       settings%functional = ""        ! empty selects pure Hartree-Fock
-      settings%spherical = this%options%spherical
-      settings%verbose = this%options%verbose
-      settings%device_rank = this%options%device_rank
       ! Resolved here rather than carried as a string, so an unknown name fails
       ! once, before any integrals, instead of at each dispatch.
       call parse_backend_name(this%options%backend, settings%backend, backend_error)
@@ -126,17 +115,6 @@ contains
          result%has_error = .true.
          return
       end if
-      settings%unrestricted = this%options%unrestricted
-      settings%guess = this%options%guess
-      if (allocated(this%options%guess_steps)) settings%guess_steps = this%options%guess_steps
-      settings%max_iter = this%options%max_iter
-      settings%allow_crap_scf = this%options%allow_crap_scf
-      settings%energy_tol = this%options%energy_tol
-      settings%density_tol = this%options%density_tol
-      settings%level_shift = this%options%level_shift
-      settings%linear_dependence = this%options%linear_dependence
-      settings%use_diis = this%options%use_diis
-      settings%diis_size = this%options%diis_size
 
       ! cuEST when this build has it, because that is the production path and
       ! the only one with gradients. The CPU backend takes over when it does

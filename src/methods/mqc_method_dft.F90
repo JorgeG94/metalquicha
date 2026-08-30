@@ -22,7 +22,7 @@ module mqc_method_dft
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_semi_numerical_hessian, only: finite_difference_hessian
-   use mqc_cuest_iface, only: cuest_scf_settings_t, parse_backend_name, &
+   use mqc_cuest_iface, only: apply_scf_settings, cuest_scf_settings_t, parse_backend_name, &
                               BACKEND_CUEST, BACKEND_LIBCINT
    use mqc_cuest_bridge, only: run_cuest_scf
    use mqc_libcint_bridge, only: run_libcint_hf
@@ -108,15 +108,8 @@ contains
          return
       end if
 
-      settings%basis_set = this%options%basis_set
-      settings%cartesian = this%options%cartesian
-      settings%ecp_set = this%options%ecp_set
-      settings%aux_basis_set = this%options%aux_basis_set
-      settings%aux_basis_named = this%options%aux_basis_named
+      call apply_scf_settings(settings, this%options)
       settings%functional = this%options%functional
-      settings%spherical = this%options%spherical
-      settings%verbose = this%options%verbose
-      settings%device_rank = this%options%device_rank
       ! Resolved here rather than carried as a string, so an unknown name fails
       ! once, before any integrals, instead of at each dispatch.
       call parse_backend_name(this%options%backend, settings%backend, backend_error)
@@ -125,23 +118,12 @@ contains
          result%has_error = .true.
          return
       end if
-      settings%unrestricted = this%options%unrestricted
-      settings%guess = this%options%guess
-      if (allocated(this%options%guess_steps)) settings%guess_steps = this%options%guess_steps
-      settings%max_iter = this%options%max_iter
-      settings%energy_tol = this%options%energy_tol
-      settings%density_tol = this%options%density_tol
-      settings%level_shift = this%options%level_shift
-      settings%linear_dependence = this%options%linear_dependence
-      settings%use_diis = this%options%use_diis
-      settings%diis_size = this%options%diis_size
       settings%radial_points = this%options%radial_points
       settings%angular_points = this%options%angular_points
       settings%grid_level = this%options%grid_level
       settings%nlc_grid_level = this%options%nlc_grid_level
       settings%screening_tolerance = this%options%screening_tolerance
       settings%block_size = this%options%block_size
-      settings%pcm = this%options%pcm
       ! Where the molecule reacts. Absent here until now, so a DFT deck asking
       ! for `properties.fukui` got a normal DFT run and no analysis, with no
       ! error to say why: the bridge gates on this being allocated.
@@ -163,9 +145,6 @@ contains
       ! Until this line existed a Kohn-Sham deck could not turn fitting on
       ! however it asked. That made the fitted path unreachable rather than
       ! wrong, which is the better of the two failures but still a gap.
-      settings%density_fitting = this%options%density_fitting
-      settings%freeze_core = this%options%freeze_core
-      settings%n_frozen_core = this%options%n_frozen_core
 
       ! The same choice Hartree-Fock makes, and made the same way rather than a
       ! second time: cuEST when this build has it, because that is the production
