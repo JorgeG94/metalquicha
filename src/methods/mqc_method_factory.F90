@@ -321,6 +321,7 @@ contains
       m%options%properties = config%properties
       m%options%basis_set = config%basis_set
       m%options%spherical = config%use_spherical
+      m%options%cartesian = config%scf%cartesian
       m%options%verbose = config%verbose
 
       ! Active space from config%mcscf

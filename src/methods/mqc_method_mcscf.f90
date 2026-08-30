@@ -41,6 +41,11 @@ module mqc_method_mcscf
          !! request arrives; the CPU path has no cavity.
       character(len=32) :: basis_set = "sto-3g"
          !! Basis set name
+      logical :: cartesian = .false.
+         !! `model.cartesian`; see `mqc_config_t`. The backend already reads
+         !! `settings%cartesian` (`run_libcint_mcscf`); until this field
+         !! existed there was nothing to give it, so a Cartesian deck ran
+         !! spherical without saying so.
       logical :: spherical = .true.
          !! Use spherical (true) or Cartesian (false) basis
       logical :: verbose = .false.
@@ -168,6 +173,7 @@ contains
       settings%bonding_no_sharing_ci = this%options%properties%bonding_no_sharing_ci
       settings%basis_set = this%options%basis_set
       settings%spherical = this%options%spherical
+      settings%cartesian = this%options%cartesian
       settings%verbose = this%options%verbose
       settings%functional = ""        ! empty selects pure Hartree-Fock
       settings%max_iter = this%options%max_iter
