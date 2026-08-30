@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/combine.html#variable-data~10">data</a>
+            <a class="list-group-item" href="../proc/combine.html#variable-data~2">data</a>
         </div>
       </div>
     </div>
@@ -193,7 +193,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~4"></span>
+              <span class="anchor" id="variable-arr"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -208,7 +208,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~33"></span>
+              <span class="anchor" id="variable-n~42"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -223,7 +223,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-r~10"></span>
+              <span class="anchor" id="variable-r~11"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -253,7 +253,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~12"></span>
+              <span class="anchor" id="variable-count~8"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -712,20 +712,20 @@ large graphs.</div>
 <path fill="none" stroke="#00ff3f" d="M263.18,-275.94C284.04,-275.94 306.26,-275.94 326.09,-275.94"/>
 <polygon fill="#00ff3f" stroke="#00ff3f" points="326.22,-279.44 336.22,-275.94 326.22,-272.44 326.22,-279.44"/>
 </g>
-<!-- proc~worker_loop -->
-<g id="proc~~combine~~CalledByGraph_node20" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~combine~~CalledByGraph_node20"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<!-- proc~worker_loop~2 -->
+<g id="proc~~combine~~CalledByGraph_node21" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~combine~~CalledByGraph_node21"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="428,-245.94 350,-245.94 350,-221.94 428,-221.94 428,-245.94"/>
 <text text-anchor="middle" x="389" y="-231.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
-<g id="proc~~combine~~CalledByGraph_edge27" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#003fff" d="M242.81,-263.9C273.6,-257.55 310.91,-249.85 340,-243.84"/>
-<polygon fill="#003fff" stroke="#003fff" points="340.84,-247.25 349.92,-241.8 339.42,-240.39 340.84,-247.25"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~combine~~CalledByGraph_edge28" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#7f00ff" d="M242.81,-263.9C273.6,-257.55 310.91,-249.85 340,-243.84"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="340.84,-247.25 349.92,-241.8 339.42,-240.39 340.84,-247.25"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~combine~~CalledByGraph_node22" class="node">
@@ -742,26 +742,26 @@ large graphs.</div>
 <path fill="none" stroke="#ff00bf" d="M206.24,-288.12C231.36,-301.85 274.23,-324.15 313,-338.94 318.5,-341.04 324.31,-343.03 330.15,-344.89"/>
 <polygon fill="#ff00bf" stroke="#ff00bf" points="329.38,-348.32 339.96,-347.9 331.43,-341.62 329.38,-348.32"/>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~run_step -->
-<g id="proc~~combine~~CalledByGraph_edge20" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~run_step</title>
-<path fill="none" stroke="#00ffff" d="M428.13,-233.94C461.83,-233.94 510.75,-233.94 544.55,-233.94"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="544.96,-237.44 554.96,-233.94 544.96,-230.44 544.96,-237.44"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~combine~~CalledByGraph_node21" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~combine~~CalledByGraph_node21"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<!-- proc~worker_loop -->
+<g id="proc~~combine~~CalledByGraph_node20" class="node">
+<title>proc~worker_loop</title>
+<g id="a_proc~~combine~~CalledByGraph_node20"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="428,-81.94 350,-81.94 350,-57.94 428,-57.94 428,-81.94"/>
 <text text-anchor="middle" x="389" y="-67.54" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
 <g id="proc~~combine~~CalledByGraph_edge23" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#7f00ff" d="M428.13,-69.94C459.36,-69.94 503.64,-69.94 536.86,-69.94"/>
 <polygon fill="#7f00ff" stroke="#7f00ff" points="537.23,-73.44 547.23,-69.94 537.23,-66.44 537.23,-73.44"/>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<g id="proc~~combine~~CalledByGraph_edge20" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ffff" d="M428.13,-233.94C461.83,-233.94 510.75,-233.94 544.55,-233.94"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="544.96,-237.44 554.96,-233.94 544.96,-230.44 544.96,-237.44"/>
 </g>
 <!-- proc~write_final_single_point&#45;&gt;proc~run_step -->
 <g id="proc~~combine~~CalledByGraph_edge21" class="edge">
@@ -793,11 +793,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~combine~~CalledByGraph_edge28" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#7f00ff" d="M270.21,-69.94C294,-69.94 318.99,-69.94 339.8,-69.94"/>
-<polygon fill="#7f00ff" stroke="#7f00ff" points="339.96,-73.44 349.96,-69.94 339.96,-66.44 339.96,-73.44"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
+<g id="proc~~combine~~CalledByGraph_edge27" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#003fff" d="M270.21,-69.94C294,-69.94 318.99,-69.94 339.8,-69.94"/>
+<polygon fill="#003fff" stroke="#003fff" points="339.96,-73.44 349.96,-69.94 339.96,-66.44 339.96,-73.44"/>
 </g>
 </g>
 </svg>
@@ -903,7 +903,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~10"></span>
+              <span class="anchor" id="variable-data~2"></span>
               integer(kind=default_int),
             </td>
               <td>private</td>
@@ -967,7 +967,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-30 15:41 +0000             </p>
+ on 2026-08-30 20:02 +0000             </p>
           </div>
         </div>
         <br>
