@@ -1068,13 +1068,15 @@ contains
                coef_rho = frr(gg)*rho_p(ig)
                if (gga) coef_rho = coef_rho + 2.0_dp*frs(gg)*gdotp
                call accumulate_channel(ao_grad, dchi, ig, n_sig, w*coef_rho, 2.0_dp, &
-                                       c_offsets, c_counts, natm, own, gradient)
+                                       c_offsets, c_counts, natm, own, gradient, &
+                                       moving=.not. hold_grid)
 
                ! `P`'s own channel, weighted by the ordinary potential. This is
                ! the term that survives when the functional is a constant -- and
                ! the only one an LDA-shaped first attempt would write.
                call accumulate_channel(ao_grad, pchi, ig, n_sig, w*vrho(gg), 2.0_dp, &
-                                       c_offsets, c_counts, natm, own, gradient)
+                                       c_offsets, c_counts, natm, own, gradient, &
+                                       moving=.not. hold_grid)
 
                if (gga) then
                   do id = 1, 3
@@ -1085,10 +1087,12 @@ contains
                   end do
                   call accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, &
                                               n_sig, wg_ref, 2.0_dp, c_offsets, &
-                                              c_counts, natm, own, gradient)
+                                              c_counts, natm, own, gradient, &
+                                              moving=.not. hold_grid)
                   call accumulate_gga_channel(ao_grad, ao_hess, pchi, pgchi, ig, &
                                               n_sig, wg_p, 2.0_dp, c_offsets, &
-                                              c_counts, natm, own, gradient)
+                                              c_counts, natm, own, gradient, &
+                                              moving=.not. hold_grid)
                end if
             end do
          end if

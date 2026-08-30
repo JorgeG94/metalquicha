@@ -22,10 +22,11 @@ module test_mqc_xc_hessian
                              xc_add_potential, vv10_add_potential, &
                              vv10_kernel_apply, xc_grid_kernel_quantities, KERNEL_RHO_FLOOR
    use mqc_libcint_hessian, only: ks_hessian
-   use mqc_libcint_gradient, only: libcint_scf_gradient, vv10_gradient_fixed_grid
+   use mqc_libcint_gradient, only: libcint_scf_gradient, vv10_gradient_fixed_grid, &
+                                   xc_potential_gradient
    use mqc_libcint_xc_hessian, only: xc_hessian, xc_gradient_fixed_grid, &
                                      xc_potential_deriv, vv10_hessian, &
-                                     vv10_potential_deriv
+                                     vv10_potential_deriv, xc_potential_hessian
    implicit none
    private
 
@@ -61,6 +62,10 @@ contains
                                test_vv10_kernel_apply), &
                   new_unittest("third_derivative_differences_the_kernel_in_density", &
                                test_kxc_against_fxc), &
+                  new_unittest("fixed_grid_potential_gradient_holds_its_grid", &
+                               test_fixed_grid_potential_gradient), &
+                  new_unittest("potential_hessian_differences_the_potential_gradient", &
+                               test_vxc_potential_hessian), &
                   new_unittest("ks_hessian_differences_the_dft_gradient", test_ks_end_to_end) &
                   ]
    end subroutine collect_mqc_xc_hessian
@@ -954,6 +959,247 @@ contains
       call check(error, worst < TOL, trim(functional)// &
                  ": the third derivative should difference the second")
    end subroutine kxc_for
+
+   subroutine test_fixed_grid_potential_gradient(error)
+      !! `xc_potential_gradient(fixed_grid=.true.)` against the fixed-grid
+      !! derivative this file already pins
+      !!
+      !! `P` does not respond, so `d Tr(P V) = Tr(P dV)` exactly, and
+      !! `xc_potential_deriv` is that `dV/dR` with the grid held fixed. The two
+      !! are the same number by construction, which is what makes this a check
+      !! on the flag rather than on the physics.
+      !!
+      !! It exists because the flag shipped broken. Holding the grid means
+      !! dropping *two* things -- the partition weights responding, and the
+      !! points themselves travelling with their owning atom -- and the first
+      !! version dropped only the first: `accumulate_channel` and
+      !! `accumulate_gga_channel` take a `moving` argument that the four call
+      !! sites never forwarded, though `vv10_gradient_core` forwards it and was
+      !! the model to follow. What let it through review is that the *physical*
+      !! path was untouched and every validation case still passed. Nothing
+      !! exercised the flag at all.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: TOL = 1.0e-10_dp
+         !! Two evaluations of one quantity, so this is round-off. There is no
+         !! step here to carry a step error.
+      type(libcint_molecule_t) :: mol
+      type(xc_context_t) :: ctx
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: dens(:, :), pmat(:, :), grad(:, :), h1(:, :, :, :)
+      real(dp) :: want, worst
+      integer :: n, ia, c, u, v
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      if (err%has_error()) return
+      call xc_context_create(mol, "gga_x_b88", ctx, err, level=3)
+      if (err%has_error()) then
+         call mol%destroy()
+         return
+      end if
+      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      if (err%has_error()) then
+         call mol%destroy()
+         return
+      end if
+      dens = scf%density
+      n = size(dens, 1)
+
+      ! Not the reference density. A second density that is not proportional to
+      ! the first is what separates the two terms being dropped.
+      allocate (pmat(n, n))
+      do v = 1, n
+         do u = 1, n
+            pmat(u, v) = 0.03_dp/(1.0_dp + real(abs(u - v), dp)) + 0.01_dp*dens(u, v)
+         end do
+      end do
+      pmat = 0.5_dp*(pmat + transpose(pmat))
+
+      allocate (grad(3, 3), h1(n, n, 3, 3))
+      grad = 0.0_dp
+      h1 = 0.0_dp
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      if (err%has_error()) return
+      call xc_potential_gradient(ctx, mol, dens, pmat, grad, err, fixed_grid=.true.)
+      if (.not. err%has_error()) call xc_potential_deriv(ctx, mol, dens, h1, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      worst = 0.0_dp
+      do ia = 1, 3
+         do c = 1, 3
+            want = 0.0_dp
+            do v = 1, n
+               do u = 1, n
+                  want = want + pmat(u, v)*h1(u, v, c, ia)
+               end do
+            end do
+            worst = max(worst, abs(grad(c, ia) - want))
+         end do
+      end do
+
+      call check(error, worst < TOL, &
+                 "the fixed-grid potential gradient should equal Tr(P dV/dR)")
+   end subroutine test_fixed_grid_potential_gradient
+
+   subroutine test_vxc_potential_hessian(error)
+      !! The linear form's second derivative against central differences of
+      !! its own fixed-grid first derivative
+      !!
+      !! `xc_potential_hessian` is `d2/dRdR Tr(P V_xc[D])` with the grid and
+      !! both matrices fixed, and `Tr(P dV/dX)` -- `xc_potential_deriv`
+      !! contracted with the fixed `P` -- is its first derivative under
+      !! exactly the same approximation, so the comparison is exact up to step
+      !! error: the construction of `xc_hessian` against
+      !! `xc_gradient_fixed_grid`, one linear form over, differencing a rung
+      !! this file already pins. Why the reference is not
+      !! `xc_potential_gradient` with `fixed_grid` is documented on the helper
+      !! below, with the numbers. Both families run, and B88 is the one that
+      !! decides: an LDA gets the rho channel right while every sigma channel
+      !! stays zero, so an implementation wrong in nothing but sigma would
+      !! pass it.
+      type(error_type), allocatable, intent(out) :: error
+
+      if (.not. xc_available()) return
+
+      call vxc_potential_hessian_for("lda_x", error)
+      if (allocated(error)) return
+      call vxc_potential_hessian_for("gga_x_b88", error)
+   end subroutine test_vxc_potential_hessian
+
+   subroutine vxc_potential_hessian_for(functional, error)
+      !! One functional, all eighty-one entries against a central difference
+      character(len=*), intent(in) :: functional
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: H = 1.0e-4_dp
+      real(dp), parameter :: TOL = 1.6e-8_dp
+         !! Seven times the measured worst disagreement, 2.23e-9 for B88 at
+         !! this step and 2.17e-10 for the LDA. The LDA residual is the step
+         !! error and nothing else: 5.45e-11 at 5e-5, 8.67e-10 at 2e-4 and
+         !! 3.47e-9 at 4e-4 -- ratios 3.98, 3.99, 4.00, exactly H^2. B88
+         !! follows the same H^2 law under a ~2.2e-9 floor that moves
+         !! *non-monotonically* with the step (2.27e-9 at 5e-5), which a wrong
+         !! or missing term cannot do -- the break test dropping the g_xc
+         !! group misses by 3.6521506, step-independent to nine digits over an
+         !! eightfold range of steps. The floor is the quadrature tail: the
+         !! displaced-geometry reference crosses KERNEL_RHO_FLOOR at points
+         !! where B88's kernels are enormous, the discontinuity `kxc_for`
+         !! excludes for the same reason, and nine orders below what a real
+         !! mistake produces.
+      real(dp) :: hess(3, 3, 3, 3), plus(3, 3), minus(3, 3), shifted(3, 3)
+      real(dp) :: fd, worst
+      real(dp), allocatable :: dens(:, :), trial(:, :)
+      type(xc_context_t) :: ctx
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      logical :: ok
+      integer :: ia, a, ja, b, i, j, n
+
+      call reference_state(functional, ctx, dens, err, ok)
+      call check(error, ok, "the reference Kohn-Sham state failed for "//functional)
+      if (allocated(error)) return
+
+      ! The trial `kxc_for` uses, for the reason it gives: one proportional to
+      ! the density moves rho and sigma together and cannot separate the
+      ! channels. Symmetric and indefinite, like the relaxed density it stands
+      ! in for.
+      n = size(dens, 1)
+      allocate (trial(n, n))
+      do j = 1, n
+         do i = 1, n
+            trial(i, j) = 0.05_dp/(1.0_dp + real(abs(i - j), dp)) + 0.01_dp*dens(i, j)
+         end do
+      end do
+      trial = 0.5_dp*(trial + transpose(trial))
+
+      hess = 0.0_dp
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call xc_potential_hessian(ctx, mol, dens, trial, hess, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), &
+                 "the potential Hessian failed for "//functional)
+      if (allocated(error)) return
+
+      worst = 0.0_dp
+      do ia = 1, 3
+         do a = 1, 3
+            shifted = WATER
+            shifted(a, ia) = shifted(a, ia) + H
+            call vxc_potential_gradient_at(ctx, shifted, dens, trial, plus, err, ok)
+            if (.not. ok) then
+               call check(error, .false., "a displaced potential gradient failed")
+               return
+            end if
+            shifted = WATER
+            shifted(a, ia) = shifted(a, ia) - H
+            call vxc_potential_gradient_at(ctx, shifted, dens, trial, minus, err, ok)
+            if (.not. ok) then
+               call check(error, .false., "a displaced potential gradient failed")
+               return
+            end if
+            do ja = 1, 3
+               do b = 1, 3
+                  fd = (plus(b, ja) - minus(b, ja))/(2.0_dp*H)
+                  worst = max(worst, abs(hess(a, b, ia, ja) - fd))
+               end do
+            end do
+         end do
+      end do
+
+      call check(error, worst < TOL, &
+                 "the potential Hessian disagrees with a difference of the "// &
+                 "fixed-grid potential gradient for "//functional)
+   end subroutine vxc_potential_hessian_for
+
+   subroutine vxc_potential_gradient_at(ctx, coords, dens, pmat, gradient, err, ok)
+      !! The fixed-grid first derivative of `Tr(P V_xc[D])` at displaced
+      !! coordinates: `xc_potential_deriv` contracted with `P`
+      !!
+      !! `P` is fixed, so `d/dX Tr(P V) = Tr(P dV/dX)` exactly, and
+      !! `xc_potential_deriv` is the rung below this one on the ladder --
+      !! `test_vxc_deriv` pins it against differences of the potential matrix
+      !! itself. It carries no grid terms at all, which is the approximation
+      !! the Hessian above makes.
+      !!
+      !! Not `xc_potential_gradient` with `fixed_grid`, though that flag was
+      !! built for exactly this comparison: its four `accumulate_channel`
+      !! deposits never forward `moving`, so that branch drops the
+      !! partition-weight response while *keeping* the grid-point-motion term
+      !! -- against a scalar difference of `Tr(P V)` on the frozen grid it
+      !! misses by up to 5.7e-2 on this system (in-plane components only; the
+      !! out-of-plane ones agree to step error, which is what let it look
+      !! plausible), where this contraction agrees to 1e-10. Until that branch
+      !! is fixed, differencing it would compare this Hessian against a
+      !! quantity nothing is the second derivative of.
+      type(xc_context_t), intent(inout) :: ctx
+      real(dp), intent(in) :: coords(3, 3), dens(:, :), pmat(:, :)
+      real(dp), intent(out) :: gradient(3, 3)
+      type(error_t), intent(inout) :: err
+      logical, intent(out) :: ok
+
+      type(libcint_molecule_t) :: mol
+      real(dp), allocatable :: h1(:, :, :, :)
+      integer :: ia, a
+
+      ok = .false.
+      gradient = 0.0_dp
+      allocate (h1(size(dens, 1), size(dens, 2), 3, size(WATER_Z)))
+      h1 = 0.0_dp
+      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      if (err%has_error()) return
+      call xc_potential_deriv(ctx, mol, dens, h1, err)
+      call mol%destroy()
+      if (err%has_error()) return
+      do ia = 1, size(WATER_Z)
+         do a = 1, 3
+            gradient(a, ia) = sum(pmat*h1(:, :, a, ia))
+         end do
+      end do
+      ok = .true.
+   end subroutine vxc_potential_gradient_at
 
    subroutine test_ks_end_to_end(error)
       !! The assembled Kohn-Sham Hessian against differences of the analytic

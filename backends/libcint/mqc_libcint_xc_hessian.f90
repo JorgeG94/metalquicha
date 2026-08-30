@@ -53,6 +53,7 @@ module mqc_libcint_xc_hessian
    private
 
    public :: xc_hessian
+   public :: xc_potential_hessian
    public :: xc_gradient_fixed_grid
    public :: xc_potential_deriv
    public :: vv10_hessian
@@ -395,6 +396,465 @@ contains
          end do
       end do
    end subroutine xc_hessian
+
+   subroutine xc_potential_hessian(ctx, mol, density, pmat, hess, error)
+      !! `d2/dRdR Tr(P V_xc[D])` with both densities and the grid held fixed,
+      !! accumulated in place
+      !!
+      !! The second derivative of the linear form `xc_potential_gradient`
+      !! differentiates once: the pass-one term of a double-hybrid Hessian
+      !! contracts the relaxed density against `V_xc^(XY)`, because the
+      !! reference operator's second derivative contains the potential's. As
+      !! there, `P` is symmetric, indefinite, integrates to zero, and appears
+      !! only linearly -- the functional is evaluated at `D` alone.
+      !!
+      !! Writing `u = (rho, sigma)` for the reference's variables and `u_P` for
+      !! the linearisation in `P` -- `rho_P`, and
+      !! `sigma_P = 2 grad rho . grad rho_P` -- the integrand collects into
+      !! four groups by how far up the functional-derivative ladder each sits:
+      !!
+      !!     g_xc u^(X) u^(Y) u_P                       the kernel moving twice
+      !!     f_xc (u^(X) u_P^(Y) + u_P^(X) u^(Y))       once, against P's motion
+      !!     f_xc u_P u^(XY)                            once, against d2(rho, sigma)
+      !!     v_xc u_P^(XY)                              the potential, against
+      !!                                                d2(rho_P, sigma_P)
+      !!
+      !! every product summed over both channels -- the expansion
+      !! `xc_kernel_apply` documents for `f_xc`, one order up. All densities
+      !! are AO motion only: the matrices never respond, and neither does the
+      !! grid, so the check differences the fixed-grid first derivative of the
+      !! same linear form -- `xc_potential_deriv` contracted with `P`, the
+      !! same approximation on both sides. Not `xc_potential_gradient` with
+      !! `fixed_grid`, though that flag exists for this comparison: its
+      !! deposits never forward `moving=.false.` to `accumulate_channel`, so
+      !! that branch keeps the grid-point-motion term while dropping the
+      !! partition weights, and the result is the exact derivative of nothing
+      !! -- the test's helper carries the measurement.
+      !!
+      !! **A separate routine, deliberately, where the double-hybrid gradient
+      !! argued itself into a merge.** That merge (`libcint_mp2_gradient`) was
+      !! between two calculations that differ in four places and agree
+      !! everywhere else -- one body, four branches. Here there is no argument
+      !! at which this coincides with `xc_hessian`: handing it `pmat = density`
+      !! yields the second derivative of `int w [v_rho rho + 2 v_sigma sigma]`,
+      !! which is nothing `xc_hessian` returns, so an optional second density
+      !! there would interleave two disjoint integrands behind one name -- the
+      !! near-copy risk relocated, not removed. What genuinely repeats is
+      !! factored instead: the weighted overlaps, the atom masking, the packed
+      !! derivative indices, and the one block that would otherwise have become
+      !! a third spelled-out copy -- the `grad . d2(grad)` contraction -- is
+      !! `d2grad_sigma_term`, called three times here with three
+      !! weight/density pairings where `xc_hessian` inlines its one.
+      !!
+      !! The last two groups above are `xc_hessian`'s potential machinery with,
+      !! respectively, the kernel contracted with `(rho_P, sigma_P)` standing
+      !! in for the potential -- the same stand-in `xc_potential_gradient`
+      !! calls `coef_rho`, one derivative down -- and `P` standing in for `D`.
+      !!
+      !! LDA and GGA. A meta-GGA is refused explicitly: it would need the tau
+      !! channels of the third functional derivative, which nothing here
+      !! provides.
+      type(xc_context_t), intent(inout) :: ctx
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)   !! The converged reference density
+      real(dp), intent(in) :: pmat(:, :)      !! The density `V_xc` is traced against
+      real(dp), intent(inout) :: hess(:, :, :, :)   !! (3, 3, natm, natm), in place
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: rho(:), rho_grad(:, :), vrho(:), vsigma(:)
+      real(dp), allocatable :: frr(:), frs(:), fss(:)
+      real(dp), allocatable :: grrr(:), grrs(:), grss(:), gsss(:)
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), ao_hess(:, :, :)
+      real(dp), allocatable :: ao_d3(:, :, :)
+      real(dp), allocatable :: extents(:), d_sig(:, :), p_sig(:, :)
+      real(dp), allocatable :: dmu(:, :), pmu(:, :)
+      real(dp), allocatable :: dmu_d(:, :, :), pmu_d(:, :, :)
+      real(dp), allocatable :: dchi(:, :), pchi(:, :)
+      real(dp), allocatable :: dgrad(:, :, :), pgrad(:, :, :)
+      real(dp), allocatable :: dsig(:, :), psig(:, :)
+      real(dp), allocatable :: rho_p(:), p_grad(:, :), sig_p(:)
+      real(dp), allocatable :: vrho_eff(:), vsig_eff(:)
+      real(dp), allocatable :: wsig(:, :), zmat(:, :), wg(:)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_offset(:), ao_list(:)
+      integer, allocatable :: c_offsets(:), c_counts(:)
+      integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig
+      integer :: ia, a, b, i, ig, gg, p, q, c, d, ih
+      real(dp) :: acc, accp, wa, wb, wc
+      logical :: gga
+      integer, parameter :: PAIR(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
+
+      if (error%has_error()) return
+
+      if (ctx%any_mgga) then
+         call error%set(ERROR_VALIDATION, "the exchange-correlation potential Hessian "// &
+                        "is LDA and GGA only: a meta-GGA needs the tau channels of the "// &
+                        "third functional derivative, which nothing here provides. "// &
+                        "Refused rather than computed with those terms missing.")
+         return
+      end if
+      gga = ctx%any_gga
+
+      natm = size(mol%coords, 2)
+      nao = mol%nao
+      npts = size(ctx%grid%weights)
+
+      ! The whole ladder at once: potential, kernel, and the four third
+      ! derivatives, floored together at KERNEL_RHO_FLOOR so no order crosses
+      ! a cutoff the others respect.
+      call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
+                                     frr, frs, fss, error, &
+                                     grrr=grrr, grrs=grrs, grss=grss, gsss=gsss)
+      if (error%has_error()) return
+
+      allocate (extents(mol%nbas))
+      call shell_extents(mol, ctx%screen_tol, extents)
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
+      allocate (c_offsets(natm), c_counts(natm))
+      allocate (d_sig(nao, nao), p_sig(nao, nao))
+
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
+         nb = g1 - g0 + 1
+
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig, &
+                                    atom_offsets=c_offsets, atom_counts=c_counts)
+         if (n_sig == 0) cycle
+
+         do jsig = 1, n_sig
+            do isig = 1, n_sig
+               d_sig(isig, jsig) = density(ao_list(isig), ao_list(jsig))
+               p_sig(isig, jsig) = pmat(ao_list(isig), ao_list(jsig))
+            end do
+         end do
+
+         if (gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+                               grad=ao_grad, hess=ao_hess, deriv3=ao_d3, &
+                               shell_mask=shell_mask, ao_offset=ao_offset, n_ao_out=n_sig)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+                               grad=ao_grad, hess=ao_hess, shell_mask=shell_mask, &
+                               ao_offset=ao_offset, n_ao_out=n_sig)
+         end if
+         if (error%has_error()) return
+
+         if (allocated(wg)) deallocate (wg)
+         allocate (wg(nb))
+         wg = ctx%grid%weights(g0:g1)
+
+         ! (D chi) and (P chi): the two gemm partners everything below is
+         ! assembled from, exactly `xc_hessian`'s `dmu` once per density.
+         if (allocated(dmu)) deallocate (dmu, pmu)
+         allocate (dmu(nb, n_sig), pmu(nb, n_sig))
+         call pic_gemm(ao(1:nb, 1:n_sig), d_sig(1:n_sig, 1:n_sig), dmu, beta=0.0_dp)
+         call pic_gemm(ao(1:nb, 1:n_sig), p_sig(1:n_sig, 1:n_sig), pmu, beta=0.0_dp)
+
+         ! rho_P at every point, and for a GGA its gradient and the linearised
+         ! sigma_P. Per block from the masked functions, against the *global*
+         ! reference gradient -- the same mixed footing `xc_potential_gradient`
+         ! stands on, so the two sides of the test truncate identically.
+         if (allocated(rho_p)) deallocate (rho_p)
+         allocate (rho_p(nb))
+         do ig = 1, nb
+            acc = 0.0_dp
+            do i = 1, n_sig
+               acc = acc + ao(ig, i)*pmu(ig, i)
+            end do
+            rho_p(ig) = acc
+         end do
+
+         if (gga) then
+            if (allocated(dmu_d)) deallocate (dmu_d, pmu_d)
+            allocate (dmu_d(nb, n_sig, 3), pmu_d(nb, n_sig, 3))
+            do d = 1, 3
+               call pic_gemm(ao_grad(1:nb, 1:n_sig, d), d_sig(1:n_sig, 1:n_sig), &
+                             dmu_d(:, :, d), beta=0.0_dp)
+               call pic_gemm(ao_grad(1:nb, 1:n_sig, d), p_sig(1:n_sig, 1:n_sig), &
+                             pmu_d(:, :, d), beta=0.0_dp)
+            end do
+            if (allocated(p_grad)) deallocate (p_grad, sig_p)
+            allocate (p_grad(nb, 3), sig_p(nb))
+            do d = 1, 3
+               do ig = 1, nb
+                  acc = 0.0_dp
+                  do i = 1, n_sig
+                     acc = acc + ao_grad(ig, i, d)*pmu(ig, i)
+                  end do
+                  ! The two is the symmetry of P, exactly as in `eval_rho`.
+                  p_grad(ig, d) = 2.0_dp*acc
+               end do
+            end do
+            do ig = 1, nb
+               gg = g0 + ig - 1
+               sig_p(ig) = 2.0_dp*(rho_grad(gg, 1)*p_grad(ig, 1) &
+                                   + rho_grad(gg, 2)*p_grad(ig, 2) &
+                                   + rho_grad(gg, 3)*p_grad(ig, 3))
+            end do
+         end if
+
+         ! The stand-in potentials: `f_xc` contracted with `(rho_P, sigma_P)`
+         ! plays the role `v_xc` plays in `xc_hessian`'s potential terms.
+         if (allocated(vrho_eff)) deallocate (vrho_eff)
+         allocate (vrho_eff(nb))
+         do ig = 1, nb
+            vrho_eff(ig) = frr(g0 + ig - 1)*rho_p(ig)
+         end do
+         if (gga) then
+            if (allocated(vsig_eff)) deallocate (vsig_eff)
+            allocate (vsig_eff(nb))
+            do ig = 1, nb
+               gg = g0 + ig - 1
+               vrho_eff(ig) = vrho_eff(ig) + frs(gg)*sig_p(ig)
+               vsig_eff(ig) = frs(gg)*rho_p(ig) + fss(gg)*sig_p(ig)
+            end do
+         end if
+
+         ! d rho/dA and d rho_P/dA: `xc_hessian`'s `dchi`, once per density.
+         if (allocated(dchi)) deallocate (dchi, pchi)
+         allocate (dchi(3*natm, nb), pchi(3*natm, nb))
+         dchi = 0.0_dp
+         pchi = 0.0_dp
+         do ia = 1, natm
+            if (c_counts(ia) == 0) cycle
+            do a = 1, 3
+               do ig = 1, nb
+                  acc = 0.0_dp
+                  accp = 0.0_dp
+                  do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                     acc = acc + ao_grad(ig, i, a)*dmu(ig, i)
+                     accp = accp + ao_grad(ig, i, a)*pmu(ig, i)
+                  end do
+                  dchi(3*(ia - 1) + a, ig) = -2.0_dp*acc
+                  pchi(3*(ia - 1) + a, ig) = -2.0_dp*accp
+               end do
+            end do
+         end do
+
+         ! d(grad rho)/dA for both densities, then d sigma/dA and
+         ! d sigma_P/dA. In the latter *both* factors of
+         ! 2 grad rho . grad rho_P move -- forgetting the first product-rule
+         ! half leaves an error confined to the sigma channel, which is what
+         ! the B88 leg of the test exists to catch.
+         if (gga) then
+            if (allocated(dgrad)) deallocate (dgrad, pgrad, dsig, psig)
+            allocate (dgrad(3*natm, 3, nb), pgrad(3*natm, 3, nb))
+            allocate (dsig(3*natm, nb), psig(3*natm, nb))
+            dgrad = 0.0_dp
+            pgrad = 0.0_dp
+            do ia = 1, natm
+               if (c_counts(ia) == 0) cycle
+               do c = 1, 3
+                  do d = 1, 3
+                     do ig = 1, nb
+                        acc = 0.0_dp
+                        accp = 0.0_dp
+                        do i = c_offsets(ia) + 1, c_offsets(ia) + c_counts(ia)
+                           acc = acc + ao_hess(ig, i, PAIR(c, d))*dmu(ig, i) &
+                                 + ao_grad(ig, i, c)*dmu_d(ig, i, d)
+                           accp = accp + ao_hess(ig, i, PAIR(c, d))*pmu(ig, i) &
+                                  + ao_grad(ig, i, c)*pmu_d(ig, i, d)
+                        end do
+                        dgrad(3*(ia - 1) + c, d, ig) = -2.0_dp*acc
+                        pgrad(3*(ia - 1) + c, d, ig) = -2.0_dp*accp
+                     end do
+                  end do
+               end do
+            end do
+            do ig = 1, nb
+               gg = g0 + ig - 1
+               do p = 1, 3*natm
+                  acc = 0.0_dp
+                  accp = 0.0_dp
+                  do d = 1, 3
+                     acc = acc + rho_grad(gg, d)*dgrad(p, d, ig)
+                     accp = accp + p_grad(ig, d)*dgrad(p, d, ig) &
+                            + rho_grad(gg, d)*pgrad(p, d, ig)
+                  end do
+                  dsig(p, ig) = 2.0_dp*acc
+                  psig(p, ig) = 2.0_dp*accp
+               end do
+            end do
+         end if
+
+         ! Groups one and two: the third derivatives against the reference's
+         ! own first derivatives, and the kernel against the mixed ones. Same
+         ! shape as `xc_hessian`'s kernel term with the ladder shifted a rung:
+         ! where it reads `f`, this reads `g` contracted with `(rho_P,
+         ! sigma_P)`, and the `f` that remains pairs a reference derivative
+         ! with a `P` one.
+         do ig = 1, nb
+            gg = g0 + ig - 1
+            wa = grrr(gg)*rho_p(ig)
+            wb = 0.0_dp
+            wc = 0.0_dp
+            if (gga) then
+               wa = wa + grrs(gg)*sig_p(ig)
+               wb = grrs(gg)*rho_p(ig) + grss(gg)*sig_p(ig)
+               wc = grss(gg)*rho_p(ig) + gsss(gg)*sig_p(ig)
+            end if
+            do p = 1, 3*natm
+               do q = 1, 3*natm
+                  acc = wa*dchi(p, ig)*dchi(q, ig) &
+                        + frr(gg)*(dchi(p, ig)*pchi(q, ig) + pchi(p, ig)*dchi(q, ig))
+                  if (gga) then
+                     acc = acc &
+                           + wb*(dchi(p, ig)*dsig(q, ig) + dsig(p, ig)*dchi(q, ig)) &
+                           + wc*dsig(p, ig)*dsig(q, ig) &
+                           + frs(gg)*(dchi(p, ig)*psig(q, ig) + psig(p, ig)*dchi(q, ig) &
+                                      + dsig(p, ig)*pchi(q, ig) + pchi(p, ig)*dsig(q, ig)) &
+                           + fss(gg)*(dsig(p, ig)*psig(q, ig) + psig(p, ig)*dsig(q, ig))
+                  end if
+                  hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) = &
+                     hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) &
+                     + wg(ig)*acc
+               end do
+            end do
+         end do
+
+         ! The `d(grad) . d(grad)` halves of the two d2-sigma terms: the
+         ! kernel-weighted one over the reference's own gradient derivatives
+         ! (group three), and the `v_sigma`-weighted mixed products from
+         ! d2 sigma_P (group four).
+         if (gga) then
+            do ig = 1, nb
+               gg = g0 + ig - 1
+               do p = 1, 3*natm
+                  do q = 1, 3*natm
+                     acc = 0.0_dp
+                     accp = 0.0_dp
+                     do d = 1, 3
+                        acc = acc + dgrad(p, d, ig)*dgrad(q, d, ig)
+                        accp = accp + pgrad(p, d, ig)*dgrad(q, d, ig) &
+                               + dgrad(p, d, ig)*pgrad(q, d, ig)
+                     end do
+                     hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) = &
+                        hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) &
+                        + 2.0_dp*wg(ig)*(vsig_eff(ig)*acc + vsigma(gg)*accp)
+                  end do
+               end do
+            end do
+         end if
+
+         ! d2 rho against the kernel stand-in and d2 rho_P against the
+         ! potential, off-diagonal piece: one derivative on each centre. Two
+         ! passes over the same overlaps -- kernel weight against D, potential
+         ! weight against P.
+         if (allocated(zmat)) deallocate (zmat)
+         allocate (zmat(n_sig, n_sig))
+         do a = 1, 3
+            do b = 1, 3
+               call weighted_overlap(ao_grad(1:nb, 1:n_sig, a), ao_grad(1:nb, 1:n_sig, b), &
+                                     wg*vrho_eff, zmat)
+               call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+                               natm, n_sig, a, b, 2.0_dp, diagonal=.false.)
+               call weighted_overlap(ao_grad(1:nb, 1:n_sig, a), ao_grad(1:nb, 1:n_sig, b), &
+                                     wg*vrho(g0:g1), zmat)
+               call add_masked(hess, p_sig, zmat, c_offsets, c_counts, &
+                               natm, n_sig, a, b, 2.0_dp, diagonal=.false.)
+            end do
+         end do
+
+         ! The same two, diagonal piece: both derivatives on one function.
+         do ih = 1, 6
+            call hess_component(ih, a, b)
+            call weighted_overlap(ao_hess(1:nb, 1:n_sig, ih), ao(1:nb, 1:n_sig), &
+                                  wg*vrho_eff, zmat)
+            call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+                            natm, n_sig, a, b, 2.0_dp, diagonal=.true.)
+            if (a /= b) call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+                                        natm, n_sig, b, a, 2.0_dp, diagonal=.true.)
+            call weighted_overlap(ao_hess(1:nb, 1:n_sig, ih), ao(1:nb, 1:n_sig), &
+                                  wg*vrho(g0:g1), zmat)
+            call add_masked(hess, p_sig, zmat, c_offsets, c_counts, &
+                            natm, n_sig, a, b, 2.0_dp, diagonal=.true.)
+            if (a /= b) call add_masked(hess, p_sig, zmat, c_offsets, c_counts, &
+                                        natm, n_sig, b, a, 2.0_dp, diagonal=.true.)
+         end do
+
+         ! The `grad . d2(grad)` halves, where the third basis-function
+         ! derivatives live: three pairings where `xc_hessian` has one. The
+         ! kernel stand-in with `grad rho` against D from d2 sigma; then, from
+         ! d2 sigma_P, `v_sigma` with `grad rho_P` against D and `v_sigma`
+         ! with `grad rho` against P -- the product rule on
+         ! `grad rho . grad rho_P`, at second order this time.
+         if (gga) then
+            if (allocated(wsig)) deallocate (wsig)
+            allocate (wsig(nb, 3))
+            do d = 1, 3
+               wsig(:, d) = 2.0_dp*wg*vsig_eff*rho_grad(g0:g1, d)
+            end do
+            call d2grad_sigma_term(hess, d_sig, wsig, ao, ao_grad, ao_hess, ao_d3, &
+                                   c_offsets, c_counts, natm, n_sig, nb)
+            do d = 1, 3
+               wsig(:, d) = 2.0_dp*wg*vsigma(g0:g1)*p_grad(:, d)
+            end do
+            call d2grad_sigma_term(hess, d_sig, wsig, ao, ao_grad, ao_hess, ao_d3, &
+                                   c_offsets, c_counts, natm, n_sig, nb)
+            do d = 1, 3
+               wsig(:, d) = 2.0_dp*wg*vsigma(g0:g1)*rho_grad(g0:g1, d)
+            end do
+            call d2grad_sigma_term(hess, p_sig, wsig, ao, ao_grad, ao_hess, ao_d3, &
+                                   c_offsets, c_counts, natm, n_sig, nb)
+         end if
+      end do
+   end subroutine xc_potential_hessian
+
+   subroutine d2grad_sigma_term(hess, dens, wsig, ao, ao_grad, ao_hess, ao_d3, &
+                                c_offsets, c_counts, natm, n_sig, nb)
+      !! One `grad . d2(grad rho)` contraction: `sum_d wsig_d d2(grad rho)_d`
+      !! over the density in `dens`, into the atom blocks of `hess`
+      !!
+      !! The four overlaps `xc_hessian` and `vv10_hessian` each spell out once:
+      !! third derivative against the bare function plus second against first
+      !! on the diagonal atom block -- both nuclear derivatives landing on one
+      !! centre is what reaches a third position derivative -- and one
+      !! derivative on each centre off it. `xc_potential_hessian` needs the
+      !! same contraction three times with three different weight/density
+      !! pairings, which is what made it a routine. Everything per point --
+      !! quadrature weight, potential or kernel factor, whichever gradient is
+      !! being dotted in -- travels in `wsig`.
+      real(dp), intent(inout) :: hess(:, :, :, :)
+      real(dp), intent(in) :: dens(:, :)
+      real(dp), intent(in) :: wsig(:, :)   !! (nb, 3)
+      real(dp), intent(in) :: ao(:, :), ao_grad(:, :, :), ao_hess(:, :, :)
+      real(dp), intent(in) :: ao_d3(:, :, :)
+      integer, intent(in) :: c_offsets(:), c_counts(:)
+      integer, intent(in) :: natm, n_sig, nb
+
+      real(dp), allocatable :: zmat(:, :)
+      integer :: c, d, e
+      integer, parameter :: PAIR(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
+      integer, parameter :: TRIP(3, 3, 3) = reshape( &
+                            [1, 2, 3, 2, 4, 5, 3, 5, 6, &
+                             2, 4, 5, 4, 7, 8, 5, 8, 9, &
+                             3, 5, 6, 5, 8, 9, 6, 9, 10], [3, 3, 3])
+
+      allocate (zmat(n_sig, n_sig))
+      do d = 1, 3
+         do c = 1, 3
+            do e = 1, 3
+               call weighted_overlap(ao_d3(1:nb, 1:n_sig, TRIP(c, e, d)), &
+                                     ao(1:nb, 1:n_sig), wsig(:, d), zmat)
+               call add_masked(hess, dens, zmat, c_offsets, c_counts, &
+                               natm, n_sig, c, e, 2.0_dp, diagonal=.true.)
+               call weighted_overlap(ao_hess(1:nb, 1:n_sig, PAIR(c, e)), &
+                                     ao_grad(1:nb, 1:n_sig, d), wsig(:, d), zmat)
+               call add_masked(hess, dens, zmat, c_offsets, c_counts, &
+                               natm, n_sig, c, e, 2.0_dp, diagonal=.true.)
+               call weighted_overlap(ao_hess(1:nb, 1:n_sig, PAIR(c, d)), &
+                                     ao_grad(1:nb, 1:n_sig, e), wsig(:, d), zmat)
+               call add_masked(hess, dens, zmat, c_offsets, c_counts, &
+                               natm, n_sig, c, e, 2.0_dp, diagonal=.false.)
+               call weighted_overlap(ao_grad(1:nb, 1:n_sig, c), &
+                                     ao_hess(1:nb, 1:n_sig, PAIR(e, d)), wsig(:, d), zmat)
+               call add_masked(hess, dens, zmat, c_offsets, c_counts, &
+                               natm, n_sig, c, e, 2.0_dp, diagonal=.false.)
+            end do
+         end do
+      end do
+   end subroutine d2grad_sigma_term
 
    subroutine vv10_hessian(ctx, mol, density, hess, error)
       !! VV10's second derivative with the density matrix and both grids fixed
