@@ -111,6 +111,14 @@ contains
 
    subroutine reference_state(functional, ctx, density, err, ok, basis)
       !! One converged reference: the grid and the density everything below uses
+      !!
+      !! `allow_half` is set here and in the two helpers below because several
+      !! callers name a libxc exchange half on purpose -- `lda_x`, `gga_x_pbe`,
+      !! `mgga_x_tpss` -- to get one rung's kernel with no correlation term beside
+      !! it, so that a broken second derivative of exchange cannot be masked by a
+      !! working one of correlation. A deck naming a half is refused, which is
+      !! what that flag defaults to; asking for one here is deliberate, and the
+      !! argument is how it says so.
       character(len=*), intent(in) :: functional
       character(len=*), intent(in), optional :: basis
          !! STO-3G unless asked otherwise, which is what every caller here
@@ -129,7 +137,7 @@ contains
       if (present(basis)) use_basis = basis
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, trim(use_basis), mol, err)
       if (err%has_error()) return
-      call xc_context_create(mol, functional, ctx, err, level=3)
+      call xc_context_create(mol, functional, ctx, err, level=3, allow_half=.true.)
       if (err%has_error()) then
          call mol%destroy()
          return
@@ -930,7 +938,7 @@ contains
       ok = .false.
       call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
-      call xc_context_create(mol, functional, ctx, err, level=3)
+      call xc_context_create(mol, functional, ctx, err, level=3, allow_half=.true.)
       if (err%has_error()) return
       call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (.not. err%has_error()) then
@@ -955,7 +963,7 @@ contains
       ok = .false.
       call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
-      call xc_context_create(mol, functional, ctx, err, level=3)
+      call xc_context_create(mol, functional, ctx, err, level=3, allow_half=.true.)
       if (err%has_error()) return
       call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (.not. err%has_error()) then

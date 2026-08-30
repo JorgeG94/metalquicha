@@ -223,7 +223,11 @@ contains
          return
       end if
 
-      call xc_context_create(mol, functional, xc, err, level=level)
+      ! `allow_half` because the ladder above starts at `lda_x` and `gga_x_pbe`
+      ! on purpose: one rung's kernel with no correlation beside it, so a broken
+      ! exchange term cannot be masked by a working correlation one. A deck asking
+      ! for half a functional is refused; asking here is deliberate.
+      call xc_context_create(mol, functional, xc, err, level=level, allow_half=.true.)
       if (err%has_error()) then
          write (*, "(A,A,A,A)") "[dft] ", functional, " context failed: ", err%get_message()
          failures = failures + 1

@@ -448,9 +448,9 @@ carry at all:
    * - Name
      - Rung
      - Composition
-   * - ``svwn``, ``lda``, ``lsda``
+   * - ``svwn``, ``svwn5``, ``lda``, ``lsda``
      - LDA
-     - ``lda_x`` + ``lda_c_vwn``
+     - ``lda_x`` + ``lda_c_vwn`` (VWN5, matching the name the GPU path uses)
    * - ``pbe``
      - GGA
      - ``gga_x_pbe`` + ``gga_c_pbe``
@@ -469,6 +469,28 @@ carry at all:
    * - ``m06-l``, ``m06l``
      - meta-GGA
      - ``mgga_x_m06_l`` + ``mgga_c_m06_l``
+   * - ``scan``
+     - meta-GGA
+     - ``mgga_x_scan`` + ``mgga_c_scan``
+   * - ``r2scan``
+     - meta-GGA
+     - ``mgga_x_r2scan`` + ``mgga_c_r2scan``
+   * - ``r2scan01``
+     - meta-GGA
+     - ``mgga_x_r2scan01`` + ``mgga_c_r2scan01`` (the larger-η regularisation)
+   * - ``scan0``
+     - hybrid meta-GGA
+     - ``hyb_mgga_x_scan0`` + ``mgga_c_scan`` (libxc reports the 25% from the
+       exchange component)
+   * - ``r2scan0``
+     - hybrid meta-GGA
+     - ``hyb_mgga_xc_r2scan0`` (25% exact exchange, libxc's to report)
+   * - ``r2scanh``
+     - hybrid meta-GGA
+     - ``hyb_mgga_xc_r2scanh`` (10%)
+   * - ``r2scan50``
+     - hybrid meta-GGA
+     - ``hyb_mgga_xc_r2scan50`` (50%)
    * - ``wb97x``
      - range-separated hybrid
      - ``hyb_gga_xc_wb97x`` (ω = 0.3)
@@ -505,6 +527,19 @@ precisely because it is B2PLYP's semilocal part at full weight.
 
 Anything beyond meta-GGA is refused, as is a functional needing the density
 Laplacian -- on libxc's own say-so rather than a guess about which ones are safe.
+
+**Half a functional is refused too.** A libxc name may be spelled directly, but
+only if it is a whole functional. libxc splits most semilocal functionals into an
+exchange half and a correlation half, and either half alone is a valid libxc
+functional that initialises, evaluates and converges -- to an energy that is not
+the functional anyone meant. On water/STO-3G ``mgga_x_r2scan`` alone lands 0.32
+Hartree from r2SCAN and ``mgga_c_r2scan`` alone nine Hartree, both silently.
+Nothing downstream can catch that, because nothing about the calculation is
+wrong; only the choice of functional is. So a name whose libxc role is ``_x_`` or
+``_c_`` is refused at the deck, and the pair belongs in the table above -- which
+is where every functional in that position already is. Names carrying ``_xc_``
+pass through untouched; a ``_k_`` name is refused as well, being a kinetic-energy
+functional rather than an exchange-correlation one.
 
 Continuum Solvation
 ^^^^^^^^^^^^^^^^^^^

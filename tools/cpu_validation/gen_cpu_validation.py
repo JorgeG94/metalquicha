@@ -450,6 +450,16 @@ DFT_CASES = [
     ("water", "cc-pvdz", "pbe0", 3),
     ("water", "cc-pvdz", "tpss", 3),
     ("water", "cc-pvdz", "m06-l", 3),
+    # The SCAN family, for the two things in it nothing above reaches. r2SCAN is
+    # a semilocal pair like TPSS, but was unreachable by name until libxc's two
+    # halves were paired here -- and asking for one half alone still converges,
+    # so a case that runs the pair is what says the pairing survived. SCAN0 is
+    # the rarer shape: a composition whose *exchange component* carries the
+    # hybrid fraction, which nothing else in this table does. Reading that
+    # fraction only for functionals libxc carries whole left it 2.27 Hartree low,
+    # converged and unflagged.
+    ("water", "cc-pvdz", "r2scan", 3),
+    ("water", "cc-pvdz", "scan0", 3),
     ("ch4", "cc-pvdz", "pbe", 3),
     # Range-separated hybrids, which reach their exchange by a path nothing else
     # uses: a second, erf-attenuated quartet loop. Losing it is not a small

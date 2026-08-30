@@ -103,7 +103,7 @@ contains
       needs = this%exx_fraction /= 0.0_dp
    end function spec_needs_exact_exchange
 
-   subroutine xc_spec_from_name(name, spec, error)
+   subroutine xc_spec_from_name(name, spec, error, allow_half)
       !! A functional name to its composition
       !!
       !! Anything not named here is passed through as a single libxc component, on
@@ -111,12 +111,30 @@ contains
       !! carries several thousand functionals and this module should not shadow any
       !! of them. A name libxc also does not know fails at resolution, with libxc's
       !! own error, which is a better message than one invented here.
+      !!
+      !! The one thing checked before that pass-through is that the name is a
+      !! *whole* functional and not one half of one -- see `check_name_is_whole`,
+      !! which is the difference between a deck being refused and a deck quietly
+      !! returning the wrong energy.
       character(len=*), intent(in) :: name
       type(xc_spec_t), intent(out) :: spec
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: allow_half
+         !! Accept a libxc name that is only exchange or only correlation.
+         !! Default false, and a deck must never set it: the point of the check
+         !! is that half a functional converges silently. It exists for the
+         !! derivative tests, which want one rung's kernel in isolation --
+         !! `lda_x` before `svwn`, `gga_x_pbe` before `pbe` -- so that a broken
+         !! exchange second derivative is not masked by a working correlation
+         !! one. Naming it at the call site is the whole value: a half asked for
+         !! on purpose reads differently from a half asked for by mistake.
 
       character(len=:), allocatable :: lower
+      logical :: whole_only
       integer :: i
+
+      whole_only = .true.
+      if (present(allow_half)) whole_only = .not. allow_half
 
       lower = trim(adjustl(name))
       do i = 1, len(lower)
@@ -231,6 +249,70 @@ contains
          spec%component(1) = xc_component_t("mgga_x_m06_l", 1.0_dp)
          spec%component(2) = xc_component_t("mgga_c_m06_l", 1.0_dp)
 
+         ! ---- the SCAN family ------------------------------------------------
+         !
+         ! SCAN: Sun, Ruzsinszky and Perdew, Phys. Rev. Lett. 115, 036402 (2015).
+         ! r2SCAN: Furness, Kaplan, Ning, Perdew and Sun, J. Phys. Chem. Lett. 11,
+         ! 8208 (2020) -- SCAN re-regularised to remove the numerical sensitivity
+         ! that made the original need an unusually fine grid. It is the member of
+         ! the family to reach for, and the reason the rest are spelled out beside
+         ! it rather than left to whoever knows libxc's naming.
+         !
+         ! The semilocal members follow TPSS and M06-L above: libxc carries the two
+         ! halves and no name for the pair. Until these rows existed `"functional":
+         ! "r2scan"` failed as a name libxc does not know -- while `mgga_x_r2scan`
+         ! *succeeded*, converged, at an energy missing every bit of the
+         ! correlation. That second failure is the one worth preventing, and the
+         ! completeness check in the default case below is what now prevents it.
+      case ("r2scan")
+         spec%from_libxc = .false.
+         spec%n_components = 2
+         spec%component(1) = xc_component_t("mgga_x_r2scan", 1.0_dp)
+         spec%component(2) = xc_component_t("mgga_c_r2scan", 1.0_dp)
+
+         ! The same construction at the larger regularisation parameter. libxc
+         ! labels both halves "with larger value for eta", which is what says they
+         ! are a pair -- there is no published name pairing them for us.
+      case ("r2scan01")
+         spec%from_libxc = .false.
+         spec%n_components = 2
+         spec%component(1) = xc_component_t("mgga_x_r2scan01", 1.0_dp)
+         spec%component(2) = xc_component_t("mgga_c_r2scan01", 1.0_dp)
+
+      case ("scan")
+         spec%from_libxc = .false.
+         spec%n_components = 2
+         spec%component(1) = xc_component_t("mgga_x_scan", 1.0_dp)
+         spec%component(2) = xc_component_t("mgga_c_scan", 1.0_dp)
+
+         ! The hybrids split two ways, and the split is libxc's rather than ours.
+         ! r2SCAN0, r2SCANh and r2SCAN50 it carries whole, one `hyb_mgga_xc_` name
+         ! each, so those three rows are renames and must state no fraction of
+         ! their own. SCAN0 it does not: `hyb_mgga_x_scan0` is the hybridised
+         ! exchange by itself, so SCAN0 is that plus SCAN correlation -- and the
+         ! quarter of exact exchange still belongs to libxc, which reports it from
+         ! the component, not from a number written here.
+      case ("scan0")
+         spec%from_libxc = .false.
+         spec%n_components = 2
+         spec%component(1) = xc_component_t("hyb_mgga_x_scan0", 1.0_dp)
+         spec%component(2) = xc_component_t("mgga_c_scan", 1.0_dp)
+
+      case ("r2scan0")
+         spec%from_libxc = .true.
+         spec%n_components = 1
+         spec%component(1) = xc_component_t("hyb_mgga_xc_r2scan0", 1.0_dp)
+
+      case ("r2scanh")
+         spec%from_libxc = .true.
+         spec%n_components = 1
+         spec%component(1) = xc_component_t("hyb_mgga_xc_r2scanh", 1.0_dp)
+
+      case ("r2scan50")
+         spec%from_libxc = .true.
+         spec%n_components = 1
+         spec%component(1) = xc_component_t("hyb_mgga_xc_r2scan50", 1.0_dp)
+
          ! BLYP, which libxc also leaves as two halves. Worth a row of its own
          ! rather than leaving callers to spell both: it is B2PLYP's semilocal
          ! part at full weight, so it is the functional a double hybrid's kernel
@@ -248,7 +330,7 @@ contains
          spec%component(1) = xc_component_t("gga_x_pbe", 1.0_dp)
          spec%component(2) = xc_component_t("gga_c_pbe", 1.0_dp)
 
-      case ("svwn", "lda", "lsda")
+      case ("svwn", "svwn5", "lda", "lsda")
          spec%from_libxc = .false.
          spec%n_components = 2
          spec%component(1) = xc_component_t("lda_x", 1.0_dp)
@@ -256,10 +338,87 @@ contains
 
          ! ---- everything else is libxc's ------------------------------------
       case default
+         if (whole_only) call check_name_is_whole(lower, error)
+         if (error%has_error()) return
          spec%from_libxc = .true.
          spec%n_components = 1
          spec%component(1) = xc_component_t(lower, 1.0_dp)
       end select
    end subroutine xc_spec_from_name
+
+   pure function libxc_role(name) result(role)
+      !! Which part of a functional a libxc name is: "x", "c", "xc", "k" or ""
+      !!
+      !! libxc spells every functional `<family>_<role>_<label>`, and the role is
+      !! the first underscore-delimited segment that is one of those four. All 702
+      !! functionals in 7.1.2 follow it without exception, so this reads libxc's
+      !! own convention rather than keeping a list that could fall out of step
+      !! with it. A name following no such convention returns "" and is left for
+      !! libxc to reject in its own words.
+      character(len=*), intent(in) :: name
+      character(len=2) :: role
+
+      integer :: i, lo, n
+
+      role = ""
+      lo = 1
+      n = len_trim(name)
+      do i = 1, n + 1
+         if (i <= n) then
+            if (name(i:i) /= "_") cycle
+         end if
+         if (is_role(name(lo:i - 1))) then
+            role = name(lo:i - 1)
+            return
+         end if
+         lo = i + 1
+      end do
+   end function libxc_role
+
+   pure function is_role(segment) result(yes)
+      !! Whether one name segment is a role marker rather than part of the label
+      character(len=*), intent(in) :: segment
+      logical :: yes
+      yes = segment == "x" .or. segment == "c" .or. segment == "xc" .or. segment == "k"
+   end function is_role
+
+   subroutine check_name_is_whole(name, error)
+      !! Refuse a libxc name that is only half of a functional
+      !!
+      !! libxc splits most of its semilocal functionals into an exchange half and
+      !! a correlation half, and either half alone is a perfectly valid libxc
+      !! functional that initialises, evaluates, and converges. It just is not the
+      !! functional anyone meant: `mgga_x_r2scan` alone lands 0.32 Hartree from
+      !! r2SCAN and `mgga_c_r2scan` alone nine Hartree, both silently, on a water
+      !! molecule. Nothing downstream can catch that, because there is nothing
+      !! wrong with the calculation -- only with which functional it ran.
+      !!
+      !! This costs nothing in reach: a pair libxc does not carry under one name
+      !! belongs in the table above, which is where every such functional in this
+      !! module already is.
+      character(len=*), intent(in) :: name
+      type(error_t), intent(inout) :: error
+
+      character(len=2) :: role
+
+      role = libxc_role(name)
+      select case (trim(role))
+      case ("x", "c")
+         call error%set(ERROR_VALIDATION, "'"//trim(name)//"' is only the "// &
+                        trim(merge("exchange   ", "correlation", trim(role) == "x"))// &
+                        " half of a functional. libxc carries the halves "// &
+                        "separately and one of them alone converges to an energy "// &
+                        "that is not the functional it is named after. Ask for a "// &
+                        "name that pairs them, or for a libxc name carrying "// &
+                        "'_xc_'.")
+      case ("k")
+         call error%set(ERROR_VALIDATION, "'"//trim(name)//"' is a kinetic energy "// &
+                        "functional, not an exchange-correlation one.")
+      case default
+         ! "xc", a whole functional; or "", a name following no libxc convention
+         ! at all. Both pass, the second because an unrecognisable name is libxc's
+         ! to reject in its own words rather than this module's to guess at.
+      end select
+   end subroutine check_name_is_whole
 
 end module mqc_xc_spec
