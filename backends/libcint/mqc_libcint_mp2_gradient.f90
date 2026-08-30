@@ -82,7 +82,7 @@ contains
                                    error, n_frozen, block_bytes, force_blocked, &
                                    xc, scf_density, pt2_scale, aux, &
                                    relaxed_density_mo, lagrangian_mo, two_particle_ao, &
-                                   energy_weighted_ao)
+                                   energy_weighted_ao, fixed_grid)
       !! dE(MP2)/dR for a closed-shell reference, in Hartree/Bohr
       !!
       !! **With `xc`, this returns something else**: the correlation part alone,
@@ -121,6 +121,21 @@ contains
          !! including the Lagrangian that feeds the Z-vector -- but *after* the
          !! solve, since scaling a linear system's right-hand side and scaling
          !! its solution are the same thing and doing both is the error to avoid.
+      logical, intent(in), optional :: fixed_grid
+         !! Leave the quadrature grid where it is, so the only motion this
+         !! differentiates is the density's. Defaults to `.false.` -- the
+         !! physical gradient, which is what a deck wants.
+         !!
+         !! `.true.` exists for one caller: the double hybrid's *Hessian* holds
+         !! the grid fixed, as `ks_hessian` and `xc_hessian` do, so the gradient
+         !! it can be differenced against is this one and not the physical one.
+         !! `xc_gradient_fixed_grid` and `vv10_gradient_fixed_grid` are public
+         !! for exactly the same reason. Comparing the fixed-grid Hessian
+         !! against the moving-grid gradient instead does not fail cleanly: it
+         !! leaves a residual that shrinks with grid level -- 5.5e-4 at level 3
+         !! against 6.5e-5 at level 5 was measured on the reference term -- and
+         !! so reads as a convergence problem rather than as the two quantities
+         !! being different derivatives.
       integer, intent(in), optional :: n_frozen
          !! Core orbitals excluded from the correlation. The amplitudes and the
          !! two-particle density span the active occupied space only; the
@@ -540,7 +555,8 @@ contains
       ! two-electron, so `vhf1` below is all of it, while a Kohn-Sham reference
       ! keeps part of its operator on a quadrature grid.
       if (dh) then
-         call xc_potential_gradient(xc, mol, scf_density, dm1, gradient, error)
+         call xc_potential_gradient(xc, mol, scf_density, dm1, gradient, error, &
+                                    fixed_grid=fixed_grid)
          if (error%has_error()) return
       end if
 

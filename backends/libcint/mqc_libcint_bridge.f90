@@ -667,7 +667,7 @@ contains
       type(scf_convergence_t) :: scf_conv
       type(scf_numerics_t) :: ladder_scf
       logical :: conv_ok
-      logical :: unrestricted, do_gradient, do_hessian
+      logical :: unrestricted, do_gradient, do_hessian, dh_analytic
       ! Left unallocated for the guesses that need no free-atom solutions. An
       ! unallocated allocatable passed to an optional dummy is an absent
       ! argument, so the SCF calls below need no branching on which guess ran.
@@ -1609,24 +1609,52 @@ contains
       ! A solvated SCF also falls through: these second derivatives are the
       ! gas-phase operator's, and the finite-difference fallback is *correct*
       ! for the continuum -- each displaced energy rebuilds its own cavity.
-      ! The double hybrid stays on this list now VV10 has come off it, and
-      ! `settings%run_mp2` does not stand in for it: a double hybrid's PT2
-      ! correlation is driven from `xc%pt2_fraction` further down and never
-      ! sets that flag. None of the second derivatives below carries it, so
-      ! `b2plyp` taken analytically returns its underlying hybrid's Hessian --
-      ! a Frobenius norm of 2.146683 against a true 2.120638 on water at
-      ! STO-3G, printed beside the double hybrid's own "PT2 x 0.270" energy
-      ! line with nothing to say the Hessian excludes what the energy includes.
+      ! A double hybrid used to be on this list, and `settings%run_mp2` still
+      ! does not stand in for one: its PT2 correlation is driven from
+      ! `xc%pt2_fraction` further down and never sets that flag. What it was
+      ! excluded *for* is now built -- none of the second derivatives here
+      ! carried the perturbative term, so `b2plyp` taken analytically returned
+      ! its underlying hybrid's Hessian, a Frobenius norm of 2.146683 against a
+      ! true 2.120638 on water at STO-3G, printed beside the double hybrid's
+      ! own "PT2 x 0.270" energy line with nothing to say the Hessian excluded
+      ! what the energy included.
       ! That is the failure the *gradient* guard above this one already
       ! prevents, where the hybrid's number came back against the double
       ! hybrid's energy, right in shape and wrong by a third.
+      !
+      ! **The double hybrid is now on the list**, under the four conditions
+      ! below, and its perturbative term is added inside the block rather
+      ! than left out of it. The conditions are the ones the second-derivative
+      ! ladder cannot yet meet, and each falls through to the semi-numerical
+      ! path rather than refusing, because that path is *correct* here: it
+      ! differences the double hybrid's own energy and so already carries
+      ! whatever this cannot.
+      !
+      !   * a meta-GGA -- `xc_kernel2_apply` and `xc_kernel_deriv` are LDA and
+      !     GGA only, and both say so rather than returning a partial kernel
+      !   * a range-separated functional -- the correlation block scales
+      !     exchange by the single `exx_fraction`, which is not what a screened
+      !     omega means
+      !   * VV10 -- `ks_hessian` carries the non-local term but the *kernel's*
+      !     third derivative and nuclear derivative do not, and unlike the two
+      !     above they would not object; this is the guard standing in for
+      !     that missing refusal
+      !   * a frozen core -- the blocks exist and plain MP2 uses them, but the
+      !     core<->active resolution has been validated over a Hartree-Fock
+      !     reference only, never against a Kohn-Sham operator carrying its
+      !     kernel in the response
+      dh_analytic = kohn_sham .and. xc%pt2_fraction /= 0.0_dp &
+                    .and. .not. xc%any_mgga .and. .not. xc%range_separated &
+                    .and. xc%nlc_b == 0.0_dp .and. xc%nlc_c == 0.0_dp &
+                    .and. .not. settings%freeze_core
       if (do_hessian .and. .not. unrestricted &
           .and. .not. settings%density_fitting .and. .not. settings%run_mp2 &
           .and. .not. settings%run_cc .and. .not. settings%pcm%enabled &
           .and. fragment%n_caps == 0 &
-          .and. .not. (kohn_sham .and. xc%pt2_fraction /= 0.0_dp)) then
+          .and. (dh_analytic .or. .not. (kohn_sham .and. xc%pt2_fraction /= 0.0_dp))) then
          block
             real(dp), allocatable :: hess4(:, :, :, :)
+            real(dp), allocatable :: hess_pt2(:, :, :, :), hess_discard(:, :, :, :)
             type(timer_type) :: hess_clock
 
             call logger%info("  computing the analytic Hessian")
@@ -1638,6 +1666,26 @@ contains
             else
                call rhf_hessian(mol, fragment%element_numbers, scf%density, scf%orbitals, &
                                 scf%orbital_energies, scf%n_occupied, hess4, error)
+            end if
+            ! The perturbative term, on top of the Kohn-Sham one, and the same
+            ! split the gradient uses: `ks_hessian` is the whole reference --
+            ! skeleton, response and nuclear repulsion -- so what is wanted from
+            ! the correlation routine is its correlation block alone. Its
+            ! `hess_ref` is Hartree-Fock-shaped and is discarded by contract,
+            ! not by choice; taking it as well would count a reference twice
+            ! and lose the functional in the copy that survived.
+            !
+            ! `pt2_scale` goes in rather than being applied here for the reason
+            ! its own docstring gives -- the Z-vector solves are linear, so
+            ! scaling inputs and scaling outputs are one operation and doing
+            ! both is the error.
+            if (dh_analytic .and. .not. error%has_error()) then
+               call logger%info("  computing the perturbative term's Hessian")
+               call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &
+                                            scf%density, scf%n_occupied, 0, &
+                                            hess_pt2, hess_discard, error, &
+                                            xc=xc, pt2_scale=xc%pt2_fraction)
+               if (.not. error%has_error()) hess4 = hess4 + hess_pt2
             end if
             if (error%has_error()) then
                call result%error%set(ERROR_VALIDATION, "Hessian: "//error%get_message())

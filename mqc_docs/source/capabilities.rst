@@ -293,7 +293,9 @@ What has a gradient on the CPU backend, at a glance:
        core orbitals and no virtuals)
    * - Double hybrids (``b2plyp``, ``b2gp-plyp``, ``mpw2plyp``)
      - yes
-     - Restricted, all-electron, GGA-based; exact or fitted reference
+     - Restricted, all-electron, GGA-based; exact or fitted reference. The
+       *Hessian* is analytic under the same conditions less the fitted
+       reference -- see :doc:`analytic_hessians`
    * - CASSCF and ORMAS-SCF
      - yes
      - No Z-vector: a converged MCSCF is stationary with respect to both the
@@ -475,9 +477,11 @@ analytically is not refused, it falls back.
   coupled-perturbed solve, the explicit second-derivative assembly) so it can be
   compared with PySCF's ``hessian.rhf`` and ``hessian.rks`` stage by stage
   rather than only at the end. Taken whenever the calculation is restricted, not
-  density fitted, and has no MP2 or coupled-cluster correlation, no continuum
-  solvent and no hydrogen caps. See :doc:`analytic_hessians` for which
-  functionals qualify.
+  density fitted, has no coupled-cluster correlation, no continuum solvent and
+  no hydrogen caps. MP2 and the double hybrids are on this path too, each
+  adding its correlation block to the reference one. See
+  :doc:`analytic_hessians` for which functionals qualify and where a double
+  hybrid falls back.
 - **Semi-numerical** otherwise: central differences of *analytic gradients*,
   ``H[i,j] = (g_j(x_i + h) - g_j(x_i - h)) / 2h``. Only one derivative is taken
   numerically, which keeps most of the digits that differencing energies twice
@@ -825,11 +829,11 @@ Planned Features
    - Unrestricted double hybrids, whose perturbative term keeps them closed-shell
    - F12 variants: these parse but have no implementation
 
-2. **Second derivatives beyond restricted Hartree-Fock**: unrestricted,
-   density-fitted and MP2 Hessians. The Kohn-Sham one is written and validated
-   against PySCF to 1e-8 for every rung through meta-GGA, hybrids and
-   range-separated hybrids included -- what is left there is wiring it to
-   ``driver: Hessian``, not the derivatives. See :doc:`analytic_hessians`
+2. **Second derivatives beyond a restricted, exact reference**: unrestricted
+   and density-fitted Hessians. The Kohn-Sham, MP2 and double-hybrid ones are
+   built and wired to ``driver: Hessian``; what remains is an open shell and a
+   fitted one. See :doc:`analytic_hessians` for the table and for the four
+   double-hybrid cases that still fall back
 
 3. **Advanced dynamics**:
 
