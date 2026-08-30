@@ -127,6 +127,26 @@ contains
       ! Where the molecule reacts. Absent here until now, so a DFT deck asking
       ! for `properties.fukui` got a normal DFT run and no analysis, with no
       ! error to say why: the bridge gates on this being allocated.
+      ! Refused rather than run. The QUAO bonding options are not meant for a
+      ! Kohn-Sham reference, and nothing in the backend stops them: the
+      ! dispatch is gated only on the deck naming an analysis, so handing these
+      ! over would run a decomposition on Kohn-Sham orbitals and report numbers
+      ! for it. Before this refactor a Kohn-Sham deck asking for them was
+      ! silently ignored, which is the failure this work exists to end -- but
+      ! the fix is to say no, not to start obeying a request the method was
+      ! never meant to serve. `bonding_analysis` itself stays copied: it selects
+      ! *which* analysis and its own dispatch handles "none".
+      if (this%options%properties%bonding_energy .or. &
+          this%options%properties%bonding_no_sharing .or. &
+          this%options%properties%bonding_restrict_localization) then
+         call result%error%set(ERROR_VALIDATION, "the QUAO bonding options are not "// &
+                               "available for a Kohn-Sham reference: the energy "// &
+                               "decomposition and its sharing controls are defined "// &
+                               "against a Hartree-Fock or MCSCF wavefunction. Request "// &
+                               "them on one of those instead.")
+         result%has_error = .true.
+         return
+      end if
       call apply_properties_settings(settings, this%options%properties)
       ! Set unconditionally, and deliberately not guarded on the backend. cuEST
       ! has no four-index path so it fits regardless and ignores this, per the
