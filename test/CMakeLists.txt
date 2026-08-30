@@ -356,7 +356,12 @@ if(MQC_ENABLE_LIBCINT)
   # predicates are plain Fortran over a per-atom core-electron count and reach
   # no integral, so they mean the same thing in either configuration -- and a
   # build that cannot evaluate an ECP is exactly where the refusals most want
-  # testing.
+  # testing. The identity the double-hybrid Hessian's rewrite rests on: every
+  # kernel contraction in the MP2 Hessian is the reference operator applied to a
+  # symmetric generalized density. Inside this guard because it drives
+  # `mp2_mo_eri_physicist` and an exchange-correlation context.
+  addtest(mqc_mp2_hessian_ks_operator)
+
   addtest(mqc_ecp_refusals)
 
   # The ECP matrix for a lanthanide, whose local channel is l = 5 -- the path
