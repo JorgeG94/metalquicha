@@ -5,8 +5,8 @@ description: Review a metalquicha branch, PR, or working-tree diff against the p
 
 # metalquicha PR review
 
-Review changed Fortran against `FORTRAN_STYLE.md` and the project's house
-rules. The point of this skill is the part **no linter catches** — run the
+Review changed Fortran against `FORTRAN_STYLE.md`, changed CMake against
+`CMAKE_STYLE.md`, and both against the project's house rules. The point of this skill is the part **no linter catches** — run the
 linters first so you never spend a finding on something CI already reports,
 then read the diff for the conventions below.
 
