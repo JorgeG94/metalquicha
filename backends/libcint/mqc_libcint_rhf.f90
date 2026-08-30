@@ -789,34 +789,21 @@ contains
          ! taper makes this true on its own in every ordinary case; requiring it
          ! costs an iteration in the case where it would not have been.
          drms_prev = drms
-         ! **The commutator decides, and `drms` is not in the test at all.**
-         ! `de` and `drms` say the iteration stopped moving; they do not say it
-         ! stopped at a stationary point. `FDS - SDF` is what vanishes when F
-         ! and D commute, which is what convergence means, and the loop has
-         ! been computing it every iteration for DIIS all along without ever
-         ! testing it.
-         !
-         ! Two failures, opposite directions, and only requiring the commutator
-         ! *always* fixes both. Testing `drms` and not the commutator let EDIIS
-         ! report "converged in 4 iterations" on water/def2-SVP at an energy
-         ! 0.11 Hartree wrong, because a stalled interpolation moves the
-         ! density hardly at all. Testing `drms` as well as the commutator
-         ! wastes iterations on an ill-conditioned basis, where `drms` measures
-         ! density components in the near-null space and pins around 1e-6
-         ! without descending -- 7 wasted iterations that move the answer 1.4e-7
-         ! on a 1188-function anion whose overlap has a 1.6e-7 eigenvalue.
-         ! Accepting *either* one, which was the obvious middle, reopens the
-         ! first hole: a small `drms` beside a large commutator is exactly the
-         ! EDIIS case.
-         !
-         ! The threshold is `min(sqrt(energy_tol), density_tol)`, both of which
-         ! the caller already supplied, so there is no constant here to
-         ! calibrate. `sqrt(energy_tol)` alone is pyscf's default for its own
-         ! `norm_gorb` and is loose when it carries the test by itself -- 1e-4
-         ! on a default deck, and a deck asking for 1e-12 would still get it.
-         ! The `min` binds it to what the caller asked of the density instead.
-         if (iter > 1 .and. de < energy_tol .and. shift_now == 0.0_dp .and. &
-             gnorm < min(sqrt(energy_tol), density_tol)) then
+         ! **The commutator has to be in the test.** `de` and `drms` say the
+         ! iteration stopped moving; they do not say it stopped at a stationary
+         ! point. `FDS - SDF` is what vanishes when F and D commute, which is
+         ! what convergence means, and an SCF can hold both of the others small
+         ! while this one is nowhere near zero -- any scheme that
+         ! *interpolates* rather than extrapolates will do it, because a
+         ! stalled interpolation moves the density hardly at all. EDIIS reached
+         ! "converged in 4 iterations" on water/def2-SVP at an energy 0.11
+         ! Hartree wrong, with `de` and `drms` under their thresholds the whole
+         ! way. PySCF has always tested this -- `norm_gorb < conv_tol_grad`
+         ! beside the energy check -- and the threshold here is its default,
+         ! `sqrt(energy_tol)`, on a commutator normalised per element so it
+         ! does not tighten with basis size.
+         if (iter > 1 .and. de < energy_tol .and. drms < density_tol .and. &
+             gnorm < sqrt(energy_tol) .and. shift_now == 0.0_dp) then
             result%converged = .true.
             exit
          end if
@@ -1211,34 +1198,21 @@ contains
          e_old = e_elec
          result%iterations = iter
          drms_prev = drms
-         ! **The commutator decides, and `drms` is not in the test at all.**
-         ! `de` and `drms` say the iteration stopped moving; they do not say it
-         ! stopped at a stationary point. `FDS - SDF` is what vanishes when F
-         ! and D commute, which is what convergence means, and the loop has
-         ! been computing it every iteration for DIIS all along without ever
-         ! testing it.
-         !
-         ! Two failures, opposite directions, and only requiring the commutator
-         ! *always* fixes both. Testing `drms` and not the commutator let EDIIS
-         ! report "converged in 4 iterations" on water/def2-SVP at an energy
-         ! 0.11 Hartree wrong, because a stalled interpolation moves the
-         ! density hardly at all. Testing `drms` as well as the commutator
-         ! wastes iterations on an ill-conditioned basis, where `drms` measures
-         ! density components in the near-null space and pins around 1e-6
-         ! without descending -- 7 wasted iterations that move the answer 1.4e-7
-         ! on a 1188-function anion whose overlap has a 1.6e-7 eigenvalue.
-         ! Accepting *either* one, which was the obvious middle, reopens the
-         ! first hole: a small `drms` beside a large commutator is exactly the
-         ! EDIIS case.
-         !
-         ! The threshold is `min(sqrt(energy_tol), density_tol)`, both of which
-         ! the caller already supplied, so there is no constant here to
-         ! calibrate. `sqrt(energy_tol)` alone is pyscf's default for its own
-         ! `norm_gorb` and is loose when it carries the test by itself -- 1e-4
-         ! on a default deck, and a deck asking for 1e-12 would still get it.
-         ! The `min` binds it to what the caller asked of the density instead.
-         if (iter > 1 .and. de < energy_tol .and. shift_now == 0.0_dp .and. &
-             gnorm < min(sqrt(energy_tol), density_tol)) then
+         ! **The commutator has to be in the test.** `de` and `drms` say the
+         ! iteration stopped moving; they do not say it stopped at a stationary
+         ! point. `FDS - SDF` is what vanishes when F and D commute, which is
+         ! what convergence means, and an SCF can hold both of the others small
+         ! while this one is nowhere near zero -- any scheme that
+         ! *interpolates* rather than extrapolates will do it, because a
+         ! stalled interpolation moves the density hardly at all. EDIIS reached
+         ! "converged in 4 iterations" on water/def2-SVP at an energy 0.11
+         ! Hartree wrong, with `de` and `drms` under their thresholds the whole
+         ! way. PySCF has always tested this -- `norm_gorb < conv_tol_grad`
+         ! beside the energy check -- and the threshold here is its default,
+         ! `sqrt(energy_tol)`, on a commutator normalised per element so it
+         ! does not tighten with basis size.
+         if (iter > 1 .and. de < energy_tol .and. drms < density_tol .and. &
+             gnorm < sqrt(energy_tol) .and. shift_now == 0.0_dp) then
             result%converged = .true.
             exit
          end if
