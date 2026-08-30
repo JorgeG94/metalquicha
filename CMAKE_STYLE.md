@@ -155,8 +155,25 @@ The `mqc` test preset filters to `^metalquicha/`, which is what leaves out the
 mctc-lib and dftd4 cases — those two `add_subdirectory("test")` unconditionally
 and cannot be configured away.
 
-`perlmutter` exists because the failure there is a wall of errors from inside
-someone else's source: tblite does not build with the Cray compiler, and the
-configure-time refusal names the flag but not the machine. The preset sets
-`MQC_ENABLE_TBLITE=OFF` and turns cuEST on, which is the pair you always want
-there.
+### The Perlmutter preset
+
+Worth spelling out, because every one of its four settings is a workaround for
+something that fails somewhere else with a message naming neither Perlmutter nor
+the flag that fixes it. The machine is nvfortran (for cuEST) over Cray MPICH.
+
+| Setting | What breaks without it |
+|---|---|
+| `MQC_ENABLE_TBLITE=OFF` | toml-f, reached through tblite, has a backslash string literal nvfortran rejects, and there is no flag to make it accept it. The configure-time refusal fires first and names the compiler, which is at least a clue |
+| `MQC_ENABLE_CUEST=ON` + `CUEST_ROOT` | the reason to be on the machine at all. cuEST ships GPU code for sm_80 and newer, so this is where the backend can actually run rather than only compile |
+| `PIC_USE_LEGACY_MPI=ON` | the `mpi_f08` path |
+| `PIC_MPICH_PERLMUTTER=ON` | `MPI_Win_allocate`'s generic does not resolve under nvfortran with Cray MPICH. Dropping those wrappers is free here -- nothing in this program uses one-sided communication |
+
+If a second generic-resolution mismatch of that kind turns up, reach for
+`PIC_USE_VAPAA=ON` rather than adding another instance-level workaround: it goes
+through MPI's C ABI and fixes the class. `cmake/modules/Findpic-mpi.cmake`
+forwards all three.
+
+Real verification is `validation/run_cuest_validation.sh`, which has the
+reference energies. Locally the backend can only be compile-checked -- see the
+stub-`libcuest.so` recipe, which lets CMake do the whole build rather than
+compiling files by hand in dependency order.

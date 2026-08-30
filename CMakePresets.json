@@ -71,11 +71,13 @@
       "name": "perlmutter",
       "inherits": "base",
       "displayName": "Perlmutter (NERSC)",
-      "description": "GPU nodes at NERSC. tblite OFF because it does not build with the Cray compiler; cuEST ON, which needs CUEST_ROOT pointing at the unpacked archive.",
+      "description": "GPU nodes at NERSC, under nvfortran with Cray MPICH. Needs CUEST_ROOT pointing at the unpacked libcuest archive. See CMAKE_STYLE.md for what each of these is working around.",
       "cacheVariables": {
         "MQC_ENABLE_TBLITE": "OFF",
         "MQC_ENABLE_CUEST": "ON",
         "CUEST_ROOT": "$env{CUEST_ROOT}",
+        "PIC_USE_LEGACY_MPI": "ON",
+        "PIC_MPICH_PERLMUTTER": "ON",
         "MQC_BLA_VENDOR": ""
       },
       "environment": {
