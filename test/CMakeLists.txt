@@ -362,6 +362,11 @@ if(MQC_ENABLE_LIBCINT)
   # `mp2_mo_eri_physicist` and an exchange-correlation context.
   addtest(mqc_mp2_hessian_ks_operator)
 
+  # `f^(X)` against a difference of the Fock matrix it derives. Pins the
+  # Hartree-Fock behaviour of a site the double-hybrid work has to change, so
+  # that edit lands with a test either side of it.
+  addtest(mqc_mp2_hessian_skeleton_fock)
+
   addtest(mqc_ecp_refusals)
 
   # The ECP matrix for a lanthanide, whose local channel is l = 5 -- the path
