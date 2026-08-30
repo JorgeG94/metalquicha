@@ -1,5 +1,12 @@
-set(_lib "pic-mpi")
-set(_url "https://github.com/JorgeG94/pic-mpi/")
+# pic-mpi -- the MPI wrapper layer, and the one dependency with a build option
+# of its own to translate.
+include("${CMAKE_CURRENT_LIST_DIR}/MqcFetch.cmake")
+
+set(_rev "v0.6.0")
+
+# The first pic-mpi release carrying the single-rank backend, i.e. the first one
+# that understands PIC_ENABLE_MPI.
+set(_serial_min "0.6.0")
 
 # Turn MQC_ENABLE_MPI=OFF into the flag pic-mpi actually understands.
 #
@@ -19,15 +26,6 @@ if(DEFINED PIC_USE_LEGACY_MPI)
       ${PIC_USE_LEGACY_MPI}
       CACHE BOOL "Use legacy MPI module" FORCE)
 endif()
-
-include("${CMAKE_CURRENT_LIST_DIR}/sample_utils.cmake")
-
-# Use the main branch
-set(_rev "v0.6.0")
-
-# The first pic-mpi release carrying the single-rank backend, i.e. the first one
-# that understands PIC_ENABLE_MPI.
-set(_serial_min "0.6.0")
 
 # Checked BEFORE the fetch, on purpose. FetchContent configures pic-mpi as soon
 # as it is made available, so a pic-mpi that predates the option fails inside
@@ -51,9 +49,15 @@ if(DEFINED MQC_ENABLE_MPI
   endif()
   unset(_rev_number)
 endif()
-my_fetch_package("${_lib}" "${_url}" "${_rev}")
 
-unset(_lib)
-unset(_url)
+mqc_fetch(
+  NAME
+  pic-mpi
+  GIT_REPOSITORY
+  "https://github.com/JorgeG94/pic-mpi/"
+  GIT_TAG
+  "${_rev}"
+  NAMESPACED_TARGET)
+
 unset(_rev)
 unset(_serial_min)

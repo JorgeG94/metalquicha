@@ -1,0 +1,141 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 22,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "default",
+      "inherits": "base",
+      "displayName": "Default",
+      "description": "Everything on by default: xTB, CPU integrals via libfint, libxc. What CI builds.",
+      "binaryDir": "${sourceDir}/build"
+    },
+    {
+      "name": "debug",
+      "inherits": "base",
+      "displayName": "Debug",
+      "description": "Debug flags. Expect 24 baseline failures with libcint selected -- see docs/CMAKE_STYLE.md.",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "libcint",
+      "inherits": "base",
+      "displayName": "libcint instead of libfint",
+      "description": "The C integrals library. Compiles different source (no fused sp shells), so CI builds it too.",
+      "cacheVariables": {
+        "MQC_USE_LIBFINT": "OFF"
+      }
+    },
+    {
+      "name": "xtb-only",
+      "inherits": "base",
+      "displayName": "xTB only",
+      "description": "No CPU integrals and no libxc, so a configure touches the network far less. GFN1/GFN2 and fragmentation only.",
+      "cacheVariables": {
+        "MQC_ENABLE_LIBCINT": "OFF",
+        "MQC_ENABLE_LIBXC": "OFF"
+      }
+    },
+    {
+      "name": "serial",
+      "inherits": "base",
+      "displayName": "No MPI",
+      "description": "pic-mpi's single-rank backend. For a machine with no MPI at all.",
+      "cacheVariables": {
+        "MQC_ENABLE_MPI": "OFF"
+      }
+    },
+    {
+      "name": "coverage",
+      "inherits": "base",
+      "displayName": "Coverage",
+      "description": "Coverage-mqc, which is the only build type the coverage flags are applied for. libxc turns itself off here.",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Coverage-mqc"
+      }
+    },
+    {
+      "name": "perlmutter",
+      "inherits": "base",
+      "displayName": "Perlmutter (NERSC)",
+      "description": "GPU nodes at NERSC. tblite OFF because it does not build with the Cray compiler; cuEST ON, which needs CUEST_ROOT pointing at the unpacked archive.",
+      "cacheVariables": {
+        "MQC_ENABLE_TBLITE": "OFF",
+        "MQC_ENABLE_CUEST": "ON",
+        "CUEST_ROOT": "$env{CUEST_ROOT}",
+        "MQC_BLA_VENDOR": ""
+      },
+      "environment": {
+        "CUEST_ROOT": "$penv{CUEST_ROOT}"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default"
+    },
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "libcint",
+      "configurePreset": "libcint"
+    },
+    {
+      "name": "xtb-only",
+      "configurePreset": "xtb-only"
+    },
+    {
+      "name": "serial",
+      "configurePreset": "serial"
+    },
+    {
+      "name": "coverage",
+      "configurePreset": "coverage"
+    },
+    {
+      "name": "perlmutter",
+      "configurePreset": "perlmutter"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "mqc",
+      "configurePreset": "default",
+      "description": "This project's own tests. mctc-lib and dftd4 add theirs unconditionally; the filter is what leaves them out.",
+      "filter": {
+        "include": {
+          "name": "^metalquicha/"
+        }
+      },
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "mqc-libcint",
+      "inherits": "mqc",
+      "configurePreset": "libcint"
+    },
+    {
+      "name": "mqc-serial",
+      "inherits": "mqc",
+      "configurePreset": "serial"
+    }
+  ]
+}

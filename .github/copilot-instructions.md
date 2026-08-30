@@ -96,6 +96,25 @@ Two more things a performance change should have thought about:
   stays serial inside a pinned fragment worker. A threaded BLAS underneath does
   not.
 
+## CMake
+
+`CMAKE_STYLE.md` has the rules; these are the three worth stopping a PR over.
+
+- **A `FetchContent_Declare` outside `cmake/modules/MqcFetch.cmake`.** Every
+  dependency is declared in its own `cmake/modules/Find<pkg>.cmake` through
+  `mqc_fetch`, with its pin and the reason for that pin beside it.
+- **An `option()` anywhere but `cmake/MqcOptions.cmake`.** One declared at its
+  point of use is declared too late for anything read earlier: that is how the
+  ECP matrix test came to be gated on a variable that did not exist yet, and so
+  never ran at all while the suite reported success.
+- **Growth in the top-level `CMakeLists.txt`.** It is an outline -- four
+  includes and the targets between them. Anything added there has a file it
+  belongs in instead.
+
+Also: a branch as a `GIT_TAG` (a moving pin reddens the matrix with a signal
+indistinguishable from a real break), and a validation program added by hand
+rather than through `mqc_add_validation_program`.
+
 ## Style
 
 Comments explain *why*, not what. The codebase documents the decision, the

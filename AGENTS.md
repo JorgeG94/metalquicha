@@ -17,10 +17,12 @@ either name finds it.
 ## Quick Start
 
 ```bash
-# Build
-mkdir build && cd build
-cmake ..
-make -j
+# Build (a preset, which is the shortest way to a correct configuration)
+cmake --preset default && cmake --build --preset default
+ctest --preset mqc
+
+# Or by hand
+cmake -B build && cmake --build build -j
 
 # Run (serial)
 ./mqc input.json
@@ -261,9 +263,19 @@ python run_validation.py
 
 Test files follow pattern `test/test_mqc_*.f90`.
 
+## Build System
+
+`CMAKE_STYLE.md` is the guide. The short version: the top-level `CMakeLists.txt`
+is an outline of four `include()`s, every dependency is declared in its own
+`cmake/modules/Find<pkg>.cmake` through `mqc_fetch`, every option lives in
+`cmake/MqcOptions.cmake`, and validation programs go through
+`mqc_add_validation_program`. `CMakePresets.json` carries the configurations
+worth remembering, `perlmutter` among them.
+
 ## Coding Conventions
 
-See `FORTRAN_STYLE.md` for the complete style guide. Key points:
+See `FORTRAN_STYLE.md` for the complete style guide, and `CMAKE_STYLE.md`
+for the build system. Key points:
 
 - Module naming: `mqc_*.f90`
 - Type naming: `*_t` suffix (e.g., `calculation_result_t`)
@@ -406,7 +418,7 @@ ctest --test-dir build -R "mqc"
 
 1. **Coverage build type**: Must use `Coverage-mqc` (not `Coverage`) - the flags are only applied for this specific build type in `cmake/CMakeLists.txt`
 
-2. **Dependency tests running**: Use `ctest -R "mqc"` to filter to only metalquicha tests; otherwise ctest runs tests from all dependencies (tblite, pic, etc.)
+2. **Dependency tests running**: mostly fixed -- `cmake/MqcDependencies.cmake` turns off every dependency test suite that can be turned off, which is all but two. `mctc-lib` and `dftd4` `add_subdirectory("test")` unconditionally and cannot be configured away, so their ~38 cases remain. `ctest --preset mqc`, or `ctest -R "mqc"`, still filters to this project's own.
 
 3. **Linter `only` clause**: The `fortitude` linter requires all `use` statements to have an `only` clause - code will fail CI without this
 

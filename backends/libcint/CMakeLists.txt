@@ -62,3 +62,9 @@ target_sources(
           mqc_efp_rotate.f90
           mqc_efp_energy.f90
           mqc_sapt.f90)
+
+# The validation and benchmark programs that exercise this backend. Registered
+# from here rather than from the top-level file so that a build without CPU
+# integrals never defines them: this directory only exists when the backend
+# does.
+include("${CMAKE_CURRENT_LIST_DIR}/validation.cmake")
