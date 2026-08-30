@@ -1164,16 +1164,19 @@ contains
       !! itself. It carries no grid terms at all, which is the approximation
       !! the Hessian above makes.
       !!
-      !! Not `xc_potential_gradient` with `fixed_grid`, though that flag was
-      !! built for exactly this comparison: its four `accumulate_channel`
-      !! deposits never forward `moving`, so that branch drops the
-      !! partition-weight response while *keeping* the grid-point-motion term
-      !! -- against a scalar difference of `Tr(P V)` on the frozen grid it
-      !! misses by up to 5.7e-2 on this system (in-plane components only; the
-      !! out-of-plane ones agree to step error, which is what let it look
-      !! plausible), where this contraction agrees to 1e-10. Until that branch
-      !! is fixed, differencing it would compare this Hessian against a
-      !! quantity nothing is the second derivative of.
+      !! `xc_potential_gradient(fixed_grid=.true.)` is the same number and
+      !! would serve, but this route shares less machinery with the routine
+      !! under test, so a common-mode error has one fewer place to hide.
+      !!
+      !! That flag was broken when this test was written: its four
+      !! `accumulate_channel` deposits did not forward `moving`, so it dropped
+      !! the partition-weight response while *keeping* the grid-point-motion
+      !! term -- against a scalar difference of `Tr(P V)` on the frozen grid it
+      !! missed by up to 5.7e-2 here, in-plane components only, the
+      !! out-of-plane ones agreeing to step error, which is what let it look
+      !! plausible. It is fixed now, and `test_fixed_grid_potential_gradient`
+      !! pins it. The history is kept because the shape of that bug is the
+      !! reason this test reaches for the independent route.
       type(xc_context_t), intent(inout) :: ctx
       real(dp), intent(in) :: coords(3, 3), dens(:, :), pmat(:, :)
       real(dp), intent(out) :: gradient(3, 3)

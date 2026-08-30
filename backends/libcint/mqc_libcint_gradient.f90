@@ -933,7 +933,8 @@ contains
       real(dp), intent(inout) :: gradient(:, :)
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: fixed_grid
-         !! Hold the quadrature fixed, omitting the partition-weight response.
+         !! Hold the quadrature fixed: omit both the partition-weight response
+         !! and the grid points travelling with their owning atom.
          !!
          !! Absent or false gives the physical derivative, which is what every
          !! production caller wants. True gives the quantity a fixed-grid Hessian
@@ -1101,8 +1102,11 @@ contains
          ! than on the energy density. Same two pieces as the energy gradient:
          ! every nucleus reweights the whole grid, and a point owned by A also
          ! moves with A.
-         ! This is the whole of the grid response for this term, which is what
-         ! lets `fixed_grid` be a single skip rather than a second code path.
+         ! The partition weights are one of the two halves of the grid
+         ! response. The other is the points moving with their owning atom,
+         ! which lives in the `moving=` forwards above rather than here --
+         ! believing this block was the whole of it is what shipped a flag that
+         ! held half the grid.
          if (hold_grid) cycle
          if (allocated(dpart)) deallocate (dpart)
          allocate (dpart(3, natm, nb))

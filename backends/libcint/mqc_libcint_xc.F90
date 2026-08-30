@@ -860,6 +860,25 @@ contains
       ! somewhere else entirely.
       want_kxc = present(grrr) .and. present(grrs) .and. present(grss) &
                  .and. present(gsss)
+      ! Refused here rather than left to the caller. The meta-GGA branch below
+      ! calls no third-derivative routine, so asking for one and getting a
+      ! silent array of zeros is the shape of the failure this file refuses
+      ! everywhere else: a converged, plausible, wrong answer with nothing in
+      ! the output to say a term was missing. The one consumer today checks
+      ! this itself, which is exactly why the guard belongs on this side -- the
+      ! second consumer will not know to.
+      if (want_kxc) then
+         do i = 1, ctx%n_func
+            if (ctx%family(i) == XC_FAMILY_MGGA .or. &
+                ctx%family(i) == XC_FAMILY_HYB_MGGA) then
+               call error%set(ERROR_VALIDATION, "third functional derivatives "// &
+                              "are not implemented for meta-GGAs: the tau channels "// &
+                              "of the third derivative would be needed and are not "// &
+                              "evaluated here.")
+               return
+            end if
+         end do
+      end if
       if (want_kxc) then
          allocate (grrr(npts), grrs(npts), grss(npts), gsss(npts))
          grrr = 0.0_dp

@@ -424,12 +424,12 @@ contains
       !! are AO motion only: the matrices never respond, and neither does the
       !! grid, so the check differences the fixed-grid first derivative of the
       !! same linear form -- `xc_potential_deriv` contracted with `P`, the
-      !! same approximation on both sides. Not `xc_potential_gradient` with
-      !! `fixed_grid`, though that flag exists for this comparison: its
-      !! deposits never forward `moving=.false.` to `accumulate_channel`, so
-      !! that branch keeps the grid-point-motion term while dropping the
-      !! partition weights, and the result is the exact derivative of nothing
-      !! -- the test's helper carries the measurement.
+      !! same approximation on both sides. The test differences
+      !! `Tr(P dV/dR)` from `xc_potential_deriv` rather than
+      !! `xc_potential_gradient(fixed_grid=.true.)`, which is the same number
+      !! -- `P` does not respond, so `d Tr(P V) = Tr(P dV)` -- but reaches it
+      !! through a routine that shares less machinery with this one, so a
+      !! common-mode error has one fewer place to hide.
       !!
       !! **A separate routine, deliberately, where the double-hybrid gradient
       !! argued itself into a merge.** That merge (`libcint_mp2_gradient`) was
