@@ -12,12 +12,13 @@ module mqc_cuest_iface
    !! the method files carry no preprocessor conditionals at all.
    use pic_types, only: dp
    use mqc_config_types, only: guess_step_t
-   use mqc_method_config, only: pcm_config_t, mcscf_config_t, scf_options_t
+   use mqc_method_config, only: pcm_config_t, mcscf_config_t, scf_options_t, properties_config_t
    implicit none
    private
 
    public :: cuest_scf_settings_t
    public :: apply_scf_settings
+   public :: apply_properties_settings
    public :: BACKEND_AUTO, BACKEND_CUEST, BACKEND_LIBCINT
    public :: parse_backend_name
    public :: method_runs_on_cuest
@@ -170,6 +171,39 @@ module mqc_cuest_iface
    end type cuest_scf_settings_t
 
 contains
+
+   subroutine apply_properties_settings(settings, properties)
+      !! Hand a backend the post-SCF properties the deck asked for
+      !!
+      !! The sibling of `apply_scf_settings`, and it exists for the same
+      !! reason: this block was written out by hand in each method and the
+      !! three had already diverged. Kohn-Sham unpacked four of the eight and
+      !! MCSCF six, so `keywords.properties.bonding_energy` on a Kohn-Sham run
+      !! reached a backend that reads `settings%bonding_energy` -- the same
+      !! routine Hartree-Fock uses -- and found the default. That one is worse
+      !! than a dropped feature: the flag guards a *refusal*, because the
+      !! bonding energy decomposition rebuilds atom energies from gas-phase
+      !! operators and must not run under a continuum, so never setting it
+      !! disarmed a check that exists to stop a wrong answer.
+      !!
+      !! `fukui_population` and `charges_scheme` are allocatable and stay
+      !! guarded: an unset one must not overwrite what a backend already has.
+      type(cuest_scf_settings_t), intent(inout) :: settings
+      type(properties_config_t), intent(in) :: properties
+
+      settings%bonding_analysis = properties%bonding_analysis
+      settings%bonding_threshold = properties%bonding_threshold
+      settings%bonding_energy = properties%bonding_energy
+      settings%bonding_no_sharing = properties%bonding_no_sharing
+      settings%bonding_no_sharing_ci = properties%bonding_no_sharing_ci
+      settings%bonding_restrict_localization = properties%bonding_restrict_localization
+      if (allocated(properties%fukui_population)) then
+         settings%fukui_population = properties%fukui_population
+      end if
+      if (allocated(properties%charges_scheme)) then
+         settings%charges_scheme = properties%charges_scheme
+      end if
+   end subroutine apply_properties_settings
 
    subroutine apply_scf_settings(settings, options)
       !! Hand a backend everything the SCF half of a method decided

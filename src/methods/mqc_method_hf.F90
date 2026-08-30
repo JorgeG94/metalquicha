@@ -18,7 +18,7 @@ module mqc_method_hf
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_semi_numerical_hessian, only: finite_difference_hessian
-   use mqc_cuest_iface, only: apply_scf_settings, cuest_scf_settings_t, parse_backend_name, &
+   use mqc_cuest_iface, only: apply_properties_settings, apply_scf_settings, cuest_scf_settings_t, parse_backend_name, &
                               BACKEND_CUEST, BACKEND_LIBCINT
    use mqc_cuest_bridge, only: run_cuest_scf
    use mqc_libcint_bridge, only: run_libcint_hf
@@ -83,19 +83,7 @@ contains
       type(error_t) :: backend_error
 
       call apply_scf_settings(settings, this%options)
-      settings%bonding_analysis = this%options%properties%bonding_analysis
-      settings%bonding_threshold = this%options%properties%bonding_threshold
-      settings%bonding_energy = this%options%properties%bonding_energy
-      if (allocated(this%options%properties%fukui_population)) then
-         settings%fukui_population = this%options%properties%fukui_population
-      end if
-      if (allocated(this%options%properties%charges_scheme)) then
-         settings%charges_scheme = this%options%properties%charges_scheme
-      end if
-      settings%bonding_no_sharing = this%options%properties%bonding_no_sharing
-      settings%bonding_restrict_localization = &
-         this%options%properties%bonding_restrict_localization
-      settings%bonding_no_sharing_ci = this%options%properties%bonding_no_sharing_ci
+      call apply_properties_settings(settings, this%options%properties)
       settings%run_mp2 = this%options%run_mp2
       settings%corr_density_fitting = this%options%corr_density_fitting
       settings%run_cc = this%options%run_cc

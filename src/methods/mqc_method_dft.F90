@@ -22,7 +22,7 @@ module mqc_method_dft
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_semi_numerical_hessian, only: finite_difference_hessian
-   use mqc_cuest_iface, only: apply_scf_settings, cuest_scf_settings_t, parse_backend_name, &
+   use mqc_cuest_iface, only: apply_properties_settings, apply_scf_settings, cuest_scf_settings_t, parse_backend_name, &
                               BACKEND_CUEST, BACKEND_LIBCINT
    use mqc_cuest_bridge, only: run_cuest_scf
    use mqc_libcint_bridge, only: run_libcint_hf
@@ -127,14 +127,7 @@ contains
       ! Where the molecule reacts. Absent here until now, so a DFT deck asking
       ! for `properties.fukui` got a normal DFT run and no analysis, with no
       ! error to say why: the bridge gates on this being allocated.
-      if (allocated(this%options%properties%fukui_population)) then
-         settings%fukui_population = this%options%properties%fukui_population
-      end if
-      if (allocated(this%options%properties%charges_scheme)) then
-         settings%charges_scheme = this%options%properties%charges_scheme
-      end if
-      settings%bonding_analysis = this%options%properties%bonding_analysis
-      settings%bonding_threshold = this%options%properties%bonding_threshold
+      call apply_properties_settings(settings, this%options%properties)
       ! Set unconditionally, and deliberately not guarded on the backend. cuEST
       ! has no four-index path so it fits regardless and ignores this, per the
       ! note at the top of this module; on the libcint side it is a real choice.

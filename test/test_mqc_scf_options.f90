@@ -22,8 +22,9 @@ module test_mqc_scf_options
    !! look identical from the backend's side.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_method_config, only: scf_options_t
-   use mqc_cuest_iface, only: cuest_scf_settings_t, apply_scf_settings
+   use mqc_method_config, only: scf_options_t, properties_config_t
+   use mqc_cuest_iface, only: cuest_scf_settings_t, apply_scf_settings, &
+                              apply_properties_settings
    use mqc_config_types, only: guess_step_t
    implicit none
    private
@@ -37,7 +38,9 @@ contains
 
       testsuite = [ &
                   new_unittest("every_shared_field_reaches_the_settings", every_field_arrives), &
-                  new_unittest("an_unallocated_guess_ladder_is_not_copied", ladder_optional) &
+                  new_unittest("an_unallocated_guess_ladder_is_not_copied", ladder_optional), &
+                  new_unittest("every_property_reaches_the_settings", every_property_arrives), &
+                  new_unittest("unset_allocatable_properties_are_not_copied", properties_optional) &
                   ]
    end subroutine collect_mqc_scf_options_tests
 
@@ -161,6 +164,76 @@ contains
       call check(error,.not. allocated(settings%guess_steps), &
                  "a ladder appeared from nowhere")
    end subroutine ladder_optional
+
+   !> The properties block had diverged three ways before it was shared: HF
+   !> unpacked all eight, Kohn-Sham four and MCSCF six. Same populate-and-assert
+   !> as the SCF fields, for the same reason.
+   subroutine every_property_arrives(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      type(properties_config_t) :: properties
+      type(cuest_scf_settings_t) :: settings
+
+      properties%bonding_analysis = "quao"
+      properties%bonding_threshold = 0.125_dp
+      properties%bonding_energy = .true.
+      properties%bonding_no_sharing = .true.
+      properties%bonding_no_sharing_ci = "project"
+      properties%bonding_restrict_localization = .true.
+      properties%fukui_population = "mulliken"
+      properties%charges_scheme = "chelpg"
+
+      call apply_properties_settings(settings, properties)
+
+      call check(error, settings%bonding_analysis == properties%bonding_analysis, &
+                 "bonding_analysis")
+      if (allocated(error)) return
+      call check(error, settings%bonding_threshold == properties%bonding_threshold, &
+                 "bonding_threshold")
+      if (allocated(error)) return
+      ! The one that guards a refusal rather than a feature: Kohn-Sham never
+      ! set it, so the check that stops a bonding-energy decomposition running
+      ! under a continuum could not fire.
+      call check(error, settings%bonding_energy .eqv. properties%bonding_energy, &
+                 "bonding_energy")
+      if (allocated(error)) return
+      call check(error, settings%bonding_no_sharing .eqv. properties%bonding_no_sharing, &
+                 "bonding_no_sharing")
+      if (allocated(error)) return
+      call check(error, settings%bonding_no_sharing_ci == properties%bonding_no_sharing_ci, &
+                 "bonding_no_sharing_ci")
+      if (allocated(error)) return
+      call check(error, settings%bonding_restrict_localization .eqv. &
+                 properties%bonding_restrict_localization, "bonding_restrict_localization")
+      if (allocated(error)) return
+      call check(error, allocated(settings%fukui_population), "fukui_population unset")
+      if (allocated(error)) return
+      call check(error, settings%fukui_population == "mulliken", "fukui_population")
+      if (allocated(error)) return
+      call check(error, allocated(settings%charges_scheme), "charges_scheme unset")
+      if (allocated(error)) return
+      call check(error, settings%charges_scheme == "chelpg", "charges_scheme")
+   end subroutine every_property_arrives
+
+   !> Two of the eight are allocatable, and an unset one must not overwrite
+   !> whatever the backend already holds.
+   subroutine properties_optional(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      type(properties_config_t) :: properties
+      type(cuest_scf_settings_t) :: settings
+
+      properties%bonding_analysis = "quao"
+      call apply_properties_settings(settings, properties)
+      call check(error, settings%bonding_analysis == "quao", &
+                 "an unset allocatable stopped the copy")
+      if (allocated(error)) return
+      call check(error,.not. allocated(settings%fukui_population), &
+                 "fukui_population appeared from nowhere")
+      if (allocated(error)) return
+      call check(error,.not. allocated(settings%charges_scheme), &
+                 "charges_scheme appeared from nowhere")
+   end subroutine properties_optional
 
 end module test_mqc_scf_options
 
