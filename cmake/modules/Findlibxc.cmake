@@ -20,6 +20,28 @@ set(ENABLE_PYTHON
     OFF
     CACHE BOOL "" FORCE)
 
+# Third functional derivatives, which libxc does not build by default.
+#
+# `MAXORDER` is 2 upstream, and asking a functional for `kxc` in such a build
+# does not return an error: libxc prints "does not provide an implementation of
+# kxc" and *aborts the process*. So this is not an optimisation to be skipped
+# when unneeded -- without it a double-hybrid Hessian kills the run.
+#
+# That Hessian is what needs them. Its perturbative term is not stationary in
+# the orbitals, so the perturbed Z-vector's operator is the differentiated
+# kernel, and the fixed-density skeleton term carries `g_xc rho^X rho^Y`;
+# omitting that one is a 400 per cent error on it rather than a correction to
+# it. Nothing below a double hybrid needs this -- a Kohn-Sham gradient stops at
+# `v_xc` and a Kohn-Sham Hessian at `f_xc` -- and it costs about 40 per cent of
+# libxc's build time, measured: 970 s against 696 s.
+#
+# Here rather than beside the fetch for the reason the header above gives: this
+# is what the subproject's own `option()` sees, and it only sees it if it is set
+# first.
+set(MAXORDER
+    3
+    CACHE STRING "" FORCE)
+
 mqc_fetch(
   NAME
   libxc
