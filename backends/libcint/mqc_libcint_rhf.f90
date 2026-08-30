@@ -210,7 +210,7 @@ contains
       call logger%performance(trim(line))
    end subroutine screening_summary
 
-   subroutine scf_table_header(verbose)
+   subroutine scf_table_header(verbose, kohn_sham)
       !! Column headings for the per-iteration table
       !!
       !! Through the logger like everything else the program says: the level
@@ -219,12 +219,27 @@ contains
       !! The frame is `mqc_convergence_report`, shared with the FMO outer loop;
       !! only the columns and their widths are the SCF's own.
       logical, intent(in) :: verbose
+      logical, intent(in) :: kohn_sham
+         !! Whether a functional is being evaluated. A Hartree-Fock run has no
+         !! quadrature, so its `XC` column is a column of zeros -- eleven
+         !! characters of every line saying that the thing that did not happen
+         !! took no time. Dropped rather than printed as `--`, since the row is
+         !! read by eye against a wall clock and a narrower table is easier to
+         !! scan than one with a hole in it.
 
-      call convergence_header(verbose, "SCF iterations", &
-                    "    iter                 energy          dE          dD   diis       Fock         XC       rest", 93)
+      if (kohn_sham) then
+         call convergence_header(verbose, "SCF iterations", &
+                                 "    iter                 energy          dE          dD   diis"// &
+                                 "       Fock         XC       rest", 93)
+      else
+         call convergence_header(verbose, "SCF iterations", &
+                                 "    iter                 energy          dE          dD   diis"// &
+                                 "       Fock       rest", 82)
+      end if
    end subroutine scf_table_header
 
-   subroutine scf_table_row(verbose, iter, energy, de, drms, ndiis, t_fock, t_xc, t_rest)
+   subroutine scf_table_row(verbose, iter, energy, de, drms, ndiis, t_fock, t_xc, t_rest, &
+                            kohn_sham)
       !! One iteration's line, with the time that iteration took
       !!
       !! **The quadrature has a column of its own, and needs one.** `STAGE_FOCK`
@@ -245,12 +260,18 @@ contains
       logical, intent(in) :: verbose
       integer, intent(in) :: iter, ndiis
       real(dp), intent(in) :: energy, de, drms, t_fock, t_xc, t_rest
+      logical, intent(in) :: kohn_sham   !! Print the quadrature column at all
 
       character(len=LINE_LEN) :: line
 
       if (.not. verbose) return
-      write (line, "(i8,f23.12,2es12.3,i7,3(f9.2,a))") &
-         iter, energy, de, drms, ndiis, t_fock, " s", t_xc, " s", t_rest, " s"
+      if (kohn_sham) then
+         write (line, "(i8,f23.12,2es12.3,i7,3(f9.2,a))") &
+            iter, energy, de, drms, ndiis, t_fock, " s", t_xc, " s", t_rest, " s"
+      else
+         write (line, "(i8,f23.12,2es12.3,i7,2(f9.2,a))") &
+            iter, energy, de, drms, ndiis, t_fock, " s", t_rest, " s"
+      end if
       call logger%info(trim(line))
    end subroutine scf_table_row
 
@@ -452,6 +473,7 @@ contains
       real(dp) :: e_pcm
       type(diis_state_t) :: diis
       logical :: extrapolated
+      logical :: kohn_sham_run
       real(dp) :: e_elec, e_old, de, drms
       real(dp) :: shift, shift_now, drms_prev, taper
       real(dp), allocatable :: sd(:, :), sds(:, :)
@@ -594,7 +616,12 @@ contains
       ! integrals, the screening bounds or the fitted/in-core tensor, the
       ! orthogonaliser and the guess.
       call clk%lap(STAGE_SETUP)
-      call scf_table_header(verbose)
+      ! `present(xc)` is not the question: the bridge passes its context
+      ! unconditionally, built or not, so it is present on a Hartree-Fock run
+      ! too. `active` is what says a functional was actually constructed.
+      kohn_sham_run = .false.
+      if (present(xc)) kohn_sham_run = xc%active
+      call scf_table_header(verbose, kohn_sham_run)
 
       shift = 0.0_dp
       if (present(level_shift)) shift = level_shift
@@ -721,7 +748,7 @@ contains
          de = abs(e_elec - e_old)
          drms = sqrt(sum((density - density_old)**2)/real(n_ao*n_ao, dp))
          call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, &
-                            diis%count(), t_fock_iter, t_xc_iter, t_rest_iter)
+                            diis%count(), t_fock_iter, t_xc_iter, t_rest_iter, kohn_sham_run)
 
          e_old = e_elec
          result%iterations = iter
@@ -862,6 +889,7 @@ contains
       real(dp) :: e_pcm
       type(diis_state_t) :: diis
       logical :: extrapolated
+      logical :: kohn_sham_run
       real(dp) :: e_elec, e_old, de, drms
       real(dp) :: shift, shift_now, drms_prev, taper
       real(dp), allocatable :: sd(:, :), sds(:, :)
@@ -999,7 +1027,12 @@ contains
       result%converged = .false.
 
       call clk%lap(STAGE_SETUP)
-      call scf_table_header(verbose)
+      ! `present(xc)` is not the question: the bridge passes its context
+      ! unconditionally, built or not, so it is present on a Hartree-Fock run
+      ! too. `active` is what says a functional was actually constructed.
+      kohn_sham_run = .false.
+      if (present(xc)) kohn_sham_run = xc%active
+      call scf_table_header(verbose, kohn_sham_run)
 
       shift = 0.0_dp
       if (present(level_shift)) shift = level_shift
@@ -1103,7 +1136,7 @@ contains
          de = abs(e_elec - e_old)
          drms = sqrt((sum((d_a - d_a_old)**2) + sum((d_b - d_b_old)**2))/real(2*nsq, dp))
          call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, &
-                            diis%count(), t_fock_iter, t_xc_iter, t_rest_iter)
+                            diis%count(), t_fock_iter, t_xc_iter, t_rest_iter, kohn_sham_run)
 
          e_old = e_elec
          result%iterations = iter
