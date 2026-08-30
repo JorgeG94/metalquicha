@@ -64,6 +64,8 @@ contains
                                test_kxc_against_fxc), &
                   new_unittest("fixed_grid_potential_gradient_holds_its_grid", &
                                test_fixed_grid_potential_gradient), &
+                  new_unittest("potential_hessian_on_a_dimer_with_d_functions", &
+                               test_vxc_potential_hessian_dimer), &
                   new_unittest("potential_hessian_differences_the_potential_gradient", &
                                test_vxc_potential_hessian), &
                   new_unittest("ks_hessian_differences_the_dft_gradient", test_ks_end_to_end) &
@@ -1153,6 +1155,146 @@ contains
                  "the potential Hessian disagrees with a difference of the "// &
                  "fixed-grid potential gradient for "//functional)
    end subroutine vxc_potential_hessian_for
+
+   subroutine test_vxc_potential_hessian_dimer(error)
+      !! The same rung on a water dimer in 6-31G(d): d functions, six atoms,
+      !! and no symmetry to hide behind
+      !!
+      !! Water at STO-3G is planar and s,p only, and that combination masks
+      !! things. Entries mixing an in-plane component with an out-of-plane one
+      !! vanish by reflection there, which is exactly how the `fixed_grid` bug
+      !! looked plausible for as long as it did -- it missed by 5.7e-02 on the
+      !! in-plane components and agreed to step error on the rest. A dimer has
+      !! no such plane, and 6-31G(d) puts Cartesian d functions on both oxygens,
+      !! so the second derivatives of the basis reach angular momenta the
+      !! monomer case never forms.
+      !!
+      !! Held to a looser band than the monomer for one reason: the quantity is
+      !! larger, and this is an absolute comparison of entries whose own
+      !! magnitudes are an order up.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: DZ(6) = [8, 1, 1, 8, 1, 1]
+      character(len=2), parameter :: DSYM(6) = ["O ", "H ", "H ", "O ", "H ", "H "]
+      real(dp), parameter :: DIMER(3, 6) = reshape([ &
+                                                   0.8974_dp, -1.285111_dp, 1.375674_dp, &
+                                                   0.93366_dp, -1.620249_dp, 0.461291_dp, &
+                                                   1.538424_dp, -0.56327_dp, 1.325981_dp, &
+                                                   -1.559218_dp, -0.241778_dp, 1.423474_dp, &
+                                                   -2.064102_dp, -0.501966_dp, 2.197464_dp, &
+                                                   -0.677656_dp, -0.678646_dp, 1.525237_dp], [3, 6])
+      real(dp), parameter :: H = 1.0e-4_dp
+      real(dp), parameter :: TOL = 2.0e-8_dp
+         !! Six times the measured worst, 3.21e-09 across all 324 entries.
+         !! Zeroing the `g_xc` group misses by 3.18 instead -- nine orders up,
+         !! and on a system where no reflection plane can hide it.
+
+      type(libcint_molecule_t) :: mol
+      type(xc_context_t) :: ctx
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: dens(:, :), pmat(:, :), hess(:, :, :, :)
+      real(dp), allocatable :: h1(:, :, :, :), coords(:, :)
+      real(dp), allocatable :: gplus(:, :), gminus(:, :)
+      real(dp) :: fd, worst
+      integer :: n, ia, ja, a, b, u, v
+
+      if (.not. xc_available()) return
+
+      call build_libcint_molecule(DZ, DSYM, DIMER, "6-31g*", mol, err)
+      if (err%has_error()) return
+      call xc_context_create(mol, "gga_x_b88", ctx, err, level=3)
+      if (err%has_error()) then
+         call mol%destroy()
+         return
+      end if
+      call run_libcint_rhf(mol, 20, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      call mol%destroy()
+      if (err%has_error()) return
+      dens = scf%density
+      n = size(dens, 1)
+
+      allocate (pmat(n, n))
+      do v = 1, n
+         do u = 1, n
+            pmat(u, v) = 0.02_dp/(1.0_dp + real(abs(u - v), dp)) + 0.01_dp*dens(u, v)
+         end do
+      end do
+      pmat = 0.5_dp*(pmat + transpose(pmat))
+
+      allocate (hess(3, 3, 6, 6))
+      hess = 0.0_dp
+      call build_libcint_molecule(DZ, DSYM, DIMER, "6-31g*", mol, err)
+      if (err%has_error()) return
+      call xc_potential_hessian(ctx, mol, dens, pmat, hess, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      ! Every one of the 18 by 18 entries, not a sum rule over them. An
+      ! aggregate would pass with errors that cancel across components, which is
+      ! the failure mode a dimer was chosen to expose in the first place.
+      allocate (coords(3, 6), h1(n, n, 3, 6), gplus(3, 6), gminus(3, 6))
+      worst = 0.0_dp
+      do ja = 1, 6
+         do b = 1, 3
+            coords = DIMER
+            coords(b, ja) = DIMER(b, ja) + H
+            call dimer_trace(DZ, DSYM, coords, ctx, dens, pmat, h1, gplus, err)
+            if (err%has_error()) exit
+            coords(b, ja) = DIMER(b, ja) - H
+            call dimer_trace(DZ, DSYM, coords, ctx, dens, pmat, h1, gminus, err)
+            if (err%has_error()) exit
+            do ia = 1, 6
+               do a = 1, 3
+                  fd = (gplus(a, ia) - gminus(a, ia))/(2.0_dp*H)
+                  worst = max(worst, abs(hess(a, b, ia, ja) - fd))
+               end do
+            end do
+         end do
+         if (err%has_error()) exit
+      end do
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      call check(error, worst < TOL, &
+                 "the potential Hessian should difference its gradient on a dimer")
+   end subroutine test_vxc_potential_hessian_dimer
+
+   subroutine dimer_trace(z, sym, coords, ctx, dens, pmat, h1, trace, err)
+      !! Tr(P dV/dR) for every component, at one geometry
+      integer, intent(in) :: z(:)
+      character(len=2), intent(in) :: sym(:)
+      real(dp), intent(in) :: coords(:, :)
+      type(xc_context_t), intent(inout) :: ctx
+      real(dp), intent(in) :: dens(:, :), pmat(:, :)
+      real(dp), intent(inout) :: h1(:, :, :, :)
+      real(dp), intent(out) :: trace(:, :)   !! (3, natm), Tr(P dV/dR) per component
+      type(error_t), intent(inout) :: err
+
+      type(libcint_molecule_t) :: mol
+      integer :: ia, c, u, v
+      real(dp) :: acc
+
+      trace = 0.0_dp
+      h1 = 0.0_dp
+      call build_libcint_molecule(z, sym, coords, "6-31g*", mol, err)
+      if (err%has_error()) return
+      call xc_potential_deriv(ctx, mol, dens, h1, err)
+      call mol%destroy()
+      if (err%has_error()) return
+      do ia = 1, size(z)
+         do c = 1, 3
+            acc = 0.0_dp
+            do v = 1, size(dens, 1)
+               do u = 1, size(dens, 1)
+                  acc = acc + pmat(u, v)*h1(u, v, c, ia)
+               end do
+            end do
+            trace(c, ia) = acc
+         end do
+      end do
+   end subroutine dimer_trace
 
    subroutine vxc_potential_gradient_at(ctx, coords, dens, pmat, gradient, err, ok)
       !! The fixed-grid first derivative of `Tr(P V_xc[D])` at displaced
