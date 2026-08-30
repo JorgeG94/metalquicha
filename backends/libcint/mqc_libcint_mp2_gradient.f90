@@ -923,7 +923,7 @@ contains
    end subroutine build_gamma_block
 
    subroutine build_effective_2pdm_ao(t2, relaxed_density_mo, coeff, n_ao, n_mo, &
-                                      n_occ, n_frozen, gamma_eff_ao)
+                                      n_occ, n_frozen, gamma_eff_ao, k_scale)
       !! The effective two-particle density in the AO basis, bra-ket symmetric
       !!
       !! **Not the gradient's `gamma_ao`.** That one carries the energy's
@@ -947,17 +947,31 @@ contains
       !! -- the frozen orbitals carry the reference's density even though the
       !! amplitudes never see them. The one-electron remainder
       !! `D_rel h^{XY} + W S^{XY}` stays separate and is not folded here.
+      !!
+      !! Over a Kohn-Sham reference the folded operator is the functional's,
+      !! so the exchange half of `Gam_D` carries `k_scale`:
+      !!
+      !!     Gam_D[a,b,c,d] = 2 D[a,c] P[b,d] - k D[a,d] P[b,c]
+      !!
+      !! The exchange-correlation share of `D_rel f^{XY}` is a grid quantity
+      !! and cannot be folded into a density; `xc_potential_hessian` carries
+      !! it, at the skeleton sweep's caller.
       real(dp), intent(in) :: t2(:, :, :, :)      !! Active amplitudes, (o,o,v,v)
       real(dp), intent(in) :: relaxed_density_mo(:, :)
       real(dp), intent(in) :: coeff(:, :)         !! C, (n_ao, n_mo)
       integer, intent(in) :: n_ao, n_mo, n_occ, n_frozen
       real(dp), allocatable, intent(out) :: gamma_eff_ao(:, :, :, :)
+      real(dp), intent(in), optional :: k_scale
+         !! Exact-exchange fraction of the reference operator. Absent is one.
 
       real(dp), allocatable :: g(:, :, :, :), swap(:, :, :, :)
       real(dp), allocatable :: cur(:, :), nxt(:, :)
       integer :: i, j, a, b, p, q, r, s, n_oa, n_v, step
       integer :: dims(4)
-      real(dp) :: u
+      real(dp) :: u, kx
+
+      kx = 1.0_dp
+      if (present(k_scale)) kx = k_scale
 
       n_oa = size(t2, 1)
       n_v = size(t2, 3)
@@ -985,13 +999,26 @@ contains
             end do
          end do
       end do
-      do q = 1, n_occ                     ! and the exchange term, b = c = q
-         do s = 1, n_mo
-            do p = 1, n_mo
-               g(p, q, q, s) = g(p, q, q, s) - relaxed_density_mo(p, s)
+      ! Two copies, split on the exchange fraction: a variable multiplier
+      ! shifts contraction and scheduling by an ulp even at exactly one, and
+      ! the Hartree-Fock path is held bit for bit.
+      if (kx == 1.0_dp) then
+         do q = 1, n_occ                  ! and the exchange term, b = c = q
+            do s = 1, n_mo
+               do p = 1, n_mo
+                  g(p, q, q, s) = g(p, q, q, s) - relaxed_density_mo(p, s)
+               end do
             end do
          end do
-      end do
+      else
+         do q = 1, n_occ                  ! the same exchange term, scaled
+            do s = 1, n_mo
+               do p = 1, n_mo
+                  g(p, q, q, s) = g(p, q, q, s) - kx*relaxed_density_mo(p, s)
+               end do
+            end do
+         end do
+      end if
 
       ! ---- physicist -> chemist, then bra-ket symmetrise --------------------
       allocate (swap(n_mo, n_mo, n_mo, n_mo))

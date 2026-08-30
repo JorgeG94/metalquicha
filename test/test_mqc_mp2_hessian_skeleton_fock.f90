@@ -28,7 +28,10 @@ module test_mqc_mp2_hessian_skeleton_fock
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
-   use mqc_libcint_mp2_hessian, only: mp2_first_order_skeletons
+   use mqc_libcint_mp2_hessian, only: mp2_first_order_skeletons, &
+                                      mp2_ks_first_order_fock
+   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available, &
+                             xc_add_potential
    use mqc_error, only: error_t
    use pic_types, only: dp
    implicit none
@@ -49,7 +52,9 @@ contains
 
       testsuite = [ &
                   new_unittest("skeleton_fock_differences_the_fock", test_fx), &
-                  new_unittest("skeleton_overlap_differences_the_overlap", test_sx) &
+                  new_unittest("skeleton_overlap_differences_the_overlap", test_sx), &
+                  new_unittest("kohn_sham_skeleton_differences_the_ks_fock", &
+                               test_fx_ks) &
                   ]
    end subroutine collect_mqc_mp2_hessian_skeleton_fock_tests
 
@@ -175,6 +180,128 @@ contains
 
       call check(error, worst < TOL, "S^(X) should difference the overlap")
    end subroutine test_sx
+
+   subroutine test_fx_ks(error)
+      !! The Kohn-Sham lift, against differences of the Kohn-Sham Fock
+      !!
+      !! The double hybrid's `f^(X)` is the Hartree-Fock skeleton lifted by
+      !! `mp2_ks_first_order_fock`: the exchange trace rescaled to the
+      !! functional's fraction and the potential's skeleton derivative added.
+      !! Differenced against `h + G_k[D] + V_xc[D]` at displaced geometries
+      !! with `C`, `D` and the grid all held to the reference's -- the same
+      !! fixed-matrix, fixed-grid convention the whole ladder uses. b3lyp,
+      !! because its fraction is neither zero nor one: a lift that scaled the
+      !! trace in one place and not the other would pass at both ends and
+      !! fail here.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: H = 1.0e-4_dp
+      real(dp), parameter :: TOL = 3.0e-8_dp
+         !! Eight times the measured worst entry, 3.81e-09 at this step and
+         !! grid level -- the same order as the Hartree-Fock check above, so
+         !! the step error still dominates: both sides evaluate the
+         !! exchange-correlation pieces on the one reference grid and the
+         !! quadrature cancels between them.
+      type(libcint_molecule_t) :: mol
+      type(xc_context_t) :: ctx
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: fx(:, :, :), sx(:, :, :), erix(:, :, :, :, :)
+      real(dp), allocatable :: c(:, :), dens(:, :), coords(:, :)
+      real(dp), allocatable :: fplus(:, :), fminus(:, :)
+      real(dp) :: fd, worst, kf
+      integer :: n, ia, comp, ix, p, q
+
+      if (.not. xc_available()) return
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      if (err%has_error()) return
+      call xc_context_create(mol, "b3lyp", ctx, err, level=3)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, &
+                           xc=ctx)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      c = scf%orbitals
+      dens = scf%density
+      kf = ctx%exx_fraction
+      n = size(c, 1)
+
+      call mp2_first_order_skeletons(mol, c, 5, fx, sx, erix, err)
+      if (.not. err%has_error()) then
+         call mp2_ks_first_order_fock(mol, ctx, dens, c, 5, erix, kf, fx, err)
+      end if
+      call mol%destroy()
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      allocate (coords(3, 3), fplus(n, n), fminus(n, n))
+      worst = 0.0_dp
+      ix = 0
+      do ia = 1, 3
+         do comp = 1, 3
+            ix = ix + 1
+            coords = WATER
+            coords(comp, ia) = WATER(comp, ia) + H
+            call mo_ks_fock_at(ctx, coords, c, dens, kf, fplus, err)
+            if (err%has_error()) exit
+            coords(comp, ia) = WATER(comp, ia) - H
+            call mo_ks_fock_at(ctx, coords, c, dens, kf, fminus, err)
+            if (err%has_error()) exit
+            do q = 1, n
+               do p = 1, n
+                  fd = (fplus(p, q) - fminus(p, q))/(2.0_dp*H)
+                  worst = max(worst, abs(fx(p, q, ix) - fd))
+               end do
+            end do
+         end do
+         if (err%has_error()) exit
+      end do
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      call check(error, worst < TOL, &
+                 "the lifted f^(X) should difference the Kohn-Sham Fock")
+   end subroutine test_fx_ks
+
+   subroutine mo_ks_fock_at(ctx, coords, c, dens, kf, f_mo, err)
+      !! `C^T (h + G_k[D] + V_xc[D]) C` at a displaced geometry: `C`, `D` and
+      !! the quadrature grid all the reference's, only the molecule moved
+      type(xc_context_t), intent(inout) :: ctx
+      real(dp), intent(in) :: coords(:, :), c(:, :), dens(:, :), kf
+      real(dp), intent(out) :: f_mo(:, :)
+      type(error_t), intent(inout) :: err
+
+      type(libcint_molecule_t) :: mol
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: h(:, :), bounds(:, :), f_ao(:, :), v_xc(:, :)
+      real(dp) :: e_xc, n_elec
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      if (err%has_error()) return
+      allocate (f_ao(size(c, 1), size(c, 1)), v_xc(size(c, 1), size(c, 1)))
+      call mol%core_hamiltonian(h)
+      call schwarz_bounds(mol, bounds, err)
+      if (.not. err%has_error()) then
+         call build_fock_direct(mol, h, dens, bounds, f_ao, stats, err, k_scale=kf)
+      end if
+      if (.not. err%has_error()) then
+         ! Into its own matrix: despite the name, `xc_add_potential` returns
+         ! the potential alone rather than accumulating.
+         call xc_add_potential(ctx, mol, dens, v_xc, e_xc, n_elec, err)
+      end if
+      call mol%destroy()
+      if (err%has_error()) return
+      f_ao = f_ao + v_xc
+      f_mo = matmul(transpose(c), matmul(f_ao, c))
+   end subroutine mo_ks_fock_at
 
    subroutine reference(mol, scf, err)
       !! The converged reference, whose `C` and `D` every displacement reuses

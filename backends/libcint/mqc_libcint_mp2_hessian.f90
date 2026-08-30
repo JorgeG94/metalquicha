@@ -45,6 +45,17 @@ module mqc_libcint_mp2_hessian
    !! makes the transcription checkable line against line rather than through a
    !! layer of swaps. `<pq|rs> = (pr|qs)`; the reorder happens once, where the
    !! AO transform lands (`tools/mp2_hessian_oracle/CONVENTIONS.md` s.1-2).
+   !!
+   !! **One routine also serves the double hybrid**, for the reason
+   !! `libcint_mp2_gradient` gives: the Kohn-Sham assembly differs from the
+   !! Hartree-Fock one in a short list of places and agrees everywhere else.
+   !! With `xc` present, every reference-operator weight becomes
+   !! `2 <pq|rs> - k <pq|sr>` plus an exchange-correlation kernel term, and
+   !! no four-index `f_xc` tensor is ever built for that term: every kernel
+   !! contraction here is the reference operator applied to a symmetric
+   !! generalized density -- the identity `test_mqc_mp2_hessian_ks_operator`
+   !! pins, factor included -- through `ks_pair_kernel` and its derivative
+   !! companions at the bottom of this file.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -59,6 +70,9 @@ module mqc_libcint_mp2_hessian
    use mqc_libcint_mp2, only: transform_ovov
    use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient, build_amplitudes, &
                                        build_effective_2pdm_ao
+   use mqc_libcint_xc, only: xc_context_t, xc_kernel_apply, xc_kernel2_apply
+   use mqc_libcint_xc_hessian, only: xc_potential_deriv, xc_kernel_deriv, &
+                                     xc_potential_hessian
    implicit none
    private
 
@@ -79,12 +93,14 @@ module mqc_libcint_mp2_hessian
    public :: mp2_perturbed_zvector_rhs
    public :: mp2_perturbed_response
    public :: mp2_correlation_hessian
+   public :: mp2_ks_first_order_fock
 
 contains
 
    subroutine mp2_skeleton_hessian(mol, gamma_eff_ao, relaxed_density_mo, &
                                    energy_weighted_ao, coeff, orbital_energies, &
-                                   n_occ, hess_corr, hess_ref, error)
+                                   n_occ, hess_corr, hess_ref, error, xc, &
+                                   scf_density)
       !! Both fixed-density skeletons, `(3, 3, natm, natm)` each
       !!
       !! `hess_corr(a, b, A, B)` is pycc's pass-1 scalar `s` for the atom pair
@@ -102,6 +118,18 @@ contains
       !! measured in `tools/mp2_hessian_oracle/CONVENTIONS.md` s.4a. Handing
       !! this routine a correlation-only `W` would double-count the reference's
       !! share -- give it exactly what `libcint_mp2_gradient` returns.
+      !!
+      !! **With `xc` the convention flips**, because with `xc` the gradient
+      !! returns something else: its double-hybrid `W` never took the
+      !! reference's share on board, so here it is halved and nothing is added
+      !! back -- reconstructing against the Hartree-Fock total would
+      !! double-count the reference. The sweep otherwise changes twice: the
+      !! reference deposit's exchange carries the functional's fraction, and
+      !! `Tr(D_rel V_xc^{XY})` -- the piece of `D_rel f^{XY}` no density fold
+      !! can carry -- lands from `xc_potential_hessian`. `hess_ref` is still
+      !! the Hartree-Fock-shaped skeleton over `dref` and is **discarded** by
+      !! a double-hybrid caller, whose reference block comes whole from
+      !! `ks_hessian`; it is not adapted here.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: gamma_eff_ao(:, :, :, :)
          !! From `build_effective_2pdm_ao`: chemist ordered, bra-ket
@@ -118,6 +146,12 @@ contains
       real(dp), allocatable, intent(out) :: hess_corr(:, :, :, :)
       real(dp), allocatable, intent(out) :: hess_ref(:, :, :, :)
       type(error_t), intent(inout) :: error
+      type(xc_context_t), intent(inout), optional :: xc
+         !! The functional the reference used. Present switches this sweep to
+         !! the double hybrid's conventions -- see the header.
+      real(dp), intent(in), optional :: scf_density(:, :)
+         !! The converged reference density, where `V_xc` is evaluated.
+         !! Required with `xc`.
 
       real(dp), allocatable :: drel_ao(:, :), wcorr(:, :), wref(:, :), dref(:, :)
       real(dp), allocatable :: h2(:, :, :), hab(:, :, :), s2(:, :, :), sab(:, :, :)
@@ -125,11 +159,24 @@ contains
       real(dp), allocatable :: cross_c(:, :, :), cross_r(:, :, :)
       integer, allocatable :: owner(:), offsets(:), counts(:)
       real(dp) :: total_c(3, 3), total_r(3, 3)
-      real(dp) :: wc, wr, zc
+      real(dp) :: wc, wr, zc, kf
+      logical :: dh
       integer :: n_ao, n_mo, natm, iao, jao, ia, ja
       integer :: a, b, comp, c, i
 
       if (error%has_error()) return
+
+      dh = present(xc)
+      kf = 1.0_dp
+      if (dh) then
+         if (.not. present(scf_density)) then
+            call error%set(ERROR_VALIDATION, "the double-hybrid skeleton Hessian "// &
+                           "needs the converged reference density alongside the "// &
+                           "functional context")
+            return
+         end if
+         kf = xc%exx_fraction
+      end if
 
       n_ao = mol%nao
       n_mo = size(coeff, 2)
@@ -154,7 +201,13 @@ contains
                         reshape(coeff(:, i), [1, n_ao]))
       end do
       allocate (wcorr(n_ao, n_ao))
-      wcorr = 0.5_dp*(energy_weighted_ao + 2.0_dp*wref)
+      if (dh) then
+         ! The double-hybrid gradient's `W` never carried the reference share,
+         ! so there is nothing to strip back out (header).
+         wcorr = 0.5_dp*energy_weighted_ao
+      else
+         wcorr = 0.5_dp*(energy_weighted_ao + 2.0_dp*wref)
+      end if
 
       allocate (dref(n_ao, n_ao))
       dref = 2.0_dp*matmul(coeff(:, 1:n_occ), transpose(coeff(:, 1:n_occ)))
@@ -291,8 +344,19 @@ contains
       ! reference deposits from the same buffers, so the second-derivative
       ! ERIs -- the dominant cost -- are generated exactly once.
       call hess_2e_skeleton_contract(mol, gamma_eff_ao, dref, owner, &
-                                     hess_corr, hess_ref, error)
+                                     hess_corr, hess_ref, error, k_scale=kf)
       if (error%has_error()) return
+
+      ! The reference operator's second derivative contains the
+      ! exchange-correlation potential's, contracted against the relaxed
+      ! correlation density -- the one pass-1 term with no Hartree-Fock
+      ! counterpart, since `gamma_eff_ao`'s fold can only carry the separable
+      ! two-electron half of `D_rel f^{XY}`. Grid held fixed, as everywhere
+      ! on this Hessian's ladder.
+      if (dh) then
+         call xc_potential_hessian(xc, mol, scf_density, drel_ao, hess_corr, error)
+         if (error%has_error()) return
+      end if
 
       deallocate (drel_ao, wcorr, wref, dref, owner, offsets, counts)
    end subroutine mp2_skeleton_hessian
@@ -1261,7 +1325,7 @@ contains
    subroutine mp2_perturbed_response(mol, coeff, orbital_energies, n_occ, &
                                      n_frozen, fx, sx, erix, mo1, t2, eri_mo, &
                                      l_mo, gam, drel, dt2, ddrel, di, error, &
-                                     tol, zvec)
+                                     tol, zvec, xc, scf_density)
       !! Units 1.7-1.8 and 2.3: the perturbed amplitudes, relaxed density and
       !! energy-weighted density for every nuclear perturbation
       !!
@@ -1328,6 +1392,16 @@ contains
          !! The unperturbed Z-vector `z_ia`, `(n_occ, n_vir)`, for a caller
          !! that wants to cross-check it against the gradient's relaxed
          !! density.
+      type(xc_context_t), intent(inout), optional :: xc
+         !! The functional the reference used. Present, the two Z-vector
+         !! solves become Kohn-Sham ones, the derivative weight `dl` carries
+         !! the exchange fraction, and every `L`-fold's kernel share is added
+         !! through the operator applies at the bottom of this file -- the
+         !! full-derivative folds through `ks_dl_pair_kernel`, whose `g_xc`
+         !! term is where the kernel's own density dependence enters. `l_mo`
+         !! must arrive already `k`-scaled.
+      real(dp), intent(in), optional :: scf_density(:, :)
+         !! The converged reference density. Required with `xc`.
 
       real(dp), allocatable :: d0(:, :), ip0(:, :), rhs0(:, :, :), zsol(:, :, :)
       real(dp), allocatable :: z(:, :), u(:, :), df(:, :), deri(:, :, :, :)
@@ -1335,12 +1409,33 @@ contains
       real(dp), allocatable :: dgam_y(:, :, :, :), dip(:, :), rhs1(:, :)
       real(dp), allocatable :: rhs(:, :, :), zx(:, :, :), zm(:, :)
       real(dp), allocatable :: pco(:, :), dpco(:, :)
-      real(dp) :: use_tol, acc
-      integer :: n_mo, n_vir, n_act, n_pert, y, atom, comp, i, j, a, b, c, d
+      real(dp), allocatable :: vk_d0(:, :), vk_drel(:, :), vk_z(:, :), vk_pco(:, :)
+      real(dp), allocatable :: kd_d0(:, :, :), kd_drel(:, :, :), kd_z(:, :, :)
+      real(dp), allocatable :: kd_pco(:, :, :)
+      real(dp), allocatable :: z_emb(:, :), pco_emb(:, :), mx(:, :), vk_mx(:, :)
+      real(dp), allocatable :: ddmat_ao(:, :), w_d0(:, :), w_drel(:, :), w_z(:, :)
+      real(dp), allocatable :: w_pco(:, :), vk_dd(:, :), vk_dpco(:, :), vk_zm(:, :)
+      real(dp), allocatable :: xc_occ(:, :), dpco_emb(:, :)
+      logical :: dh
+      real(dp) :: use_tol, acc, kf
+      integer :: n_ao, n_mo, n_vir, n_act, n_pert, y, atom, comp, i, j, a, b, c, d
       integer :: m, e, f, p, q, r, s
 
       if (error%has_error()) return
 
+      dh = present(xc)
+      kf = 1.0_dp
+      if (dh) then
+         if (.not. present(scf_density)) then
+            call error%set(ERROR_VALIDATION, "the double-hybrid perturbed response "// &
+                           "needs the converged reference density: the kernel and "// &
+                           "its derivatives are evaluated at it")
+            return
+         end if
+         kf = xc%exx_fraction
+      end if
+
+      n_ao = size(coeff, 1)
       n_mo = size(coeff, 2)
       n_vir = n_mo - n_occ
       n_act = n_occ - n_frozen
@@ -1390,6 +1485,14 @@ contains
       end do
 
       call mp2_mo_lagrangian(eri_mo, orbital_energies, d0, gam, n_occ, ip0)
+      if (dh) then
+         ! The unrelaxed Lagrangian's Kohn-Sham lift, outside the routine for
+         ! the module header's bit-for-bit reason.
+         allocate (vk_d0(n_mo, n_mo))
+         call ks_pair_kernel(xc, mol, coeff, scf_density, d0, vk_d0, error)
+         if (error%has_error()) return
+         call ks_occ_fold_patch(eri_mo, d0, n_occ, kf, vk_d0, ip0)
+      end if
       if (n_frozen > 0) then
          allocate (pco(n_frozen, n_act))
          do i = 1, n_act
@@ -1398,6 +1501,19 @@ contains
                            /(orbital_energies(c) - orbital_energies(n_frozen + i))
             end do
          end do
+         if (dh) then
+            ! The rotation as the pair folds see it: one triangle of the
+            ! core<->active divide, the operator applies symmetrising it.
+            allocate (pco_emb(n_mo, n_mo), vk_pco(n_mo, n_mo))
+            pco_emb = 0.0_dp
+            do i = 1, n_act
+               do c = 1, n_frozen
+                  pco_emb(n_frozen + i, c) = pco(c, i)
+               end do
+            end do
+            call ks_pair_kernel(xc, mol, coeff, scf_density, pco_emb, vk_pco, error)
+            if (error%has_error()) return
+         end if
       end if
       allocate (rhs0(n_vir, n_occ, 1))
       do i = 1, n_occ
@@ -1412,17 +1528,51 @@ contains
                                             + l_mo(n_occ + a, c, i, n_frozen + j))
                   end do
                end do
+               if (dh) acc = acc + vk_pco(n_occ + a, i)
             end if
             rhs0(a, i, 1) = -acc
          end do
       end do
+      ! `xc` and `scf_density` forward as they stand: absent, `cphf_solve`
+      ! sees the Hartree-Fock equations it always solved.
       call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zsol, &
-                      error=error, mo_rhs=rhs0, tol=use_tol, max_iter=200)
+                      error=error, mo_rhs=rhs0, tol=use_tol, max_iter=200, &
+                      xc=xc, density=scf_density)
       if (error%has_error()) return
       allocate (z(n_occ, n_vir))
       z = transpose(zsol(:, :, 1))
       deallocate (rhs0, zsol, ip0)
       if (present(zvec)) zvec = z
+
+      ! ---- the kernel-derivative stacks, one grid pass per density ---------
+      !
+      ! Every `d_X L` fold below contracts one of four fixed densities, and
+      ! the skeleton share of its kernel term depends on the density alone,
+      ! so it is built here for all `3 natm` perturbations at once. The
+      ! per-perturbation shares -- the rotations and the `g_xc` term -- are
+      ! assembled inside the loop, where `U^X` first exists.
+      if (dh) then
+         allocate (z_emb(n_mo, n_mo), vk_z(n_mo, n_mo), vk_drel(n_mo, n_mo))
+         z_emb = 0.0_dp
+         z_emb(1:n_occ, n_occ + 1:n_mo) = z
+         call ks_pair_kernel(xc, mol, coeff, scf_density, z_emb, vk_z, error)
+         call ks_pair_kernel(xc, mol, coeff, scf_density, drel, vk_drel, error)
+         call ks_kernel_deriv_stack(xc, mol, coeff, scf_density, d0, kd_d0, error)
+         call ks_kernel_deriv_stack(xc, mol, coeff, scf_density, drel, kd_drel, error)
+         call ks_kernel_deriv_stack(xc, mol, coeff, scf_density, z_emb, kd_z, error)
+         if (n_frozen > 0) then
+            call ks_kernel_deriv_stack(xc, mol, coeff, scf_density, pco_emb, &
+                                       kd_pco, error)
+         end if
+         if (error%has_error()) return
+         allocate (mx(n_mo, n_mo), vk_mx(n_mo, n_mo), ddmat_ao(n_ao, n_ao))
+         allocate (w_d0(n_mo, n_mo), w_drel(n_mo, n_mo), w_z(n_mo, n_mo))
+         allocate (vk_dd(n_mo, n_mo), vk_zm(n_mo, n_mo), xc_occ(n_mo, n_mo))
+         if (n_frozen > 0) then
+            allocate (w_pco(n_mo, n_mo), vk_dpco(n_mo, n_mo))
+            allocate (dpco_emb(n_mo, n_mo))
+         end if
+      end if
 
       ! ---- pass 1: one perturbation's derivative resident at a time --------
       allocate (dt2(n_act, n_act, n_vir, n_vir, n_pert))
@@ -1431,18 +1581,78 @@ contains
       do y = 1, n_pert
          atom = (y - 1)/3 + 1
          comp = y - 3*(atom - 1)
+         if (dh) then
+            ! The kernel's response to this perturbation's first-order
+            ! density: `mo1` is the carrier -- `-S^(X)/2` occupied rows, the
+            ! solved response below -- and the Brillouin rewrite inside
+            ! `mp2_full_u` redistributes only the antisymmetric part of the
+            ! core<->active block, which the symmetrised apply never sees.
+            ! One matrix therefore serves the rewrite and `d_X f` alike.
+            mx = 0.0_dp
+            mx(:, 1:n_occ) = mo1(:, :, comp, atom)
+            call ks_pair_kernel(xc, mol, coeff, scf_density, mx, vk_mx, error)
+            if (error%has_error()) return
+         end if
          call mp2_full_u(mo1(:, :, comp, atom), sx(:, :, y), n_occ, u, &
                          n_frozen=n_frozen, fx1=fx(:, :, y), l_mo=l_mo, &
                          orbital_energies=orbital_energies)
+         if (dh .and. n_frozen > 0) then
+            ! The Brillouin rewrite's kernel share, folded into the rotation
+            ! after the fact: the rewrite's divides are independent -- each
+            ! reads only the solved virtual rows -- so lifting `acc` by
+            ! `vk_mx(c, i)` inside and correcting `u` here are the same
+            ! rotation, and the routine's text stays the Hartree-Fock one
+            ! (module header).
+            do i = n_frozen + 1, n_occ
+               do c = 1, n_frozen
+                  u(c, i) = u(c, i) - vk_mx(c, i) &
+                            /(orbital_energies(c) - orbital_energies(i))
+                  u(i, c) = -sx(c, i, y) - u(c, i)
+               end do
+            end do
+         end if
          call mp2_perturbed_fock(fx(:, :, y), sx(:, :, y), u, l_mo, &
                                  orbital_energies, n_occ, df)
+         ! The mean-field response's kernel share: every element, since the
+         ! perturbed Fock's folds run over the full square.
+         if (dh) df = df + vk_mx
          call mp2_perturbed_eri(erix(:, :, :, :, y), u, eri_mo, deri)
+         ! Two copies of the weight build, split on the exchange fraction,
+         ! for the reason `mp2_first_order_skeletons` gives.
          allocate (dl(n_mo, n_mo, n_mo, n_mo))
-         do s = 1, n_mo
-            do r = 1, n_mo
-               dl(:, :, r, s) = 2.0_dp*deri(:, :, r, s) - deri(:, :, s, r)
+         if (kf == 1.0_dp) then
+            do s = 1, n_mo
+               do r = 1, n_mo
+                  dl(:, :, r, s) = 2.0_dp*deri(:, :, r, s) - deri(:, :, s, r)
+               end do
             end do
-         end do
+         else
+            do s = 1, n_mo
+               do r = 1, n_mo
+                  dl(:, :, r, s) = 2.0_dp*deri(:, :, r, s) - kf*deri(:, :, s, r)
+               end do
+            end do
+         end if
+         if (dh) then
+            ! The full-derivative kernel shares for this perturbation. The
+            ! reference density's matrix response is `4 C sym(mx) C^T` --
+            ! `nuclear_apply`'s own first-order density -- and feeds the
+            ! `g_xc` term of every `d_X L` fold.
+            ddmat_ao = 2.0_dp*matmul(coeff, &
+                                     matmul(mx + transpose(mx), transpose(coeff)))
+            call ks_dl_pair_kernel(xc, mol, coeff, scf_density, d0, vk_d0, &
+                                   kd_d0(:, :, y), u, ddmat_ao, w_d0, error)
+            call ks_dl_pair_kernel(xc, mol, coeff, scf_density, drel, vk_drel, &
+                                   kd_drel(:, :, y), u, ddmat_ao, w_drel, error)
+            call ks_dl_pair_kernel(xc, mol, coeff, scf_density, z_emb, vk_z, &
+                                   kd_z(:, :, y), u, ddmat_ao, w_z, error)
+            if (n_frozen > 0) then
+               call ks_dl_pair_kernel(xc, mol, coeff, scf_density, pco_emb, &
+                                      vk_pco, kd_pco(:, :, y), u, ddmat_ao, &
+                                      w_pco, error)
+            end if
+            if (error%has_error()) return
+         end if
          call mp2_perturbed_t2(deri, df, t2, orbital_energies, n_frozen, n_occ, ta)
          dt2(:, :, :, :, y) = ta
          call mp2_perturbed_onepdm(t2, ta, n_frozen, n_occ, n_mo, ddg)
@@ -1450,9 +1660,23 @@ contains
          ! The Z-vector right-hand side wants the Lagrangian's response at the
          ! unrelaxed pair; the energy-weighted density wants it at the relaxed
          ! one. Both while the derivative tensor is still here.
-         call mp2_perturbed_lagrangian(df, deri, dl, eri_mo, l_mo, orbital_energies, &
-                                       d0, ddg, gam, dgam_y, n_occ, dip)
+         call mp2_perturbed_lagrangian(df, deri, dl, eri_mo, l_mo, &
+                                       orbital_energies, d0, ddg, gam, dgam_y, &
+                                       n_occ, dip)
+         if (dh) then
+            ! The occupied-column folds' kernel shares -- `dD . L` through the
+            ! apply at `ddg`, `D . d_X L` through the full-derivative helper
+            ! -- added with the routine's own `-1/2` after the fact, so its
+            ! Hartree-Fock text stands (module header).
+            call ks_pair_kernel(xc, mol, coeff, scf_density, ddg, vk_dd, error)
+            if (error%has_error()) return
+            xc_occ = vk_dd + w_d0
+            dip(:, 1:n_occ) = dip(:, 1:n_occ) - 0.5_dp*xc_occ(:, 1:n_occ)
+         end if
          call mp2_perturbed_zvector_rhs(dip, df, dl, z, n_occ, rhs1)
+         ! The `dL . z` fold's kernel share, subtracted the way the explicit
+         ! fold is.
+         if (dh) rhs1 = rhs1 - w_z(n_occ + 1:n_mo, 1:n_occ)
          if (n_frozen > 0) then
             ! The Sylvester derivative of the core<->active divide (header):
             ! the off-diagonal d_Y f couplings within the core and active
@@ -1471,6 +1695,17 @@ contains
                   dpco(c, i) = acc/(orbital_energies(c) - orbital_energies(n_frozen + i))
                end do
             end do
+            if (dh) then
+               dpco_emb = 0.0_dp
+               do i = 1, n_act
+                  do c = 1, n_frozen
+                     dpco_emb(n_frozen + i, c) = dpco(c, i)
+                  end do
+               end do
+               call ks_pair_kernel(xc, mol, coeff, scf_density, dpco_emb, &
+                                   vk_dpco, error)
+               if (error%has_error()) return
+            end if
             do i = 1, n_occ
                do a = 1, n_vir
                   acc = 0.0_dp
@@ -1482,6 +1717,7 @@ contains
                                            + dl(n_occ + a, c, i, n_frozen + j))
                      end do
                   end do
+                  if (dh) acc = acc + vk_dpco(n_occ + a, i) + w_pco(n_occ + a, i)
                   rhs1(a, i) = rhs1(a, i) + acc
                end do
             end do
@@ -1495,15 +1731,28 @@ contains
          end if
          rhs(:, :, y) = rhs1
          deallocate (dip)
-         call mp2_perturbed_lagrangian(df, deri, dl, eri_mo, l_mo, orbital_energies, &
-                                       drel, ddg, gam, dgam_y, n_occ, dip)
+         call mp2_perturbed_lagrangian(df, deri, dl, eri_mo, l_mo, &
+                                       orbital_energies, drel, ddg, gam, &
+                                       dgam_y, n_occ, dip)
+         if (dh) then
+            ! As at the unrelaxed pair above; `ddg` may have just taken the
+            ! core<->active response, so its kernel share is re-applied at
+            ! the matrix the fold read.
+            if (n_frozen > 0) then
+               call ks_pair_kernel(xc, mol, coeff, scf_density, ddg, vk_dd, error)
+               if (error%has_error()) return
+            end if
+            xc_occ = vk_dd + w_drel
+            dip(:, 1:n_occ) = dip(:, 1:n_occ) - 0.5_dp*xc_occ(:, 1:n_occ)
+         end if
          di(:, :, y) = dip
          ddrel(:, :, y) = ddg
          deallocate (u, df, deri, dl, ta, ddg, dgam_y, dip, rhs1)
       end do
 
       call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zx, &
-                      error=error, mo_rhs=rhs, tol=use_tol, max_iter=200)
+                      error=error, mo_rhs=rhs, tol=use_tol, max_iter=200, &
+                      xc=xc, density=scf_density)
       if (error%has_error()) return
       deallocate (rhs)
 
@@ -1533,14 +1782,29 @@ contains
                di(p, q, y) = di(p, q, y) - 0.5_dp*acc
             end do
          end do
+         if (dh) then
+            ! The solved blocks' own kernel share of `d_Y I`, unperturbed
+            ! operator only -- the same linearity that lets pass 2 run after
+            ! the derivative tensors are gone.
+            call ks_pair_kernel(xc, mol, coeff, scf_density, zm, vk_zm, error)
+            if (error%has_error()) return
+            di(:, 1:n_occ, y) = di(:, 1:n_occ, y) - 0.5_dp*vk_zm(:, 1:n_occ)
+         end if
       end do
       deallocate (zm, zx, d0, z)
       if (allocated(pco)) deallocate (pco)
+      if (allocated(vk_d0)) then
+         deallocate (vk_d0, vk_drel, vk_z, kd_d0, kd_drel, kd_z)
+         deallocate (z_emb, mx, vk_mx, ddmat_ao, w_d0, w_drel, w_z)
+         deallocate (vk_dd, vk_zm, xc_occ)
+      end if
+      if (allocated(vk_pco)) deallocate (vk_pco, pco_emb, kd_pco, w_pco, &
+                                         vk_dpco, dpco_emb)
    end subroutine mp2_perturbed_response
 
    subroutine mp2_correlation_hessian(mol, coeff, orbital_energies, density, &
                                       n_occ, n_frozen, hess_corr, hess_ref, &
-                                      error, tol)
+                                      error, tol, xc, pt2_scale)
       !! Unit 1.9: the analytic MP2 correlation Hessian, `(3, 3, natm, natm)`
       !!
       !! The three groups of pycc's `_hessian_blocks` (`route == 'aod'`)
@@ -1569,6 +1833,15 @@ contains
       !! rewrite of `U^X`, the Unit 2.2 pair augmentation and the Unit 2.3
       !! Sylvester derivative; `n_frozen = 0` reproduces the all-electron
       !! path verbatim.
+      !!
+      !! **With `xc`, this returns something else**: the correlation block of
+      !! a double hybrid, over the Kohn-Sham reference whose orbitals and
+      !! `density` arrive here, scaled by `pt2_scale` -- the second-order
+      !! analogue of `libcint_mp2_gradient`'s own switch, one routine because
+      !! the two assemblies differ in an enumerable list of sites and agree
+      !! everywhere else. `hess_ref` is then still the Hartree-Fock-shaped
+      !! skeleton and is to be **discarded**: a double-hybrid caller takes
+      !! its whole reference block from `ks_hessian` instead.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coeff(:, :)            !! C, (n_ao, n_mo)
       real(dp), intent(in) :: orbital_energies(:)    !! (n_mo), Hartree
@@ -1583,6 +1856,15 @@ contains
          !! to 1e-13, below the solvers' own defaults on purpose: the
          !! references this assembly is gated against are dense solves, so
          !! the entire iterative floor in any comparison is ours.
+      type(xc_context_t), intent(inout), optional :: xc
+         !! The functional the Kohn-Sham reference used. Present switches the
+         !! whole ladder to the double hybrid's correlation block -- see the
+         !! header. `density` is then where every kernel is evaluated.
+      real(dp), intent(in), optional :: pt2_scale
+         !! The functional's PT2 coefficient. Applied once, to the finished
+         !! correlation block, for the gradient's reason: the perturbed
+         !! Z-vector solves are linear, so scaling their inputs and scaling
+         !! their outputs are the same operation and doing both is the error.
 
       real(dp), allocatable :: gradient(:, :), dm1mo(:, :), w_ao(:, :)
       real(dp), allocatable :: eri_packed(:, :), ovov(:, :, :, :), t2(:, :, :, :)
@@ -1597,7 +1879,9 @@ contains
       real(dp), allocatable :: h1a(:, :, :), s1a(:, :, :), mo1(:, :, :, :)
       real(dp), allocatable :: orb(:, :), dt2(:, :, :, :, :)
       real(dp), allocatable :: ddrel(:, :, :), di(:, :, :), dgam(:, :, :, :)
-      real(dp) :: use_tol, resp
+      real(dp), allocatable :: vk_drel(:, :), kd_drel_mo(:, :, :), vkpf(:, :)
+      logical :: dh
+      real(dp) :: use_tol, resp, kf, cscale
       integer :: n_ao, n_mo, natm, n_pert, a, x, ix, iy, ax, by, cx, cy
       integer :: p, q, r, s
 
@@ -1605,15 +1889,35 @@ contains
       use_tol = 1.0e-13_dp
       if (present(tol)) use_tol = tol
 
+      ! The double hybrid's settings, and the ordinary MP2 values that leave
+      ! every expression below bit for bit what it was: full exchange, unit
+      ! scale, no kernel anywhere.
+      dh = present(xc)
+      kf = 1.0_dp
+      cscale = 1.0_dp
+      if (dh) then
+         kf = xc%exx_fraction
+         if (present(pt2_scale)) cscale = pt2_scale
+      end if
+
       n_ao = mol%nao
       n_mo = size(coeff, 2)
       natm = mol%natm
       n_pert = 3*natm
 
       ! ---- the unperturbed ladder, from the gradient ------------------------
-      call libcint_mp2_gradient(mol, coeff, orbital_energies, n_occ, gradient, &
-                                error, n_frozen=n_frozen, relaxed_density_mo=dm1mo, &
-                                energy_weighted_ao=w_ao)
+      if (dh) then
+         call libcint_mp2_gradient(mol, coeff, orbital_energies, n_occ, gradient, &
+                                   error, n_frozen=n_frozen, &
+                                   relaxed_density_mo=dm1mo, &
+                                   energy_weighted_ao=w_ao, xc=xc, &
+                                   scf_density=density, pt2_scale=cscale)
+      else
+         call libcint_mp2_gradient(mol, coeff, orbital_energies, n_occ, gradient, &
+                                   error, n_frozen=n_frozen, &
+                                   relaxed_density_mo=dm1mo, &
+                                   energy_weighted_ao=w_ao)
+      end if
       if (error%has_error()) return
 
       call mol%eris_packed(eri_packed)
@@ -1624,10 +1928,12 @@ contains
 
       ! ---- pass 1: the fixed-density second skeletons, both blocks ----------
       call build_effective_2pdm_ao(t2, dm1mo, coeff, n_ao, n_mo, n_occ, n_frozen, &
-                                   gamma_eff)
+                                   gamma_eff, k_scale=kf)
+      ! `xc` forwards as it stands -- absent, the sweep is the Hartree-Fock
+      ! one and `scf_density` goes unread.
       call mp2_skeleton_hessian(mol, gamma_eff, dm1mo, w_ao, coeff, &
                                 orbital_energies, n_occ, hess_corr, hess_ref, &
-                                error)
+                                error, xc=xc, scf_density=density)
       if (error%has_error()) return
       ! Freed before any pass-2 tensor exists -- the two-pass memory shape.
       deallocate (gamma_eff)
@@ -1635,22 +1941,56 @@ contains
       ! ---- pass 2 inputs: skeletons, carriers, and the CPHF ----------------
       call mp2_first_order_skeletons(mol, coeff, n_occ, fx, sx, erix, error)
       if (error%has_error()) return
+      ! The Kohn-Sham lift lives outside the skeleton builder on purpose:
+      ! the Hartree-Fock routine's text is part of the bit-for-bit contract
+      ! (module header), and everything the lift needs -- the occupied trace
+      ! of `erix` and the potential's grid derivative -- is in hand here.
+      if (dh) then
+         call mp2_ks_first_order_fock(mol, xc, density, coeff, n_occ, erix, kf, &
+                                      fx, error)
+         if (error%has_error()) return
+      end if
       call mp2_mo_eri_physicist(mol, coeff, eri_mo, error)
       if (error%has_error()) return
 
+      ! Two copies of the weight build, split on the exchange fraction, for
+      ! the reason `mp2_first_order_skeletons` gives: full exchange keeps its
+      ! literal statements bit for bit.
       allocate (l_mo(n_mo, n_mo, n_mo, n_mo))
-      do s = 1, n_mo
-         do r = 1, n_mo
-            do q = 1, n_mo
-               do p = 1, n_mo
-                  l_mo(p, q, r, s) = 2.0_dp*eri_mo(p, q, r, s) - eri_mo(p, q, s, r)
+      if (kf == 1.0_dp) then
+         do s = 1, n_mo
+            do r = 1, n_mo
+               do q = 1, n_mo
+                  do p = 1, n_mo
+                     l_mo(p, q, r, s) = 2.0_dp*eri_mo(p, q, r, s) - eri_mo(p, q, s, r)
+                  end do
                end do
             end do
          end do
-      end do
+      else
+         do s = 1, n_mo
+            do r = 1, n_mo
+               do q = 1, n_mo
+                  do p = 1, n_mo
+                     l_mo(p, q, r, s) = 2.0_dp*eri_mo(p, q, r, s) &
+                                        - kf*eri_mo(p, q, s, r)
+                  end do
+               end do
+            end do
+         end do
+      end if
 
       call mp2_cumulant_2pdm(t2, n_frozen, n_occ, n_mo, gam)
       call mp2_mo_lagrangian(eri_mo, orbital_energies, dm1mo, gam, n_occ, imat)
+      if (dh) then
+         ! The Lagrangian's occupied-column fold, lifted to the reference's
+         ! exchange fraction plus its kernel -- outside `mp2_mo_lagrangian`
+         ! for the bit-for-bit reason above.
+         allocate (vk_drel(n_mo, n_mo))
+         call ks_pair_kernel(xc, mol, coeff, density, dm1mo, vk_drel, error)
+         if (error%has_error()) return
+         call ks_occ_fold_patch(eri_mo, dm1mo, n_occ, kf, vk_drel, imat)
+      end if
 
       ! All-electron non-canonical, the bare carriers are the augmented ones
       ! (the augmentation is the exact identity there, and the response test
@@ -1660,13 +2000,46 @@ contains
       ! `P^(X)` carrier must meet `f^(Y)` in the orbital response.
       allocate (xov_st(n_mo, n_mo, n_pert), i2_st(n_mo, n_mo, n_pert))
       if (n_frozen > 0) allocate (pf_st(n_mo, n_mo, n_pert))
+      if (dh) then
+         ! The skeleton derivative of the Lagrangian's kernel fold, all
+         ! perturbations from one grid pass.
+         call ks_kernel_deriv_stack(xc, mol, coeff, density, dm1mo, &
+                                    kd_drel_mo, error)
+         if (error%has_error()) return
+         if (n_frozen > 0) allocate (vkpf(n_mo, n_mo))
+      end if
       do x = 1, n_pert
          call mp2_skeleton_lagrangian(fx(:, :, x), sx(:, :, x), &
                                       erix(:, :, :, :, x), dm1mo, gam, imat, &
                                       n_occ, ip, xov, i2)
+         if (dh) then
+            ! The fold's Kohn-Sham lift -- exchange fraction plus the
+            ! kernel's skeleton derivative -- lands on `ip`, and the two
+            ! carriers are rebuilt from it exactly as the routine builds
+            ! them. Note `fx` and `imat` already arrived lifted, so those
+            ! terms of `I'^(X)` need nothing here.
+            call ks_occ_fold_patch(erix(:, :, :, :, x), dm1mo, n_occ, kf, &
+                                   kd_drel_mo(:, :, x), ip)
+            xov = transpose(ip) - ip
+            i2 = ip
+            i2(n_occ + 1:n_mo, 1:n_occ) = transpose(ip(1:n_occ, n_occ + 1:n_mo))
+         end if
          if (n_frozen > 0) then
             call mp2_pair_rotation_augment(ip, xov, i2, l_mo, orbital_energies, &
                                            n_occ, n_frozen, .false., xt, it, pf)
+            if (dh) then
+               ! The kernel share of the augmentation's pair sums -- the same
+               ! `P^(X)` against `L` folds, as one operator apply, patched
+               ! where the augmented carriers were just assembled so the
+               ! transcription above stays checkable against pycc line by
+               ! line.
+               call ks_pair_kernel(xc, mol, coeff, density, pf, vkpf, error)
+               if (error%has_error()) return
+               xt(n_occ + 1:n_mo, 1:n_occ) = xt(n_occ + 1:n_mo, 1:n_occ) &
+                                             + 0.5_dp*vkpf(n_occ + 1:n_mo, 1:n_occ)
+               it(1:n_occ, 1:n_occ) = it(1:n_occ, 1:n_occ) &
+                                      - 0.5_dp*vkpf(1:n_occ, 1:n_occ)
+            end if
             xov_st(:, :, x) = xt
             i2_st(:, :, x) = it
             pf_st(:, :, x) = pf
@@ -1682,7 +2055,7 @@ contains
       if (error%has_error()) return
       allocate (h1(n_ao, n_ao, 3, natm), s1(n_ao, n_ao, 3, natm))
       do a = 1, natm
-         call make_h1_atom(mol, density, eip1, a, h1a, error)
+         call make_h1_atom(mol, density, eip1, a, h1a, error, k_scale=kf)
          call overlap_deriv_atom(mol, a, s1a, error)
          if (error%has_error()) return
          h1(:, :, :, a) = h1a
@@ -1690,8 +2063,19 @@ contains
          deallocate (h1a, s1a)
       end do
       deallocate (eip1)
-      call solve_mo1_batch(mol, coeff, orbital_energies, n_occ, h1, s1, mo1, &
-                           error, max_iter=200, tol=use_tol)
+      if (dh) then
+         ! `make_h1_atom` differentiates only integrals; the Kohn-Sham mean
+         ! field also keeps part of itself on the quadrature grid, and the
+         ! coupled-perturbed right-hand side needs that derivative too.
+         call xc_potential_deriv(xc, mol, density, h1, error)
+         if (error%has_error()) return
+         call solve_mo1_batch(mol, coeff, orbital_energies, n_occ, h1, s1, mo1, &
+                              error, xc=xc, reference=density, k_scale=kf, &
+                              max_iter=200, tol=use_tol)
+      else
+         call solve_mo1_batch(mol, coeff, orbital_energies, n_occ, h1, s1, mo1, &
+                              error, max_iter=200, tol=use_tol)
+      end if
       if (error%has_error()) return
       deallocate (h1, s1)
 
@@ -1707,7 +2091,8 @@ contains
       ! ---- group 3: the 2n+1 density response -------------------------------
       call mp2_perturbed_response(mol, coeff, orbital_energies, n_occ, n_frozen, &
                                   fx, sx, erix, mo1, t2, eri_mo, l_mo, gam, &
-                                  dm1mo, dt2, ddrel, di, error, tol=use_tol)
+                                  dm1mo, dt2, ddrel, di, error, tol=use_tol, &
+                                  xc=xc, scf_density=density)
       if (error%has_error()) return
       deallocate (mo1, eri_mo, l_mo, gam, imat)
 
@@ -1733,7 +2118,266 @@ contains
          deallocate (dgam)
       end do
 
+      ! Once, here, and nowhere else -- the gradient's own rule, one order up.
+      ! `hess_ref` is deliberately not scaled: it is the reference's skeleton,
+      ! and a double-hybrid caller discards it anyway (header).
+      if (dh) hess_corr = cscale*hess_corr
+
       deallocate (gradient, dm1mo, w_ao, t2, fx, sx, erix, orb, dt2, ddrel, di)
+      if (allocated(vk_drel)) deallocate (vk_drel, kd_drel_mo)
+      if (allocated(vkpf)) deallocate (vkpf)
    end subroutine mp2_correlation_hessian
+
+   subroutine mp2_ks_first_order_fock(mol, xc, scf_density, coeff, n_occ, erix, &
+                                      k_scale, fx, error)
+      !! Lift the Hartree-Fock first-order skeleton Fock to the Kohn-Sham one
+      !!
+      !!     f^(X)_pq -> f^(X)_pq + (1 - k) sum_m <pm|mq>^(X) + (C^T V_xc^(X) C)_pq
+      !!
+      !! `mp2_first_order_skeletons` builds the Hartree-Fock skeleton and its
+      !! text is part of the no-`xc` path's bit-for-bit contract (module
+      !! header), so the lift lives here instead: the exchange trace is
+      !! recovered from the `erix` stack that builder already returns --
+      !! `<pm|mq>^(X)` is its fold's `chem(p, m, m, q)` said in physicist
+      !! order -- and the potential's skeleton derivative comes from one
+      !! `xc_potential_deriv` grid pass covering every perturbation, matrices
+      !! and grid held fixed. `test_mqc_mp2_hessian_skeleton_fock` differences
+      !! the lifted matrix against the Kohn-Sham Fock it derives.
+      type(libcint_molecule_t), intent(in) :: mol
+      type(xc_context_t), intent(inout) :: xc
+      real(dp), intent(in) :: scf_density(:, :)   !! Converged reference density
+      real(dp), intent(in) :: coeff(:, :)
+      integer, intent(in) :: n_occ                !! Full doubly-occupied count
+      real(dp), intent(in) :: erix(:, :, :, :, :)  !! `<pq|rs>^(X)`, physicist
+      real(dp), intent(in) :: k_scale             !! The functional's fraction
+      real(dp), intent(inout) :: fx(:, :, :)      !! Lifted in place
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: vxc1(:, :, :, :)
+      real(dp) :: acc, cx
+      integer :: n_ao, n_mo, natm, a, comp, x, p, q, m
+
+      if (error%has_error()) return
+      n_ao = size(coeff, 1)
+      n_mo = size(coeff, 2)
+      natm = mol%natm
+      allocate (vxc1(n_ao, n_ao, 3, natm))
+      vxc1 = 0.0_dp
+      call xc_potential_deriv(xc, mol, scf_density, vxc1, error)
+      if (error%has_error()) return
+
+      cx = 1.0_dp - k_scale
+      do a = 1, natm
+         do comp = 1, 3
+            x = 3*(a - 1) + comp
+            do q = 1, n_mo
+               do p = 1, n_mo
+                  acc = 0.0_dp
+                  do m = 1, n_occ
+                     acc = acc + erix(p, m, m, q, x)
+                  end do
+                  fx(p, q, x) = fx(p, q, x) + cx*acc
+               end do
+            end do
+            fx(:, :, x) = fx(:, :, x) &
+                          + matmul(transpose(coeff), &
+                                   matmul(vxc1(:, :, comp, a), coeff))
+         end do
+      end do
+      deallocate (vxc1)
+   end subroutine mp2_ks_first_order_fock
+
+   subroutine ks_occ_fold_patch(t, d, n_occ, k_scale, vk, mat)
+      !! Lift a Lagrangian's occupied-column fold to the Kohn-Sham reference
+      !!
+      !! `mp2_mo_lagrangian` and `mp2_skeleton_lagrangian` fold
+      !! `D_rs (L_rpsq + L_rqsp)` at full exchange and close with `-1/2`;
+      !! over a Kohn-Sham reference the same fold carries the functional's
+      !! exchange fraction and the kernel. Both fixes are additive on top of
+      !! the Hartree-Fock result,
+      !!
+      !!     mat(p, q) += -1/2 [ (1-k) sum_rs D(r,s) (T(r,p,q,s) + T(r,q,p,s))
+      !!                         + vk(p, q) ],   q occupied
+      !!
+      !! and living here rather than inside those routines keeps their text
+      !! -- and therefore the no-`xc` path's bits -- untouched (module
+      !! header). The rescale stays a threaded loop for the folds' own
+      !! reason: `p` and `q` are strided in `T`, and it is one power of
+      !! `n_mo` cheaper than the gemm terms beside it.
+      real(dp), intent(in) :: t(:, :, :, :)   !! `<pq|rs>` or `<pq|rs>^(X)`
+      real(dp), intent(in) :: d(:, :)         !! The fold's density
+      integer, intent(in) :: n_occ
+      real(dp), intent(in) :: k_scale
+      real(dp), intent(in) :: vk(:, :)
+         !! The kernel share: `ks_pair_kernel` at `d` for the unperturbed
+         !! fold, the matching `ks_kernel_deriv_stack` slice for a skeleton-
+         !! perturbed one.
+      real(dp), intent(inout) :: mat(:, :)
+
+      real(dp) :: acc, cx
+      integer :: n_mo, p, q, r, s
+
+      n_mo = size(d, 1)
+      cx = 1.0_dp - k_scale
+      !$omp parallel do collapse(2) default(none) schedule(static) &
+      !$omp    shared(mat, d, t, vk, n_mo, n_occ, cx) private(p, q, r, s, acc)
+      do q = 1, n_occ
+         do p = 1, n_mo
+            acc = 0.0_dp
+            do s = 1, n_mo
+               do r = 1, n_mo
+                  acc = acc + d(r, s)*(t(r, p, q, s) + t(r, q, p, s))
+               end do
+            end do
+            mat(p, q) = mat(p, q) - 0.5_dp*(cx*acc + vk(p, q))
+         end do
+      end do
+      !$omp end parallel do
+   end subroutine ks_occ_fold_patch
+
+   subroutine ks_pair_kernel(xc, mol, coeff, scf_density, m_mo, vout, error)
+      !! The exchange-correlation kernel's share of one pair contraction
+      !!
+      !! Every kernel site on this ladder has the shape
+      !! `test_mqc_mp2_hessian_ks_operator` pins,
+      !!
+      !!     sum_rs M(r,s) (L(r,p,s,q) + L(r,q,s,p))
+      !!
+      !! and its kernel share is the reference operator applied to a symmetric
+      !! generalized density -- never a four-index `f_xc` tensor:
+      !!
+      !!     vout = 4 C^T f_xc[ C M_sym C^T ] C,   M_sym = (M + M^T)/2
+      !!
+      !! The factor is anchored to the coupled-perturbed operator this must
+      !! agree with: `response_operator` applies `2 G[Dt]` at
+      !! `Dt = 2 C M_sym C^T`, and `xc_kernel_apply` is linear in its trial
+      !! density. The contraction annihilates the antisymmetric part of `M`
+      !! -- the operator test's deliberately asymmetric trial -- so callers
+      !! hand over one-sided densities (a vo rotation, one triangle of a
+      !! core<->active divide) exactly as they hold them.
+      type(xc_context_t), intent(inout) :: xc
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coeff(:, :)
+      real(dp), intent(in) :: scf_density(:, :)   !! Where the kernel lives
+      real(dp), intent(in) :: m_mo(:, :)          !! Generalized density, MO
+      real(dp), intent(out) :: vout(:, :)         !! (n_mo, n_mo)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: msym(:, :), m_ao(:, :), vao(:, :)
+      integer :: n_ao, n_mo
+
+      if (error%has_error()) return
+      n_ao = size(coeff, 1)
+      n_mo = size(coeff, 2)
+      allocate (msym(n_mo, n_mo), m_ao(n_ao, n_ao), vao(n_ao, n_ao))
+      msym = 0.5_dp*(m_mo + transpose(m_mo))
+      m_ao = matmul(coeff, matmul(msym, transpose(coeff)))
+      vao = 0.0_dp
+      call xc_kernel_apply(xc, mol, scf_density, m_ao, vao, error)
+      if (error%has_error()) return
+      vout = 4.0_dp*matmul(transpose(coeff), matmul(vao, coeff))
+      deallocate (msym, m_ao, vao)
+   end subroutine ks_pair_kernel
+
+   subroutine ks_kernel_deriv_stack(xc, mol, coeff, scf_density, m_mo, kd_mo, error)
+      !! The skeleton nuclear derivative of `ks_pair_kernel`, every perturbation
+      !!
+      !!     kd_mo(:, :, x) = 4 C^T ( d/dX f_xc-apply[C M_sym C^T] ) C
+      !!
+      !! at fixed matrices and fixed grid -- `xc_kernel_deriv`, which already
+      !! carries both families of skeleton motion (the basis functions under
+      !! the integral and the densities on the grid, `g_xc` included), so one
+      !! grid pass covers all `3 natm` slices. What it deliberately does not
+      !! carry -- the MO rotations and the reference density's matrix
+      !! response -- is `ks_dl_pair_kernel`'s per-perturbation business.
+      type(xc_context_t), intent(inout) :: xc
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coeff(:, :)
+      real(dp), intent(in) :: scf_density(:, :)
+      real(dp), intent(in) :: m_mo(:, :)
+      real(dp), allocatable, intent(out) :: kd_mo(:, :, :)   !! (n_mo, n_mo, 3*natm)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: msym(:, :), m_ao(:, :), h1(:, :, :, :)
+      integer :: n_ao, n_mo, natm, a, comp, x
+
+      if (error%has_error()) return
+      n_ao = size(coeff, 1)
+      n_mo = size(coeff, 2)
+      natm = mol%natm
+      allocate (msym(n_mo, n_mo), m_ao(n_ao, n_ao))
+      msym = 0.5_dp*(m_mo + transpose(m_mo))
+      m_ao = matmul(coeff, matmul(msym, transpose(coeff)))
+      allocate (h1(n_ao, n_ao, 3, natm))
+      h1 = 0.0_dp
+      call xc_kernel_deriv(xc, mol, scf_density, m_ao, h1, error)
+      if (error%has_error()) return
+      allocate (kd_mo(n_mo, n_mo, 3*natm))
+      do a = 1, natm
+         do comp = 1, 3
+            x = 3*(a - 1) + comp
+            kd_mo(:, :, x) = 4.0_dp*matmul(transpose(coeff), &
+                                           matmul(h1(:, :, comp, a), coeff))
+         end do
+      end do
+      deallocate (msym, m_ao, h1)
+   end subroutine ks_kernel_deriv_stack
+
+   subroutine ks_dl_pair_kernel(xc, mol, coeff, scf_density, m_mo, vk_m, kd_x, &
+                                u, ddmat_ao, w, error)
+      !! The kernel share of a full-derivative fold: `d_X L` against `M`
+      !!
+      !! What `ks_pair_kernel` is to `L`, this is to the derivative weight
+      !! `dl` -- the total `d_X` of `4 C^T f_xc[C M_sym C^T] C` at fixed `M`,
+      !! in the four pieces the product rule gives:
+      !!
+      !!     w = U^T Vk + Vk U                    the free MO pair rotating
+      !!       + kd_x                             the grid skeleton (stack slice)
+      !!       + apply[U M_sym + M_sym U^T]       the contracted density rotating
+      !!       + 4 C^T g_xc[dD, C M_sym C^T] C    the kernel's coefficients
+      !!                                          moving with the reference
+      !!                                          density's matrix response dD
+      !!
+      !! The `g_xc` term is `xc_kernel2_apply`; the skeleton share of the
+      !! density's motion is already inside `kd_x`, so `ddmat_ao` is the
+      !! matrix response alone -- `nuclear_apply`'s first-order density,
+      !! `2 (C U_occ C_occ^T + h.c.)`.
+      type(xc_context_t), intent(inout) :: xc
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coeff(:, :)
+      real(dp), intent(in) :: scf_density(:, :)
+      real(dp), intent(in) :: m_mo(:, :)      !! The fixed generalized density
+      real(dp), intent(in) :: vk_m(:, :)      !! `ks_pair_kernel` at `m_mo`
+      real(dp), intent(in) :: kd_x(:, :)      !! One slice of the deriv stack
+      real(dp), intent(in) :: u(:, :)         !! `U^X`, full MO rotation
+      real(dp), intent(in) :: ddmat_ao(:, :)  !! Reference density's response
+      real(dp), intent(out) :: w(:, :)        !! (n_mo, n_mo)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: msym(:, :), rot(:, :), tmp(:, :)
+      real(dp), allocatable :: m_ao(:, :), vao(:, :)
+      integer :: n_ao, n_mo
+
+      if (error%has_error()) return
+      n_ao = size(coeff, 1)
+      n_mo = size(coeff, 2)
+      allocate (msym(n_mo, n_mo), rot(n_mo, n_mo), tmp(n_mo, n_mo))
+      msym = 0.5_dp*(m_mo + transpose(m_mo))
+
+      w = matmul(transpose(u), vk_m) + matmul(vk_m, u) + kd_x
+
+      rot = matmul(u, msym) + matmul(msym, transpose(u))
+      call ks_pair_kernel(xc, mol, coeff, scf_density, rot, tmp, error)
+      if (error%has_error()) return
+      w = w + tmp
+
+      allocate (m_ao(n_ao, n_ao), vao(n_ao, n_ao))
+      m_ao = matmul(coeff, matmul(msym, transpose(coeff)))
+      vao = 0.0_dp
+      call xc_kernel2_apply(xc, mol, scf_density, ddmat_ao, m_ao, vao, error)
+      if (error%has_error()) return
+      w = w + 4.0_dp*matmul(transpose(coeff), matmul(vao, coeff))
+      deallocate (msym, rot, tmp, m_ao, vao)
+   end subroutine ks_dl_pair_kernel
 
 end module mqc_libcint_mp2_hessian
