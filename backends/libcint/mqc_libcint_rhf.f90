@@ -248,11 +248,11 @@ contains
       if (kohn_sham) then
          call convergence_header(verbose, "SCF iterations", &
                                  "    iter                 energy          dE          dD"// &
-                                 "       |[F,DS]|   diis       Fock         XC       rest", 108)
+                                 "        diis      n       Fock         XC       rest", 105)
       else
          call convergence_header(verbose, "SCF iterations", &
                                  "    iter                 energy          dE          dD"// &
-                                 "       |[F,DS]|   diis       Fock       rest", 97)
+                                 "        diis      n       Fock       rest", 94)
       end if
    end subroutine scf_table_header
 
