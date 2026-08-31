@@ -22,29 +22,36 @@ module mqc_method_mcscf
    use pic_types, only: dp
    use mqc_program_limits, only: MAX_ORBITAL_LABEL_LEN
    use mqc_method_base, only: qc_method_t
-   use mqc_method_config, only: pcm_config_t, properties_config_t
+   use mqc_method_config, only: pcm_config_t, properties_config_t, scf_options_t
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: ERROR_VALIDATION
-   use mqc_cuest_iface, only: apply_properties_settings, cuest_scf_settings_t
+   use mqc_cuest_iface, only: apply_properties_settings, apply_scf_settings, &
+                              cuest_scf_settings_t
    use mqc_libcint_bridge, only: run_libcint_mcscf
    implicit none
    private
 
    public :: mcscf_method_t, mcscf_options_t
 
-   type :: mcscf_options_t
-      !! MCSCF/CASSCF calculation options
-      type(properties_config_t) :: properties
-      type(pcm_config_t) :: pcm
-         !! Continuum solvation. Carried so the refusal can be made where the
-         !! request arrives; the CPU path has no cavity.
-      character(len=32) :: basis_set = "sto-3g"
-         !! Basis set name
-      logical :: spherical = .true.
-         !! Use spherical (true) or Cartesian (false) basis
-      logical :: verbose = .false.
-         !! Print iteration details
+   type, extends(scf_options_t) :: mcscf_options_t
+      !! What a CASSCF adds to the reference SCF every method shares
+      !!
+      !! **The reference SCF's settings are inherited, not re-declared.** This
+      !! type used to carry its own `basis_set`, `spherical`, `verbose`, `pcm`,
+      !! `properties`, `max_iter`, `density_tol`, `linear_dependence`,
+      !! `level_shift`, `use_diis` and `diis_size`, each a copy of the field of
+      !! the same name on `scf_options_t`, and each needing the same three hand
+      !! edits to add or change. That is the duplication `scf_options_t` exists
+      !! to remove, and MCSCF was the one reference-based method still outside
+      !! it.
+      !!
+      !! It also carried a `conv_tol`, documented as the reference SCF's energy
+      !! threshold, that **nothing read** -- the reference SCF was given the
+      !! CASSCF's `energy_tol` instead. Both defaulted to 1e-8, so the two were
+      !! indistinguishable in every run; the field is gone and the inherited
+      !! `energy_tol` is what reaches the SCF, which is what was happening
+      !! anyway.
 
       ! Active space definition
       character(len=MAX_ORBITAL_LABEL_LEN), allocatable :: avas_orbitals(:)
@@ -83,8 +90,6 @@ module mqc_method_mcscf
          !! the Davidson takes a residual threshold, not an iteration cap.
       real(dp) :: orbital_tol = 1.0e-6_dp
          !! Orbital gradient convergence threshold
-      real(dp) :: energy_tol = 1.0e-8_dp
-         !! Energy convergence threshold
       real(dp) :: ci_tol = 1.0e-8_dp
          !! CI energy convergence threshold. Not reachable from a deck; the
          !! macro loop pins its inner CASCI tight on purpose.
@@ -105,20 +110,6 @@ module mqc_method_mcscf
       real(dp) :: imaginary_shift = 0.0_dp
          !! Imaginary shift for intruder states
 
-      ! Reference SCF settings, shared with every other reference-based method
-      integer :: max_iter = 100
-         !! Maximum reference SCF iterations
-      real(dp) :: conv_tol = 1.0e-8_dp
-         !! Reference SCF energy convergence threshold
-      real(dp) :: density_tol = 1.0e-6_dp
-      real(dp) :: linear_dependence = 0.0_dp
-         !! Zero means the orthogonaliser's own cutoff. See `scf_config_t`.
-         !! Reference SCF density matrix convergence threshold
-      real(dp) :: level_shift = 0.0_dp
-         !! Hartree added to the virtual block before each diagonalisation.
-         !! Zero is off. See `scf_config_t`.
-      logical :: use_diis = .true.
-      integer :: diis_size = 8
    end type mcscf_options_t
 
    type, extends(qc_method_t) :: mcscf_method_t
@@ -158,8 +149,6 @@ contains
       ! The reference SCF's settings, which is most of what this is: a CASSCF
       ! begins with a closed-shell SCF and the backend takes the same settings
       ! object for it that Hartree-Fock does.
-      settings%pcm = this%options%pcm
-
       ! Refused rather than dropped. `run_libcint_mcscf` never reads
       ! `settings%fukui_population` -- unlike `run_libcint_hf`, which does --
       ! so a deck asking for Fukui indices on a CASSCF would otherwise be
@@ -176,17 +165,10 @@ contains
          return
       end if
       call apply_properties_settings(settings, this%options%properties)
-      settings%basis_set = this%options%basis_set
-      settings%spherical = this%options%spherical
-      settings%verbose = this%options%verbose
+      ! The reference SCF's settings, through the one routine that carries them.
+      ! `pcm` comes with them, so the assignment above this block is gone too.
+      call apply_scf_settings(settings, this%options)
       settings%functional = ""        ! empty selects pure Hartree-Fock
-      settings%max_iter = this%options%max_iter
-      settings%energy_tol = this%options%energy_tol
-      settings%density_tol = this%options%density_tol
-      settings%level_shift = this%options%level_shift
-      settings%linear_dependence = this%options%linear_dependence
-      settings%use_diis = this%options%use_diis
-      settings%diis_size = this%options%diis_size
 
       if (allocated(this%options%avas_orbitals)) then
          settings%mcscf%avas_orbitals = this%options%avas_orbitals
