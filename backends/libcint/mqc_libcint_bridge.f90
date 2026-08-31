@@ -2320,6 +2320,7 @@ contains
       call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                            settings%density_tol, settings%verbose, scf, error, &
                            diis_vectors=diis_size, accelerator=accel_kind, &
+                           level_shift=settings%level_shift, &
                            linear_dependence=settings%linear_dependence)
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
