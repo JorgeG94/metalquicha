@@ -127,23 +127,30 @@ contains
       ! Where the molecule reacts. Absent here until now, so a DFT deck asking
       ! for `properties.fukui` got a normal DFT run and no analysis, with no
       ! error to say why: the bridge gates on this being allocated.
-      ! Refused rather than run. The QUAO bonding options are not meant for a
-      ! Kohn-Sham reference, and nothing in the backend stops them: the
-      ! dispatch is gated only on the deck naming an analysis, so handing these
-      ! over would run a decomposition on Kohn-Sham orbitals and report numbers
-      ! for it. Before this refactor a Kohn-Sham deck asking for them was
-      ! silently ignored, which is the failure this work exists to end -- but
-      ! the fix is to say no, not to start obeying a request the method was
-      ! never meant to serve. `bonding_analysis` itself stays copied: it selects
-      ! *which* analysis and its own dispatch handles "none".
-      if (this%options%properties%bonding_energy .or. &
-          this%options%properties%bonding_no_sharing .or. &
-          this%options%properties%bonding_restrict_localization) then
-         call result%error%set(ERROR_VALIDATION, "the QUAO bonding options are not "// &
-                               "available for a Kohn-Sham reference: the energy "// &
-                               "decomposition and its sharing controls are defined "// &
-                               "against a Hartree-Fock or MCSCF wavefunction. Request "// &
-                               "them on one of those instead.")
+      ! Refused rather than run. The quasi-atomic bonding analysis is not
+      ! defined against a Kohn-Sham reference, and nothing in the backend stops
+      ! it: `run_libcint_hf` serves both references and its dispatch is gated
+      ! only on the deck naming an analysis, so handing this over would run a
+      ! decomposition on Kohn-Sham orbitals and report numbers for it. Before
+      ! this refactor such a deck was silently ignored, which is the failure
+      ! this work exists to end -- but the fix is to say no, not to start
+      ! obeying a request the method was never meant to serve.
+      !
+      ! The analysis itself is refused, not merely its sub-options. Naming
+      ! `quao` with none of them set still runs it, so a check on
+      ! `bonding_energy` and friends alone would leave the plainest spelling of
+      ! the request working.
+      ! Tested on the name rather than through `bonding_analysis_kind`, which
+      ! lives in `mqc_libcint_bonding` -- a backend module this one must not
+      ! depend on, or the build without libcint stops compiling. "none" and
+      ! empty are that function's own spellings for off; any other name selects
+      ! an analysis, and QUAO is the only one there is.
+      if (len_trim(this%options%properties%bonding_analysis) > 0 .and. &
+          trim(adjustl(this%options%properties%bonding_analysis)) /= "none") then
+         call result%error%set(ERROR_VALIDATION, "the quasi-atomic bonding analysis is "// &
+                               "not available for a Kohn-Sham reference: it is defined "// &
+                               "against a Hartree-Fock or MCSCF wavefunction. Request it "// &
+                               "on one of those instead.")
          result%has_error = .true.
          return
       end if
