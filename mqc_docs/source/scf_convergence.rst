@@ -108,6 +108,16 @@ present; on cuEST, leaving it unset keeps that backend's historical behaviour,
 where the threshold was read from ``density_tolerance``. Harmonising the two
 measures needs a GPU to verify on.
 
+**One consequence for GPU runs, worth knowing before it surprises you.** The
+energy leg of the test now defaults to ``1e-9`` on both backends, where it was
+``1e-6``; the commutator leg on cuEST still falls back to ``density_tolerance``,
+which has not moved. So a GPU run naming no tolerances at all converges *tighter
+than it used to*, and takes more iterations to do it. ``gradient_tolerance``
+cannot loosen that, because it moves only the second leg -- ``tolerance`` is the
+knob. The asymmetry is deliberate: giving the GPU the CPU's derived default would
+change what it converges to, on a measure that is not the CPU's, and that cannot
+be verified without the hardware.
+
 .. _level-shifting:
 
 Level shifting

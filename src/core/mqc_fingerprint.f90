@@ -189,6 +189,14 @@ contains
          call h%int(config%scf%max_iter)
          call h%real(config%scf%energy_convergence)
          call h%real(config%scf%density_convergence)
+         ! The commutator threshold, in for the same reason the other two are:
+         ! it is half of the convergence test on both backends, so two runs
+         ! differing only in it stop at different iterations and hold different
+         ! densities. Zero -- the sentinel for "derive it" -- is a distinct
+         ! request from any number a deck could name, and hashes as one, which
+         ! is what it should be: what a backend derives depends on which
+         ! backend it is.
+         call h%real(config%scf%gradient_convergence)
          if (config%method_type == METHOD_TYPE_DFT) then
             call h%text("dft")
             call h%text(trim(config%dft%functional))

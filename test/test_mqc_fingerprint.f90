@@ -42,6 +42,7 @@ contains
                   new_unittest("basis_moves_it", test_basis), &
                   new_unittest("functional_moves_it", test_functional), &
                   new_unittest("scf_threshold_moves_it", test_threshold), &
+                  new_unittest("scf_gradient_threshold_moves_it", test_gradient_threshold), &
                   new_unittest("driver_moves_it", test_driver), &
                   new_unittest("verbosity_does_not", test_verbosity), &
                   new_unittest("angular_form_moves_it", test_cartesian) &
@@ -237,6 +238,24 @@ contains
       b%scf%energy_convergence = 1.0e-6_dp
       call differ(error, sys, sys, a, b, "loosening the SCF threshold")
    end subroutine test_threshold
+
+   subroutine test_gradient_threshold(error)
+      !! `keywords.scf.gradient_tolerance` is half of the convergence test
+      !!
+      !! Both backends stop on `|dE|` *and* the commutator norm, so a run that
+      !! names this one stops at a different iteration and holds a different
+      !! density from one that leaves it at the derived default -- with the
+      !! same energy threshold, the same basis and the same functional. Nothing
+      !! else in the deck distinguishes the two.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(method_config_t) :: a, b
+
+      call water_dimer(sys)
+      call dft(a); call dft(b)
+      b%scf%gradient_convergence = 1.0e-7_dp
+      call differ(error, sys, sys, a, b, "naming a gradient threshold")
+   end subroutine test_gradient_threshold
 
    subroutine test_driver(error)
       !! An energy run and a gradient run are not interchangeable
