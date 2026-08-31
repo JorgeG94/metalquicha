@@ -32,6 +32,7 @@ module mqc_libcint_bridge
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf, &
                               SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ
    use mqc_libcint_projection, only: climb_basis_ladder
+   use mqc_diis, only: parse_accelerator_name, accelerator_name, ACCEL_DIIS
    use mqc_libcint_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                        guess_display_name
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
@@ -627,8 +628,9 @@ contains
       type(pcm_context_t) :: pcm_ctx
       type(error_t) :: error
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
-      integer :: iatom, diis_size, guess_kind
+      integer :: iatom, diis_size, guess_kind, accel_kind
       integer :: nelec        !! Valence electrons: fragment%nelec less any ECP core
+      logical :: accel_ok
       logical :: unrestricted, do_gradient, do_hessian
       ! Left unallocated for the guesses that need no free-atom solutions. An
       ! unallocated allocatable passed to an optional dummy is an absent
@@ -903,6 +905,19 @@ contains
       end if
 
       ! ---- which initial guess? ---------------------------------------------
+      call parse_accelerator_name(settings%accelerator, accel_kind, accel_ok)
+      if (.not. accel_ok) then
+         call result%error%set(ERROR_VALIDATION, "keywords.scf.accelerator '"// &
+                               trim(settings%accelerator)//"' is not one of diis, "// &
+                               "adiis or ediis.")
+         result%has_error = .true.
+         return
+      end if
+      if (accel_kind /= ACCEL_DIIS) then
+         call logger%info("    SCF accelerator: "//trim(accelerator_name(accel_kind))// &
+                          " while the error is large, then DIIS")
+      end if
+
       call parse_guess_name(settings%guess, guess_kind, error)
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
@@ -1034,7 +1049,7 @@ contains
                                  settings%density_tol, settings%verbose, scf, error, &
                                  aux=aux, diis_vectors=diis_size, guess=guess_kind, &
                                  guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
-                                 level_shift=settings%level_shift, &
+                                 level_shift=settings%level_shift, accelerator=accel_kind, &
                                  linear_dependence=settings%linear_dependence, &
                                  b_ao_out=scf_b_ao)
          else
@@ -1042,7 +1057,7 @@ contains
                                  settings%density_tol, settings%verbose, scf, error, &
                                  aux=aux, diis_vectors=diis_size, guess=guess_kind, &
                                  guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
-                                 level_shift=settings%level_shift, &
+                                 level_shift=settings%level_shift, accelerator=accel_kind, &
                                  linear_dependence=settings%linear_dependence)
          end if
          ! Kept alive: the gradient below has to be told the same auxiliary
@@ -1052,7 +1067,7 @@ contains
                               settings%energy_tol, settings%density_tol, settings%verbose, &
                               scf, error, diis_vectors=diis_size, guess=guess_kind, &
                               guess_density_alpha=guess_a, guess_density_beta=guess_b, xc=xc, &
-                              pcm=pcm_ctx, level_shift=settings%level_shift, &
+                              pcm=pcm_ctx, level_shift=settings%level_shift, accelerator=accel_kind, &
                               linear_dependence=settings%linear_dependence)
       else
          ! Store the integrals when they fit, rather than rebuilding every
@@ -1082,7 +1097,7 @@ contains
                               diis_vectors=diis_size, guess=guess_kind, &
                               guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
                               in_core=eri_fits_in_core(mol%nao) .and. .not. xc%range_separated, &
-                              level_shift=settings%level_shift, &
+                              level_shift=settings%level_shift, accelerator=accel_kind, &
                               linear_dependence=settings%linear_dependence)
       end if
       if (error%has_error()) then
@@ -2201,7 +2216,8 @@ contains
       real(dp), allocatable :: natural(:, :), occupations(:), reference(:, :)
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
       character(len=MAX_LINE_LENGTH) :: line
-      integer :: iatom, diis_size
+      integer :: iatom, diis_size, accel_kind
+      logical :: accel_ok
       integer :: space(4)
 
       if (settings%pcm%enabled) then
@@ -2283,9 +2299,28 @@ contains
       diis_size = settings%diis_size
       if (.not. settings%use_diis) diis_size = 0
 
+      ! The reference SCF is an SCF, so it answers to `keywords.scf` like any
+      ! other. Parsing here rather than trusting the caller is what makes a
+      ! misspelling a refusal instead of a silent fall back to DIIS: the name
+      ! reaches this routine whatever it says, and nothing downstream would
+      ! report that a requested accelerator had not been used.
+      call parse_accelerator_name(settings%accelerator, accel_kind, accel_ok)
+      if (.not. accel_ok) then
+         call result%error%set(ERROR_VALIDATION, "keywords.scf.accelerator '"// &
+                               trim(settings%accelerator)//"' is not one of diis, "// &
+                               "adiis or ediis.")
+         result%has_error = .true.
+         return
+      end if
+      if (accel_kind /= ACCEL_DIIS) then
+         call logger%info("    SCF accelerator: "//trim(accelerator_name(accel_kind))// &
+                          " while the error is large, then DIIS")
+      end if
+
       call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                            settings%density_tol, settings%verbose, scf, error, &
-                           diis_vectors=diis_size, &
+                           diis_vectors=diis_size, accelerator=accel_kind, &
+                           level_shift=settings%level_shift, &
                            linear_dependence=settings%linear_dependence)
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())

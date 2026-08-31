@@ -271,6 +271,7 @@ contains
       call named(json, "keywords.scf.density_tolerance", config%scf_density_tolerance_set)
       call optional_logical(json, "keywords.scf.unrestricted", config%scf_unrestricted)
       call optional_string(json, "keywords.scf.guess", config%scf_guess)
+      call optional_string(json, "keywords.scf.accelerator", config%scf_accelerator)
       call optional_string(json, "keywords.guess.type", config%guess_type)
       call read_guess_steps(json, config, error)
       if (error%has_error()) return

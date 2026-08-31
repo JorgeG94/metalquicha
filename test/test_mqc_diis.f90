@@ -2,7 +2,8 @@
 module test_mqc_diis
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp, int64
-   use mqc_diis, only: diis_state_t
+   use mqc_diis, only: diis_state_t, ACCEL_DIIS, ACCEL_EDIIS, ACCEL_ADIIS
+   use mqc_ediis, only: simplex_quadratic_min, ediis_coefficients, adiis_coefficients
    implicit none
 
    !> How far the ring-buffer extrapolation may sit from the reference one.
@@ -23,9 +24,184 @@ contains
                   new_unittest("diis_coefficients_sum_to_one", test_coeffs_sum), &
                   new_unittest("diis_ring_evicts_oldest", test_ring_evicts), &
                   new_unittest("diis_matches_reference_algorithm", test_vs_reference), &
-                  new_unittest("diis_cached_overlap_matches_direct", test_overlap_cache) &
+                  new_unittest("diis_cached_overlap_matches_direct", test_overlap_cache), &
+                  new_unittest("simplex_min_stays_on_the_simplex", test_simplex), &
+                  new_unittest("adiis_keeps_the_newest_at_its_own_minimum", test_adiis_zero), &
+                  new_unittest("energy_schemes_interpolate_where_diis_does_not", test_hull), &
+                  new_unittest("ediis_adiis_match_pyscf_coefficients", test_vs_pyscf) &
                   ]
    end subroutine collect_mqc_diis
+
+   subroutine test_vs_pyscf(error)
+      !! Both energy models against `pyscf.scf.diis`, coefficient by coefficient
+      !!
+      !! This is the test that decides whether the port is right, and it exists
+      !! because the arithmetic has one place where the literature and the
+      !! reference implementation disagree: the published EDIIS functional
+      !! carries a 1/2 on its correction term and `ediis_minimize` does not.
+      !! Following PySCF is a choice, so it has to be checked against PySCF and
+      !! not against the paper.
+      !!
+      !! The history below is synthetic and chosen for two properties a real
+      !! one would not reliably have. `df` is markedly **non-symmetric**, so an
+      !! implementation that mirrored one triangle onto the other -- the
+      !! tempting thing, since the neighbouring DIIS overlap cache is symmetric
+      !! -- gives different numbers here. And both answers put a **zero** on the
+      !! middle entry, which sits on the boundary of the simplex where the
+      !! `x^2 / sum x^2` parameterisation is singular; a minimiser that cannot
+      !! reach the boundary lands somewhere else.
+      !!
+      !! Reference values from pyscf 2.14, `ediis_minimize` and
+      !! `adiis_minimize` on the same `df` and energies.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: DF(3, 3) = reshape([ &
+                                                0.990_dp, 0.930_dp, 0.765_dp, &
+                                                0.650_dp, 0.635_dp, 0.550_dp, &
+                                                0.355_dp, 0.4175_dp, 0.430_dp], [3, 3])
+      real(dp), parameter :: ES(3) = [-1.00_dp, -1.20_dp, -1.25_dp]
+      real(dp), parameter :: EDIIS_REF(3) = [0.291666666804_dp, 0.0_dp, 0.708333333196_dp]
+      real(dp), parameter :: ADIIS_REF(3) = [0.249999999908_dp, 0.0_dp, 0.750000000092_dp]
+      real(dp), parameter :: TOL = 1.0e-6_dp
+         !! Far tighter than the factor of two the 1/2 would introduce, and
+         !! loose enough for two different minimisers reaching the same point.
+
+      real(dp), allocatable :: c(:)
+      logical :: ok
+      integer :: i
+
+      call ediis_coefficients(ES, DF, 3, c, ok)
+      call check(error, ok, "EDIIS should produce coefficients")
+      if (allocated(error)) return
+      do i = 1, 3
+         call check(error, abs(c(i) - EDIIS_REF(i)) < TOL, "EDIIS coefficient disagrees with pyscf")
+         if (allocated(error)) return
+      end do
+      deallocate (c)
+
+      call adiis_coefficients(DF, 3, c, ok)
+      call check(error, ok, "ADIIS should produce coefficients")
+      if (allocated(error)) return
+      do i = 1, 3
+         call check(error, abs(c(i) - ADIIS_REF(i)) < TOL, "ADIIS coefficient disagrees with pyscf")
+         if (allocated(error)) return
+      end do
+      deallocate (c)
+   end subroutine test_vs_pyscf
+
+   subroutine test_simplex(error)
+      !! The parameterised minimisation returns a point on the simplex
+      !!
+      !! Non-negative and summing to one is not a property the minimiser checks
+      !! for -- it is what `c_i = x_i^2 / sum x_j^2` makes unavoidable. So this
+      !! is really a test that the parameterisation is the one in use, which is
+      !! the thing that would silently stop being true if someone replaced the
+      !! inner loop with an unconstrained solve.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp) :: a(3, 3), b(3)
+      real(dp), allocatable :: c(:)
+      integer :: i
+
+      ! Deliberately indefinite: EDIIS's quadratic form is not positive
+      ! definite either, and a solver that assumed it were would run away here.
+      a = reshape([2.0_dp, -1.0_dp, 0.3_dp, &
+                   -1.0_dp, -3.0_dp, 0.5_dp, &
+                   0.3_dp, 0.5_dp, 1.0_dp], [3, 3])
+      b = [0.5_dp, -2.0_dp, 1.0_dp]
+
+      call simplex_quadratic_min(a, b, 3, c)
+      call check(error, abs(sum(c) - 1.0_dp) < 1.0e-12_dp, "coefficients must sum to one")
+      if (allocated(error)) return
+      do i = 1, 3
+         call check(error, c(i) >= -1.0e-14_dp, "coefficients must be non-negative")
+         if (allocated(error)) return
+      end do
+   end subroutine test_simplex
+
+   subroutine test_adiis_zero(error)
+      !! ADIIS at its own zero puts everything on the newest entry
+      !!
+      !! Both the linear and quadratic parts of the ADIIS model vanish at
+      !! `c = (0, ..., 1)`, so when no mixture can lower it the answer must be
+      !! "keep what was just built". That is the sign convention's only
+      !! observable consequence, and getting it backwards -- which is easy,
+      !! since the model is written as a difference against the newest -- gives
+      !! a scheme that runs away from the current point every iteration.
+      type(error_type), allocatable, intent(out) :: error
+      type(diis_state_t) :: acc
+      real(dp) :: f(4), d(4)
+      real(dp), allocatable :: probe(:)
+      logical :: ok
+      integer :: i
+
+      call acc%init(6, 4, 4, energy_based=.true.)
+      ! Two entries whose densities and Focks are identical: no mixture can
+      ! improve on the newest, because every entry is the newest.
+      f = [1.0_dp, 0.2_dp, 0.2_dp, 1.5_dp]
+      d = [0.9_dp, 0.1_dp, 0.1_dp, 0.4_dp]
+      do i = 1, 2
+         call acc%push(f, f, density=d, energy=-1.0_dp)
+      end do
+
+      allocate (probe(4))
+      probe = 0.0_dp
+      call acc%extrapolate_with(ACCEL_ADIIS, probe, ok)
+      call check(error, ok, "ADIIS should produce coefficients")
+      if (allocated(error)) then
+         call acc%destroy(); return
+      end if
+      ! Every stored Fock is the same, so any simplex point reproduces it --
+      ! what is being checked is that the result is that Fock and not a
+      ! runaway multiple of it.
+      call check(error, maxval(abs(probe - f)) < 1.0e-10_dp, &
+                 "ADIIS should return the Fock it was given")
+      call acc%destroy()
+      deallocate (probe)
+   end subroutine test_adiis_zero
+
+   subroutine test_hull(error)
+      !! The energy schemes stay inside the hull; DIIS need not
+      !!
+      !! This is the property the pair exists for. DIIS coefficients are only
+      !! constrained to sum to one, so the extrapolate can land outside the
+      !! range of the Fock matrices it was built from -- which is what makes it
+      !! fast at the end and dangerous at the start. EDIIS and ADIIS are convex
+      !! combinations and cannot.
+      type(error_type), allocatable, intent(out) :: error
+      type(diis_state_t) :: acc
+      real(dp) :: f1(2), f2(2), f3(2), d1(2), d2(2), d3(2), lo, hi
+      real(dp), allocatable :: p(:)
+      logical :: ok
+
+      call acc%init(6, 2, 2, energy_based=.true.)
+      f1 = [1.0_dp, 0.0_dp]; d1 = [0.8_dp, 0.1_dp]
+      f2 = [0.6_dp, 0.1_dp]; d2 = [0.7_dp, 0.2_dp]
+      f3 = [0.2_dp, 0.3_dp]; d3 = [0.5_dp, 0.4_dp]
+      call acc%push(f1, [0.9_dp, 0.1_dp], density=d1, energy=-1.00_dp)
+      call acc%push(f2, [0.4_dp, 0.2_dp], density=d2, energy=-1.20_dp)
+      call acc%push(f3, [0.1_dp, 0.3_dp], density=d3, energy=-1.25_dp)
+
+      lo = min(f1(1), f2(1), f3(1))
+      hi = max(f1(1), f2(1), f3(1))
+
+      allocate (p(2))
+      p = 0.0_dp
+      call acc%extrapolate_with(ACCEL_EDIIS, p, ok)
+      call check(error, ok, "EDIIS should produce coefficients")
+      if (.not. allocated(error)) &
+         call check(error, p(1) >= lo - 1.0e-12_dp .and. p(1) <= hi + 1.0e-12_dp, &
+                    "EDIIS must interpolate, not extrapolate")
+      if (.not. allocated(error)) then
+         p = 0.0_dp
+         call acc%extrapolate_with(ACCEL_ADIIS, p, ok)
+         call check(error, ok, "ADIIS should produce coefficients")
+      end if
+      if (.not. allocated(error)) &
+         call check(error, p(1) >= lo - 1.0e-12_dp .and. p(1) <= hi + 1.0e-12_dp, &
+                    "ADIIS must interpolate, not extrapolate")
+      call acc%destroy()
+      deallocate (p)
+   end subroutine test_hull
 
    subroutine test_below_two(error)
       !! A single stored vector cannot be extrapolated; fock must be untouched

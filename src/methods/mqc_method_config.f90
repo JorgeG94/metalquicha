@@ -65,6 +65,11 @@ module mqc_method_config
          !! Use DIIS acceleration
       integer :: diis_size = 8
          !! Number of Fock matrices for DIIS
+      character(len=32) :: accelerator = "diis"
+         !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
+         !! 'ediis'. The energy-based pair runs only while the error is large
+         !! and hands over to DIIS, so naming one asks for a different opening,
+         !! not a different endgame.
       character(len=32) :: guess = "auto"
          !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection',
          !! or 'auto'
@@ -330,6 +335,12 @@ module mqc_method_config
          !! Use DIIS acceleration
       integer :: diis_size = 8
          !! Number of Fock matrices for DIIS
+      character(len=32) :: accelerator = "diis"
+         !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
+         !! 'ediis'. The energy-based pair runs only while the error is large
+         !! and hands over to DIIS, so naming one asks for a different opening,
+         !! not a different endgame. Shared here rather than repeated per
+         !! method: `hf_options_t` and `dft_options_t` both extend this type.
       logical :: allow_crap_scf = .false.
          !! Keep a non-converged SCF instead of failing
       character(len=32) :: guess = "auto"

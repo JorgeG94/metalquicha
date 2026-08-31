@@ -81,6 +81,34 @@ contains
          return
       end if
 
+      ! Same principle as the ECP refusal above, and the same failure it
+      ! prevents. This backend's DIIS is device-resident and Pulay-only: there
+      ! is no EDIIS or ADIIS under `backends/cuest`, and nothing here read
+      ! `settings%accelerator` at all -- so a deck naming one got a plain DIIS
+      ! run with nothing to say so.
+      !
+      ! That also silently defeated the check for whether the setting is live.
+      ! On the CPU path a misspelled accelerator is refused by name, so an
+      ! invalid one is the reliable way to confirm the keyword arrives; here it
+      ! was accepted, which made a GPU run indistinguishable from a correctly
+      ! plumbed one.
+      !
+      ! Refusing the unimplemented and the misspelled through one branch is
+      ! deliberate. Parsing it, refusing the unknown and ignoring the
+      ! known-but-unimplemented would answer a deck asking for EDIIS with DIIS,
+      ! which is the thing being fixed.
+      if (len_trim(settings%accelerator) > 0 .and. &
+          trim(adjustl(settings%accelerator)) /= "diis") then
+         call error%set(ERROR_VALIDATION, "keywords.scf.accelerator is '"// &
+                        trim(settings%accelerator)//"', and the GPU backend has only "// &
+                        "DIIS: its extrapolation is device-resident and no energy-based "// &
+                        "scheme is implemented there. Refused rather than run as DIIS "// &
+                        "without saying so. Use the CPU backend for EDIIS or ADIIS, or "// &
+                        "drop the keyword.")
+         call record_failure(result, error)
+         return
+      end if
+
       ! ---- which functional, if any ----------------------------------------
       if (len_trim(settings%functional) == 0) then
          functional_id = -1   ! pure Hartree-Fock, no XC plan

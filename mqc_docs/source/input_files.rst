@@ -741,6 +741,7 @@ SCF Options
        "maxiter": 300,
        "tolerance": 1e-6,
        "guess": "auto",
+       "accelerator": "diis",
        "unrestricted": false,
        "density_fitting": false,
        "level_shift": 0.0,
@@ -765,6 +766,11 @@ SCF Options
     property of the backend: the CPU path resolves it to ``sad`` and the GPU path
     to ``gwh``, each having measured its own.
 
+- ``accelerator``: Which convergence accelerator opens the SCF (default:
+  ``diis``). One of ``diis``, ``ediis`` or ``adiis``. The energy-based pair run
+  only while the error is large and hand over to DIIS for the endgame, so naming
+  one asks for a different opening and not a different endgame. See
+  :ref:`accelerators` for when that is worth doing and how to tell it happened.
 - ``unrestricted``: Force the unrestricted path (default: false). An odd electron
   count or a multiplicity above one forces it regardless.
 - ``density_fitting``: Fit J and K in the reference (default: false). Asked for

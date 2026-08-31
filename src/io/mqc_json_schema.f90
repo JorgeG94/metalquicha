@@ -348,6 +348,7 @@ contains
       call allow(keys, "level_shift")
       call allow(keys, "diis")
       call allow(keys, "diis_size")
+      call allow(keys, "accelerator")
    end function scf_keys
 
    function efp_keys() result(keys)

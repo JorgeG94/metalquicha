@@ -22,7 +22,7 @@ module mqc_libcint_rhf
    use mqc_scf_common, only: build_orthogonalizer, report_linear_dependence, &
                              build_density_closed_shell, &
                              build_density_spin, spin_contamination, GWH_K
-   use mqc_diis, only: diis_state_t
+   use mqc_diis, only: diis_state_t, ACCEL_DIIS, ACCEL_SWITCH
    use mqc_fock_projector, only: fock_projector_t
    use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_uhf, &
                                  direct_stats_t
@@ -210,6 +210,24 @@ contains
       call logger%performance(trim(line))
    end subroutine screening_summary
 
+   pure function scheme_now(accel, err_norm) result(scheme)
+      !! Which accelerator runs this iteration
+      !!
+      !! An energy-based scheme is named because the SCF is expected to
+      !! misbehave early; it hands over to DIIS once it no longer is. The
+      !! switch is on the error norm rather than an iteration count, so an SCF
+      !! that starts near its solution never pays for the interpolation.
+      !!
+      !! A caller that asked for DIIS gets DIIS at every norm, so the default
+      !! path runs through this line rather than around it.
+      integer, intent(in) :: accel
+      real(dp), intent(in) :: err_norm
+      integer :: scheme
+
+      scheme = ACCEL_DIIS
+      if (accel /= ACCEL_DIIS .and. err_norm > ACCEL_SWITCH) scheme = accel
+   end function scheme_now
+
    subroutine scf_table_header(verbose, kohn_sham)
       !! Column headings for the per-iteration table
       !!
@@ -229,17 +247,17 @@ contains
 
       if (kohn_sham) then
          call convergence_header(verbose, "SCF iterations", &
-                                 "    iter                 energy          dE          dD   diis"// &
-                                 "       Fock         XC       rest", 93)
+                                 "    iter                 energy          dE          dD"// &
+                                 "        diis      n       Fock         XC       rest", 105)
       else
          call convergence_header(verbose, "SCF iterations", &
-                                 "    iter                 energy          dE          dD   diis"// &
-                                 "       Fock       rest", 82)
+                                 "    iter                 energy          dE          dD"// &
+                                 "        diis      n       Fock       rest", 94)
       end if
    end subroutine scf_table_header
 
-   subroutine scf_table_row(verbose, iter, energy, de, drms, ndiis, t_fock, t_xc, t_rest, &
-                            kohn_sham)
+   subroutine scf_table_row(verbose, iter, energy, de, drms, gnorm, ndiis, t_fock, t_xc, &
+                            t_rest, kohn_sham)
       !! One iteration's line, with the time that iteration took
       !!
       !! **The quadrature has a column of its own, and needs one.** `STAGE_FOCK`
@@ -259,18 +277,18 @@ contains
       !! missing, which is exactly the case here.
       logical, intent(in) :: verbose
       integer, intent(in) :: iter, ndiis
-      real(dp), intent(in) :: energy, de, drms, t_fock, t_xc, t_rest
+      real(dp), intent(in) :: energy, de, drms, gnorm, t_fock, t_xc, t_rest
       logical, intent(in) :: kohn_sham   !! Print the quadrature column at all
 
       character(len=LINE_LEN) :: line
 
       if (.not. verbose) return
       if (kohn_sham) then
-         write (line, "(i8,f23.12,2es12.3,i7,3(f9.2,a))") &
-            iter, energy, de, drms, ndiis, t_fock, " s", t_xc, " s", t_rest, " s"
+         write (line, "(i8,f23.12,3es12.3,i7,3(f9.2,a))") &
+            iter, energy, de, drms, gnorm, ndiis, t_fock, " s", t_xc, " s", t_rest, " s"
       else
-         write (line, "(i8,f23.12,2es12.3,i7,2(f9.2,a))") &
-            iter, energy, de, drms, ndiis, t_fock, " s", t_rest, " s"
+         write (line, "(i8,f23.12,3es12.3,i7,2(f9.2,a))") &
+            iter, energy, de, drms, gnorm, ndiis, t_fock, " s", t_rest, " s"
       end if
       call logger%info(trim(line))
    end subroutine scf_table_row
@@ -354,7 +372,7 @@ contains
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                               verbose, result, error, aux, diis_vectors, in_core, &
                               guess, guess_density, xc, h_extra, pcm, projector, &
-                              level_shift, linear_dependence, b_ao_out)
+                              level_shift, linear_dependence, b_ao_out, accelerator)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -362,6 +380,9 @@ contains
       real(dp), intent(in) :: energy_tol, density_tol
       logical, intent(in) :: verbose
       real(dp), intent(in), optional :: level_shift
+      integer, intent(in), optional :: accelerator
+         !! `ACCEL_DIIS` (the default and the historical behaviour), or one of
+         !! the energy-based schemes to run while the error is large.
          !! Hartree added to the virtual block of the Fock matrix before each
          !! diagonalisation. Absent or zero is off.
       type(rhf_result_t), intent(out) :: result
@@ -474,7 +495,9 @@ contains
       type(diis_state_t) :: diis
       logical :: extrapolated
       logical :: kohn_sham_run
+      integer :: accel
       real(dp) :: e_elec, e_old, de, drms
+      real(dp) :: gnorm
       real(dp) :: shift, shift_now, drms_prev, taper
       real(dp), allocatable :: sd(:, :), sds(:, :)
       integer :: n_ao, n_mo, n_occ, iter
@@ -575,7 +598,8 @@ contains
       ! The error vector lives in the orthogonal basis, where it is n_mo
       ! square rather than n_ao -- that is the same shape the cuEST path uses
       ! and the reason both converge alike.
-      call diis%init(diis_size, n_ao*n_ao, n_mo*n_mo)
+      call diis%init(diis_size, n_ao*n_ao, n_mo*n_mo, &
+                     energy_based=(accel /= ACCEL_DIIS))
 
       ! Every guess ends up as a starting Fock matrix, which is then diagonalised
       ! and occupied exactly as an iteration's would be. That uniformity is the
@@ -622,6 +646,9 @@ contains
       kohn_sham_run = .false.
       if (present(xc)) kohn_sham_run = xc%active
       call scf_table_header(verbose, kohn_sham_run)
+
+      accel = ACCEL_DIIS
+      if (present(accelerator)) accel = accelerator
 
       shift = 0.0_dp
       if (present(level_shift)) shift = level_shift
@@ -709,9 +736,11 @@ contains
          ! when F and D commute, which is what convergence means, so it is the
          ! quantity worth extrapolating against.
          call commutator(fock, density, s, x, err)
+         gnorm = maxval(abs(err))
          fock_flat = reshape(fock, [n_ao*n_ao])
-         call diis%push(fock_flat, reshape(err, [n_mo*n_mo]))
-         call diis%extrapolate(fock_flat, extrapolated)
+         call diis%push(fock_flat, reshape(err, [n_mo*n_mo]), &
+                        density=reshape(density, [n_ao*n_ao]), energy=e_elec)
+         call diis%extrapolate_with(scheme_now(accel, gnorm), fock_flat, extrapolated)
          if (extrapolated) fock = reshape(fock_flat, [n_ao, n_ao])
          t_rest_iter = clk%seconds_of(STAGE_DIIS)
          call clk%lap(STAGE_DIIS)
@@ -747,7 +776,7 @@ contains
 
          de = abs(e_elec - e_old)
          drms = sqrt(sum((density - density_old)**2)/real(n_ao*n_ao, dp))
-         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, &
+         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, gnorm, &
                             diis%count(), t_fock_iter, t_xc_iter, t_rest_iter, kohn_sham_run)
 
          e_old = e_elec
@@ -760,8 +789,21 @@ contains
          ! taper makes this true on its own in every ordinary case; requiring it
          ! costs an iteration in the case where it would not have been.
          drms_prev = drms
+         ! **The commutator has to be in the test.** `de` and `drms` say the
+         ! iteration stopped moving; they do not say it stopped at a stationary
+         ! point. `FDS - SDF` is what vanishes when F and D commute, which is
+         ! what convergence means, and an SCF can hold both of the others small
+         ! while this one is nowhere near zero -- any scheme that
+         ! *interpolates* rather than extrapolates will do it, because a
+         ! stalled interpolation moves the density hardly at all. EDIIS reached
+         ! "converged in 4 iterations" on water/def2-SVP at an energy 0.11
+         ! Hartree wrong, with `de` and `drms` under their thresholds the whole
+         ! way. PySCF has always tested this -- `norm_gorb < conv_tol_grad`
+         ! beside the energy check -- and the threshold here is its default,
+         ! `sqrt(energy_tol)`, on a commutator normalised per element so it
+         ! does not tighten with basis size.
          if (iter > 1 .and. de < energy_tol .and. drms < density_tol .and. &
-             shift_now == 0.0_dp) then
+             gnorm < sqrt(energy_tol) .and. shift_now == 0.0_dp) then
             result%converged = .true.
             exit
          end if
@@ -816,7 +858,7 @@ contains
    subroutine run_libcint_uhf(mol, nelec, multiplicity, max_iter, energy_tol, density_tol, &
                               verbose, result, error, diis_vectors, in_core, diis_start, &
                               guess, guess_density_alpha, guess_density_beta, xc, pcm, &
-                              level_shift, linear_dependence)
+                              level_shift, linear_dependence, accelerator)
       !! Drive an unrestricted SCF to convergence
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
@@ -836,6 +878,9 @@ contains
       real(dp), intent(in) :: energy_tol, density_tol
       logical, intent(in) :: verbose
       real(dp), intent(in), optional :: level_shift
+      integer, intent(in), optional :: accelerator
+         !! `ACCEL_DIIS` (the default and the historical behaviour), or one of
+         !! the energy-based schemes to run while the error is large.
          !! As `run_libcint_rhf`. Applied to each spin's Fock matrix against its
          !! own virtual projector, and tapered off before convergence for the
          !! same reason.
@@ -884,13 +929,16 @@ contains
       real(dp), allocatable :: d_a(:, :), d_b(:, :), d_a_old(:, :), d_b_old(:, :)
       real(dp), allocatable :: coeff_a(:, :), coeff_b(:, :), eig_a(:), eig_b(:)
       real(dp), allocatable :: err_a(:, :), err_b(:, :), fock_flat(:), err_flat(:)
+      real(dp), allocatable :: dens_flat(:)
       real(dp), allocatable :: v_pcm(:, :)
       logical :: use_pcm
       real(dp) :: e_pcm
       type(diis_state_t) :: diis
       logical :: extrapolated
       logical :: kohn_sham_run
+      integer :: accel
       real(dp) :: e_elec, e_old, de, drms
+      real(dp) :: gnorm
       real(dp) :: shift, shift_now, drms_prev, taper
       real(dp), allocatable :: sd(:, :), sds(:, :)
       integer :: n_ao, n_mo, n_alpha, n_beta, iter, nsq, msq
@@ -973,13 +1021,14 @@ contains
       allocate (fock_a(n_ao, n_ao), fock_b(n_ao, n_ao))
       allocate (d_a(n_ao, n_ao), d_b(n_ao, n_ao), d_a_old(n_ao, n_ao), d_b_old(n_ao, n_ao))
       allocate (err_a(n_mo, n_mo), err_b(n_mo, n_mo))
-      allocate (fock_flat(2*nsq), err_flat(2*msq))
+      allocate (fock_flat(2*nsq), err_flat(2*msq), dens_flat(2*nsq))
       if (use_pcm) allocate (v_pcm(n_ao, n_ao))
 
       ! One subspace over both spins, so an extrapolation step moves them
       ! together. The vectors are the two Fock matrices laid end to end and the
       ! two commutators likewise.
-      call diis%init(diis_size, 2*nsq, 2*msq)
+      call diis%init(diis_size, 2*nsq, 2*msq, &
+                     energy_based=(accel /= ACCEL_DIIS))
 
       ! The symmetric guesses -- core and GWH -- give alpha and beta the same
       ! orbitals, and the occupations are what separate them: n_alpha > n_beta
@@ -1033,6 +1082,9 @@ contains
       kohn_sham_run = .false.
       if (present(xc)) kohn_sham_run = xc%active
       call scf_table_header(verbose, kohn_sham_run)
+
+      accel = ACCEL_DIIS
+      if (present(accelerator)) accel = accelerator
 
       shift = 0.0_dp
       if (present(level_shift)) shift = level_shift
@@ -1096,9 +1148,14 @@ contains
          fock_flat(nsq + 1:2*nsq) = reshape(fock_b, [nsq])
          err_flat(1:msq) = reshape(err_a, [msq])
          err_flat(msq + 1:2*msq) = reshape(err_b, [msq])
-         call diis%push(fock_flat, err_flat)
+         gnorm = maxval(abs(err_flat))
+         dens_flat(1:nsq) = reshape(d_a, [nsq])
+         dens_flat(nsq + 1:2*nsq) = reshape(d_b, [nsq])
+         call diis%push(fock_flat, err_flat, density=dens_flat, energy=e_elec)
          extrapolated = .false.
-         if (iter >= start_cycle) call diis%extrapolate(fock_flat, extrapolated)
+         if (iter >= start_cycle) then
+            call diis%extrapolate_with(scheme_now(accel, gnorm), fock_flat, extrapolated)
+         end if
          if (extrapolated) then
             fock_a = reshape(fock_flat(1:nsq), [n_ao, n_ao])
             fock_b = reshape(fock_flat(nsq + 1:2*nsq), [n_ao, n_ao])
@@ -1135,14 +1192,27 @@ contains
 
          de = abs(e_elec - e_old)
          drms = sqrt((sum((d_a - d_a_old)**2) + sum((d_b - d_b_old)**2))/real(2*nsq, dp))
-         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, &
+         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, gnorm, &
                             diis%count(), t_fock_iter, t_xc_iter, t_rest_iter, kohn_sham_run)
 
          e_old = e_elec
          result%iterations = iter
          drms_prev = drms
+         ! **The commutator has to be in the test.** `de` and `drms` say the
+         ! iteration stopped moving; they do not say it stopped at a stationary
+         ! point. `FDS - SDF` is what vanishes when F and D commute, which is
+         ! what convergence means, and an SCF can hold both of the others small
+         ! while this one is nowhere near zero -- any scheme that
+         ! *interpolates* rather than extrapolates will do it, because a
+         ! stalled interpolation moves the density hardly at all. EDIIS reached
+         ! "converged in 4 iterations" on water/def2-SVP at an energy 0.11
+         ! Hartree wrong, with `de` and `drms` under their thresholds the whole
+         ! way. PySCF has always tested this -- `norm_gorb < conv_tol_grad`
+         ! beside the energy check -- and the threshold here is its default,
+         ! `sqrt(energy_tol)`, on a commutator normalised per element so it
+         ! does not tighten with basis size.
          if (iter > 1 .and. de < energy_tol .and. drms < density_tol .and. &
-             shift_now == 0.0_dp) then
+             gnorm < sqrt(energy_tol) .and. shift_now == 0.0_dp) then
             result%converged = .true.
             exit
          end if

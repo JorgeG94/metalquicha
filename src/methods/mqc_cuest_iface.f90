@@ -127,6 +127,11 @@ module mqc_cuest_iface
          !! Pure (spherical) vs Cartesian angular functions
       logical :: verbose = .false.
          !! Print the SCF iteration table
+      character(len=32) :: accelerator = "diis"
+         !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
+         !! 'ediis'. The energy-based pair runs only while the error is large
+         !! and hands over to DIIS, so naming one asks for a different opening,
+         !! not a different endgame.
       character(len=32) :: guess = "auto"
          !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection',
          !! or 'auto'
@@ -243,6 +248,7 @@ contains
       settings%linear_dependence = options%linear_dependence
       settings%use_diis = options%use_diis
       settings%diis_size = options%diis_size
+      settings%accelerator = options%accelerator
       settings%verbose = options%verbose
       settings%device_rank = options%device_rank
       settings%pcm = options%pcm
