@@ -1273,7 +1273,9 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
-      real(dp) :: e_nl_total, e_nl_dup
+      real(dp) :: e_nl_total
+      real(dp), allocatable :: v_nl(:, :)
+         !! VV10's potential, built once and added to both spins
       real(dp), allocatable :: rho_a(:), rho_b(:), grad_a(:, :), grad_b(:, :)
       real(dp), allocatable :: tau_a(:), tau_b(:)
       real(dp), allocatable :: rho(:), sigma(:), tau(:), lapl(:)
@@ -1549,12 +1551,20 @@ contains
       ! total density, with no spin dependence anywhere in it, so
       ! dE/drho_a = dE/drho_b and likewise for the gradient term.
       if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
-         call vv10_add_potential(ctx, mol, d_alpha + d_beta, v_alpha, e_nl_total, error)
+         ! Evaluated once and added to both, rather than called twice. The
+         ! comment above is the reason it can be: the kernel has no spin
+         ! dependence, so the two calls did identical work and the second
+         ! existed only to reach `v_beta`. That doubled the whole non-local
+         ! term, which is the dominant cost of a `-V` SCF iteration -- on an
+         ! open-shell case here the exchange-correlation column ran 23 s
+         ! against the Fock build's 5 s, and half of it was this.
+         if (.not. allocated(v_nl)) allocate (v_nl(size(v_alpha, 1), size(v_alpha, 2)))
+         v_nl = 0.0_dp
+         call vv10_add_potential(ctx, mol, d_alpha + d_beta, v_nl, e_nl_total, error)
          if (error%has_error()) return
-         call vv10_add_potential(ctx, mol, d_alpha + d_beta, v_beta, e_nl_dup, error)
-         if (error%has_error()) return
-         ! Added once, not twice: `e_nl` is the energy of the whole density,
-         ! and the second call is only there to reach the beta matrix.
+         v_alpha = v_alpha + v_nl
+         v_beta = v_beta + v_nl
+         ! Added once, not twice: `e_nl` is the energy of the whole density.
          e_xc = e_xc + e_nl_total
       end if
 #endif
