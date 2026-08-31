@@ -216,7 +216,8 @@ Backend support
 Implemented on the CPU path, for Hartree-Fock, DFT, and the reference SCF of a
 CASSCF or CASCI.
 
-The cuEST GPU backend accepts the keyword and does not apply it, so a GPU run
-converges as though it were absent. It also does not refuse an invalid name,
-because the parsing lives in the CPU bridge -- on the GPU path a misspelled
-accelerator is silently a DIIS run.
+**The cuEST GPU backend refuses anything but** ``diis``. Its extrapolation is
+device-resident and Pulay-only; no energy-based scheme is implemented there. A
+deck naming ``ediis`` or ``adiis`` for a GPU run is refused by name rather than
+answered with a DIIS run that says nothing about it, and a misspelled name is
+refused by the same branch. Use the CPU backend if you want one of them.
