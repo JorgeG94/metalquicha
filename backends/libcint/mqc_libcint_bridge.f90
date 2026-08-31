@@ -2216,7 +2216,8 @@ contains
       real(dp), allocatable :: natural(:, :), occupations(:), reference(:, :)
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
       character(len=MAX_LINE_LENGTH) :: line
-      integer :: iatom, diis_size
+      integer :: iatom, diis_size, accel_kind
+      logical :: accel_ok
       integer :: space(4)
 
       if (settings%pcm%enabled) then
@@ -2298,9 +2299,27 @@ contains
       diis_size = settings%diis_size
       if (.not. settings%use_diis) diis_size = 0
 
+      ! The reference SCF is an SCF, so it answers to `keywords.scf` like any
+      ! other. Parsing here rather than trusting the caller is what makes a
+      ! misspelling a refusal instead of a silent fall back to DIIS: the name
+      ! reaches this routine whatever it says, and nothing downstream would
+      ! report that a requested accelerator had not been used.
+      call parse_accelerator_name(settings%accelerator, accel_kind, accel_ok)
+      if (.not. accel_ok) then
+         call result%error%set(ERROR_VALIDATION, "keywords.scf.accelerator '"// &
+                               trim(settings%accelerator)//"' is not one of diis, "// &
+                               "adiis or ediis.")
+         result%has_error = .true.
+         return
+      end if
+      if (accel_kind /= ACCEL_DIIS) then
+         call logger%info("    SCF accelerator: "//trim(accelerator_name(accel_kind))// &
+                          " while the error is large, then DIIS")
+      end if
+
       call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                            settings%density_tol, settings%verbose, scf, error, &
-                           diis_vectors=diis_size, &
+                           diis_vectors=diis_size, accelerator=accel_kind, &
                            linear_dependence=settings%linear_dependence)
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
