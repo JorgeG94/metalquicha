@@ -332,6 +332,26 @@ HAND_MAINTAINED = {
     "cpu/mqc/makefp/water_makefp.json",
     "cpu/mqc/makefp/water_makefp_df.json",
     "cpu/mqc/makefp/hydronium_makefp.json",
+    # The double hybrid's Hessian on a basis with d functions, whose reference is
+    # *ours*. Not because none could be generated but because none can be
+    # generated well: differencing a pinned-grid PySCF energy -- the construction
+    # the three STO-3G double-hybrid cases use -- loses accuracy once a heavy
+    # nucleus with a sharp density moves through a grid that stays put, and lands
+    # 7e-5 from both analytic Hessians, which sit 2.5e-5 from each other. See the
+    # note at HESSIAN_DH_CASES.
+    #
+    # **So this detects change and not correctness**, and is labelled a
+    # regression pin rather than a validation case for that reason. What makes
+    # our matrix the one worth pinning is measured elsewhere and not here: it
+    # differences our own gradient to 4.59e-10, it is symmetric to 2.6e-11 where
+    # PySCF's is asymmetric by 3.3e-6 on this basis, and Hartree-Fock at the same
+    # basis agrees with PySCF analytically to 3.0e-8, so the l=2 integral second
+    # derivatives underneath are sound. The bound is 1e-9 against 7.3e-12 of
+    # scatter between one thread and four.
+    #
+    # Its manifest entry is in validation_tests.json with the other
+    # hand-maintained ones.
+    "cpu/mqc/hessian/cpu_water_6-31g_st__b2plyp_hess.json",
     # The EFP2 interaction energy. Its reference is GAMESS rather than PySCF, so this
     # script cannot generate it either. It consumes the potential that
     # water_makefp.json writes beside itself, so that deck runs first.
