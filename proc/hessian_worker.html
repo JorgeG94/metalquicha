@@ -141,14 +141,14 @@
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-coord">coord</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-disp_idx~3">disp_idx</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-displaced_geom~2">displaced_geom</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-dummy_msg~3">dummy_msg</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-full_system~2">full_system</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-dummy_msg~4">dummy_msg</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-full_system~3">full_system</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-grad_result">grad_result</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-gradient_type~2">gradient_type</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-local_config~2">local_config</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-n_atoms~39">n_atoms</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-req~10">req</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-status~31">status</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-n_atoms~42">n_atoms</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-req~16">req</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-status~36">status</a>
         </div>
       </div>
     </div>
@@ -194,8 +194,8 @@
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_method_base.html'>mqc_method_base</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_method_factory.html'>mqc_method_factory</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_method_base.html'>mqc_method_base</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1437,7 +1437,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~21"></span>
+              <span class="anchor" id="variable-world_comm~23"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1452,7 +1452,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~81"></span>
+              <span class="anchor" id="variable-sys_geom~65"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1467,7 +1467,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~39"></span>
+              <span class="anchor" id="variable-config~34"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1789,52 +1789,58 @@ Requests displacement indices, computes gradients, and sends results back</p>
 <g id="proc~~hessian_worker~~CallsGraph_node22" class="node">
 <title>proc~configure_scf</title>
 <g id="a_proc~~hessian_worker~~CallsGraph_node22"><a xlink:href="../proc/configure_scf.html" xlink:title="configure_scf">
-<polygon fill="#d9534f" stroke="#d9534f" points="966.5,-271 883.5,-271 883.5,-247 966.5,-247 966.5,-271"/>
-<text text-anchor="middle" x="925" y="-256.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configure_scf</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="966.5,-266 883.5,-266 883.5,-242 966.5,-242 966.5,-266"/>
+<text text-anchor="middle" x="925" y="-251.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configure_scf</text>
 </a>
 </g>
 </g>
 <!-- proc~configure_dft&#45;&gt;proc~configure_scf -->
 <g id="proc~~hessian_worker~~CallsGraph_edge21" class="edge">
 <title>proc~configure_dft&#45;&gt;proc~configure_scf</title>
-<path fill="none" stroke="#ff0000" d="M771.46,-288.24C801.08,-282.56 841.49,-274.82 873.27,-268.73"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="874.1,-272.13 883.26,-266.81 872.78,-265.26 874.1,-272.13"/>
+<path fill="none" stroke="#ff0000" d="M771.46,-287.2C801.08,-280.75 841.49,-271.96 873.27,-265.04"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="874.24,-268.41 883.26,-262.87 872.75,-261.57 874.24,-268.41"/>
 </g>
 <!-- proc~configure_hf&#45;&gt;proc~configure_scf -->
 <g id="proc~~hessian_worker~~CallsGraph_edge22" class="edge">
 <title>proc~configure_hf&#45;&gt;proc~configure_scf</title>
-<path fill="none" stroke="#ffff00" d="M769.59,-255C799.37,-255.77 840.82,-256.85 873.28,-257.69"/>
-<polygon fill="#ffff00" stroke="#ffff00" points="873.39,-261.19 883.48,-257.95 873.57,-254.19 873.39,-261.19"/>
+<path fill="none" stroke="#ffff00" d="M769.59,-254C799.37,-254 840.82,-254 873.28,-254"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="873.48,-257.5 883.48,-254 873.48,-250.5 873.48,-257.5"/>
+</g>
+<!-- proc~configure_mcscf&#45;&gt;proc~configure_scf -->
+<g id="proc~~hessian_worker~~CallsGraph_edge23" class="edge">
+<title>proc~configure_mcscf&#45;&gt;proc~configure_scf</title>
+<path fill="none" stroke="#00ff00" d="M780.2,-222.71C808.77,-228.92 844.7,-236.74 873.49,-243.01"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="872.84,-246.45 883.35,-245.15 874.32,-239.61 872.84,-246.45"/>
 </g>
 <!-- proc~method_type_to_string -->
 <g id="proc~~hessian_worker~~CallsGraph_node23" class="node">
 <title>proc~method_type_to_string</title>
 <g id="a_proc~~hessian_worker~~CallsGraph_node23"><a xlink:href="../proc/method_type_to_string.html" xlink:title="method_type_to_string">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="991.5,-219 858.5,-219 858.5,-195 991.5,-195 991.5,-219"/>
-<text text-anchor="middle" x="925" y="-204.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_type_to_string</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="991.5,-224 858.5,-224 858.5,-200 991.5,-200 991.5,-224"/>
+<text text-anchor="middle" x="925" y="-209.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_type_to_string</text>
 </a>
 </g>
 </g>
 <!-- proc~configure_xtb&#45;&gt;proc~method_type_to_string -->
-<g id="proc~~hessian_worker~~CallsGraph_edge23" class="edge">
+<g id="proc~~hessian_worker~~CallsGraph_edge24" class="edge">
 <title>proc~configure_xtb&#45;&gt;proc~method_type_to_string</title>
-<path fill="none" stroke="#00ffff" d="M772.88,-178.03C795.78,-182.42 824.81,-187.98 851.29,-193.06"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="850.81,-196.53 861.29,-194.98 852.13,-189.66 850.81,-196.53"/>
+<path fill="none" stroke="#00ffff" d="M772.88,-179.11C797.97,-184.57 830.4,-191.63 858.79,-197.81"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="858.13,-201.25 868.64,-199.95 859.62,-194.41 858.13,-201.25"/>
 </g>
 <!-- proc~xtb_has_solvation -->
 <g id="proc~~hessian_worker~~CallsGraph_node25" class="node">
 <title>proc~xtb_has_solvation</title>
 <g id="a_proc~~hessian_worker~~CallsGraph_node25"><a xlink:href="../proc/xtb_has_solvation.html" xlink:title="xtb_config_t%xtb_has_solvation">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="1015,-177 835,-177 835,-153 1015,-153 1015,-177"/>
-<text text-anchor="middle" x="925" y="-162.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_config_t%xtb_has_solvation</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1015,-182 835,-182 835,-158 1015,-158 1015,-182"/>
+<text text-anchor="middle" x="925" y="-167.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_config_t%xtb_has_solvation</text>
 </a>
 </g>
 </g>
 <!-- proc~configure_xtb&#45;&gt;proc~xtb_has_solvation -->
-<g id="proc~~hessian_worker~~CallsGraph_edge24" class="edge">
+<g id="proc~~hessian_worker~~CallsGraph_edge25" class="edge">
 <title>proc~configure_xtb&#45;&gt;proc~xtb_has_solvation</title>
-<path fill="none" stroke="#00ffff" d="M772.88,-168.92C788.22,-168.52 806.31,-168.05 824.53,-167.58"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="824.75,-171.07 834.66,-167.31 824.57,-164.07 824.75,-171.07"/>
+<path fill="none" stroke="#00ffff" d="M772.88,-170C788.22,-170 806.31,-170 824.53,-170"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="824.66,-173.5 834.66,-170 824.66,-166.5 824.66,-173.5"/>
 </g>
 <!-- proc~mp2_reset -->
 <g id="proc~~hessian_worker~~CallsGraph_node24" class="node">
@@ -1846,7 +1852,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
 </g>
 </g>
 <!-- proc~energy_reset&#45;&gt;proc~mp2_reset -->
-<g id="proc~~hessian_worker~~CallsGraph_edge25" class="edge">
+<g id="proc~~hessian_worker~~CallsGraph_edge26" class="edge">
 <title>proc~energy_reset&#45;&gt;proc~mp2_reset</title>
 <path fill="none" stroke="#0000ff" d="M799.04,-107C811.46,-107 824.57,-107 837.44,-107"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="837.69,-110.5 847.69,-107 837.69,-103.5 837.69,-110.5"/>
@@ -2224,7 +2230,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dummy_msg~3"></span>
+              <span class="anchor" id="variable-dummy_msg~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -2241,7 +2247,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-full_system~2"></span>
+              <span class="anchor" id="variable-full_system~3"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -2309,7 +2315,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~39"></span>
+              <span class="anchor" id="variable-n_atoms~42"></span>
               integer,
             </td>
               <td>private</td>
@@ -2326,7 +2332,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~10"></span>
+              <span class="anchor" id="variable-req~16"></span>
               type(request_t),
             </td>
               <td>private</td>
@@ -2343,7 +2349,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~31"></span>
+              <span class="anchor" id="variable-status~36"></span>
               type(MPI_Status),
             </td>
               <td>private</td>
@@ -2514,7 +2520,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-31 04:31 +0000             </p>
+ on 2026-08-31 05:40 +0000             </p>
           </div>
         </div>
         <br>

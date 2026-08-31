@@ -311,11 +311,10 @@ contains
       type(mcscf_method_t), intent(inout) :: m
       type(method_config_t), intent(in) :: config
 
-      ! Common settings
-      m%options%properties = config%properties
-      m%options%basis_set = config%basis_set
-      m%options%spherical = config%use_spherical
-      m%options%verbose = config%verbose
+      ! Everything the reference SCF shares, through the one routine that fills
+      ! it. A CASSCF starts from a closed-shell SCF, and a deck that tightened
+      ! `keywords.scf` meant that one too.
+      call configure_scf(m%options, config)
 
       ! Active space from config%mcscf
       if (allocated(config%mcscf%avas_orbitals)) then
@@ -346,18 +345,6 @@ contains
       m%options%max_micro_iter = config%mcscf%max_micro_iter
       m%options%orbital_tol = config%mcscf%orbital_convergence
       m%options%ci_tol = config%mcscf%ci_convergence
-
-      ! The reference SCF, from the shared config%scf that every other
-      ! reference-based method reads. A CASSCF starts from a closed-shell SCF,
-      ! and a deck that tightened `keywords.scf` meant that one too.
-      m%options%max_iter = config%scf%max_iter
-      m%options%energy_tol = config%scf%energy_convergence
-      m%options%density_tol = config%scf%density_convergence
-      m%options%level_shift = config%scf%level_shift
-      m%options%linear_dependence = config%scf%linear_dependence
-      m%options%use_diis = config%scf%use_diis
-      m%options%diis_size = config%scf%diis_size
-      m%options%pcm = config%pcm
 
       ! PT2 corrections
       m%options%use_pt2 = config%mcscf%use_pt2
