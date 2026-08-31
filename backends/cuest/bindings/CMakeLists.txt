@@ -17,7 +17,7 @@
 # needs. They sit here because they are the same kind of thing -- thin
 # iso_c_binding layers over a vendor C API -- and share the convention of
 # binding device pointers as TYPE(c_ptr).
-target_sources(${main_lib} PRIVATE cuest.f90 cuest_helpers.f90 cuda_runtime.f90
+target_sources(${main_lib} PRIVATE cuest.f90 cuest_helpers.f90 cuda_runtime.F90
                                    cuda_helpers.f90 cublas.f90 cusolver.f90)
 
 # cuda_runtime.f90 carries one #if on MQC_CUDA_VERSION_MAJOR, for the entry
@@ -25,4 +25,4 @@ target_sources(${main_lib} PRIVATE cuest.f90 cuest_helpers.f90 cuda_runtime.f90
 # file rather than by renaming it to .F90 -- the convention everywhere else in
 # this project -- so the name still matches the generated original and a
 # re-copy from mod_cuest stays a plain overwrite.
-set_source_files_properties(cuda_runtime.f90 PROPERTIES Fortran_PREPROCESS ON)
+set_source_files_properties(cuda_runtime.F90 PROPERTIES Fortran_PREPROCESS ON)
