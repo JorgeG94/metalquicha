@@ -46,6 +46,20 @@ module test_mqc_libcint_cphf
    !> cancels to leading order anyway, being an even-order effect in a central
    !> difference of the dipole.
    real(dp), parameter :: FIELD_STRENGTH = 1.0e-3_dp
+   ! **`water` converges to 1e-14, not the 1e-12 it used to.** What is
+   ! differenced here is a *dipole*, which comes from the density, and the
+   ! convergence test no longer looks at the density at all -- so the SCF has to
+   ! be asked for the tightness this needs rather than getting it from a term
+   ! that happened to be in the gate.
+   !
+   ! The energy tolerance is the lever, and measurably so. Holding it at 1e-12
+   ! and tightening the commutator instead barely moves the comparison: 1e-7
+   ! gives 9.6e-6 against the 2e-6 bound, 1e-8 gives 2.1e-6, and only 1e-9
+   ! passes -- three times the OpenMP reduction-order noise floor, which is
+   ! where a threshold stops measuring anything. At 1e-14, with the commutator
+   ! left derived, the disagreement is 1.236e-6 and **identical at 1, 2, 4, 8
+   ! and 16 threads**, which says the SCF has stopped being what limits it and
+   ! the O(h^2) truncation is -- which is what the bound below measures.
 
 contains
 
@@ -108,11 +122,11 @@ contains
          do k = 1, 3
             h_field = h_field + field(k)*dip(:, :, k)
          end do
-         call run_libcint_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, &
+         call run_libcint_rhf(mol, 10, 200, 1.0e-14_dp, 1.0e-10_dp, .false., scf, err, &
                               in_core=.true., h_extra=h_field)
          deallocate (dip, h_field)
       else
-         call run_libcint_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, &
+         call run_libcint_rhf(mol, 10, 200, 1.0e-14_dp, 1.0e-10_dp, .false., scf, err, &
                               in_core=.true.)
       end if
    end subroutine water
