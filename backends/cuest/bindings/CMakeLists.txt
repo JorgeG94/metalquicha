@@ -19,3 +19,10 @@
 # binding device pointers as TYPE(c_ptr).
 target_sources(${main_lib} PRIVATE cuest.f90 cuest_helpers.f90 cuda_runtime.f90
                                    cuda_helpers.f90 cublas.f90 cusolver.f90)
+
+# cuda_runtime.f90 carries one #if on MQC_CUDA_VERSION_MAJOR, for the entry
+# point CUDA 13 renamed out from under it. Preprocessing is asked for on the
+# file rather than by renaming it to .F90 -- the convention everywhere else in
+# this project -- so the name still matches the generated original and a
+# re-copy from mod_cuest stays a plain overwrite.
+set_source_files_properties(cuda_runtime.f90 PROPERTIES Fortran_PREPROCESS ON)

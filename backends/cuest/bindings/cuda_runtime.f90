@@ -25,6 +25,31 @@
 !    the correct size.
 !  * Fortran is case-insensitive; the C names are preserved verbatim and
 !    checked for case-insensitive collisions at generation time.
+!
+!  CUDA 13 -- the one hand-edit on top of the generated output
+!  ----------------------------------------------------------
+!  CUDA 13 retired the _v2 generation of the runtime API. Every _v2 symbol is
+!  gone from libcudart, and for most of them the plain name now carries what
+!  12.x called the _v2 signature. A binding generated from 12.9 headers is
+!  therefore wrong against 13 in two different ways, and only one of them is
+!  loud: the _v2 spellings fail to link, while the 12-era plain spellings link
+!  happily to a symbol that no longer takes those arguments -- cudaMemAdvise
+!  went from an int device to a cudaMemLocation struct in that slot.
+!
+!  So the guards below, on MQC_CUDA_VERSION_MAJOR (set by
+!  cmake/MqcDependencies.cmake from the toolkit CMake found; undefined, and so
+!  0, outside that build, which selects the 12.x reading):
+!
+!    * an entry point 13 renamed keeps its Fortran name and binds whichever C
+!      symbol that version exports, so callers spell it the same either way;
+!    * an entry point 13 removed is compiled out, so calling it is a missing
+!      name at compile time rather than a wrong call at run time;
+!    * cudaDeviceProp is guarded field by field -- 13 changed the layout too.
+!
+!  Regenerating from CUDA 13 headers would remove the need for all of it, and
+!  is the better fix whenever mod_cuest gets there. Until then, keep these
+!  guards when re-copying, and note that they are derived from a diff of the
+!  two headers rather than written by hand.
 ! ==========================================================================
 module cuda_runtime
    use, intrinsic :: iso_c_binding
@@ -1784,6 +1809,18 @@ module cuda_runtime
    end type CUuuid_st
 
    type, bind(C) :: cudaDeviceProp
+      ! CUDA 13 changed this struct as well as the entry point that fills it:
+      ! it drops eight fields, adds seven, and shrinks the reserved tail from
+      ! 63 to 56. Reading a 13 runtime through the 12.x layout does not fail,
+      ! it just quietly returns other fields' values, and it does so from
+      ! deviceOverlap onward: the first removal, clockRate, falls in padding
+      ! the 8-byte totalConstMem needed anyway, so name, totalGlobalMem, major
+      ! and minor come back right by luck and hide the problem. Measured on an
+      ! A100 with CUDA 13.2, the unguarded layout reports multiProcessorCount
+      ! as 0 -- that slot now holds `integrated` -- against a true 108.
+      !
+      ! The guards are derived from a diff of the 12.9 and 13.2 headers rather
+      ! than placed by hand; regenerate them the same way.
       character(kind=c_char) :: name(256)
       type(CUuuid_st) :: uuid
       character(kind=c_char) :: luid(8)
@@ -1796,21 +1833,31 @@ module cuda_runtime
       integer(c_int) :: maxThreadsPerBlock
       integer(c_int) :: maxThreadsDim(3)
       integer(c_int) :: maxGridSize(3)
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) :: clockRate
+#endif
       integer(c_size_t) :: totalConstMem
       integer(c_int) :: major
       integer(c_int) :: minor
       integer(c_size_t) :: textureAlignment
       integer(c_size_t) :: texturePitchAlignment
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) :: deviceOverlap
+#endif
       integer(c_int) :: multiProcessorCount
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) :: kernelExecTimeoutEnabled
+#endif
       integer(c_int) :: integrated
       integer(c_int) :: canMapHostMemory
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) :: computeMode
+#endif
       integer(c_int) :: maxTexture1D
       integer(c_int) :: maxTexture1DMipmap
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) :: maxTexture1DLinear
+#endif
       integer(c_int) :: maxTexture2D(2)
       integer(c_int) :: maxTexture2DMipmap(2)
       integer(c_int) :: maxTexture2DLinear(3)
@@ -1837,7 +1884,9 @@ module cuda_runtime
       integer(c_int) :: tccDriver
       integer(c_int) :: asyncEngineCount
       integer(c_int) :: unifiedAddressing
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) :: memoryClockRate
+#endif
       integer(c_int) :: memoryBusWidth
       integer(c_int) :: l2CacheSize
       integer(c_int) :: persistingL2CacheMaxSize
@@ -1851,13 +1900,17 @@ module cuda_runtime
       integer(c_int) :: isMultiGpuBoard
       integer(c_int) :: multiGpuBoardGroupID
       integer(c_int) :: hostNativeAtomicSupported
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) :: singleToDoublePrecisionPerfRatio
+#endif
       integer(c_int) :: pageableMemoryAccess
       integer(c_int) :: concurrentManagedAccess
       integer(c_int) :: computePreemptionSupported
       integer(c_int) :: canUseHostPointerForRegisteredMem
       integer(c_int) :: cooperativeLaunch
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) :: cooperativeMultiDeviceLaunch
+#endif
       integer(c_size_t) :: sharedMemPerBlockOptin
       integer(c_int) :: pageableMemoryAccessUsesHostPageTables
       integer(c_int) :: directManagedMemAccessFromHost
@@ -1877,7 +1930,20 @@ module cuda_runtime
       integer(c_int) :: ipcEventSupported
       integer(c_int) :: clusterLaunch
       integer(c_int) :: unifiedFunctionPointers
+#if MQC_CUDA_VERSION_MAJOR >= 13
+      integer(c_int) :: deviceNumaConfig
+      integer(c_int) :: deviceNumaId
+      integer(c_int) :: mpsEnabled
+      integer(c_int) :: hostNumaId
+      integer(c_int) :: gpuPciDeviceID
+      integer(c_int) :: gpuPciSubsystemID
+      integer(c_int) :: hostNumaMultinodeIpcSupported
+#endif
+#if MQC_CUDA_VERSION_MAJOR >= 13
+      integer(c_int) :: reserved(56)
+#else
       integer(c_int) :: reserved(63)
+#endif
    end type cudaDeviceProp
 
    type, bind(C) :: cudaIpcEventHandle_st
@@ -2405,6 +2471,7 @@ module cuda_runtime
          type(c_ptr), value :: end
       end function cudaEventElapsedTime
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaEventElapsedTime_v2(ms, start, end) &
          bind(C, name="cudaEventElapsedTime_v2")
          import
@@ -2412,6 +2479,7 @@ module cuda_runtime
          type(c_ptr), value :: start
          type(c_ptr), value :: end
       end function cudaEventElapsedTime_v2
+#endif
 
       integer(c_int) function cudaEventQuery(event) &
          bind(C, name="cudaEventQuery")
@@ -2558,7 +2626,11 @@ module cuda_runtime
       end function cudaGetDeviceFlags
 
       integer(c_int) function cudaGetDeviceProperties(prop, device) &
-         bind(C, name="cudaGetDeviceProperties_v2")   ! header aliases cudaGetDeviceProperties -> cudaGetDeviceProperties_v2
+#if MQC_CUDA_VERSION_MAJOR >= 13
+         bind(C, name="cudaGetDeviceProperties")
+#else
+         bind(C, name="cudaGetDeviceProperties_v2")
+#endif
          import
          type(cudaDeviceProp), intent(inout) :: prop
          integer(c_int), value :: device
@@ -2682,6 +2754,7 @@ module cuda_runtime
          type(c_ptr), value :: childGraph
       end function cudaGraphAddChildGraphNode
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaGraphAddDependencies(graph, from, to, numDependencies) &
          bind(C, name="cudaGraphAddDependencies")
          import
@@ -2690,9 +2763,14 @@ module cuda_runtime
          type(c_ptr), intent(out) :: to
          integer(c_size_t), value :: numDependencies
       end function cudaGraphAddDependencies
+#endif
 
       integer(c_int) function cudaGraphAddDependencies_v2(graph, from, to, edgeData, numDependencies) &
+#if MQC_CUDA_VERSION_MAJOR >= 13
+         bind(C, name="cudaGraphAddDependencies")
+#else
          bind(C, name="cudaGraphAddDependencies_v2")
+#endif
          import
          type(c_ptr), value :: graph
          type(c_ptr), intent(out) :: from
@@ -2858,6 +2936,7 @@ module cuda_runtime
          type(cudaMemsetParams), intent(in) :: pMemsetParams
       end function cudaGraphAddMemsetNode
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaGraphAddNode(pGraphNode, graph, pDependencies, numDependencies, nodeParams) &
          bind(C, name="cudaGraphAddNode")
          import
@@ -2867,10 +2946,15 @@ module cuda_runtime
          integer(c_size_t), value :: numDependencies
          type(cudaGraphNodeParams), intent(inout) :: nodeParams
       end function cudaGraphAddNode
+#endif
 
       integer(c_int) function cudaGraphAddNode_v2( &
          pGraphNode, graph, pDependencies, dependencyData, numDependencies, nodeParams) &
+#if MQC_CUDA_VERSION_MAJOR >= 13
+         bind(C, name="cudaGraphAddNode")
+#else
          bind(C, name="cudaGraphAddNode_v2")
+#endif
          import
          type(c_ptr), intent(out) :: pGraphNode
          type(c_ptr), value :: graph
@@ -3124,6 +3208,7 @@ module cuda_runtime
          type(cudaExternalSemaphoreWaitNodeParams), intent(in) :: nodeParams
       end function cudaGraphExternalSemaphoresWaitNodeSetParams
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaGraphGetEdges(graph, from, to, numEdges) &
          bind(C, name="cudaGraphGetEdges")
          import
@@ -3132,9 +3217,14 @@ module cuda_runtime
          type(c_ptr), intent(out) :: to
          integer(c_size_t), intent(inout) :: numEdges
       end function cudaGraphGetEdges
+#endif
 
       integer(c_int) function cudaGraphGetEdges_v2(graph, from, to, edgeData, numEdges) &
+#if MQC_CUDA_VERSION_MAJOR >= 13
+         bind(C, name="cudaGraphGetEdges")
+#else
          bind(C, name="cudaGraphGetEdges_v2")
+#endif
          import
          type(c_ptr), value :: graph
          type(c_ptr), intent(out) :: from
@@ -3323,6 +3413,7 @@ module cuda_runtime
          type(c_ptr), value :: clonedGraph
       end function cudaGraphNodeFindInClone
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaGraphNodeGetDependencies(node, pDependencies, pNumDependencies) &
          bind(C, name="cudaGraphNodeGetDependencies")
          import
@@ -3330,9 +3421,14 @@ module cuda_runtime
          type(c_ptr), intent(out) :: pDependencies
          integer(c_size_t), intent(inout) :: pNumDependencies
       end function cudaGraphNodeGetDependencies
+#endif
 
       integer(c_int) function cudaGraphNodeGetDependencies_v2(node, pDependencies, edgeData, pNumDependencies) &
+#if MQC_CUDA_VERSION_MAJOR >= 13
+         bind(C, name="cudaGraphNodeGetDependencies")
+#else
          bind(C, name="cudaGraphNodeGetDependencies_v2")
+#endif
          import
          type(c_ptr), value :: node
          type(c_ptr), intent(out) :: pDependencies
@@ -3340,6 +3436,7 @@ module cuda_runtime
          integer(c_size_t), intent(inout) :: pNumDependencies
       end function cudaGraphNodeGetDependencies_v2
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaGraphNodeGetDependentNodes(node, pDependentNodes, pNumDependentNodes) &
          bind(C, name="cudaGraphNodeGetDependentNodes")
          import
@@ -3347,9 +3444,14 @@ module cuda_runtime
          type(c_ptr), intent(out) :: pDependentNodes
          integer(c_size_t), intent(inout) :: pNumDependentNodes
       end function cudaGraphNodeGetDependentNodes
+#endif
 
       integer(c_int) function cudaGraphNodeGetDependentNodes_v2(node, pDependentNodes, edgeData, pNumDependentNodes) &
+#if MQC_CUDA_VERSION_MAJOR >= 13
+         bind(C, name="cudaGraphNodeGetDependentNodes")
+#else
          bind(C, name="cudaGraphNodeGetDependentNodes_v2")
+#endif
          import
          type(c_ptr), value :: node
          type(c_ptr), intent(out) :: pDependentNodes
@@ -3395,6 +3497,7 @@ module cuda_runtime
          integer(c_int), value :: count
       end function cudaGraphReleaseUserObject
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaGraphRemoveDependencies(graph, from, to, numDependencies) &
          bind(C, name="cudaGraphRemoveDependencies")
          import
@@ -3403,9 +3506,14 @@ module cuda_runtime
          type(c_ptr), intent(out) :: to
          integer(c_size_t), value :: numDependencies
       end function cudaGraphRemoveDependencies
+#endif
 
       integer(c_int) function cudaGraphRemoveDependencies_v2(graph, from, to, edgeData, numDependencies) &
+#if MQC_CUDA_VERSION_MAJOR >= 13
+         bind(C, name="cudaGraphRemoveDependencies")
+#else
          bind(C, name="cudaGraphRemoveDependencies_v2")
+#endif
          import
          type(c_ptr), value :: graph
          type(c_ptr), intent(out) :: from
@@ -3597,6 +3705,7 @@ module cuda_runtime
          type(c_ptr), value :: stream
       end function cudaLaunchCooperativeKernel
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaLaunchCooperativeKernelMultiDevice(launchParamsList, numDevices, flags) &
          bind(C, name="cudaLaunchCooperativeKernelMultiDevice")
          import
@@ -3604,6 +3713,7 @@ module cuda_runtime
          integer(c_int), value :: numDevices
          integer(c_int), value :: flags
       end function cudaLaunchCooperativeKernelMultiDevice
+#endif
 
       integer(c_int) function cudaLaunchHostFunc(stream, fn, userData) &
          bind(C, name="cudaLaunchHostFunc")
@@ -3801,6 +3911,7 @@ module cuda_runtime
          integer(c_size_t), value :: height
       end function cudaMallocPitch
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaMemAdvise(devPtr, count, advice, device) &
          bind(C, name="cudaMemAdvise")
          import
@@ -3809,9 +3920,14 @@ module cuda_runtime
          integer(c_int), value :: advice
          integer(c_int), value :: device
       end function cudaMemAdvise
+#endif
 
       integer(c_int) function cudaMemAdvise_v2(devPtr, count, advice, location) &
+#if MQC_CUDA_VERSION_MAJOR >= 13
+         bind(C, name="cudaMemAdvise")
+#else
          bind(C, name="cudaMemAdvise_v2")
+#endif
          import
          type(c_ptr), value :: devPtr
          integer(c_size_t), value :: count
@@ -3911,6 +4027,7 @@ module cuda_runtime
          integer(c_size_t), value :: minBytesToKeep
       end function cudaMemPoolTrimTo
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaMemPrefetchAsync(devPtr, count, dstDevice, stream) &
          bind(C, name="cudaMemPrefetchAsync")
          import
@@ -3919,9 +4036,14 @@ module cuda_runtime
          integer(c_int), value :: dstDevice
          type(c_ptr), value :: stream
       end function cudaMemPrefetchAsync
+#endif
 
       integer(c_int) function cudaMemPrefetchAsync_v2(devPtr, count, location, flags, stream) &
+#if MQC_CUDA_VERSION_MAJOR >= 13
+         bind(C, name="cudaMemPrefetchAsync")
+#else
          bind(C, name="cudaMemPrefetchAsync_v2")
+#endif
          import
          type(c_ptr), value :: devPtr
          integer(c_size_t), value :: count
@@ -4396,17 +4518,21 @@ module cuda_runtime
          integer(c_int), value :: flags
       end function cudaSetDeviceFlags
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaSetDoubleForDevice(d) &
          bind(C, name="cudaSetDoubleForDevice")
          import
          real(c_double), intent(inout) :: d
       end function cudaSetDoubleForDevice
+#endif
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaSetDoubleForHost(d) &
          bind(C, name="cudaSetDoubleForHost")
          import
          real(c_double), intent(inout) :: d
       end function cudaSetDoubleForHost
+#endif
 
       integer(c_int) function cudaSetValidDevices(device_arr, len) &
          bind(C, name="cudaSetValidDevices")
@@ -4416,7 +4542,11 @@ module cuda_runtime
       end function cudaSetValidDevices
 
       integer(c_int) function cudaSignalExternalSemaphoresAsync_v2(extSemArray, paramsArray, numExtSems, stream) &
+#if MQC_CUDA_VERSION_MAJOR >= 13
+         bind(C, name="cudaSignalExternalSemaphoresAsync")
+#else
          bind(C, name="cudaSignalExternalSemaphoresAsync_v2")
+#endif
          import
          type(c_ptr), intent(out) :: extSemArray
          type(cudaExternalSemaphoreSignalParams), intent(in) :: paramsArray
@@ -4510,6 +4640,7 @@ module cuda_runtime
          type(cudaLaunchAttributeValue), intent(inout) :: value_out
       end function cudaStreamGetAttribute
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaStreamGetCaptureInfo_v2( &
          stream, captureStatus_out, id_out, graph_out, dependencies_out, numDependencies_out) &
          bind(C, name="cudaStreamGetCaptureInfo_v2")
@@ -4521,10 +4652,15 @@ module cuda_runtime
          type(c_ptr), intent(out) :: dependencies_out
          integer(c_size_t), intent(inout) :: numDependencies_out
       end function cudaStreamGetCaptureInfo_v2
+#endif
 
       integer(c_int) function cudaStreamGetCaptureInfo_v3( &
          stream, captureStatus_out, id_out, graph_out, dependencies_out, edgeData_out, numDependencies_out) &
+#if MQC_CUDA_VERSION_MAJOR >= 13
+         bind(C, name="cudaStreamGetCaptureInfo")
+#else
          bind(C, name="cudaStreamGetCaptureInfo_v3")
+#endif
          import
          type(c_ptr), value :: stream
          integer(c_int), intent(out) :: captureStatus_out
@@ -4590,6 +4726,7 @@ module cuda_runtime
          type(c_ptr), value :: stream
       end function cudaStreamSynchronize
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaStreamUpdateCaptureDependencies(stream, dependencies, numDependencies, flags) &
          bind(C, name="cudaStreamUpdateCaptureDependencies")
          import
@@ -4598,10 +4735,15 @@ module cuda_runtime
          integer(c_size_t), value :: numDependencies
          integer(c_int), value :: flags
       end function cudaStreamUpdateCaptureDependencies
+#endif
 
       integer(c_int) function cudaStreamUpdateCaptureDependencies_v2( &
          stream, dependencies, dependencyData, numDependencies, flags) &
+#if MQC_CUDA_VERSION_MAJOR >= 13
+         bind(C, name="cudaStreamUpdateCaptureDependencies")
+#else
          bind(C, name="cudaStreamUpdateCaptureDependencies_v2")
+#endif
          import
          type(c_ptr), value :: stream
          type(c_ptr), intent(out) :: dependencies
@@ -4624,41 +4766,53 @@ module cuda_runtime
          integer(c_int), intent(out) :: mode
       end function cudaThreadExchangeStreamCaptureMode
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaThreadExit() &
          bind(C, name="cudaThreadExit")
          import
       end function cudaThreadExit
+#endif
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaThreadGetCacheConfig(pCacheConfig) &
          bind(C, name="cudaThreadGetCacheConfig")
          import
          integer(c_int), intent(out) :: pCacheConfig
       end function cudaThreadGetCacheConfig
+#endif
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaThreadGetLimit(pValue, limit) &
          bind(C, name="cudaThreadGetLimit")
          import
          integer(c_size_t), intent(inout) :: pValue
          integer(c_int), value :: limit
       end function cudaThreadGetLimit
+#endif
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaThreadSetCacheConfig(cacheConfig) &
          bind(C, name="cudaThreadSetCacheConfig")
          import
          integer(c_int), value :: cacheConfig
       end function cudaThreadSetCacheConfig
+#endif
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaThreadSetLimit(limit, value) &
          bind(C, name="cudaThreadSetLimit")
          import
          integer(c_int), value :: limit
          integer(c_size_t), value :: value
       end function cudaThreadSetLimit
+#endif
 
+#if MQC_CUDA_VERSION_MAJOR < 13
       integer(c_int) function cudaThreadSynchronize() &
          bind(C, name="cudaThreadSynchronize")
          import
       end function cudaThreadSynchronize
+#endif
 
       integer(c_int) function cudaUserObjectCreate(object_out, ptr, destroy, initialRefcount, flags) &
          bind(C, name="cudaUserObjectCreate")
@@ -4685,7 +4839,11 @@ module cuda_runtime
       end function cudaUserObjectRetain
 
       integer(c_int) function cudaWaitExternalSemaphoresAsync_v2(extSemArray, paramsArray, numExtSems, stream) &
+#if MQC_CUDA_VERSION_MAJOR >= 13
+         bind(C, name="cudaWaitExternalSemaphoresAsync")
+#else
          bind(C, name="cudaWaitExternalSemaphoresAsync_v2")
+#endif
          import
          type(c_ptr), intent(out) :: extSemArray
          type(cudaExternalSemaphoreWaitParams), intent(in) :: paramsArray
