@@ -18,6 +18,94 @@ badly and then hand back to it; and there is level shifting. Both are described
 below. There is no damping, no Fermi smearing and no second-order fallback; see
 :doc:`capabilities` for the standing list.
 
+.. _when-is-it-converged:
+
+When is it converged
+--------------------
+
+Two things have to be true, and they are pyscf's two:
+
+.. math::
+
+   |E_n - E_{n-1}| < \texttt{tolerance}
+   \quad\text{and}\quad
+   \max_{\mu\nu} |(FDS - SDF)_{\mu\nu}| < \texttt{gradient\_tolerance}
+
+The energy stopped moving, **and** the Fock matrix commutes with the density.
+The density change is computed and printed on the iteration table as ``dD``, and
+is **not** tested -- exactly as pyscf computes ``norm_ddm``, prints it, and never
+gates on it.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 18 54
+
+   * - Key
+     - Default
+     - What it bounds
+   * - ``keywords.scf.tolerance``
+     - ``1e-9``
+     - The change in energy between iterations
+   * - ``keywords.scf.gradient_tolerance``
+     - ``sqrt(tolerance)``
+     - The commutator, as a max element. pyscf's ``conv_tol_grad``
+   * - ``keywords.scf.density_tolerance``
+     - ``1e-6``
+     - **Nothing, for convergence.** Still sets where the level shift tapers off
+
+**Why the commutator has to be in it.** ``dE`` and ``dD`` say the iteration
+stopped moving. They do not say it stopped at a stationary point, and an SCF can
+hold both small while :math:`FDS - SDF` is nowhere near zero. Any scheme that
+*interpolates* rather than extrapolates will do it, because a stalled
+interpolation moves the density hardly at all. EDIIS on water/6-31G pins at a
+commutator of 1.2e-2 for seven iterations while ``dE`` sits at 1e-12 and ``dD``
+at 1e-11; without the commutator the SCF stops there, 5.9e-5 Hartree from the
+answer. On water/def2-SVP the same failure has been seen at 0.11 Hartree.
+
+.. _gradient-tolerance:
+
+Setting ``gradient_tolerance`` yourself
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Leave it alone if you want an energy. **Set it if you want a density.**
+
+Near convergence the energy is variational, so its error falls as the *square*
+of the commutator; the density's error falls only linearly. The default
+``sqrt(tolerance)`` is the right scaling for the first and about three orders too
+loose for the second. Anything computed from the converged density rather than
+from its energy inherits that -- multipoles, atomic charges, a dipole, and any
+finite-difference of one of those.
+
+.. code-block:: json
+
+   "keywords": { "scf": { "gradient_tolerance": 1e-8 } }
+
+**It cannot be had by tightening** ``tolerance`` **instead.** Reaching a
+commutator of 1e-8 through ``sqrt`` would need ``tolerance`` of 1e-16, which is
+below what a molecular energy resolves in double precision, and the SCF then
+never converges at all. The two demands are separate and take separate numbers,
+which is why pyscf exposes ``conv_tol_grad`` rather than only deriving it. The
+paths inside the program that consume a density -- the EFP fragment potentials,
+the charge partitioning -- set it for themselves and say so where they do.
+
+**There is a floor.** The commutator cannot be resolved below the scatter that
+unordered OpenMP reduction merges put into it, and that scatter is a band whose
+top moves with thread count: on AlH3/6-31G it plateaus at 9.8e-14 on one thread
+and 3.1e-10 on sixteen. A threshold inside that band is sampling noise rather
+than measuring convergence -- one at 1e-10 made the same binary converge at 1 and
+8 threads and fail at 2 and 4. Larger systems on more threads should be expected
+to floor higher.
+
+Backends measure it differently
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The CPU path takes the largest element of :math:`FDS - SDF`. The cuEST backend
+takes a Frobenius norm over the whole matrix. **The same number does not mean the
+same thing to both**, so ``gradient_tolerance`` is not portable between them at
+present; on cuEST, leaving it unset keeps that backend's historical behaviour,
+where the threshold was read from ``density_tolerance``. Harmonising the two
+measures needs a GPU to verify on.
+
 .. _level-shifting:
 
 Level shifting

@@ -739,7 +739,8 @@ SCF Options
    "keywords": {
      "scf": {
        "maxiter": 300,
-       "tolerance": 1e-6,
+       "tolerance": 1e-9,
+       "gradient_tolerance": 0.0,
        "guess": "auto",
        "accelerator": "diis",
        "unrestricted": false,
@@ -751,7 +752,15 @@ SCF Options
    }
 
 - ``maxiter``: Maximum SCF iterations (default: 300)
-- ``tolerance``: Convergence tolerance (default: 1e-6)
+- ``tolerance``: Convergence on the *energy* change between iterations
+  (default: 1e-9, as pyscf's ``conv_tol``)
+- ``gradient_tolerance``: Convergence on the commutator :math:`FDS - SDF`, which
+  is pyscf's ``conv_tol_grad`` (default: 0.0, meaning derive ``sqrt(tolerance)``).
+  Both this and ``tolerance`` must be satisfied; the density change is printed
+  and not tested. **Set it when what you want is the density rather than the
+  energy** -- multipoles, charges, dipoles and anything differenced from them --
+  because the energy's error falls as the commutator squared while the density's
+  falls only linearly. See :ref:`gradient-tolerance`.
 - ``guess``: Initial orbital guess (default: ``auto``). One of:
 
   - ``core`` -- the core Hamiltonian, ``F = H``. Cheapest and worst; on a
