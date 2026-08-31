@@ -60,12 +60,14 @@ hold both small while :math:`FDS - SDF` is nowhere near zero. Any scheme that
 interpolation moves the density hardly at all. EDIIS on water/6-31G pins at a
 commutator of 1.2e-2 for seven iterations while ``dE`` sits at 1e-12 and ``dD``
 at 1e-11; without the commutator the SCF stops there, 5.9e-5 Hartree from the
-answer. On water/def2-SVP the same failure has been seen at 0.11 Hartree.
+answer. On water/def2-SVP the same failure has been seen at 0.11 Hartree. That
+stall is a property of the scheme rather than an accident -- see
+:ref:`accelerators`, which is where the schemes that cause it are described.
 
 .. _gradient-tolerance:
 
 Setting ``gradient_tolerance`` yourself
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Leave it alone if you want an energy. **Set it if you want a density.**
 
@@ -97,7 +99,7 @@ than measuring convergence -- one at 1e-10 made the same binary converge at 1 an
 to floor higher.
 
 Backends measure it differently
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The CPU path takes the largest element of :math:`FDS - SDF`. The cuEST backend
 takes a Frobenius norm over the whole matrix. **The same number does not mean the
