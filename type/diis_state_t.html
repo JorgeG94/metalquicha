@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 1.2% of total for derived types.</p>Including implementation: 79 statements,  2.1% of total for derived types.">16 statements</a>
+                 title="<p> 1.6% of total for derived types.</p>Including implementation: 147 statements,  3.8% of total for derived types.">21 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,6 +136,10 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../type/diis_state_t.html#variable-density_history">density_history</a>
+            <a class="list-group-item" href="../type/diis_state_t.html#variable-df~3">df</a>
+            <a class="list-group-item" href="../type/diis_state_t.html#variable-energy_based">energy_based</a>
+            <a class="list-group-item" href="../type/diis_state_t.html#variable-energy_history">energy_history</a>
             <a class="list-group-item" href="../type/diis_state_t.html#variable-error_history">error_history</a>
             <a class="list-group-item" href="../type/diis_state_t.html#variable-fock_history">fock_history</a>
             <a class="list-group-item" href="../type/diis_state_t.html#variable-max_vectors">max_vectors</a>
@@ -143,7 +147,7 @@
             <a class="list-group-item" href="../type/diis_state_t.html#variable-n_fock">n_fock</a>
             <a class="list-group-item" href="../type/diis_state_t.html#variable-n_stored">n_stored</a>
             <a class="list-group-item" href="../type/diis_state_t.html#variable-newest">newest</a>
-            <a class="list-group-item" href="../type/diis_state_t.html#variable-overlap~5">overlap</a>
+            <a class="list-group-item" href="../type/diis_state_t.html#variable-overlap~9">overlap</a>
         </div>
       </div>
     </div>
@@ -170,10 +174,11 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-count~14">count</a>
-            <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-destroy~23">destroy</a>
+            <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-count~10">count</a>
+            <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-destroy~18">destroy</a>
             <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-extrapolate">extrapolate</a>
-            <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-init~4">init</a>
+            <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-extrapolate_with">extrapolate_with</a>
+            <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-init~6">init</a>
             <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-push">push</a>
         </div>
       </div>
@@ -211,6 +216,84 @@
 <th></th><th scope="col">Initial</th>        <th scope="col"></th>
     </thead>
     <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-density_history"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>density_history</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(n_fock, max_vectors)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-df~3"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>df</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(max_vectors, max_vectors) cached <D_i | F_j> in slot coordinates,
+which is everything EDIIS and ADIIS need from the history.</p>
+<p><strong>Not symmetric.</strong> <code>&lt;D_i|F_j&gt;</code> and <code>&lt;D_j|F_i&gt;</code> are different
+numbers off the diagonal, and both energy models depend on the
+difference, so a new entry updates a full row <em>and</em> a full column
+rather than one triangle &ndash; unlike <code>overlap</code> above, where the two
+are equal and the assignment is mirrored.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energy_based"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>energy_based</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+                <p>Whether the history below is carried. Off by default and allocated
+only on request: a density is the size of a Fock matrix, so this
+doubles the history&rsquo;s footprint &ndash; 14 MB at 472 basis functions
+across eight slots &ndash; and a run that only ever calls DIIS should not
+pay for it.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energy_history"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>energy_history</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(max_vectors)</p>
+            </td>
+        </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-error_history"></span>
@@ -332,7 +415,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~5"></span>
+              <span class="anchor" id="variable-overlap~9"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -363,7 +446,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-count~14"></span>
+      <span class="anchor" id="boundprocedure-count~10"></span>
       <h3>
           procedure, public ::
   <strong>count</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_count.html'>diis_count</a>
@@ -422,7 +505,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-destroy~23"></span>
+      <span class="anchor" id="boundprocedure-destroy~18"></span>
       <h3>
           procedure, public ::
   <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_destroy.html'>diis_destroy</a>
@@ -560,7 +643,106 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-init~4"></span>
+      <span class="anchor" id="boundprocedure-extrapolate_with"></span>
+      <h3>
+          procedure, public ::
+  <strong>extrapolate_with</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_extrapolate_with.html'>diis_extrapolate_with</a>
+        
+      </h3>
+    </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+                    <h3>
+    private  subroutine <a href='../proc/diis_extrapolate_with.html'>diis_extrapolate_with</a>(this, scheme, fock, ok)  
+</h3>
+    
+
+  <p>Replace fock with the combination the named scheme asks for</p><a href="../proc/diis_extrapolate_with.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              class(<a href='diis_state_t.html'>diis_state_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scheme</strong></td>
+            <td>
+<p>One of the ACCEL_* parameters</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              real(kind=dp),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fock</strong>(this%n_fock)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              logical,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ok</strong></td>
+            <td>
+<p>False leaves fock untouched</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+          </li>
+      </ul>
+  </div>
+
+          </div>
+          <div class="row">
+              <div class="card mt-3">
+    <div class="card-header codesum">
+      <span class="anchor" id="boundprocedure-init~6"></span>
       <h3>
           procedure, public ::
   <strong>init</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_init.html'>diis_init</a>
@@ -570,7 +752,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
       <ul class="list-group">
           <li class="list-group-item">
                     <h3>
-    private  subroutine <a href='../proc/diis_init.html'>diis_init</a>(this, max_vectors, n_fock, n_error)  
+    private  subroutine <a href='../proc/diis_init.html'>diis_init</a>(this, max_vectors, n_fock, n_error, energy_based)  
 </h3>
     
 
@@ -647,6 +829,22 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
 <p>Elements in one error vector</p>
             </td>
         </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              logical,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>energy_based</strong></td>
+            <td>
+<p>Carry densities and energies too, for EDIIS and ADIIS. Absent is
+false, so a plain DIIS caller allocates exactly what it did before.</p>
+            </td>
+        </tr>
     </tbody>
   </table>
 
@@ -669,11 +867,11 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
       <ul class="list-group">
           <li class="list-group-item">
                     <h3>
-    private  subroutine <a href='../proc/diis_push.html'>diis_push</a>(this, fock, error_vector)  
+    private  subroutine <a href='../proc/diis_push.html'>diis_push</a>(this, fock, error_vector, density, energy)  
 </h3>
     
 
-  <p>Add one (Fock, error) pair, evicting the oldest entry when full</p>
+  <p>Add one entry, evicting the oldest when full</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -731,6 +929,39 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
 
             </td>
         </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>density</strong>(this%n_fock)</td>
+            <td>
+<p>Required when the state was initialised <code>energy_based</code>; ignored
+otherwise. Same layout as <code>fock</code> &ndash; for an unrestricted SCF both
+spins stacked, so <code>&lt;D|F&gt;</code> comes out as the sum over spins, which is
+the trace both energy models want.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>energy</strong></td>
+            <td>
+<p>The total energy of this entry, for EDIIS. ADIIS does not use it.</p>
+            </td>
+        </tr>
     </tbody>
   </table>
 
@@ -760,10 +991,31 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
 <span class="w">         </span><span class="c">!! Kept across iterations: pushing one vector changes exactly one row</span>
 <span class="w">         </span><span class="c">!! and column, so rebuilding the whole matrix each iteration costs</span>
 <span class="w">         </span><span class="c">!! O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</span>
+
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy_based</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">         </span><span class="c">!! Whether the history below is carried. Off by default and allocated</span>
+<span class="w">         </span><span class="c">!! only on request: a density is the size of a Fock matrix, so this</span>
+<span class="w">         </span><span class="c">!! doubles the history's footprint -- 14 MB at 472 basis functions</span>
+<span class="w">         </span><span class="c">!! across eight slots -- and a run that only ever calls DIIS should not</span>
+<span class="w">         </span><span class="c">!! pay for it.</span>
+
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">density_history</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (n_fock, max_vectors)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy_history</span><span class="p">(:)</span><span class="w">      </span><span class="c">!! (max_vectors)</span>
+
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">df</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! (max_vectors, max_vectors) cached &lt;D_i | F_j&gt; in slot coordinates,</span>
+<span class="w">         </span><span class="c">!! which is everything EDIIS and ADIIS need from the history.</span>
+<span class="w">         </span><span class="c">!!</span>
+<span class="w">         </span><span class="c">!! **Not symmetric.** `&lt;D_i|F_j&gt;` and `&lt;D_j|F_i&gt;` are different</span>
+<span class="w">         </span><span class="c">!! numbers off the diagonal, and both energy models depend on the</span>
+<span class="w">         </span><span class="c">!! difference, so a new entry updates a full row *and* a full column</span>
+<span class="w">         </span><span class="c">!! rather than one triangle -- unlike `overlap` above, where the two</span>
+<span class="w">         </span><span class="c">!! are equal and the assignment is mirrored.</span>
 <span class="w">   </span><span class="k">contains</span>
 <span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">init</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">diis_init</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">push</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">diis_push</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">extrapolate</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">diis_extrapolate</span>
+<span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">extrapolate_with</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">diis_extrapolate_with</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">destroy</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">diis_destroy</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">count</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">diis_count</span>
 <span class="w">   </span><span class="k">end type </span><span class="n">diis_state_t</span>
@@ -789,7 +1041,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-31 05:40 +0000             </p>
+ on 2026-08-31 23:41 +0000             </p>
           </div>
         </div>
         <br>

@@ -194,17 +194,17 @@ expansion is far worse than a failed fragment.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
                   <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
                   <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
                   <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1502,7 +1502,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-options"></span>
+              <span class="anchor" id="variable-options~3"></span>
               type(<a href='../type/hf_options_t.html'>hf_options_t</a>),
             </td>
               <td>public</td>
@@ -1528,17 +1528,17 @@ large graphs.</div>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_energy'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_energy.html'>hf_calc_energy</a></td>
+  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_energy~3'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_energy.html'>hf_calc_energy</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_gradient'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_gradient.html'>hf_calc_gradient</a></td>
+  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_gradient~3'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_gradient.html'>hf_calc_gradient</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_hessian'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_hessian.html'>hf_calc_hessian</a></td>
+  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_hessian~3'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_hessian.html'>hf_calc_hessian</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1571,7 +1571,28 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~4"></span>
+              <span class="anchor" id="variable-accelerator~3"></span>
+              character(len=32),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>accelerator</strong></td>
+<td> =</td>
+                <td>&#34;diis&#34;</td>
+            <td>
+<p><code>keywords.scf.accelerator</code>: &lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or
+&lsquo;ediis&rsquo;. The energy-based pair runs only while the error is large
+and hands over to DIIS, so naming one asks for a different opening,
+not a different endgame. Shared here rather than repeated per
+method: <code>hf_options_t</code> and <code>dft_options_t</code> both extend this type.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-allow_crap_scf~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1622,7 +1643,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~5"></span>
+              <span class="anchor" id="variable-backend~4"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1656,7 +1677,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~5"></span>
+              <span class="anchor" id="variable-cartesian~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -1673,7 +1694,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_diis_size"></span>
+              <span class="anchor" id="variable-cc_diis_size~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1690,7 +1711,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_max_iter"></span>
+              <span class="anchor" id="variable-cc_max_iter~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1707,7 +1728,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_spin_adapted"></span>
+              <span class="anchor" id="variable-cc_spin_adapted~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1724,7 +1745,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_tolerance"></span>
+              <span class="anchor" id="variable-cc_tolerance~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1741,7 +1762,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_triples"></span>
+              <span class="anchor" id="variable-cc_triples~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1758,7 +1779,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-corr_density_fitting"></span>
+              <span class="anchor" id="variable-corr_density_fitting~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1894,7 +1915,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~8"></span>
+              <span class="anchor" id="variable-guess~6"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1915,7 +1936,7 @@ An explicit spelling always wins over both.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~4"></span>
+              <span class="anchor" id="variable-guess_steps~3"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -2023,7 +2044,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties~3"></span>
+              <span class="anchor" id="variable-properties~2"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
               <td>public</td>
@@ -2040,7 +2061,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-run_cc"></span>
+              <span class="anchor" id="variable-run_cc~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2059,7 +2080,7 @@ method, not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-run_mp2"></span>
+              <span class="anchor" id="variable-run_mp2~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2078,7 +2099,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scs_os"></span>
+              <span class="anchor" id="variable-scs_os~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2095,7 +2116,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scs_ss"></span>
+              <span class="anchor" id="variable-scs_ss~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2146,7 +2167,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~4"></span>
+              <span class="anchor" id="variable-use_diis~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -2163,7 +2184,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~8"></span>
+              <span class="anchor" id="variable-verbose~7"></span>
               logical,
             </td>
               <td>public</td>
@@ -2213,7 +2234,7 @@ not an option on Hartree-Fock.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~60"></span>
+              <span class="anchor" id="variable-this~73"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2228,7 +2249,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~14"></span>
+              <span class="anchor" id="variable-fragment~10"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2243,7 +2264,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~10"></span>
+              <span class="anchor" id="variable-result~24"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2283,7 +2304,7 @@ not an option on Hartree-Fock.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~62"></span>
+              <span class="anchor" id="variable-this~75"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2298,7 +2319,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~16"></span>
+              <span class="anchor" id="variable-fragment~12"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2313,7 +2334,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~12"></span>
+              <span class="anchor" id="variable-result~26"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2353,7 +2374,7 @@ not an option on Hartree-Fock.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~63"></span>
+              <span class="anchor" id="variable-this~76"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2368,7 +2389,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~17"></span>
+              <span class="anchor" id="variable-fragment~13"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2383,7 +2404,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~13"></span>
+              <span class="anchor" id="variable-result~27"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2423,7 +2444,7 @@ not an option on Hartree-Fock.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~61"></span>
+              <span class="anchor" id="variable-this~74"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2438,7 +2459,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~15"></span>
+              <span class="anchor" id="variable-fragment~11"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2453,7 +2474,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~11"></span>
+              <span class="anchor" id="variable-result~25"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2468,7 +2489,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient"></span>
+              <span class="anchor" id="variable-want_gradient~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2528,7 +2549,7 @@ qualify is a fact about that backend.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-31 05:40 +0000             </p>
+ on 2026-08-31 23:41 +0000             </p>
           </div>
         </div>
         <br>

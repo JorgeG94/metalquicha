@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">16 statements</a>
+                 title=" 0.1% of total for procedures.">27 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -138,7 +138,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/diis_push.html#variable-age~3">age</a>
             <a class="list-group-item" href="../proc/diis_push.html#variable-other~2">other</a>
-            <a class="list-group-item" href="../proc/diis_push.html#variable-slot~6">slot</a>
+            <a class="list-group-item" href="../proc/diis_push.html#variable-slot~5">slot</a>
         </div>
       </div>
     </div>
@@ -174,11 +174,11 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>private  subroutine diis_push(this, fock, error_vector)  
+    <h2>private  subroutine diis_push(this, fock, error_vector, density, energy)  
 </h2>
     
 
-    <p>Add one (Fock, error) pair, evicting the oldest entry when full</p>
+    <p>Add one entry, evicting the oldest when full</p>
 
     <h3>Type Bound</h3>
     <p><a href='../type/diis_state_t.html'>diis_state_t</a></p>
@@ -196,7 +196,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~103"></span>
+              <span class="anchor" id="variable-this~102"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -211,7 +211,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fock"></span>
+              <span class="anchor" id="variable-fock~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -237,6 +237,39 @@
             <td><strong>error_vector</strong>(this%n_error)</td>
             <td>
                 
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-density~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>density</strong>(this%n_fock)</td>
+            <td>
+                <p>Required when the state was initialised <code>energy_based</code>; ignored
+otherwise. Same layout as <code>fock</code> &ndash; for an unrestricted SCF both
+spins stacked, so <code>&lt;D|F&gt;</code> comes out as the sum over spins, which is
+the trace both energy models want.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energy~9"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>energy</strong></td>
+            <td>
+                <p>The total energy of this entry, for EDIIS. ADIIS does not use it.</p>
             </td>
         </tr>
     </tbody>
@@ -429,7 +462,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-slot~6"></span>
+              <span class="anchor" id="variable-slot~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -460,11 +493,18 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">diis_push</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">fock</span><span class="p">,</span><span class="w"> </span><span class="n">error_vector</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Add one (Fock, error) pair, evicting the oldest entry when full</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">diis_push</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">fock</span><span class="p">,</span><span class="w"> </span><span class="n">error_vector</span><span class="p">,</span><span class="w"> </span><span class="n">density</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Add one entry, evicting the oldest when full</span>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">diis_state_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fock</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">n_fock</span><span class="p">)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error_vector</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">n_error</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">density</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">n_fock</span><span class="p">)</span>
+<span class="w">         </span><span class="c">!! Required when the state was initialised `energy_based`; ignored</span>
+<span class="w">         </span><span class="c">!! otherwise. Same layout as `fock` -- for an unrestricted SCF both</span>
+<span class="w">         </span><span class="c">!! spins stacked, so `&lt;D|F&gt;` comes out as the sum over spins, which is</span>
+<span class="w">         </span><span class="c">!! the trace both energy models want.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy</span>
+<span class="w">         </span><span class="c">!! The total energy of this entry, for EDIIS. ADIIS does not use it.</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">slot</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="p">,</span><span class="w"> </span><span class="n">other</span>
 
@@ -482,6 +522,25 @@ large graphs.</div>
 <span class="w">                                         </span><span class="n">this</span><span class="p">%</span><span class="n">error_history</span><span class="p">(:,</span><span class="w"> </span><span class="n">other</span><span class="p">))</span>
 <span class="w">         </span><span class="n">this</span><span class="p">%</span><span class="n">overlap</span><span class="p">(</span><span class="n">other</span><span class="p">,</span><span class="w"> </span><span class="n">slot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">overlap</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span><span class="w"> </span><span class="n">other</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end do</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">energy_based</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">density</span><span class="p">))</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">density_history</span><span class="p">(:,</span><span class="w"> </span><span class="n">slot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">density</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">energy</span><span class="p">))</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">energy_history</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">energy</span>
+
+<span class="w">         </span><span class="c">! A full row *and* a full column, because `df` is not symmetric: the</span>
+<span class="w">         </span><span class="c">! new density against every stored Fock, and every stored density</span>
+<span class="w">         </span><span class="c">! against the new Fock. Mirroring one onto the other -- which is what</span>
+<span class="w">         </span><span class="c">! `overlap` above does, correctly, since it is symmetric -- would put</span>
+<span class="w">         </span><span class="c">! `&lt;D_j|F_i&gt;` where `&lt;D_i|F_j&gt;` belongs and quietly symmetrise both</span>
+<span class="w">         </span><span class="c">! energy models.</span>
+<span class="w">         </span><span class="k">do </span><span class="n">age</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">n_stored</span>
+<span class="w">            </span><span class="n">other</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">slot_of_age</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="p">)</span>
+<span class="w">            </span><span class="n">this</span><span class="p">%</span><span class="n">df</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">density_history</span><span class="p">(:,</span><span class="w"> </span><span class="n">slot</span><span class="p">)</span><span class="o">*</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                       </span><span class="n">this</span><span class="p">%</span><span class="n">fock_history</span><span class="p">(:,</span><span class="w"> </span><span class="n">other</span><span class="p">))</span>
+<span class="w">            </span><span class="n">this</span><span class="p">%</span><span class="n">df</span><span class="p">(</span><span class="n">other</span><span class="p">,</span><span class="w"> </span><span class="n">slot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">density_history</span><span class="p">(:,</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="o">*</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                       </span><span class="n">this</span><span class="p">%</span><span class="n">fock_history</span><span class="p">(:,</span><span class="w"> </span><span class="n">slot</span><span class="p">))</span>
+<span class="w">         </span><span class="k">end do</span>
+<span class="k">      end if</span>
 <span class="k">   end subroutine </span><span class="n">diis_push</span>
 </pre></div>
 
@@ -506,7 +565,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-31 05:40 +0000             </p>
+ on 2026-08-31 23:41 +0000             </p>
           </div>
         </div>
         <br>

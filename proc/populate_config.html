@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.0% of total for procedures.">224 statements</a>
+                 title=" 1.0% of total for procedures.">225 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,13 +137,13 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/populate_config.html#variable-backend_named">backend_named</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-found~25">found</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-found~33">found</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-found_charges">found_charges</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-found_fukui">found_fukui</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-imol~5">imol</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-imol~7">imol</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-n_mol">n_mol</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-settings~9">settings</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-text~31">text</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-settings~13">settings</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-text~35">text</a>
         </div>
       </div>
     </div>
@@ -199,7 +199,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~25"></span>
+              <span class="anchor" id="variable-json~28"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -229,7 +229,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~21"></span>
+              <span class="anchor" id="variable-config~38"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -244,7 +244,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~75"></span>
+              <span class="anchor" id="variable-error~165"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1854,7 +1854,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~25"></span>
+              <span class="anchor" id="variable-found~33"></span>
               logical,
             </td>
               <td>private</td>
@@ -1905,7 +1905,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imol~5"></span>
+              <span class="anchor" id="variable-imol~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -1939,7 +1939,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~9"></span>
+              <span class="anchor" id="variable-settings~13"></span>
               logical,
             </td>
               <td>private</td>
@@ -1956,7 +1956,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~31"></span>
+              <span class="anchor" id="variable-text~35"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -2116,6 +2116,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">named</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.density_tolerance"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_density_tolerance_set</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.unrestricted"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_unrestricted</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.guess"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_guess</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.accelerator"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_accelerator</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.guess.type"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">guess_type</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">read_guess_steps</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
@@ -2383,7 +2384,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-31 05:40 +0000             </p>
+ on 2026-08-31 23:41 +0000             </p>
           </div>
         </div>
         <br>

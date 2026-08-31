@@ -213,6 +213,7 @@ contains
       options%linear_dependence = config%scf%linear_dependence
       options%use_diis = config%scf%use_diis
       options%diis_size = config%scf%diis_size
+      options%accelerator = config%scf%accelerator
       options%pcm = config%pcm
       options%properties = config%properties
    end subroutine configure_scf

@@ -1,0 +1,1143 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>simplex_quadratic_min &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>simplex_quadratic_min
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.3% of total for procedures.">62 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_ediis.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_ediis.f90.html'>mqc_ediis.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_ediis.html'>mqc_ediis</a></li>
+            <li class="breadcrumb-item active" aria-current="page">simplex_quadratic_min</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-c_new">c_new</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-e_now">e_now</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-e_trial">e_trial</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-gnorm">gnorm</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-gx">gx</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-gx_new">gx_new</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-hmat">hmat</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-hy">hy</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-i~85">i</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-it">it</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-j~26">j</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-ls">ls</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-p~5">p</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-rho">rho</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-slope">slope</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-step~3">step</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-sv">sv</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-sy">sy</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-x~3">x</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-x_new">x_new</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-yv">yv</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/simplex_quadratic_min.html#src">simplex_quadratic_min</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine simplex_quadratic_min(a, b, n, c)  
+</h2>
+    
+
+    <p>Minimise <code>b . c + c^T A c</code> over the simplex: c_i &gt;= 0, sum(c) = 1</p>
+<p><strong>The constraint is removed rather than enforced.</strong> Writing
+<code>c_i = x_i^2 / sum_j x_j^2</code> satisfies both conditions for any real <code>x</code>,
+which turns a constrained problem into an unconstrained one. This is
+the parameterisation <code>pyscf/scf/diis.py</code> uses, and the chain rule
+through it is the same:</p>
+<div class="codehilite"><pre><span></span><code>dE/dx_n = (2 x_n / S) * (g_n - sum_k c_k g_k),   g = dE/dc
+</code></pre></div>
+
+<p>The bracket is the gradient projected onto the simplex, so no separate
+projection appears &ndash; it is what the parameterisation produces.</p>
+<p><strong>BFGS, not steepest descent.</strong> <code>A</code> is not positive definite, and on a
+badly conditioned quadratic steepest descent stalls short of the
+minimum and returns coefficients that are merely nearby. That is
+invisible: the SCF still converges, via DIIS-like behaviour, just
+slower &ndash; which is exactly the symptom that would be read as &ldquo;the
+energy schemes are slow&rdquo; rather than &ldquo;the inner minimisation is not
+converged&rdquo;. PySCF uses BFGS at <code>tol = 1e-9</code>; this matches it, with a
+backtracking Armijo line search so an indefinite region cannot take an
+unbounded step.</p>
+<p>Started from a uniform <code>x</code>, as PySCF does. The obvious alternative &ndash;
+all weight on the newest entry &ndash; is a different basin on a non-convex
+model, so it is not a free choice.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-a~8"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>a</strong>(:,:)</td>
+            <td>
+                <p>(n, n)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-b~5"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>b</strong>(:)</td>
+            <td>
+                <p>(n)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~22"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-c"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>c</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~simplex_quadratic_min~~CallsGraph Pages: 1 -->
+<svg id="procsimplex_quadratic_minCallsGraph" width="381pt" height="116pt"
+ viewBox="0.00 0.00 381.00 116.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~simplex_quadratic_min~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 112)">
+<title>proc~~simplex_quadratic_min~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 377,-112 377,4 -4,4"/>
+<!-- proc~simplex_quadratic_min -->
+<g id="proc~~simplex_quadratic_min~~CallsGraph_node1" class="node">
+<title>proc~simplex_quadratic_min</title>
+<polygon fill="none" stroke="black" points="135,-66 0,-66 0,-42 135,-42 135,-66"/>
+<text text-anchor="middle" x="67.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50">simplex_quadratic_min</text>
+</g>
+<!-- proc~model -->
+<g id="proc~~simplex_quadratic_min~~CallsGraph_node2" class="node">
+<title>proc~model</title>
+<g id="a_proc~~simplex_quadratic_min~~CallsGraph_node2"><a xlink:href="../proc/model.html" xlink:title="model">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="232.5,-108 178.5,-108 178.5,-84 232.5,-84 232.5,-108"/>
+<text text-anchor="middle" x="205.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">model</text>
+</a>
+</g>
+</g>
+<!-- proc~simplex_quadratic_min&#45;&gt;proc~model -->
+<g id="proc~~simplex_quadratic_min~~CallsGraph_edge1" class="edge">
+<title>proc~simplex_quadratic_min&#45;&gt;proc~model</title>
+<path fill="none" stroke="#ff0000" d="M107.47,-66.04C126.77,-71.99 149.9,-79.14 168.74,-84.96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="167.84,-88.34 178.43,-87.95 169.91,-81.65 167.84,-88.34"/>
+</g>
+<!-- proc~weights -->
+<g id="proc~~simplex_quadratic_min~~CallsGraph_node3" class="node">
+<title>proc~weights</title>
+<g id="a_proc~~simplex_quadratic_min~~CallsGraph_node3"><a xlink:href="../proc/weights.html" xlink:title="weights">
+<polygon fill="#d9534f" stroke="#d9534f" points="232.5,-66 178.5,-66 178.5,-42 232.5,-42 232.5,-66"/>
+<text text-anchor="middle" x="205.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">weights</text>
+</a>
+</g>
+</g>
+<!-- proc~simplex_quadratic_min&#45;&gt;proc~weights -->
+<g id="proc~~simplex_quadratic_min~~CallsGraph_edge2" class="edge">
+<title>proc~simplex_quadratic_min&#45;&gt;proc~weights</title>
+<path fill="none" stroke="#ff0000" d="M135.3,-54C146.67,-54 158.08,-54 168.27,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="168.39,-57.5 178.39,-54 168.39,-50.5 168.39,-57.5"/>
+</g>
+<!-- proc~x_gradient -->
+<g id="proc~~simplex_quadratic_min~~CallsGraph_node4" class="node">
+<title>proc~x_gradient</title>
+<g id="a_proc~~simplex_quadratic_min~~CallsGraph_node4"><a xlink:href="../proc/x_gradient.html" xlink:title="x_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="240,-24 171,-24 171,0 240,0 240,-24"/>
+<text text-anchor="middle" x="205.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">x_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~simplex_quadratic_min&#45;&gt;proc~x_gradient -->
+<g id="proc~~simplex_quadratic_min~~CallsGraph_edge3" class="edge">
+<title>proc~simplex_quadratic_min&#45;&gt;proc~x_gradient</title>
+<path fill="none" stroke="#ff0000" d="M107.47,-41.96C124.14,-36.82 143.67,-30.79 160.82,-25.49"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="162.08,-28.76 170.6,-22.47 160.02,-22.07 162.08,-28.76"/>
+</g>
+<!-- proc~model_gradient -->
+<g id="proc~~simplex_quadratic_min~~CallsGraph_node5" class="node">
+<title>proc~model_gradient</title>
+<g id="a_proc~~simplex_quadratic_min~~CallsGraph_node5"><a xlink:href="../proc/model_gradient.html" xlink:title="model_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="373,-24 276,-24 276,0 373,0 373,-24"/>
+<text text-anchor="middle" x="324.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">model_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~x_gradient&#45;&gt;proc~model_gradient -->
+<g id="proc~~simplex_quadratic_min~~CallsGraph_edge4" class="edge">
+<title>proc~x_gradient&#45;&gt;proc~model_gradient</title>
+<path fill="none" stroke="#0000ff" d="M240.03,-12C247.99,-12 256.71,-12 265.41,-12"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="265.58,-15.5 275.58,-12 265.58,-8.5 265.58,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~simplex_quadratic_min~~CalledByGraph Pages: 1 -->
+<svg id="procsimplex_quadratic_minCalledByGraph" width="511pt" height="74pt"
+ viewBox="0.00 0.00 511.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~simplex_quadratic_min~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>proc~~simplex_quadratic_min~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 507,-70 507,4 -4,4"/>
+<!-- proc~simplex_quadratic_min -->
+<g id="proc~~simplex_quadratic_min~~CalledByGraph_node1" class="node">
+<title>proc~simplex_quadratic_min</title>
+<polygon fill="none" stroke="black" points="503,-45 368,-45 368,-21 503,-21 503,-45"/>
+<text text-anchor="middle" x="435.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">simplex_quadratic_min</text>
+</g>
+<!-- proc~adiis_coefficients -->
+<g id="proc~~simplex_quadratic_min~~CalledByGraph_node2" class="node">
+<title>proc~adiis_coefficients</title>
+<g id="a_proc~~simplex_quadratic_min~~CalledByGraph_node2"><a xlink:href="../proc/adiis_coefficients.html" xlink:title="adiis_coefficients">
+<polygon fill="#d9534f" stroke="#d9534f" points="332,-66 228,-66 228,-42 332,-42 332,-66"/>
+<text text-anchor="middle" x="280" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">adiis_coefficients</text>
+</a>
+</g>
+</g>
+<!-- proc~adiis_coefficients&#45;&gt;proc~simplex_quadratic_min -->
+<g id="proc~~simplex_quadratic_min~~CalledByGraph_edge1" class="edge">
+<title>proc~adiis_coefficients&#45;&gt;proc~simplex_quadratic_min</title>
+<path fill="none" stroke="#ff0000" d="M332.11,-47.01C340.32,-45.88 348.98,-44.7 357.63,-43.52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="358.34,-46.95 367.77,-42.13 357.39,-40.02 358.34,-46.95"/>
+</g>
+<!-- proc~ediis_coefficients -->
+<g id="proc~~simplex_quadratic_min~~CalledByGraph_node3" class="node">
+<title>proc~ediis_coefficients</title>
+<g id="a_proc~~simplex_quadratic_min~~CalledByGraph_node3"><a xlink:href="../proc/ediis_coefficients.html" xlink:title="ediis_coefficients">
+<polygon fill="#d9534f" stroke="#d9534f" points="332,-24 228,-24 228,0 332,0 332,-24"/>
+<text text-anchor="middle" x="280" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ediis_coefficients</text>
+</a>
+</g>
+</g>
+<!-- proc~ediis_coefficients&#45;&gt;proc~simplex_quadratic_min -->
+<g id="proc~~simplex_quadratic_min~~CalledByGraph_edge2" class="edge">
+<title>proc~ediis_coefficients&#45;&gt;proc~simplex_quadratic_min</title>
+<path fill="none" stroke="#ff0000" d="M332.11,-18.99C340.32,-20.12 348.98,-21.3 357.63,-22.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="357.39,-25.98 367.77,-23.87 358.34,-19.05 357.39,-25.98"/>
+</g>
+<!-- proc~diis_extrapolate_with -->
+<g id="proc~~simplex_quadratic_min~~CalledByGraph_node4" class="node">
+<title>proc~diis_extrapolate_with</title>
+<g id="a_proc~~simplex_quadratic_min~~CalledByGraph_node4"><a xlink:href="../proc/diis_extrapolate_with.html" xlink:title="diis_state_t%diis_extrapolate_with">
+<polygon fill="#d9534f" stroke="#d9534f" points="192,-45 0,-45 0,-21 192,-21 192,-45"/>
+<text text-anchor="middle" x="96" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">diis_state_t%diis_extrapolate_with</text>
+</a>
+</g>
+</g>
+<!-- proc~diis_extrapolate_with&#45;&gt;proc~adiis_coefficients -->
+<g id="proc~~simplex_quadratic_min~~CalledByGraph_edge3" class="edge">
+<title>proc~diis_extrapolate_with&#45;&gt;proc~adiis_coefficients</title>
+<path fill="none" stroke="#ff0000" d="M192.26,-43.99C200.85,-44.98 209.39,-45.97 217.57,-46.91"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="217.38,-50.41 227.71,-48.08 218.18,-43.46 217.38,-50.41"/>
+</g>
+<!-- proc~diis_extrapolate_with&#45;&gt;proc~ediis_coefficients -->
+<g id="proc~~simplex_quadratic_min~~CalledByGraph_edge4" class="edge">
+<title>proc~diis_extrapolate_with&#45;&gt;proc~ediis_coefficients</title>
+<path fill="none" stroke="#00ffff" d="M192.26,-22.01C200.85,-21.02 209.39,-20.03 217.57,-19.09"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="218.18,-22.54 227.71,-17.92 217.38,-15.59 218.18,-22.54"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-c_new"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>c_new</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-e_now"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>e_now</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-e_trial"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>e_trial</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gnorm"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>gnorm</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gx"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>gx</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gx_new"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>gx_new</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hmat"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>hmat</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hy"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>hy</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~85"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-it"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>it</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-j~26"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>j</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ls"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ls</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-p~5"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>p</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-rho"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>rho</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-slope"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>slope</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-step~3"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>step</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sv"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>sv</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sy"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-x~3"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>x</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-x_new"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>x_new</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-yv"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>yv</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">simplex_quadratic_min</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Minimise `b . c + c^T A c` over the simplex: c_i &gt;= 0, sum(c) = 1</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! **The constraint is removed rather than enforced.** Writing</span>
+<span class="w">      </span><span class="c">!! `c_i = x_i^2 / sum_j x_j^2` satisfies both conditions for any real `x`,</span>
+<span class="w">      </span><span class="c">!! which turns a constrained problem into an unconstrained one. This is</span>
+<span class="w">      </span><span class="c">!! the parameterisation `pyscf/scf/diis.py` uses, and the chain rule</span>
+<span class="w">      </span><span class="c">!! through it is the same:</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!!     dE/dx_n = (2 x_n / S) * (g_n - sum_k c_k g_k),   g = dE/dc</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The bracket is the gradient projected onto the simplex, so no separate</span>
+<span class="w">      </span><span class="c">!! projection appears -- it is what the parameterisation produces.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! **BFGS, not steepest descent.** `A` is not positive definite, and on a</span>
+<span class="w">      </span><span class="c">!! badly conditioned quadratic steepest descent stalls short of the</span>
+<span class="w">      </span><span class="c">!! minimum and returns coefficients that are merely nearby. That is</span>
+<span class="w">      </span><span class="c">!! invisible: the SCF still converges, via DIIS-like behaviour, just</span>
+<span class="w">      </span><span class="c">!! slower -- which is exactly the symptom that would be read as "the</span>
+<span class="w">      </span><span class="c">!! energy schemes are slow" rather than "the inner minimisation is not</span>
+<span class="w">      </span><span class="c">!! converged". PySCF uses BFGS at `tol = 1e-9`; this matches it, with a</span>
+<span class="w">      </span><span class="c">!! backtracking Armijo line search so an indefinite region cannot take an</span>
+<span class="w">      </span><span class="c">!! unbounded step.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Started from a uniform `x`, as PySCF does. The obvious alternative --</span>
+<span class="w">      </span><span class="c">!! all weight on the newest entry -- is a different basin on a non-convex</span>
+<span class="w">      </span><span class="c">!! model, so it is not a free choice.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">a</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">   </span><span class="c">!! (n, n)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">b</span><span class="p">(:)</span><span class="w">      </span><span class="c">!! (n)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">c</span><span class="p">(:)</span>
+
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">x</span><span class="p">(:),</span><span class="w"> </span><span class="n">gx</span><span class="p">(:),</span><span class="w"> </span><span class="n">gx_new</span><span class="p">(:),</span><span class="w"> </span><span class="n">p</span><span class="p">(:),</span><span class="w"> </span><span class="n">sv</span><span class="p">(:),</span><span class="w"> </span><span class="n">yv</span><span class="p">(:),</span><span class="w"> </span><span class="n">hy</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hmat</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">x_new</span><span class="p">(:),</span><span class="w"> </span><span class="n">c_new</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">e_now</span><span class="p">,</span><span class="w"> </span><span class="n">e_trial</span><span class="p">,</span><span class="w"> </span><span class="n">step</span><span class="p">,</span><span class="w"> </span><span class="n">sy</span><span class="p">,</span><span class="w"> </span><span class="n">rho</span><span class="p">,</span><span class="w"> </span><span class="n">slope</span><span class="p">,</span><span class="w"> </span><span class="n">gnorm</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">it</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">ls</span>
+
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">(</span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">gx</span><span class="p">(</span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">gx_new</span><span class="p">(</span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">sv</span><span class="p">(</span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">yv</span><span class="p">(</span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">hy</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">hmat</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">x_new</span><span class="p">(</span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">c_new</span><span class="p">(</span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">c</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+
+<span class="w">      </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span>
+<span class="w">      </span><span class="k">call </span><span class="n">weights</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">)</span>
+<span class="w">      </span><span class="n">e_now</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">x_gradient</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">gx</span><span class="p">)</span>
+
+<span class="w">      </span><span class="n">hmat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+<span class="w">         </span><span class="n">hmat</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span>
+<span class="w">      </span><span class="k">end do</span>
+
+<span class="k">      do </span><span class="n">it</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">MAX_STEPS</span>
+<span class="w">         </span><span class="n">gnorm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">gx</span><span class="o">*</span><span class="n">gx</span><span class="p">))</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">gnorm</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">GRAD_FLOOR</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
+
+<span class="k">         </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="nb">matmul</span><span class="p">(</span><span class="n">hmat</span><span class="p">,</span><span class="w"> </span><span class="n">gx</span><span class="p">)</span>
+<span class="w">         </span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">gx</span><span class="p">)</span>
+<span class="w">         </span><span class="c">! A non-descent direction means the inverse-Hessian estimate has gone</span>
+<span class="w">         </span><span class="c">! indefinite, which an indefinite `A` permits. Reset to steepest</span>
+<span class="w">         </span><span class="c">! descent rather than step uphill.</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">slope</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">hmat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">            </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+<span class="w">               </span><span class="n">hmat</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span>
+<span class="w">            </span><span class="k">end do</span>
+<span class="k">            </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">gx</span>
+<span class="w">            </span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">gx</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+
+<span class="k">         </span><span class="n">step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span>
+<span class="w">         </span><span class="n">e_trial</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e_now</span>
+<span class="w">         </span><span class="k">do </span><span class="n">ls</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">60</span>
+<span class="w">            </span><span class="n">x_new</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">step</span><span class="o">*</span><span class="n">p</span>
+<span class="w">            </span><span class="k">call </span><span class="n">weights</span><span class="p">(</span><span class="n">x_new</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">c_new</span><span class="p">)</span>
+<span class="w">            </span><span class="n">e_trial</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">c_new</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">e_trial</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">e_now</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">1.0e-4_dp</span><span class="o">*</span><span class="n">step</span><span class="o">*</span><span class="n">slope</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
+<span class="k">            </span><span class="n">step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.5_dp</span><span class="o">*</span><span class="n">step</span>
+<span class="w">         </span><span class="k">end do</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">step</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">STEP_FLOOR</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
+
+<span class="k">         call </span><span class="n">x_gradient</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">c_new</span><span class="p">,</span><span class="w"> </span><span class="n">x_new</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">gx_new</span><span class="p">)</span>
+<span class="w">         </span><span class="n">sv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x_new</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">x</span>
+<span class="w">         </span><span class="n">yv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gx_new</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">gx</span>
+<span class="w">         </span><span class="n">sy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">sv</span><span class="o">*</span><span class="n">yv</span><span class="p">)</span>
+
+<span class="w">         </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x_new</span>
+<span class="w">         </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c_new</span>
+<span class="w">         </span><span class="n">e_now</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e_trial</span>
+<span class="w">         </span><span class="n">gx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gx_new</span>
+
+<span class="w">         </span><span class="c">! Skip the update when the curvature condition fails; keeping the last</span>
+<span class="w">         </span><span class="c">! good inverse Hessian is safer than one built from a bad pair.</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">sy</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">1.0e-14_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">rho</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="o">/</span><span class="n">sy</span>
+<span class="w">            </span><span class="n">hy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">matmul</span><span class="p">(</span><span class="n">hmat</span><span class="p">,</span><span class="w"> </span><span class="n">yv</span><span class="p">)</span>
+<span class="w">            </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+<span class="w">               </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+<span class="w">                  </span><span class="n">hmat</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hmat</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">rho</span><span class="o">*</span><span class="p">(</span><span class="n">sv</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">*</span><span class="n">hy</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hy</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">*</span><span class="n">sv</span><span class="p">(</span><span class="n">j</span><span class="p">))</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                               </span><span class="o">+</span><span class="w"> </span><span class="n">rho</span><span class="o">*</span><span class="n">rho</span><span class="o">*</span><span class="nb">sum</span><span class="p">(</span><span class="n">yv</span><span class="o">*</span><span class="n">hy</span><span class="p">)</span><span class="o">*</span><span class="n">sv</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">*</span><span class="n">sv</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">rho</span><span class="o">*</span><span class="n">sv</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">*</span><span class="n">sv</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+<span class="w">               </span><span class="k">end do</span>
+<span class="k">            end do</span>
+<span class="k">         end if</span>
+<span class="k">      end do</span>
+
+<span class="k">      deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">gx</span><span class="p">,</span><span class="w"> </span><span class="n">gx_new</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">sv</span><span class="p">,</span><span class="w"> </span><span class="n">yv</span><span class="p">,</span><span class="w"> </span><span class="n">hy</span><span class="p">,</span><span class="w"> </span><span class="n">hmat</span><span class="p">,</span><span class="w"> </span><span class="n">x_new</span><span class="p">,</span><span class="w"> </span><span class="n">c_new</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">simplex_quadratic_min</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-31 23:41 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
