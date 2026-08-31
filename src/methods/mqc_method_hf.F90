@@ -13,12 +13,12 @@ module mqc_method_hf
    use pic_types, only: dp
    use mqc_config_types, only: guess_step_t
    use mqc_method_base, only: qc_method_t
-   use mqc_method_config, only: pcm_config_t, properties_config_t
+   use mqc_method_config, only: scf_options_t, pcm_config_t, properties_config_t
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_semi_numerical_hessian, only: finite_difference_hessian
-   use mqc_cuest_iface, only: cuest_scf_settings_t, parse_backend_name, &
+   use mqc_cuest_iface, only: apply_properties_settings, apply_scf_settings, cuest_scf_settings_t, parse_backend_name, &
                               BACKEND_CUEST, BACKEND_LIBCINT
    use mqc_cuest_bridge, only: run_cuest_scf
    use mqc_libcint_bridge, only: run_libcint_hf
@@ -27,32 +27,12 @@ module mqc_method_hf
 
    public :: hf_method_t, hf_options_t
 
-   type :: hf_options_t
+   type, extends(scf_options_t) :: hf_options_t
       !! Hartree-Fock calculation options
-      type(properties_config_t) :: properties
-      type(pcm_config_t) :: pcm
-         !! Continuum solvation. Carried here as well as on the Kohn-Sham
-         !! options because a continuum is a property of the reference, not of
-         !! the functional: Hartree-Fock, MP2 and coupled cluster all reach the
-         !! backend through this type, and leaving it off meant `keywords.pcm`
-         !! was read, validated, and then silently dropped for every one of them.
-      character(len=32) :: basis_set = "sto-3g"
-      character(len=32) :: ecp_set = ""
-         !! Effective core potential set, empty for an all-electron run
-         !! Orbital basis set name
-      logical :: cartesian = .false.
-         !! `model.cartesian`; see `mqc_config_t`.
-      character(len=32) :: aux_basis_set = "def2-universal-jkfit"
-         !! Auxiliary (JKFIT) basis for the density-fitted J and K
-      logical :: aux_basis_named = .false.
-         !! Whether the deck asked for `aux_basis_set`. See `scf_config_t`.
-      logical :: density_fitting = .false.
       logical :: run_mp2 = .false.
          !! Follow the reference with an MP2 correction. Set by the factory
          !! from the method name rather than by a keyword: "mp2" is a method,
          !! not an option on Hartree-Fock.
-      logical :: freeze_core = .false.
-      integer :: n_frozen_core = -1
       logical :: corr_density_fitting = .false.
       real(dp) :: scs_ss = 1.0_dp
       real(dp) :: scs_os = 1.0_dp
@@ -66,46 +46,6 @@ module mqc_method_hf
       integer :: cc_diis_size = 8
       logical :: cc_spin_adapted = .true.
          !! Spatial-orbital coupled cluster rather than spin orbitals
-         !! Fit J and K rather than computing exact integrals (CPU backend)
-      logical :: spherical = .true.
-         !! Use spherical (true) or Cartesian (false) basis
-      logical :: verbose = .false.
-         !! Print SCF iterations
-      integer :: device_rank = 0
-         !! Node-local MPI rank, for spreading ranks across a node's GPUs
-      logical :: unrestricted = .false.
-         !! Force UHF/UKS even for a closed shell
-      character(len=32) :: guess = "auto"
-         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection',
-         !! or 'auto'
-      type(guess_step_t), allocatable :: guess_steps(:)
-         !! The basis ladder for 'basis_set_projection', one entry per
-         !! preliminary SCF in order.
-         !!
-         !! 'auto' means the backend picks, because the best starting point
-         !! is a property of the backend rather than of the request: the CPU
-         !! path resolves it to 'sad', and cuEST to 'gwh', each having
-         !! measured its own. An explicit spelling always wins over both.
-
-      ! SCF settings (from shared scf_config_t)
-      logical :: allow_crap_scf = .false.  !! Keep a non-converged SCF instead of failing
-      integer :: max_iter = 100
-         !! Maximum SCF iterations
-      real(dp) :: conv_tol = 1.0e-8_dp
-         !! Energy convergence threshold
-      real(dp) :: density_tol = 1.0e-6_dp
-      real(dp) :: linear_dependence = 0.0_dp
-         !! Zero means the orthogonaliser's own cutoff. See `scf_config_t`.
-         !! Density matrix convergence threshold
-      real(dp) :: level_shift = 0.0_dp
-         !! Hartree added to the virtual block before each diagonalisation.
-         !! Zero is off. See `scf_config_t`.
-      logical :: use_diis = .true.
-         !! Use DIIS acceleration
-      integer :: diis_size = 8
-         !! Number of Fock matrices for DIIS
-      character(len=16) :: backend = "auto"
-         !! Integral backend request: "auto", "cuest"/"gpu", "libcint"/"cpu".
    end type hf_options_t
 
    type, extends(qc_method_t) :: hf_method_t
@@ -142,29 +82,9 @@ contains
       type(cuest_scf_settings_t) :: settings
       type(error_t) :: backend_error
 
-      settings%pcm = this%options%pcm
-      settings%bonding_analysis = this%options%properties%bonding_analysis
-      settings%bonding_threshold = this%options%properties%bonding_threshold
-      settings%bonding_energy = this%options%properties%bonding_energy
-      if (allocated(this%options%properties%fukui_population)) then
-         settings%fukui_population = this%options%properties%fukui_population
-      end if
-      if (allocated(this%options%properties%charges_scheme)) then
-         settings%charges_scheme = this%options%properties%charges_scheme
-      end if
-      settings%bonding_no_sharing = this%options%properties%bonding_no_sharing
-      settings%bonding_restrict_localization = &
-         this%options%properties%bonding_restrict_localization
-      settings%bonding_no_sharing_ci = this%options%properties%bonding_no_sharing_ci
-      settings%basis_set = this%options%basis_set
-      settings%cartesian = this%options%cartesian
-      settings%ecp_set = this%options%ecp_set
-      settings%aux_basis_set = this%options%aux_basis_set
-      settings%aux_basis_named = this%options%aux_basis_named
-      settings%density_fitting = this%options%density_fitting
+      call apply_scf_settings(settings, this%options)
+      call apply_properties_settings(settings, this%options%properties)
       settings%run_mp2 = this%options%run_mp2
-      settings%freeze_core = this%options%freeze_core
-      settings%n_frozen_core = this%options%n_frozen_core
       settings%corr_density_fitting = this%options%corr_density_fitting
       settings%run_cc = this%options%run_cc
       settings%cc_triples = this%options%cc_triples
@@ -175,9 +95,6 @@ contains
       settings%scs_ss = this%options%scs_ss
       settings%scs_os = this%options%scs_os
       settings%functional = ""        ! empty selects pure Hartree-Fock
-      settings%spherical = this%options%spherical
-      settings%verbose = this%options%verbose
-      settings%device_rank = this%options%device_rank
       ! Resolved here rather than carried as a string, so an unknown name fails
       ! once, before any integrals, instead of at each dispatch.
       call parse_backend_name(this%options%backend, settings%backend, backend_error)
@@ -186,17 +103,6 @@ contains
          result%has_error = .true.
          return
       end if
-      settings%unrestricted = this%options%unrestricted
-      settings%guess = this%options%guess
-      if (allocated(this%options%guess_steps)) settings%guess_steps = this%options%guess_steps
-      settings%max_iter = this%options%max_iter
-      settings%allow_crap_scf = this%options%allow_crap_scf
-      settings%energy_tol = this%options%conv_tol
-      settings%density_tol = this%options%density_tol
-      settings%level_shift = this%options%level_shift
-      settings%linear_dependence = this%options%linear_dependence
-      settings%use_diis = this%options%use_diis
-      settings%diis_size = this%options%diis_size
 
       ! cuEST when this build has it, because that is the production path and
       ! the only one with gradients. The CPU backend takes over when it does

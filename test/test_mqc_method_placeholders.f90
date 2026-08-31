@@ -159,7 +159,7 @@ contains
       call create_test_fragment(fragment)
 
       method%options%verbose = .true.
-      method%options%use_density_fitting = .true.
+      method%options%density_fitting = .true.
 
       call method%calc_energy(fragment, result)
 

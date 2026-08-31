@@ -16,13 +16,13 @@ module mqc_method_dft
    !! cannot end up with mismatched Coulomb and XC definitions.
    use pic_types, only: dp
    use mqc_config_types, only: guess_step_t
-   use mqc_method_config, only: pcm_config_t, properties_config_t
+   use mqc_method_config, only: scf_options_t, pcm_config_t, properties_config_t
    use mqc_method_base, only: qc_method_t
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_semi_numerical_hessian, only: finite_difference_hessian
-   use mqc_cuest_iface, only: cuest_scf_settings_t, parse_backend_name, &
+   use mqc_cuest_iface, only: apply_properties_settings, apply_scf_settings, cuest_scf_settings_t, parse_backend_name, &
                               BACKEND_CUEST, BACKEND_LIBCINT
    use mqc_cuest_bridge, only: run_cuest_scf
    use mqc_libcint_bridge, only: run_libcint_hf
@@ -31,46 +31,10 @@ module mqc_method_dft
 
    public :: dft_method_t, dft_options_t
 
-   type :: dft_options_t
+   type, extends(scf_options_t) :: dft_options_t
       !! DFT calculation options
-      character(len=32) :: basis_set = "sto-3g"
-      character(len=32) :: ecp_set = ""
-         !! Effective core potential set, empty for an all-electron run
-         !! Basis set name
       character(len=32) :: functional = "b3lyp"
          !! Exchange-correlation functional
-      integer :: max_iter = 100
-         !! Maximum SCF iterations
-      real(dp) :: energy_tol = 1.0e-8_dp
-         !! Energy convergence threshold
-      real(dp) :: density_tol = 1.0e-6_dp
-      real(dp) :: linear_dependence = 0.0_dp
-         !! Zero means the orthogonaliser's own cutoff. See `scf_config_t`.
-         !! Density matrix convergence threshold
-      real(dp) :: level_shift = 0.0_dp
-         !! Hartree added to the virtual block before each diagonalisation.
-         !! Zero is off. See `scf_config_t`.
-      logical :: spherical = .true.
-         !! Use spherical (true) or Cartesian (false) basis
-      logical :: verbose = .false.
-         !! Print SCF iterations
-      integer :: device_rank = 0
-         !! Node-local MPI rank, for spreading ranks across a node's GPUs
-      logical :: unrestricted = .false.
-         !! Force UHF/UKS even for a closed shell
-      character(len=32) :: guess = "auto"
-         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection',
-         !! or 'auto'
-      type(guess_step_t), allocatable :: guess_steps(:)
-         !! The basis ladder for 'basis_set_projection', one entry per
-         !! preliminary SCF in order.
-         !!
-         !! 'auto' means the backend picks, because the best starting point
-         !! is a property of the backend rather than of the request: the CPU
-         !! path resolves it to 'sad', and cuEST to 'gwh', each having
-         !! measured its own. An explicit spelling always wins over both.
-
-      ! Grid settings
       character(len=16) :: grid_type = "medium"
          !! Integration grid quality
       integer :: radial_points = 75
@@ -88,41 +52,12 @@ module mqc_method_dft
          !! Number of angular grid points (Lebedev)
 
       ! Density fitting
-      logical :: use_density_fitting = .false.
-         !! Use RI-J approximation
-      logical :: cartesian = .false.
-         !! `model.cartesian`; see `mqc_config_t`.
-      character(len=32) :: aux_basis_set = "def2-universal-jkfit"
-         !! Auxiliary (JKFIT) basis. Required by the cuEST backend.
-      logical :: aux_basis_named = .false.
-         !! Whether the deck asked for it. See `scf_config_t`.
-
-      ! Correlation, for the double hybrids. Nothing else on this path has a
-      ! correlated term, but `b2plyp` and its relatives carry an MP2 and read
-      ! `keywords.correlation` like any other method that does. Absent these,
-      ! a deck asking to freeze the core got an all-electron answer with
-      ! nothing in the output to say the request had been dropped.
-      logical :: freeze_core = .false.
-      integer :: n_frozen_core = -1
-         !! -1 counts the core from the elements
-
-      ! Dispersion correction
       logical :: use_dispersion = .false.
          !! Add empirical dispersion correction
       character(len=8) :: dispersion_type = "d3bj"
          !! Dispersion type: "d3", "d3bj", "d4"
 
       ! DIIS acceleration
-      logical :: use_diis = .true.
-         !! Use DIIS for SCF convergence
-      integer :: diis_size = 8
-         !! Number of Fock matrices in DIIS
-      type(properties_config_t) :: properties
-      type(pcm_config_t) :: pcm
-         !! Continuum solvation. Only the cuEST path implements it; the CPU
-         !! backend ignores it, which `run_cuest_scf`'s stub makes visible.
-      character(len=16) :: backend = "auto"
-         !! Integral backend request: "auto", "cuest"/"gpu", "libcint"/"cpu".
    end type dft_options_t
 
    type, extends(qc_method_t) :: dft_method_t
@@ -173,15 +108,8 @@ contains
          return
       end if
 
-      settings%basis_set = this%options%basis_set
-      settings%cartesian = this%options%cartesian
-      settings%ecp_set = this%options%ecp_set
-      settings%aux_basis_set = this%options%aux_basis_set
-      settings%aux_basis_named = this%options%aux_basis_named
+      call apply_scf_settings(settings, this%options)
       settings%functional = this%options%functional
-      settings%spherical = this%options%spherical
-      settings%verbose = this%options%verbose
-      settings%device_rank = this%options%device_rank
       ! Resolved here rather than carried as a string, so an unknown name fails
       ! once, before any integrals, instead of at each dispatch.
       call parse_backend_name(this%options%backend, settings%backend, backend_error)
@@ -190,34 +118,43 @@ contains
          result%has_error = .true.
          return
       end if
-      settings%unrestricted = this%options%unrestricted
-      settings%guess = this%options%guess
-      if (allocated(this%options%guess_steps)) settings%guess_steps = this%options%guess_steps
-      settings%max_iter = this%options%max_iter
-      settings%energy_tol = this%options%energy_tol
-      settings%density_tol = this%options%density_tol
-      settings%level_shift = this%options%level_shift
-      settings%linear_dependence = this%options%linear_dependence
-      settings%use_diis = this%options%use_diis
-      settings%diis_size = this%options%diis_size
       settings%radial_points = this%options%radial_points
       settings%angular_points = this%options%angular_points
       settings%grid_level = this%options%grid_level
       settings%nlc_grid_level = this%options%nlc_grid_level
       settings%screening_tolerance = this%options%screening_tolerance
       settings%block_size = this%options%block_size
-      settings%pcm = this%options%pcm
       ! Where the molecule reacts. Absent here until now, so a DFT deck asking
       ! for `properties.fukui` got a normal DFT run and no analysis, with no
       ! error to say why: the bridge gates on this being allocated.
-      if (allocated(this%options%properties%fukui_population)) then
-         settings%fukui_population = this%options%properties%fukui_population
+      ! Refused rather than run. The quasi-atomic bonding analysis is not
+      ! defined against a Kohn-Sham reference, and nothing in the backend stops
+      ! it: `run_libcint_hf` serves both references and its dispatch is gated
+      ! only on the deck naming an analysis, so handing this over would run a
+      ! decomposition on Kohn-Sham orbitals and report numbers for it. Before
+      ! this refactor such a deck was silently ignored, which is the failure
+      ! this work exists to end -- but the fix is to say no, not to start
+      ! obeying a request the method was never meant to serve.
+      !
+      ! The analysis itself is refused, not merely its sub-options. Naming
+      ! `quao` with none of them set still runs it, so a check on
+      ! `bonding_energy` and friends alone would leave the plainest spelling of
+      ! the request working.
+      ! Tested on the name rather than through `bonding_analysis_kind`, which
+      ! lives in `mqc_libcint_bonding` -- a backend module this one must not
+      ! depend on, or the build without libcint stops compiling. "none" and
+      ! empty are that function's own spellings for off; any other name selects
+      ! an analysis, and QUAO is the only one there is.
+      if (len_trim(this%options%properties%bonding_analysis) > 0 .and. &
+          trim(adjustl(this%options%properties%bonding_analysis)) /= "none") then
+         call result%error%set(ERROR_VALIDATION, "the quasi-atomic bonding analysis is "// &
+                               "not available for a Kohn-Sham reference: it is defined "// &
+                               "against a Hartree-Fock or MCSCF wavefunction. Request it "// &
+                               "on one of those instead.")
+         result%has_error = .true.
+         return
       end if
-      if (allocated(this%options%properties%charges_scheme)) then
-         settings%charges_scheme = this%options%properties%charges_scheme
-      end if
-      settings%bonding_analysis = this%options%properties%bonding_analysis
-      settings%bonding_threshold = this%options%properties%bonding_threshold
+      call apply_properties_settings(settings, this%options%properties)
       ! Set unconditionally, and deliberately not guarded on the backend. cuEST
       ! has no four-index path so it fits regardless and ignores this, per the
       ! note at the top of this module; on the libcint side it is a real choice.
@@ -228,9 +165,6 @@ contains
       ! Until this line existed a Kohn-Sham deck could not turn fitting on
       ! however it asked. That made the fitted path unreachable rather than
       ! wrong, which is the better of the two failures but still a gap.
-      settings%density_fitting = this%options%use_density_fitting
-      settings%freeze_core = this%options%freeze_core
-      settings%n_frozen_core = this%options%n_frozen_core
 
       ! The same choice Hartree-Fock makes, and made the same way rather than a
       ! second time: cuEST when this build has it, because that is the production
