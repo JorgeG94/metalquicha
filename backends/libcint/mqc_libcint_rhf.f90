@@ -247,16 +247,16 @@ contains
 
       if (kohn_sham) then
          call convergence_header(verbose, "SCF iterations", &
-                                 "    iter                 energy          dE          dD"// &
-                                 "        diis      n       Fock         XC       rest", 105)
+                                 "    iter                 energy          dE"// &
+                                 "        diis      n       Fock         XC       rest", 93)
       else
          call convergence_header(verbose, "SCF iterations", &
-                                 "    iter                 energy          dE          dD"// &
-                                 "        diis      n       Fock       rest", 94)
+                                 "    iter                 energy          dE"// &
+                                 "        diis      n       Fock       rest", 82)
       end if
    end subroutine scf_table_header
 
-   subroutine scf_table_row(verbose, iter, energy, de, drms, gnorm, ndiis, t_fock, t_xc, &
+   subroutine scf_table_row(verbose, iter, energy, de, gnorm, ndiis, t_fock, t_xc, &
                             t_rest, kohn_sham)
       !! One iteration's line, with the time that iteration took
       !!
@@ -277,18 +277,18 @@ contains
       !! missing, which is exactly the case here.
       logical, intent(in) :: verbose
       integer, intent(in) :: iter, ndiis
-      real(dp), intent(in) :: energy, de, drms, gnorm, t_fock, t_xc, t_rest
+      real(dp), intent(in) :: energy, de, gnorm, t_fock, t_xc, t_rest
       logical, intent(in) :: kohn_sham   !! Print the quadrature column at all
 
       character(len=LINE_LEN) :: line
 
       if (.not. verbose) return
       if (kohn_sham) then
-         write (line, "(i8,f23.12,3es12.3,i7,3(f9.2,a))") &
-            iter, energy, de, drms, gnorm, ndiis, t_fock, " s", t_xc, " s", t_rest, " s"
+         write (line, "(i8,f23.12,2es12.3,i7,3(f9.2,a))") &
+            iter, energy, de, gnorm, ndiis, t_fock, " s", t_xc, " s", t_rest, " s"
       else
-         write (line, "(i8,f23.12,3es12.3,i7,2(f9.2,a))") &
-            iter, energy, de, drms, gnorm, ndiis, t_fock, " s", t_rest, " s"
+         write (line, "(i8,f23.12,2es12.3,i7,2(f9.2,a))") &
+            iter, energy, de, gnorm, ndiis, t_fock, " s", t_rest, " s"
       end if
       call logger%info(trim(line))
    end subroutine scf_table_row
@@ -798,7 +798,7 @@ contains
 
          de = abs(e_elec - e_old)
          drms = sqrt(sum((density - density_old)**2)/real(n_ao*n_ao, dp))
-         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, gnorm, &
+         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, gnorm, &
                             diis%count(), t_fock_iter, t_xc_iter, t_rest_iter, kohn_sham_run)
 
          e_old = e_elec
@@ -815,8 +815,12 @@ contains
          ! pyscf's test -- `abs(e_tot - last_hf_e) < conv_tol .and. norm_gorb <
          ! conv_tol_grad`, with `conv_tol_grad` defaulting to `sqrt(conv_tol)`
          ! and `norm_gorb` normalised per element exactly as `gnorm` is here.
-         ! pyscf computes a density change too, calls it `norm_ddm`, prints it
-         ! on the iteration line, and never tests it. So does this.
+         ! pyscf computes a density change too, calls it `norm_ddm`, and never
+         ! tests it. It prints it; this does not, and the table shows the
+         ! commutator in that column instead -- a number that is not part of
+         ! the convergence test reads as though it were, and the `diis` column
+         ! is the one a stalled SCF has to be diagnosed from. `drms` is still
+         ! computed, because the level-shift taper is driven from it.
          !
          ! `de` and `drms` say the iteration stopped moving; they do not say it
          ! stopped at a stationary point. `FDS - SDF` is what vanishes when F
@@ -1266,7 +1270,7 @@ contains
 
          de = abs(e_elec - e_old)
          drms = sqrt((sum((d_a - d_a_old)**2) + sum((d_b - d_b_old)**2))/real(2*nsq, dp))
-         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, drms, gnorm, &
+         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, gnorm, &
                             diis%count(), t_fock_iter, t_xc_iter, t_rest_iter, kohn_sham_run)
 
          e_old = e_elec
@@ -1276,8 +1280,12 @@ contains
          ! pyscf's test -- `abs(e_tot - last_hf_e) < conv_tol .and. norm_gorb <
          ! conv_tol_grad`, with `conv_tol_grad` defaulting to `sqrt(conv_tol)`
          ! and `norm_gorb` normalised per element exactly as `gnorm` is here.
-         ! pyscf computes a density change too, calls it `norm_ddm`, prints it
-         ! on the iteration line, and never tests it. So does this.
+         ! pyscf computes a density change too, calls it `norm_ddm`, and never
+         ! tests it. It prints it; this does not, and the table shows the
+         ! commutator in that column instead -- a number that is not part of
+         ! the convergence test reads as though it were, and the `diis` column
+         ! is the one a stalled SCF has to be diagnosed from. `drms` is still
+         ! computed, because the level-shift taper is driven from it.
          !
          ! `de` and `drms` say the iteration stopped moving; they do not say it
          ! stopped at a stationary point. `FDS - SDF` is what vanishes when F

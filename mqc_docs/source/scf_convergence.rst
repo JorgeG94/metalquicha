@@ -32,9 +32,14 @@ Two things have to be true, and they are pyscf's two:
    \max_{\mu\nu} |(FDS - SDF)_{\mu\nu}| < \texttt{gradient\_tolerance}
 
 The energy stopped moving, **and** the Fock matrix commutes with the density.
-The density change is computed and printed on the iteration table as ``dD``, and
-is **not** tested -- exactly as pyscf computes ``norm_ddm``, prints it, and never
-gates on it.
+
+The iteration table shows both, under ``dE`` and ``diis``. It does **not** show a
+density change: pyscf computes one, calls it ``norm_ddm`` and prints it without
+testing it, and a number on the convergence table that is not part of the
+convergence test reads as though it were. The commutator column is the one a
+stalled SCF has to be read from -- see the EDIIS example below, where the density
+change goes to 1e-11 while the commutator sits at 1.2e-2. The density change is
+still computed, because the level shift tapers off it.
 
 .. list-table::
    :header-rows: 1
