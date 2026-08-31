@@ -2005,10 +2005,17 @@ def pyscf_hessian(atoms, basis, functional="", level=HESSIAN_GRID_LEVEL):
 
 # Analytic double-hybrid Hessian cases, as (molecule, basis, functional).
 #
-# Deliberately short. Every entry costs 326 converged SCF-plus-MP2 runs to
-# reference -- see `pyscf_dh_hessian` -- so this list buys coverage of the
-# *assembly*, which one case establishes, rather than of basis sets, which the
-# energy and gradient cases already cover at far lower cost.
+# Deliberately one molecule and one basis. Every entry costs 326 converged
+# SCF-plus-MP2 runs to reference -- see `pyscf_dh_hessian` -- so this list buys
+# coverage of the *assembly* rather than of basis sets, which the energy and
+# gradient cases already cover at far lower cost.
+#
+# All three functionals, though, and that is assembly coverage rather than
+# breadth for its own sake: they carry different exchange and PT2 fractions
+# (0.53/0.27, 0.65/0.36, 0.55/0.25), and a fraction applied on one side of the
+# kernel substitution and not the other reproduces the right answer at some
+# values and not others. `test_mqc_mp2_hessian_ks_operator` makes the same
+# argument for the same reason one rung down, and runs at three fractions.
 #
 # All-electron, because the analytic path is: a frozen-core double hybrid is
 # refused at the gradient and so never reaches a Hessian. GGA-based, because
@@ -2016,15 +2023,33 @@ def pyscf_hessian(atoms, basis, functional="", level=HESSIAN_GRID_LEVEL):
 # here are GGA-based anyway.
 HESSIAN_DH_CASES = [
     ("water", "sto-3g", "b2plyp"),
+    ("water", "sto-3g", "b2gp-plyp"),
+    ("water", "sto-3g", "mpw2plyp"),
 ]
 
-#: Nine times the measured worst entry, 5.3e-8 on water/STO-3G against the
-#: Richardson-extrapolated reference. Looser than the ordinary DFT Hessian bound
-#: because the reference is differenced rather than analytic: what it absorbs is
-#: the residual `O(h^4)` the extrapolation leaves and the energy's own
-#: convergence floor amplified by `1/h^2`, neither of which the analytic
-#: references carry.
+#: Nine times the measured worst entry, 5.3e-8 for `b2plyp` and 4.0e-8 for
+#: `b2gp-plyp` on water/STO-3G against the Richardson-extrapolated reference.
+#: Looser than the ordinary DFT Hessian bound because the reference is
+#: differenced rather than analytic: what it absorbs is the residual `O(h^4)`
+#: the extrapolation leaves and the energy's own convergence floor amplified by
+#: `1/h^2`, neither of which the analytic references carry.
 HESSIAN_DH_TOLERANCE = 5.0e-7
+
+#: `mpw2plyp` is held ten times looser, and the reason is the functional rather
+#: than the assembly. mPW91 exchange is rougher on a level-3 grid than B88 is,
+#: so everything differenced across it carries more quadrature noise: measured
+#: 5.2e-7 against this reference, where the other two sit near 5e-8.
+#:
+#: That it is the grid and not our second derivative was established by
+#: refining it. `test_mqc_dh_hessian_fd`, which differences *our own* gradient
+#: and so never touches PySCF, reads 4.689e-08 for `mpw2plyp` at level 3 and
+#: 3.865e-09 at level 5 -- a factor of twelve for one refinement, against
+#: 4.891e-10 for `b2plyp` at level 3. An error in the assembly would not
+#: converge away with the quadrature; this does.
+#:
+#: Still four orders below what the check is for: suppressing the bridge's
+#: addition of the perturbative term moves these matrices by 1.8e-2.
+HESSIAN_DH_LOOSE = {"mpw2plyp": 5.0e-6}
 
 
 def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
@@ -3007,7 +3032,8 @@ def main():
             # check. Only the displaced points differ.
             "expected_energy": round(energy, 12),
             "expected_hessian": [[round(c, 12) for c in row] for row in hessian],
-            "hessian_tolerance": HESSIAN_DH_TOLERANCE,
+            "hessian_tolerance": HESSIAN_DH_LOOSE.get(
+                functional, HESSIAN_DH_TOLERANCE),
             "requires": "libxc",
             "type": "unfragmented",
         }
