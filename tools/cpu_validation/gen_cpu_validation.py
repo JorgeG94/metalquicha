@@ -2026,6 +2026,28 @@ HESSIAN_DH_CASES = [
     ("water", "sto-3g", "b2gp-plyp"),
     ("water", "sto-3g", "mpw2plyp"),
 ]
+# **No d-function case here, and the reason is this reference rather than our
+# assembly.** 6-31G* was tried, because STO-3G reaches no `l = 2` second
+# derivative and no d-shell AO second derivative on the grid, and it had to be
+# withdrawn: differencing a pinned-grid energy stops being accurate once a
+# *heavy* nucleus with a sharp density moves through a grid that stays put.
+#
+# Measured, B3LYP/6-31G*, three constructions of one fixed-grid Hessian:
+#
+#     ours            vs these energy differences   7.3e-5
+#     PySCF analytic  vs these energy differences   9.8e-5
+#     ours            vs PySCF analytic             2.5e-5
+#
+# The two analytic Hessians agree with each other better than either agrees
+# with the differenced one, which makes the differenced one the outlier. It is
+# worth 5.3e-8 at STO-3G and 7e-5 here, and the whole difference is the oxygen
+# diagonal -- the block where the nucleus moves furthest through its own dense
+# atomic grid. A case built on it would need a 5e-4 bound, which hides
+# everything it is meant to catch.
+#
+# The d coverage is taken where it is tight instead:
+# `test_mqc_dh_hessian_fd` runs the same comparison at 6-31G* against *our own*
+# gradient, on one grid, and reads 4.59e-10.
 
 #: Nine times the measured worst entry, 5.3e-8 for `b2plyp` and 4.0e-8 for
 #: `b2gp-plyp` on water/STO-3G against the Richardson-extrapolated reference.

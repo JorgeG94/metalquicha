@@ -70,6 +70,12 @@ module test_mqc_dh_hessian_fd
    !> between these two derivatives would sit two orders above it.
    real(dp), parameter :: TOL = 1.0e-8_dp
 
+   !> Twenty times the measured worst entry with d functions, 4.590e-10 on
+   !> 6-31G* -- indistinguishable from the s-and-p number, which is the result
+   !> worth recording: nothing about the `l = 2` second derivatives or the
+   !> d-shell grid terms costs this assembly any accuracy.
+   real(dp), parameter :: TOL_D = 1.0e-8_dp
+
 contains
 
    subroutine collect_mqc_dh_hessian_fd_tests(testsuite)
@@ -78,15 +84,18 @@ contains
       testsuite = [ &
                   new_unittest("perturbative_hessian_differences_its_own_gradient", &
                                column_against_fd), &
+                  new_unittest("d_functions_difference_their_own_gradient", &
+                               column_against_fd_d), &
                   new_unittest("perturbative_hessian_column_sums_to_nothing", &
                                column_translates) &
                   ]
    end subroutine collect_mqc_dh_hessian_fd_tests
 
    !> The perturbative term's gradient at `coords`, on the grid in `ctx`
-   subroutine pt2_gradient_at(ctx, coords, gradient, err, ok)
+   subroutine pt2_gradient_at(ctx, coords, basis, gradient, err, ok)
       type(xc_context_t), intent(inout) :: ctx
       real(dp), intent(in) :: coords(3, 3)
+      character(len=*), intent(in) :: basis
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
@@ -95,7 +104,7 @@ contains
       type(rhf_result_t) :: scf
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "6-31g", mol, err)
+      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, trim(basis), mol, err)
       if (err%has_error()) return
 
       ! Tighter than the default for the reason one rung down gives: a loose
@@ -117,8 +126,9 @@ contains
    end subroutine pt2_gradient_at
 
    !> `H[:, X] = d(perturbative gradient)/dX` by the 7-point O(h^6) stencil
-   subroutine fd_column(ctx, column, err, ok)
+   subroutine fd_column(ctx, basis, column, err, ok)
       type(xc_context_t), intent(inout) :: ctx
+      character(len=*), intent(in) :: basis
       real(dp), intent(out) :: column(9)
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
@@ -135,7 +145,7 @@ contains
          coords = WATER
          coords(PERT_CART, PERT_ATOM) = coords(PERT_CART, PERT_ATOM) &
                                         + real(OFFSET(point), dp)*STEP
-         call pt2_gradient_at(ctx, coords, gradient, err, ok)
+         call pt2_gradient_at(ctx, coords, basis, gradient, err, ok)
          if (.not. ok) return
          accumulated = accumulated + WEIGHT(point)*gradient
       end do
@@ -144,8 +154,9 @@ contains
    end subroutine fd_column
 
    !> The analytic column, from the same context and reference geometry
-   subroutine analytic_column(ctx, column, err, ok)
+   subroutine analytic_column(ctx, basis, column, err, ok)
       type(xc_context_t), intent(inout) :: ctx
+      character(len=*), intent(in) :: basis
       real(dp), intent(out) :: column(9)
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
@@ -156,7 +167,7 @@ contains
       integer :: ia, a
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, trim(basis), mol, err)
       if (err%has_error()) return
       call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
                            .false., scf, err, xc=ctx)
@@ -180,7 +191,36 @@ contains
    end subroutine analytic_column
 
    subroutine column_against_fd(error)
-      !! The gate this phase turns on
+      !! The gate this phase turns on, on a basis of s and p functions
+      type(error_type), allocatable, intent(out) :: error
+
+      call column_at_basis("6-31g", TOL, error)
+   end subroutine column_against_fd
+
+   subroutine column_against_fd_d(error)
+      !! The same, on a basis with d functions
+      !!
+      !! STO-3G and 6-31G reach no `l = 2` second-derivative integral and no
+      !! d-shell AO second derivative on the grid, so without this the whole
+      !! double-hybrid Hessian is checked on s and p alone. 6-31G* is Cartesian
+      !! in our convention, which makes this 6d rather than 5d.
+      !!
+      !! **The coverage lives here rather than in the validation suite**, and
+      !! that is a finding rather than a preference. The suite's double-hybrid
+      !! reference differences a pinned-grid PySCF energy, and that construction
+      !! stops being accurate once a heavy nucleus with a sharp density moves
+      !! through a grid that stays put: worth 5.3e-8 at STO-3G and 7e-5 at
+      !! 6-31G*, all of it on the oxygen diagonal, and further from PySCF's own
+      !! analytic Hessian than that Hessian is from ours. Differencing our own
+      !! gradient has no such problem, because one grid serves both sides.
+      type(error_type), allocatable, intent(out) :: error
+
+      call column_at_basis("6-31g*", TOL_D, error)
+   end subroutine column_against_fd_d
+
+   subroutine column_at_basis(basis, tol, error)
+      character(len=*), intent(in) :: basis
+      real(dp), intent(in) :: tol
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
@@ -197,21 +237,21 @@ contains
       ! has to be handed a deterministic number.
       threads = omp_get_max_threads()
       call omp_set_num_threads(1)
-      call reference_context(ctx, err, ok)
-      if (ok) call fd_column(ctx, fd, err, ok)
-      if (ok) call analytic_column(ctx, analytic, err, ok)
+      call reference_context(basis, ctx, err, ok)
+      if (ok) call fd_column(ctx, basis, fd, err, ok)
+      if (ok) call analytic_column(ctx, basis, analytic, err, ok)
       call omp_set_num_threads(threads)
 
       call check(error, ok, "the double-hybrid column did not evaluate: "// &
                  err%get_message())
       if (allocated(error)) return
 
-      write (*, "(a, es10.3)") "        max |analytic - fd| = ", &
-         maxval(abs(analytic - fd))
-      call check(error, maxval(abs(analytic - fd)) < TOL, &
+      write (*, "(a, a, a, es10.3)") "        ", basis, &
+         " max |analytic - fd| = ", maxval(abs(analytic - fd))
+      call check(error, maxval(abs(analytic - fd)) < tol, &
                  "the perturbative term's analytic Hessian does not difference "// &
                  "its own gradient")
-   end subroutine column_against_fd
+   end subroutine column_at_basis
 
    subroutine column_translates(error)
       !! Translating the molecule cannot change its energy -- nearly
@@ -241,8 +281,8 @@ contains
 
       if (.not. xc_available()) return
 
-      call reference_context(ctx, err, ok)
-      if (ok) call analytic_column(ctx, analytic, err, ok)
+      call reference_context("6-31g", ctx, err, ok)
+      if (ok) call analytic_column(ctx, "6-31g", analytic, err, ok)
       call check(error, ok, "the double-hybrid column did not evaluate: "// &
                  err%get_message())
       if (allocated(error)) return
@@ -257,7 +297,8 @@ contains
    end subroutine column_translates
 
    !> The grid every evaluation in this file shares
-   subroutine reference_context(ctx, err, ok)
+   subroutine reference_context(basis, ctx, err, ok)
+      character(len=*), intent(in) :: basis
       type(xc_context_t), intent(out) :: ctx
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
@@ -265,7 +306,7 @@ contains
       type(libcint_molecule_t) :: mol
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, trim(basis), mol, err)
       if (err%has_error()) return
       call xc_context_create(mol, FUNCTIONAL, ctx, err, level=3)
       call mol%destroy()
