@@ -138,7 +138,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/do_fragment_work.html#variable-calc_type_local~2">calc_type_local</a>
             <a class="list-group-item" href="../proc/do_fragment_work.html#variable-calculator~3">calculator</a>
-            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-current_log_level~4">current_log_level</a>
+            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-current_log_level~8">current_log_level</a>
             <a class="list-group-item" href="../proc/do_fragment_work.html#variable-is_verbose~3">is_verbose</a>
             <a class="list-group-item" href="../proc/do_fragment_work.html#variable-local_config~3">local_config</a>
             <a class="list-group-item" href="../proc/do_fragment_work.html#variable-show_geometry">show_geometry</a>
@@ -318,7 +318,7 @@ Verbosity is controlled by the global logger level.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~4"></span>
+              <span class="anchor" id="variable-fragment_idx~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -333,7 +333,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~48"></span>
+              <span class="anchor" id="variable-result~51"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -393,7 +393,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~20"></span>
+              <span class="anchor" id="variable-world_comm~26"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -735,32 +735,53 @@ Verbosity is controlled by the global logger level.</p>
 <path fill="none" stroke="#00ff66" d="M501.97,-290.95C511.52,-288.44 521.11,-285.48 530,-282 547.25,-275.25 549.46,-269.33 566,-261 569.15,-259.41 572.46,-257.83 575.79,-256.29"/>
 <polygon fill="#00ff66" stroke="#00ff66" points="577.5,-259.36 585.19,-252.08 574.63,-252.97 577.5,-259.36"/>
 </g>
-<!-- proc~method_type_to_string -->
+<!-- proc~configure_scf -->
 <g id="proc~~do_fragment_work~~CallsGraph_node22" class="node">
+<title>proc~configure_scf</title>
+<g id="a_proc~~do_fragment_work~~CallsGraph_node22"><a xlink:href="../proc/configure_scf.html" xlink:title="configure_scf">
+<polygon fill="#d9534f" stroke="#d9534f" points="833.5,-357 750.5,-357 750.5,-333 833.5,-333 833.5,-357"/>
+<text text-anchor="middle" x="792" y="-342.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configure_scf</text>
+</a>
+</g>
+</g>
+<!-- proc~configure_dft&#45;&gt;proc~configure_scf -->
+<g id="proc~~do_fragment_work~~CallsGraph_edge22" class="edge">
+<title>proc~configure_dft&#45;&gt;proc~configure_scf</title>
+<path fill="none" stroke="#ff0000" d="M657.36,-361.13C682,-358.16 713.72,-354.33 740.08,-351.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="740.75,-354.59 750.26,-349.92 739.91,-347.64 740.75,-354.59"/>
+</g>
+<!-- proc~configure_hf&#45;&gt;proc~configure_scf -->
+<g id="proc~~do_fragment_work~~CallsGraph_edge23" class="edge">
+<title>proc~configure_hf&#45;&gt;proc~configure_scf</title>
+<path fill="none" stroke="#7fff00" d="M655.62,-328.66C680.56,-331.67 713.29,-335.62 740.32,-338.88"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="740.03,-342.37 750.37,-340.1 740.86,-335.42 740.03,-342.37"/>
+</g>
+<!-- proc~method_type_to_string -->
+<g id="proc~~do_fragment_work~~CallsGraph_node23" class="node">
 <title>proc~method_type_to_string</title>
-<g id="a_proc~~do_fragment_work~~CallsGraph_node22"><a xlink:href="../proc/method_type_to_string.html" xlink:title="method_type_to_string">
+<g id="a_proc~~do_fragment_work~~CallsGraph_node23"><a xlink:href="../proc/method_type_to_string.html" xlink:title="method_type_to_string">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="858.5,-273 725.5,-273 725.5,-249 858.5,-249 858.5,-273"/>
 <text text-anchor="middle" x="792" y="-258.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_type_to_string</text>
 </a>
 </g>
 </g>
 <!-- proc~configure_xtb&#45;&gt;proc~method_type_to_string -->
-<g id="proc~~do_fragment_work~~CallsGraph_edge22" class="edge">
+<g id="proc~~do_fragment_work~~CallsGraph_edge24" class="edge">
 <title>proc~configure_xtb&#45;&gt;proc~method_type_to_string</title>
 <path fill="none" stroke="#7f00ff" d="M658.68,-245.03C675.63,-247.08 695.77,-249.51 715.15,-251.85"/>
 <polygon fill="#7f00ff" stroke="#7f00ff" points="714.85,-255.34 725.2,-253.06 715.69,-248.39 714.85,-255.34"/>
 </g>
 <!-- proc~xtb_has_solvation -->
-<g id="proc~~do_fragment_work~~CallsGraph_node23" class="node">
+<g id="proc~~do_fragment_work~~CallsGraph_node24" class="node">
 <title>proc~xtb_has_solvation</title>
-<g id="a_proc~~do_fragment_work~~CallsGraph_node23"><a xlink:href="../proc/xtb_has_solvation.html" xlink:title="xtb_config_t%xtb_has_solvation">
+<g id="a_proc~~do_fragment_work~~CallsGraph_node24"><a xlink:href="../proc/xtb_has_solvation.html" xlink:title="xtb_config_t%xtb_has_solvation">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="882,-231 702,-231 702,-207 882,-207 882,-231"/>
 <text text-anchor="middle" x="792" y="-216.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_config_t%xtb_has_solvation</text>
 </a>
 </g>
 </g>
 <!-- proc~configure_xtb&#45;&gt;proc~xtb_has_solvation -->
-<g id="proc~~do_fragment_work~~CallsGraph_edge23" class="edge">
+<g id="proc~~do_fragment_work~~CallsGraph_edge25" class="edge">
 <title>proc~configure_xtb&#45;&gt;proc~xtb_has_solvation</title>
 <path fill="none" stroke="#7f00ff" d="M658.68,-234.97C668.79,-233.75 680.03,-232.39 691.57,-231"/>
 <polygon fill="#7f00ff" stroke="#7f00ff" points="692.26,-234.44 701.76,-229.77 691.42,-227.49 692.26,-234.44"/>
@@ -1237,7 +1258,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~4"></span>
+              <span class="anchor" id="variable-current_log_level~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -1425,7 +1446,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-30 21:54 +0000             </p>
+ on 2026-08-31 04:31 +0000             </p>
           </div>
         </div>
         <br>

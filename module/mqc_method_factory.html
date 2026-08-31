@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.9% of total for modules and submodules.">231 statements</a>
+                 title=" 0.8% of total for modules and submodules.">213 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -173,6 +173,7 @@
             <a class="list-group-item" href="../module/mqc_method_factory.html#proc-configure_dft">configure_dft</a>
             <a class="list-group-item" href="../module/mqc_method_factory.html#proc-configure_hf">configure_hf</a>
             <a class="list-group-item" href="../module/mqc_method_factory.html#proc-configure_mcscf">configure_mcscf</a>
+            <a class="list-group-item" href="../module/mqc_method_factory.html#proc-configure_scf">configure_scf</a>
             <a class="list-group-item" href="../module/mqc_method_factory.html#proc-configure_xtb">configure_xtb</a>
         </div>
       </div>
@@ -203,15 +204,15 @@ Whether this build can run a method at all</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_method_hf.html'>mqc_method_hf</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item">mctc_env</li>
                   <li class="list-inline-item"><a href='mqc_method_dft.html'>mqc_method_dft</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_mcscf.html'>mqc_method_mcscf</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_hf.html'>mqc_method_hf</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
                   <li class="list-inline-item"><a href='mqc_method_xtb.html'>mqc_method_xtb</a></li>
-                  <li class="list-inline-item">mctc_env</li>
-                  <li class="list-inline-item"><a href='mqc_method_mcscf.html'>mqc_method_mcscf</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1747,18 +1748,18 @@ large graphs.</div>
 <path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M786.14,-362.51C740.48,-355.27 650.25,-340.97 595.36,-332.27"/>
 <polygon fill="#5cff00" stroke="#5cff00" points="595.63,-328.77 585.2,-330.66 594.53,-335.68 595.63,-328.77"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_method_factory~~UsedByGraph_node22" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_method_factory~~UsedByGraph_node22"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_method_factory~~UsedByGraph_node22"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="854.5,-337 776.5,-337 776.5,-313 854.5,-313 854.5,-337"/>
 <text text-anchor="middle" x="815.5" y="-322.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_method_factory~~UsedByGraph_edge22" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M776.25,-325C728.38,-325 646.47,-325 595.31,-325"/>
 <polygon fill="#5cff00" stroke="#5cff00" points="595.19,-321.5 585.19,-325 595.19,-328.5 595.19,-321.5"/>
 </g>
@@ -1904,7 +1905,7 @@ large graphs.</div>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/method_factory_t.html#boundprocedure-create~2'>create</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/factory_create.html'>factory_create</a></td>
+  <strong><a href='../type/method_factory_t.html#boundprocedure-create~3'>create</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/factory_create.html'>factory_create</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1937,7 +1938,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~31"></span>
+              <span class="anchor" id="variable-config~47"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1982,7 +1983,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~6"></span>
+              <span class="anchor" id="variable-method_type~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2027,7 +2028,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~117"></span>
+              <span class="anchor" id="variable-this~147"></span>
               class(<a href='../type/method_factory_t.html'>method_factory_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2042,7 +2043,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~26"></span>
+              <span class="anchor" id="variable-config~41"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2092,7 +2093,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~4"></span>
+              <span class="anchor" id="variable-m~6"></span>
               type(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2107,7 +2108,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~29"></span>
+              <span class="anchor" id="variable-config~45"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2147,7 +2148,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~3"></span>
+              <span class="anchor" id="variable-m~5"></span>
               type(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2162,7 +2163,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~28"></span>
+              <span class="anchor" id="variable-config~44"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2237,7 +2238,7 @@ reach the same code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~5"></span>
+              <span class="anchor" id="variable-m~7"></span>
               type(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2252,7 +2253,62 @@ reach the same code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~30"></span>
+              <span class="anchor" id="variable-config~46"></span>
+              type(<a href='../type/method_config_t.html'>method_config_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-configure_scf"></span> <h3>private  subroutine <a href='../proc/configure_scf.html'>configure_scf</a>(options, config)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Fill everything a self-consistent-field method shares, from the deck</p><a href="../proc/configure_scf.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-options~5"></span>
+              class(<a href='../type/scf_options_t.html'>scf_options_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>options</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~43"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2292,7 +2348,7 @@ reach the same code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~2"></span>
+              <span class="anchor" id="variable-m~4"></span>
               type(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2307,7 +2363,7 @@ reach the same code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~27"></span>
+              <span class="anchor" id="variable-config~42"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2350,7 +2406,7 @@ reach the same code.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-30 21:54 +0000             </p>
+ on 2026-08-31 04:31 +0000             </p>
           </div>
         </div>
         <br>

@@ -26,7 +26,7 @@ module mqc_method_mcscf
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: ERROR_VALIDATION
-   use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_cuest_iface, only: apply_properties_settings, cuest_scf_settings_t
    use mqc_libcint_bridge, only: run_libcint_mcscf
    implicit none
    private
@@ -159,19 +159,29 @@ contains
       ! begins with a closed-shell SCF and the backend takes the same settings
       ! object for it that Hartree-Fock does.
       settings%pcm = this%options%pcm
-      settings%bonding_analysis = this%options%properties%bonding_analysis
-      settings%bonding_threshold = this%options%properties%bonding_threshold
-      settings%bonding_energy = this%options%properties%bonding_energy
-      settings%bonding_no_sharing = this%options%properties%bonding_no_sharing
-      settings%bonding_restrict_localization = &
-         this%options%properties%bonding_restrict_localization
-      settings%bonding_no_sharing_ci = this%options%properties%bonding_no_sharing_ci
+
+      ! Refused rather than dropped. `run_libcint_mcscf` never reads
+      ! `settings%fukui_population` -- unlike `run_libcint_hf`, which does --
+      ! so a deck asking for Fukui indices on a CASSCF would otherwise be
+      ! obeyed everywhere except where it matters and report a result that
+      ! ignored it. That is the failure this whole shared-settings work exists
+      ! to end, and handing the field over unread would recreate it one layer
+      ! further down.
+      if (allocated(this%options%properties%fukui_population)) then
+         call result%error%set(ERROR_VALIDATION, "Fukui indices are not available for "// &
+                               "an MCSCF reference: they need a response the CASSCF path "// &
+                               "does not build. Request them on a Hartree-Fock or "// &
+                               "Kohn-Sham calculation instead.")
+         result%has_error = .true.
+         return
+      end if
+      call apply_properties_settings(settings, this%options%properties)
       settings%basis_set = this%options%basis_set
       settings%spherical = this%options%spherical
       settings%verbose = this%options%verbose
       settings%functional = ""        ! empty selects pure Hartree-Fock
       settings%max_iter = this%options%max_iter
-      settings%energy_tol = this%options%conv_tol
+      settings%energy_tol = this%options%energy_tol
       settings%density_tol = this%options%density_tol
       settings%level_shift = this%options%level_shift
       settings%linear_dependence = this%options%linear_dependence

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.4% of total for modules and submodules.">98 statements</a>
+                 title=" 0.6% of total for modules and submodules.">143 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -181,6 +181,8 @@
       </a>
       <div id="subs-0" class="collapse">
         <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_cuest_iface.html#proc-apply_properties_settings">apply_properties_settings</a>
+            <a class="list-group-item" href="../module/mqc_cuest_iface.html#proc-apply_scf_settings">apply_scf_settings</a>
             <a class="list-group-item" href="../module/mqc_cuest_iface.html#proc-parse_backend_name">parse_backend_name</a>
         </div>
       </div>
@@ -215,9 +217,9 @@ the method files carry no preprocessor conditionals at all.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1347,18 +1349,18 @@ large graphs.</div>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1328.14,-364.39C1282.48,-371.45 1192.25,-385.41 1137.36,-393.91"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="1136.55,-390.49 1127.2,-395.48 1137.62,-397.41 1136.55,-390.49"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_cuest_iface~~UsedByGraph_node37" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_cuest_iface~~UsedByGraph_node37"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_cuest_iface~~UsedByGraph_node37"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1396.5,-330 1318.5,-330 1318.5,-306 1396.5,-306 1396.5,-330"/>
 <text text-anchor="middle" x="1357.5" y="-315.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_cuest_iface~~UsedByGraph_edge50" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1318.31,-319.13C1295.98,-321.23 1267.96,-326.46 1246,-339 1224.94,-351.03 1231.13,-368.1 1210,-380 1187.98,-392.4 1160.31,-397.77 1137.24,-399.99"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="1136.7,-396.52 1127.01,-400.8 1137.25,-403.5 1136.7,-396.52"/>
 </g>
@@ -2500,6 +2502,116 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         <section>
           <h2>Subroutines</h2>
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-apply_properties_settings"></span> <h3>public  subroutine <a href='../proc/apply_properties_settings.html'>apply_properties_settings</a>(settings, properties)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Hand a backend the post-SCF properties the deck asked for</p><a href="../proc/apply_properties_settings.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-settings"></span>
+              type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>settings</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-properties"></span>
+              type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>properties</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-apply_scf_settings"></span> <h3>public  subroutine <a href='../proc/apply_scf_settings.html'>apply_scf_settings</a>(settings, options)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Hand a backend everything the SCF half of a method decided</p><a href="../proc/apply_scf_settings.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-settings~2"></span>
+              type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>settings</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-options"></span>
+              class(<a href='../type/scf_options_t.html'>scf_options_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>options</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-parse_backend_name"></span> <h3>public  subroutine <a href='../proc/parse_backend_name.html'>parse_backend_name</a>(name, kind, error)  
 </h3></div>
     <div class="card-body">
@@ -2549,7 +2661,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error"></span>
+              <span class="anchor" id="variable-error~9"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2592,7 +2704,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-30 21:54 +0000             </p>
+ on 2026-08-31 04:31 +0000             </p>
           </div>
         </div>
         <br>

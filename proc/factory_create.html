@@ -185,7 +185,7 @@ config%method_type and configures it from the nested config.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~117"></span>
+              <span class="anchor" id="variable-this~147"></span>
               class(<a href='../type/method_factory_t.html'>method_factory_t</a>),
             </td>
 <td>intent(in)</td>
@@ -200,7 +200,7 @@ config%method_type and configures it from the nested config.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~26"></span>
+              <span class="anchor" id="variable-config~41"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -218,7 +218,7 @@ config%method_type and configures it from the nested config.</p>
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-method~7"></span>
+          <span class="anchor" id="variable-method~8"></span>
           class(<a href='../type/qc_method_t.html'>qc_method_t</a>), allocatable
         </small>
       </h3>
@@ -306,32 +306,53 @@ config%method_type and configures it from the nested config.</p>
 <path fill="none" stroke="#ff0000" d="M131.71,-83.85C160.56,-73.75 201.79,-59.32 232.97,-48.41"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="234.42,-51.61 242.71,-45 232.11,-45 234.42,-51.61"/>
 </g>
-<!-- proc~method_type_to_string -->
+<!-- proc~configure_scf -->
 <g id="proc~~factory_create~~CallsGraph_node6" class="node">
+<title>proc~configure_scf</title>
+<g id="a_proc~~factory_create~~CallsGraph_node6"><a xlink:href="../proc/configure_scf.html" xlink:title="configure_scf">
+<polygon fill="#d9534f" stroke="#d9534f" points="495.5,-150 412.5,-150 412.5,-126 495.5,-126 495.5,-150"/>
+<text text-anchor="middle" x="454" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configure_scf</text>
+</a>
+</g>
+</g>
+<!-- proc~configure_dft&#45;&gt;proc~configure_scf -->
+<g id="proc~~factory_create~~CallsGraph_edge5" class="edge">
+<title>proc~configure_dft&#45;&gt;proc~configure_scf</title>
+<path fill="none" stroke="#ff0000" d="M319.36,-154.13C344,-151.16 375.72,-147.33 402.08,-144.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="402.75,-147.59 412.26,-142.92 401.91,-140.64 402.75,-147.59"/>
+</g>
+<!-- proc~configure_hf&#45;&gt;proc~configure_scf -->
+<g id="proc~~factory_create~~CallsGraph_edge6" class="edge">
+<title>proc~configure_hf&#45;&gt;proc~configure_scf</title>
+<path fill="none" stroke="#7fff00" d="M317.62,-121.66C342.56,-124.67 375.29,-128.62 402.32,-131.88"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="402.03,-135.37 412.37,-133.1 402.86,-128.42 402.03,-135.37"/>
+</g>
+<!-- proc~method_type_to_string -->
+<g id="proc~~factory_create~~CallsGraph_node7" class="node">
 <title>proc~method_type_to_string</title>
-<g id="a_proc~~factory_create~~CallsGraph_node6"><a xlink:href="../proc/method_type_to_string.html" xlink:title="method_type_to_string">
+<g id="a_proc~~factory_create~~CallsGraph_node7"><a xlink:href="../proc/method_type_to_string.html" xlink:title="method_type_to_string">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="520.5,-66 387.5,-66 387.5,-42 520.5,-42 520.5,-66"/>
 <text text-anchor="middle" x="454" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_type_to_string</text>
 </a>
 </g>
 </g>
 <!-- proc~configure_xtb&#45;&gt;proc~method_type_to_string -->
-<g id="proc~~factory_create~~CallsGraph_edge5" class="edge">
+<g id="proc~~factory_create~~CallsGraph_edge7" class="edge">
 <title>proc~configure_xtb&#45;&gt;proc~method_type_to_string</title>
 <path fill="none" stroke="#7f00ff" d="M320.68,-38.03C337.63,-40.08 357.77,-42.51 377.15,-44.85"/>
 <polygon fill="#7f00ff" stroke="#7f00ff" points="376.85,-48.34 387.2,-46.06 377.69,-41.39 376.85,-48.34"/>
 </g>
 <!-- proc~xtb_has_solvation -->
-<g id="proc~~factory_create~~CallsGraph_node7" class="node">
+<g id="proc~~factory_create~~CallsGraph_node8" class="node">
 <title>proc~xtb_has_solvation</title>
-<g id="a_proc~~factory_create~~CallsGraph_node7"><a xlink:href="../proc/xtb_has_solvation.html" xlink:title="xtb_config_t%xtb_has_solvation">
+<g id="a_proc~~factory_create~~CallsGraph_node8"><a xlink:href="../proc/xtb_has_solvation.html" xlink:title="xtb_config_t%xtb_has_solvation">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="544,-24 364,-24 364,0 544,0 544,-24"/>
 <text text-anchor="middle" x="454" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_config_t%xtb_has_solvation</text>
 </a>
 </g>
 </g>
 <!-- proc~configure_xtb&#45;&gt;proc~xtb_has_solvation -->
-<g id="proc~~factory_create~~CallsGraph_edge6" class="edge">
+<g id="proc~~factory_create~~CallsGraph_edge8" class="edge">
 <title>proc~configure_xtb&#45;&gt;proc~xtb_has_solvation</title>
 <path fill="none" stroke="#7f00ff" d="M320.68,-27.97C330.79,-26.75 342.03,-25.39 353.57,-24"/>
 <polygon fill="#7f00ff" stroke="#7f00ff" points="354.26,-27.44 363.76,-22.77 353.42,-20.49 354.26,-27.44"/>
@@ -901,7 +922,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-30 21:54 +0000             </p>
+ on 2026-08-31 04:31 +0000             </p>
           </div>
         </div>
         <br>
