@@ -281,8 +281,18 @@ the amplitudes enter the relaxed density and the response equations unscaled.
 **RI-MP2.** The fitted correlation Hessian does not exist yet, and the fitted
 reference is excluded for the same reason as everywhere else in this table.
 
-**Double hybrids that are not GGA-based, all-electron and unscreened.** Four
-cases fall back, and they divide into two kinds. A meta-GGA or a
+**Double hybrids that are not GGA-based, all-electron and unscreened.** Read
+this entry against the table above rather than instead of it: a meta-GGA, a
+range-separated hybrid and a VV10 functional all take the analytic path as
+*functionals*, and only their **double hybrids** fall back. The line between
+the two is the order of the functional derivative each needs, not the method.
+A Kohn-Sham Hessian needs the second, :math:`f_{xc}`, which
+``xc_kernel_apply`` provides at every rung and ``vv10_kernel_apply`` extends to
+the non-local term. A double hybrid's perturbative block needs the *third*,
+:math:`g_{xc}`, plus that kernel's own nuclear derivative -- and those two
+routines, ``xc_kernel2_apply`` and ``xc_kernel_deriv``, stop at the GGA rung.
+
+Four cases fall back, and they divide into two kinds. A meta-GGA or a
 range-separated double hybrid is missing something nameable: the kernel's third
 derivative in ``tau`` for the first, and an operator at a screened omega for the
 second, where the correlation block currently scales exchange by a single
