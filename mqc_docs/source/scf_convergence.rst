@@ -12,9 +12,11 @@ week on it.
 What is available
 -----------------
 
-DIIS is on by default and does most of the work. Beyond it there is level
-shifting, described below. There is no damping, no Fermi smearing and no
-second-order fallback; see :doc:`capabilities` for the standing list.
+DIIS is on by default and does most of the work. Beyond it there are two
+energy-based accelerators, EDIIS and ADIIS, which open an SCF that DIIS opens
+badly and then hand back to it; and there is level shifting. Both are described
+below. There is no damping, no Fermi smearing and no second-order fallback; see
+:doc:`capabilities` for the standing list.
 
 .. _level-shifting:
 
@@ -133,3 +135,88 @@ Backend support
 Level shifting is implemented on the CPU path. The cuEST GPU backend accepts the
 keyword but does not currently apply it, so a GPU run with ``level_shift`` set
 converges as though it were absent.
+
+.. _accelerators:
+
+Accelerators
+------------
+
+``keywords.scf.accelerator`` chooses which accelerator opens the SCF:
+``diis`` (the default), ``ediis`` or ``adiis``. A name outside those three is
+refused rather than ignored.
+
+DIIS extrapolates from the error vectors of previous iterations, and it is very
+good once those iterations are near enough to the answer to be informative. Far
+from convergence they are not, and the extrapolation can be worse than the
+iteration it replaces -- the classic symptom being an SCF that oscillates
+between two densities rather than settling into either. EDIIS and ADIIS build
+their step from the energies and densities instead, minimising a model that is
+bounded below, so they cannot make that particular mistake.
+
+They are also slower per iteration and less accurate near convergence, which is
+why they do not simply replace DIIS.
+
+The handover
+^^^^^^^^^^^^
+
+**Naming an accelerator asks for a different opening, not a different endgame.**
+EDIIS and ADIIS run only while the commutator :math:`FDS - SDF` is above
+``ACCEL_SWITCH``, currently ``1e-2``; below that the SCF hands over to DIIS for
+the rest of the run. This is deliberate: the energy-based schemes earn their
+keep exactly where DIIS is unreliable and lose to it everywhere else.
+
+Two consequences are worth knowing before you conclude the setting is broken.
+
+**Identical iteration counts are the expected result on an easy case.** If the
+commutator starts below ``1e-2``, or drops below it in the first cycle, the
+handover fires immediately and the run is a DIIS run. An N\ :sub:`2` CAS(6,6)
+reference converges in 11 iterations under ``diis`` and 11 under ``ediis``; only
+the trajectory differs, in the eighth decimal. **Do not use the iteration count
+to check that the keyword took effect.** Two things do say so: an invalid name
+is refused, and a non-default accelerator prints a line naming itself when the
+SCF starts.
+
+**EDIIS can stall just above the switch.** Because the threshold is a fixed
+number and the stall is a property of the system, an SCF can settle at a
+commutator slightly the wrong side of it and stay there, running the slower
+algorithm precisely where it has stopped helping. Water / 6-31G / RHF, with
+``accelerator: ediis``:
+
+.. code-block:: text
+
+    iter          energy        dD          commutator
+       3   -75.983865252943   1.334E-03      1.975E-02
+       4   -75.984014411771   2.563E-12      1.191E-02
+       5   -75.984014411771   3.520E-04      1.191E-02
+       6   -75.984037428504   1.059E-03      9.313E-03
+
+It sits at ``1.191E-02`` against a switch of ``1e-2``, with the density
+momentarily not moving at all, and only then falls through and grinds down.
+The same molecule takes 8 iterations under DIIS and 12 under EDIIS. The symptom
+a user sees is "EDIIS is slower"; the cause is that it is stuck just the wrong
+side of a threshold. How long it lasts varies with the system -- runs of two and
+of seven iterations have both been observed.
+
+``ACCEL_SWITCH`` is a compile-time parameter. There is no keyword for it, so
+when this happens the available answer is to use ``diis``, not to move the
+threshold.
+
+When to reach for one
+^^^^^^^^^^^^^^^^^^^^^
+
+Use ``ediis`` or ``adiis`` on an SCF that oscillates from a bad starting point --
+a stretched bond, a transition-metal complex, a poor guess -- and DIIS on
+anything that is merely slow. An SCF that crawls because the gap is small is not
+helped by either; that is what :ref:`level-shifting` is for. The two are
+independent and can be set together.
+
+Backend support
+^^^^^^^^^^^^^^^
+
+Implemented on the CPU path, for Hartree-Fock, DFT, and the reference SCF of a
+CASSCF or CASCI.
+
+The cuEST GPU backend accepts the keyword and does not apply it, so a GPU run
+converges as though it were absent. It also does not refuse an invalid name,
+because the parsing lives in the CPU bridge -- on the GPU path a misspelled
+accelerator is silently a DIIS run.
