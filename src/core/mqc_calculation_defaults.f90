@@ -18,7 +18,7 @@ module mqc_calculation_defaults
    ! SCF
    ! =========================================================================
    integer, parameter, public :: DEFAULT_SCF_MAXITER = 100
-   real(dp), parameter, public :: DEFAULT_SCF_CONV = 1.0e-6_dp
+   real(dp), parameter, public :: DEFAULT_SCF_CONV = 1.0e-9_dp
    !> Density convergence a deck gets when it does not say. Matches what
    !> `method_config_t` already defaulted to, so naming the key changes nothing
    !> for a deck that leaves it alone.

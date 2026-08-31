@@ -218,12 +218,14 @@ contains
                                 fragment%nelec, fragment%multiplicity, settings%max_iter, &
                                 settings%energy_tol, settings%density_tol, settings%use_diis, &
                                 settings%diis_size, settings%verbose, scf, error, &
-                                guess=guess_type, guess_alpha=guess_alpha, guess_beta=guess_beta)
+                                guess=guess_type, guess_alpha=guess_alpha, guess_beta=guess_beta, &
+                                grad_tol=settings%grad_tol)
             else
                call run_uks_scf(system, context, fragment%element_numbers, fragment%coordinates, &
                                 fragment%nelec, fragment%multiplicity, settings%max_iter, &
                                 settings%energy_tol, settings%density_tol, settings%use_diis, &
-                                settings%diis_size, settings%verbose, scf, error, guess=guess_type)
+                                settings%diis_size, settings%verbose, scf, error, guess=guess_type, &
+                                grad_tol=settings%grad_tol)
             end if
          else
             if (guess_type == SCF_GUESS_SAC) then
@@ -231,12 +233,14 @@ contains
                                 fragment%nelec, settings%max_iter, settings%energy_tol, &
                                 settings%density_tol, settings%use_diis, settings%diis_size, &
                                 settings%verbose, scf, error, guess=guess_type, &
-                                guess_alpha=guess_alpha, guess_beta=guess_beta)
+                                guess_alpha=guess_alpha, guess_beta=guess_beta, &
+                                grad_tol=settings%grad_tol)
             else
                call run_rhf_scf(system, context, fragment%element_numbers, fragment%coordinates, &
                                 fragment%nelec, settings%max_iter, settings%energy_tol, &
                                 settings%density_tol, settings%use_diis, settings%diis_size, &
-                                settings%verbose, scf, error, guess=guess_type)
+                                settings%verbose, scf, error, guess=guess_type, &
+                                grad_tol=settings%grad_tol)
             end if
          end if
       end if

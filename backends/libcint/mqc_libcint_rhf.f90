@@ -372,12 +372,25 @@ contains
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                               verbose, result, error, aux, diis_vectors, in_core, &
                               guess, guess_density, xc, h_extra, pcm, projector, &
-                              level_shift, linear_dependence, b_ao_out, accelerator)
+                              level_shift, linear_dependence, b_ao_out, accelerator, grad_tol)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
+      real(dp), intent(in), optional :: grad_tol
+         !! Commutator threshold -- pyscf's `conv_tol_grad`. Zero or absent
+         !! derives `sqrt(energy_tol)`, which is pyscf's own default and the
+         !! right scaling *for the energy*: its error goes as `gnorm**2`.
+         !!
+         !! **A caller that consumes the density has to set this.** Density
+         !! error goes as `gnorm`, not its square, so the derived value bounds
+         !! it about three orders more loosely than the energy. It cannot be
+         !! fixed by tightening `energy_tol` instead: reaching `gnorm < 1e-8`
+         !! that way needs `energy_tol = 1e-16`, below what a molecular energy
+         !! resolves, and then nothing converges at all. The two demands are
+         !! separate and take separate numbers, which is why pyscf exposes this
+         !! one rather than only deriving it.
       logical, intent(in) :: verbose
       real(dp), intent(in), optional :: level_shift
       integer, intent(in), optional :: accelerator
@@ -498,6 +511,7 @@ contains
       integer :: accel
       real(dp) :: e_elec, e_old, de, drms
       real(dp) :: gnorm
+      real(dp) :: gtol
       real(dp) :: shift, shift_now, drms_prev, taper
       real(dp), allocatable :: sd(:, :), sds(:, :)
       integer :: n_ao, n_mo, n_occ, iter
@@ -650,6 +664,14 @@ contains
       accel = ACCEL_DIIS
       if (present(accelerator)) accel = accelerator
 
+      ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
+      ! caller states it. See the argument's own note for why a density
+      ! consumer must.
+      gtol = sqrt(energy_tol)
+      if (present(grad_tol)) then
+         if (grad_tol > 0.0_dp) gtol = grad_tol
+      end if
+
       shift = 0.0_dp
       if (present(level_shift)) shift = level_shift
       ! Refused rather than clamped. A negative shift lowers the virtuals into
@@ -789,21 +811,51 @@ contains
          ! taper makes this true on its own in every ordinary case; requiring it
          ! costs an iteration in the case where it would not have been.
          drms_prev = drms
-         ! **The commutator has to be in the test.** `de` and `drms` say the
-         ! iteration stopped moving; they do not say it stopped at a stationary
-         ! point. `FDS - SDF` is what vanishes when F and D commute, which is
-         ! what convergence means, and an SCF can hold both of the others small
-         ! while this one is nowhere near zero -- any scheme that
-         ! *interpolates* rather than extrapolates will do it, because a
-         ! stalled interpolation moves the density hardly at all. EDIIS reached
-         ! "converged in 4 iterations" on water/def2-SVP at an energy 0.11
-         ! Hartree wrong, with `de` and `drms` under their thresholds the whole
-         ! way. PySCF has always tested this -- `norm_gorb < conv_tol_grad`
-         ! beside the energy check -- and the threshold here is its default,
-         ! `sqrt(energy_tol)`, on a commutator normalised per element so it
-         ! does not tighten with basis size.
-         if (iter > 1 .and. de < energy_tol .and. drms < density_tol .and. &
-             gnorm < sqrt(energy_tol) .and. shift_now == 0.0_dp) then
+         ! **The energy and the commutator, and not the density.** This is
+         ! pyscf's test -- `abs(e_tot - last_hf_e) < conv_tol .and. norm_gorb <
+         ! conv_tol_grad`, with `conv_tol_grad` defaulting to `sqrt(conv_tol)`
+         ! and `norm_gorb` normalised per element exactly as `gnorm` is here.
+         ! pyscf computes a density change too, calls it `norm_ddm`, prints it
+         ! on the iteration line, and never tests it. So does this.
+         !
+         ! `de` and `drms` say the iteration stopped moving; they do not say it
+         ! stopped at a stationary point. `FDS - SDF` is what vanishes when F
+         ! and D commute, which is what convergence *means*, and an SCF can
+         ! hold both of the others small while this one is nowhere near zero.
+         ! Any scheme that *interpolates* rather than extrapolates will do it,
+         ! because a stalled interpolation moves the density hardly at all:
+         ! EDIIS on water/6-31G pins at a commutator of 1.156e-2 for seven
+         ! iterations while `de` sits at 1e-12 and `drms` at 1e-11, and without
+         ! this term the SCF stops there, 5.9e-5 Hartree from the answer.
+         !
+         ! **Dropping `drms` is only safe with the tighter energy tolerance
+         ! that comes with it.** `DEFAULT_SCF_CONV` is 1e-9 now, as pyscf's is,
+         ! where it was 1e-6. At the old value `drms` was doing the work the
+         ! energy threshold was too loose to do, and removing it alone left the
+         ! SCF stopping early enough that a finite-field polarizability
+         ! disagreed with the analytic one. The two changes are one change.
+         !
+         ! Two thresholds were tried and rejected, and the reasons bound what
+         ! any future one may be:
+         !
+         !   * `min(sqrt(energy_tol), density_tol)` is 1e-10 where a caller
+         !     asks for a tight density, and the commutator cannot be resolved
+         !     that far. Unordered OpenMP reduction merges scatter it over a
+         !     band whose top moves with thread count -- AlH3/6-31G, run past
+         !     any gate, plateaus at 9.8e-14 on one thread and 3.1e-10 on
+         !     sixteen. The same binary passed a test at 1 and 8 threads and
+         !     failed it at 2 and 4.
+         !   * A fixed 1e-9, with no energy term, passed all 121 unit tests and
+         !     then failed **34 of 296** validation cases -- every open-shell
+         !     KS case, the range-separated hybrids, RI-CCSD, EFP2 and ORMAS,
+         !     none of which reach it, so they ran to the iteration cap.
+         !
+         ! So a bound has to clear the noise floor at the thread count and
+         ! system size in use, and be reachable by an open-shell
+         ! range-separated case. `sqrt(energy_tol)` is 3.2e-5 at the new
+         ! default and satisfies both by orders.
+         if (iter > 1 .and. de < energy_tol .and. gnorm < gtol .and. &
+             shift_now == 0.0_dp) then
             result%converged = .true.
             exit
          end if
@@ -858,7 +910,7 @@ contains
    subroutine run_libcint_uhf(mol, nelec, multiplicity, max_iter, energy_tol, density_tol, &
                               verbose, result, error, diis_vectors, in_core, diis_start, &
                               guess, guess_density_alpha, guess_density_beta, xc, pcm, &
-                              level_shift, linear_dependence, accelerator)
+                              level_shift, linear_dependence, accelerator, grad_tol)
       !! Drive an unrestricted SCF to convergence
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
@@ -876,6 +928,19 @@ contains
       integer, intent(in) :: multiplicity   !! 2S+1
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
+      real(dp), intent(in), optional :: grad_tol
+         !! Commutator threshold -- pyscf's `conv_tol_grad`. Zero or absent
+         !! derives `sqrt(energy_tol)`, which is pyscf's own default and the
+         !! right scaling *for the energy*: its error goes as `gnorm**2`.
+         !!
+         !! **A caller that consumes the density has to set this.** Density
+         !! error goes as `gnorm`, not its square, so the derived value bounds
+         !! it about three orders more loosely than the energy. It cannot be
+         !! fixed by tightening `energy_tol` instead: reaching `gnorm < 1e-8`
+         !! that way needs `energy_tol = 1e-16`, below what a molecular energy
+         !! resolves, and then nothing converges at all. The two demands are
+         !! separate and take separate numbers, which is why pyscf exposes this
+         !! one rather than only deriving it.
       logical, intent(in) :: verbose
       real(dp), intent(in), optional :: level_shift
       integer, intent(in), optional :: accelerator
@@ -939,6 +1004,7 @@ contains
       integer :: accel
       real(dp) :: e_elec, e_old, de, drms
       real(dp) :: gnorm
+      real(dp) :: gtol
       real(dp) :: shift, shift_now, drms_prev, taper
       real(dp), allocatable :: sd(:, :), sds(:, :)
       integer :: n_ao, n_mo, n_alpha, n_beta, iter, nsq, msq
@@ -1086,6 +1152,14 @@ contains
       accel = ACCEL_DIIS
       if (present(accelerator)) accel = accelerator
 
+      ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
+      ! caller states it. See the argument's own note for why a density
+      ! consumer must.
+      gtol = sqrt(energy_tol)
+      if (present(grad_tol)) then
+         if (grad_tol > 0.0_dp) gtol = grad_tol
+      end if
+
       shift = 0.0_dp
       if (present(level_shift)) shift = level_shift
       ! Refused rather than clamped. A negative shift lowers the virtuals into
@@ -1198,21 +1272,51 @@ contains
          e_old = e_elec
          result%iterations = iter
          drms_prev = drms
-         ! **The commutator has to be in the test.** `de` and `drms` say the
-         ! iteration stopped moving; they do not say it stopped at a stationary
-         ! point. `FDS - SDF` is what vanishes when F and D commute, which is
-         ! what convergence means, and an SCF can hold both of the others small
-         ! while this one is nowhere near zero -- any scheme that
-         ! *interpolates* rather than extrapolates will do it, because a
-         ! stalled interpolation moves the density hardly at all. EDIIS reached
-         ! "converged in 4 iterations" on water/def2-SVP at an energy 0.11
-         ! Hartree wrong, with `de` and `drms` under their thresholds the whole
-         ! way. PySCF has always tested this -- `norm_gorb < conv_tol_grad`
-         ! beside the energy check -- and the threshold here is its default,
-         ! `sqrt(energy_tol)`, on a commutator normalised per element so it
-         ! does not tighten with basis size.
-         if (iter > 1 .and. de < energy_tol .and. drms < density_tol .and. &
-             gnorm < sqrt(energy_tol) .and. shift_now == 0.0_dp) then
+         ! **The energy and the commutator, and not the density.** This is
+         ! pyscf's test -- `abs(e_tot - last_hf_e) < conv_tol .and. norm_gorb <
+         ! conv_tol_grad`, with `conv_tol_grad` defaulting to `sqrt(conv_tol)`
+         ! and `norm_gorb` normalised per element exactly as `gnorm` is here.
+         ! pyscf computes a density change too, calls it `norm_ddm`, prints it
+         ! on the iteration line, and never tests it. So does this.
+         !
+         ! `de` and `drms` say the iteration stopped moving; they do not say it
+         ! stopped at a stationary point. `FDS - SDF` is what vanishes when F
+         ! and D commute, which is what convergence *means*, and an SCF can
+         ! hold both of the others small while this one is nowhere near zero.
+         ! Any scheme that *interpolates* rather than extrapolates will do it,
+         ! because a stalled interpolation moves the density hardly at all:
+         ! EDIIS on water/6-31G pins at a commutator of 1.156e-2 for seven
+         ! iterations while `de` sits at 1e-12 and `drms` at 1e-11, and without
+         ! this term the SCF stops there, 5.9e-5 Hartree from the answer.
+         !
+         ! **Dropping `drms` is only safe with the tighter energy tolerance
+         ! that comes with it.** `DEFAULT_SCF_CONV` is 1e-9 now, as pyscf's is,
+         ! where it was 1e-6. At the old value `drms` was doing the work the
+         ! energy threshold was too loose to do, and removing it alone left the
+         ! SCF stopping early enough that a finite-field polarizability
+         ! disagreed with the analytic one. The two changes are one change.
+         !
+         ! Two thresholds were tried and rejected, and the reasons bound what
+         ! any future one may be:
+         !
+         !   * `min(sqrt(energy_tol), density_tol)` is 1e-10 where a caller
+         !     asks for a tight density, and the commutator cannot be resolved
+         !     that far. Unordered OpenMP reduction merges scatter it over a
+         !     band whose top moves with thread count -- AlH3/6-31G, run past
+         !     any gate, plateaus at 9.8e-14 on one thread and 3.1e-10 on
+         !     sixteen. The same binary passed a test at 1 and 8 threads and
+         !     failed it at 2 and 4.
+         !   * A fixed 1e-9, with no energy term, passed all 121 unit tests and
+         !     then failed **34 of 296** validation cases -- every open-shell
+         !     KS case, the range-separated hybrids, RI-CCSD, EFP2 and ORMAS,
+         !     none of which reach it, so they ran to the iteration cap.
+         !
+         ! So a bound has to clear the noise floor at the thread count and
+         ! system size in use, and be reachable by an open-shell
+         ! range-separated case. `sqrt(energy_tol)` is 3.2e-5 at the new
+         ! default and satisfies both by orders.
+         if (iter > 1 .and. de < energy_tol .and. gnorm < gtol .and. &
+             shift_now == 0.0_dp) then
             result%converged = .true.
             exit
          end if

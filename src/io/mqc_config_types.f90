@@ -373,6 +373,8 @@ module mqc_config_types
          !! because the multipoles are taken from that density, and must keep
          !! doing so unless a deck says otherwise.
       real(dp) :: scf_density_tolerance = DEFAULT_SCF_DENSITY_CONV
+      real(dp) :: scf_gradient_tolerance = 0.0_dp
+         !! `keywords.scf.gradient_tolerance`; zero derives `sqrt(tolerance)`
       real(dp) :: scf_linear_dependence = 0.0_dp
          !! `keywords.scf.linear_dependence_threshold`. Overlap eigenvalues at
          !! or below this are dropped as linearly dependent. Raise it to shed

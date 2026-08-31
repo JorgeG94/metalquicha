@@ -265,6 +265,12 @@ contains
       integer, parameter :: SCF_MAX_ITER = 100
       real(dp), parameter :: SCF_ENERGY_TOL = 1.0e-9_dp
       real(dp), parameter :: SCF_DENSITY_TOL = 1.0e-7_dp
+      real(dp), parameter :: SCF_GRAD_TOL = 1.0e-7_dp
+         !! Stated rather than derived, because what this routine wants is the
+         !! *density* -- it partitions it into charges. `sqrt(SCF_ENERGY_TOL)`
+         !! would be 3.2e-5, and the density error goes as the commutator
+         !! rather than its square. Matches the density threshold that used to
+         !! gate convergence here.
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
@@ -283,7 +289,7 @@ contains
       if (error%has_error()) return
 
       call run_libcint_rhf(mol, nelec, SCF_MAX_ITER, SCF_ENERGY_TOL, SCF_DENSITY_TOL, &
-                           .false., scf, error)
+                           .false., scf, error, grad_tol=SCF_GRAD_TOL)
       if (error%has_error()) return
       if (.not. scf%converged) then
          call error%set(ERROR_VALIDATION, "the SCF did not converge, so there is no "// &
@@ -1051,6 +1057,7 @@ contains
                                  guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
                                  level_shift=settings%level_shift, accelerator=accel_kind, &
                                  linear_dependence=settings%linear_dependence, &
+                                 grad_tol=settings%grad_tol, &
                                  b_ao_out=scf_b_ao)
          else
             call run_libcint_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
@@ -1058,7 +1065,8 @@ contains
                                  aux=aux, diis_vectors=diis_size, guess=guess_kind, &
                                  guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
                                  level_shift=settings%level_shift, accelerator=accel_kind, &
-                                 linear_dependence=settings%linear_dependence)
+                                 linear_dependence=settings%linear_dependence, &
+                                 grad_tol=settings%grad_tol)
          end if
          ! Kept alive: the gradient below has to be told the same auxiliary
          ! basis this SCF fitted with. Released once past it.
@@ -1068,7 +1076,8 @@ contains
                               scf, error, diis_vectors=diis_size, guess=guess_kind, &
                               guess_density_alpha=guess_a, guess_density_beta=guess_b, xc=xc, &
                               pcm=pcm_ctx, level_shift=settings%level_shift, accelerator=accel_kind, &
-                              linear_dependence=settings%linear_dependence)
+                              linear_dependence=settings%linear_dependence, &
+                              grad_tol=settings%grad_tol)
       else
          ! Store the integrals when they fit, rather than rebuilding every
          ! quartet at every iteration.
@@ -1098,7 +1107,8 @@ contains
                               guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
                               in_core=eri_fits_in_core(mol%nao) .and. .not. xc%range_separated, &
                               level_shift=settings%level_shift, accelerator=accel_kind, &
-                              linear_dependence=settings%linear_dependence)
+                              linear_dependence=settings%linear_dependence, &
+                              grad_tol=settings%grad_tol)
       end if
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
@@ -2321,7 +2331,8 @@ contains
                            settings%density_tol, settings%verbose, scf, error, &
                            diis_vectors=diis_size, accelerator=accel_kind, &
                            level_shift=settings%level_shift, &
-                           linear_dependence=settings%linear_dependence)
+                           linear_dependence=settings%linear_dependence, &
+                           grad_tol=settings%grad_tol)
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
          result%has_error = .true.

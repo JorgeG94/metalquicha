@@ -340,6 +340,7 @@ contains
       call allow(keys, "maxiter")
       call allow(keys, "tolerance")
       call allow(keys, "density_tolerance")
+      call allow(keys, "gradient_tolerance")
       call allow(keys, "linear_dependence_threshold")
       call allow(keys, "unrestricted")
       call allow(keys, "guess")

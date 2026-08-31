@@ -161,6 +161,8 @@ module mqc_cuest_iface
       integer :: max_iter = 100
       real(dp) :: energy_tol = 1.0e-8_dp
       real(dp) :: density_tol = 1.0e-6_dp
+      real(dp) :: grad_tol = 0.0_dp
+         !! Commutator threshold; zero derives `sqrt(energy_tol)`.
       real(dp) :: level_shift = 0.0_dp
          !! Hartree added to the virtual block before each diagonalisation, and
          !! tapered to zero before the SCF exits. See `scf_config_t`.
@@ -244,6 +246,7 @@ contains
       settings%allow_crap_scf = options%allow_crap_scf
       settings%energy_tol = options%energy_tol
       settings%density_tol = options%density_tol
+      settings%grad_tol = options%grad_tol
       settings%level_shift = options%level_shift
       settings%linear_dependence = options%linear_dependence
       settings%use_diis = options%use_diis
