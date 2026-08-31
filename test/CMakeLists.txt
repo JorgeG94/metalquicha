@@ -369,6 +369,15 @@ if(MQC_ENABLE_LIBCINT)
   # libxc; ~2.5 min, which is what six converged SCF+gradient points cost.
   addtest(mqc_dh_hessian_fd)
 
+  # `int1e_irp` against a difference of the dipole integrals it differentiates.
+  # Pins the component layout, which is a measurement and not a convention.
+  addtest(mqc_dipole_deriv)
+
+  # The whole dipole derivative, response included, against a difference of the
+  # converged dipole. Hartree-Fock and Kohn-Sham; the KS case skips itself
+  # without libxc.
+  addtest(mqc_scf_dipole_deriv)
+
   # `f^(X)` against a difference of the Fock matrix it derives. Pins the
   # Hartree-Fock behaviour of a site the double-hybrid work has to change, so
   # that edit lands with a test either side of it.

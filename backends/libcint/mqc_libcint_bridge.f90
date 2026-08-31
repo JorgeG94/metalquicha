@@ -1655,6 +1655,7 @@ contains
          block
             real(dp), allocatable :: hess4(:, :, :, :)
             real(dp), allocatable :: hess_pt2(:, :, :, :), hess_discard(:, :, :, :)
+            real(dp), allocatable :: ddip(:, :)
             type(timer_type) :: hess_clock
 
             call logger%info("  computing the analytic Hessian")
@@ -1662,10 +1663,11 @@ contains
             if (kohn_sham) then
                call ks_hessian(mol, fragment%element_numbers, scf%density, scf%orbitals, &
                                scf%orbital_energies, scf%n_occupied, xc, xc%exx_fraction, &
-                               hess4, error)
+                               hess4, error, dipole_derivatives=ddip)
             else
                call rhf_hessian(mol, fragment%element_numbers, scf%density, scf%orbitals, &
-                                scf%orbital_energies, scf%n_occupied, hess4, error)
+                                scf%orbital_energies, scf%n_occupied, hess4, error, &
+                                dipole_derivatives=ddip)
             end if
             ! The perturbative term, on top of the Kohn-Sham one, and the same
             ! split the gradient uses: `ks_hessian` is the whole reference --
@@ -1697,6 +1699,22 @@ contains
 
             call hessian_to_matrix(hess4, result%hessian)
             result%has_hessian = .true.
+            ! Infrared intensities, which the vibrational analysis works out
+            ! from these and the normal modes. Free here in the sense that
+            ! matters: the response they need was solved for the Hessian, so
+            ! what this added was two one-electron integrals.
+            !
+            ! Not set for a double hybrid, and the guard is the point rather
+            ! than an oversight. `ddip` above is the *reference's* dipole
+            ! derivative; a double hybrid's dipole is the relaxed one, and the
+            ! perturbative term contributes to it. Handing the reference's
+            ! number over under the double hybrid's name would be the same
+            ! failure the Hessian gate above this one was built to stop, one
+            ! property along.
+            if (allocated(ddip) .and. .not. dh_analytic) then
+               result%dipole_derivatives = ddip
+               result%has_dipole_derivatives = .true.
+            end if
             deallocate (hess4)
             write (line, "(a,f10.2,a)") "  Hessian done in ", hess_clock%get_elapsed_time(), " s"
             call logger%info(trim(line))

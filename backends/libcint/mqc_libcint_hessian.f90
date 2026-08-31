@@ -875,7 +875,7 @@ contains
 
    subroutine response_hessian(mol, density, orbitals, energies, n_occ, hess, error, &
                                xc, reference, k_scale, rs_k_lr, rs_omega, &
-                               max_iter, tol)
+                               max_iter, tol, dipole_derivatives)
       !! What the Hessian gains from letting the density relax
       !!
       !! The gradient needs no density derivative -- that is what makes the
@@ -913,6 +913,18 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
+      real(dp), allocatable, intent(out), optional :: dipole_derivatives(:, :)
+         !! `d mu_a / dR_(X,b)`, `(3, 3*natm)` in atomic units, the Cartesian
+         !! index fastest -- the layout `finite_diff_dipole_derivatives`
+         !! produces and `compute_vibrational_analysis` reads for infrared
+         !! intensities.
+         !!
+         !! Here rather than in a routine of its own because the expensive part
+         !! is already done. What a dipole derivative needs beyond one-electron
+         !! integrals is the perturbed density, and that is exactly what the
+         !! coupled-perturbed solve below produces for the Hessian. Asking for
+         !! it separately would pay for the whole response a second time, which
+         !! is most of what an analytic Hessian costs.
 
       real(dp), allocatable :: h1(:, :, :, :), s1(:, :, :, :)
       real(dp), allocatable :: d1(:, :, :, :), w1(:, :, :, :)
@@ -1035,6 +1047,14 @@ contains
          end do
       end do
 
+      ! The dipole derivative, while `d1` is in hand and before the mean-field
+      ! batch reuses the buffers. Nothing below needs it and it needs nothing
+      ! below.
+      if (present(dipole_derivatives)) then
+         call assemble_dipole_derivatives(mol, density, d1, dipole_derivatives, error)
+         if (error%has_error()) return
+      end if
+
       ! Their mean fields in one batch, chunked the same way and for the same
       ! reason as the solve above: `3 natm` separate builds pay for the same
       ! integrals `3 natm` times.
@@ -1086,7 +1106,7 @@ contains
    end subroutine response_hessian
 
    subroutine rhf_hessian(mol, atomic_numbers, density, orbitals, energies, n_occ, &
-                          hess, error, max_iter, tol)
+                          hess, error, max_iter, tol, dipole_derivatives)
       !! The analytic Hessian of a converged restricted Hartree-Fock energy
       !!
       !! Three pieces that are checked three different ways and only mean
@@ -1108,6 +1128,12 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
+      real(dp), allocatable, intent(out), optional :: dipole_derivatives(:, :)
+         !! `d mu_a / dR_(X,b)`, `(3, 3*natm)`, forwarded from
+         !! `response_hessian` -- see there for why it comes out beside the
+         !! Hessian rather than from a routine of its own. Present, an infrared
+         !! intensity costs two one-electron integrals on top of a Hessian that
+         !! was being computed anyway; absent, nothing extra is built.
 
       real(dp), allocatable :: weighted(:, :), part(:, :, :, :), resp(:, :, :, :)
       integer :: i, nao
@@ -1127,7 +1153,8 @@ contains
       call nuclear_repulsion_hessian(atomic_numbers, mol%coords, hess, error)
       call partial_hessian(mol, density, weighted, part, error)
       call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
-                            max_iter=max_iter, tol=tol)
+                            max_iter=max_iter, tol=tol, &
+                            dipole_derivatives=dipole_derivatives)
       if (error%has_error()) return
 
       hess = hess + part + resp
@@ -1135,7 +1162,7 @@ contains
    end subroutine rhf_hessian
 
    subroutine ks_hessian(mol, atomic_numbers, density, orbitals, energies, n_occ, &
-                         xc, k_scale, hess, error, max_iter, tol)
+                         xc, k_scale, hess, error, max_iter, tol, dipole_derivatives)
       !! The analytic Hessian of a converged Kohn-Sham energy
       !!
       !! `rhf_hessian` with the exchange-correlation parts put back. Three
@@ -1190,6 +1217,12 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
+      real(dp), allocatable, intent(out), optional :: dipole_derivatives(:, :)
+         !! `d mu_a / dR_(X,b)`, `(3, 3*natm)`, forwarded from
+         !! `response_hessian` -- see there for why it comes out beside the
+         !! Hessian rather than from a routine of its own. Present, an infrared
+         !! intensity costs two one-electron integrals on top of a Hessian that
+         !! was being computed anyway; absent, nothing extra is built.
 
       real(dp), allocatable :: weighted(:, :), part(:, :, :, :), resp(:, :, :, :)
       integer :: i, nao
@@ -1242,7 +1275,8 @@ contains
       call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
                             xc=xc, reference=density, k_scale=k_scale, &
                             rs_k_lr=xc%rs_k_lr, rs_omega=xc%rs_omega, &
-                            max_iter=max_iter, tol=tol)
+                            max_iter=max_iter, tol=tol, &
+                            dipole_derivatives=dipole_derivatives)
       if (error%has_error()) return
 
       hess = hess + part + resp
@@ -1531,5 +1565,78 @@ contains
          first = last + 1
       end do
    end subroutine mean_field_batch
+
+   subroutine assemble_dipole_derivatives(mol, density, d1, ddip_dr, error)
+      !! `d mu_a / dR_(X,b)` from the perturbed densities the response produced
+      !!
+      !! The dipole is nuclear less electronic,
+      !!
+      !!     mu_a = sum_A Z_A R_(A,a) - Tr(D r_a)
+      !!
+      !! so differentiating it gives three terms and every one of them matters:
+      !!
+      !!     d mu_a / dR_(X,b) = Z_X delta_ab
+      !!                       - Tr(D  d r_a / dR_(X,b))
+      !!                       - Tr(D^(X,b) r_a)
+      !!
+      !! the first because the nucleus itself moved, the second because the
+      !! basis functions ride on it, and the third because the electrons relax.
+      !! Dropping the third is the same mistake as dropping the response from a
+      !! Hessian: what is left is smooth, plausible, and wrong by tens of
+      !! percent on exactly the modes an infrared spectrum is read for.
+      !!
+      !! **`mol%charges` is the right charge here**, ECP-reduced and all. It is
+      !! not the atomic number, and elsewhere in this backend that distinction
+      !! is a bug -- the exchange-correlation grid wants the element and had to
+      !! have `core_electrons` added back. Here the reduced charge is correct
+      !! and adding the core back would be the error: the electrons those cores
+      !! hold are not in `density` either, so the two halves of the dipole have
+      !! to be missing the same thing for the neutral molecule to come out
+      !! neutral.
+      use mqc_libcint_multipole, only: multipole_matrices, dipole_integral_derivatives
+      type(libcint_molecule_t), intent(in), target :: mol
+      real(dp), intent(in) :: density(:, :)      !! Closed shell, carrying its two
+      real(dp), intent(in) :: d1(:, :, :, :)     !! (n_ao, n_ao, 3, natm)
+      real(dp), allocatable, intent(out) :: ddip_dr(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: dip(:, :, :), ddip(:, :, :, :, :)
+      real(dp) :: origin(3)
+      integer :: natm, ia, a, b, col
+
+      natm = mol%natm
+
+      ! The origin cancels out of a derivative -- shifting it moves every
+      ! column by the same constant times the total charge, and that constant
+      ! is what the translational sum rule removes -- so this is a choice about
+      ! conditioning rather than about physics, and the nuclear centroid keeps
+      ! `r` small over the basis.
+      origin = 0.0_dp
+      do ia = 1, natm
+         origin = origin + mol%coords(:, ia)
+      end do
+      if (natm > 0) origin = origin/real(natm, dp)
+
+      call multipole_matrices(mol, origin, 1, dip, error)
+      if (error%has_error()) return
+      call dipole_integral_derivatives(mol, origin, ddip, error)
+      if (error%has_error()) return
+
+      allocate (ddip_dr(3, 3*natm))
+      ddip_dr = 0.0_dp
+
+      do ia = 1, natm
+         do b = 1, 3
+            col = 3*(ia - 1) + b
+            do a = 1, 3
+               ddip_dr(a, col) = -sum(density*ddip(:, :, a, b, ia)) &
+                                 - sum(d1(:, :, b, ia)*dip(:, :, a))
+            end do
+            ddip_dr(b, col) = ddip_dr(b, col) + mol%charges(ia)
+         end do
+      end do
+
+      deallocate (dip, ddip)
+   end subroutine assemble_dipole_derivatives
 
 end module mqc_libcint_hessian
