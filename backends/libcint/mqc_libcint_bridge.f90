@@ -42,6 +42,7 @@ module mqc_libcint_bridge
    use mqc_libcint_ecp, only: ECP_AVAILABLE
    use mqc_libcint_pcm, only: pcm_context_t
    use mqc_libcint_gradient, only: libcint_scf_gradient
+   use mqc_libcint_multipole, only: multipole_matrices
    use mqc_libcint_hessian, only: rhf_hessian, ks_hessian, hessian_to_matrix, &
                                   nuclear_repulsion_hessian, response_hessian
    use mqc_libcint_mp2_hessian, only: mp2_correlation_hessian
@@ -2261,6 +2262,54 @@ contains
             end block
          end if
       end if
+
+      ! The dipole moment, in atomic units, about the input frame's origin.
+      !
+      ! **Fixed at the origin rather than the molecule's centroid**, and that is
+      ! about the derivative rather than about the dipole. The semi-numerical
+      ! Hessian differences this across displaced geometries, so an origin that
+      ! travelled with the nuclei would make the difference the derivative of
+      ! the wrong function. For a neutral molecule the two agree anyway; for a
+      ! charged one only this choice is differentiable.
+      !
+      ! `mol%charges` is the ECP-reduced charge, which is what pairs with the
+      ! electrons actually in the density -- the same reasoning
+      ! `assemble_dipole_derivatives` sets out, and the opposite of what the
+      ! exchange-correlation grid needs.
+      !
+      ! Setting this is also what gives the *fallback* Hessian its infrared
+      ! intensities. `mqc_semi_numerical_hessian` already collects a dipole at
+      ! every displacement and calls `finite_diff_dipole_derivatives` when it
+      ! has one at each; until now `has_dipole` was never true on this path, so
+      ! it never did. Only tblite set it, which is why an xTB run printed
+      ! intensities and a Hartree-Fock one did not.
+      block
+         real(dp), allocatable :: dip_ao(:, :, :)
+         real(dp) :: mu(3)
+         integer :: comp, iat
+
+         call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip_ao, error)
+         if (.not. error%has_error()) then
+            do comp = 1, 3
+               mu(comp) = -sum(scf%density*dip_ao(:, :, comp))
+            end do
+            if (unrestricted .and. allocated(scf%density_beta)) then
+               do comp = 1, 3
+                  mu(comp) = mu(comp) - sum(scf%density_beta*dip_ao(:, :, comp))
+               end do
+            end if
+            do iat = 1, mol%natm
+               mu = mu + mol%charges(iat)*mol%coords(:, iat)
+            end do
+            result%dipole = mu
+            result%has_dipole = .true.
+            deallocate (dip_ao)
+         else
+            ! A dipole is a convenience here, not the calculation. Losing it
+            ! must not fail a run that otherwise converged.
+            call error%clear()
+         end if
+      end block
 
       ! The frontier pair, from the orbital energies the SCF already produced.
       if (allocated(scf%orbital_energies)) then

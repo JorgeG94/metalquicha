@@ -85,6 +85,17 @@ module test_mqc_scf_dipole_deriv
       -2.388844393797e-17_dp, 6.915066873745e-02_dp, -3.266422555407e-01_dp, -1.369474381003e-16_dp, -1.028342714492e-01_dp, 5.828927547819e-03_dp, -7.969224953476e-17_dp, 3.368360691565e-02_dp, 3.208133225513e-01_dp], [9, 3]))
    integer, parameter :: KS_GRID_LEVEL = 7
 
+   !> The same at Hartree-Fock on **6-31G***, which is where `l = 2` enters.
+   !> Cartesian in our convention, so 6d. Nothing else in this file reaches a d
+   !> function, and both the component layout and the assembly underneath were
+   !> wrong at s and p before they were measured, so neither is taken on trust
+   !> here.
+   real(dp), parameter :: PYSCF_HF_D(3, 9) = transpose(reshape([ &
+      -7.891501532599e-01_dp, 2.099238493154e-16_dp, 2.040924995416e-16_dp, 3.945559076098e-01_dp, -9.280084835285e-18_dp, -2.070202645103e-16_dp, 3.945942456500e-01_dp, -2.006437644801e-16_dp, 2.927764968698e-18_dp, &
+      -5.755266533450e-16_dp, -4.777531502625e-01_dp, 3.207177071903e-02_dp, 5.182133519400e-17_dp, 3.195688419636e-01_dp, -1.576429940788e-02_dp, 5.237053181510e-16_dp, 1.581843082990e-01_dp, -1.630747131115e-02_dp, &
+      1.483046759390e-17_dp, 3.217310415450e-02_dp, -4.942485656217e-01_dp, 1.870192737331e-16_dp, -5.811966754130e-02_dp, 1.664107959184e-01_dp, -2.018497413269e-16_dp, 2.594656338679e-02_dp, 3.278377697033e-01_dp], [9, 3]))
+   character(len=*), parameter :: BASIS_D = "6-31g*"
+
 contains
 
    subroutine collect_mqc_scf_dipole_deriv_tests(testsuite)
@@ -96,7 +107,9 @@ contains
                   new_unittest("hartree_fock_matrix_against_pyscf", &
                                test_against_pyscf_hf), &
                   new_unittest("kohn_sham_matrix_against_pyscf", &
-                               test_against_pyscf_ks) &
+                               test_against_pyscf_ks), &
+                  new_unittest("d_functions_against_pyscf", &
+                               test_against_pyscf_d) &
                   ]
    end subroutine collect_mqc_scf_dipole_deriv_tests
 
@@ -250,7 +263,7 @@ contains
       !! The whole matrix, against PySCF's own analytic derivative
       type(error_type), allocatable, intent(out) :: error
 
-      call against_pyscf("", PYSCF_HF, 5.0e-7_dp, "HF   ", error)
+      call against_pyscf("", BASIS, PYSCF_HF, 5.0e-7_dp, "HF   ", error)
    end subroutine test_against_pyscf_hf
 
    subroutine test_against_pyscf_ks(error)
@@ -258,11 +271,18 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       if (.not. xc_available()) return
-      call against_pyscf("b3lyp", PYSCF_KS, 5.0e-7_dp, "B3LYP", error)
+      call against_pyscf("b3lyp", BASIS, PYSCF_KS, 5.0e-7_dp, "B3LYP", error)
    end subroutine test_against_pyscf_ks
 
-   subroutine against_pyscf(functional, reference, tol, label, error)
-      character(len=*), intent(in) :: functional, label
+   subroutine test_against_pyscf_d(error)
+      !! The whole matrix on a basis with d functions
+      type(error_type), allocatable, intent(out) :: error
+
+      call against_pyscf("", BASIS_D, PYSCF_HF_D, 5.0e-7_dp, "HF/d ", error)
+   end subroutine test_against_pyscf_d
+
+   subroutine against_pyscf(functional, basis, reference, tol, label, error)
+      character(len=*), intent(in) :: functional, basis, label
       real(dp), intent(in) :: reference(3, 9)
       real(dp), intent(in) :: tol
          !! Ten times the measured worst -- 5.82e-08 for Hartree-Fock and
@@ -280,7 +300,7 @@ contains
       logical :: ok
       integer :: ia, a, b
 
-      call derivative(functional, ddip, err, ok)
+      call derivative(functional, basis, ddip, err, ok)
       call check(error, ok, "the dipole derivative did not evaluate: "//err%get_message())
       if (allocated(error)) return
 
@@ -331,8 +351,8 @@ contains
    end function sum_rule_tol
 
    !> `d mu / dR` at the reference geometry, nothing displaced
-   subroutine derivative(functional, ddip, err, ok)
-      character(len=*), intent(in) :: functional
+   subroutine derivative(functional, basis, ddip, err, ok)
+      character(len=*), intent(in) :: functional, basis
       real(dp), allocatable, intent(out) :: ddip(:, :)
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
@@ -343,7 +363,7 @@ contains
       real(dp), allocatable :: hess(:, :, :, :)
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, BASIS, mol, err)
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, basis, mol, err)
       if (err%has_error()) return
       if (len_trim(functional) > 0) then
          call xc_context_create(mol, functional, ctx, err, level=KS_GRID_LEVEL)

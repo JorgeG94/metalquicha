@@ -45,6 +45,8 @@ contains
       testsuite = [ &
                   new_unittest("derivatives_difference_the_dipole_integrals", &
                                test_against_difference), &
+                  new_unittest("d_functions_difference_the_dipole_integrals", &
+                               test_against_difference_d), &
                   new_unittest("the_transposed_reading_is_distinguishable", &
                                test_transpose_fails) &
                   ]
@@ -139,6 +141,35 @@ contains
                  "the dipole integral derivatives do not difference the dipole "// &
                  "integrals")
    end subroutine test_against_difference
+
+   subroutine test_against_difference_d(error)
+      !! The same on a basis with d functions
+      !!
+      !! `int1e_irp` at `l = 2` is a different code path in the integral
+      !! library, and the layout and the assembly were both wrong at s and p
+      !! before they were measured, so neither is assumed to carry over.
+      !! 6-31G* is Cartesian in our convention, making this 6d rather than 5d.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: direct, transposed
+      type(error_t) :: err
+      logical :: ok
+
+      call worst_errors("6-31g*", direct, transposed, err, ok)
+      call check(error, ok, "the dipole integral derivatives did not evaluate: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      write (*, "(a, es10.3)") "        6-31g*  max |analytic - fd| = ", direct
+      ! Nine times the measured worst, 5.476e-09, which is larger than the
+      ! s-and-p case's 1.543e-09 for the stencil's reason rather than the
+      ! integrals': d functions are sharper, so the same step resolves them
+      ! less well. Held on its own bound instead of borrowing the one above,
+      ! which it would clear by only a factor of one and a half.
+      call check(error, direct < 5.0e-8_dp, &
+                 "the dipole integral derivatives do not difference the dipole "// &
+                 "integrals on a basis with d functions")
+   end subroutine test_against_difference_d
 
    subroutine test_transpose_fails(error)
       !! The check above can tell the two component orders apart

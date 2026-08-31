@@ -144,7 +144,44 @@ respect to Cartesian displacements:
 
 where :math:`\alpha \in \{x, y, z\}` and *i* runs over all 3N Cartesian coordinates.
 
-This is computed via finite differences of the dipole moment during the Hessian calculation.
+There are two routes to it and the backend picks, the same way it picks between
+the two Hessians.
+
+**Analytically**, wherever the analytic Hessian applies. What a dipole
+derivative needs beyond one-electron integrals is the response of the density,
+and the coupled-perturbed solve has just produced that for the Hessian --
+so the extra cost is two one-electron integrals rather than a second solve:
+
+.. math::
+
+   \frac{\partial \mu_\alpha}{\partial R_{X\beta}}
+     = Z_X \delta_{\alpha\beta}
+     - \mathrm{Tr}\!\left(D \frac{\partial r_\alpha}{\partial R_{X\beta}}\right)
+     - \mathrm{Tr}\!\left(\frac{\partial D}{\partial R_{X\beta}} r_\alpha\right)
+
+the three terms being the nucleus moving, the basis functions riding it, and the
+electrons relaxing. The last is the one that is easy to omit and hard to notice:
+without it the derivative is smooth, correctly signed, obeys the translational
+sum rule, and is wrong by tens of percent.
+
+A **double hybrid** adds a fourth: its dipole is the *relaxed* one, so the
+perturbative term contributes through the MP2 relaxed density, and the
+intensity needs that derivative on top of the reference's -- the same split as
+its Hessian. On water/6-31G that term is 1.26e-02 against a dipole of order one.
+
+**By finite differences of the dipole** otherwise, collected at the same
+displaced geometries the semi-numerical Hessian already visits.
+
+The two agree: on water/STO-3G with B3LYP the analytic route gives 7.98, 56.46
+and 29.96 km/mol and the finite-difference one gives 7.98, 56.47 and 29.98,
+which is two entirely different assemblies landing within 0.02 km/mol of each
+other.
+
+Validated against PySCF, which has no infrared module but does have the pieces
+one is built from -- ``int1e_irp`` and a coupled-perturbed solve. The dipole
+derivative agrees to 5.8e-08 for Hartree-Fock, 1.9e-07 on a basis with d
+functions, and 3.8e-08 for B3LYP on a converged grid. See
+:doc:`analytic_hessians` for which calculations reach the analytic path.
 
 Transformation to Normal Coordinates
 ------------------------------------

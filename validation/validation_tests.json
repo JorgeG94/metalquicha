@@ -287,6 +287,19 @@
             "type": "unfragmented"
         },
         {
+            "name": "B3LYP IR intensities H2O sto-3g (CPU, regression pin)",
+            "input": "inputs/cpu/mqc/hessian/cpu_water_sto-3g_b3lyp_hess.json",
+            "expected_energy": -75.311397472377,
+            "expected_ir_intensities": [
+                7.981589323,
+                56.456971305,
+                29.964291738
+            ],
+            "ir_tolerance": 1e-06,
+            "requires": "libxc",
+            "type": "unfragmented"
+        },
+        {
             "name": "Optimize water GFN2 (DL-FIND)",
             "input": "inputs/cpu/tblite/gfn2/w1_optimize.json",
             "expected_energy": -5.070544354,
