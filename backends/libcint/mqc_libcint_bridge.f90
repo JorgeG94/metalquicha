@@ -1655,7 +1655,7 @@ contains
          block
             real(dp), allocatable :: hess4(:, :, :, :)
             real(dp), allocatable :: hess_pt2(:, :, :, :), hess_discard(:, :, :, :)
-            real(dp), allocatable :: ddip(:, :)
+            real(dp), allocatable :: ddip(:, :), ddip_pt2(:, :)
             type(timer_type) :: hess_clock
 
             call logger%info("  computing the analytic Hessian")
@@ -1686,7 +1686,8 @@ contains
                call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &
                                             scf%density, scf%n_occupied, 0, &
                                             hess_pt2, hess_discard, error, &
-                                            xc=xc, pt2_scale=xc%pt2_fraction)
+                                            xc=xc, pt2_scale=xc%pt2_fraction, &
+                                            dipole_derivatives=ddip_pt2)
                if (.not. error%has_error()) hess4 = hess4 + hess_pt2
             end if
             if (error%has_error()) then
@@ -1704,14 +1705,16 @@ contains
             ! matters: the response they need was solved for the Hessian, so
             ! what this added was two one-electron integrals.
             !
-            ! Not set for a double hybrid, and the guard is the point rather
-            ! than an oversight. `ddip` above is the *reference's* dipole
-            ! derivative; a double hybrid's dipole is the relaxed one, and the
-            ! perturbative term contributes to it. Handing the reference's
-            ! number over under the double hybrid's name would be the same
-            ! failure the Hessian gate above this one was built to stop, one
-            ! property along.
-            if (allocated(ddip) .and. .not. dh_analytic) then
+            ! A double hybrid's dipole is the *relaxed* one, so its intensity
+            ! needs the perturbative term's derivative added to the reference's
+            ! -- the same split as the Hessian just above, where `hess_pt2` is
+            ! added to `ks_hessian`. On water/6-31G that term is 1.26e-02
+            ! against a dipole of order one: small, and far too large to leave
+            ! out of an intensity.
+            if (allocated(ddip)) then
+               if (dh_analytic) then
+                  if (allocated(ddip_pt2)) ddip = ddip + ddip_pt2
+               end if
                result%dipole_derivatives = ddip
                result%has_dipole_derivatives = .true.
             end if
