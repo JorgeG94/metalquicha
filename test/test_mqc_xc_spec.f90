@@ -31,7 +31,9 @@ contains
                   new_unittest("plain_functionals_pass_through_to_libxc", test_passthrough), &
                   new_unittest("published_fractions_are_what_we_think", test_published), &
                   new_unittest("mpw2plyp_matches_its_paper", test_mpw2plyp), &
-                  new_unittest("an_empty_name_is_refused", test_empty) &
+                  new_unittest("an_empty_name_is_refused", test_empty), &
+                  new_unittest("scan_family_pairs_its_halves", test_scan_family), &
+                  new_unittest("half_a_functional_is_refused", test_halves_refused) &
                   ]
    end subroutine collect_mqc_xc_spec_tests
 
@@ -83,17 +85,19 @@ contains
       ! A libxc name, not a friendly one: "pbe" and "svwn" are *compositions* here,
       ! because libxc carries their exchange and correlation halves without carrying
       ! that name for the pair. So the pass-through case has to be spelled the way
-      ! libxc spells it.
-      call xc_spec_from_name("GGA_X_PBE", spec, err)
+      ! libxc spells it -- and it has to be a whole functional, since a lone half
+      ! is now refused. `gga_x_pbe` used to stand here and would fail today, which
+      ! is the point of that check rather than a casualty of it.
+      call xc_spec_from_name("MGGA_XC_B97M_V", spec, err)
       call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) return
-      call check(error, spec%from_libxc, "gga_x_pbe should be left to libxc")
+      call check(error, spec%from_libxc, "mgga_xc_b97m_v should be left to libxc")
       if (allocated(error)) return
-      call check(error, spec%n_components == 1, "gga_x_pbe should be one component")
+      call check(error, spec%n_components == 1, "mgga_xc_b97m_v should be one component")
       if (allocated(error)) return
-      call check(error, spec%name == "gga_x_pbe", "the name should be lowercased")
+      call check(error, spec%name == "mgga_xc_b97m_v", "the name should be lowercased")
       if (allocated(error)) return
-      call check(error,.not. spec%is_double_hybrid(), "pbe is not a double hybrid")
+      call check(error,.not. spec%is_double_hybrid(), "b97m-v is not a double hybrid")
       if (allocated(error)) return
       ! Crucially zero: a plain hybrid's fraction is libxc's to report, and a
       ! number here would be a second source of truth that could disagree.
@@ -162,6 +166,119 @@ contains
       if (allocated(error)) return
       call check(error, spec%component(1)%name == "gga_x_mpw91", "mPW2-PLYP exchange is mPW91")
    end subroutine test_mpw2plyp
+
+   subroutine test_scan_family(error)
+      !! Every SCAN row resolves to both halves of a functional, not one
+      !!
+      !! The failure this pins is not a wrong number but a missing term: r2SCAN
+      !! spelled as its exchange half alone converges 0.32 Hartree away on water
+      !! and says nothing. So what is asserted is the component *count* and the
+      !! two names, for every row, rather than any energy.
+      type(error_type), allocatable, intent(out) :: error
+      type(xc_spec_t) :: spec
+      type(error_t) :: err
+
+      call xc_spec_from_name("r2scan", spec, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      call check(error, spec%n_components == 2, "r2scan is exchange and correlation")
+      if (allocated(error)) return
+      call check(error, spec%component(1)%name == "mgga_x_r2scan", "r2scan exchange")
+      if (allocated(error)) return
+      call check(error, spec%component(2)%name == "mgga_c_r2scan", "r2scan correlation")
+      if (allocated(error)) return
+
+      call xc_spec_from_name("scan", spec, err)
+      call check(error, spec%n_components == 2 .and. &
+                 spec%component(1)%name == "mgga_x_scan" .and. &
+                 spec%component(2)%name == "mgga_c_scan", "scan is both halves")
+      if (allocated(error)) return
+
+      call xc_spec_from_name("r2scan01", spec, err)
+      call check(error, spec%n_components == 2 .and. &
+                 spec%component(1)%name == "mgga_x_r2scan01" .and. &
+                 spec%component(2)%name == "mgga_c_r2scan01", &
+                 "r2scan01 pairs the two larger-eta halves, not one of each")
+      if (allocated(error)) return
+
+      ! SCAN0's exchange component is itself a hybrid, so this row must still
+      ! claim no fraction of its own: the quarter of exact exchange is libxc's to
+      ! report from `hyb_mgga_x_scan0`.
+      call xc_spec_from_name("scan0", spec, err)
+      call check(error, spec%n_components == 2 .and. &
+                 spec%component(1)%name == "hyb_mgga_x_scan0" .and. &
+                 spec%component(2)%name == "mgga_c_scan", &
+                 "scan0 is hybridised exchange plus SCAN correlation")
+      if (allocated(error)) return
+      call check(error,.not. spec%needs_exact_exchange(), &
+                 "scan0 must not state an exchange fraction libxc already carries")
+      if (allocated(error)) return
+
+      ! The three libxc does carry whole. These are renames, so one component and
+      ! no fraction stated here.
+      call xc_spec_from_name("r2scan0", spec, err)
+      call check(error, spec%from_libxc .and. spec%n_components == 1 .and. &
+                 spec%component(1)%name == "hyb_mgga_xc_r2scan0", "r2scan0 is a rename")
+      if (allocated(error)) return
+      call xc_spec_from_name("r2scanh", spec, err)
+      call check(error, spec%component(1)%name == "hyb_mgga_xc_r2scanh", "r2scanh is a rename")
+      if (allocated(error)) return
+      call xc_spec_from_name("r2scan50", spec, err)
+      call check(error, spec%component(1)%name == "hyb_mgga_xc_r2scan50", "r2scan50 is a rename")
+      if (allocated(error)) return
+      call check(error,.not. spec%needs_exact_exchange(), &
+                 "a rename must leave its fraction to libxc")
+   end subroutine test_scan_family
+
+   subroutine test_halves_refused(error)
+      !! A libxc name carrying only exchange or only correlation is refused
+      !!
+      !! Both halves initialise and evaluate perfectly well in libxc, so nothing
+      !! downstream can catch this -- the calculation is correct, it is just not
+      !! the functional anyone asked for. Refusing at the name is the only place
+      !! it can be caught.
+      type(error_type), allocatable, intent(out) :: error
+      type(xc_spec_t) :: spec
+      type(error_t) :: err
+
+      call xc_spec_from_name("mgga_x_r2scan", spec, err)
+      call check(error, err%has_error(), "exchange alone must be refused")
+      if (allocated(error)) return
+
+      call err%clear()
+      call xc_spec_from_name("mgga_c_r2scan", spec, err)
+      call check(error, err%has_error(), "correlation alone must be refused")
+      if (allocated(error)) return
+
+      call err%clear()
+      call xc_spec_from_name("gga_x_pbe", spec, err)
+      call check(error, err%has_error(), "a GGA exchange half must be refused too")
+      if (allocated(error)) return
+
+      call err%clear()
+      call xc_spec_from_name("lda_x", spec, err)
+      call check(error, err%has_error(), "the role can be the last segment")
+      if (allocated(error)) return
+
+      ! Kinetic energy functionals are not exchange-correlation ones at all.
+      call err%clear()
+      call xc_spec_from_name("gga_k_tfvw", spec, err)
+      call check(error, err%has_error(), "a kinetic functional is not an xc one")
+      if (allocated(error)) return
+
+      ! And the complement, so this cannot pass by refusing everything: a whole
+      ! functional still goes through, and so does a name following no libxc
+      ! convention, which stays libxc's to reject in its own words.
+      call err%clear()
+      call xc_spec_from_name("hyb_mgga_xc_r2scan0", spec, err)
+      call check(error,.not. err%has_error(), "a combined name must pass through")
+      if (allocated(error)) return
+
+      call err%clear()
+      call xc_spec_from_name("not_a_functional", spec, err)
+      call check(error,.not. err%has_error(), &
+                 "an unrecognisable name is libxc's to reject, not this module's")
+   end subroutine test_halves_refused
 
    subroutine test_empty(error)
       !! No functional named is an error, not a default

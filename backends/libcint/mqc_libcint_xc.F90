@@ -201,7 +201,7 @@ contains
    end function xc_available
 
    subroutine xc_context_create(mol, functional, ctx, error, level, polarized, &
-                                screen_tol, point_block, nlc_level)
+                                screen_tol, point_block, nlc_level, allow_half)
       !! Resolve a functional name and build the grid it will be integrated on
       type(libcint_molecule_t), intent(in) :: mol
       character(len=*), intent(in) :: functional
@@ -221,6 +221,10 @@ contains
          !! evaluates the whole basis, which is the way to check what it costs.
       integer, intent(in), optional :: point_block
          !! Grid points per block. Non-positive keeps the default.
+      logical, intent(in), optional :: allow_half
+         !! Accept a libxc name carrying only exchange or only correlation.
+         !! Passed to `xc_spec_from_name`, which explains why it exists and why
+         !! no deck may set it. The derivative tests are the only caller.
 
       type(xc_spec_t) :: spec
       integer :: grid_level, i, id, family
@@ -237,7 +241,7 @@ contains
          return
       end if
 
-      call xc_spec_from_name(functional, spec, error)
+      call xc_spec_from_name(functional, spec, error, allow_half=allow_half)
       if (error%has_error()) return
 
       grid_level = DEFAULT_GRID_LEVEL
@@ -369,11 +373,20 @@ contains
             ctx%nlc_c = nlc_c
          end if
 
-         ! libxc owns a global hybrid's fraction, so ask rather than assume. Only a
-         ! composition libxc does not carry may state its own, and `mqc_xc_spec`
-         ! leaves that at zero for everything libxc knows -- so the two can never
-         ! both be nonzero and disagree.
-         if (spec%from_libxc .and. .not. (cam_omega /= 0.0_dp .and. cam_beta /= 0.0_dp)) then
+         ! libxc owns a hybrid's fraction, so ask rather than assume -- and ask it
+         ! of every component, not only of a functional libxc carries whole. SCAN0
+         ! is the case that separates those two readings: it is a composition here,
+         ! because libxc pairs no correlation with it, but its exchange component
+         ! `hyb_mgga_x_scan0` carries the quarter of exact exchange itself. Asking
+         ! only for single-component specs dropped that quarter silently, which is
+         ! a converged number for a different functional.
+         !
+         ! Safe to ask always: every semilocal component of every composition in
+         ! `mqc_xc_spec` reports zero here, so nothing existing moves. A spec's own
+         ! `exx_fraction` remains for exchange libxc knows nothing about, which is
+         ! the double hybrids and only them -- so the two still cannot both be
+         ! nonzero and disagree.
+         if (.not. (cam_omega /= 0.0_dp .and. cam_beta /= 0.0_dp)) then
             libxc_exx = xc_f03_hyb_exx_coef(ctx%func(i))
             ctx%exx_fraction = ctx%exx_fraction + spec%component(i)%weight*libxc_exx
          end if
