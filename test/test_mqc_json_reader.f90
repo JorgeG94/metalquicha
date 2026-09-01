@@ -90,6 +90,8 @@ contains
                   new_unittest("fukui_scf_inherits_keywords_scf", test_fukui_scf_inherit), &
                   new_unittest("fukui_scf_overrides_per_key", test_fukui_scf_override), &
                   new_unittest("fukui_scf_inherit_false_drops_the_seed", test_fukui_scf_no_inherit), &
+                  new_unittest("fukui_scf_inherits_the_current_guess_spelling", &
+                               test_fukui_scf_guess_spelling), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -1992,6 +1994,53 @@ contains
       ! The neutral is untouched by any of it.
       call check(error, config%scf_maxiter == 77, "the neutral must not move")
    end subroutine test_fukui_scf_override
+
+   subroutine test_fukui_scf_guess_spelling(error)
+      !! The ions inherit `keywords.guess.type`, not only `keywords.scf.guess`
+      !!
+      !! There are two spellings for the neutral's guess -- `keywords.scf.guess`
+      !! is superseded and `keywords.guess.type` is current -- and
+      !! `config_to_driver` resolves them in that order. Seeding from only the
+      !! superseded one left a deck written the current way inheriting twelve
+      !! keys and silently not the thirteenth: the ladder came across while the
+      !! guess that selects it stayed `auto`.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      ! The current spelling, on its own.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"guess": {"type": "gwh"}', "", two_atoms(), &
+                      root='"properties": {"fukui": {"population": "chelpg"}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%fukui_scf%guess == "gwh", &
+                 "keywords.guess.type must reach the ions")
+      if (allocated(error)) return
+
+      ! The superseded spelling still works.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"guess": "core"}', "", two_atoms(), &
+                      root='"properties": {"fukui": {"population": "chelpg"}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%fukui_scf%guess == "core", &
+                 "keywords.scf.guess must still reach the ions")
+      if (allocated(error)) return
+
+      ! And the ions may still name their own, which beats either.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"guess": {"type": "gwh"}', "", two_atoms(), &
+                      root='"properties": {"fukui": {"population": "chelpg", '// &
+                      '"scf": {"guess": "sad"}}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%fukui_scf%guess == "sad", &
+                 "the ions' own guess must win over the inherited one")
+   end subroutine test_fukui_scf_guess_spelling
 
    subroutine test_fukui_scf_no_inherit(error)
       !! `inherit_scf: false` falls back to the defaults, not to the neutral

@@ -879,7 +879,15 @@ contains
          if (allocated(config%scf_accelerator)) then
             config%fukui_scf%accelerator = config%scf_accelerator
          end if
+         ! Both spellings, in the order `config_to_driver` resolves them for the
+         ! neutral: `keywords.scf.guess` is the superseded one and
+         ! `keywords.guess.type` the current one, so the latter wins where a
+         ! deck somehow carries both. Copying only the superseded field left a
+         ! deck written the current way inheriting the ladder below while its
+         ! ions kept `auto` -- inheritance that worked for twelve keys and
+         ! quietly did not for the thirteenth.
          if (allocated(config%scf_guess)) config%fukui_scf%guess = config%scf_guess
+         if (allocated(config%guess_type)) config%fukui_scf%guess = config%guess_type
          ! The ladder comes across whole or not at all. A rung names a basis,
          ! and half a ladder is not a cheaper start -- it is a different one.
          if (allocated(config%guess_steps)) then

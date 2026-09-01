@@ -1166,6 +1166,9 @@ contains
             integer :: fukui_frozen
             real(dp) :: fukui_pt2
             character(len=32) :: fukui_guess_mode
+            integer :: fukui_accel, fukui_diis, fukui_guess_kind
+            integer, allocatable :: fukui_guess_arg
+            logical :: fukui_accel_ok
             type(libcint_molecule_t), target :: fukui_aux
             type(libcint_molecule_t), pointer :: fukui_aux_arg
             logical :: fukui_fitted
@@ -1213,6 +1216,45 @@ contains
             ! before the deck was consulted, so there is nothing to resolve
             ! here and no sentinel to test. This block used to do that
             ! arithmetic three times, once per hand-picked field.
+            !
+            ! What is left here is spelling, not policy: two strings the deck
+            ! writes and the SCF wants as integers, and the one field whose
+            ! deck spelling and internal spelling genuinely differ -- `diis:
+            ! false` is a subspace of zero, which is how the SCF says "off"
+            ! everywhere else. The neutral does the same three lines a few
+            ! hundred lines up.
+            call parse_accelerator_name(settings%fukui_scf%accelerator, &
+                                        fukui_accel, fukui_accel_ok)
+            if (.not. fukui_accel_ok) then
+               call result%error%set(ERROR_VALIDATION, &
+                                     "properties.fukui.scf.accelerator '"// &
+                                     trim(settings%fukui_scf%accelerator)// &
+                                     "' is not one of diis, adiis, ediis")
+               result%has_error = .true.
+               return
+            end if
+            fukui_diis = settings%fukui_scf%diis_size
+            if (.not. settings%fukui_scf%use_diis) fukui_diis = 0
+            ! Only an explicit spelling is forwarded. `auto` is the default, and
+            ! resolving it here would move every `guess: independent` deck that
+            ! never named one off the GWH the ions have always used.
+            fukui_guess_kind = -1
+            if (trim(settings%fukui_scf%guess) /= "auto") then
+               call parse_guess_name(settings%fukui_scf%guess, fukui_guess_kind, error)
+               if (error%has_error()) then
+                  call result%error%set(ERROR_VALIDATION, &
+                                        "properties.fukui.scf.guess: "//error%get_message())
+                  result%has_error = .true.
+                  return
+               end if
+            end if
+            ! Absent rather than a sentinel at the callee: an unallocated
+            ! allocatable actual is not present at an optional dummy, the same
+            ! idiom `fukui_aux_arg` uses above.
+            if (allocated(fukui_guess_arg)) deallocate (fukui_guess_arg)
+            if (fukui_guess_kind >= 0) then
+               allocate (fukui_guess_arg, source=fukui_guess_kind)
+            end if
             fukui_guess_mode = "neutral"
             if (allocated(settings%fukui_guess)) fukui_guess_mode = settings%fukui_guess
 
@@ -1242,9 +1284,14 @@ contains
                                n_frozen=fukui_frozen, aux=fukui_aux_arg, &
                                verbose=settings%verbose, pcm=pcm_ctx, &
                                level_shift=settings%fukui_scf%level_shift, &
-                               diis_vectors=settings%fukui_scf%diis_size, &
+                               diis_vectors=fukui_diis, &
                                guess_mode=fukui_guess_mode, &
-                               incremental_fock=settings%fukui_scf%incremental_fock)
+                               incremental_fock=settings%fukui_scf%incremental_fock, &
+                               accelerator=fukui_accel, &
+                               grad_tol=settings%fukui_scf%grad_tol, &
+                               linear_dependence=settings%fukui_scf%linear_dependence, &
+                               allow_unconverged=settings%fukui_scf%allow_crap_scf, &
+                               unseeded_guess=fukui_guess_arg)
             if (fukui_fitted) call fukui_aux%destroy()
             if (fukui_error%has_error()) then
                call logger%warning("  the Fukui analysis could not run: "// &

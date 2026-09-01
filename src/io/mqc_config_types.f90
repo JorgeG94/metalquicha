@@ -221,10 +221,16 @@ module mqc_config_types
       character(len=:), allocatable :: fukui_population
          !! From `properties.fukui.population`. Allocated means the deck asked
          !! for Fukui indices; "chelpg" or "mulliken" chooses how the density
-         !! difference is condensed onto atoms. Required inside the object
-         !! rather than defaulted, so that asking for the analysis and choosing
-         !! how it is condensed are one decision -- the choice changes the
-         !! numbers enough that it should not be made by omission.
+         !! difference is condensed onto atoms.
+         !!
+         !! **Defaults to CHELPG**, which is what the reader fills in when the
+         !! object omits it -- `properties: {"fukui": {}}` is a valid request
+         !! and one of the validation decks is written that way. It was
+         !! required once, on the argument that a choice which moves the
+         !! numbers should be written down rather than inherited; that was
+         !! reversed because the two schemes are not equal candidates, and this
+         !! comment did not follow. See `fukui_keys` in `mqc_json_schema` for
+         !! the reasoning that stands.
       character(len=:), allocatable :: fukui_guess
          !! `properties.fukui.guess`: "neutral" (the default) or "independent".
          !!

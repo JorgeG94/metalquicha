@@ -1297,8 +1297,17 @@ The driver stays ``"energy"``.
      one level apart. The outer one takes ``neutral`` or ``independent`` and
      says whether the ion starts from the neutral's density at all; the inner
      one takes ``core``, ``gwh``, ``sad`` and so on, and says how a density is
-     built when it starts from nothing. The inner one only bites under
-     ``"guess": "independent"``.
+     built when it starts from nothing. **The inner one only bites under**
+     ``"guess": "independent"`` -- a seeded ion already has a density, so there
+     is nothing left for a guess to decide, and naming one there does nothing
+     rather than something surprising.
+
+  ``linear_dependence_threshold`` is worth calling out, because the ions are
+  where it matters most and it is inherited by default. A basis diffuse enough
+  for the anion to bind its extra electron is also the one whose overlap goes
+  near-singular, so the neutral can drop functions while the ions do not --
+  which makes the three energies incomparable and the indices meaningless. The
+  three SCFs share the threshold unless a deck says otherwise.
 
   There is no ``basis``, ``density_fitting`` or ``unrestricted`` here. The
   density difference is taken over the neutral's own basis functions by

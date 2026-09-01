@@ -34,7 +34,9 @@
                 "maxiter": 300,
                 "level_shift": 0.1,
                 "diis_size": 12,
-                "accelerator": "ediis"
+                "accelerator": "ediis",
+                "linear_dependence_threshold": 1e-07,
+                "diis": true
             }
         }
     }
