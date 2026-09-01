@@ -57,6 +57,45 @@ still computed, because the level shift tapers off it.
    * - ``keywords.scf.density_tolerance``
      - ``1e-6``
      - **Nothing, for convergence.** Still sets where the level shift tapers off
+   * - ``keywords.scf.convergence_metric``
+     - ``standard``
+     - Which measure decides. ``tolerance`` is read in its units
+
+Choosing the measure
+^^^^^^^^^^^^^^^^^^^^
+
+``convergence_metric`` names the quantity ``tolerance`` bounds:
+
+- ``standard`` -- the default, and what this program has always done: the
+  energy **and** the commutator, the latter at ``sqrt(tolerance)`` or at
+  ``gradient_tolerance`` when that is given.
+- ``commutator`` -- the commutator alone, with ``tolerance`` read as its bound
+  rather than an energy. ``diis`` and ``gradient`` are accepted spellings of
+  the same thing: :math:`FDS - SDF` in the orthogonal basis is both what DIIS
+  extrapolates against and the orbital gradient, pyscf's ``norm_gorb``.
+- ``energy`` -- the change in energy alone. **The weakest of the three**, and
+  see the warning below before choosing it.
+- ``density`` -- the RMS change in the density matrix alone.
+
+.. code-block:: json
+
+   "keywords": { "scf": { "convergence_metric": "commutator", "tolerance": 1e-6 } }
+
+Note the units change with the measure. A commutator of ``1e-6`` is about as
+converged as an energy of ``1e-12``, because the energy's error falls as the
+*square* of the commutator -- so a number carried across from a deck written
+against ``standard`` will be far tighter than intended, and one written the
+other way far looser.
+
+.. warning::
+
+   **The energy metric can stop early, and silently.** An accelerator that
+   *interpolates* rather than extrapolates can hold ``dE`` still while the
+   commutator stays large: EDIIS on water/6-31G sits at ``dE`` of 5.7e-13 with
+   a commutator of 1.1e-2, and an energy-only test stops there -- 5.8e-5
+   hartree from the answer. Selecting ``energy`` alongside ``ediis`` or
+   ``adiis`` prints a warning for this reason. Prefer ``commutator`` if you
+   want one measure, or ``standard`` if you want the safe default.
 
 **Why the commutator has to be in it.** ``dE`` and ``dD`` say the iteration
 stopped moving. They do not say it stopped at a stationary point, and an SCF can

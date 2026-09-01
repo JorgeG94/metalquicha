@@ -96,6 +96,7 @@ module mqc_method_config
          !! is also the honest setting for timing a Fock build, since an
          !! incremental one gets cheaper with every iteration.
       character(len=32) :: accelerator = "diis"
+      character(len=32) :: convergence_metric = "standard"
          !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
          !! 'ediis'. The energy-based pair runs only while the error is large
          !! and hands over to DIIS, so naming one asks for a different opening,

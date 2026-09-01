@@ -157,6 +157,10 @@ module mqc_config_types
          !! cheaper late in an SCF; false forces a full build every iteration,
          !! which is the first thing to rule out when a run stalls.
       character(len=32) :: accelerator = "diis"
+      character(len=32) :: convergence_metric = "standard"
+         !! Which measure decides this SCF has stopped. See
+         !! `mqc_scf_convergence`; the default is the energy-and-commutator
+         !! pair every loop tested before that module existed.
          !! 'diis' (the default), 'adiis' or 'ediis'. The energy-based pair
          !! runs only while the error is large and hands over to DIIS, so
          !! naming one asks for a different opening, not a different endgame.
@@ -497,6 +501,9 @@ module mqc_config_types
       real(dp) :: scf_tolerance = DEFAULT_SCF_CONV
       logical :: scf_maxiter_set = .false.
          !! Whether the deck named `keywords.scf.maxiter`; see `scf_config_t`.
+      character(len=:), allocatable :: scf_convergence_metric
+         !! `keywords.scf.convergence_metric`. Unallocated leaves the default,
+         !! which is today's energy-and-commutator pair.
       logical :: scf_tolerance_set = .false.
          !! Whether the deck named it. Needed because "the default" and "the
          !! user asked for the default" are different requests to a caller that

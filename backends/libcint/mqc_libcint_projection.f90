@@ -38,9 +38,10 @@ module mqc_libcint_projection
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_config_types, only: guess_step_t
+   use mqc_config_types, only: guess_step_t, scf_numerics_t
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, SCF_GUESS_SAD, SCF_GUESS_GWH
+   use mqc_diis, only: parse_accelerator_name, ACCEL_DIIS
    use libcint_fortran, only: LIBCINT_BAS_SLOTS, LIBCINT_PTR_EXP, &
                               LIBCINT_PTR_COEFF, LIBCINT_PTR_ENV_START
    implicit none
@@ -62,7 +63,7 @@ module mqc_libcint_projection
 contains
 
    subroutine climb_basis_ladder(steps, atomic_numbers, symbols, coords, nelec, &
-                                 mol_target, density, error, verbose)
+                                 mol_target, density, error, verbose, scf_in)
       !! Converge each basis in turn, projecting forward, and return a density
       !! in the target basis
       !!
@@ -74,6 +75,11 @@ contains
       !! caller and the last projection lands in it, so a two-step ladder plus a
       !! model basis is three SCFs, the last of which is the caller's.
       type(guess_step_t), intent(in) :: steps(:)
+      !! Note what a rung does NOT get its own copy of: only `maxiter` and
+      !! `tolerance` are per-rung, because only those differ by rung -- an
+      !! early one has to land in the right basin and can stop loosely. How the
+      !! iteration is *driven* is a property of the calculation, not of the
+      !! rung, which is what `scf` carries.
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: symbols(:)
       real(dp), intent(in) :: coords(:, :)
@@ -82,9 +88,23 @@ contains
       real(dp), allocatable, intent(out) :: density(:, :)
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: verbose
+      type(scf_numerics_t), intent(in), optional :: scf_in
+         !! How to drive each rung's SCF: the accelerator, the DIIS subspace,
+         !! the level shift, the linear-dependence threshold and incremental
+         !! Fock building.
+         !!
+         !! **None of these reached a rung before.** The calls below passed
+         !! eight positional arguments and named one, so every rung ran on
+         !! defaults whatever the deck said. `linear_dependence` is the one
+         !! that matters: a ladder exists to climb into a large diffuse basis,
+         !! which is exactly where the overlap goes near-singular, so the rung
+         !! that most needs a cutoff was the one guaranteed not to get it.
 
       type(libcint_molecule_t), allocatable :: rungs(:)
       type(rhf_result_t) :: scf
+      real(dp) :: shift, lindep
+      integer :: accel, ndiis
+      logical :: incr, accel_ok
       real(dp), allocatable :: carried(:, :)
       integer :: i, n, n_occ
       logical :: talk
@@ -103,6 +123,27 @@ contains
       ! Every rung is built up front. The last one is needed after its SCF to
       ! project into the next, and a molecule that has been destroyed cannot be
       ! asked for its overlap.
+      ! Resolved once for the whole ladder. Absent leaves exactly the defaults
+      ! every rung used before this argument existed, so a caller that does not
+      ! pass `scf` is unaffected.
+      shift = 0.0_dp
+      lindep = 0.0_dp
+      accel = ACCEL_DIIS
+      ndiis = 8
+      incr = .true.
+      if (present(scf_in)) then
+         shift = scf_in%level_shift
+         lindep = scf_in%linear_dependence
+         ndiis = scf_in%diis_size
+         if (.not. scf_in%use_diis) ndiis = 0
+         incr = scf_in%incremental_fock
+         call parse_accelerator_name(scf_in%accelerator, accel, accel_ok)
+         ! A spelling this routine cannot parse has already been refused by the
+         ! caller, which runs the same parse before any of this. Falling back
+         ! rather than erroring keeps a guess from failing a calculation.
+         if (.not. accel_ok) accel = ACCEL_DIIS
+      end if
+
       allocate (rungs(n))
       do i = 1, n
          call build_libcint_molecule(atomic_numbers, symbols, coords, steps(i)%basis, &
@@ -122,11 +163,17 @@ contains
             ! rather than a minute.
             call run_libcint_rhf(rungs(i), nelec, steps(i)%maxiter, steps(i)%tolerance, &
                                  steps(i)%tolerance, .false., scf, error, &
-                                 guess=SCF_GUESS_GWH)
+                                 guess=SCF_GUESS_GWH, &
+                                 level_shift=shift, linear_dependence=lindep, &
+                                 accelerator=accel, diis_vectors=ndiis, &
+                                 incremental_fock=incr)
          else
             call run_libcint_rhf(rungs(i), nelec, steps(i)%maxiter, steps(i)%tolerance, &
                                  steps(i)%tolerance, .false., scf, error, &
-                                 guess=SCF_GUESS_SAD, guess_density=carried)
+                                 guess=SCF_GUESS_SAD, guess_density=carried, &
+                                 level_shift=shift, linear_dependence=lindep, &
+                                 accelerator=accel, diis_vectors=ndiis, &
+                                 incremental_fock=incr)
          end if
          if (error%has_error()) return
          ! A rung that does not converge is not fatal. It is a starting point for

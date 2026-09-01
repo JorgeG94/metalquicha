@@ -34,6 +34,8 @@ module mqc_libcint_bridge
    use mqc_libcint_projection, only: climb_basis_ladder
    use mqc_diis, only: parse_accelerator_name, accelerator_name, ACCEL_DIIS
    use mqc_config_types, only: scf_numerics_t
+   use mqc_scf_convergence, only: scf_convergence_t, parse_convergence_metric, &
+                                  CONV_METRIC_ENERGY
    use mqc_libcint_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                        guess_display_name
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
@@ -651,6 +653,9 @@ contains
       integer :: iatom, diis_size, guess_kind, accel_kind
       integer :: nelec        !! Valence electrons: fragment%nelec less any ECP core
       logical :: accel_ok
+      type(scf_convergence_t) :: scf_conv
+      type(scf_numerics_t) :: ladder_scf
+      logical :: conv_ok
       logical :: unrestricted, do_gradient, do_hessian
       ! Left unallocated for the guesses that need no free-atom solutions. An
       ! unallocated allocatable passed to an optional dummy is an absent
@@ -926,6 +931,31 @@ contains
 
       ! ---- which initial guess? ---------------------------------------------
       call parse_accelerator_name(settings%accelerator, accel_kind, accel_ok)
+      ! The convergence rule, assembled once per run rather than at each SCF
+      ! call. A metric the deck misspells is refused here, before any integral
+      ! is computed, and named -- silently falling back to the default would be
+      ! the same class of bug as dropping the setting.
+      call parse_convergence_metric(settings%convergence_metric, scf_conv%metric, conv_ok)
+      if (.not. conv_ok) then
+         call result%error%set(ERROR_VALIDATION, "keywords.scf.convergence_metric '"// &
+                               trim(settings%convergence_metric)//"' is not one of "// &
+                               "standard, energy, commutator, density")
+         result%has_error = .true.
+         return
+      end if
+      scf_conv%tolerance = settings%energy_tol
+      scf_conv%gradient_tolerance = settings%grad_tol
+      ! The energy metric is the weakest of the three and unsafe with an
+      ! accelerator that INTERPOLATES: EDIIS on water/6-31G holds dE at 1e-13
+      ! while the commutator sits at 1.1e-2, and stopping there lands 5.8e-5
+      ! hartree from the answer. Measured, not estimated. Said once, here,
+      ! rather than refused -- the user named the metric and gets it.
+      if (scf_conv%metric == CONV_METRIC_ENERGY .and. accel_kind /= ACCEL_DIIS) then
+         call logger%warning("  convergence_metric is 'energy' and the accelerator "// &
+                             "interpolates. An interpolating scheme can stall with a "// &
+                             "small dE and a large commutator, and an energy-only test "// &
+                             "stops there. Prefer 'commutator', or 'standard'.")
+      end if
       if (.not. accel_ok) then
          call result%error%set(ERROR_VALIDATION, "keywords.scf.accelerator '"// &
                                trim(settings%accelerator)//"' is not one of diis, "// &
@@ -956,9 +986,19 @@ contains
             call mol%destroy()
             return
          end if
+         ! How the rungs are driven comes from the deck, the same as the target
+         ! SCF's. Only `maxiter` and `tolerance` stay per-rung -- those differ
+         ! by rung on purpose; the rest is a property of the calculation.
+         ladder_scf%level_shift = settings%level_shift
+         ladder_scf%linear_dependence = settings%linear_dependence
+         ladder_scf%use_diis = settings%use_diis
+         ladder_scf%diis_size = settings%diis_size
+         ladder_scf%incremental_fock = settings%incremental_fock
+         ladder_scf%accelerator = settings%accelerator
          call climb_basis_ladder(settings%guess_steps, fragment%element_numbers, symbols, &
                                  fragment%coordinates, nelec, mol, guess_total, &
-                                 guess_error, verbose=settings%verbose)
+                                 guess_error, verbose=settings%verbose, &
+                                 scf_in=ladder_scf)
          if (guess_error%has_error()) then
             ! The same reasoning the atomic guess uses: a guess that cannot be
             ! built is a reason to start somewhere else, not to fail the
@@ -1079,7 +1119,7 @@ contains
                                  level_shift=settings%level_shift, accelerator=accel_kind, &
                                  linear_dependence=settings%linear_dependence, &
                                  incremental_fock=settings%incremental_fock, &
-                                 grad_tol=settings%grad_tol, &
+                                 grad_tol=settings%grad_tol, convergence=scf_conv, &
                                  b_ao_out=scf_b_ao)
          else
             call run_libcint_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
@@ -1089,7 +1129,7 @@ contains
                                  level_shift=settings%level_shift, accelerator=accel_kind, &
                                  linear_dependence=settings%linear_dependence, &
                                  incremental_fock=settings%incremental_fock, &
-                                 grad_tol=settings%grad_tol)
+                                 grad_tol=settings%grad_tol, convergence=scf_conv)
          end if
          ! Kept alive: the gradient below has to be told the same auxiliary
          ! basis this SCF fitted with. Released once past it.
@@ -1101,7 +1141,7 @@ contains
                               pcm=pcm_ctx, level_shift=settings%level_shift, accelerator=accel_kind, &
                               linear_dependence=settings%linear_dependence, &
                               incremental_fock=settings%incremental_fock, &
-                              grad_tol=settings%grad_tol)
+                              grad_tol=settings%grad_tol, convergence=scf_conv)
       else
          ! Store the integrals when they fit, rather than rebuilding every
          ! quartet at every iteration.
@@ -1133,7 +1173,7 @@ contains
                               level_shift=settings%level_shift, accelerator=accel_kind, &
                               linear_dependence=settings%linear_dependence, &
                               incremental_fock=settings%incremental_fock, &
-                              grad_tol=settings%grad_tol)
+                              grad_tol=settings%grad_tol, convergence=scf_conv)
       end if
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
@@ -2316,6 +2356,8 @@ contains
       character(len=MAX_LINE_LENGTH) :: line
       integer :: iatom, diis_size, accel_kind
       logical :: accel_ok
+      type(scf_convergence_t) :: scf_conv
+      logical :: conv_ok
       integer :: space(4)
 
       if (settings%pcm%enabled) then
@@ -2403,6 +2445,31 @@ contains
       ! reaches this routine whatever it says, and nothing downstream would
       ! report that a requested accelerator had not been used.
       call parse_accelerator_name(settings%accelerator, accel_kind, accel_ok)
+      ! The convergence rule, assembled once per run rather than at each SCF
+      ! call. A metric the deck misspells is refused here, before any integral
+      ! is computed, and named -- silently falling back to the default would be
+      ! the same class of bug as dropping the setting.
+      call parse_convergence_metric(settings%convergence_metric, scf_conv%metric, conv_ok)
+      if (.not. conv_ok) then
+         call result%error%set(ERROR_VALIDATION, "keywords.scf.convergence_metric '"// &
+                               trim(settings%convergence_metric)//"' is not one of "// &
+                               "standard, energy, commutator, density")
+         result%has_error = .true.
+         return
+      end if
+      scf_conv%tolerance = settings%energy_tol
+      scf_conv%gradient_tolerance = settings%grad_tol
+      ! The energy metric is the weakest of the three and unsafe with an
+      ! accelerator that INTERPOLATES: EDIIS on water/6-31G holds dE at 1e-13
+      ! while the commutator sits at 1.1e-2, and stopping there lands 5.8e-5
+      ! hartree from the answer. Measured, not estimated. Said once, here,
+      ! rather than refused -- the user named the metric and gets it.
+      if (scf_conv%metric == CONV_METRIC_ENERGY .and. accel_kind /= ACCEL_DIIS) then
+         call logger%warning("  convergence_metric is 'energy' and the accelerator "// &
+                             "interpolates. An interpolating scheme can stall with a "// &
+                             "small dE and a large commutator, and an energy-only test "// &
+                             "stops there. Prefer 'commutator', or 'standard'.")
+      end if
       if (.not. accel_ok) then
          call result%error%set(ERROR_VALIDATION, "keywords.scf.accelerator '"// &
                                trim(settings%accelerator)//"' is not one of diis, "// &
@@ -2421,7 +2488,7 @@ contains
                            level_shift=settings%level_shift, &
                            linear_dependence=settings%linear_dependence, &
                            incremental_fock=settings%incremental_fock, &
-                           grad_tol=settings%grad_tol)
+                           grad_tol=settings%grad_tol, convergence=scf_conv)
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
          result%has_error = .true.

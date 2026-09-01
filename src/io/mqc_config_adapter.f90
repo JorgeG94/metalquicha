@@ -264,6 +264,10 @@ contains
       if (allocated(mqc_config%scf_accelerator)) then
          driver_config%method_config%scf%accelerator = mqc_config%scf_accelerator
       end if
+      if (allocated(mqc_config%scf_convergence_metric)) then
+         driver_config%method_config%scf%convergence_metric = &
+            mqc_config%scf_convergence_metric
+      end if
       driver_config%method_config%scf%linear_dependence = mqc_config%scf_linear_dependence
       ! Carry across whether the deck actually named them, not just what they
       ! came out as. A caller whose own default is stricter than the shared one

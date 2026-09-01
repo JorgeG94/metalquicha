@@ -321,6 +321,7 @@ contains
       call allow(keys, "tolerance")
       call allow(keys, "density_tolerance")
       call allow(keys, "gradient_tolerance")
+      call allow(keys, "convergence_metric")
       call allow(keys, "linear_dependence_threshold")
       call allow(keys, "level_shift")
       call allow(keys, "diis")
@@ -405,6 +406,11 @@ contains
       call allow(keys, "tolerance")
       call allow(keys, "density_tolerance")
       call allow(keys, "gradient_tolerance")
+      ! Which measure decides the SCF has stopped: "standard" (the default --
+      ! energy and commutator together, as before this key existed), "energy",
+      ! "commutator" (aliases "diis" and "gradient", all three naming FDS-SDF),
+      ! or "density". `tolerance` is read in the units of whichever is chosen.
+      call allow(keys, "convergence_metric")
       call allow(keys, "linear_dependence_threshold")
       call allow(keys, "guess")
       call allow(keys, "allow_crap_scf")

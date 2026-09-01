@@ -217,6 +217,7 @@ contains
       options%diis_size = config%scf%diis_size
       options%incremental_fock = config%scf%incremental_fock
       options%accelerator = config%scf%accelerator
+      options%convergence_metric = config%scf%convergence_metric
       options%pcm = config%pcm
       options%properties = config%properties
    end subroutine configure_scf

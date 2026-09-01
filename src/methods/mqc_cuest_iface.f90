@@ -133,6 +133,8 @@ module mqc_cuest_iface
       logical :: verbose = .false.
          !! Print the SCF iteration table
       character(len=32) :: accelerator = "diis"
+      character(len=32) :: convergence_metric = "standard"
+         !! See `mqc_scf_convergence`.
          !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
          !! 'ediis'. The energy-based pair runs only while the error is large
          !! and hands over to DIIS, so naming one asks for a different opening,
@@ -265,6 +267,7 @@ contains
       settings%diis_size = options%diis_size
       settings%incremental_fock = options%incremental_fock
       settings%accelerator = options%accelerator
+      settings%convergence_metric = options%convergence_metric
       settings%verbose = options%verbose
       settings%device_rank = options%device_rank
       settings%pcm = options%pcm

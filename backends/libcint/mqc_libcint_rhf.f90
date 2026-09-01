@@ -30,6 +30,7 @@ module mqc_libcint_rhf
    use mqc_libcint_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks
    use mqc_libcint_pcm, only: pcm_context_t
    use mqc_program_limits, only: DF_AUX_CHUNK
+   use mqc_scf_convergence, only: scf_convergence_t
    implicit none
    private
 
@@ -418,13 +419,17 @@ contains
                               verbose, result, error, aux, diis_vectors, in_core, &
                               guess, guess_density, xc, h_extra, pcm, projector, &
                               level_shift, linear_dependence, b_ao_out, accelerator, grad_tol, &
-                              incremental_fock)
+                              incremental_fock, convergence)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
       real(dp), intent(in), optional :: grad_tol
+      type(scf_convergence_t), intent(in), optional :: convergence
+         !! The rule that decides this SCF has converged. Absent reproduces
+         !! what `energy_tol` and `grad_tol` meant before this existed, so a
+         !! caller that has not been updated is unaffected.
       logical, intent(in), optional :: incremental_fock
          !! Build each iteration from the density change. Default true; false
          !! forces a full build every iteration, which is what to reach for when
@@ -562,6 +567,7 @@ contains
       real(dp) :: e_elec, e_old, de, drms
       real(dp) :: gnorm
       real(dp) :: gtol
+      type(scf_convergence_t) :: conv
       real(dp) :: shift, shift_now, drms_prev, taper
       real(dp), allocatable :: sd(:, :), sds(:, :)
       integer :: n_ao, n_mo, n_occ, iter
@@ -735,10 +741,16 @@ contains
       ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
       ! caller states it. See the argument's own note for why a density
       ! consumer must.
-      gtol = sqrt(energy_tol)
-      if (present(grad_tol)) then
-         if (grad_tol > 0.0_dp) gtol = grad_tol
+      ! Assembled once. A caller that states nothing gets `CONV_METRIC_STANDARD`
+      ! with the same `sqrt(energy_tol)` bound this line used to compute, so
+      ! introducing the type moves no number.
+      if (present(convergence)) then
+         conv = convergence
+      else
+         conv%tolerance = energy_tol
+         if (present(grad_tol)) conv%gradient_tolerance = grad_tol
       end if
+      gtol = conv%commutator_bound()
 
       shift = 0.0_dp
       if (present(level_shift)) shift = level_shift
@@ -942,7 +954,12 @@ contains
          ! system size in use, and be reachable by an open-shell
          ! range-separated case. `sqrt(energy_tol)` is 3.2e-5 at the new
          ! default and satisfies both by orders.
-         if (iter > 1 .and. de < energy_tol .and. gnorm < gtol .and. &
+         ! The rule lives in `scf_convergence_t`, not here. `shift_now` stays
+         ! in the caller because it is not a convergence measure: a shifted
+         ! Fock matrix is a different operator, so an iterate that met the
+         ! threshold under a shift has not converged the problem that was
+         ! asked for.
+         if (iter > 1 .and. conv%is_converged(de, drms, gnorm) .and. &
              shift_now == 0.0_dp) then
             result%converged = .true.
             exit
@@ -999,7 +1016,7 @@ contains
                               verbose, result, error, diis_vectors, in_core, diis_start, &
                               guess, guess_density_alpha, guess_density_beta, xc, pcm, &
                               level_shift, linear_dependence, accelerator, grad_tol, &
-                              incremental_fock)
+                              incremental_fock, convergence)
       !! Drive an unrestricted SCF to convergence
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
@@ -1018,6 +1035,10 @@ contains
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
       real(dp), intent(in), optional :: grad_tol
+      type(scf_convergence_t), intent(in), optional :: convergence
+         !! The rule that decides this SCF has converged. Absent reproduces
+         !! what `energy_tol` and `grad_tol` meant before this existed, so a
+         !! caller that has not been updated is unaffected.
       logical, intent(in), optional :: incremental_fock
          !! Build each iteration from the density change. Default true; false
          !! forces a full build every iteration, which is what to reach for when
@@ -1098,6 +1119,7 @@ contains
       real(dp) :: e_elec, e_old, de, drms
       real(dp) :: gnorm
       real(dp) :: gtol
+      type(scf_convergence_t) :: conv
       real(dp) :: shift, shift_now, drms_prev, taper
       real(dp), allocatable :: sd(:, :), sds(:, :)
       integer :: n_ao, n_mo, n_alpha, n_beta, iter, nsq, msq
@@ -1260,10 +1282,16 @@ contains
       ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
       ! caller states it. See the argument's own note for why a density
       ! consumer must.
-      gtol = sqrt(energy_tol)
-      if (present(grad_tol)) then
-         if (grad_tol > 0.0_dp) gtol = grad_tol
+      ! Assembled once. A caller that states nothing gets `CONV_METRIC_STANDARD`
+      ! with the same `sqrt(energy_tol)` bound this line used to compute, so
+      ! introducing the type moves no number.
+      if (present(convergence)) then
+         conv = convergence
+      else
+         conv%tolerance = energy_tol
+         if (present(grad_tol)) conv%gradient_tolerance = grad_tol
       end if
+      gtol = conv%commutator_bound()
 
       shift = 0.0_dp
       if (present(level_shift)) shift = level_shift
@@ -1436,7 +1464,12 @@ contains
          ! system size in use, and be reachable by an open-shell
          ! range-separated case. `sqrt(energy_tol)` is 3.2e-5 at the new
          ! default and satisfies both by orders.
-         if (iter > 1 .and. de < energy_tol .and. gnorm < gtol .and. &
+         ! The rule lives in `scf_convergence_t`, not here. `shift_now` stays
+         ! in the caller because it is not a convergence measure: a shifted
+         ! Fock matrix is a different operator, so an iterate that met the
+         ! threshold under a shift has not converged the problem that was
+         ! asked for.
+         if (iter > 1 .and. conv%is_converged(de, drms, gnorm) .and. &
              shift_now == 0.0_dp) then
             result%converged = .true.
             exit
