@@ -109,7 +109,9 @@ contains
                             functional, grid_level, pt2_fraction, neutral_orbitals, &
                             neutral_orbital_energies, aux, n_frozen, verbose, pcm, &
                             level_shift, diis_vectors, nlc_grid_level, &
-                            screening_tolerance, block_size, guess_mode, incremental_fock)
+                            screening_tolerance, block_size, guess_mode, incremental_fock, &
+                            accelerator, grad_tol, linear_dependence, unseeded_guess, &
+                            allow_unconverged)
       !! Run the ions and condense the difference onto atoms
       !!
       !! The neutral density is handed in rather than recomputed, since the
@@ -177,6 +179,32 @@ contains
          !! turns it off for the whole Fukui run. Withholding it here would
          !! leave the one place a stalling run most wants to rule it out --
          !! the ions -- building incrementally whatever the deck said.
+      integer, intent(in), optional :: accelerator
+         !! `properties.fukui.scf.accelerator`, already parsed to an `ACCEL_*`
+         !! kind by the caller. Absent leaves the SCF's own default.
+      real(dp), intent(in), optional :: grad_tol
+         !! `properties.fukui.scf.gradient_tolerance`. Absent derives it from
+         !! the energy tolerance, as the neutral's SCF does.
+      real(dp), intent(in), optional :: linear_dependence
+         !! `properties.fukui.scf.linear_dependence_threshold`. The ions are
+         !! the place this is most likely to be wanted: a diffuse basis chosen
+         !! so the anion binds its extra electron is also the one whose overlap
+         !! goes near-singular.
+      integer, intent(in), optional :: unseeded_guess
+         !! An `SCF_GUESS_*` kind for an ion that is NOT seeded from the
+         !! neutral -- so it bites under `guess_mode = "independent"`, and is
+         !! ignored otherwise, because a seeded ion already has a density and
+         !! nothing left for a guess to decide.
+         !!
+         !! Absent keeps the GWH fallback below. The caller passes this only
+         !! for an explicit spelling and not for `auto`, so a deck that never
+         !! mentioned a guess is not quietly moved off GWH.
+      logical, intent(in), optional :: allow_unconverged
+         !! `properties.fukui.scf.allow_crap_scf`. Keep an ion that did not
+         !! converge instead of refusing to form the index, with a warning. The
+         !! indices are differences of two densities, so an unconverged one
+         !! makes every number downstream a result to follow up rather than to
+         !! trust -- which is exactly what the neutral's own flag means.
       character(len=*), intent(in), optional :: guess_mode
          !! "neutral" (the default) or "independent".
          !!
@@ -238,7 +266,7 @@ contains
       real(dp), allocatable :: overlap(:, :), total(:, :)
       real(dp), allocatable :: d_guess_a(:, :), d_guess_b(:, :)
       integer :: n_ao, n_occ_neutral, guess_kind
-      logical :: seeded
+      logical :: seeded, keep_unconverged
       logical :: loud
       integer :: natm
       type(xc_context_t), target :: xc_ions
@@ -372,9 +400,12 @@ contains
       ! makes one call site serve both paths: `guess_kind` falls back to GWH and
       ! the two densities vanish from the call, which is exactly the old
       ! behaviour rather than an error.
+      keep_unconverged = .false.
+      if (present(allow_unconverged)) keep_unconverged = allow_unconverged
       n_ao = size(neutral_density, 1)
       n_occ_neutral = nelec/2
       guess_kind = SCF_GUESS_GWH
+      if (present(unseeded_guess)) guess_kind = unseeded_guess
       seeded = present(neutral_orbitals)
       ! An explicit "independent" turns the seeding off and nothing else: the
       ! orbitals are still passed by the caller, still the right shape, and
@@ -405,16 +436,23 @@ contains
                            level_shift=level_shift, &
                            guess=guess_kind, guess_density_alpha=d_guess_a, &
                            guess_density_beta=d_guess_b, &
-                           incremental_fock=incremental_fock)
+                           incremental_fock=incremental_fock, &
+                           accelerator=accelerator, grad_tol=grad_tol, &
+                           linear_dependence=linear_dependence)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the anion")
          return
       end if
       if (.not. anion%converged) then
-         call error%set(ERROR_VALIDATION, "the anion did not converge, so f+ cannot "// &
-                        "be formed. Anions converge poorly in a basis with no diffuse "// &
-                        "functions, which is usually the cause rather than the SCF.")
-         return
+         if (.not. keep_unconverged) then
+            call error%set(ERROR_VALIDATION, "the anion did not converge, so f+ cannot "// &
+                           "be formed. Anions converge poorly in a basis with no diffuse "// &
+                           "functions, which is usually the cause rather than the SCF.")
+            return
+         end if
+         call logger%warning("  Fukui: the anion did not converge, and "// &
+                             "allow_crap_scf kept it. Every index below is "// &
+                             "built from it and is a result to follow up.")
       end if
       allocate (total(size(anion%density, 1), size(anion%density, 2)))
       total = anion%density + anion%density_beta
@@ -447,15 +485,22 @@ contains
                            level_shift=level_shift, &
                            guess=guess_kind, guess_density_alpha=d_guess_a, &
                            guess_density_beta=d_guess_b, &
-                           incremental_fock=incremental_fock)
+                           incremental_fock=incremental_fock, &
+                           accelerator=accelerator, grad_tol=grad_tol, &
+                           linear_dependence=linear_dependence)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the cation")
          return
       end if
       if (.not. cation%converged) then
-         call error%set(ERROR_VALIDATION, "the cation did not converge, so f- cannot "// &
-                        "be formed.")
-         return
+         if (.not. keep_unconverged) then
+            call error%set(ERROR_VALIDATION, "the cation did not converge, so f- cannot "// &
+                           "be formed.")
+            return
+         end if
+         call logger%warning("  Fukui: the cation did not converge, and "// &
+                             "allow_crap_scf kept it. Every index below is "// &
+                             "built from it and is a result to follow up.")
       end if
       allocate (total(size(cation%density, 1), size(cation%density, 2)))
       total = cation%density + cation%density_beta

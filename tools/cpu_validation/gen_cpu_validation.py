@@ -358,6 +358,12 @@ HAND_MAINTAINED = {
     # exercised the path end to end.
     "cpu/mqc/fukui/cpu_water_6-31g_fukui_chelpg.json",
     "cpu/mqc/fukui/cpu_water_6-31g_fukui_mulliken.json",
+    # The ions given their own SCF group, and the neutral's energy pinned to the
+    # same number as the chelpg case above. `properties.fukui.scf` configures
+    # the two ion SCFs only, so a level shift and an EDIIS opening set there
+    # must leave the neutral exactly where it was -- if a regression leaked
+    # them onto it, this case moves and its twin does not.
+    "cpu/mqc/fukui/cpu_water_6-31g_fukui_scf_group.json",
     # The same analysis on Kohn-Sham ions. Here for a reason the other two do
     # not cover: the ions are doublets, so they need a spin-POLARISED
     # functional, while the closed-shell neutral's context is unpolarised.

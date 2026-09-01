@@ -102,6 +102,9 @@ contains
       call check_child_object(core, root, "properties", properties_keys(), error)
       call check_grandchild_object(core, root, "properties", "fukui", &
                                    fukui_keys(), error)
+      if (error%has_error()) return
+      call check_fukui_scf_object(core, root, error)
+      if (error%has_error()) return
       call check_grandchild_object(core, root, "properties", "charges", &
                                    charges_keys(), error)
       call check_grandchild_object(core, root, "properties", "bonding_analysis", &
@@ -275,17 +278,58 @@ contains
       !! JSON either way, so nothing is inherited silently.
       type(key_set_t) :: keys
       call allow(keys, "population")
-      ! The ions are their own SCF problem and are allowed to be configured as
-      ! one. They are harder than the neutral -- a charged species in a basis
-      ! that has to describe a diffuse tail -- so inheriting the settings that
-      ! converged the neutral is a default rather than a rule. Each of these
-      ! inherits `keywords.scf` when absent, so a deck that says nothing is
-      ! unchanged.
+      ! Which starting density each ion gets: "neutral" or "independent".
+      !
+      ! **Deliberately a sibling of `scf`, not a key inside it**, even though
+      ! `scf` has a `guess` of its own. The two are different questions and the
+      ! spelling collides: this one says whether the ion starts from the
+      ! neutral's converged orbitals at all, while `scf.guess` says how a
+      ! density is built when it starts from nothing -- `core`, `gwh`, `sad`.
+      ! Nesting is what keeps them apart, so moving this one inside `scf` would
+      ! put two unrelated meanings on one name.
       call allow(keys, "guess")
-      call allow(keys, "maxiter")
-      call allow(keys, "diis_size")
-      call allow(keys, "level_shift")
+      ! The ions are their own SCF problem and are configured as one, with the
+      ! same key spellings `keywords.scf` uses so a block can be moved between
+      ! them unchanged.
+      call allow(keys, "scf")
    end function fukui_keys
+
+   function fukui_scf_keys() result(keys)
+      !! `properties.fukui.scf`: how the deltaSCF ions converge
+      !!
+      !! Every key here is spelled exactly as its `keywords.scf` counterpart,
+      !! and each is *seeded* from that counterpart before the deck is read --
+      !! so naming none of them leaves the ions converging the way the neutral
+      !! did, and naming one changes only that one. There is no sentinel for
+      !! "absent" anywhere below, because absent is spelled by the field still
+      !! holding what it inherited.
+      !!
+      !! `inherit_scf` is the exception, and the only key here without a
+      !! `keywords.scf` twin: false drops the seed, so unnamed keys fall back
+      !! to the type defaults rather than to the neutral's settings. That is
+      !! for a neutral converged tightly, or with an accelerator chosen for it,
+      !! where inheriting is the wrong start rather than a cautious one.
+      !!
+      !! No `basis`, `density_fitting` or `unrestricted`: the density
+      !! difference is taken over the neutral's own basis functions by
+      !! construction, and an ion disagreeing with the neutral about the
+      !! Hamiltonian would not give a Fukui index -- it would give a
+      !! difference between two different calculations.
+      type(key_set_t) :: keys
+      call allow(keys, "inherit_scf")
+      call allow(keys, "maxiter")
+      call allow(keys, "tolerance")
+      call allow(keys, "density_tolerance")
+      call allow(keys, "gradient_tolerance")
+      call allow(keys, "linear_dependence_threshold")
+      call allow(keys, "level_shift")
+      call allow(keys, "diis")
+      call allow(keys, "diis_size")
+      call allow(keys, "accelerator")
+      call allow(keys, "incremental_fock")
+      call allow(keys, "allow_crap_scf")
+      call allow(keys, "guess")
+   end function fukui_scf_keys
 
    function charges_keys() result(keys)
       !! Settings for the atomic partial charges
@@ -855,6 +899,29 @@ contains
          end if
       end do
    end function lowered
+
+   subroutine check_fukui_scf_object(core, root, error)
+      !! Validate `properties.fukui.scf`, one level deeper than the helpers go
+      !!
+      !! `check_grandchild_object` walks two levels and this key is three down,
+      !! so the walk is spelled out. Worth validating rather than waving
+      !! through: an unrecognised key here is a convergence setting the ions
+      !! silently did not get, and the run still prints Fukui indices.
+      type(json_core), intent(inout) :: core
+      type(json_value), pointer, intent(in) :: root
+      type(error_t), intent(inout) :: error
+
+      type(json_value), pointer :: properties, fukui, scf
+      logical :: found
+
+      call core%get(root, "properties", properties, found)
+      if (.not. found .or. .not. associated(properties)) return
+      call core%get(properties, "fukui", fukui, found)
+      if (.not. found .or. .not. associated(fukui)) return
+      call core%get(fukui, "scf", scf, found)
+      if (.not. found .or. .not. associated(scf)) return
+      call check_object(core, scf, "properties.fukui.scf", fukui_scf_keys(), error)
+   end subroutine check_fukui_scf_object
 
    subroutine check_fukui_guess(core, root, error)
       !! `properties.fukui.guess` names a mode this code has

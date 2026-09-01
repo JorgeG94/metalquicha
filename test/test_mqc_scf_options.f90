@@ -196,6 +196,18 @@ contains
       properties%bonding_restrict_localization = .true.
       properties%fukui_population = "mulliken"
       properties%charges_scheme = "chelpg"
+      ! The ion SCF group. None of the three fields this replaced was ever
+      ! asserted here, despite `scf_options_t` promising that every field is --
+      ! so all three could have stopped crossing and nothing would have said
+      ! so. Setting each to something no default would produce.
+      properties%fukui_scf%max_iter = 173
+      properties%fukui_scf%energy_tol = 3.5e-7_dp
+      properties%fukui_scf%density_tol = 2.5e-5_dp
+      properties%fukui_scf%level_shift = 0.375_dp
+      properties%fukui_scf%diis_size = 11
+      properties%fukui_scf%accelerator = "ediis"
+      properties%fukui_scf%incremental_fock = .false.
+      properties%fukui_scf%inherit_scf = .false.
 
       call apply_properties_settings(settings, properties)
 
@@ -227,6 +239,23 @@ contains
       call check(error, allocated(settings%charges_scheme), "charges_scheme unset")
       if (allocated(error)) return
       call check(error, settings%charges_scheme == "chelpg", "charges_scheme")
+      if (allocated(error)) return
+      call check(error, settings%fukui_scf%max_iter == 173, "fukui_scf%max_iter")
+      if (allocated(error)) return
+      call check(error, settings%fukui_scf%energy_tol == 3.5e-7_dp, "fukui_scf%energy_tol")
+      if (allocated(error)) return
+      call check(error, settings%fukui_scf%density_tol == 2.5e-5_dp, "fukui_scf%density_tol")
+      if (allocated(error)) return
+      call check(error, settings%fukui_scf%level_shift == 0.375_dp, "fukui_scf%level_shift")
+      if (allocated(error)) return
+      call check(error, settings%fukui_scf%diis_size == 11, "fukui_scf%diis_size")
+      if (allocated(error)) return
+      call check(error, settings%fukui_scf%accelerator == "ediis", "fukui_scf%accelerator")
+      if (allocated(error)) return
+      call check(error,.not. settings%fukui_scf%incremental_fock, &
+                 "fukui_scf%incremental_fock")
+      if (allocated(error)) return
+      call check(error,.not. settings%fukui_scf%inherit_scf, "fukui_scf%inherit_scf")
    end subroutine every_property_arrives
 
    !> Two of the eight are allocatable, and an unset one must not overwrite

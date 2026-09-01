@@ -317,9 +317,9 @@ contains
       if (allocated(mqc_config%fukui_guess)) then
          driver_config%method_config%properties%fukui_guess = mqc_config%fukui_guess
       end if
-      driver_config%method_config%properties%fukui_maxiter = mqc_config%fukui_maxiter
-      driver_config%method_config%properties%fukui_diis_size = mqc_config%fukui_diis_size
-      driver_config%method_config%properties%fukui_level_shift = mqc_config%fukui_level_shift
+      ! One assignment, and no test: the reader already resolved this against
+      ! `keywords.scf`, so every field holds the value the ions should use.
+      driver_config%method_config%properties%fukui_scf = mqc_config%fukui_scf
       driver_config%method_config%properties%bonding_no_sharing = &
          mqc_config%bonding_no_sharing
       driver_config%method_config%properties%bonding_restrict_localization = &

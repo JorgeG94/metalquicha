@@ -1247,6 +1247,74 @@ The driver stays ``"energy"``.
     0.27/0.28/0.23/0.23 over the four atoms, ranking nothing, where CHELPG puts
     0.59 on the carbonyl carbon.
 
+  ``guess`` chooses what each ion starts from, and defaults to ``neutral``:
+
+  - ``neutral`` -- seed each ion from the converged neutral's orbitals, filled
+    Aufbau at that ion's own occupation. Usually much the better start; an
+    unseeded anion can begin a hartree or more above its own answer.
+  - ``independent`` -- let each ion take the ordinary initial guess. Reach for
+    this when an ion converges to the wrong state: seeding from the neutral
+    puts the extra electron in the *neutral's* LUMO, and where that is a poor
+    guess for the ion's own orbital the SCF can settle on a different
+    stationary point rather than climb out of it.
+
+  ``scf`` configures how the two ions converge. They are a second SCF beside
+  the neutral's and are harder than it -- a charged species in a basis chosen
+  to describe a neutral one -- so a deck can give them their own settings:
+
+  .. code-block:: json
+
+     "properties": {
+       "fukui": {
+         "population": "chelpg",
+         "scf": {"maxiter": 300, "level_shift": 0.2}
+       }
+     }
+
+  Every key here is spelled exactly as its ``keywords.scf`` counterpart and
+  means the same thing: ``maxiter``, ``tolerance``, ``density_tolerance``,
+  ``gradient_tolerance``, ``linear_dependence_threshold``, ``level_shift``,
+  ``diis``, ``diis_size``, ``accelerator``, ``incremental_fock``,
+  ``allow_crap_scf`` and ``guess``. A block can be moved between the two
+  unchanged.
+
+  **Anything not named is inherited from** ``keywords.scf``, per key. The
+  example above gives the ions a longer iteration budget and a level shift
+  while leaving them converging to the same tolerances, with the same
+  accelerator, as the neutral. Naming one setting never resets the others.
+
+  ``inherit_scf`` is the one key with no ``keywords.scf`` twin. It defaults to
+  ``true``; setting it ``false`` drops the inheritance, so anything the block
+  does not name falls back to the ordinary defaults rather than to the
+  neutral's settings. That is for a neutral converged unusually tightly, or
+  with an accelerator picked for it, where carrying that onto a charged species
+  is the wrong starting point rather than a careful one. It changes only the
+  fallback -- a key the block names wins either way.
+
+  .. note::
+
+     ``scf.guess`` and the ``guess`` beside ``population`` are different keys
+     one level apart. The outer one takes ``neutral`` or ``independent`` and
+     says whether the ion starts from the neutral's density at all; the inner
+     one takes ``core``, ``gwh``, ``sad`` and so on, and says how a density is
+     built when it starts from nothing. **The inner one only bites under**
+     ``"guess": "independent"`` -- a seeded ion already has a density, so there
+     is nothing left for a guess to decide, and naming one there does nothing
+     rather than something surprising.
+
+  ``linear_dependence_threshold`` is worth calling out, because the ions are
+  where it matters most and it is inherited by default. A basis diffuse enough
+  for the anion to bind its extra electron is also the one whose overlap goes
+  near-singular, so the neutral can drop functions while the ions do not --
+  which makes the three energies incomparable and the indices meaningless. The
+  three SCFs share the threshold unless a deck says otherwise.
+
+  There is no ``basis``, ``density_fitting`` or ``unrestricted`` here. The
+  density difference is taken over the neutral's own basis functions by
+  construction, and an ion that disagreed with the neutral about the
+  Hamiltonian would not give a Fukui index -- it would give a difference
+  between two different calculations.
+
   .. warning::
 
      **Negative indices are spurious. Take them with a grain of salt.**

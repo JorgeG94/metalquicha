@@ -5,7 +5,7 @@ module mqc_method_config
    !! for each method family. The factory reads from the appropriate nested type.
    use pic_types, only: int32, dp
    use mqc_program_limits, only: MAX_ORBITAL_LABEL_LEN
-   use mqc_config_types, only: guess_step_t
+   use mqc_config_types, only: guess_step_t, scf_numerics_t, deltascf_options_t
    use mqc_method_types, only: METHOD_TYPE_UNKNOWN
    use mqc_calculation_defaults, only: DEFAULT_VDW_SCALE, DEFAULT_DYNAMIC_TOL, &
                                        DEFAULT_DYNAMIC_MAXITER, EFP_RESPONSE_AUTO, &
@@ -16,6 +16,7 @@ module mqc_method_config
    public :: method_config_t
    public :: scf_config_t, xtb_config_t, dft_config_t, mcscf_config_t
    public :: scf_options_t
+   public :: scf_numerics_t, deltascf_options_t  !! Re-exported from mqc_config_types
    public :: correlation_config_t, cc_config_t, f12_config_t
    public :: efp_config_t
    public :: pcm_config_t
@@ -291,10 +292,11 @@ module mqc_method_config
       character(len=:), allocatable :: fukui_population
       character(len=:), allocatable :: fukui_guess
          !! "neutral" (default) or "independent". See `mqc_config_t`.
-      integer :: fukui_maxiter = -1        !! -1 inherits keywords.scf.maxiter
-      integer :: fukui_diis_size = -1      !! -1 inherits keywords.scf.diis_size
-      real(dp) :: fukui_level_shift = -1.0_dp
-         !! Negative inherits keywords.scf.level_shift; zero means "off".
+      type(deltascf_options_t) :: fukui_scf
+         !! How the ion SCFs converge. Already resolved against
+         !! `keywords.scf` by the time it reaches here -- the reader seeds it
+         !! and the deck overwrites what it names -- so a consumer reads these
+         !! fields directly and never tests a sentinel.
       character(len=:), allocatable :: charges_scheme
          !! Allocated when `properties.charges` asked for partial charges;
          !! "mulliken" or "chelpg". Unallocated means no charges, which is why
@@ -307,7 +309,7 @@ module mqc_method_config
       real(dp) :: bonding_threshold = 1.0_dp
    end type properties_config_t
 
-   type :: scf_options_t
+   type, extends(scf_numerics_t) :: scf_options_t
       !! What every self-consistent-field method carries, defined once
       !!
       !! **This exists because the copies drifted and one of them cost a bug.**
@@ -321,6 +323,14 @@ module mqc_method_config
       !! copies had also drifted in spelling -- `conv_tol` against
       !! `energy_tol`, `density_fitting` against `use_density_fitting` -- for
       !! fields meant to mean the same thing.
+      !!
+      !! **The convergence knobs live one level down, in `scf_numerics_t`.**
+      !! `max_iter`, the tolerances, the level shift, DIIS and the accelerator
+      !! are inherited from there rather than declared here, so that a second
+      !! SCF in the same run -- the deltaSCF ions behind a Fukui analysis --
+      !! can carry them without also carrying a basis, a `pcm` and a
+      !! `properties` block it has no use for. Reading `options%max_iter` is
+      !! unchanged by that; the field is inherited, not moved away.
       !!
       !! Method options **extend** this rather than holding it as a component,
       !! so `options%max_iter` keeps working and a method cannot forget a
@@ -347,53 +357,6 @@ module mqc_method_config
          !! `model.cartesian`; see `mqc_config_t`.
       logical :: spherical = .true.
          !! Use spherical (true) or Cartesian (false) basis
-      integer :: max_iter = 100
-         !! Maximum SCF iterations
-      real(dp) :: energy_tol = 1.0e-8_dp
-         !! Energy convergence threshold
-      real(dp) :: density_tol = 1.0e-6_dp
-      real(dp) :: grad_tol = 0.0_dp
-         !! Commutator threshold; zero derives `sqrt(energy_tol)`. See
-         !! `scf_config_t%gradient_convergence`.
-         !! Density matrix convergence threshold
-      real(dp) :: linear_dependence = 0.0_dp
-         !! Zero means the orthogonaliser's own cutoff. See `scf_config_t`.
-      real(dp) :: level_shift = 0.0_dp
-         !! Hartree added to the virtual block before each diagonalisation.
-         !! Zero is off. See `scf_config_t`.
-      logical :: use_diis = .true.
-         !! Use DIIS acceleration
-      integer :: diis_size = 8
-         !! Number of Fock matrices for DIIS
-      logical :: incremental_fock = .true.
-         !! Build each iteration's Fock matrix from the density *change* since
-         !! the last full build, rather than from the density.
-         !!
-         !! On by default: it is exact to the convergence threshold and several
-         !! times cheaper late in an SCF. False forces a full build every
-         !! iteration, which is what to reach for when an SCF misbehaves. The
-         !! incremental path accumulates a correction, so it is the first thing
-         !! to rule out when a run stalls or wanders -- and rebuilding the binary
-         !! to test that is not a debugging step anyone should have to take. It
-         !! is also the honest setting for timing a Fock build, since an
-         !! incremental one gets cheaper with every iteration.
-      character(len=32) :: accelerator = "diis"
-         !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
-         !! 'ediis'. The energy-based pair runs only while the error is large
-         !! and hands over to DIIS, so naming one asks for a different opening,
-         !! not a different endgame. Shared here rather than repeated per
-         !! method: `hf_options_t` and `dft_options_t` both extend this type.
-      logical :: allow_crap_scf = .false.
-         !! Keep a non-converged SCF instead of failing
-      character(len=32) :: guess = "auto"
-         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection',
-         !! or 'auto'. 'auto' means the backend picks, because the best
-         !! starting point is a property of the backend rather than of the
-         !! request: the CPU path resolves it to 'sad', and cuEST to 'gwh'.
-         !! An explicit spelling always wins over both.
-      type(guess_step_t), allocatable :: guess_steps(:)
-         !! The basis ladder for 'basis_set_projection', one entry per
-         !! preliminary SCF in order.
       logical :: unrestricted = .false.
          !! Force UHF/UKS even for a closed shell
       logical :: density_fitting = .false.
