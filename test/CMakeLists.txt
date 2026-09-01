@@ -170,6 +170,12 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_efp_read)
   target_link_libraries(test_mqc_efp_read PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # That the deck's SCF settings reach the one SCF a MakeFP run performs. Six of
+  # them used to be dropped between the config and the call, which no deck test
+  # can see -- the symptom is that the numbers are a default run's.
+  addtest(mqc_makefp_scf)
+  target_link_libraries(test_mqc_makefp_scf PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # The electrostatic interaction between two fragments, against the energy
   # GAMESS reports for the same dimer. Chiefly a guard on the charge-dipole
   # sign, which both ways round gives a plausible-looking answer.

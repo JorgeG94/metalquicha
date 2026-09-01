@@ -74,6 +74,12 @@ module mqc_efp_potential
    !> Longest line any section emits, with room to spare.
    integer, parameter :: MAX_LINE = 160
 
+   real(dp), parameter :: MAKEFP_DENSITY_TOL = 1.0e-8_dp
+   !! What a fragment potential is fitted at, and this routine's default for
+   !! both the density threshold and the commutator gate derived from it.
+   !! Named because the warning below has to compare against the same number
+   !! -- written twice, they drift, and the drift is silent.
+
    !> Flattened extents of the Cartesian tensors the polarizability blocks carry:
    !> a pair of directions, a triple, and a quadruple. Nine is also the number of
    !> slots GAMESS writes a polarizability in, those being the same thing.
@@ -323,7 +329,7 @@ contains
       integer :: natm, core, i, j, k, n_valence, n_electrons
       integer :: guess_kind
       real(dp) :: e_tol, d_tol, g_tol
-      character(len=16) :: tol_text
+      character(len=16) :: tol_text, ref_text
       integer :: n_iter, scf_diis, accel_kind
       real(dp) :: shift, lindep
       logical :: incr, accel_ok
@@ -452,7 +458,7 @@ contains
       ! basis, the same as the key does on the Energy path. Absent, the SCF is
       ! exact.
       e_tol = 1.0e-10_dp
-      d_tol = 1.0e-8_dp
+      d_tol = MAKEFP_DENSITY_TOL
       if (present(energy_tol)) e_tol = energy_tol
       if (present(density_tol)) d_tol = density_tol
       ! **The commutator threshold is stated, not derived, and this routine is
@@ -495,10 +501,12 @@ contains
       else if (.not. present(density_tol) .and. present(energy_tol)) then
          g_tol = sqrt(e_tol)
       end if
-      if (g_tol > 1.0e-8_dp) then
+      if (g_tol > MAKEFP_DENSITY_TOL) then
          write (tol_text, "(es9.2)") g_tol
+         write (ref_text, "(es9.2)") MAKEFP_DENSITY_TOL
          call logger%warning("  MAKEFP: the SCF will stop at a commutator of "// &
-                             trim(adjustl(tol_text))//", looser than the 1e-8 a "// &
+                             trim(adjustl(tol_text))//", looser than the "// &
+                             trim(adjustl(ref_text))//" a "// &
                              "fragment potential is fitted at. The multipoles and "// &
                              "polarizabilities come off this density, so they will "// &
                              "drift from their references. Name "// &
