@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">29 statements</a>
+                 title=" 0.2% of total for procedures.">33 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,11 +137,11 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/check_object.html#variable-child">child</a>
-            <a class="list-group-item" href="../proc/check_object.html#variable-found~34">found</a>
+            <a class="list-group-item" href="../proc/check_object.html#variable-found~24">found</a>
             <a class="list-group-item" href="../proc/check_object.html#variable-ichild">ichild</a>
             <a class="list-group-item" href="../proc/check_object.html#variable-ikey">ikey</a>
-            <a class="list-group-item" href="../proc/check_object.html#variable-n_children~2">n_children</a>
-            <a class="list-group-item" href="../proc/check_object.html#variable-name~22">name</a>
+            <a class="list-group-item" href="../proc/check_object.html#variable-n_children">n_children</a>
+            <a class="list-group-item" href="../proc/check_object.html#variable-name~8">name</a>
         </div>
       </div>
     </div>
@@ -227,7 +227,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~23"></span>
+              <span class="anchor" id="variable-path~13"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -257,7 +257,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~150"></span>
+              <span class="anchor" id="variable-error~59"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -879,7 +879,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~34"></span>
+              <span class="anchor" id="variable-found~24"></span>
               logical,
             </td>
               <td>private</td>
@@ -930,7 +930,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_children~2"></span>
+              <span class="anchor" id="variable-n_children"></span>
               integer,
             </td>
               <td>private</td>
@@ -947,7 +947,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~22"></span>
+              <span class="anchor" id="variable-name~8"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -999,6 +999,17 @@ large graphs.</div>
 <span class="k">         call </span><span class="n">core</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="n">child</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">name</span><span class="p">))</span><span class="w"> </span><span class="k">cycle</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">is_allowed</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="w">            </span><span class="c">! A key that moved gets told where it went. The generic message</span>
+<span class="w">            </span><span class="c">! lists what is allowed *here*, which for a relocated key is the</span>
+<span class="w">            </span><span class="c">! one list guaranteed not to contain it -- so it reads as "no such</span>
+<span class="w">            </span><span class="c">! setting" when the setting exists a line away.</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">path</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"keywords.scf"</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"unrestricted"</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.unrestricted has moved "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">"to model.unrestricted. It selects which wavefunction is "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">"computed, not how the SCF reaches it, so it belongs with "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="s2">"model.method and model.functional."</span><span class="p">)</span>
+<span class="w">               </span><span class="k">return</span>
+<span class="k">            end if</span>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"Unknown key "</span><span class="o">//</span><span class="n">quoted</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="s2">". Allowed here: "</span><span class="o">//</span><span class="n">allowed_list</span><span class="p">(</span><span class="n">keys</span><span class="p">))</span>
 <span class="w">            </span><span class="k">return</span>
@@ -1037,7 +1048,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-01 04:12 +0000             </p>
+ on 2026-09-01 06:50 +0000             </p>
           </div>
         </div>
         <br>

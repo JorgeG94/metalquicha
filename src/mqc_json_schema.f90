@@ -107,6 +107,7 @@ contains
       call check_grandchild_object(core, root, "properties", "bonding_analysis", &
                                    bonding_analysis_keys(), error)
       call check_bonding_analysis(core, root, error)
+      call check_fukui_guess(core, root, error)
       call check_ecp_supported(core, root, error)
       if (error%has_error()) return
       call check_grandchild_object(core, root, "system", "logger", logger_keys(), error)
@@ -202,6 +203,15 @@ contains
       call allow(keys, "aux_basis")
       call allow(keys, "functional")
       call allow(keys, "cartesian")
+      call allow(keys, "unrestricted")
+         !! Here rather than under `keywords.scf`, where it used to live. That
+         !! block is how an answer is reached -- iterations, tolerances, the
+         !! extrapolation -- and none of it changes the answer. This does: an
+         !! unrestricted reference is a larger variational space and a different
+         !! wavefunction, so a broken-symmetry singlet has its own energy. It
+         !! belongs with `method` and `functional`, which is what the code has
+         !! always said -- `run_libcint_rhf` and `run_libcint_uhf` are separate
+         !! routines and the output banner labels runs RKS or UKS.
       call require(keys, "method")
    end function model_keys
 
@@ -265,6 +275,16 @@ contains
       !! JSON either way, so nothing is inherited silently.
       type(key_set_t) :: keys
       call allow(keys, "population")
+      ! The ions are their own SCF problem and are allowed to be configured as
+      ! one. They are harder than the neutral -- a charged species in a basis
+      ! that has to describe a diffuse tail -- so inheriting the settings that
+      ! converged the neutral is a default rather than a rule. Each of these
+      ! inherits `keywords.scf` when absent, so a deck that says nothing is
+      ! unchanged.
+      call allow(keys, "guess")
+      call allow(keys, "maxiter")
+      call allow(keys, "diis_size")
+      call allow(keys, "level_shift")
    end function fukui_keys
 
    function charges_keys() result(keys)
@@ -342,7 +362,6 @@ contains
       call allow(keys, "density_tolerance")
       call allow(keys, "gradient_tolerance")
       call allow(keys, "linear_dependence_threshold")
-      call allow(keys, "unrestricted")
       call allow(keys, "guess")
       call allow(keys, "allow_crap_scf")
       call allow(keys, "density_fitting")
@@ -350,6 +369,7 @@ contains
       call allow(keys, "diis")
       call allow(keys, "diis_size")
       call allow(keys, "accelerator")
+      call allow(keys, "incremental_fock")
    end function scf_keys
 
    function efp_keys() result(keys)
@@ -625,6 +645,17 @@ contains
          call core%info(child, name=name)
          if (.not. allocated(name)) cycle
          if (.not. is_allowed(keys, name)) then
+            ! A key that moved gets told where it went. The generic message
+            ! lists what is allowed *here*, which for a relocated key is the
+            ! one list guaranteed not to contain it -- so it reads as "no such
+            ! setting" when the setting exists a line away.
+            if (path == "keywords.scf" .and. name == "unrestricted") then
+               call error%set(ERROR_VALIDATION, "keywords.scf.unrestricted has moved "// &
+                              "to model.unrestricted. It selects which wavefunction is "// &
+                              "computed, not how the SCF reaches it, so it belongs with "// &
+                              "model.method and model.functional.")
+               return
+            end if
             call error%set(ERROR_VALIDATION, "Unknown key "//quoted(path, name)// &
                            ". Allowed here: "//allowed_list(keys))
             return
@@ -824,6 +855,43 @@ contains
          end if
       end do
    end function lowered
+
+   subroutine check_fukui_guess(core, root, error)
+      !! `properties.fukui.guess` names a mode this code has
+      !!
+      !! Checked here rather than left to the reader, for the reason the whole
+      !! validator exists: the reader compares against "independent" and treats
+      !! everything else as the default, so a misspelling would silently seed
+      !! from the neutral -- which is the setting the deck was trying to turn
+      !! off. A wrong answer produced by a typo in the thing meant to prevent
+      !! it is the worst shape this failure could take.
+      type(json_core), intent(inout) :: core
+      type(json_value), pointer, intent(in) :: root
+      type(error_t), intent(inout) :: error
+
+      type(json_value), pointer :: properties, fukui, entry
+      character(len=:), allocatable :: mode
+      logical :: found
+
+      if (error%has_error()) return
+      call core%get(root, "properties", properties, found)
+      if (.not. found .or. .not. associated(properties)) return
+      call core%get(properties, "fukui", fukui, found)
+      if (.not. found .or. .not. associated(fukui)) return
+      call core%get(fukui, "guess", entry, found)
+      if (.not. found .or. .not. associated(entry)) return
+      call core%get(fukui, "guess", mode)
+
+      select case (lowered(trim(adjustl(mode))))
+      case ("neutral", "independent")
+         return
+      case default
+         call error%set(ERROR_VALIDATION, "properties.fukui.guess is '"//trim(mode)// &
+                        "'. It is 'neutral' -- seed each ion from the converged "// &
+                        "neutral's orbitals, the default -- or 'independent', which "// &
+                        "gives each ion the ordinary SCF guess instead.")
+      end select
+   end subroutine check_fukui_guess
 
    subroutine check_ecp_supported(core, root, error)
       !! `model.ecp` only reaches the methods that were wired for it

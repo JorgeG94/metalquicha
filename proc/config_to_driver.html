@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.9% of total for procedures.">206 statements</a>
+                 title=" 1.0% of total for procedures.">213 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -209,7 +209,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~6"></span>
+              <span class="anchor" id="variable-driver_config~4"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -274,7 +274,7 @@ the count from wherever the geometry came from instead.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~123"></span>
+              <span class="anchor" id="variable-error~148"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -1132,6 +1132,7 @@ large graphs.</div>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">level_shift</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_level_shift</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">use_diis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_use_diis</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">diis_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_diis_size</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">incremental_fock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_incremental_fock</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_accelerator</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">accelerator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_accelerator</span>
 <span class="w">      </span><span class="k">end if</span>
@@ -1159,7 +1160,7 @@ large graphs.</div>
 <span class="k">         </span><span class="n">driver_config</span><span class="p">%</span><span class="n">checkpoint_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">checkpoint_file</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="k">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">allow_crap_scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">allow_crap_scf</span>
-<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">unrestricted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_unrestricted</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">unrestricted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">unrestricted</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">density_fitting</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_density_fitting</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">corr</span><span class="p">%</span><span class="n">freeze_core</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">corr_freeze_core</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">corr</span><span class="p">%</span><span class="n">n_frozen_core</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">corr_n_frozen_core</span>
@@ -1190,7 +1191,13 @@ large graphs.</div>
 <span class="k">         </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">fukui_population</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">            </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">fukui_population</span>
 <span class="w">      </span><span class="k">end if</span>
-<span class="k">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_no_sharing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">fukui_guess</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">fukui_guess</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">fukui_guess</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">fukui_maxiter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">fukui_maxiter</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">fukui_diis_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">fukui_diis_size</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">fukui_level_shift</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">fukui_level_shift</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_no_sharing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">         </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">bonding_no_sharing</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_restrict_localization</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">         </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">bonding_restrict_localization</span>
@@ -1301,7 +1308,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-01 04:12 +0000             </p>
+ on 2026-09-01 06:50 +0000             </p>
           </div>
         </div>
         <br>

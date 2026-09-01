@@ -199,6 +199,7 @@ contains
       call optional_string(json, "model.aux_basis", config%aux_basis)
       call optional_logical(json, "model.cartesian", config%cartesian)
       call optional_string(json, "model.functional", config%functional)
+      call optional_logical(json, "model.unrestricted", config%unrestricted)
 
       ! ---- properties ------------------------------------------------------
       ! The `fukui` OBJECT is what asks for the analysis; `population` only
@@ -211,6 +212,11 @@ contains
          config%fukui_population = "chelpg"
          call optional_string(json, "properties.fukui.population", &
                               config%fukui_population)
+         config%fukui_guess = "neutral"
+         call optional_string(json, "properties.fukui.guess", config%fukui_guess)
+         call optional_int(json, "properties.fukui.maxiter", config%fukui_maxiter)
+         call optional_int(json, "properties.fukui.diis_size", config%fukui_diis_size)
+         call optional_real(json, "properties.fukui.level_shift", config%fukui_level_shift)
       end if
       ! Same shape as `fukui`: the OBJECT is the request, `scheme` only says
       ! how. Defaulted here for the same reason -- the scheme a run used should
@@ -270,9 +276,9 @@ contains
       call optional_real(json, "keywords.scf.linear_dependence_threshold", &
                          config%scf_linear_dependence)
       call named(json, "keywords.scf.density_tolerance", config%scf_density_tolerance_set)
-      call optional_logical(json, "keywords.scf.unrestricted", config%scf_unrestricted)
       call optional_string(json, "keywords.scf.guess", config%scf_guess)
       call optional_string(json, "keywords.scf.accelerator", config%scf_accelerator)
+      call optional_logical(json, "keywords.scf.incremental_fock", config%scf_incremental_fock)
       call optional_string(json, "keywords.guess.type", config%guess_type)
       call read_guess_steps(json, config, error)
       if (error%has_error()) return

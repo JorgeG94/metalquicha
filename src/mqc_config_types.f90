@@ -123,6 +123,26 @@ module mqc_config_types
          !! From `properties.bonding_analysis.type`. Absent or "none" means no
          !! analysis; "gms_quao" means the quasi-atomic bonding picture.
       character(len=:), allocatable :: fukui_population
+      character(len=:), allocatable :: fukui_guess
+         !! `properties.fukui.guess`: "neutral" (the default) or "independent".
+         !!
+         !! "neutral" seeds each ion from the converged neutral's orbitals,
+         !! filled Aufbau at that ion's own occupation. That is usually much the
+         !! better start -- an unseeded anion can begin a Hartree or two above
+         !! its own answer -- but it puts the extra electron in the *neutral's*
+         !! LUMO, and where that orbital is a poor guess for the ion's own the
+         !! SCF can settle on a different stationary point rather than climb
+         !! out. "independent" lets each ion take the ordinary guess instead.
+      integer :: fukui_maxiter = -1
+         !! `properties.fukui.maxiter`, for the ions alone. -1 inherits
+         !! `keywords.scf.maxiter`, which is the neutral's budget and need not
+         !! suit two SCFs that are harder than it.
+      integer :: fukui_diis_size = -1
+         !! `properties.fukui.diis_size`. -1 inherits `keywords.scf.diis_size`.
+      real(dp) :: fukui_level_shift = -1.0_dp
+         !! `properties.fukui.level_shift`. Negative inherits
+         !! `keywords.scf.level_shift`; zero is a real value meaning "off", so
+         !! the sentinel cannot be zero here.
          !! From `properties.fukui.population`. Allocated means the deck asked
          !! for Fukui indices; "chelpg" or "mulliken" chooses how the density
          !! difference is condensed onto atoms. Required inside the object
@@ -187,6 +207,9 @@ module mqc_config_types
          !! Pople sets throughout, so reproducing a GAMESS number needs a way
          !! to say so. Defaults false, which honours the file.
       character(len=:), allocatable :: functional
+      logical :: scf_incremental_fock = .true.
+         !! `keywords.scf.incremental_fock`. False forces a full Fock build every
+         !! iteration; see `scf_config_t` for why anyone would want that.
       character(len=:), allocatable :: scf_accelerator
          !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
          !! 'ediis'. The energy-based pair runs only while the error is large
@@ -207,7 +230,10 @@ module mqc_config_types
          !! One entry per preliminary SCF, in order. The target basis is
          !! `model.basis` and is not repeated here, so three SCFs -- STO-3G, then
          !! 6-31G, then cc-pVTZ -- is two steps and a model basis.
-      logical :: scf_unrestricted = .false.
+      logical :: unrestricted = .false.
+         !! `model.unrestricted`. Unprefixed because the model fields are --
+         !! `basis`, `functional`, `cartesian` -- and prefixes here track the
+         !! deck block the value came from.
       logical :: allow_crap_scf = .false.
       logical :: scf_density_fitting = .false.
       ! keywords.correlation -- post-Hartree-Fock, kept apart from the SCF ones

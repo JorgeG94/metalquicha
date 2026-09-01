@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.0% of total for procedures.">226 statements</a>
+                 title=" 1.1% of total for procedures.">232 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,13 +137,13 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/populate_config.html#variable-backend_named">backend_named</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-found~13">found</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-found">found</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-found_charges">found_charges</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-found_fukui">found_fukui</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-imol">imol</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-n_mol">n_mol</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-settings~6">settings</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-text~6">text</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-settings~2">settings</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-text~2">text</a>
         </div>
       </div>
     </div>
@@ -199,7 +199,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~15"></span>
+              <span class="anchor" id="variable-json~3"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -229,7 +229,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~21"></span>
+              <span class="anchor" id="variable-config~3"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -244,7 +244,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~76"></span>
+              <span class="anchor" id="variable-error~9"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1854,7 +1854,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~13"></span>
+              <span class="anchor" id="variable-found"></span>
               logical,
             </td>
               <td>private</td>
@@ -1939,7 +1939,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~6"></span>
+              <span class="anchor" id="variable-settings~2"></span>
               logical,
             </td>
               <td>private</td>
@@ -1956,7 +1956,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~6"></span>
+              <span class="anchor" id="variable-text~2"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -2044,6 +2044,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"model.aux_basis"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">aux_basis</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"model.cartesian"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">cartesian</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"model.functional"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">functional</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"model.unrestricted"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">unrestricted</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! ---- properties ------------------------------------------------------</span>
 <span class="w">      </span><span class="c">! The `fukui` OBJECT is what asks for the analysis; `population` only</span>
@@ -2056,6 +2057,11 @@ large graphs.</div>
 <span class="k">         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_population</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"chelpg"</span>
 <span class="w">         </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.population"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_population</span><span class="p">)</span>
+<span class="w">         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_guess</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"neutral"</span>
+<span class="w">         </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.guess"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_guess</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.maxiter"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_maxiter</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.diis_size"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_diis_size</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">optional_real</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.level_shift"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_level_shift</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="w">      </span><span class="c">! Same shape as `fukui`: the OBJECT is the request, `scheme` only says</span>
 <span class="w">      </span><span class="c">! how. Defaulted here for the same reason -- the scheme a run used should</span>
@@ -2115,9 +2121,9 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_real</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.linear_dependence_threshold"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                         </span><span class="n">config</span><span class="p">%</span><span class="n">scf_linear_dependence</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">named</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.density_tolerance"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_density_tolerance_set</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.unrestricted"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_unrestricted</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.guess"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_guess</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.accelerator"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_accelerator</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.incremental_fock"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_incremental_fock</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.guess.type"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">guess_type</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">read_guess_steps</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
@@ -2385,7 +2391,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-01 04:12 +0000             </p>
+ on 2026-09-01 06:50 +0000             </p>
           </div>
         </div>
         <br>
