@@ -6,6 +6,7 @@ module test_mqc_config_adapter
    use mqc_method_types, only: METHOD_TYPE_GFN2
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_OPTIMIZE
    use mqc_error, only: error_t
+   use pic_types, only: dp
    implicit none
    private
    public :: collect_mqc_config_adapter_tests
@@ -23,6 +24,8 @@ contains
                   new_unittest("single_fragment_no_overlap", test_single_fragment), &
                   new_unittest("driver_global_groups", test_driver_global_groups), &
                   new_unittest("driver_nodes_per_group", test_driver_nodes_per_group), &
+                  new_unittest("hessian_displacement_reaches_the_method", &
+                               test_hessian_displacement), &
                   new_unittest("saddle_target_reaches_driver", test_saddle_target), &
                   new_unittest("saddle_needs_a_saddle_algorithm", test_saddle_algorithm), &
                   new_unittest("unknown_target_refused", test_unknown_target), &
@@ -215,6 +218,42 @@ contains
       config%calc_type = CALC_TYPE_OPTIMIZE
       config%nfrag = 0
    end subroutine optimize_config
+
+   subroutine test_hessian_displacement(error)
+      !! The deck's finite-difference step has to reach the *method*
+      !!
+      !! `driver_config%hessian%displacement` was already set and already
+      !! covered -- `test_mqc_json_reader` asserts the reader picks the value
+      !! up. Nothing asserted the next rung, and that is exactly where it was
+      !! dropped: `finite_difference_hessian` took no displacement argument at
+      !! all, so every finite-difference Hessian ran at `DEFAULT_DISPLACEMENT`
+      !! while the log printed that default back as though it had been asked
+      !! for. A keyword accepted, validated, read, and then silently ignored.
+      !!
+      !! Both fields are checked. The driver one is what the vibrational path
+      !! reads and the method one is what actually displaces the geometry, and
+      !! they are set from the same source in two separate statements -- so one
+      !! can be right while the other is not, which is the state this test was
+      !! written to end.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver_config
+      type(error_t) :: parse_error
+
+      call optimize_config(config)
+      config%hessian_displacement = 0.0125_dp
+
+      call config_to_driver(config, driver_config, error=parse_error)
+
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, abs(driver_config%hessian%displacement - 0.0125_dp) < 1.0e-12_dp, &
+                 "the displacement should reach the driver")
+      if (allocated(error)) return
+      call check(error, &
+                 abs(driver_config%method_config%hessian_displacement - 0.0125_dp) < 1.0e-12_dp, &
+                 "the displacement should reach the method, which is what displaces")
+   end subroutine test_hessian_displacement
 
    subroutine test_saddle_target(error)
       !! A saddle target with an algorithm that can look for one

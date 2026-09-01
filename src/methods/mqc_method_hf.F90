@@ -194,7 +194,8 @@ contains
       ! path runs its own reference point -- so this starts over rather than
       ! trying to keep the SCF that just ran.
       call result%destroy()
-      call finite_difference_hessian(this, fragment, result, verbose=this%options%verbose)
+      call finite_difference_hessian(this, fragment, result, verbose=this%options%verbose, &
+                                     displacement_in=this%options%hessian_displacement)
    end subroutine hf_calc_hessian
 
 end module mqc_method_hf

@@ -7,7 +7,7 @@ module mqc_method_config
    use mqc_program_limits, only: MAX_ORBITAL_LABEL_LEN
    use mqc_config_types, only: guess_step_t, scf_numerics_t, deltascf_options_t
    use mqc_method_types, only: METHOD_TYPE_UNKNOWN
-   use mqc_calculation_defaults, only: DEFAULT_VDW_SCALE, DEFAULT_DYNAMIC_TOL, &
+   use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_VDW_SCALE, DEFAULT_DYNAMIC_TOL, &
                                        DEFAULT_DYNAMIC_MAXITER, EFP_RESPONSE_AUTO, &
                                        DEFAULT_RESPONSE_BATCH
    implicit none
@@ -371,6 +371,14 @@ module mqc_method_config
          !! Node-local MPI rank, for spreading ranks across a node's GPUs
       logical :: verbose = .false.
          !! Print SCF iterations
+      real(dp) :: hessian_displacement = DEFAULT_DISPLACEMENT
+         !! Step for a finite-difference Hessian, in Bohr.
+         !!
+         !! Here because the method is what runs the displacements, and the
+         !! deck's value had no route to it: `keywords.hessian.displacement`
+         !! reached `driver_config%hessian` and stopped, so every
+         !! finite-difference Hessian ran at the default while the log printed
+         !! that default back as though it had been asked for.
       type(pcm_config_t) :: pcm
          !! Continuum solvation. A property of the reference rather than of
          !! the functional, which is why it sits here: Hartree-Fock, DFT, MP2
@@ -547,6 +555,8 @@ module mqc_method_config
          !! Method type constant
       logical :: verbose = .false.
          !! Enable verbose output
+      real(dp) :: hessian_displacement = DEFAULT_DISPLACEMENT
+         !! Step for a finite-difference Hessian, in Bohr
       character(len=32) :: basis_set = "sto-3g"
          !! Basis set name (HF, DFT, MCSCF)
       character(len=32) :: ecp_set = ""
@@ -669,6 +679,7 @@ contains
       ! Common settings
       this%method_type = METHOD_TYPE_UNKNOWN
       this%verbose = .false.
+      this%hessian_displacement = DEFAULT_DISPLACEMENT
       this%basis_set = "sto-3g"
       this%use_spherical = .true.
 
