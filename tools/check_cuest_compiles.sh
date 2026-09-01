@@ -54,8 +54,28 @@ BACKEND=(mqc_cuest_runtime mqc_cuest_basis mqc_cuest_grid mqc_cuest_functionals
          mqc_cuest_bridge)
 
 fail=0
+# Either extension: `cuda_runtime` is `.F90` because it carries the
+# `#if MQC_CUDA_VERSION_MAJOR` guards for the entry points CUDA 13 renamed, and
+# the capital F is what gets it preprocessed. This used to assume `.f90` for
+# everything, so the rename turned into "Cannot open file
+# backends/cuest/bindings/cuda_runtime.f90" -- a message that reads like a
+# missing file rather than a script that looked in one place.
+#
+# The guard is left undefined here on purpose. This is a compile check with no
+# CUDA toolkit in reach, so an undefined macro takes the pre-13 branch, which is
+# the one that has to keep compiling for every build that is not CUDA 13.
+src_for() { # dir, name -> path
+   if [[ -f "$1/$2.F90" ]]; then
+      printf '%s/%s.F90' "$1" "$2"
+   else
+      printf '%s/%s.f90' "$1" "$2"
+   fi
+}
+
 compile() { # dir, name
-   if ! $FC -c $INC -J"$WORK" "$1/$2.f90" -o "$WORK/$2.o" 2>"$WORK/$2.err"; then
+   local src
+   src=$(src_for "$1" "$2")
+   if ! $FC -c $INC -J"$WORK" "$src" -o "$WORK/$2.o" 2>"$WORK/$2.err"; then
       return 1
    fi
    return 0
@@ -63,7 +83,7 @@ compile() { # dir, name
 
 for m in "${BINDINGS[@]}"; do
    if ! compile backends/cuest/bindings "$m"; then
-      echo "FAILED: backends/cuest/bindings/$m.f90"
+      echo "FAILED: $(src_for backends/cuest/bindings "$m")"
       sed -n '1,25p' "$WORK/$m.err"
       fail=1
    fi

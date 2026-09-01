@@ -403,24 +403,48 @@ contains
       !! offsets load-bearing. Not bitwise, for the same reason as the
       !! validation program: the blocked path screens where the dense one reads
       !! a tensor, and both land around 1e-12.
+      !!
+      !! **Pinned to one thread, as the sibling integral-path check is.** The
+      !! three paths converge three SCFs independently, so what separates their
+      !! gradients includes the order each run's OpenMP reductions happened to
+      !! associate. Measured here: 1.4e-15 on one thread against 1.3e-11 to
+      !! 2.7e-11 above it, on a bound of 1e-10 -- passing, but by four times
+      !! rather than five orders, and CI caught it over the line. What is under
+      !! test is whether three memory layouts build the same quantities, which
+      !! is a question about offsets and screening, not about reduction order.
       type(error_type), allocatable, intent(out) :: error
       real(dp), allocatable :: dense(:, :), split(:, :), blocked(:, :)
       type(error_t) :: err
+      integer :: saved
+
+      saved = 1
+!$    saved = omp_get_max_threads()
+!$    call omp_set_num_threads(1)
 
       call water_gradient("6-31g", 1, dense, err)
       call check(error,.not. err%has_error(), &
                  "the dense path must run: "//err%get_full_trace())
-      if (allocated(error)) return
+      if (allocated(error)) then
+!$       call omp_set_num_threads(saved)
+         return
+      end if
       call water_gradient("6-31g", 1, split, err, block_bytes=1.0_dp)
       call check(error,.not. err%has_error(), &
                  "the split path must run: "//err%get_full_trace())
-      if (allocated(error)) return
+      if (allocated(error)) then
+!$       call omp_set_num_threads(saved)
+         return
+      end if
       call water_gradient("6-31g", 1, blocked, err, block_bytes=1.0_dp, &
                           force_blocked=.true.)
       call check(error,.not. err%has_error(), &
                  "the blocked path must run: "//err%get_full_trace())
-      if (allocated(error)) return
+      if (allocated(error)) then
+!$       call omp_set_num_threads(saved)
+         return
+      end if
 
+!$    call omp_set_num_threads(saved)
       call check(error, maxval(abs(dense - split)) < 1.0e-10_dp, &
                  "splitting the occupied loop must not move a frozen-core gradient")
       if (allocated(error)) return
