@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.5% of total for modules and submodules.">134 statements</a>
+                 title=" 0.8% of total for modules and submodules.">208 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -168,6 +168,8 @@
       </a>
       <div id="funcs-0" class="collapse">
         <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_xc_spec.html#proc-is_role">is_role</a>
+            <a class="list-group-item" href="../module/mqc_xc_spec.html#proc-libxc_role">libxc_role</a>
             <a class="list-group-item" href="../module/mqc_xc_spec.html#proc-spec_is_double_hybrid">spec_is_double_hybrid</a>
             <a class="list-group-item" href="../module/mqc_xc_spec.html#proc-spec_needs_exact_exchange">spec_needs_exact_exchange</a>
         </div>
@@ -182,6 +184,7 @@
       <div id="subs-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/mqc_xc_spec.html#proc-xc_spec_from_name">xc_spec_from_name</a>
+            <a class="list-group-item" href="../module/mqc_xc_spec.html#proc-check_name_is_whole">check_name_is_whole</a>
         </div>
       </div>
     </div>
@@ -436,7 +439,7 @@ nothing in view needs more.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~32"></span>
+              <span class="anchor" id="variable-name~33"></span>
               character(len=48),
             </td>
               <td>public</td>
@@ -574,7 +577,7 @@ which is the case that needs a citation and a test.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~33"></span>
+              <span class="anchor" id="variable-name~34"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -636,6 +639,96 @@ which is the case that needs a citation and a test.</p>
         <section>
           <h2>Functions</h2>
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-is_role"></span> <h3>private pure function <a href='../proc/is_role.html'>is_role</a>(segment) result(yes)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Whether one name segment is a role marker rather than part of the label</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-segment"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>segment</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>logical</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-libxc_role"></span> <h3>private pure function <a href='../proc/libxc_role.html'>libxc_role</a>(name) result(role)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Which part of a functional a libxc name is: &ldquo;x&rdquo;, &ldquo;c&rdquo;, &ldquo;xc&rdquo;, &ldquo;k&rdquo; or &ldquo;&rdquo;</p><a href="../proc/libxc_role.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-name~36"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>name</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>character(len=2)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-spec_is_double_hybrid"></span> <h3>private pure function <a href='../proc/spec_is_double_hybrid.html'>spec_is_double_hybrid</a>(this) result(is_dh)  
 </h3></div>
     <div class="card-body">
@@ -655,7 +748,7 @@ which is the case that needs a citation and a test.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~140"></span>
+              <span class="anchor" id="variable-this~148"></span>
               class(<a href='../type/xc_spec_t.html'>xc_spec_t</a>),
             </td>
 <td>intent(in)</td>
@@ -700,7 +793,7 @@ which is the case that needs a citation and a test.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~141"></span>
+              <span class="anchor" id="variable-this~149"></span>
               class(<a href='../type/xc_spec_t.html'>xc_spec_t</a>),
             </td>
 <td>intent(in)</td>
@@ -731,7 +824,7 @@ which is the case that needs a citation and a test.</p>
         <section>
           <h2>Subroutines</h2>
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-xc_spec_from_name"></span> <h3>public  subroutine <a href='../proc/xc_spec_from_name.html'>xc_spec_from_name</a>(name, spec, error)  
+    <div class="card-header codesum"><span class="anchor" id="proc-xc_spec_from_name"></span> <h3>public  subroutine <a href='../proc/xc_spec_from_name.html'>xc_spec_from_name</a>(name, spec, error, allow_half)  
 </h3></div>
     <div class="card-body">
           
@@ -750,7 +843,7 @@ which is the case that needs a citation and a test.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~34"></span>
+              <span class="anchor" id="variable-name~35"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -780,7 +873,84 @@ which is the case that needs a citation and a test.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~179"></span>
+              <span class="anchor" id="variable-error~182"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-allow_half"></span>
+              logical,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>allow_half</strong></td>
+            <td>
+<p>Accept a libxc name that is only exchange or only correlation.
+Default false, and a deck must never set it: the point of the check
+is that half a functional converges silently. It exists for the
+derivative tests, which want one rung&rsquo;s kernel in isolation &ndash;
+<code>lda_x</code> before <code>svwn</code>, <code>gga_x_pbe</code> before <code>pbe</code> &ndash; so that a broken
+exchange second derivative is not masked by a working correlation
+one. Naming it at the call site is the whole value: a half asked for
+on purpose reads differently from a half asked for by mistake.</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-check_name_is_whole"></span> <h3>private  subroutine <a href='../proc/check_name_is_whole.html'>check_name_is_whole</a>(name, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Refuse a libxc name that is only half of a functional</p><a href="../proc/check_name_is_whole.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-name~37"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>name</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~183"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -823,7 +993,7 @@ which is the case that needs a citation and a test.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-01 06:50 +0000             </p>
+ on 2026-09-01 09:52 +0000             </p>
           </div>
         </div>
         <br>
