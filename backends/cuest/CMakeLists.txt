@@ -25,6 +25,13 @@ if(MQC_CUEST_BINDINGS STREQUAL "fetch")
             ${mod_cuest_SOURCE_DIR}/cuest_helpers.f90
             ${mod_cuest_SOURCE_DIR}/cudafort/cuda_runtime.f90
             ${mod_cuest_SOURCE_DIR}/cudafort/cuda_helpers.f90)
+  # Upstream ships it as `.f90`, so nothing asks the compiler to preprocess it
+  # -- and it carries the one `#if MQC_CUDA_VERSION_MAJOR` guard that the
+  # vendored copy is renamed to `.F90` for. Without this the guard is invisible
+  # and the CUDA 13 entry-point rename is not handled on this path, which is a
+  # link error at best and the wrong symbol at worst.
+  set_source_files_properties(${mod_cuest_SOURCE_DIR}/cudafort/cuda_runtime.f90
+                              PROPERTIES Fortran_PREPROCESS ON)
 elseif(MQC_CUEST_BINDINGS STREQUAL "vendored")
   message(STATUS "cuEST bindings: vendored under backends/cuest/bindings")
   add_subdirectory(bindings)
