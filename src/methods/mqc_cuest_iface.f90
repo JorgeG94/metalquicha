@@ -11,7 +11,7 @@ module mqc_cuest_iface
    !! which has a stub form fpm compiles and a real form CMake compiles -- lets
    !! the method files carry no preprocessor conditionals at all.
    use pic_types, only: dp
-   use mqc_config_types, only: guess_step_t, deltascf_options_t
+   use mqc_scf_types, only: guess_step_t, deltascf_options_t
    use mqc_method_config, only: pcm_config_t, mcscf_config_t, scf_options_t, properties_config_t
    implicit none
    private

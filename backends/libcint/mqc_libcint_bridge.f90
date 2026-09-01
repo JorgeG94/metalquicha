@@ -33,7 +33,7 @@ module mqc_libcint_bridge
                               SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ
    use mqc_libcint_projection, only: climb_basis_ladder
    use mqc_diis, only: parse_accelerator_name, accelerator_name, ACCEL_DIIS
-   use mqc_config_types, only: scf_numerics_t
+   use mqc_scf_types, only: scf_numerics_t
    use mqc_scf_convergence, only: scf_convergence_t, parse_convergence_metric, &
                                   CONV_METRIC_ENERGY
    use mqc_libcint_atomic_guess, only: build_atomic_guess, parse_guess_name, &
@@ -567,7 +567,8 @@ contains
    subroutine run_libcint_fmo(atomic_numbers, element_symbols, coordinates, owner, &
                               basis_name, esp, expansion, far_field, resppc, &
                               level, max_outer, outer_tol, scf_max_iter, &
-                              scf_energy_tol, scf_density_tol, bond_breaking, &
+                              scf_energy_tol, scf_density_tol, scf_drive, &
+                              bond_breaking, &
                               cap_scale, energy, error, comm)
       !! Run FMO2 (or EE-MBE) over a partitioned system
       !!
@@ -590,6 +591,11 @@ contains
       real(dp), intent(in) :: outer_tol
       integer, intent(in) :: scf_max_iter
       real(dp), intent(in) :: scf_energy_tol, scf_density_tol
+      type(scf_numerics_t), intent(in) :: scf_drive
+         !! How each fragment SCF is driven. A `scf_numerics_t` rather than more
+         !! scalars: it lives in `mqc_config_types`, not in this backend, so the
+         !! layer above can name it without being able to compile the backend --
+         !! which is the constraint the scalar list above exists to satisfy.
       character(len=*), intent(in) :: bond_breaking
       real(dp), intent(in) :: cap_scale
       real(dp), intent(out) :: energy
@@ -620,6 +626,7 @@ contains
       opts%scf_max_iter = scf_max_iter
       opts%scf_energy_tol = scf_energy_tol
       opts%scf_density_tol = scf_density_tol
+      opts%scf = scf_drive
       opts%bond_breaking = bond_breaking
       opts%cap_scale = cap_scale
 

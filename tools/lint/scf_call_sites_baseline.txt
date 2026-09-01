@@ -16,15 +16,9 @@
 # stalling fragment converges, and a dropped `incremental_fock` means the one
 # switch for ruling out the incremental Fock build does nothing.
 
-# Fragment SCFs in an FMO run. `fmo_options_t` carries its own three-field
-# subset -- scf_max_iter, scf_energy_tol, scf_density_tol -- so a fragment gets
-# an iteration budget and two tolerances and nothing else. The largest entry
-# here and the most user-visible: a fragment that will not converge cannot be
-# given an accelerator, a level shift or a linear-dependence cutoff from the
-# deck, which is exactly what a real fragmented system needs.
-backends/libcint/mqc_libcint_fmo.f90 8
-
-# The monomer SCFs behind a SAPT interaction energy. Nothing is forwarded.
+# The monomer SCFs behind a SAPT interaction energy. Like the ladder before it,
+# the routine holds no configuration at all -- one has to be threaded in from
+# the caller before there is anything to forward.
 backends/libcint/mqc_sapt.f90 3
 
 # The MakeFP fragment potential SCF. Fixed on feat/makefp-scf-config; this
@@ -37,5 +31,6 @@ backends/libcint/mqc_efp_potential.f90 2
 backends/libcint/mqc_libcint_fukui.f90 2
 backends/libcint/mqc_libcint_projection.f90 2
 
-# The model-system SCF an adjusted frozen orbital is localized from.
+# The model-system SCF an adjusted frozen orbital is localized from. Same shape
+# as SAPT: nothing to forward until a configuration reaches the routine.
 backends/libcint/mqc_libcint_afo.f90 1

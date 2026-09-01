@@ -117,6 +117,7 @@ module mqc_libcint_fmo
    use mqc_libcint_esp, only: esp_matrices
    use mqc_libcint_charges, only: mulliken_charges, chelpg_charges
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_scf_types, only: scf_numerics_t
    implicit none
    private
 
@@ -335,6 +336,12 @@ module mqc_libcint_fmo
          !! The energy rather than the density because it is what the answer is
          !! made of, and rather than the charges because with `esp = "exact"`
          !! there are no charges in the loop to converge.
+      type(scf_numerics_t) :: scf
+         !! How each fragment SCF is driven. The three fields below stay
+         !! per-fragment -- a fragment is a smaller problem and gets its own
+         !! budget and tolerances -- but the accelerator, DIIS subspace, level
+         !! shift and linear-dependence threshold are properties of the
+         !! calculation, and none of them reached a fragment before.
       integer :: scf_max_iter = 100
       real(dp) :: scf_energy_tol = 1.0e-9_dp
       real(dp) :: scf_density_tol = 1.0e-7_dp
@@ -1247,18 +1254,18 @@ contains
 
       if (allocated(u) .and. held) then
          call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error, &
+                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, &
                               h_extra=u, projector=proj)
       else if (allocated(u)) then
          call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error, h_extra=u)
+                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, h_extra=u)
       else if (held) then
          call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error, &
+                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, &
                               projector=proj)
       else
          call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error)
+                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf)
       end if
       if (error%has_error()) return
       if (.not. scf%converged) all_converged = .false.
@@ -1971,18 +1978,18 @@ contains
 
       if (embedded .and. constrained) then
          call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error, &
+                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, &
                               h_extra=u, projector=proj)
       else if (embedded) then
          call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error, h_extra=u)
+                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, h_extra=u)
       else if (constrained) then
          call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error, &
+                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, &
                               projector=proj)
       else
          call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error)
+                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf)
       end if
       if (error%has_error()) return
       if (present(all_converged)) then

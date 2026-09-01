@@ -30,7 +30,9 @@ module mqc_libcint_rhf
    use mqc_libcint_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks
    use mqc_libcint_pcm, only: pcm_context_t
    use mqc_program_limits, only: DF_AUX_CHUNK
-   use mqc_scf_convergence, only: scf_convergence_t
+   use mqc_scf_convergence, only: scf_convergence_t, parse_convergence_metric
+   use mqc_scf_types, only: scf_numerics_t
+   use mqc_diis, only: parse_accelerator_name
    implicit none
    private
 
@@ -419,7 +421,7 @@ contains
                               verbose, result, error, aux, diis_vectors, in_core, &
                               guess, guess_density, xc, h_extra, pcm, projector, &
                               level_shift, linear_dependence, b_ao_out, accelerator, grad_tol, &
-                              incremental_fock, convergence)
+                              incremental_fock, convergence, scf)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -427,6 +429,16 @@ contains
       real(dp), intent(in) :: energy_tol, density_tol
       real(dp), intent(in), optional :: grad_tol
       type(scf_convergence_t), intent(in), optional :: convergence
+      type(scf_numerics_t), intent(in), optional :: scf
+         !! The whole configuration, as one argument.
+         !!
+         !! **This is what a caller holding a config should pass.** The
+         !! individual optionals above predate it and still work -- and still
+         !! win, so a caller can pass the group and override one field -- but a
+         !! new call site should name this and nothing else. Six keyword
+         !! arguments repeated at every call is how settings went missing: FMO
+         !! has eight such sites, SAPT three, and each was one forgotten
+         !! keyword away from silently ignoring the deck.
          !! The rule that decides this SCF has converged. Absent reproduces
          !! what `energy_tol` and `grad_tol` meant before this existed, so a
          !! caller that has not been updated is unaffected.
@@ -568,6 +580,9 @@ contains
       real(dp) :: gnorm
       real(dp) :: gtol
       type(scf_convergence_t) :: conv
+      logical :: accel_ok_grp
+      integer :: metric_kind
+      logical :: metric_ok
       real(dp) :: shift, shift_now, drms_prev, taper
       real(dp), allocatable :: sd(:, :), sds(:, :)
       integer :: n_ao, n_mo, n_occ, iter
@@ -586,9 +601,14 @@ contains
       end if
 
       diis_size = 8
+      if (present(scf)) then
+         diis_size = scf%diis_size
+         if (.not. scf%use_diis) diis_size = 0
+      end if
       if (present(diis_vectors)) diis_size = diis_vectors
       use_in_core = .false.
       want_incremental = .true.
+      if (present(scf)) want_incremental = scf%incremental_fock
       if (present(incremental_fock)) want_incremental = incremental_fock
       if (present(in_core)) use_in_core = in_core
       guess_kind = SCF_GUESS_GWH
@@ -668,6 +688,7 @@ contains
       end if
 
       lindep = 0.0_dp
+      if (present(scf)) lindep = scf%linear_dependence
       if (present(linear_dependence)) lindep = linear_dependence
       call build_orthogonalizer(s, x, n_mo, error, smallest_overlap=s_min, &
                                 smallest_kept=s_kept, threshold=lindep)
@@ -736,6 +757,8 @@ contains
       call scf_table_header(verbose, kohn_sham_run)
 
       accel = ACCEL_DIIS
+      if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
+      if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
       if (present(accelerator)) accel = accelerator
 
       ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
@@ -749,10 +772,19 @@ contains
       else
          conv%tolerance = energy_tol
          if (present(grad_tol)) conv%gradient_tolerance = grad_tol
+         ! The metric named by the group, when one was passed. A spelling the
+         ! caller has already validated; an unparseable one leaves the default
+         ! rather than failing a calculation from inside the SCF.
+         if (present(scf)) then
+            call parse_convergence_metric(scf%convergence_metric, metric_kind, metric_ok)
+            if (metric_ok) conv%metric = metric_kind
+         end if
       end if
       gtol = conv%commutator_bound()
 
+      ! The group first, then any individual override on top of it.
       shift = 0.0_dp
+      if (present(scf)) shift = scf%level_shift
       if (present(level_shift)) shift = level_shift
       ! Refused rather than clamped. A negative shift lowers the virtuals into
       ! the occupied set, which is the opposite of the point: it narrows the gap
@@ -1016,7 +1048,7 @@ contains
                               verbose, result, error, diis_vectors, in_core, diis_start, &
                               guess, guess_density_alpha, guess_density_beta, xc, pcm, &
                               level_shift, linear_dependence, accelerator, grad_tol, &
-                              incremental_fock, convergence)
+                              incremental_fock, convergence, scf)
       !! Drive an unrestricted SCF to convergence
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
@@ -1036,6 +1068,16 @@ contains
       real(dp), intent(in) :: energy_tol, density_tol
       real(dp), intent(in), optional :: grad_tol
       type(scf_convergence_t), intent(in), optional :: convergence
+      type(scf_numerics_t), intent(in), optional :: scf
+         !! The whole configuration, as one argument.
+         !!
+         !! **This is what a caller holding a config should pass.** The
+         !! individual optionals above predate it and still work -- and still
+         !! win, so a caller can pass the group and override one field -- but a
+         !! new call site should name this and nothing else. Six keyword
+         !! arguments repeated at every call is how settings went missing: FMO
+         !! has eight such sites, SAPT three, and each was one forgotten
+         !! keyword away from silently ignoring the deck.
          !! The rule that decides this SCF has converged. Absent reproduces
          !! what `energy_tol` and `grad_tol` meant before this existed, so a
          !! caller that has not been updated is unaffected.
@@ -1120,6 +1162,9 @@ contains
       real(dp) :: gnorm
       real(dp) :: gtol
       type(scf_convergence_t) :: conv
+      logical :: accel_ok_grp
+      integer :: metric_kind
+      logical :: metric_ok
       real(dp) :: shift, shift_now, drms_prev, taper
       real(dp), allocatable :: sd(:, :), sds(:, :)
       integer :: n_ao, n_mo, n_alpha, n_beta, iter, nsq, msq
@@ -1136,11 +1181,16 @@ contains
       character(len=LINE_LEN) :: line
 
       diis_size = 8
+      if (present(scf)) then
+         diis_size = scf%diis_size
+         if (.not. scf%use_diis) diis_size = 0
+      end if
       if (present(diis_vectors)) diis_size = diis_vectors
       start_cycle = DEFAULT_UHF_DIIS_START
       if (present(diis_start)) start_cycle = diis_start
       use_in_core = .false.
       want_incremental = .true.
+      if (present(scf)) want_incremental = scf%incremental_fock
       if (present(incremental_fock)) want_incremental = incremental_fock
       if (present(in_core)) use_in_core = in_core
       guess_kind = SCF_GUESS_GWH
@@ -1198,6 +1248,7 @@ contains
       end if
 
       lindep = 0.0_dp
+      if (present(scf)) lindep = scf%linear_dependence
       if (present(linear_dependence)) lindep = linear_dependence
       call build_orthogonalizer(s, x, n_mo, error, smallest_overlap=s_min, &
                                 smallest_kept=s_kept, threshold=lindep)
@@ -1277,6 +1328,8 @@ contains
       call scf_table_header(verbose, kohn_sham_run)
 
       accel = ACCEL_DIIS
+      if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
+      if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
       if (present(accelerator)) accel = accelerator
 
       ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
@@ -1290,10 +1343,19 @@ contains
       else
          conv%tolerance = energy_tol
          if (present(grad_tol)) conv%gradient_tolerance = grad_tol
+         ! The metric named by the group, when one was passed. A spelling the
+         ! caller has already validated; an unparseable one leaves the default
+         ! rather than failing a calculation from inside the SCF.
+         if (present(scf)) then
+            call parse_convergence_metric(scf%convergence_metric, metric_kind, metric_ok)
+            if (metric_ok) conv%metric = metric_kind
+         end if
       end if
       gtol = conv%commutator_bound()
 
+      ! The group first, then any individual override on top of it.
       shift = 0.0_dp
+      if (present(scf)) shift = scf%level_shift
       if (present(level_shift)) shift = level_shift
       ! Refused rather than clamped. A negative shift lowers the virtuals into
       ! the occupied set, which is the opposite of the point: it narrows the gap

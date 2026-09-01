@@ -53,7 +53,7 @@ module mqc_efp_potential
    use pic_timer, only: timer_type
    use libcint_fortran, only: LIBCINT_ANG_OF
    use pic_logger, only: logger => global_logger
-   use mqc_config_types, only: scf_numerics_t, print_scf_config
+   use mqc_scf_types, only: scf_numerics_t, print_scf_config
    use mqc_diis, only: parse_accelerator_name, ACCEL_DIIS
    use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none

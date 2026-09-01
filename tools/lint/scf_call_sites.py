@@ -113,6 +113,12 @@ def scan(paths: list[Path]) -> list[tuple[str, int, list[str]]]:
             line_no = text.count("\n", 0, m.start()) + 1
             if exempt_near(lines, line_no, seg):
                 continue
+            # `scf=` is the whole configuration in one argument, and is what a
+            # call site should pass. It satisfies the rule on its own: the
+            # individual keywords predate it and remain valid, but repeating
+            # six of them at every site is the shape that lost settings.
+            if re.search(r"\bscf\s*=", seg):
+                continue
             missing = [s for s in SETTINGS if not re.search(rf"\b{s}\s*=", seg)]
             if missing:
                 found.append((p.as_posix(), line_no, missing))

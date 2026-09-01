@@ -673,6 +673,16 @@ contains
             expansion%scf_max_iter = config%fmo_scf_max_iter
             expansion%scf_energy_tol = config%fmo_scf_energy_tol
             expansion%scf_density_tol = config%fmo_scf_density_tol
+            ! From `keywords.scf`, the same source the unfragmented path reads.
+            ! The three above stay on `keywords.fragmentation` because they are
+            ! per-fragment by intent; these are not.
+            expansion%scf_drive%level_shift = config%method_config%scf%level_shift
+            expansion%scf_drive%linear_dependence = config%method_config%scf%linear_dependence
+            expansion%scf_drive%use_diis = config%method_config%scf%use_diis
+            expansion%scf_drive%diis_size = config%method_config%scf%diis_size
+            expansion%scf_drive%incremental_fock = config%method_config%scf%incremental_fock
+            expansion%scf_drive%accelerator = config%method_config%scf%accelerator
+            expansion%scf_drive%convergence_metric = config%method_config%scf%convergence_metric
             expansion%resources => resources
             expansion%node_leader_ranks = node_leader_ranks
             expansion%num_nodes = num_nodes

@@ -11,7 +11,7 @@ module mqc_method_hf
    !! placeholder number -- a silently wrong energy inside a many-body
    !! expansion is far worse than a failed fragment.
    use pic_types, only: dp
-   use mqc_config_types, only: guess_step_t
+   use mqc_scf_types, only: guess_step_t
    use mqc_method_base, only: qc_method_t
    use mqc_method_config, only: scf_options_t, pcm_config_t, properties_config_t
    use mqc_result_types, only: calculation_result_t

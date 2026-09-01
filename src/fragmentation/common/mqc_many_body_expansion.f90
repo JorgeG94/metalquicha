@@ -9,6 +9,7 @@ module mqc_many_body_expansion
    use mqc_config_adapter, only: driver_config_t
    use mqc_json_output_types, only: json_output_data_t
    use mqc_checkpoint, only: checkpoint_t
+   use mqc_scf_types, only: scf_numerics_t
    implicit none
    private
 
@@ -184,6 +185,18 @@ module mqc_many_body_expansion
          !! thing here as it does for MBE.
       integer :: max_outer = 50
       real(dp) :: outer_tol = 1.0e-7_dp
+      type(scf_numerics_t) :: scf_drive
+         !! How each fragment SCF is *driven* -- the accelerator, DIIS
+         !! subspace, level shift, linear-dependence threshold and incremental
+         !! Fock building.
+         !!
+         !! Separate from the three fields below, which are per-fragment on
+         !! purpose: a fragment is a smaller, easier problem than the whole
+         !! system and gets its own budget and tolerances. How the iteration is
+         !! driven is not a property of the fragment, and none of it reached a
+         !! fragment before -- so a deck could not give a stalling fragment an
+         !! accelerator or a level shift, on the feature most likely to meet
+         !! one.
       integer :: scf_max_iter = 100
       real(dp) :: scf_energy_tol = 1.0e-9_dp
       real(dp) :: scf_density_tol = 1.0e-7_dp
@@ -323,6 +336,7 @@ contains
                            trim(this%far_field), this%resppc, this%level, &
                            this%max_outer, this%outer_tol, this%scf_max_iter, &
                            this%scf_energy_tol, this%scf_density_tol, &
+                           this%scf_drive, &
                            trim(this%bond_breaking), this%cap_scale, this%energy, error)
       if (error%has_error()) then
          call logger%error("fmo_run_serial: "//error%get_message())
@@ -396,6 +410,7 @@ contains
                            trim(this%far_field), this%resppc, this%level, &
                            this%max_outer, this%outer_tol, this%scf_max_iter, &
                            this%scf_energy_tol, this%scf_density_tol, &
+                           this%scf_drive, &
                            trim(this%bond_breaking), this%cap_scale, this%energy, error, &
                            comm=this%resources%mpi_comms%world_comm)
       if (error%has_error()) then

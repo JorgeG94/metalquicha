@@ -5,7 +5,7 @@ module mqc_method_config
    !! for each method family. The factory reads from the appropriate nested type.
    use pic_types, only: int32, dp
    use mqc_program_limits, only: MAX_ORBITAL_LABEL_LEN
-   use mqc_config_types, only: guess_step_t, scf_numerics_t, deltascf_options_t
+   use mqc_scf_types, only: guess_step_t, scf_numerics_t, deltascf_options_t
    use mqc_method_types, only: METHOD_TYPE_UNKNOWN
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_VDW_SCALE, DEFAULT_DYNAMIC_TOL, &
                                        DEFAULT_DYNAMIC_MAXITER, EFP_RESPONSE_AUTO, &

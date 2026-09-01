@@ -38,7 +38,7 @@ module mqc_libcint_projection
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_config_types, only: guess_step_t, scf_numerics_t
+   use mqc_scf_types, only: guess_step_t, scf_numerics_t
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, SCF_GUESS_SAD, SCF_GUESS_GWH
    use mqc_diis, only: parse_accelerator_name, ACCEL_DIIS
