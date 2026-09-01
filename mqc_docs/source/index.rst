@@ -25,6 +25,7 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    python_interface
    json_output
    validation
+   scf_guess
    scf_convergence
    vibrational_analysis
    analytic_hessians

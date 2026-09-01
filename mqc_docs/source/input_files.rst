@@ -827,6 +827,12 @@ SCF Options
   - ``auto`` -- let the backend choose, since the best starting point is a
     property of the backend: the CPU path resolves it to ``sad`` and the GPU path
     to ``gwh``, each having measured its own.
+  - ``basis_set_projection`` -- converge in smaller bases first and project the
+    density forward. Configured through its own ``keywords.guess`` block rather
+    than by this name alone, since the ladder needs its rungs written down; see
+    :ref:`basis-set-projection`.
+
+  See :doc:`scf_guess` for what each one is for and when to reach for it.
 
 - ``accelerator``: Which convergence accelerator opens the SCF (default:
   ``diis``). One of ``diis``, ``ediis`` or ``adiis``. The energy-based pair run
@@ -878,6 +884,34 @@ SCF Options
   is that the fragments which failed are named in the output, with the monomers
   each was built from, so the run can be followed up rather than trusted. See
   :ref:`unconverged-fragments`.
+
+Guess Options
+^^^^^^^^^^^^^
+
+An alternative to ``keywords.scf.guess`` that carries settings alongside the
+name. Required for ``basis_set_projection``, which needs its ladder written out:
+
+.. code-block:: json
+
+   "guess": {
+     "type": "basis_set_projection",
+     "subscf": {
+       "steps": [
+         { "basis": "sto-3g", "maxiter": 30, "tolerance": 1e-4 },
+         { "basis": "6-31g" }
+       ]
+     }
+   }
+
+- ``type``: the guess, spelled as in ``keywords.scf.guess``. Setting both this
+  and ``keywords.scf.guess`` is refused -- they are two spellings of one choice.
+- ``subscf.steps``: the ladder, cheapest first, one entry per preliminary SCF.
+  ``basis`` is required; ``maxiter`` (default: 50) and ``tolerance`` (default:
+  1e-5) are per rung. The target basis comes from ``model.basis`` and is **not**
+  a step. ``subscf`` is only meaningful under ``basis_set_projection``, and a
+  projection guess with no steps is refused.
+
+See :ref:`basis-set-projection` for what the ladder is for and how it fails.
 
 Correlation Options
 ^^^^^^^^^^^^^^^^^^^
