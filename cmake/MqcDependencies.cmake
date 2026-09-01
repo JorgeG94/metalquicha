@@ -108,6 +108,23 @@ if(MQC_ENABLE_CUEST)
     PATHS "${CUEST_ROOT}/lib"
     NO_DEFAULT_PATH REQUIRED)
   find_package(CUDAToolkit REQUIRED)
+  # CUDA 13 removed every _v2 entry point from the runtime, so the vendored
+  # bindings have to know which major version they are being built against --
+  # see the guard on cudaGetDeviceProperties in bindings/cuda_runtime.f90.
+  #
+  # 13.2 is the floor on that major version because it is the only CUDA 13 this
+  # has been built against; 13.0 and 13.1 are refused rather than assumed to
+  # behave like it. Nothing below 13 is gated -- 12.x is what the bindings were
+  # generated from and is the well-trodden path.
+  if(CUDAToolkit_VERSION_MAJOR EQUAL 13 AND CUDAToolkit_VERSION VERSION_LESS
+                                            13.2)
+    message(
+      FATAL_ERROR
+        "cuEST needs CUDA 12.x or CUDA >= 13.2, found ${CUDAToolkit_VERSION}")
+  endif()
+  target_compile_definitions(
+    ${main_lib} PRIVATE MQC_CUDA_VERSION_MAJOR=${CUDAToolkit_VERSION_MAJOR})
+  message(STATUS "CUDA toolkit: ${CUDAToolkit_VERSION}")
   # cuBLAS backs the SCF's own linear algebra (the Fock assembly, the DIIS
   # commutator and the orthogonal-basis transform) and cuSOLVER the Fock
   # diagonalization, both reached through the hand-written bindings in

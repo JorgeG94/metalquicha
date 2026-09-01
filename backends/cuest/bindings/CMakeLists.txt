@@ -17,5 +17,15 @@
 # needs. They sit here because they are the same kind of thing -- thin
 # iso_c_binding layers over a vendor C API -- and share the convention of
 # binding device pointers as TYPE(c_ptr).
-target_sources(${main_lib} PRIVATE cuest.f90 cuest_helpers.f90 cuda_runtime.f90
+target_sources(${main_lib} PRIVATE cuest.f90 cuest_helpers.f90 cuda_runtime.F90
                                    cuda_helpers.f90 cublas.f90 cusolver.f90)
+
+# cuda_runtime.F90 carries one #if on MQC_CUDA_VERSION_MAJOR, for the entry
+# point CUDA 13 renamed out from under it. The capital F is what asks for
+# preprocessing, matching every other preprocessed source here; the property
+# below states it as well, for a compiler that does not infer it from the
+# extension.
+#
+# It is the one vendored binding whose name differs from its generated original,
+# so a re-copy from mod_cuest is a rename rather than a plain overwrite.
+set_source_files_properties(cuda_runtime.F90 PROPERTIES Fortran_PREPROCESS ON)

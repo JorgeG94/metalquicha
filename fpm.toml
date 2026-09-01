@@ -44,5 +44,5 @@ ignore = ["C003", "C072", "S212", "C142", "C183", "C181"]
 # project (see backends/cuest/bindings/CMakeLists.txt); they are third-party
 # output, not project code, so linting them is noise -- they would be
 # overwritten on the next regeneration anyway.
-exclude = ["test/*", "backends/cuest/bindings/cuest.f90", "backends/cuest/bindings/cuda_runtime.f90"]
+exclude = ["test/*", "backends/cuest/bindings/cuest.f90", "backends/cuest/bindings/cuda_runtime.F90"]
 line-length = 132
