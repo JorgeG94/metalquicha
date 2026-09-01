@@ -36,6 +36,15 @@ module mqc_method_config
          !! Energy convergence threshold (Hartree)
       real(dp) :: density_convergence = 1.0e-6_dp
          !! Density matrix convergence threshold
+      real(dp) :: gradient_convergence = 0.0_dp
+         !! `keywords.scf.gradient_tolerance` -- pyscf's `conv_tol_grad`.
+         !!
+         !! Zero means "not set", and the SCF then derives `sqrt(tolerance)`,
+         !! which is pyscf's own default. Set it when what you want from the
+         !! run is the *density* rather than the energy: the energy's error
+         !! goes as the commutator squared, the density's only as the
+         !! commutator, so the derived value bounds the second about three
+         !! orders more loosely than the first.
       real(dp) :: linear_dependence = 0.0_dp
          !! `keywords.scf.linear_dependence_threshold`. Overlap eigenvalues at
          !! or below this are dropped as linearly dependent. Raise it to shed
@@ -325,6 +334,9 @@ module mqc_method_config
       real(dp) :: energy_tol = 1.0e-8_dp
          !! Energy convergence threshold
       real(dp) :: density_tol = 1.0e-6_dp
+      real(dp) :: grad_tol = 0.0_dp
+         !! Commutator threshold; zero derives `sqrt(energy_tol)`. See
+         !! `scf_config_t%gradient_convergence`.
          !! Density matrix convergence threshold
       real(dp) :: linear_dependence = 0.0_dp
          !! Zero means the orthogonaliser's own cutoff. See `scf_config_t`.

@@ -203,15 +203,15 @@ has no CI at all, so there is nothing to choose between.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
                   <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
+                  <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1396,17 +1396,17 @@ large graphs.</div>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_energy~2'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_energy.html'>mcscf_calc_energy</a></td>
+  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_energy'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_energy.html'>mcscf_calc_energy</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_gradient~2'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_gradient.html'>mcscf_calc_gradient</a></td>
+  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_gradient'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_gradient.html'>mcscf_calc_gradient</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_hessian~2'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_hessian.html'>mcscf_calc_hessian</a></td>
+  <strong><a href='../type/mcscf_method_t.html#boundprocedure-calc_hessian'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_hessian.html'>mcscf_calc_hessian</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1460,7 +1460,7 @@ method: <code>hf_options_t</code> and <code>dft_options_t</code> both extend thi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~3"></span>
+              <span class="anchor" id="variable-allow_crap_scf~6"></span>
               logical,
             </td>
               <td>public</td>
@@ -1545,7 +1545,7 @@ method: <code>hf_options_t</code> and <code>dft_options_t</code> both extend thi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~4"></span>
+              <span class="anchor" id="variable-backend~3"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1579,7 +1579,7 @@ method: <code>hf_options_t</code> and <code>dft_options_t</code> both extend thi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~4"></span>
+              <span class="anchor" id="variable-cartesian~5"></span>
               logical,
             </td>
               <td>public</td>
@@ -1631,7 +1631,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~2"></span>
+              <span class="anchor" id="variable-density_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1643,7 +1643,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
 <td> =</td>
                 <td>1.0e-6_dp</td>
             <td>
-<p>Density matrix convergence threshold</p>
+
             </td>
         </tr>
         <tr>
@@ -1699,7 +1699,7 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~2"></span>
+              <span class="anchor" id="variable-energy_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1750,6 +1750,25 @@ macro loop pins its inner CASCI tight on purpose.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-grad_tol~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>grad_tol</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+<p>Commutator threshold; zero derives <code>sqrt(energy_tol)</code>. See
+<code>scf_config_t%gradient_convergence</code>.
+Density matrix convergence threshold</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-guess~6"></span>
               character(len=32),
             </td>
@@ -1771,7 +1790,7 @@ An explicit spelling always wins over both.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~3"></span>
+              <span class="anchor" id="variable-guess_steps~4"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -1858,7 +1877,7 @@ Zero is off. See <code>scf_config_t</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~4"></span>
+              <span class="anchor" id="variable-max_iter~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -2121,7 +2140,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties~2"></span>
+              <span class="anchor" id="variable-properties~3"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
               <td>public</td>
@@ -2241,7 +2260,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~7"></span>
+              <span class="anchor" id="variable-verbose~9"></span>
               logical,
             </td>
               <td>public</td>
@@ -2291,7 +2310,77 @@ exists, so no keyword reaches it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~13"></span>
+              <span class="anchor" id="variable-this~12"></span>
+              class(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment~2"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~3"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-mcscf_calc_gradient"></span> <h3>private  subroutine <a href='../proc/mcscf_calc_gradient.html'>mcscf_calc_gradient</a>(this, fragment, result)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The analytic gradient of an optimised CASSCF</p><a href="../proc/mcscf_calc_gradient.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~14"></span>
               class(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2342,11 +2431,11 @@ exists, so no keyword reaches it.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-mcscf_calc_gradient"></span> <h3>private  subroutine <a href='../proc/mcscf_calc_gradient.html'>mcscf_calc_gradient</a>(this, fragment, result)  
+    <div class="card-header codesum"><span class="anchor" id="proc-mcscf_calc_hessian"></span> <h3>private  subroutine <a href='../proc/mcscf_calc_hessian.html'>mcscf_calc_hessian</a>(this, fragment, result)  
 </h3></div>
     <div class="card-body">
           
-  <p>The analytic gradient of an optimised CASSCF</p><a href="../proc/mcscf_calc_gradient.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Refused, for the reason the gradient is: there is nothing to difference</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2376,7 +2465,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~6"></span>
+              <span class="anchor" id="variable-fragment~5"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2391,77 +2480,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~7"></span>
-              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>result</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-mcscf_calc_hessian"></span> <h3>private  subroutine <a href='../proc/mcscf_calc_hessian.html'>mcscf_calc_hessian</a>(this, fragment, result)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Refused, for the reason the gradient is: there is nothing to difference</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-this~16"></span>
-              class(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>this</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-fragment~7"></span>
-              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>fragment</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-result~8"></span>
+              <span class="anchor" id="variable-result~6"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2501,7 +2520,7 @@ exists, so no keyword reaches it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~14"></span>
+              <span class="anchor" id="variable-this~13"></span>
               class(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2516,7 +2535,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~5"></span>
+              <span class="anchor" id="variable-fragment~3"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2531,7 +2550,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~6"></span>
+              <span class="anchor" id="variable-result~4"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2586,7 +2605,7 @@ exists, so no keyword reaches it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~8"></span>
+              <span class="anchor" id="variable-fragment~6"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2601,7 +2620,7 @@ exists, so no keyword reaches it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~9"></span>
+              <span class="anchor" id="variable-result~7"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2659,7 +2678,7 @@ exists, so no keyword reaches it.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-31 23:41 +0000             </p>
+ on 2026-09-01 02:09 +0000             </p>
           </div>
         </div>
         <br>
