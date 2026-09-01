@@ -209,6 +209,7 @@ contains
       options%allow_crap_scf = config%scf%allow_crap_scf
       options%energy_tol = config%scf%energy_convergence
       options%density_tol = config%scf%density_convergence
+      options%grad_tol = config%scf%gradient_convergence
       options%level_shift = config%scf%level_shift
       options%linear_dependence = config%scf%linear_dependence
       options%use_diis = config%scf%use_diis

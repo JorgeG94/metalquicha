@@ -281,7 +281,7 @@ contains
    subroutine run_rhf_scf(system, context, atomic_numbers, coordinates, n_electrons, &
                           max_iterations, energy_tolerance, density_tolerance, &
                           use_diis, diis_size, verbose, result, error, guess, &
-                          guess_alpha, guess_beta)
+                          guess_alpha, guess_beta, grad_tol)
       !! Drive a closed-shell RHF calculation to convergence
       type(cuest_system_t), intent(inout) :: system   !! Live cuEST objects for this molecule
       type(cuest_context_t), intent(inout) :: context
@@ -294,6 +294,24 @@ contains
       integer, intent(in) :: max_iterations
       real(dp), intent(in) :: energy_tolerance        !! Convergence on |dE|
       real(dp), intent(in) :: density_tolerance       !! Convergence on the DIIS error norm
+      real(dp), intent(in), optional :: grad_tol
+         !! Commutator threshold, when a caller states one.
+         !!
+         !! **This backend already converged on the commutator**, before the CPU
+         !! one did -- `commutator_device` builds `FDS - SDF` and the test below
+         !! has always been `|dE| .and. that norm`, with no density term. What
+         !! it lacked was a name for the threshold: it read `density_tolerance`,
+         !! which is not what it measures.
+         !!
+         !! **The fallback is `density_tolerance`, not `sqrt(energy_tolerance)`
+         !! as on the CPU path, and that asymmetry is deliberate.** The two
+         !! backends do not measure the same quantity: `gnorm` there is a max
+         !! element, `error_norm` here is a Frobenius norm over the whole
+         !! matrix, so the same number does not mean the same thing and one
+         !! cannot be given the other's default without changing what this
+         !! backend converges to. Harmonising them needs a GPU to verify on,
+         !! and this box has none -- so the default behaviour here is left
+         !! exactly as it was and only the explicit knob is new.
       logical, intent(in) :: use_diis
       integer, intent(in) :: diis_size                !! DIIS subspace size
       logical, intent(in) :: verbose                  !! Print the iteration table
@@ -311,7 +329,7 @@ contains
       real(dp), allocatable :: occupied(:, :)
       type(diis_device_t) :: diis
       integer :: n_ao, n_mo, n_occ, iteration
-      real(dp) :: electronic_energy, previous_energy, energy_change, error_norm
+      real(dp) :: electronic_energy, previous_energy, energy_change, error_norm, gtol
       real(dp) :: xc_energy, nlc_energy, pcm_energy, trace_h, trace_j, trace_k
       logical :: diis_ok
 
@@ -383,6 +401,14 @@ contains
          ! The error vectors live in the orthogonal basis, the Fock matrices in the AO basis.
          call diis%init(context, diis_size, n_ao*n_ao, n_mo*n_mo, error)
          if (error%has_error()) return
+      end if
+
+      ! The commutator threshold. Falls back to `density_tolerance`, which is
+      ! what this test has always read -- see the argument's note for why it is
+      ! not `sqrt(energy_tolerance)` as on the CPU path.
+      gtol = density_tolerance
+      if (present(grad_tol)) then
+         if (grad_tol > 0.0_dp) gtol = grad_tol
       end if
 
       previous_energy = 0.0_dp
@@ -528,7 +554,7 @@ contains
          end if
 
          if (iteration > 1 .and. abs(energy_change) < energy_tolerance &
-             .and. error_norm < density_tolerance) then
+             .and. error_norm < gtol) then
             result%converged = .true.
             result%iterations = iteration
             exit
@@ -646,7 +672,7 @@ contains
    subroutine run_uks_scf(system, context, atomic_numbers, coordinates, n_electrons, multiplicity, &
                           max_iterations, energy_tolerance, density_tolerance, &
                           use_diis, diis_size, verbose, result, error, guess, &
-                          guess_alpha, guess_beta)
+                          guess_alpha, guess_beta, grad_tol)
       !! Drive an unrestricted (open-shell) SCF to convergence
       !!
       !! Spin conventions, matching what cuEST's density-fitted routines expect:
@@ -670,6 +696,8 @@ contains
       integer, intent(in) :: multiplicity
       integer, intent(in) :: max_iterations
       real(dp), intent(in) :: energy_tolerance, density_tolerance
+      real(dp), intent(in), optional :: grad_tol
+         !! As `cuest_rhf`; see the note there.
       logical, intent(in) :: use_diis
       integer, intent(in) :: diis_size
       logical, intent(in) :: verbose
@@ -693,7 +721,7 @@ contains
          !! which the system cannot know at creation time, so it is formed here.
       integer :: n_ao, n_mo, n_alpha, n_beta, iteration
       integer :: n_fock_spin, n_err_spin
-      real(dp) :: electronic_energy, previous_energy, energy_change, error_norm, xc_energy
+      real(dp) :: electronic_energy, previous_energy, energy_change, error_norm, xc_energy, gtol
       real(dp) :: nlc_energy
       real(dp) :: pcm_energy
       real(dp) :: trace_h, trace_j, trace_ka, trace_kb
@@ -783,6 +811,14 @@ contains
       xc_energy = 0.0_dp
       nlc_energy = 0.0_dp
       pcm_energy = 0.0_dp
+      ! The commutator threshold. Falls back to `density_tolerance`, which is
+      ! what this test has always read -- see the argument's note for why it is
+      ! not `sqrt(energy_tolerance)` as on the CPU path.
+      gtol = density_tolerance
+      if (present(grad_tol)) then
+         if (grad_tol > 0.0_dp) gtol = grad_tol
+      end if
+
       previous_energy = 0.0_dp
       result%converged = .false.
 
@@ -922,7 +958,7 @@ contains
          end if
 
          if (iteration > 1 .and. abs(energy_change) < energy_tolerance &
-             .and. error_norm < density_tolerance) then
+             .and. error_norm < gtol) then
             result%converged = .true.
             result%iterations = iteration
             exit

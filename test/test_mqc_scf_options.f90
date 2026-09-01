@@ -64,10 +64,12 @@ contains
       options%allow_crap_scf = .true.
       options%energy_tol = 1.5e-9_dp
       options%density_tol = 2.5e-7_dp
+      options%grad_tol = 3.5e-6_dp
       options%level_shift = 0.35_dp
       options%linear_dependence = 1.0e-5_dp
       options%use_diis = .false.
       options%diis_size = 11
+      options%accelerator = "ediis"
       options%verbose = .true.
       options%device_rank = 2
       options%pcm%enabled = .true.
@@ -121,6 +123,8 @@ contains
       if (allocated(error)) return
       call check(error, settings%density_tol == options%density_tol, "density_tol")
       if (allocated(error)) return
+      call check(error, settings%grad_tol == options%grad_tol, "grad_tol")
+      if (allocated(error)) return
       call check(error, settings%level_shift == options%level_shift, "level_shift")
       if (allocated(error)) return
       call check(error, settings%linear_dependence == options%linear_dependence, "linear_dependence")
@@ -128,6 +132,8 @@ contains
       call check(error, settings%use_diis .eqv. options%use_diis, "use_diis")
       if (allocated(error)) return
       call check(error, settings%diis_size == options%diis_size, "diis_size")
+      if (allocated(error)) return
+      call check(error, settings%accelerator == options%accelerator, "accelerator")
       if (allocated(error)) return
       call check(error, settings%verbose .eqv. options%verbose, "verbose")
       if (allocated(error)) return

@@ -251,6 +251,7 @@ contains
       driver_config%method_config%scf%max_iter = mqc_config%scf_maxiter
       driver_config%method_config%scf%energy_convergence = mqc_config%scf_tolerance
       driver_config%method_config%scf%density_convergence = mqc_config%scf_density_tolerance
+      driver_config%method_config%scf%gradient_convergence = mqc_config%scf_gradient_tolerance
       driver_config%method_config%scf%level_shift = mqc_config%scf_level_shift
       driver_config%method_config%scf%use_diis = mqc_config%scf_use_diis
       driver_config%method_config%scf%diis_size = mqc_config%scf_diis_size

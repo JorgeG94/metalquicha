@@ -298,7 +298,7 @@ contains
       real(dp) :: rms_exp, rms_gauss
       integer :: natm, core, i, j, k, n_valence, n_electrons
       integer :: guess_kind
-      real(dp) :: e_tol, d_tol
+      real(dp) :: e_tol, d_tol, g_tol
       real(dp), allocatable :: guess_total(:, :)
       character(len=:), allocatable :: guess_name
       type(timer_type) :: stage
@@ -426,12 +426,28 @@ contains
       d_tol = 1.0e-8_dp
       if (present(energy_tol)) e_tol = energy_tol
       if (present(density_tol)) d_tol = density_tol
+      ! **The commutator threshold is stated, not derived, and this routine is
+      ! why the argument exists.** Everything a fragment potential carries is
+      ! fitted to the SCF *density* -- the multipoles, the polarizabilities,
+      ! the screening -- and the density's error goes as the commutator, where
+      ! the energy's goes as its square. `sqrt(e_tol)` would be 1e-5 and the
+      ! multipoles drift off their GAMESS references.
+      !
+      ! It cannot be had by tightening `e_tol` instead: matching this through
+      ! `sqrt` would need 1e-16, below what a molecular energy resolves, and
+      ! then nothing converges at all. Measured: every EFP test fails.
+      !
+      ! `d_tol` is what used to gate convergence here, so asking the commutator
+      ! for the same number keeps the potentials exactly as tight as they were.
+      g_tol = d_tol
       if (present(aux_basis)) then
          call run_libcint_rhf(mol, n_electrons, 200, e_tol, d_tol, &
-                              talk, scf, error, guess=guess_kind, guess_density=guess_total, aux=aux)
+                              talk, scf, error, guess=guess_kind, guess_density=guess_total, &
+                              aux=aux, grad_tol=g_tol)
       else
          call run_libcint_rhf(mol, n_electrons, 200, e_tol, d_tol, &
-                              talk, scf, error, guess=guess_kind, guess_density=guess_total)
+                              talk, scf, error, guess=guess_kind, guess_density=guess_total, &
+                              grad_tol=g_tol)
       end if
       if (error%has_error()) then
          call mol%destroy()
