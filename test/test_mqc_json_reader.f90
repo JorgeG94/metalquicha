@@ -86,6 +86,7 @@ contains
                   new_unittest("optimization_hess_end", test_hess_end), &
                   new_unittest("optimization_target", test_opt_target), &
                   new_unittest("scf_diis_controls", test_diis_keywords), &
+                  new_unittest("incremental_fock keyword", test_incremental_fock_keyword), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -1887,6 +1888,46 @@ contains
       if (allocated(error)) return
       call check(error, config%scf_diis_size == 8, "the default subspace is eight")
    end subroutine test_diis_keywords
+
+   subroutine test_incremental_fock_keyword(error)
+      !! `keywords.scf.incremental_fock`
+      !!
+      !! The switch exists so that "is the incremental build doing this?" can be
+      !! answered from a deck rather than by rebuilding the binary. That makes
+      !! the default the load-bearing part: an SCF that quietly stopped building
+      !! incrementally would lose most of its speed with nothing to say so, and
+      !! one that could not be turned off leaves a stalling run with no way to
+      !! rule the correction out.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"incremental_fock": false}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%scf_incremental_fock, "false should be read as false")
+      if (allocated(error)) return
+
+      ! Never mentioned: on, from the default in the type rather than a second
+      ! copy written into the reader.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"maxiter": 50}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%scf_incremental_fock, "incremental building defaults on")
+      if (allocated(error)) return
+
+      ! Spelled true explicitly, which a deck pinning the default would do.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"incremental_fock": true}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%scf_incremental_fock, "true should be read as true")
+   end subroutine test_incremental_fock_keyword
 
    subroutine test_malformed(error)
       !! Broken JSON is a parse error, not a crash or a half-filled config

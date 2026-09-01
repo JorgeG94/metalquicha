@@ -203,7 +203,8 @@ Specifies the quantum chemistry method:
      "method": "XTB-GFN1",
      "basis": "cc-pVDZ",
      "ecp": "def2-ecp",
-     "aux_basis": "cc-pVDZ-RIFIT"
+     "aux_basis": "cc-pVDZ-RIFIT",
+     "unrestricted": false
    }
 
 **Supported methods**. Spelling is case-insensitive, and an ``XTB-`` prefix is
@@ -272,6 +273,24 @@ leaving the backend at ``auto`` on a build that resolves it to the GPU. Ask for
 ``backend: libcint``, which honours the file and this keyword both. A basis
 whose *file* is Cartesian, such as 6-31G*, was already refused on the GPU path
 for the same reason.
+
+Restricted or unrestricted
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``unrestricted`` forces an unrestricted reference (default: false). Most decks
+never set it: an odd electron count or a multiplicity above one already selects
+that path, and all but two of this repository's own open-shell validation cases
+say nothing at all. It is for the case the electron count cannot express -- a
+broken-symmetry singlet, where the multiplicity is 1 and the wavefunction is
+still to be allowed to break spin symmetry.
+
+It sits under ``model`` and not with the SCF settings because it is not one.
+``keywords.scf`` is how an answer is reached -- iterations, tolerances, the
+extrapolation -- and none of it changes the answer. This does: an unrestricted
+reference is a larger variational space and a different wavefunction, so a
+broken-symmetry singlet has its own energy. A deck using the old
+``keywords.scf.unrestricted`` spelling is refused with a message naming the new
+one rather than being silently ignored.
 
 Effective core potentials
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -743,7 +762,6 @@ SCF Options
        "gradient_tolerance": 0.0,
        "guess": "auto",
        "accelerator": "diis",
-       "unrestricted": false,
        "density_fitting": false,
        "level_shift": 0.0,
        "allow_crap_scf": false,
@@ -780,8 +798,6 @@ SCF Options
   only while the error is large and hand over to DIIS for the endgame, so naming
   one asks for a different opening and not a different endgame. See
   :ref:`accelerators` for when that is worth doing and how to tell it happened.
-- ``unrestricted``: Force the unrestricted path (default: false). An odd electron
-  count or a multiplicity above one forces it regardless.
 - ``density_fitting``: Fit J and K in the reference (default: false). Asked for
   explicitly rather than inferred from ``aux_basis`` being present.
 - ``level_shift``: Hartree added to the virtual orbitals before each
@@ -877,7 +893,7 @@ What only an iterative correlation method needs.
   times smaller and several times faster.
 
 **Open-shell systems** need no keyword. A multiplicity other than 1, an odd
-electron count, or ``keywords.scf.unrestricted`` puts the reference in an
+electron count, or ``model.unrestricted`` puts the reference in an
 unrestricted SCF, and coupled cluster follows it there -- ``spin_adapted`` is
 ignored, since those equations are derived for a closed shell and have no beta
 orbitals to be given. Density fitting is the one combination refused: the fitted

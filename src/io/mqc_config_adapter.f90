@@ -255,6 +255,7 @@ contains
       driver_config%method_config%scf%level_shift = mqc_config%scf_level_shift
       driver_config%method_config%scf%use_diis = mqc_config%scf_use_diis
       driver_config%method_config%scf%diis_size = mqc_config%scf_diis_size
+      driver_config%method_config%scf%incremental_fock = mqc_config%scf_incremental_fock
       if (allocated(mqc_config%scf_accelerator)) then
          driver_config%method_config%scf%accelerator = mqc_config%scf_accelerator
       end if
@@ -282,7 +283,7 @@ contains
          driver_config%checkpoint_file = mqc_config%checkpoint_file
       end if
       driver_config%method_config%scf%allow_crap_scf = mqc_config%allow_crap_scf
-      driver_config%method_config%scf%unrestricted = mqc_config%scf_unrestricted
+      driver_config%method_config%scf%unrestricted = mqc_config%unrestricted
       driver_config%method_config%scf%density_fitting = mqc_config%scf_density_fitting
       driver_config%method_config%corr%freeze_core = mqc_config%corr_freeze_core
       driver_config%method_config%corr%n_frozen_core = mqc_config%corr_n_frozen_core
@@ -313,6 +314,12 @@ contains
          driver_config%method_config%properties%fukui_population = &
             mqc_config%fukui_population
       end if
+      if (allocated(mqc_config%fukui_guess)) then
+         driver_config%method_config%properties%fukui_guess = mqc_config%fukui_guess
+      end if
+      driver_config%method_config%properties%fukui_maxiter = mqc_config%fukui_maxiter
+      driver_config%method_config%properties%fukui_diis_size = mqc_config%fukui_diis_size
+      driver_config%method_config%properties%fukui_level_shift = mqc_config%fukui_level_shift
       driver_config%method_config%properties%bonding_no_sharing = &
          mqc_config%bonding_no_sharing
       driver_config%method_config%properties%bonding_restrict_localization = &

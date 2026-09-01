@@ -42,7 +42,8 @@ contains
                   new_unittest("ecp_is_an_allowed_model_key", test_ecp_allowed), &
                   new_unittest("ecp_refused_for_xtb", test_ecp_xtb), &
                   new_unittest("ecp_refused_for_mcscf", test_ecp_mcscf), &
-                  new_unittest("empty_ecp_is_not_a_request", test_ecp_empty) &
+                  new_unittest("empty_ecp_is_not_a_request", test_ecp_empty), &
+                  new_unittest("unrestricted moved to model", test_unrestricted_moved) &
                   ]
    end subroutine collect_mqc_json_schema_tests
 
@@ -54,13 +55,14 @@ contains
 
       call write_deck([character(len=200) :: &
                        '"schema": {"name": "t", "version": "1.0", "index_base": 0, "units": "angstrom"},', &
-                       '"model": {"method": "XTB-GFN2", "basis": "sto-3g", "aux_basis": "x", "functional": "pbe"},', &
+                       '"model": {"method": "XTB-GFN2", "basis": "sto-3g", "aux_basis": "x",', &
+                       '          "functional": "pbe", "unrestricted": false},', &
                        '"driver": "Energy",', &
                        '"title": "anything",', &
                        '"system": {"logger": {"level": "info"}, "skip_json_output": false,', &
                        '           "fragment_breakdown": "csv"},', &
                        '"keywords": {', &
-                       '  "scf": {"maxiter": 40, "tolerance": 1e-8, "unrestricted": false, "guess": "gwh",', &
+                       '  "scf": {"maxiter": 40, "tolerance": 1e-8, "guess": "gwh",', &
                        '          "allow_crap_scf": false},', &
                        '  "hessian": {"displacement": 0.005, "temperature": 300.0, "pressure": 1.0},', &
                        '  "aimd": {"dt": 0.5, "nsteps": 10, "initial_temperature": 300.0,', &
@@ -306,6 +308,41 @@ contains
                        '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
       call expect_accepted(error, "an empty ecp on an xTB deck")
    end subroutine test_ecp_empty
+
+   subroutine test_unrestricted_moved(error)
+      !! `unrestricted` lives under `model`, and the old spelling says so
+      !!
+      !! It sat in `keywords.scf` until it was moved: that block is how an SCF
+      !! reaches its answer and none of it changes the answer, where this
+      !! selects a larger variational space and so a different wavefunction.
+      !!
+      !! The refusal is tested for its *message*, not merely for failing. The
+      !! generic unknown-key error lists what is allowed in the block the key
+      !! was found in, which for a relocated key is the one list that cannot
+      !! contain it -- so it reads as "no such setting" when the setting exists
+      !! one block away, and the reader is left to guess that it moved rather
+      !! than that it was dropped.
+      type(error_type), allocatable, intent(out) :: error
+
+      call write_deck([character(len=200) :: &
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "hf", "basis": "sto-3g"},', &
+                       '"driver": "Energy",', &
+                       '"keywords": {"scf": {"unrestricted": true}},', &
+                       '"molecules": [{"symbols": ["H", "H"], "geometry": [0,0,0, 0.7,0,0],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
+      call expect_rejected(error, "model.unrestricted", &
+                           "the old keywords.scf spelling")
+      if (allocated(error)) return
+
+      call write_deck([character(len=200) :: &
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "hf", "basis": "sto-3g", "unrestricted": true},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"symbols": ["H", "H"], "geometry": [0,0,0, 0.7,0,0],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
+      call expect_accepted(error, "unrestricted under model")
+   end subroutine test_unrestricted_moved
 
    subroutine expect_rejected(error, needle, what)
       !! Rejected, and the message names the thing that was wrong

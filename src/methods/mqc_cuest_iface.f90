@@ -91,6 +91,12 @@ module mqc_cuest_iface
       ! together, and a backend either builds a continuum or does not.
       character(len=32) :: bonding_analysis = "none"
       character(len=:), allocatable :: fukui_population
+      character(len=:), allocatable :: fukui_guess
+         !! "neutral" (default) or "independent"; see `mqc_config_t`.
+      integer :: fukui_maxiter = -1        !! -1 inherits max_iter
+      integer :: fukui_diis_size = -1      !! -1 inherits diis_size
+      real(dp) :: fukui_level_shift = -1.0_dp
+         !! Negative inherits level_shift; zero is a real value meaning "off".
       character(len=:), allocatable :: charges_scheme
          !! Atomic partial charges from `properties.charges`, unallocated when
          !! none were asked for. Travels here for the same reason the bonding
@@ -172,6 +178,9 @@ module mqc_cuest_iface
          !! `scf_config_t`.
       logical :: use_diis = .true.
       integer :: diis_size = 8
+      logical :: incremental_fock = .true.
+         !! Build from the density change rather than the density. See
+         !! `scf_config_t`; false forces a full build every iteration.
 
       integer :: radial_points = 75    !! XC grid radial points per atom
       integer :: angular_points = 302  !! XC grid Lebedev order
@@ -207,6 +216,14 @@ contains
       if (allocated(properties%fukui_population)) then
          settings%fukui_population = properties%fukui_population
       end if
+      if (allocated(properties%fukui_guess)) then
+         settings%fukui_guess = properties%fukui_guess
+      end if
+      ! Sentinels, not allocatables, so these copy unconditionally: -1 already
+      ! means "inherit" and carrying it across says so.
+      settings%fukui_maxiter = properties%fukui_maxiter
+      settings%fukui_diis_size = properties%fukui_diis_size
+      settings%fukui_level_shift = properties%fukui_level_shift
       if (allocated(properties%charges_scheme)) then
          settings%charges_scheme = properties%charges_scheme
       end if
@@ -251,6 +268,7 @@ contains
       settings%linear_dependence = options%linear_dependence
       settings%use_diis = options%use_diis
       settings%diis_size = options%diis_size
+      settings%incremental_fock = options%incremental_fock
       settings%accelerator = options%accelerator
       settings%verbose = options%verbose
       settings%device_rank = options%device_rank

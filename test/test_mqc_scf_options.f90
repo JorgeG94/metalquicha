@@ -69,6 +69,11 @@ contains
       options%linear_dependence = 1.0e-5_dp
       options%use_diis = .false.
       options%diis_size = 11
+      ! Set to the non-default, so a copy that never happens is caught. This
+      ! one was added after the deck value reached `mqc_config_t`, was carried
+      ! through every settings type, and then was not passed at the SCF call
+      ! site -- a flag that parsed, validated and did nothing.
+      options%incremental_fock = .false.
       options%accelerator = "ediis"
       options%verbose = .true.
       options%device_rank = 2
@@ -132,6 +137,9 @@ contains
       call check(error, settings%use_diis .eqv. options%use_diis, "use_diis")
       if (allocated(error)) return
       call check(error, settings%diis_size == options%diis_size, "diis_size")
+      if (allocated(error)) return
+      call check(error, settings%incremental_fock .eqv. options%incremental_fock, &
+                 "incremental_fock")
       if (allocated(error)) return
       call check(error, settings%accelerator == options%accelerator, "accelerator")
       if (allocated(error)) return

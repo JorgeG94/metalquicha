@@ -74,6 +74,18 @@ module mqc_method_config
          !! Use DIIS acceleration
       integer :: diis_size = 8
          !! Number of Fock matrices for DIIS
+      logical :: incremental_fock = .true.
+         !! Build each iteration's Fock matrix from the density *change* since
+         !! the last full build, rather than from the density.
+         !!
+         !! On by default: it is exact to the convergence threshold and several
+         !! times cheaper late in an SCF. False forces a full build every
+         !! iteration, which is what to reach for when an SCF misbehaves. The
+         !! incremental path accumulates a correction, so it is the first thing
+         !! to rule out when a run stalls or wanders -- and rebuilding the binary
+         !! to test that is not a debugging step anyone should have to take. It
+         !! is also the honest setting for timing a Fock build, since an
+         !! incremental one gets cheaper with every iteration.
       character(len=32) :: accelerator = "diis"
          !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
          !! 'ediis'. The energy-based pair runs only while the error is large
@@ -277,6 +289,12 @@ module mqc_method_config
       !! Analyses to run once the wave function exists
       character(len=32) :: bonding_analysis = "none"
       character(len=:), allocatable :: fukui_population
+      character(len=:), allocatable :: fukui_guess
+         !! "neutral" (default) or "independent". See `mqc_config_t`.
+      integer :: fukui_maxiter = -1        !! -1 inherits keywords.scf.maxiter
+      integer :: fukui_diis_size = -1      !! -1 inherits keywords.scf.diis_size
+      real(dp) :: fukui_level_shift = -1.0_dp
+         !! Negative inherits keywords.scf.level_shift; zero means "off".
       character(len=:), allocatable :: charges_scheme
          !! Allocated when `properties.charges` asked for partial charges;
          !! "mulliken" or "chelpg". Unallocated means no charges, which is why
@@ -347,6 +365,18 @@ module mqc_method_config
          !! Use DIIS acceleration
       integer :: diis_size = 8
          !! Number of Fock matrices for DIIS
+      logical :: incremental_fock = .true.
+         !! Build each iteration's Fock matrix from the density *change* since
+         !! the last full build, rather than from the density.
+         !!
+         !! On by default: it is exact to the convergence threshold and several
+         !! times cheaper late in an SCF. False forces a full build every
+         !! iteration, which is what to reach for when an SCF misbehaves. The
+         !! incremental path accumulates a correction, so it is the first thing
+         !! to rule out when a run stalls or wanders -- and rebuilding the binary
+         !! to test that is not a debugging step anyone should have to take. It
+         !! is also the honest setting for timing a Fock build, since an
+         !! incremental one gets cheaper with every iteration.
       character(len=32) :: accelerator = "diis"
          !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
          !! 'ediis'. The energy-based pair runs only while the error is large

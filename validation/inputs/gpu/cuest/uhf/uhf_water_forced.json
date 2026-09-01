@@ -13,13 +13,13 @@
     "model": {
         "method": "hf",
         "basis": "def2-svp",
-        "aux_basis": "def2-universal-jkfit"
+        "aux_basis": "def2-universal-jkfit",
+        "unrestricted": true
     },
     "keywords": {
         "scf": {
             "maxiter": 100,
-            "tolerance": 1e-08,
-            "unrestricted": true
+            "tolerance": 1e-08
         }
     },
     "system": {

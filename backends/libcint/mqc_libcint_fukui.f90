@@ -108,7 +108,8 @@ contains
                             scheme, max_iter, energy_tol, density_tol, res, error, &
                             functional, grid_level, pt2_fraction, neutral_orbitals, &
                             neutral_orbital_energies, aux, n_frozen, verbose, pcm, &
-                            level_shift, diis_vectors)
+                            level_shift, diis_vectors, nlc_grid_level, &
+                            screening_tolerance, block_size, guess_mode, incremental_fock)
       !! Run the ions and condense the difference onto atoms
       !!
       !! The neutral density is handed in rather than recomputed, since the
@@ -171,6 +172,40 @@ contains
       type(error_t), intent(inout) :: error
       character(len=*), intent(in), optional :: functional
       integer, intent(in), optional :: grid_level
+      logical, intent(in), optional :: incremental_fock
+         !! Passed to both ion SCFs, so that turning incremental building off
+         !! turns it off for the whole Fukui run. Withholding it here would
+         !! leave the one place a stalling run most wants to rule it out --
+         !! the ions -- building incrementally whatever the deck said.
+      character(len=*), intent(in), optional :: guess_mode
+         !! "neutral" (the default) or "independent".
+         !!
+         !! "neutral" seeds each ion from the converged neutral's orbitals at
+         !! that ion's own occupation, which is usually much the better start --
+         !! see the note on the seeding below for what it is worth. But it fills
+         !! the *neutral's* LUMO, and where that orbital is a poor guess for the
+         !! ion's own the SCF can settle on a different stationary point
+         !! instead of climbing out of it: an anion that stalls a few
+         !! millihartree above the answer the ordinary guess reaches is the
+         !! symptom, and DIIS will not rescue it because a stationary point is
+         !! exactly what DIIS is looking for. "independent" gives each ion the
+         !! ordinary guess, which converges from further away but is not aimed
+         !! at any particular solution.
+      integer, intent(in), optional :: nlc_grid_level
+         !! VV10's own quadrature level, forwarded from `keywords.dft.nlc_grid_level`.
+         !!
+         !! Absent leaves `NLC_GRID_LEVEL`, and leaving it absent was a bug: the
+         !! neutral honoured the deck and the ions did not, so a `-V` functional
+         !! integrated its non-local term on a grid the caller never asked for and
+         !! the difference these indices are made of was taken between two
+         !! quadratures. It also cost what a Fukui run cannot afford -- the double
+         !! sum goes as the square of this grid.
+      real(dp), intent(in), optional :: screening_tolerance
+         !! AO screening threshold for the quadrature, from
+         !! `keywords.dft.screening_tolerance`. Same reasoning: the ions have no
+         !! business screening differently from the neutral.
+      integer, intent(in), optional :: block_size
+         !! Grid points per block, from `keywords.dft.block_size`.
       real(dp), intent(in), optional :: pt2_fraction
       real(dp), intent(in), optional :: neutral_orbitals(:, :)
       real(dp), intent(in), optional :: neutral_orbital_energies(:)
@@ -252,8 +287,15 @@ contains
          end if
          ! Spin-polarised, because both ions are doublets. See the note on this
          ! routine: this is the whole reason the functional arrives by name.
+         ! Every grid knob the neutral was given, not just `level`. An absent
+         ! optional passed on stays absent, so a caller that says nothing still
+         ! gets the defaults -- but a caller that set one no longer has it
+         ! dropped on the floor here.
          call xc_context_create(mol, trim(functional), xc_ions, error, &
-                                level=grid_level, polarized=.true.)
+                                level=grid_level, polarized=.true., &
+                                nlc_level=nlc_grid_level, &
+                                screen_tol=screening_tolerance, &
+                                point_block=block_size)
          if (error%has_error()) then
             call error%add_context("Fukui indices: the ions' functional")
             return
@@ -334,6 +376,14 @@ contains
       n_occ_neutral = nelec/2
       guess_kind = SCF_GUESS_GWH
       seeded = present(neutral_orbitals)
+      ! An explicit "independent" turns the seeding off and nothing else: the
+      ! orbitals are still passed by the caller, still the right shape, and
+      ! still wanted for a double hybrid's perturbative term. Only the two
+      ! guess densities go unbuilt, and the unallocated-actual rule below then
+      ! removes them from the call.
+      if (seeded .and. present(guess_mode)) then
+         seeded = .not. (trim(guess_mode) == "independent")
+      end if
       if (seeded) seeded = size(neutral_orbitals, 1) == n_ao .and. &
                            size(neutral_orbitals, 2) >= n_occ_neutral + 1
       if (seeded) then
@@ -354,7 +404,8 @@ contains
                            diis_vectors=diis_vectors, &
                            level_shift=level_shift, &
                            guess=guess_kind, guess_density_alpha=d_guess_a, &
-                           guess_density_beta=d_guess_b)
+                           guess_density_beta=d_guess_b, &
+                           incremental_fock=incremental_fock)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the anion")
          return
@@ -395,7 +446,8 @@ contains
                            diis_vectors=diis_vectors, &
                            level_shift=level_shift, &
                            guess=guess_kind, guess_density_alpha=d_guess_a, &
-                           guess_density_beta=d_guess_b)
+                           guess_density_beta=d_guess_b, &
+                           incremental_fock=incremental_fock)
       if (error%has_error()) then
          call error%add_context("Fukui indices: the cation")
          return
