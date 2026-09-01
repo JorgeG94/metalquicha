@@ -19,6 +19,7 @@ module test_mqc_libcint_mp2
    !!     every memory path -- the occupied-frozen block of the relaxed density
    !!     is built from the Lagrangian, and no energy comparison can see it.
    use testdrive, only: new_unittest, unittest_type, error_type, check
+!$ use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_result_types, only: mp2_energy_t
@@ -565,20 +566,42 @@ contains
       !! from, and neither touches the fitted correlation -- so under a frozen
       !! core they still have to agree to rounding, which is what shows the
       !! new occupied-frozen block feeds both the same numbers.
+      !! **Pinned to one thread, and the pin is the point.** The two paths
+      !! converge two SCFs independently, so what separates their gradients is
+      !! not only how far each ran but the order its OpenMP reductions
+      !! happened to associate -- and that scatter grows with thread count.
+      !! Measured on this comparison: 1.7e-15 on one thread, 1.9e-11 on four,
+      !! 4.6e-10 on twenty-six, against a bound of 1e-10. The quantity under
+      !! test is whether stored and recomputed reference integrals give the
+      !! same answer, which is a question about the integrals and not about
+      !! reduction order, so the noise is measured away rather than budgeted
+      !! for.
       type(error_type), allocatable, intent(out) :: error
       real(dp), allocatable :: stored(:, :), direct(:, :)
       type(error_t) :: err
+      integer :: saved
+
+      saved = 1
+!$    saved = omp_get_max_threads()
+!$    call omp_set_num_threads(1)
 
       call water_ri_gradient("6-31g", "cc-pvdz-rifit", 1, stored, err)
       call check(error,.not. err%has_error(), &
                  "the stored path must run: "//err%get_full_trace())
-      if (allocated(error)) return
+      if (allocated(error)) then
+!$       call omp_set_num_threads(saved)
+         return
+      end if
       call water_ri_gradient("6-31g", "cc-pvdz-rifit", 1, direct, err, &
                              force_direct=.true.)
       call check(error,.not. err%has_error(), &
                  "the direct path must run: "//err%get_full_trace())
-      if (allocated(error)) return
+      if (allocated(error)) then
+!$       call omp_set_num_threads(saved)
+         return
+      end if
 
+!$    call omp_set_num_threads(saved)
       call check(error, maxval(abs(stored - direct)) < 1.0e-10_dp, &
                  "recomputing the reference integrals must not move a frozen-core "// &
                  "RI gradient")
