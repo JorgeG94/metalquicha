@@ -28,7 +28,7 @@ module mqc_driver
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, &
                              CALC_TYPE_OPTIMIZE, CALC_TYPE_CONFORMERS, &
                              CALC_TYPE_HESSIAN, CALC_TYPE_MAKEFP
-   use mqc_config_types, only: bond_t, mqc_config_t
+   use mqc_config_types, only: bond_t, mqc_config_t, scf_numerics_t
    use mqc_mbe, only: compute_gmbe
    use mqc_result_types, only: calculation_result_t
    use mqc_scf_common, only: lindep_tally_t, lindep_collect_begin, lindep_collect_end, &
@@ -1335,7 +1335,9 @@ contains
       character(len=8), allocatable :: symbols(:)
       character(len=:), allocatable :: path, name
       integer :: i
-      real(dp), allocatable :: named_energy_tol, named_density_tol
+      real(dp), allocatable :: named_energy_tol, named_density_tol, named_grad_tol
+      integer, allocatable :: named_max_iter
+      type(scf_numerics_t) :: makefp_scf
          !! What the deck asked for, if it asked at all
          !!
          !! Unallocated means it did not, and that is the signal rather than an
@@ -1391,6 +1393,28 @@ contains
       if (config%method_config%scf%density_convergence_set) then
          named_density_tol = config%method_config%scf%density_convergence
       end if
+      ! Zero is this field's "not named" -- it is what the SCF reads as "derive
+      ! it from the energy tolerance" everywhere else, so there is no separate
+      ! flag to carry. Nothing forwarded it here before, so a MakeFP deck that
+      ! stated the commutator threshold outright had it dropped.
+      if (config%method_config%scf%gradient_convergence > 0.0_dp) then
+         named_grad_tol = config%method_config%scf%gradient_convergence
+      end if
+      ! The iteration cap is this path's own 200 unless the deck named one, for
+      ! the reason the tolerances are: a fragment potential is converged tightly
+      ! and wants a budget larger than the shared default of 100. `max_iter_set`
+      ! is what tells a deck that asked for 100 from one that said nothing.
+      if (config%method_config%scf%max_iter_set) then
+         named_max_iter = config%method_config%scf%max_iter
+      end if
+      ! Everything else about how the SCF runs goes down whole. These are the
+      ! settings a MakeFP deck could set and then watch do nothing.
+      makefp_scf%level_shift = config%method_config%scf%level_shift
+      makefp_scf%linear_dependence = config%method_config%scf%linear_dependence
+      makefp_scf%use_diis = config%method_config%scf%use_diis
+      makefp_scf%diis_size = config%method_config%scf%diis_size
+      makefp_scf%incremental_fock = config%method_config%scf%incremental_fock
+      makefp_scf%accelerator = config%method_config%scf%accelerator
       if (config%method_config%scf%density_fitting) then
          call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
                                  config%method_config%basis_set, name, path, err, &
@@ -1399,6 +1423,8 @@ contains
                                  guess=trim(config%method_config%scf%guess), &
                                  energy_tol=named_energy_tol, &
                                  density_tol=named_density_tol, &
+                                 grad_tol=named_grad_tol, &
+                                 scf_in=makefp_scf, max_iter_in=named_max_iter, &
                                  vdwscl=config%method_config%efp%vdw_scale, &
                                  dynamic_tol=config%method_config%efp%dynamic_tolerance, &
                                  dynamic_maxiter=config%method_config%efp%dynamic_maxiter, &
@@ -1412,6 +1438,8 @@ contains
                                  guess=trim(config%method_config%scf%guess), &
                                  energy_tol=named_energy_tol, &
                                  density_tol=named_density_tol, &
+                                 grad_tol=named_grad_tol, &
+                                 scf_in=makefp_scf, max_iter_in=named_max_iter, &
                                  vdwscl=config%method_config%efp%vdw_scale, &
                                  dynamic_tol=config%method_config%efp%dynamic_tolerance, &
                                  dynamic_maxiter=config%method_config%efp%dynamic_maxiter, &

@@ -494,6 +494,8 @@ module mqc_config_types
       ! SCF settings
       integer :: scf_maxiter = 300              !! Using 300 (parser-specific, different from DEFAULT_SCF_MAXITER)
       real(dp) :: scf_tolerance = DEFAULT_SCF_CONV
+      logical :: scf_maxiter_set = .false.
+         !! Whether the deck named `keywords.scf.maxiter`; see `scf_config_t`.
       logical :: scf_tolerance_set = .false.
          !! Whether the deck named it. Needed because "the default" and "the
          !! user asked for the default" are different requests to a caller that
