@@ -174,14 +174,14 @@ that can be used by optimization algorithms, MD integrators, and MC samplers</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_resources.html'>mqc_resources</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_resources.html'>mqc_resources</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -756,7 +756,7 @@ This is the main interface for optimization/dynamics codes</p><a href="../proc/c
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~2"></span>
+              <span class="anchor" id="variable-sys_geom~39"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -771,7 +771,7 @@ This is the main interface for optimization/dynamics codes</p><a href="../proc/c
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config"></span>
+              <span class="anchor" id="variable-driver_config~5"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -786,7 +786,7 @@ This is the main interface for optimization/dynamics codes</p><a href="../proc/c
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources"></span>
+              <span class="anchor" id="variable-resources~4"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -801,7 +801,7 @@ This is the main interface for optimization/dynamics codes</p><a href="../proc/c
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy"></span>
+              <span class="anchor" id="variable-energy~13"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -816,7 +816,7 @@ This is the main interface for optimization/dynamics codes</p><a href="../proc/c
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient"></span>
+              <span class="anchor" id="variable-gradient~9"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -831,7 +831,7 @@ This is the main interface for optimization/dynamics codes</p><a href="../proc/c
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian"></span>
+              <span class="anchor" id="variable-hessian~13"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -846,7 +846,7 @@ This is the main interface for optimization/dynamics codes</p><a href="../proc/c
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds"></span>
+              <span class="anchor" id="variable-bonds~14"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -861,7 +861,7 @@ This is the main interface for optimization/dynamics codes</p><a href="../proc/c
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-write_output"></span>
+              <span class="anchor" id="variable-write_output~2"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -872,7 +872,7 @@ This is the main interface for optimization/dynamics codes</p><a href="../proc/c
             <td><strong>write_output</strong></td>
             <td>
 <p>Whether the driver writes its JSON output file. Defaults to what
-<code>run_calculation</code> defaults to, which is yes.</p><a href="../proc/compute_energy_and_forces.html#variable-write_output" class="pull-right"><emph>Read more&hellip;</emph></a>
+<code>run_calculation</code> defaults to, which is yes.</p><a href="../proc/compute_energy_and_forces.html#variable-write_output~2" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
     </tbody>
@@ -903,7 +903,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom"></span>
+              <span class="anchor" id="variable-sys_geom~38"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -918,7 +918,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm"></span>
+              <span class="anchor" id="variable-comm~13"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -961,7 +961,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-01 02:09 +0000             </p>
+ on 2026-09-01 04:12 +0000             </p>
           </div>
         </div>
         <br>

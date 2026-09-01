@@ -99,15 +99,15 @@
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/mqc_ci.f90"> Source File</a>
+              <a href="../src/mqc_ormas_ci.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/mqc_ci.f90.html'>mqc_ci.f90</a></li>
-                <li class="breadcrumb-item"><a href='../module/mqc_ci.html'>mqc_ci</a></li>
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_ormas_ci.f90.html'>mqc_ormas_ci.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></li>
             <li class="breadcrumb-item active" aria-current="page">string_terms</li>
           </ol>
         </nav>
@@ -137,10 +137,11 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/string_terms~2.html#variable-ip~3">ip</a>
-            <a class="list-group-item" href="../proc/string_terms~2.html#variable-iq~4">iq</a>
-            <a class="list-group-item" href="../proc/string_terms~2.html#variable-istr">istr</a>
-            <a class="list-group-item" href="../proc/string_terms~2.html#variable-p~11">p</a>
-            <a class="list-group-item" href="../proc/string_terms~2.html#variable-q~7">q</a>
+            <a class="list-group-item" href="../proc/string_terms~2.html#variable-iq~3">iq</a>
+            <a class="list-group-item" href="../proc/string_terms~2.html#variable-n_found~3">n_found</a>
+            <a class="list-group-item" href="../proc/string_terms~2.html#variable-p~8">p</a>
+            <a class="list-group-item" href="../proc/string_terms~2.html#variable-q~6">q</a>
+            <a class="list-group-item" href="../proc/string_terms~2.html#variable-s~9">s</a>
         </div>
       </div>
     </div>
@@ -176,11 +177,16 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>private  subroutine string_terms(table, coulomb, exchange, h1e, n_str, one_body, same_spin, occupied)  
+    <h2>private  subroutine string_terms(strings, n_orbitals, n_electrons, h1e, coulomb, exchange, one_body, same_spin, screened, occupied)  
 </h2>
     
 
-    <p>The part of a diagonal element that depends on one spin alone</p>
+    <p>Everything about a diagonal element that one spin decides alone</p>
+<p>Three things per string: its one-electron sum, its own Coulomb and
+exchange, and &ndash; the one worth hoisting &ndash; the vector
+<code>screened(q) = sum over occupied p of (pp|qq)</code>. Without it the
+opposite-spin Coulomb term costs a double loop for every determinant;
+with it, a single sum over the other spin&rsquo;s electrons.</p>
 
 
     <h3>Arguments</h3>
@@ -196,52 +202,52 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-table~3"></span>
-              type(<a href='../type/link_table_t.html'>link_table_t</a>),
+              <span class="anchor" id="variable-strings~3"></span>
+              integer(kind=int64),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>table</strong></td>
+            <td><strong>strings</strong>(:)</td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coulomb~4"></span>
-              real(kind=dp),
+              <span class="anchor" id="variable-n_orbitals~5"></span>
+              integer,
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>coulomb</strong>(:,:)</td>
+            <td><strong>n_orbitals</strong></td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-exchange~4"></span>
-              real(kind=dp),
+              <span class="anchor" id="variable-n_electrons~6"></span>
+              integer,
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>exchange</strong>(:,:)</td>
+            <td><strong>n_electrons</strong></td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-h1e~6"></span>
+              <span class="anchor" id="variable-h1e~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -256,15 +262,30 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_str~2"></span>
-              integer,
+              <span class="anchor" id="variable-coulomb~3"></span>
+              real(kind=dp),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>n_str</strong></td>
+            <td><strong>coulomb</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-exchange~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>exchange</strong>(:,:)</td>
             <td>
                 
             </td>
@@ -301,12 +322,27 @@
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-screened"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>screened</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-occupied~3"></span>
               integer,
             </td>
-<td>intent(out),</td>
+<td>intent(out)</td>
               <td></td>            <td>
-              allocatable
+              
             </td>
             <td>::</td>
             <td><strong>occupied</strong>(:,:)</td>
@@ -320,6 +356,126 @@
     <br>
     <div class="card">
       <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~string_terms~2~~CallsGraph Pages: 1 -->
+<svg id="procstring_terms2CallsGraph" width="229pt" height="32pt"
+ viewBox="0.00 0.00 229.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~string_terms~2~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~string_terms~2~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 225,-28 225,4 -4,4"/>
+<!-- proc~string_terms~2 -->
+<g id="proc~~string_terms~2~~CallsGraph_node1" class="node">
+<title>proc~string_terms~2</title>
+<polygon fill="none" stroke="black" points="79,-24 0,-24 0,0 79,0 79,-24"/>
+<text text-anchor="middle" x="39.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">string_terms</text>
+</g>
+<!-- proc~occupied_orbitals -->
+<g id="proc~~string_terms~2~~CallsGraph_node2" class="node">
+<title>proc~occupied_orbitals</title>
+<g id="a_proc~~string_terms~2~~CallsGraph_node2"><a xlink:href="../proc/occupied_orbitals.html" xlink:title="occupied_orbitals">
+<polygon fill="#d9534f" stroke="#d9534f" points="221,-24 115,-24 115,0 221,0 221,-24"/>
+<text text-anchor="middle" x="168" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">occupied_orbitals</text>
+</a>
+</g>
+</g>
+<!-- proc~string_terms~2&#45;&gt;proc~occupied_orbitals -->
+<g id="proc~~string_terms~2~~CallsGraph_edge1" class="edge">
+<title>proc~string_terms~2&#45;&gt;proc~occupied_orbitals</title>
+<path fill="none" stroke="#ff0000" d="M79.14,-12C87.18,-12 95.86,-12 104.51,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="104.62,-15.5 114.62,-12 104.62,-8.5 104.62,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
   <h3 class="card-title">Called by</h3>
       </div>
       <div class="card-body">
@@ -329,31 +485,46 @@
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~string_terms~2~~CalledByGraph Pages: 1 -->
-<svg id="procstring_terms2CalledByGraph" width="196pt" height="32pt"
- viewBox="0.00 0.00 196.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg id="procstring_terms2CalledByGraph" width="336pt" height="32pt"
+ viewBox="0.00 0.00 336.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="proc~~string_terms~2~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
 <title>proc~~string_terms~2~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 192,-28 192,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 332,-28 332,4 -4,4"/>
 <!-- proc~string_terms~2 -->
 <g id="proc~~string_terms~2~~CalledByGraph_node1" class="node">
 <title>proc~string_terms~2</title>
-<polygon fill="none" stroke="black" points="188,-24 109,-24 109,0 188,0 188,-24"/>
-<text text-anchor="middle" x="148.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">string_terms</text>
+<polygon fill="none" stroke="black" points="328,-24 249,-24 249,0 328,0 328,-24"/>
+<text text-anchor="middle" x="288.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">string_terms</text>
 </g>
-<!-- proc~ci_diagonal -->
+<!-- proc~ormas_diagonal -->
 <g id="proc~~string_terms~2~~CalledByGraph_node2" class="node">
-<title>proc~ci_diagonal</title>
-<g id="a_proc~~string_terms~2~~CalledByGraph_node2"><a xlink:href="../proc/ci_diagonal.html" xlink:title="ci_diagonal">
-<polygon fill="#d9534f" stroke="#d9534f" points="73,-24 0,-24 0,0 73,0 73,-24"/>
-<text text-anchor="middle" x="36.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ci_diagonal</text>
+<title>proc~ormas_diagonal</title>
+<g id="a_proc~~string_terms~2~~CalledByGraph_node2"><a xlink:href="../proc/ormas_diagonal.html" xlink:title="ormas_diagonal">
+<polygon fill="#d9534f" stroke="#d9534f" points="213,-24 115,-24 115,0 213,0 213,-24"/>
+<text text-anchor="middle" x="164" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_diagonal</text>
 </a>
 </g>
 </g>
-<!-- proc~ci_diagonal&#45;&gt;proc~string_terms~2 -->
+<!-- proc~ormas_diagonal&#45;&gt;proc~string_terms~2 -->
 <g id="proc~~string_terms~2~~CalledByGraph_edge1" class="edge">
-<title>proc~ci_diagonal&#45;&gt;proc~string_terms~2</title>
-<path fill="none" stroke="#ff0000" d="M73.21,-12C81.42,-12 90.28,-12 98.93,-12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="98.93,-15.5 108.93,-12 98.93,-8.5 98.93,-15.5"/>
+<title>proc~ormas_diagonal&#45;&gt;proc~string_terms~2</title>
+<path fill="none" stroke="#ff0000" d="M213.06,-12C221.45,-12 230.18,-12 238.59,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="238.65,-15.5 248.65,-12 238.65,-8.5 238.65,-15.5"/>
+</g>
+<!-- proc~ormas_solve -->
+<g id="proc~~string_terms~2~~CalledByGraph_node3" class="node">
+<title>proc~ormas_solve</title>
+<g id="a_proc~~string_terms~2~~CalledByGraph_node3"><a xlink:href="../proc/ormas_solve.html" xlink:title="ormas_solve">
+<polygon fill="#d9534f" stroke="#d9534f" points="79,-24 0,-24 0,0 79,0 79,-24"/>
+<text text-anchor="middle" x="39.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ormas_solve</text>
+</a>
+</g>
+</g>
+<!-- proc~ormas_solve&#45;&gt;proc~ormas_diagonal -->
+<g id="proc~~string_terms~2~~CalledByGraph_edge2" class="edge">
+<title>proc~ormas_solve&#45;&gt;proc~ormas_diagonal</title>
+<path fill="none" stroke="#ff0000" d="M79.26,-12C87.32,-12 95.99,-12 104.58,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="104.58,-15.5 114.58,-12 104.58,-8.5 104.58,-15.5"/>
 </g>
 </g>
 </svg>
@@ -472,7 +643,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iq~4"></span>
+              <span class="anchor" id="variable-iq~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -489,7 +660,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-istr"></span>
+              <span class="anchor" id="variable-n_found~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -497,7 +668,7 @@ large graphs.</div>
               
             </td>
             <td>::</td>
-            <td><strong>istr</strong></td>
+            <td><strong>n_found</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -506,7 +677,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-p~11"></span>
+              <span class="anchor" id="variable-p~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -523,7 +694,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-q~7"></span>
+              <span class="anchor" id="variable-q~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -532,6 +703,23 @@ large graphs.</div>
             </td>
             <td>::</td>
             <td><strong>q</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-s~9"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>s</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -554,32 +742,39 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">string_terms</span><span class="p">(</span><span class="n">table</span><span class="p">,</span><span class="w"> </span><span class="n">coulomb</span><span class="p">,</span><span class="w"> </span><span class="n">exchange</span><span class="p">,</span><span class="w"> </span><span class="n">h1e</span><span class="p">,</span><span class="w"> </span><span class="n">n_str</span><span class="p">,</span><span class="w"> </span><span class="n">one_body</span><span class="p">,</span><span class="w"> </span><span class="n">same_spin</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="n">occupied</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! The part of a diagonal element that depends on one spin alone</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">link_table_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">table</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coulomb</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">exchange</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">h1e</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_str</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">string_terms</span><span class="p">(</span><span class="n">strings</span><span class="p">,</span><span class="w"> </span><span class="n">n_orbitals</span><span class="p">,</span><span class="w"> </span><span class="n">n_electrons</span><span class="p">,</span><span class="w"> </span><span class="n">h1e</span><span class="p">,</span><span class="w"> </span><span class="n">coulomb</span><span class="p">,</span><span class="w"> </span><span class="n">exchange</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="n">one_body</span><span class="p">,</span><span class="w"> </span><span class="n">same_spin</span><span class="p">,</span><span class="w"> </span><span class="n">screened</span><span class="p">,</span><span class="w"> </span><span class="n">occupied</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Everything about a diagonal element that one spin decides alone</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Three things per string: its one-electron sum, its own Coulomb and</span>
+<span class="w">      </span><span class="c">!! exchange, and -- the one worth hoisting -- the vector</span>
+<span class="w">      </span><span class="c">!! `screened(q) = sum over occupied p of (pp|qq)`. Without it the</span>
+<span class="w">      </span><span class="c">!! opposite-spin Coulomb term costs a double loop for every determinant;</span>
+<span class="w">      </span><span class="c">!! with it, a single sum over the other spin's electrons.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">strings</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_orbitals</span><span class="p">,</span><span class="w"> </span><span class="n">n_electrons</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">h1e</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">coulomb</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">exchange</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">one_body</span><span class="p">(:),</span><span class="w"> </span><span class="n">same_spin</span><span class="p">(:)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">occupied</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">screened</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">occupied</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">istr</span><span class="p">,</span><span class="w"> </span><span class="n">ip</span><span class="p">,</span><span class="w"> </span><span class="n">iq</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">q</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="n">ip</span><span class="p">,</span><span class="w"> </span><span class="n">iq</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">,</span><span class="w"> </span><span class="n">n_found</span>
 
-<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">occupied</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">table</span><span class="p">%</span><span class="n">n_electrons</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">n_str</span><span class="p">))</span>
-<span class="w">      </span><span class="k">do </span><span class="n">istr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_str</span>
-<span class="w">         </span><span class="k">do </span><span class="n">ip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">%</span><span class="n">n_electrons</span>
-<span class="w">            </span><span class="n">occupied</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span><span class="w"> </span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">table</span><span class="p">%</span><span class="n">des</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span><span class="w"> </span><span class="n">istr</span><span class="p">)</span>
-<span class="w">         </span><span class="k">end do</span>
+<span class="w">      </span><span class="k">do </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">strings</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">occupied_orbitals</span><span class="p">(</span><span class="n">strings</span><span class="p">(</span><span class="n">s</span><span class="p">),</span><span class="w"> </span><span class="n">n_orbitals</span><span class="p">,</span><span class="w"> </span><span class="n">occupied</span><span class="p">(:,</span><span class="w"> </span><span class="n">s</span><span class="p">),</span><span class="w"> </span><span class="n">n_found</span><span class="p">)</span>
 
-<span class="k">         </span><span class="n">one_body</span><span class="p">(</span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
-<span class="w">         </span><span class="n">same_spin</span><span class="p">(</span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
-<span class="w">         </span><span class="k">do </span><span class="n">ip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">%</span><span class="n">n_electrons</span>
-<span class="w">            </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">occupied</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span><span class="w"> </span><span class="n">istr</span><span class="p">)</span>
-<span class="w">            </span><span class="n">one_body</span><span class="p">(</span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">one_body</span><span class="p">(</span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">h1e</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">)</span>
-<span class="w">            </span><span class="k">do </span><span class="n">iq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">%</span><span class="n">n_electrons</span>
-<span class="w">               </span><span class="n">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">occupied</span><span class="p">(</span><span class="n">iq</span><span class="p">,</span><span class="w"> </span><span class="n">istr</span><span class="p">)</span>
-<span class="w">               </span><span class="n">same_spin</span><span class="p">(</span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">same_spin</span><span class="p">(</span><span class="n">istr</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                 </span><span class="o">+</span><span class="w"> </span><span class="mf">0.5_dp</span><span class="o">*</span><span class="p">(</span><span class="n">coulomb</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">exchange</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">))</span>
+<span class="w">         </span><span class="n">one_body</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">         </span><span class="n">same_spin</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">         </span><span class="n">screened</span><span class="p">(:,</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+
+<span class="w">         </span><span class="k">do </span><span class="n">ip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_electrons</span>
+<span class="w">            </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">occupied</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">)</span>
+<span class="w">            </span><span class="n">one_body</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">one_body</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">h1e</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">)</span>
+<span class="w">            </span><span class="n">screened</span><span class="p">(:,</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">screened</span><span class="p">(:,</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">coulomb</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">            </span><span class="c">! Pairs once each, which is where the usual half goes.</span>
+<span class="w">            </span><span class="k">do </span><span class="n">iq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ip</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_electrons</span>
+<span class="w">               </span><span class="n">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">occupied</span><span class="p">(</span><span class="n">iq</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">)</span>
+<span class="w">               </span><span class="n">same_spin</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">same_spin</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">coulomb</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">exchange</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end do</span>
 <span class="k">         end do</span>
 <span class="k">      end do</span>
@@ -607,7 +802,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-01 02:09 +0000             </p>
+ on 2026-09-01 04:12 +0000             </p>
           </div>
         </div>
         <br>

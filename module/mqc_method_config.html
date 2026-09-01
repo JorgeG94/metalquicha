@@ -210,11 +210,11 @@ for each method family. The factory reads from the appropriate nested type.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
                   <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1979,7 +1979,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~6"></span>
+              <span class="anchor" id="variable-max_iter~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -1996,7 +1996,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~3"></span>
+              <span class="anchor" id="variable-n_roots~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2048,7 +2048,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~4"></span>
+              <span class="anchor" id="variable-use_diis~5"></span>
               logical,
             </td>
               <td>public</td>
@@ -2250,7 +2250,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_scs~2"></span>
+              <span class="anchor" id="variable-use_scs"></span>
               logical,
             </td>
               <td>public</td>
@@ -2368,7 +2368,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~3"></span>
+              <span class="anchor" id="variable-functional~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -2540,7 +2540,7 @@ expensive here. Negative means the backend&rsquo;s own default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_response~2"></span>
+              <span class="anchor" id="variable-allow_crap_response"></span>
               logical,
             </td>
               <td>public</td>
@@ -2553,12 +2553,12 @@ expensive here. Negative means the backend&rsquo;s own default.</p>
                 <td>.false.</td>
             <td>
 <p>Take whatever the response solve reached when it runs out of
-iterations, instead of refusing.</p><a href="../type/efp_config_t.html#variable-allow_crap_response~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+iterations, instead of refusing.</p><a href="../type/efp_config_t.html#variable-allow_crap_response" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dynamic_maxiter~2"></span>
+              <span class="anchor" id="variable-dynamic_maxiter"></span>
               integer,
             </td>
               <td>public</td>
@@ -2592,7 +2592,7 @@ iterations, instead of refusing.</p><a href="../type/efp_config_t.html#variable-
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-response~2"></span>
+              <span class="anchor" id="variable-response"></span>
               integer,
             </td>
               <td>public</td>
@@ -2609,7 +2609,7 @@ iterations, instead of refusing.</p><a href="../type/efp_config_t.html#variable-
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-response_batch~2"></span>
+              <span class="anchor" id="variable-response_batch"></span>
               integer,
             </td>
               <td>public</td>
@@ -2812,7 +2812,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-avas_orbitals~2"></span>
+              <span class="anchor" id="variable-avas_orbitals"></span>
               character(len=MAX_ORBITAL_LABEL_LEN),
             </td>
               <td>public,</td>
@@ -2830,7 +2830,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-avas_threshold~2"></span>
+              <span class="anchor" id="variable-avas_threshold"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2864,7 +2864,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-full_valence~2"></span>
+              <span class="anchor" id="variable-full_valence"></span>
               logical,
             </td>
               <td>public</td>
@@ -2881,7 +2881,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imaginary_shift~2"></span>
+              <span class="anchor" id="variable-imaginary_shift"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2898,7 +2898,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ipea_shift~2"></span>
+              <span class="anchor" id="variable-ipea_shift"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2915,7 +2915,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_macro_iter~2"></span>
+              <span class="anchor" id="variable-max_macro_iter"></span>
               integer,
             </td>
               <td>public</td>
@@ -2932,7 +2932,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_micro_iter~2"></span>
+              <span class="anchor" id="variable-max_micro_iter"></span>
               integer,
             </td>
               <td>public</td>
@@ -2949,7 +2949,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_active_electrons~2"></span>
+              <span class="anchor" id="variable-n_active_electrons"></span>
               integer,
             </td>
               <td>public</td>
@@ -2966,7 +2966,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_active_orbitals~4"></span>
+              <span class="anchor" id="variable-n_active_orbitals~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2983,7 +2983,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_inactive_orbitals~2"></span>
+              <span class="anchor" id="variable-n_inactive_orbitals"></span>
               integer,
             </td>
               <td>public</td>
@@ -3000,7 +3000,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_states~2"></span>
+              <span class="anchor" id="variable-n_states"></span>
               integer,
             </td>
               <td>public</td>
@@ -3017,7 +3017,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-optimize_orbitals~2"></span>
+              <span class="anchor" id="variable-optimize_orbitals"></span>
               logical,
             </td>
               <td>public</td>
@@ -3029,7 +3029,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
 <td> =</td>
                 <td>.true.</td>
             <td>
-<p>Move the orbitals as well as the CI coefficients.</p><a href="../type/mcscf_config_t.html#variable-optimize_orbitals~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Move the orbitals as well as the CI coefficients.</p><a href="../type/mcscf_config_t.html#variable-optimize_orbitals" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -3051,7 +3051,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ormas_max_electrons~2"></span>
+              <span class="anchor" id="variable-ormas_max_electrons"></span>
               integer,
             </td>
               <td>public,</td>
@@ -3068,7 +3068,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ormas_min_electrons~2"></span>
+              <span class="anchor" id="variable-ormas_min_electrons"></span>
               integer,
             </td>
               <td>public,</td>
@@ -3085,7 +3085,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ormas_subspaces~2"></span>
+              <span class="anchor" id="variable-ormas_subspaces"></span>
               integer,
             </td>
               <td>public,</td>
@@ -3103,7 +3103,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pt2_type~2"></span>
+              <span class="anchor" id="variable-pt2_type"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -3120,7 +3120,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-state_weights~2"></span>
+              <span class="anchor" id="variable-state_weights"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -3137,7 +3137,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_pt2~2"></span>
+              <span class="anchor" id="variable-use_pt2"></span>
               logical,
             </td>
               <td>public</td>
@@ -3186,7 +3186,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~4"></span>
+              <span class="anchor" id="variable-backend~3"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -3341,7 +3341,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mcscf~5"></span>
+              <span class="anchor" id="variable-mcscf~2"></span>
               type(<a href='../type/mcscf_config_t.html'>mcscf_config_t</a>),
             </td>
               <td>public</td>
@@ -3358,7 +3358,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~6"></span>
+              <span class="anchor" id="variable-method_type~3"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -3392,7 +3392,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties~4"></span>
+              <span class="anchor" id="variable-properties~3"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
               <td>public</td>
@@ -3409,7 +3409,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf~3"></span>
+              <span class="anchor" id="variable-scf~2"></span>
               type(<a href='../type/scf_config_t.html'>scf_config_t</a>),
             </td>
               <td>public</td>
@@ -3443,7 +3443,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~10"></span>
+              <span class="anchor" id="variable-verbose~6"></span>
               logical,
             </td>
               <td>public</td>
@@ -3460,7 +3460,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-xtb~2"></span>
+              <span class="anchor" id="variable-xtb"></span>
               type(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
               <td>public</td>
@@ -3541,7 +3541,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~5"></span>
+              <span class="anchor" id="variable-dielectric~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3576,7 +3576,7 @@ see <code>mqc_config_types</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~4"></span>
+              <span class="anchor" id="variable-max_iter~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -3593,7 +3593,7 @@ see <code>mqc_config_types</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~7"></span>
+              <span class="anchor" id="variable-method~3"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -3633,7 +3633,7 @@ fixed and refuses &ldquo;iefpcm&rdquo; rather than substituting.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~12"></span>
+              <span class="anchor" id="variable-tolerance~6"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3700,7 +3700,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_analysis~3"></span>
+              <span class="anchor" id="variable-bonding_analysis~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -3717,7 +3717,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_energy~3"></span>
+              <span class="anchor" id="variable-bonding_energy~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -3734,7 +3734,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_no_sharing~3"></span>
+              <span class="anchor" id="variable-bonding_no_sharing~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -3751,7 +3751,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_no_sharing_ci~3"></span>
+              <span class="anchor" id="variable-bonding_no_sharing_ci~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -3768,7 +3768,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_restrict_localization~3"></span>
+              <span class="anchor" id="variable-bonding_restrict_localization~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -3785,7 +3785,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_threshold~3"></span>
+              <span class="anchor" id="variable-bonding_threshold~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3802,7 +3802,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charges_scheme~3"></span>
+              <span class="anchor" id="variable-charges_scheme~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3822,7 +3822,7 @@ this is allocatable rather than a &ldquo;none&rdquo; sentinel like
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_population~3"></span>
+              <span class="anchor" id="variable-fukui_population~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3891,7 +3891,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~5"></span>
+              <span class="anchor" id="variable-allow_crap_scf~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -3943,7 +3943,7 @@ inheriting the default.</p><a href="../type/scf_config_t.html#variable-aux_basis
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~4"></span>
+              <span class="anchor" id="variable-cartesian~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -4101,7 +4101,7 @@ or &lsquo;auto&rsquo;</p><a href="../type/scf_config_t.html#variable-guess~5" cl
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~3"></span>
+              <span class="anchor" id="variable-guess_steps~2"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -4162,7 +4162,7 @@ discard.</p><a href="../type/scf_config_t.html#variable-linear_dependence~2" cla
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~3"></span>
+              <span class="anchor" id="variable-max_iter~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -4198,7 +4198,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~2"></span>
+              <span class="anchor" id="variable-use_diis~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -4268,7 +4268,7 @@ method: <code>hf_options_t</code> and <code>dft_options_t</code> both extend thi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~6"></span>
+              <span class="anchor" id="variable-allow_crap_scf~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -4319,7 +4319,7 @@ method: <code>hf_options_t</code> and <code>dft_options_t</code> both extend thi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~3"></span>
+              <span class="anchor" id="variable-backend~2"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -4353,7 +4353,7 @@ method: <code>hf_options_t</code> and <code>dft_options_t</code> both extend thi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~5"></span>
+              <span class="anchor" id="variable-cartesian~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -4387,7 +4387,7 @@ method: <code>hf_options_t</code> and <code>dft_options_t</code> both extend thi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~3"></span>
+              <span class="anchor" id="variable-density_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4455,7 +4455,7 @@ method: <code>hf_options_t</code> and <code>dft_options_t</code> both extend thi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~3"></span>
+              <span class="anchor" id="variable-energy_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4529,7 +4529,7 @@ An explicit spelling always wins over both.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~4"></span>
+              <span class="anchor" id="variable-guess_steps~3"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -4582,7 +4582,7 @@ Zero is off. See <code>scf_config_t</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~5"></span>
+              <span class="anchor" id="variable-max_iter~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -4637,7 +4637,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties~3"></span>
+              <span class="anchor" id="variable-properties~2"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
               <td>public</td>
@@ -4688,7 +4688,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~3"></span>
+              <span class="anchor" id="variable-use_diis~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -4705,7 +4705,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~9"></span>
+              <span class="anchor" id="variable-verbose~5"></span>
               logical,
             </td>
               <td>public</td>
@@ -4754,7 +4754,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-accuracy~3"></span>
+              <span class="anchor" id="variable-accuracy"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4771,7 +4771,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_nang~4"></span>
+              <span class="anchor" id="variable-cpcm_nang"></span>
               integer,
             </td>
               <td>public</td>
@@ -4788,7 +4788,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_rscale~4"></span>
+              <span class="anchor" id="variable-cpcm_rscale"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4805,7 +4805,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~4"></span>
+              <span class="anchor" id="variable-dielectric"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4839,7 +4839,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvation_model~4"></span>
+              <span class="anchor" id="variable-solvation_model"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -4856,7 +4856,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvent~4"></span>
+              <span class="anchor" id="variable-solvent"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -4873,7 +4873,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_cds~4"></span>
+              <span class="anchor" id="variable-use_cds"></span>
               logical,
             </td>
               <td>public</td>
@@ -4890,7 +4890,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_shift~4"></span>
+              <span class="anchor" id="variable-use_shift"></span>
               logical,
             </td>
               <td>public</td>
@@ -4959,7 +4959,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~105"></span>
+              <span class="anchor" id="variable-this~78"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -5009,7 +5009,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~109"></span>
+              <span class="anchor" id="variable-this~82"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -5049,7 +5049,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~108"></span>
+              <span class="anchor" id="variable-this~81"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5089,7 +5089,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~106"></span>
+              <span class="anchor" id="variable-this~79"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5104,7 +5104,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_cds~5"></span>
+              <span class="anchor" id="variable-use_cds~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -5119,7 +5119,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_shift~5"></span>
+              <span class="anchor" id="variable-use_shift~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -5134,7 +5134,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~6"></span>
+              <span class="anchor" id="variable-dielectric~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -5149,7 +5149,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_nang~5"></span>
+              <span class="anchor" id="variable-cpcm_nang~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -5164,7 +5164,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_rscale~5"></span>
+              <span class="anchor" id="variable-cpcm_rscale~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -5179,7 +5179,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvent~5"></span>
+              <span class="anchor" id="variable-solvent~2"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -5194,7 +5194,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvation_model~5"></span>
+              <span class="anchor" id="variable-solvation_model~2"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -5234,7 +5234,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~107"></span>
+              <span class="anchor" id="variable-this~80"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -5307,7 +5307,7 @@ validated and then silently dropped for that path.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-01 02:09 +0000             </p>
+ on 2026-09-01 04:12 +0000             </p>
           </div>
         </div>
         <br>
