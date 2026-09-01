@@ -4207,6 +4207,13 @@
             "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is that the run completes: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned in test/test_mqc_fukui.f90."
         },
         {
+            "name": "RHF with Fukui indices, ions given their own SCF group H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_scf_group.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented",
+            "reference_note": "Same molecule, basis and reference as the chelpg case above, and deliberately the same energy: properties.fukui.scf configures the two ion SCFs only, so a deck that sets a level shift, an EDIIS opening and a longer budget for them must leave the neutral's energy exactly where it was. A regression that leaked these settings onto the neutral would move this number while the chelpg case held still, which is what makes the pair diagnostic. The indices themselves are pinned in test/test_mqc_fukui.f90."
+        },
+        {
             "name": "RHF with Fukui indices (mulliken) H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_mulliken.json",
             "expected_energy": -75.984779843967,

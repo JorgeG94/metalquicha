@@ -87,6 +87,9 @@ contains
                   new_unittest("optimization_target", test_opt_target), &
                   new_unittest("scf_diis_controls", test_diis_keywords), &
                   new_unittest("incremental_fock keyword", test_incremental_fock_keyword), &
+                  new_unittest("fukui_scf_inherits_keywords_scf", test_fukui_scf_inherit), &
+                  new_unittest("fukui_scf_overrides_per_key", test_fukui_scf_override), &
+                  new_unittest("fukui_scf_inherit_false_drops_the_seed", test_fukui_scf_no_inherit), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -1928,6 +1931,97 @@ contains
       if (allocated(error)) return
       call check(error, config%scf_incremental_fock, "true should be read as true")
    end subroutine test_incremental_fock_keyword
+
+   subroutine test_fukui_scf_inherit(error)
+      !! An absent `properties.fukui.scf` leaves the ions on `keywords.scf`
+      !!
+      !! This is the whole reason the group replaced three sentinel fields. The
+      !! ions are a second SCF beside the neutral, and a deck that says nothing
+      !! about them must converge them the way it asked for the neutral -- not
+      !! the way the type defaults happen to read.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"maxiter": 77, "level_shift": 0.25, "diis_size": 3}', &
+                      "", two_atoms(), root='"properties": {"fukui": {"population": "chelpg"}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%fukui_scf%max_iter == 77, "maxiter did not inherit")
+      if (allocated(error)) return
+      call check(error, config%fukui_scf%level_shift == 0.25_dp, &
+                 "level_shift did not inherit")
+      if (allocated(error)) return
+      call check(error, config%fukui_scf%diis_size == 3, "diis_size did not inherit")
+      if (allocated(error)) return
+      call check(error, config%fukui_scf%inherit_scf, "inherit_scf defaults true")
+   end subroutine test_fukui_scf_inherit
+
+   subroutine test_fukui_scf_override(error)
+      !! A named key wins; its neighbours still inherit
+      !!
+      !! The half that a plain extended type could not express. Naming one
+      !! setting for the ions must not silently reset the rest to type
+      !! defaults, which is what would happen if "unset" were decided by
+      !! comparing against a default rather than by seeding first.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"maxiter": 77, "level_shift": 0.25, "diis_size": 3}', &
+                      "", two_atoms(), &
+                      root='"properties": {"fukui": {"population": "chelpg", '// &
+                      '"scf": {"maxiter": 250, "accelerator": "ediis"}}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%fukui_scf%max_iter == 250, "the named maxiter must win")
+      if (allocated(error)) return
+      call check(error, config%fukui_scf%accelerator == "ediis", "accelerator")
+      if (allocated(error)) return
+      ! Not named, so still the neutral's -- not the 0.0 and 8 of the type.
+      call check(error, config%fukui_scf%level_shift == 0.25_dp, &
+                 "an unnamed neighbour must keep the inherited value")
+      if (allocated(error)) return
+      call check(error, config%fukui_scf%diis_size == 3, &
+                 "an unnamed neighbour must keep the inherited value")
+      if (allocated(error)) return
+      ! The neutral is untouched by any of it.
+      call check(error, config%scf_maxiter == 77, "the neutral must not move")
+   end subroutine test_fukui_scf_override
+
+   subroutine test_fukui_scf_no_inherit(error)
+      !! `inherit_scf: false` falls back to the defaults, not to the neutral
+      !!
+      !! For a neutral converged tightly, or with an accelerator chosen for it,
+      !! where carrying that onto a charged species is the wrong start. What it
+      !! changes is only the fallback: a key the object names still wins.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"maxiter": 77, "level_shift": 0.25, "diis_size": 3}', &
+                      "", two_atoms(), &
+                      root='"properties": {"fukui": {"population": "chelpg", '// &
+                      '"scf": {"inherit_scf": false, "level_shift": 0.5}}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%fukui_scf%inherit_scf, "inherit_scf must read false")
+      if (allocated(error)) return
+      call check(error, config%fukui_scf%max_iter == 100, &
+                 "an unnamed key must fall back to the default, not the neutral")
+      if (allocated(error)) return
+      call check(error, config%fukui_scf%diis_size == 8, &
+                 "an unnamed key must fall back to the default, not the neutral")
+      if (allocated(error)) return
+      call check(error, config%fukui_scf%level_shift == 0.5_dp, &
+                 "a named key wins whatever inherit_scf says")
+   end subroutine test_fukui_scf_no_inherit
 
    subroutine test_malformed(error)
       !! Broken JSON is a parse error, not a crash or a half-filled config

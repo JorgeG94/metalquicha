@@ -214,9 +214,9 @@ contains
                               config%fukui_population)
          config%fukui_guess = "neutral"
          call optional_string(json, "properties.fukui.guess", config%fukui_guess)
-         call optional_int(json, "properties.fukui.maxiter", config%fukui_maxiter)
-         call optional_int(json, "properties.fukui.diis_size", config%fukui_diis_size)
-         call optional_real(json, "properties.fukui.level_shift", config%fukui_level_shift)
+         ! `properties.fukui.scf` is NOT read here. It is seeded from the
+         ! resolved `keywords.scf`, which this routine has not reached yet, so
+         ! it is read by `read_fukui_scf` below once those values exist.
       end if
       ! Same shape as `fukui`: the OBJECT is the request, `scheme` only says
       ! how. Defaulted here for the same reason -- the scheme a run used should
@@ -283,6 +283,12 @@ contains
       call read_guess_steps(json, config, error)
       if (error%has_error()) return
       call optional_logical(json, "keywords.scf.allow_crap_scf", config%allow_crap_scf)
+
+      ! After `keywords.scf`, and that ordering is the whole design: the ion
+      ! settings inherit by being *seeded* from the neutral's before the deck
+      ! is consulted, so "the deck did not say" needs no sentinel -- the field
+      ! simply still holds what it inherited.
+      call read_fukui_scf(json, config)
       call optional_logical(json, "keywords.scf.density_fitting", &
                             config%scf_density_fitting)
       ! MAKEFP's own group. Nothing here is an SCF setting -- the SCF is already
@@ -832,6 +838,91 @@ contains
          end do
       end do
    end subroutine read_constraints
+
+   subroutine read_fukui_scf(json, config)
+      !! Resolve `properties.fukui.scf` against `keywords.scf`
+      !!
+      !! **Must run after the `keywords.scf` block.** Inheritance here is a
+      !! seed followed by an overwrite: every field starts at the value that
+      !! converged the neutral, and `optional_*` leaves it alone when the deck
+      !! does not name the key. That is why nothing below tests for "absent"
+      !! and why no field carries a sentinel -- the state "unset" is spelled by
+      !! the field still holding the inherited value.
+      !!
+      !! The three fields this replaced each needed a sentinel, and one of them
+      !! could not have a clean one: zero is a real level shift meaning "off",
+      !! so "unset" had to be spelled "any negative" and the meaning of a
+      !! negative shift was quietly spent on bookkeeping.
+      !!
+      !! `inherit_scf: false` skips the seed, leaving the type defaults for
+      !! anything the object does not name. It is for the case where the
+      !! neutral was converged tightly, or with an accelerator picked for it,
+      !! and carrying that onto a charged species is the wrong start rather
+      !! than a careful one.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+
+      call optional_logical(json, "properties.fukui.scf.inherit_scf", &
+                            config%fukui_scf%inherit_scf)
+
+      if (config%fukui_scf%inherit_scf) then
+         config%fukui_scf%max_iter = config%scf_maxiter
+         config%fukui_scf%energy_tol = config%scf_tolerance
+         config%fukui_scf%density_tol = config%scf_density_tolerance
+         config%fukui_scf%grad_tol = config%scf_gradient_tolerance
+         config%fukui_scf%linear_dependence = config%scf_linear_dependence
+         config%fukui_scf%level_shift = config%scf_level_shift
+         config%fukui_scf%use_diis = config%scf_use_diis
+         config%fukui_scf%diis_size = config%scf_diis_size
+         config%fukui_scf%incremental_fock = config%scf_incremental_fock
+         config%fukui_scf%allow_crap_scf = config%allow_crap_scf
+         if (allocated(config%scf_accelerator)) then
+            config%fukui_scf%accelerator = config%scf_accelerator
+         end if
+         if (allocated(config%scf_guess)) config%fukui_scf%guess = config%scf_guess
+         ! The ladder comes across whole or not at all. A rung names a basis,
+         ! and half a ladder is not a cheaper start -- it is a different one.
+         if (allocated(config%guess_steps)) then
+            config%fukui_scf%guess_steps = config%guess_steps
+         end if
+      end if
+
+      call optional_int(json, "properties.fukui.scf.maxiter", config%fukui_scf%max_iter)
+      call optional_real(json, "properties.fukui.scf.tolerance", config%fukui_scf%energy_tol)
+      call optional_real(json, "properties.fukui.scf.density_tolerance", &
+                         config%fukui_scf%density_tol)
+      call optional_real(json, "properties.fukui.scf.gradient_tolerance", &
+                         config%fukui_scf%grad_tol)
+      call optional_real(json, "properties.fukui.scf.linear_dependence_threshold", &
+                         config%fukui_scf%linear_dependence)
+      call optional_real(json, "properties.fukui.scf.level_shift", &
+                         config%fukui_scf%level_shift)
+      call optional_logical(json, "properties.fukui.scf.diis", config%fukui_scf%use_diis)
+      call optional_int(json, "properties.fukui.scf.diis_size", config%fukui_scf%diis_size)
+      call optional_logical(json, "properties.fukui.scf.incremental_fock", &
+                            config%fukui_scf%incremental_fock)
+      call optional_logical(json, "properties.fukui.scf.allow_crap_scf", &
+                            config%fukui_scf%allow_crap_scf)
+      call read_fixed_string(json, "properties.fukui.scf.accelerator", &
+                             config%fukui_scf%accelerator)
+      call read_fixed_string(json, "properties.fukui.scf.guess", config%fukui_scf%guess)
+   end subroutine read_fukui_scf
+
+   subroutine read_fixed_string(json, key, target)
+      !! `optional_string` onto a fixed-length field, leaving it alone if absent
+      !!
+      !! `optional_string` takes a deferred-length allocatable, which the
+      !! `character(len=32)` fields on `scf_numerics_t` are not. Reading into a
+      !! local and assigning only when the key was there keeps the "absent
+      !! means keep what you inherited" rule intact.
+      type(json_file), intent(inout) :: json
+      character(len=*), intent(in) :: key
+      character(len=*), intent(inout) :: target
+      character(len=:), allocatable :: buf
+
+      call optional_string(json, key, buf)
+      if (allocated(buf)) target = buf
+   end subroutine read_fixed_string
 
    subroutine read_guess_steps(json, config, error)
       !! The basis-set-projection ladder, one entry per preliminary SCF

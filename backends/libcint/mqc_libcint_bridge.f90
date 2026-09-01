@@ -1165,8 +1165,6 @@ contains
             type(error_t) :: fukui_error
             integer :: fukui_frozen
             real(dp) :: fukui_pt2
-            integer :: fukui_maxiter, fukui_diis
-            real(dp) :: fukui_shift
             character(len=32) :: fukui_guess_mode
             type(libcint_molecule_t), target :: fukui_aux
             type(libcint_molecule_t), pointer :: fukui_aux_arg
@@ -1210,16 +1208,11 @@ contains
             ! it, a few hundred lines below -- a Fukui run that froze a
             ! different core than the energy would report an IP that did not
             ! match the numbers beside it.
-            ! Each ion setting falls back to the neutral's. The sentinels are
-            ! what "absent" looks like by the time it reaches here -- -1 for the
-            ! counts, negative for the shift, since zero is a real level shift
-            ! meaning "off" and could not double as "unset".
-            fukui_maxiter = settings%max_iter
-            if (settings%fukui_maxiter > 0) fukui_maxiter = settings%fukui_maxiter
-            fukui_diis = diis_size
-            if (settings%fukui_diis_size > 0) fukui_diis = settings%fukui_diis_size
-            fukui_shift = settings%level_shift
-            if (settings%fukui_level_shift >= 0.0_dp) fukui_shift = settings%fukui_level_shift
+            ! Read straight across. The fallback to the neutral's settings
+            ! happened in the reader, which seeded these from `keywords.scf`
+            ! before the deck was consulted, so there is nothing to resolve
+            ! here and no sentinel to test. This block used to do that
+            ! arithmetic three times, once per hand-picked field.
             fukui_guess_mode = "neutral"
             if (allocated(settings%fukui_guess)) fukui_guess_mode = settings%fukui_guess
 
@@ -1234,8 +1227,10 @@ contains
             end if
             if (.not. settings%freeze_core) fukui_frozen = 0
             call fukui_indices(mol, nelec, fragment%multiplicity, scf%density, &
-                               scf%energy, settings%fukui_population, fukui_maxiter, &
-                               settings%energy_tol, settings%density_tol, fukui, &
+                               scf%energy, settings%fukui_population, &
+                               settings%fukui_scf%max_iter, &
+                               settings%fukui_scf%energy_tol, &
+                               settings%fukui_scf%density_tol, fukui, &
                                fukui_error, functional=trim(settings%functional), &
                                grid_level=settings%grid_level, &
                                nlc_grid_level=settings%nlc_grid_level, &
@@ -1246,10 +1241,10 @@ contains
                                neutral_orbital_energies=scf%orbital_energies, &
                                n_frozen=fukui_frozen, aux=fukui_aux_arg, &
                                verbose=settings%verbose, pcm=pcm_ctx, &
-                               level_shift=fukui_shift, &
-                               diis_vectors=fukui_diis, &
+                               level_shift=settings%fukui_scf%level_shift, &
+                               diis_vectors=settings%fukui_scf%diis_size, &
                                guess_mode=fukui_guess_mode, &
-                               incremental_fock=settings%incremental_fock)
+                               incremental_fock=settings%fukui_scf%incremental_fock)
             if (fukui_fitted) call fukui_aux%destroy()
             if (fukui_error%has_error()) then
                call logger%warning("  the Fukui analysis could not run: "// &

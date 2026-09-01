@@ -41,6 +41,8 @@ module mqc_config_types
    public :: input_fragment_t   !! One fragment definition, as written in the input
    public :: bond_t             !! Re-exported so consumers need only this module
    public :: guess_step_t       !! One rung of a basis-set-projection ladder
+   public :: scf_numerics_t     !! How an SCF is driven, shared by every SCF in a run
+   public :: deltascf_options_t  !! Convergence settings for a second SCF beside the first
 
    type :: input_fragment_t
       !! Input fragment definition with charge, multiplicity, and atom indices
@@ -107,6 +109,100 @@ module mqc_config_types
       real(dp) :: tolerance = 1.0e-5_dp
    end type guess_step_t
 
+   type :: scf_numerics_t
+      !! How a self-consistent field is driven to convergence, defined once
+      !!
+      !! Split out of `scf_options_t` so that a *second* SCF in the same run
+      !! can be configured without inheriting things that are not about
+      !! convergence. The deltaSCF behind a Fukui analysis is the case that
+      !! forced it: those ions need their own iteration limit and level shift,
+      !! but they cannot have their own basis (the density difference is taken
+      !! over the neutral's basis functions by construction) and they must not
+      !! have their own `properties` -- a Fukui analysis nested inside a Fukui
+      !! analysis is not a thing anyone is asking for.
+      !!
+      !! That last point is not only taste. `scf_options_t` carries a
+      !! `properties_config_t`, and `properties_config_t` is where the ion
+      !! settings live, so a `deltascf_options_t` extending the *full* options
+      !! type would contain itself. Fortran takes that if the component is
+      !! allocatable, and it would mean nothing.
+      !!
+      !! The boundary is "how the iteration is driven". Anything selecting
+      !! *which* wave function is being converged -- `unrestricted`,
+      !! `density_fitting`, the basis, the frozen core -- stays in
+      !! `scf_options_t`, because a second SCF over the same molecule has no
+      !! business disagreeing about those.
+      integer :: max_iter = 100
+         !! Maximum SCF iterations
+      real(dp) :: energy_tol = 1.0e-8_dp
+         !! Energy convergence threshold
+      real(dp) :: density_tol = 1.0e-6_dp
+         !! Density matrix convergence threshold
+      real(dp) :: grad_tol = 0.0_dp
+         !! Commutator threshold; zero derives `sqrt(energy_tol)`.
+      real(dp) :: linear_dependence = 0.0_dp
+         !! Zero means the orthogonaliser's own cutoff.
+      real(dp) :: level_shift = 0.0_dp
+         !! Hartree added to the virtual block before each diagonalisation.
+         !! Zero is off -- which is why this could never carry a sentinel for
+         !! "unset", and why the ions used to spell theirs "any negative".
+      logical :: use_diis = .true.
+         !! Use DIIS acceleration
+      integer :: diis_size = 8
+         !! Number of Fock matrices for DIIS
+      logical :: incremental_fock = .true.
+         !! Build each Fock matrix from the density *change* since the last
+         !! full build. Exact to the convergence threshold and several times
+         !! cheaper late in an SCF; false forces a full build every iteration,
+         !! which is the first thing to rule out when a run stalls.
+      character(len=32) :: accelerator = "diis"
+         !! 'diis' (the default), 'adiis' or 'ediis'. The energy-based pair
+         !! runs only while the error is large and hands over to DIIS, so
+         !! naming one asks for a different opening, not a different endgame.
+      logical :: allow_crap_scf = .false.
+         !! Keep a non-converged SCF instead of failing
+      character(len=32) :: guess = "auto"
+         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection'
+         !! or 'auto', where the backend picks.
+         !!
+         !! **Not the same key as `mqc_config_t%fukui_guess`**, which takes
+         !! 'neutral' or 'independent' and says whether the ion starts from the
+         !! neutral's converged density at all. This one says how a density is
+         !! built when it starts from nothing. They are one level apart in the
+         !! deck and spelled the same, which is a trap: see `fukui_keys` in
+         !! `mqc_json_schema`.
+      type(guess_step_t), allocatable :: guess_steps(:)
+         !! The basis ladder for 'basis_set_projection', one entry per
+         !! preliminary SCF in order.
+   end type scf_numerics_t
+
+   type, extends(scf_numerics_t) :: deltascf_options_t
+      !! Convergence settings for a second SCF run beside the first
+      !!
+      !! The ions behind a Fukui analysis are their own SCF problem and are
+      !! allowed to be configured as one. They are harder than the neutral -- a
+      !! charged species in a basis chosen to describe a neutral one -- so
+      !! inheriting whatever converged the neutral is a default rather than a
+      !! rule.
+      !!
+      !! **Inheritance happens at read time, not here.** The reader seeds every
+      !! field above from the resolved `keywords.scf` before it looks at the
+      !! deck, so a key the deck does not name keeps the neutral's value and a
+      !! key it does name wins. That is why nothing here carries a sentinel:
+      !! there is no "unset" state to encode, because "unset" is spelled by the
+      !! field already holding the inherited value. The three fields this
+      !! replaced each needed one, and `level_shift` could not have a clean one
+      !! at all.
+      logical :: inherit_scf = .true.
+         !! Seed from `keywords.scf` (the default) or from the defaults above.
+         !!
+         !! False is for the case where the neutral was converged tightly, or
+         !! with an accelerator chosen for it, and carrying that onto a charged
+         !! species is the wrong starting point rather than a cautious one. It
+         !! does not stop the deck naming keys explicitly -- those still win
+         !! either way; it only changes what the unnamed ones fall back to.
+   end type deltascf_options_t
+
    type :: mqc_config_t
       !! Complete configuration from .mqc file
 
@@ -123,6 +219,12 @@ module mqc_config_types
          !! From `properties.bonding_analysis.type`. Absent or "none" means no
          !! analysis; "gms_quao" means the quasi-atomic bonding picture.
       character(len=:), allocatable :: fukui_population
+         !! From `properties.fukui.population`. Allocated means the deck asked
+         !! for Fukui indices; "chelpg" or "mulliken" chooses how the density
+         !! difference is condensed onto atoms. Required inside the object
+         !! rather than defaulted, so that asking for the analysis and choosing
+         !! how it is condensed are one decision -- the choice changes the
+         !! numbers enough that it should not be made by omission.
       character(len=:), allocatable :: fukui_guess
          !! `properties.fukui.guess`: "neutral" (the default) or "independent".
          !!
@@ -133,22 +235,16 @@ module mqc_config_types
          !! LUMO, and where that orbital is a poor guess for the ion's own the
          !! SCF can settle on a different stationary point rather than climb
          !! out. "independent" lets each ion take the ordinary guess instead.
-      integer :: fukui_maxiter = -1
-         !! `properties.fukui.maxiter`, for the ions alone. -1 inherits
-         !! `keywords.scf.maxiter`, which is the neutral's budget and need not
-         !! suit two SCFs that are harder than it.
-      integer :: fukui_diis_size = -1
-         !! `properties.fukui.diis_size`. -1 inherits `keywords.scf.diis_size`.
-      real(dp) :: fukui_level_shift = -1.0_dp
-         !! `properties.fukui.level_shift`. Negative inherits
-         !! `keywords.scf.level_shift`; zero is a real value meaning "off", so
-         !! the sentinel cannot be zero here.
-         !! From `properties.fukui.population`. Allocated means the deck asked
-         !! for Fukui indices; "chelpg" or "mulliken" chooses how the density
-         !! difference is condensed onto atoms. Required inside the object
-         !! rather than defaulted, so that asking for the analysis and choosing
-         !! how it is condensed are one decision -- the choice changes the
-         !! numbers enough that it should not be made by omission.
+      type(deltascf_options_t) :: fukui_scf
+         !! `properties.fukui.scf`: how the ion SCFs converge.
+         !!
+         !! Seeded from the resolved `keywords.scf` by the reader unless
+         !! `inherit_scf` is false, then overwritten by whatever the object
+         !! names. This replaced three hand-picked fields -- `maxiter`,
+         !! `diis_size` and `level_shift` -- that were each threaded through
+         !! five layers by hand and each needed a sentinel for "absent";
+         !! `level_shift` never had a clean one, since zero is a real value
+         !! meaning "off".
       character(len=:), allocatable :: charges_scheme
          !! From `properties.charges.scheme`. Allocated means the deck asked for
          !! atomic partial charges; "mulliken" or "chelpg" chooses how the

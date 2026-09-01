@@ -11,7 +11,7 @@ module mqc_cuest_iface
    !! which has a stub form fpm compiles and a real form CMake compiles -- lets
    !! the method files carry no preprocessor conditionals at all.
    use pic_types, only: dp
-   use mqc_config_types, only: guess_step_t
+   use mqc_config_types, only: guess_step_t, deltascf_options_t
    use mqc_method_config, only: pcm_config_t, mcscf_config_t, scf_options_t, properties_config_t
    implicit none
    private
@@ -93,10 +93,9 @@ module mqc_cuest_iface
       character(len=:), allocatable :: fukui_population
       character(len=:), allocatable :: fukui_guess
          !! "neutral" (default) or "independent"; see `mqc_config_t`.
-      integer :: fukui_maxiter = -1        !! -1 inherits max_iter
-      integer :: fukui_diis_size = -1      !! -1 inherits diis_size
-      real(dp) :: fukui_level_shift = -1.0_dp
-         !! Negative inherits level_shift; zero is a real value meaning "off".
+      type(deltascf_options_t) :: fukui_scf
+         !! How the ion SCFs converge, already resolved against
+         !! `keywords.scf`; see `scf_numerics_t`.
       character(len=:), allocatable :: charges_scheme
          !! Atomic partial charges from `properties.charges`, unallocated when
          !! none were asked for. Travels here for the same reason the bonding
@@ -219,11 +218,7 @@ contains
       if (allocated(properties%fukui_guess)) then
          settings%fukui_guess = properties%fukui_guess
       end if
-      ! Sentinels, not allocatables, so these copy unconditionally: -1 already
-      ! means "inherit" and carrying it across says so.
-      settings%fukui_maxiter = properties%fukui_maxiter
-      settings%fukui_diis_size = properties%fukui_diis_size
-      settings%fukui_level_shift = properties%fukui_level_shift
+      settings%fukui_scf = properties%fukui_scf
       if (allocated(properties%charges_scheme)) then
          settings%charges_scheme = properties%charges_scheme
       end if
