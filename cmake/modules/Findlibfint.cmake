@@ -7,14 +7,22 @@
 # redden the whole matrix on a metalquicha change that touched nothing, and the
 # signal would be indistinguishable from a real break.
 #
-# v0.1.3 is 9a9926aacf8a4fe2fb364454dd45fbb39cf82dbf today. It is the first
-# release carrying the scalar ECP integrals, which nothing else provides:
-# libcint has no ECP code at all, so `mqc_libcint_ecp` refuses `model.ecp`
-# outright in a `-DMQC_USE_LIBFINT=OFF` build rather than failing at the linker.
-# It also succeeds v0.1.1, the first release whose C ABI carries the second
-# derivatives -- which is what lets `mqc_libcint_hess_abi` declare one set of
-# entry points for both backends -- and v0.1.2, the first whose F12 integrals
-# build. Both are ancestors of it, so neither is given up here.
+# v0.1.4 is 9bb326ee84d2e1710b9bdfa93a5fe9e81617d9aa today. It is the first
+# release whose C ABI exposes `int1e_irp`, `<i| r nabla |j>` -- the nuclear
+# derivative of the dipole integrals, and so what an analytic infrared intensity
+# needs. The integral was in the library before this; what it lacked was a C
+# entry point, and reaching the Fortran module directly for it would have made
+# the caller unlinkable against libcint, which is the one property this
+# indirection exists to keep.
+#
+# It succeeds v0.1.3, the first release carrying the scalar ECP integrals, which
+# nothing else provides: libcint has no ECP code at all, so `mqc_libcint_ecp`
+# refuses `model.ecp` outright in a `-DMQC_USE_LIBFINT=OFF` build rather than
+# failing at the linker. It also succeeds v0.1.1, the first release whose C ABI
+# carries the second derivatives -- which is what lets `mqc_libcint_hess_abi`
+# declare one set of entry points for both backends -- and v0.1.2, the first
+# whose F12 integrals build. Both are ancestors of it, so neither is given up
+# here.
 #
 # libcint pins by SHA rather than by name, which is the stronger form: a tag can
 # be moved and a SHA cannot. This one is a tag because it was a *branch* for the
