@@ -368,11 +368,16 @@ A benchmark suite that checks them lives on `perf/benchmark-suite`.
   an LDA one and 98 of a meta-GGA one, against a Fock build under two per cent.
   Threading it is worth 5-10x, and until that lands a pure GGA costs about 26x
   Hartree-Fock, which is backwards for a functional carrying no exact exchange.
-* **The BLAS is sequential on purpose.** Fragment paths pin themselves to one
-  OpenMP thread and parallelise over MPI instead, so threaded MKL competes with
-  the ranks: five times faster on one molecule, thirty-one per cent slower on
-  four ranks. Thread at our level, not the BLAS's, so `omp_set_num_threads` is
-  still what decides.
+* **Only xTB is pinned to one thread, and not for speed.** `needs_serial_execution`
+  in `src/mqc_method_types.f90` names GFN1 and GFN2 and nothing else: threaded,
+  tblite corrupts a result rather than failing. Every other method -- the whole
+  libcint/libfint ab initio path -- keeps the threads the launcher gave it, on
+  the unfragmented path and on the fragment workers alike, and a Fock build
+  threads its own quartet loop. Clamping those was an old bug, not a policy:
+  raising `OMP_NUM_THREADS` did nothing and the cause was nowhere near the
+  command line. The measured "threaded MKL competes with the ranks" result --
+  five times faster on one molecule, thirty-one per cent slower on four --
+  was taken on that clamped xTB path; do not carry it over to ab initio.
 * **Structure is a poor guide to where time goes.** Two separate optimisation
   attempts here were aimed at the wrong file on the strength of reading the
   code; one VTune hotspots collection settled it in minutes. `perf_event_paranoid`
@@ -404,8 +409,10 @@ rm -rf build && cmake -B build && cmake --build build -j
 # Generate coverage report (requires lcov, GCC only)
 cmake -DCMAKE_BUILD_TYPE=Coverage-mqc -B build && cmake --build build && cmake --build build --target coverage
 
-# Run with verbose output
-./build/mqc input.json --verbose
+# Run with verbose output -- mqc has no such flag; it takes the deck and
+# nothing else (a second argument is a hard error, app/main.f90). Verbosity is
+# "system": {"logger": {"level": "verbose"}} in the deck. Levels: debug,
+# verbose, info (default), performance, warning, error, knowledge.
 
 # Run linter
 fortitude check

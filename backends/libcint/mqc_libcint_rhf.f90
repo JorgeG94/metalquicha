@@ -103,15 +103,34 @@ module mqc_libcint_rhf
       !! build tends toward quadratic -- but where they cross is not measured.
       !! For a Kohn-Sham calculation the quadrature is the thing to look at.
       !!
-      !! Two gaps, both deliberate rather than overlooked. A range-separated
-      !! functional needs a second exchange matrix over the attenuated kernel, and
-      !! that one is still rebuilt from the full density every iteration -- it
-      !! could carry its own `g_ref`, and until it does such a functional saves on
-      !! one of its two passes. And `assemble_fock_uhf` takes no state, so every
-      !! open-shell calculation builds in full; the mechanism carries over, with
-      !! two spin densities and two accumulated G, but it is a separate change.
-      real(dp), allocatable :: d_ref(:, :)   !! Density `g_ref` belongs to
-      real(dp), allocatable :: g_ref(:, :)   !! Accumulated G, without H
+      !! **Both passes of a range-separated build are incremental**, and both
+      !! spins of an unrestricted one. The attenuated exchange is linear in the
+      !! density exactly as the full-kernel G is -- it is the same quartet loop
+      !! with `omega` set -- so it accumulates the same way, into its own
+      !! reference. It needs a separate one rather than sharing `g_ref` because
+      !! the two are different operators on the same density and only their sum
+      !! is ever wanted; keeping them apart is also what lets the energy be
+      !! taken before V_xc without either being double counted.
+      !!
+      !! Both channels share `since_reset` and `active`, so a full rebuild
+      !! re-syncs every reference at once. Staggering them would let one channel
+      !! carry fifteen iterations of accumulated rounding while the other had
+      !! just been rebuilt, and the error in the sum is what matters.
+      !!
+      !! **In an unrestricted SCF `d_ref`, `g_ref` and `g_ref_lr` are the alpha
+      !! channel** and the `_b` fields are beta. One state object belongs to one
+      !! SCF, which is restricted or unrestricted and never both, so the reuse
+      !! costs nothing -- but it does mean the plain names are not "the total"
+      !! on that path.
+      real(dp), allocatable :: d_ref(:, :)   !! Density `g_ref` belongs to (alpha, if unrestricted)
+      real(dp), allocatable :: g_ref(:, :)   !! Accumulated G, without H (alpha, if unrestricted)
+      real(dp), allocatable :: g_ref_lr(:, :)
+         !! Accumulated long-range K, allocated only for a range-separated
+         !! functional. Alpha channel on the unrestricted path.
+      real(dp), allocatable :: d_ref_b(:, :)  !! Beta density, unrestricted only
+      real(dp), allocatable :: g_ref_b(:, :)  !! Accumulated beta G, unrestricted only
+      real(dp), allocatable :: g_ref_lr_b(:, :)
+         !! Accumulated beta long-range K, unrestricted and range-separated only
       integer :: since_reset = 0             !! Iterations since the last full build
       logical :: active = .false.            !! Off until the first full build seeds it
    end type incremental_state_t
@@ -372,13 +391,18 @@ contains
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                               verbose, result, error, aux, diis_vectors, in_core, &
                               guess, guess_density, xc, h_extra, pcm, projector, &
-                              level_shift, linear_dependence, b_ao_out, accelerator, grad_tol)
+                              level_shift, linear_dependence, b_ao_out, accelerator, grad_tol, &
+                              incremental_fock)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
       real(dp), intent(in), optional :: grad_tol
+      logical, intent(in), optional :: incremental_fock
+         !! Build each iteration from the density change. Default true; false
+         !! forces a full build every iteration, which is what to reach for when
+         !! an SCF stalls or when a Fock timing needs to mean something.
          !! Commutator threshold -- pyscf's `conv_tol_grad`. Zero or absent
          !! derives `sqrt(energy_tol)`, which is pyscf's own default and the
          !! right scaling *for the energy*: its error goes as `gnorm**2`.
@@ -518,6 +542,7 @@ contains
       type(timing_report_t) :: clk
       type(direct_stats_t) :: screening
       type(incremental_state_t) :: incr
+      logical :: want_incremental
       real(dp) :: t_fock_iter, t_rest_iter, t_xc_iter
       real(dp) :: s_min, s_kept   !! overlap conditioning, reported before iteration 1
       real(dp) :: lindep
@@ -531,6 +556,8 @@ contains
       diis_size = 8
       if (present(diis_vectors)) diis_size = diis_vectors
       use_in_core = .false.
+      want_incremental = .true.
+      if (present(incremental_fock)) want_incremental = incremental_fock
       if (present(in_core)) use_in_core = in_core
       guess_kind = SCF_GUESS_GWH
       if (present(guess)) guess_kind = guess
@@ -559,6 +586,21 @@ contains
          else
             call logger%info("  basis functions: "//to_char(n_ao)//"  (spherical, 5d/7f)")
          end if
+         ! Charge and multiplicity, because a log that reports neither cannot be
+         ! checked against the deck that asked for it. `nelec` alone does not say
+         ! which ion this is: a Fukui run prints three of these tables in a row and
+         ! they differ by one electron, so "205 electrons" identifies the state only
+         ! to a reader willing to count nuclei.
+         !
+         ! Derived rather than passed. `mol%charges` carries the ECP's core
+         ! subtracted and `nelec` arrives reduced by the same cores, so the
+         ! difference is the physical charge in both cases and needs no separate
+         ! all-electron count. `core_electrons` is zero for an all-electron atom,
+         ! which is what makes the one expression serve both.
+         call logger%info("  restricted: charge = "// &
+                          to_char(nint(sum(mol%charges)) - nelec)// &
+                          "  multiplicity = 1"// &
+                          "  electrons = "//to_char(nelec))
       end if
 
       call clk%start()
@@ -723,9 +765,19 @@ contains
          ! Kohn-Sham run that plainly took seconds.
          t_fock_iter = clk%seconds_of(STAGE_FOCK)
          t_xc_iter = clk%seconds_of(STAGE_XC)
-         call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                            fock, e_elec, error, clk=clk, screening=screening, incr=incr, &
-                            bmat_lr=bmat_lr)
+         ! `incr` present is what switches incremental building on inside
+         ! `assemble_fock`, so withholding it is how the deck turns it off --
+         ! one branch here rather than a flag threaded into the assembler and
+         ! tested again at each of its three build sites.
+         if (want_incremental) then
+            call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
+                               fock, e_elec, error, clk=clk, screening=screening, incr=incr, &
+                               bmat_lr=bmat_lr)
+         else
+            call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
+                               fock, e_elec, error, clk=clk, screening=screening, &
+                               bmat_lr=bmat_lr)
+         end if
          if (error%has_error()) return
          ! The continuum, after the gas-phase pieces and before the commutator:
          ! its operator belongs to the Fock matrix DIIS extrapolates and the
@@ -914,7 +966,8 @@ contains
    subroutine run_libcint_uhf(mol, nelec, multiplicity, max_iter, energy_tol, density_tol, &
                               verbose, result, error, diis_vectors, in_core, diis_start, &
                               guess, guess_density_alpha, guess_density_beta, xc, pcm, &
-                              level_shift, linear_dependence, accelerator, grad_tol)
+                              level_shift, linear_dependence, accelerator, grad_tol, &
+                              incremental_fock)
       !! Drive an unrestricted SCF to convergence
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
@@ -933,6 +986,10 @@ contains
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
       real(dp), intent(in), optional :: grad_tol
+      logical, intent(in), optional :: incremental_fock
+         !! Build each iteration from the density change. Default true; false
+         !! forces a full build every iteration, which is what to reach for when
+         !! an SCF stalls or when a Fock timing needs to mean something.
          !! Commutator threshold -- pyscf's `conv_tol_grad`. Zero or absent
          !! derives `sqrt(energy_tol)`, which is pyscf's own default and the
          !! right scaling *for the energy*: its error goes as `gnorm**2`.
@@ -1013,6 +1070,12 @@ contains
       real(dp), allocatable :: sd(:, :), sds(:, :)
       integer :: n_ao, n_mo, n_alpha, n_beta, iter, nsq, msq
       type(timing_report_t) :: clk
+      logical :: want_incremental
+      type(incremental_state_t) :: incr
+         !! Owned by the loop and handed only to the loop's own build. The guess
+         !! and the final rebuild deliberately go without it: the energy that
+         !! leaves this routine must be an exact build, not one carrying sixteen
+         !! iterations of accumulated correction.
       real(dp) :: t_fock_iter, t_rest_iter, t_xc_iter
       real(dp) :: s_min, s_kept   !! overlap conditioning, reported before iteration 1
       real(dp) :: lindep
@@ -1023,6 +1086,8 @@ contains
       start_cycle = DEFAULT_UHF_DIIS_START
       if (present(diis_start)) start_cycle = diis_start
       use_in_core = .false.
+      want_incremental = .true.
+      if (present(incremental_fock)) want_incremental = incremental_fock
       if (present(in_core)) use_in_core = in_core
       guess_kind = SCF_GUESS_GWH
       if (present(guess)) guess_kind = guess
@@ -1060,6 +1125,10 @@ contains
          else
             call logger%info("  basis functions: "//to_char(n_ao)//"  (spherical, 5d/7f)")
          end if
+         call logger%info("  unrestricted: charge = "// &
+                          to_char(nint(sum(mol%charges)) - nelec)// &
+                          "  multiplicity = "//to_char(multiplicity)// &
+                          "  electrons = "//to_char(nelec))
          call logger%info("  unrestricted: n_alpha = "//to_char(n_alpha)// &
                           "  n_beta = "//to_char(n_beta))
       end if
@@ -1204,8 +1273,15 @@ contains
          ! against itself -- which is what the XC column was doing.
          t_fock_iter = clk%seconds_of(STAGE_FOCK)
          t_xc_iter = clk%seconds_of(STAGE_XC)
-         call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
-                                e_elec, error, clk=clk)
+         ! As on the restricted path: `incr` present is the switch, so the deck
+         ! turns incremental building off by withholding it.
+         if (want_incremental) then
+            call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
+                                   e_elec, error, clk=clk, incr=incr)
+         else
+            call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
+                                   e_elec, error, clk=clk)
+         end if
          if (error%has_error()) return
          ! The continuum sees one density -- the total -- and both spins feel
          ! one potential, as they would from any classical charge.
@@ -1413,7 +1489,9 @@ contains
 
       type(direct_stats_t) :: stats
       real(dp), allocatable :: g_delta(:, :), d_delta(:, :), h_zero(:, :)
+      real(dp), allocatable :: k_lr(:, :)
       logical :: use_incremental, full_build
+      logical :: want_lr
       real(dp), allocatable :: v_xc(:, :)
       real(dp) :: k_scale, e_xc, n_elec
       logical :: have_lr
@@ -1421,6 +1499,7 @@ contains
 
       kohn_sham = .false.
       k_scale = 1.0_dp
+      want_lr = .false.
       if (present(xc)) then
          if (xc%active) then
             kohn_sham = .true.
@@ -1428,6 +1507,11 @@ contains
             ! fraction, and Hartree-Fock is the fraction being one -- which is why
             ! this is a scale rather than a branch.
             k_scale = xc%exx_fraction
+            ! Settled once, because the direct branch now asks in three places
+            ! -- the full build, the delta and the non-incremental callers --
+            ! and `xc` is optional, so each site would otherwise need its own
+            ! `present` guard before touching `range_separated`.
+            want_lr = xc%range_separated
          end if
       end if
 
@@ -1513,6 +1597,24 @@ contains
                ! does not already contain H.
                incr%g_ref = fock - h
                incr%d_ref = density
+               ! The attenuated pass, seeded from the same density in the same
+               ! iteration so the two references never describe different
+               ! densities. Added to `fock` here rather than by the block below,
+               ! which now only runs when there is no incremental state.
+               if (want_lr) then
+                  if (.not. allocated(incr%g_ref_lr)) then
+                     allocate (incr%g_ref_lr(size(h, 1), size(h, 2)))
+                  end if
+                  allocate (k_lr(size(h, 1), size(h, 2)), h_zero(size(h, 1), size(h, 2)))
+                  h_zero = 0.0_dp
+                  call build_fock_direct(mol, h_zero, density, bounds, k_lr, stats, &
+                                         error, k_scale=xc%rs_k_lr, j_scale=0.0_dp, &
+                                         omega=xc%rs_omega)
+                  if (error%has_error()) return
+                  incr%g_ref_lr = k_lr
+                  fock = fock + k_lr
+                  deallocate (k_lr, h_zero)
+               end if
                incr%since_reset = 0
                incr%active = .true.
             else
@@ -1559,9 +1661,22 @@ contains
                                       k_scale=k_scale, density_screen=.true.)
                if (error%has_error()) return
                incr%g_ref = incr%g_ref + g_delta
+               ! The attenuated exchange on the same delta. `erf(omega r)/r <= 1/r`
+               ! pointwise, so the full-kernel Schwarz bounds screen this
+               ! conservatively -- the same argument the full LR pass already
+               ! relies on -- and the density weighting is keyed on the delta
+               ! here just as it is above.
+               if (want_lr) then
+                  call build_fock_direct(mol, h_zero, d_delta, bounds, g_delta, stats, &
+                                         error, k_scale=xc%rs_k_lr, j_scale=0.0_dp, &
+                                         omega=xc%rs_omega, density_screen=.true.)
+                  if (error%has_error()) return
+                  incr%g_ref_lr = incr%g_ref_lr + g_delta
+               end if
                incr%d_ref = density
                incr%since_reset = incr%since_reset + 1
                fock = h + incr%g_ref
+               if (want_lr) fock = fock + incr%g_ref_lr
                deallocate (g_delta, d_delta, h_zero)
             end if
          else
@@ -1570,28 +1685,23 @@ contains
             if (error%has_error()) return
          end if
 
-         ! The long-range exchange is rebuilt from the full density every
-         ! iteration rather than incrementally. `g_ref` is captured before this is
-         ! added, so the two do not overlap -- but it does mean a range-separated
-         ! functional saves on only one of its two passes.
-         if (kohn_sham) then
-            if (xc%range_separated) then
-               block
-                  real(dp), allocatable :: k_lr(:, :)
-                  real(dp), allocatable :: h_zero(:, :)
-                  ! Zero in place of the core Hamiltonian and no Coulomb term, so
-                  ! this pass returns the long-range exchange alone and nothing has
-                  ! to be subtracted back out afterwards.
-                  allocate (k_lr(size(h, 1), size(h, 2)), h_zero(size(h, 1), size(h, 2)))
-                  h_zero = 0.0_dp
-                  call build_fock_direct(mol, h_zero, density, bounds, k_lr, stats, &
-                                         error, k_scale=xc%rs_k_lr, j_scale=0.0_dp, &
-                                         omega=xc%rs_omega)
-                  if (error%has_error()) return
-                  fock = fock + k_lr
-                  deallocate (k_lr, h_zero)
-               end block
-            end if
+         ! The long-range exchange for the callers that build in full -- the
+         ! guess, the gradient and the final energy rebuild. The incremental
+         ! branch above handles its own, accumulating into `g_ref_lr`, because
+         ! it has the delta and this does not.
+         !
+         ! Zero in place of the core Hamiltonian and no Coulomb term, so this
+         ! pass returns the long-range exchange alone and nothing has to be
+         ! subtracted back out afterwards.
+         if (want_lr .and. .not. use_incremental) then
+            allocate (k_lr(size(h, 1), size(h, 2)), h_zero(size(h, 1), size(h, 2)))
+            h_zero = 0.0_dp
+            call build_fock_direct(mol, h_zero, density, bounds, k_lr, stats, &
+                                   error, k_scale=xc%rs_k_lr, j_scale=0.0_dp, &
+                                   omega=xc%rs_omega)
+            if (error%has_error()) return
+            fock = fock + k_lr
+            deallocate (k_lr, h_zero)
          end if
       end if
 
@@ -1626,7 +1736,7 @@ contains
    end subroutine assemble_fock
 
    subroutine assemble_fock_uhf(mol, h, d_alpha, d_beta, eri, bounds, xc, &
-                                fock_a, fock_b, e_elec, error, clk)
+                                fock_a, fock_b, e_elec, error, clk, incr)
       !! Both spin Fock matrices for this pair of densities, and their energy
       !!
       !! The unrestricted twin of `assemble_fock`, and it exists for the same
@@ -1649,20 +1759,37 @@ contains
          !! Charges the two-electron build and the quadrature to their own
          !! buckets. Optional because the guess and the final rebuild call this
          !! outside the iteration, where there is no per-iteration row to fill.
+      type(incremental_state_t), intent(inout), optional :: incr
+         !! Present from the SCF loop, which wants each build to cost only the
+         !! change since the last one. Absent from the guess and the final energy
+         !! rebuild, which want an exact build -- the last of those especially,
+         !! since the energy that goes out must not carry sixteen iterations of
+         !! accumulated correction.
+         !!
+         !! Two spin channels and, for a range-separated functional, two kernels
+         !! in each: four accumulated G in the worst case, all keyed to one
+         !! `since_reset` so a rebuild re-syncs them together. The saving is
+         !! larger here than on the restricted path, because an open-shell build
+         !! was doing two full passes per iteration and now does two small ones.
 
       type(direct_stats_t) :: stats
       real(dp), allocatable :: v_a(:, :), v_b(:, :)
+      real(dp), allocatable :: ga_delta(:, :), gb_delta(:, :)
+      real(dp), allocatable :: da_delta(:, :), db_delta(:, :), h_zero(:, :)
+      real(dp), allocatable :: k_lr_a(:, :), k_lr_b(:, :)
       real(dp) :: k_scale, e_xc, n_elec
-      logical :: kohn_sham
+      logical :: kohn_sham, want_lr, use_incremental, full_build
       integer :: n
 
       n = size(h, 1)
       kohn_sham = .false.
       k_scale = 1.0_dp
+      want_lr = .false.
       if (present(xc)) then
          if (xc%active) then
             kohn_sham = .true.
             k_scale = xc%exx_fraction
+            want_lr = xc%range_separated
          end if
       end if
 
@@ -1678,30 +1805,109 @@ contains
          end if
       end if
 
+      ! Incremental building is for the direct path only, as on the restricted
+      ! side: the in-core path contracts a stored tensor, so its cost does not
+      ! depend on how large the density elements are and a small delta saves
+      ! nothing.
+      use_incremental = .false.
+      if (present(incr) .and. .not. allocated(eri)) use_incremental = .true.
+
       if (allocated(eri)) then
          call build_fock_uhf(h, eri, d_alpha, d_beta, fock_a, fock_b, k_scale=k_scale)
+      else if (use_incremental) then
+         full_build = .not. incr%active .or. incr%since_reset >= INCREMENTAL_RESET
+         if (full_build) then
+            call build_fock_direct_uhf(mol, h, d_alpha, d_beta, bounds, fock_a, fock_b, &
+                                       stats, error, k_scale=k_scale)
+            if (error%has_error()) return
+            if (.not. allocated(incr%g_ref)) then
+               allocate (incr%g_ref(n, n), incr%d_ref(n, n))
+               allocate (incr%g_ref_b(n, n), incr%d_ref_b(n, n))
+            end if
+            ! G alone in each spin, so the next iteration's correction adds to a
+            ! matrix that does not already contain H.
+            incr%g_ref = fock_a - h
+            incr%g_ref_b = fock_b - h
+            incr%d_ref = d_alpha
+            incr%d_ref_b = d_beta
+            if (want_lr) then
+               if (.not. allocated(incr%g_ref_lr)) then
+                  allocate (incr%g_ref_lr(n, n), incr%g_ref_lr_b(n, n))
+               end if
+               ! Zero core Hamiltonian and no Coulomb, so this pass returns the
+               ! long-range exchange of each spin and nothing to subtract back.
+               allocate (k_lr_a(n, n), k_lr_b(n, n), h_zero(n, n))
+               h_zero = 0.0_dp
+               call build_fock_direct_uhf(mol, h_zero, d_alpha, d_beta, bounds, &
+                                          k_lr_a, k_lr_b, stats, error, &
+                                          k_scale=xc%rs_k_lr, j_scale=0.0_dp, &
+                                          omega=xc%rs_omega)
+               if (error%has_error()) return
+               incr%g_ref_lr = k_lr_a
+               incr%g_ref_lr_b = k_lr_b
+               fock_a = fock_a + k_lr_a
+               fock_b = fock_b + k_lr_b
+               deallocate (k_lr_a, k_lr_b, h_zero)
+            end if
+            incr%since_reset = 0
+            incr%active = .true.
+         else
+            allocate (ga_delta(n, n), gb_delta(n, n))
+            allocate (da_delta(n, n), db_delta(n, n), h_zero(n, n))
+            da_delta = d_alpha - incr%d_ref
+            db_delta = d_beta - incr%d_ref_b
+            h_zero = 0.0_dp
+            ! Zero for the core Hamiltonian, so this returns G(delta) and nothing
+            ! has to be subtracted back out.
+            !
+            ! `build_fock_direct_uhf` always weights its Schwarz bound by the
+            ! density it multiplies, so the delta screens hard here without a
+            ! flag to ask for it -- which is what makes the correction cheaper
+            ! than the build rather than merely equal to it. The restricted path
+            ! needs `density_screen=.true.` explicitly only because it also
+            ! serves CPHF, which must opt out.
+            call build_fock_direct_uhf(mol, h_zero, da_delta, db_delta, bounds, &
+                                       ga_delta, gb_delta, stats, error, k_scale=k_scale)
+            if (error%has_error()) return
+            incr%g_ref = incr%g_ref + ga_delta
+            incr%g_ref_b = incr%g_ref_b + gb_delta
+            if (want_lr) then
+               call build_fock_direct_uhf(mol, h_zero, da_delta, db_delta, bounds, &
+                                          ga_delta, gb_delta, stats, error, &
+                                          k_scale=xc%rs_k_lr, j_scale=0.0_dp, &
+                                          omega=xc%rs_omega)
+               if (error%has_error()) return
+               incr%g_ref_lr = incr%g_ref_lr + ga_delta
+               incr%g_ref_lr_b = incr%g_ref_lr_b + gb_delta
+            end if
+            incr%d_ref = d_alpha
+            incr%d_ref_b = d_beta
+            incr%since_reset = incr%since_reset + 1
+            fock_a = h + incr%g_ref
+            fock_b = h + incr%g_ref_b
+            if (want_lr) then
+               fock_a = fock_a + incr%g_ref_lr
+               fock_b = fock_b + incr%g_ref_lr_b
+            end if
+            deallocate (ga_delta, gb_delta, da_delta, db_delta, h_zero)
+         end if
       else
          call build_fock_direct_uhf(mol, h, d_alpha, d_beta, bounds, fock_a, fock_b, &
                                     stats, error, k_scale=k_scale)
          if (error%has_error()) return
-         if (kohn_sham) then
-            if (xc%range_separated) then
-               block
-                  real(dp), allocatable :: k_lr_a(:, :), k_lr_b(:, :), h_zero(:, :)
-                  ! Zero core Hamiltonian and no Coulomb, so this pass returns the
-                  ! long-range exchange of each spin and nothing to subtract back.
-                  allocate (k_lr_a(n, n), k_lr_b(n, n), h_zero(n, n))
-                  h_zero = 0.0_dp
-                  call build_fock_direct_uhf(mol, h_zero, d_alpha, d_beta, bounds, &
-                                             k_lr_a, k_lr_b, stats, error, &
-                                             k_scale=xc%rs_k_lr, j_scale=0.0_dp, &
-                                             omega=xc%rs_omega)
-                  if (error%has_error()) return
-                  fock_a = fock_a + k_lr_a
-                  fock_b = fock_b + k_lr_b
-                  deallocate (k_lr_a, k_lr_b, h_zero)
-               end block
-            end if
+         if (want_lr) then
+            ! Zero core Hamiltonian and no Coulomb, so this pass returns the
+            ! long-range exchange of each spin and nothing to subtract back.
+            allocate (k_lr_a(n, n), k_lr_b(n, n), h_zero(n, n))
+            h_zero = 0.0_dp
+            call build_fock_direct_uhf(mol, h_zero, d_alpha, d_beta, bounds, &
+                                       k_lr_a, k_lr_b, stats, error, &
+                                       k_scale=xc%rs_k_lr, j_scale=0.0_dp, &
+                                       omega=xc%rs_omega)
+            if (error%has_error()) return
+            fock_a = fock_a + k_lr_a
+            fock_b = fock_b + k_lr_b
+            deallocate (k_lr_a, k_lr_b, h_zero)
          end if
       end if
 

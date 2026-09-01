@@ -1057,6 +1057,7 @@ contains
                                  guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
                                  level_shift=settings%level_shift, accelerator=accel_kind, &
                                  linear_dependence=settings%linear_dependence, &
+                                 incremental_fock=settings%incremental_fock, &
                                  grad_tol=settings%grad_tol, &
                                  b_ao_out=scf_b_ao)
          else
@@ -1066,6 +1067,7 @@ contains
                                  guess_density=guess_total, xc=xc, pcm=pcm_ctx, &
                                  level_shift=settings%level_shift, accelerator=accel_kind, &
                                  linear_dependence=settings%linear_dependence, &
+                                 incremental_fock=settings%incremental_fock, &
                                  grad_tol=settings%grad_tol)
          end if
          ! Kept alive: the gradient below has to be told the same auxiliary
@@ -1077,6 +1079,7 @@ contains
                               guess_density_alpha=guess_a, guess_density_beta=guess_b, xc=xc, &
                               pcm=pcm_ctx, level_shift=settings%level_shift, accelerator=accel_kind, &
                               linear_dependence=settings%linear_dependence, &
+                              incremental_fock=settings%incremental_fock, &
                               grad_tol=settings%grad_tol)
       else
          ! Store the integrals when they fit, rather than rebuilding every
@@ -1108,6 +1111,7 @@ contains
                               in_core=eri_fits_in_core(mol%nao) .and. .not. xc%range_separated, &
                               level_shift=settings%level_shift, accelerator=accel_kind, &
                               linear_dependence=settings%linear_dependence, &
+                              incremental_fock=settings%incremental_fock, &
                               grad_tol=settings%grad_tol)
       end if
       if (error%has_error()) then
@@ -1161,6 +1165,9 @@ contains
             type(error_t) :: fukui_error
             integer :: fukui_frozen
             real(dp) :: fukui_pt2
+            integer :: fukui_maxiter, fukui_diis
+            real(dp) :: fukui_shift
+            character(len=32) :: fukui_guess_mode
             type(libcint_molecule_t), target :: fukui_aux
             type(libcint_molecule_t), pointer :: fukui_aux_arg
             logical :: fukui_fitted
@@ -1203,6 +1210,19 @@ contains
             ! it, a few hundred lines below -- a Fukui run that froze a
             ! different core than the energy would report an IP that did not
             ! match the numbers beside it.
+            ! Each ion setting falls back to the neutral's. The sentinels are
+            ! what "absent" looks like by the time it reaches here -- -1 for the
+            ! counts, negative for the shift, since zero is a real level shift
+            ! meaning "off" and could not double as "unset".
+            fukui_maxiter = settings%max_iter
+            if (settings%fukui_maxiter > 0) fukui_maxiter = settings%fukui_maxiter
+            fukui_diis = diis_size
+            if (settings%fukui_diis_size > 0) fukui_diis = settings%fukui_diis_size
+            fukui_shift = settings%level_shift
+            if (settings%fukui_level_shift >= 0.0_dp) fukui_shift = settings%fukui_level_shift
+            fukui_guess_mode = "neutral"
+            if (allocated(settings%fukui_guess)) fukui_guess_mode = settings%fukui_guess
+
             fukui_frozen = settings%n_frozen_core
             if (fukui_frozen < 0) then
                if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then
@@ -1214,17 +1234,22 @@ contains
             end if
             if (.not. settings%freeze_core) fukui_frozen = 0
             call fukui_indices(mol, nelec, fragment%multiplicity, scf%density, &
-                               scf%energy, settings%fukui_population, settings%max_iter, &
+                               scf%energy, settings%fukui_population, fukui_maxiter, &
                                settings%energy_tol, settings%density_tol, fukui, &
                                fukui_error, functional=trim(settings%functional), &
                                grid_level=settings%grid_level, &
+                               nlc_grid_level=settings%nlc_grid_level, &
+                               screening_tolerance=settings%screening_tolerance, &
+                               block_size=settings%block_size, &
                                pt2_fraction=fukui_pt2, &
                                neutral_orbitals=scf%orbitals, &
                                neutral_orbital_energies=scf%orbital_energies, &
                                n_frozen=fukui_frozen, aux=fukui_aux_arg, &
                                verbose=settings%verbose, pcm=pcm_ctx, &
-                               level_shift=settings%level_shift, &
-                               diis_vectors=diis_size)
+                               level_shift=fukui_shift, &
+                               diis_vectors=fukui_diis, &
+                               guess_mode=fukui_guess_mode, &
+                               incremental_fock=settings%incremental_fock)
             if (fukui_fitted) call fukui_aux%destroy()
             if (fukui_error%has_error()) then
                call logger%warning("  the Fukui analysis could not run: "// &
@@ -2332,6 +2357,7 @@ contains
                            diis_vectors=diis_size, accelerator=accel_kind, &
                            level_shift=settings%level_shift, &
                            linear_dependence=settings%linear_dependence, &
+                           incremental_fock=settings%incremental_fock, &
                            grad_tol=settings%grad_tol)
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())

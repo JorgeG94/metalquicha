@@ -12,13 +12,13 @@
     ],
     "model": {
         "method": "hf",
-        "basis": "6-31g"
+        "basis": "6-31g",
+        "unrestricted": true
     },
     "keywords": {
         "scf": {
             "maxiter": 100,
-            "tolerance": 1e-12,
-            "unrestricted": true
+            "tolerance": 1e-12
         },
         "pcm": {
             "method": "iefpcm",

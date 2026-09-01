@@ -1273,7 +1273,9 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
-      real(dp) :: e_nl_total, e_nl_dup
+      real(dp) :: e_nl_total
+      real(dp), allocatable :: v_nl(:, :)
+         !! VV10's potential, built once and added to both spins
       real(dp), allocatable :: rho_a(:), rho_b(:), grad_a(:, :), grad_b(:, :)
       real(dp), allocatable :: tau_a(:), tau_b(:)
       real(dp), allocatable :: rho(:), sigma(:), tau(:), lapl(:)
@@ -1549,12 +1551,20 @@ contains
       ! total density, with no spin dependence anywhere in it, so
       ! dE/drho_a = dE/drho_b and likewise for the gradient term.
       if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
-         call vv10_add_potential(ctx, mol, d_alpha + d_beta, v_alpha, e_nl_total, error)
+         ! Evaluated once and added to both, rather than called twice. The
+         ! comment above is the reason it can be: the kernel has no spin
+         ! dependence, so the two calls did identical work and the second
+         ! existed only to reach `v_beta`. That doubled the whole non-local
+         ! term, which is the dominant cost of a `-V` SCF iteration -- on an
+         ! open-shell case here the exchange-correlation column ran 23 s
+         ! against the Fock build's 5 s, and half of it was this.
+         if (.not. allocated(v_nl)) allocate (v_nl(size(v_alpha, 1), size(v_alpha, 2)))
+         v_nl = 0.0_dp
+         call vv10_add_potential(ctx, mol, d_alpha + d_beta, v_nl, e_nl_total, error)
          if (error%has_error()) return
-         call vv10_add_potential(ctx, mol, d_alpha + d_beta, v_beta, e_nl_dup, error)
-         if (error%has_error()) return
-         ! Added once, not twice: `e_nl` is the energy of the whole density,
-         ! and the second call is only there to reach the beta matrix.
+         v_alpha = v_alpha + v_nl
+         v_beta = v_beta + v_nl
+         ! Added once, not twice: `e_nl` is the energy of the whole density.
          e_xc = e_xc + e_nl_total
       end if
 #endif
@@ -1922,7 +1932,9 @@ contains
       !!
       !! Two sweeps over that grid rather than one: the kernel's inner sum runs
       !! over every point, so nothing can be contracted until rho and sigma are
-      !! known everywhere.
+      !! known everywhere. Both are threaded over blocks, as is the double sum
+      !! between them -- this routine is the whole cost of a `-V` iteration, so
+      !! a serial stretch anywhere in it is the run's critical path.
       !!
       !! No AO screening here, unlike the exchange loop. On a grid this size
       !! the saving is small and the indexing it needs -- a per-block
@@ -1940,8 +1952,11 @@ contains
       real(dp), allocatable :: exc(:), vrho(:), vsigma(:)
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), grad_coeff(:, :)
       real(dp), allocatable :: rho_blk(:), rho_grad_blk(:, :), vtau_none(:)
+      real(dp), allocatable :: v_local(:, :)
       integer :: npts, g0, g1, nb, ig, id
       integer :: n_kept
+      type(error_t) :: local_error
+      logical :: failed
 
       e_nl = 0.0_dp
 
@@ -1957,13 +1972,39 @@ contains
       rho_grad = 0.0_dp
 
       ! Sweep one: rho and sigma everywhere.
+      !
+      ! Threaded over blocks, as the semilocal loops are. Every block writes to
+      ! its own slice of `rho`, `sigma` and `rho_grad` -- the index is the grid
+      ! point, so there is nothing to reduce and no two threads touch the same
+      ! element. Both sweeps here used to run serially while the double sum
+      ! between them was threaded, which on a `-V` functional left most of the
+      ! machine idle for the part that is linear in the grid.
+      !
+      ! `firstprivate(local_error)` rather than `private`, for the reason the
+      ! restricted path sets out: a private copy of a derived type need not pick
+      ! up its default initialisation, and here it did not.
+      failed = .false.
+      !$omp parallel do default(none) &
+      !$omp    shared(ctx, mol, density, npts, rho, sigma, rho_grad, error, failed) &
+      !$omp    private(g0, g1, nb, ig, id, ao, ao_grad, rho_blk, rho_grad_blk) &
+      !$omp    firstprivate(local_error) &
+      !$omp    schedule(dynamic)
       do g0 = 1, npts, ctx%point_block
+         if (failed) cycle
          g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
          if (allocated(rho_blk)) deallocate (rho_blk, rho_grad_blk)
          allocate (rho_blk(nb), rho_grad_blk(nb, 3))
-         call eval_ao_block(mol, ctx%nlc_grid%coords(:, g0:g1), ao, error, grad=ao_grad)
-         if (error%has_error()) return
+         call eval_ao_block(mol, ctx%nlc_grid%coords(:, g0:g1), ao, local_error, grad=ao_grad)
+         if (local_error%has_error()) then
+            !$omp critical (vv10_rho_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (vv10_rho_failure)
+            cycle
+         end if
          call eval_rho(ao, density, rho_blk, ao_grad=ao_grad, rho_grad=rho_grad_blk)
          do ig = 1, nb
             rho(g0 + ig - 1) = rho_blk(ig)
@@ -1974,6 +2015,8 @@ contains
                                  + rho_grad_blk(ig, 3)**2
          end do
       end do
+      !$omp end parallel do
+      if (failed) return
 
       allocate (exc(npts), vrho(npts), vsigma(npts))
       call vv10_nlc(ctx%nlc_b, ctx%nlc_c, ctx%nlc_grid%coords, rho, sigma, &
@@ -1986,20 +2029,46 @@ contains
       ! see `nlc_grid_level`, which is a fixed level rather than a step below
       ! `grid_level`, so a deck already running a coarse grid gets no
       ! separation between the two unless it asks.
-      call logger%verbose("  VV10: "//to_char(npts)//" grid points, "// &
-                          to_char(n_kept)//" carry density, "// &
-                          to_char(real(npts, dp)*real(n_kept, dp)/1.0e6_dp)// &
-                          " million pairs")
+      !call logger%verbose("  VV10: "//to_char(npts)//" grid points, "// &
+      !                    to_char(n_kept)//" carry density, "// &
+      !                    to_char(real(npts, dp)*real(n_kept, dp)/1.0e6_dp)// &
+      !                    " million pairs")
 
       e_nl = sum(ctx%nlc_grid%weights*rho*exc)
 
       ! Sweep two: contract the potential on the grid it was evaluated on.
       allocate (vtau_none(0))
+
+      ! Sweep two: contract the potential on the grid it was evaluated on.
+      !
+      ! This one accumulates into a single matrix, so unlike sweep one it needs
+      ! a reduction: each thread fills its own `v_local` and adds it in once at
+      ! the end, rather than contending for `v_nl` on every block. `v_nl` itself
+      ! is *not* zeroed here -- the restricted caller passes the matrix that
+      ! already holds the semilocal potential and expects this to add to it.
+      failed = .false.
+      !$omp parallel default(none) &
+      !$omp    shared(ctx, mol, npts, vrho, vsigma, rho_grad, v_nl, vtau_none, &
+      !$omp           error, failed) &
+      !$omp    private(g0, g1, nb, ig, id, ao, ao_grad, grad_coeff, v_local) &
+      !$omp    firstprivate(local_error)
+      allocate (v_local(size(v_nl, 1), size(v_nl, 2)))
+      v_local = 0.0_dp
+      !$omp do schedule(dynamic)
       do g0 = 1, npts, ctx%point_block
+         if (failed) cycle
          g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
-         call eval_ao_block(mol, ctx%nlc_grid%coords(:, g0:g1), ao, error, grad=ao_grad)
-         if (error%has_error()) return
+         call eval_ao_block(mol, ctx%nlc_grid%coords(:, g0:g1), ao, local_error, grad=ao_grad)
+         if (local_error%has_error()) then
+            !$omp critical (vv10_pot_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (vv10_pot_failure)
+            cycle
+         end if
          if (allocated(grad_coeff)) deallocate (grad_coeff)
          allocate (grad_coeff(nb, 3))
          ! dE/d(grad rho) = 2 vsigma grad rho, the same chain rule the
@@ -2010,9 +2079,15 @@ contains
             end do
          end do
          call accumulate_xc_matrix(ctx%nlc_grid%weights(g0:g1), ao, vrho(g0:g1), &
-                                   v_nl, ao_grad=ao_grad, grad_coeff=grad_coeff, &
+                                   v_local, ao_grad=ao_grad, grad_coeff=grad_coeff, &
                                    vtau=vtau_none, any_gga=.true., any_mgga=.false.)
       end do
+      !$omp end do
+      !$omp critical (vv10_pot_reduce)
+      v_nl = v_nl + v_local
+      !$omp end critical (vv10_pot_reduce)
+      !$omp end parallel
+      if (failed) return
    end subroutine vv10_add_potential
 
    subroutine vv10_kernel_apply(ctx, mol, density, dtilde, v_kernel, error)
