@@ -586,17 +586,17 @@ contains
          else
             call logger%info("  basis functions: "//to_char(n_ao)//"  (spherical, 5d/7f)")
          end if
-      ! Charge and multiplicity, because a log that reports neither cannot be
-      ! checked against the deck that asked for it. `nelec` alone does not say
-      ! which ion this is: a Fukui run prints three of these tables in a row and
-      ! they differ by one electron, so "205 electrons" identifies the state only
-      ! to a reader willing to count nuclei.
-      !
-      ! Derived rather than passed. `mol%charges` carries the ECP's core
-      ! subtracted and `nelec` arrives reduced by the same cores, so the
-      ! difference is the physical charge in both cases and needs no separate
-      ! all-electron count. `core_electrons` is zero for an all-electron atom,
-      ! which is what makes the one expression serve both.
+         ! Charge and multiplicity, because a log that reports neither cannot be
+         ! checked against the deck that asked for it. `nelec` alone does not say
+         ! which ion this is: a Fukui run prints three of these tables in a row and
+         ! they differ by one electron, so "205 electrons" identifies the state only
+         ! to a reader willing to count nuclei.
+         !
+         ! Derived rather than passed. `mol%charges` carries the ECP's core
+         ! subtracted and `nelec` arrives reduced by the same cores, so the
+         ! difference is the physical charge in both cases and needs no separate
+         ! all-electron count. `core_electrons` is zero for an all-electron atom,
+         ! which is what makes the one expression serve both.
          call logger%info("  restricted: charge = "// &
                           to_char(nint(sum(mol%charges)) - nelec)// &
                           "  multiplicity = 1"// &
