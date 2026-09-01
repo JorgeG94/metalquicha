@@ -215,6 +215,10 @@ contains
 
       ! Set calculation-specific keywords
       driver_config%hessian%displacement = mqc_config%hessian_displacement
+      ! ...and to the method, which is what actually runs the displacements.
+      ! Setting only the line above left the deck's value in a field nothing
+      ! downstream read.
+      driver_config%method_config%hessian_displacement = mqc_config%hessian_displacement
       driver_config%hessian%temperature = mqc_config%hessian_temperature
       driver_config%hessian%pressure = mqc_config%hessian_pressure
       driver_config%aimd%dt = mqc_config%aimd_dt

@@ -35,12 +35,15 @@ module mqc_semi_numerical_hessian
 
 contains
 
-   subroutine finite_difference_hessian(method, fragment, result, verbose)
+   subroutine finite_difference_hessian(method, fragment, result, verbose, displacement_in)
       !! Hessian of `method` at `fragment`, by central differences of gradients
       class(qc_method_t), intent(in) :: method            !! Any method with analytic gradients
       type(physical_fragment_t), intent(in) :: fragment   !! Reference geometry
       type(calculation_result_t), intent(out) :: result   !! Energy, gradient and Hessian
       logical, intent(in), optional :: verbose
+      real(dp), intent(in), optional :: displacement_in
+         !! Step in Bohr. Absent, `DEFAULT_DISPLACEMENT` stands, which is what
+         !! every caller got before this argument existed.
 
       type(displaced_geometry_t), allocatable :: forward_geoms(:), backward_geoms(:)
       real(dp), allocatable :: forward_gradients(:, :, :), backward_gradients(:, :, :)
@@ -56,6 +59,9 @@ contains
       n_atoms = fragment%n_atoms
       n_displacements = 3*n_atoms
       displacement = DEFAULT_DISPLACEMENT
+      if (present(displacement_in)) then
+         if (displacement_in > 0.0_dp) displacement = displacement_in
+      end if
 
       if (is_verbose) then
          call logger%info("Hessian by central differences of analytic gradients")

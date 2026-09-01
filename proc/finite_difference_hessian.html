@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.4% of total for procedures.">86 statements</a>
+                 title=" 0.4% of total for procedures.">90 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,18 +136,18 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-backward_dipoles">backward_dipoles</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-backward_geoms">backward_geoms</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-backward_gradients">backward_gradients</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-backward_dipoles~2">backward_dipoles</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-backward_geoms~2">backward_geoms</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-backward_gradients~2">backward_gradients</a>
             <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-displacement~2">displacement</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-forward_dipoles">forward_dipoles</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-forward_geoms">forward_geoms</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-forward_gradients">forward_gradients</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-have_dipoles~2">have_dipoles</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-i~62">i</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-forward_dipoles~2">forward_dipoles</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-forward_geoms~2">forward_geoms</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-forward_gradients~2">forward_gradients</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-have_dipoles~3">have_dipoles</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-i~99">i</a>
             <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-is_verbose~2">is_verbose</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-n_atoms~16">n_atoms</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-n_displacements">n_displacements</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-n_atoms~23">n_atoms</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-n_displacements~2">n_displacements</a>
             <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-point">point</a>
         </div>
       </div>
@@ -184,7 +184,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine finite_difference_hessian(method, fragment, result, verbose)  
+    <h2>public  subroutine finite_difference_hessian(method, fragment, result, verbose, displacement_in)  
 </h2>
     
 
@@ -204,7 +204,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~6"></span>
+              <span class="anchor" id="variable-method~9"></span>
               class(<a href='../type/qc_method_t.html'>qc_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -219,7 +219,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~10"></span>
+              <span class="anchor" id="variable-fragment~18"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -234,7 +234,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~21"></span>
+              <span class="anchor" id="variable-result~19"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -260,6 +260,22 @@
             <td><strong>verbose</strong></td>
             <td>
                 
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-displacement_in"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>displacement_in</strong></td>
+            <td>
+                <p>Step in Bohr. Absent, <code>DEFAULT_DISPLACEMENT</code> stands, which is what
+every caller got before this argument existed.</p>
             </td>
         </tr>
     </tbody>
@@ -788,7 +804,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-backward_dipoles"></span>
+              <span class="anchor" id="variable-backward_dipoles~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -805,7 +821,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backward_geoms"></span>
+              <span class="anchor" id="variable-backward_geoms~2"></span>
               type(<a href='../type/displaced_geometry_t.html'>displaced_geometry_t</a>),
             </td>
               <td>private,</td>
@@ -822,7 +838,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backward_gradients"></span>
+              <span class="anchor" id="variable-backward_gradients~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -856,7 +872,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-forward_dipoles"></span>
+              <span class="anchor" id="variable-forward_dipoles~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -873,7 +889,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-forward_geoms"></span>
+              <span class="anchor" id="variable-forward_geoms~2"></span>
               type(<a href='../type/displaced_geometry_t.html'>displaced_geometry_t</a>),
             </td>
               <td>private,</td>
@@ -890,7 +906,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-forward_gradients"></span>
+              <span class="anchor" id="variable-forward_gradients~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -907,7 +923,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-have_dipoles~2"></span>
+              <span class="anchor" id="variable-have_dipoles~3"></span>
               logical,
             </td>
               <td>private</td>
@@ -924,7 +940,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~62"></span>
+              <span class="anchor" id="variable-i~99"></span>
               integer,
             </td>
               <td>private</td>
@@ -958,7 +974,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~16"></span>
+              <span class="anchor" id="variable-n_atoms~23"></span>
               integer,
             </td>
               <td>private</td>
@@ -975,7 +991,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_displacements"></span>
+              <span class="anchor" id="variable-n_displacements~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1023,12 +1039,15 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">finite_difference_hessian</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="p">)</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">finite_difference_hessian</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="p">,</span><span class="w"> </span><span class="n">displacement_in</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Hessian of `method` at `fragment`, by central differences of gradients</span>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">qc_method_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method</span><span class="w">            </span><span class="c">!! Any method with analytic gradients</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span><span class="w">   </span><span class="c">!! Reference geometry</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span><span class="w">   </span><span class="c">!! Energy, gradient and Hessian</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">verbose</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">displacement_in</span>
+<span class="w">         </span><span class="c">!! Step in Bohr. Absent, `DEFAULT_DISPLACEMENT` stands, which is what</span>
+<span class="w">         </span><span class="c">!! every caller got before this argument existed.</span>
 
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">displaced_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">forward_geoms</span><span class="p">(:),</span><span class="w"> </span><span class="n">backward_geoms</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">forward_gradients</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">backward_gradients</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:)</span>
@@ -1044,8 +1063,11 @@ large graphs.</div>
 <span class="w">      </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fragment</span><span class="p">%</span><span class="n">n_atoms</span>
 <span class="w">      </span><span class="n">n_displacements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">n_atoms</span>
 <span class="w">      </span><span class="n">displacement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_DISPLACEMENT</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">displacement_in</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">displacement_in</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="n">displacement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">displacement_in</span>
+<span class="w">      </span><span class="k">end if</span>
 
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">is_verbose</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">is_verbose</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Hessian by central differences of analytic gradients"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Atoms:                 "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">))</span>
 <span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Gradient evaluations:  "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">n_displacements</span><span class="p">))</span>
@@ -1154,7 +1176,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-01 13:21 +0000             </p>
+ on 2026-09-01 21:03 +0000             </p>
           </div>
         </div>
         <br>
