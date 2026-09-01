@@ -53,7 +53,7 @@ module mqc_efp_potential
    use pic_timer, only: timer_type
    use libcint_fortran, only: LIBCINT_ANG_OF
    use pic_logger, only: logger => global_logger
-   use mqc_config_types, only: scf_numerics_t
+   use mqc_config_types, only: scf_numerics_t, print_scf_config
    use mqc_diis, only: parse_accelerator_name, ACCEL_DIIS
    use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
@@ -327,6 +327,7 @@ contains
       integer :: n_iter, scf_diis, accel_kind
       real(dp) :: shift, lindep
       logical :: incr, accel_ok
+      type(scf_numerics_t) :: echo
       real(dp), allocatable :: guess_total(:, :)
       character(len=:), allocatable :: guess_name
       type(timer_type) :: stage
@@ -528,6 +529,23 @@ contains
                            trim(scf_in%accelerator)//"' is not one of diis, adiis, ediis")
             return
          end if
+      end if
+      ! Echoed before the SCF runs, so a deck that set something and saw no
+      ! effect can be checked against what arrived rather than against the
+      ! source. This path dropped six settings silently; the block is the
+      ! cheapest guard against a seventh.
+      if (talk) then
+         echo = scf_numerics_t()
+         if (present(scf_in)) echo = scf_in
+         echo%max_iter = n_iter
+         echo%energy_tol = e_tol
+         echo%density_tol = d_tol
+         echo%grad_tol = g_tol
+         echo%diis_size = scf_diis
+         echo%level_shift = shift
+         echo%linear_dependence = lindep
+         echo%incremental_fock = incr
+         call print_scf_config(echo, "MAKEFP SCF")
       end if
       if (present(aux_basis)) then
          call run_libcint_rhf(mol, n_electrons, n_iter, e_tol, d_tol, &

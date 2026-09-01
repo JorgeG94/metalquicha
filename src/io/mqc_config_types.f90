@@ -43,6 +43,7 @@ module mqc_config_types
    public :: guess_step_t       !! One rung of a basis-set-projection ladder
    public :: scf_numerics_t     !! How an SCF is driven, shared by every SCF in a run
    public :: deltascf_options_t  !! Convergence settings for a second SCF beside the first
+   public :: print_scf_config   !! Echo a resolved SCF configuration
 
    type :: input_fragment_t
       !! Input fragment definition with charge, multiplicity, and atom indices
@@ -768,4 +769,54 @@ contains
       class(input_fragment_t), intent(inout) :: this
       if (allocated(this%indices)) deallocate (this%indices)
    end subroutine input_fragment_destroy
+   subroutine print_scf_config(scf, label)
+      !! Echo what an SCF was actually told to do
+      !!
+      !! Every silent-drop bug this code has had looks the same from outside: a
+      !! key is set, the schema accepts it, and the run behaves as though it
+      !! were never written. The Fukui ions lost six settings that way and the
+      !! MakeFP SCF lost six more, and in both cases the only way to find out
+      !! was to read the call site. A deck that can be echoed back cannot hide
+      !! that -- if a setting is missing from this block, it did not arrive.
+      !!
+      !! Printed from the resolved configuration rather than from the deck, so
+      !! it shows what the SCF will use and not what was asked for. Those differ
+      !! wherever a default, an inheritance or a backend override sits between
+      !! the two, which is exactly where the interesting bugs are.
+      use pic_logger, only: logger => global_logger
+      class(scf_numerics_t), intent(in) :: scf
+      character(len=*), intent(in) :: label
+         !! Which SCF this is -- there is more than one in a Fukui or MakeFP
+         !! run, and two identical blocks with no names would be worse than
+         !! none.
+
+      character(len=160) :: line
+
+      call logger%info("  "//label//" configuration")
+      write (line, "(a,i0,a,es9.2,a,es9.2)") &
+         "    maxiter ", scf%max_iter, "   energy_tol ", scf%energy_tol, &
+         "   density_tol ", scf%density_tol
+      call logger%info(trim(line))
+      ! Zero means "derived", and saying so beats printing 0.00E+00 as though a
+      ! threshold of zero were being asked for.
+      if (scf%grad_tol > 0.0_dp) then
+         write (line, "(a,es9.2,a)") "    commutator_tol ", scf%grad_tol, "  (stated)"
+      else
+         write (line, "(a,es9.2,a)") "    commutator_tol ", scf%energy_tol, &
+            "  (follows energy_tol)"
+      end if
+      call logger%info(trim(line))
+      write (line, "(a,a,a,i0,a,l1)") &
+         "    accelerator ", trim(scf%accelerator), "   diis_size ", scf%diis_size, &
+         "   diis ", scf%use_diis
+      call logger%info(trim(line))
+      write (line, "(a,es9.2,a,es9.2)") &
+         "    level_shift ", scf%level_shift, "   linear_dependence ", scf%linear_dependence
+      call logger%info(trim(line))
+      write (line, "(a,a,a,l1,a,l1)") &
+         "    guess ", trim(scf%guess), "   incremental_fock ", scf%incremental_fock, &
+         "   allow_crap_scf ", scf%allow_crap_scf
+      call logger%info(trim(line))
+   end subroutine print_scf_config
+
 end module mqc_config_types
