@@ -1,0 +1,805 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>read_fukui_scf &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>read_fukui_scf
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.2% of total for procedures.">37 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_json_config_reader.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_json_config_reader.f90.html'>mqc_json_config_reader.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></li>
+            <li class="breadcrumb-item active" aria-current="page">read_fukui_scf</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/read_fukui_scf.html#src">read_fukui_scf</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine read_fukui_scf(json, config)  
+</h2>
+    
+
+    <p>Resolve <code>properties.fukui.scf</code> against <code>keywords.scf</code></p>
+<p><strong>Must run after the <code>keywords.scf</code> block.</strong> Inheritance here is a
+seed followed by an overwrite: every field starts at the value that
+converged the neutral, and <code>optional_*</code> leaves it alone when the deck
+does not name the key. That is why nothing below tests for &ldquo;absent&rdquo;
+and why no field carries a sentinel &ndash; the state &ldquo;unset&rdquo; is spelled by
+the field still holding the inherited value.</p>
+<p>The three fields this replaced each needed a sentinel, and one of them
+could not have a clean one: zero is a real level shift meaning &ldquo;off&rdquo;,
+so &ldquo;unset&rdquo; had to be spelled &ldquo;any negative&rdquo; and the meaning of a
+negative shift was quietly spent on bookkeeping.</p>
+<p><code>inherit_scf: false</code> skips the seed, leaving the type defaults for
+anything the object does not name. It is for the case where the
+neutral was converged tightly, or with an accelerator picked for it,
+and carrying that onto a charged species is the wrong start rather
+than a careful one.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~31"></span>
+              type(json_file),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~35"></span>
+              type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~read_fukui_scf~~CallsGraph Pages: 1 -->
+<svg id="procread_fukui_scfCallsGraph" width="458pt" height="155pt"
+ viewBox="0.00 0.00 458.00 155.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~read_fukui_scf~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 151)">
+<title>proc~~read_fukui_scf~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-151 454,-151 454,4 -4,4"/>
+<!-- proc~read_fukui_scf -->
+<g id="proc~~read_fukui_scf~~CallsGraph_node1" class="node">
+<title>proc~read_fukui_scf</title>
+<polygon fill="none" stroke="black" points="88,-86 0,-86 0,-62 88,-62 88,-86"/>
+<text text-anchor="middle" x="44" y="-71.6" font-family="Helvetica,sans-Serif" font-size="10.50">read_fukui_scf</text>
+</g>
+<!-- proc~optional_int -->
+<g id="proc~~read_fukui_scf~~CallsGraph_node2" class="node">
+<title>proc~optional_int</title>
+<g id="a_proc~~read_fukui_scf~~CallsGraph_node2"><a xlink:href="../proc/optional_int.html" xlink:title="optional_int">
+<polygon fill="#d9534f" stroke="#d9534f" points="349,-147 274,-147 274,-123 349,-123 349,-147"/>
+<text text-anchor="middle" x="311.5" y="-132.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optional_int</text>
+</a>
+</g>
+</g>
+<!-- proc~read_fukui_scf&#45;&gt;proc~optional_int -->
+<g id="proc~~read_fukui_scf~~CallsGraph_edge1" class="edge">
+<title>proc~read_fukui_scf&#45;&gt;proc~optional_int</title>
+<path fill="none" stroke="#ff0000" d="M84.21,-86.11C96.85,-89.82 110.96,-93.78 124,-97 171.21,-108.66 225.77,-119.47 263.63,-126.56"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="263.38,-130.07 273.85,-128.46 264.66,-123.19 263.38,-130.07"/>
+</g>
+<!-- proc~optional_logical -->
+<g id="proc~~read_fukui_scf~~CallsGraph_node3" class="node">
+<title>proc~optional_logical</title>
+<g id="a_proc~~read_fukui_scf~~CallsGraph_node3"><a xlink:href="../proc/optional_logical.html" xlink:title="optional_logical">
+<polygon fill="#d9534f" stroke="#d9534f" points="360,-105 263,-105 263,-81 360,-81 360,-105"/>
+<text text-anchor="middle" x="311.5" y="-90.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optional_logical</text>
+</a>
+</g>
+</g>
+<!-- proc~read_fukui_scf&#45;&gt;proc~optional_logical -->
+<g id="proc~~read_fukui_scf~~CallsGraph_edge2" class="edge">
+<title>proc~read_fukui_scf&#45;&gt;proc~optional_logical</title>
+<path fill="none" stroke="#ff0000" d="M88.25,-77.09C132.97,-80.3 203.06,-85.31 252.55,-88.85"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="252.56,-92.36 262.78,-89.59 253.06,-85.38 252.56,-92.36"/>
+</g>
+<!-- proc~optional_real -->
+<g id="proc~~read_fukui_scf~~CallsGraph_node4" class="node">
+<title>proc~optional_real</title>
+<g id="a_proc~~read_fukui_scf~~CallsGraph_node4"><a xlink:href="../proc/optional_real.html" xlink:title="optional_real">
+<polygon fill="#d9534f" stroke="#d9534f" points="216.5,-66 134.5,-66 134.5,-42 216.5,-42 216.5,-66"/>
+<text text-anchor="middle" x="175.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optional_real</text>
+</a>
+</g>
+</g>
+<!-- proc~read_fukui_scf&#45;&gt;proc~optional_real -->
+<g id="proc~~read_fukui_scf~~CallsGraph_edge3" class="edge">
+<title>proc~read_fukui_scf&#45;&gt;proc~optional_real</title>
+<path fill="none" stroke="#ff0000" d="M88.12,-67.34C99.62,-65.56 112.14,-63.63 123.99,-61.8"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="124.85,-65.21 134.19,-60.22 123.78,-58.29 124.85,-65.21"/>
+</g>
+<!-- proc~read_fixed_string -->
+<g id="proc~~read_fukui_scf~~CallsGraph_node5" class="node">
+<title>proc~read_fixed_string</title>
+<g id="a_proc~~read_fukui_scf~~CallsGraph_node5"><a xlink:href="../proc/read_fixed_string.html" xlink:title="read_fixed_string">
+<polygon fill="#d9534f" stroke="#d9534f" points="227,-24 124,-24 124,0 227,0 227,-24"/>
+<text text-anchor="middle" x="175.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_fixed_string</text>
+</a>
+</g>
+</g>
+<!-- proc~read_fukui_scf&#45;&gt;proc~read_fixed_string -->
+<g id="proc~~read_fukui_scf~~CallsGraph_edge4" class="edge">
+<title>proc~read_fukui_scf&#45;&gt;proc~read_fixed_string</title>
+<path fill="none" stroke="#ff0000" d="M67.22,-61.83C82.92,-53.39 104.53,-42.08 124,-33 127.58,-31.33 131.32,-29.65 135.09,-28.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="136.59,-31.17 144.41,-24.02 133.84,-24.74 136.59,-31.17"/>
+</g>
+<!-- get -->
+<g id="proc~~read_fukui_scf~~CallsGraph_node6" class="node">
+<title>get</title>
+<polygon fill="#777777" stroke="#777777" points="450,-85 396,-85 396,-61 450,-61 450,-85"/>
+<text text-anchor="middle" x="423" y="-70.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get</text>
+</g>
+<!-- proc~optional_int&#45;&gt;get -->
+<g id="proc~~read_fukui_scf~~CallsGraph_edge5" class="edge">
+<title>proc~optional_int&#45;&gt;get</title>
+<path fill="none" stroke="#ff0000" d="M341.76,-122.99C347.88,-120.22 354.22,-117.16 360,-114 372.6,-107.11 385.96,-98.47 397.03,-90.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="399.15,-93.68 405.37,-85.1 395.16,-87.93 399.15,-93.68"/>
+</g>
+<!-- proc~optional_logical&#45;&gt;get -->
+<g id="proc~~read_fukui_scf~~CallsGraph_edge6" class="edge">
+<title>proc~optional_logical&#45;&gt;get</title>
+<path fill="none" stroke="#7fff00" d="M360.21,-84.29C368.8,-82.72 377.63,-81.1 385.82,-79.61"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="386.59,-83.02 395.8,-77.78 385.34,-76.14 386.59,-83.02"/>
+</g>
+<!-- proc~optional_real&#45;&gt;get -->
+<g id="proc~~read_fukui_scf~~CallsGraph_edge7" class="edge">
+<title>proc~optional_real&#45;&gt;get</title>
+<path fill="none" stroke="#00ffff" d="M216.76,-57.12C263.61,-60.74 340.29,-66.68 385.48,-70.17"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="385.47,-73.68 395.71,-70.97 386.01,-66.7 385.47,-73.68"/>
+</g>
+<!-- proc~optional_string -->
+<g id="proc~~read_fukui_scf~~CallsGraph_node7" class="node">
+<title>proc~optional_string</title>
+<g id="a_proc~~read_fukui_scf~~CallsGraph_node7"><a xlink:href="../proc/optional_string.html" xlink:title="optional_string">
+<polygon fill="#d9534f" stroke="#d9534f" points="357,-25 266,-25 266,-1 357,-1 357,-25"/>
+<text text-anchor="middle" x="311.5" y="-10.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optional_string</text>
+</a>
+</g>
+</g>
+<!-- proc~read_fixed_string&#45;&gt;proc~optional_string -->
+<g id="proc~~read_fukui_scf~~CallsGraph_edge8" class="edge">
+<title>proc~read_fixed_string&#45;&gt;proc~optional_string</title>
+<path fill="none" stroke="#7f00ff" d="M227.16,-12.38C236.52,-12.45 246.34,-12.52 255.81,-12.59"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="255.89,-16.09 265.92,-12.67 255.95,-9.09 255.89,-16.09"/>
+</g>
+<!-- proc~optional_string&#45;&gt;get -->
+<g id="proc~~read_fukui_scf~~CallsGraph_edge9" class="edge">
+<title>proc~optional_string&#45;&gt;get</title>
+<path fill="none" stroke="#00ffff" d="M334.73,-25.17C342.7,-29.53 351.76,-34.48 360,-39 370.04,-44.5 380.98,-50.5 390.85,-55.91"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="389.46,-59.14 399.91,-60.88 392.82,-53 389.46,-59.14"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~read_fukui_scf~~CalledByGraph Pages: 1 -->
+<svg id="procread_fukui_scfCalledByGraph" width="641pt" height="81pt"
+ viewBox="0.00 0.00 641.00 81.44" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~read_fukui_scf~~CalledByGraph" class="graph" transform="scale(0.7 0.7) rotate(0) translate(4 112)">
+<title>proc~~read_fukui_scf~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 909,-112 909,4 -4,4"/>
+<!-- proc~read_fukui_scf -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_node1" class="node">
+<title>proc~read_fukui_scf</title>
+<polygon fill="none" stroke="black" points="905,-87 817,-87 817,-63 905,-63 905,-87"/>
+<text text-anchor="middle" x="861" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">read_fukui_scf</text>
+</g>
+<!-- proc~populate_config -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_node2" class="node">
+<title>proc~populate_config</title>
+<g id="a_proc~~read_fukui_scf~~CalledByGraph_node2"><a xlink:href="../proc/populate_config.html" xlink:title="populate_config">
+<polygon fill="#d9534f" stroke="#d9534f" points="781,-87 683,-87 683,-63 781,-63 781,-87"/>
+<text text-anchor="middle" x="732" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">populate_config</text>
+</a>
+</g>
+</g>
+<!-- proc~populate_config&#45;&gt;proc~read_fukui_scf -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_edge1" class="edge">
+<title>proc~populate_config&#45;&gt;proc~read_fukui_scf</title>
+<path fill="none" stroke="#ff0000" d="M781.01,-75C789.4,-75 798.18,-75 806.7,-75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="806.93,-78.5 816.93,-75 806.93,-71.5 806.93,-78.5"/>
+</g>
+<!-- proc~read_json_config_file -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_node3" class="node">
+<title>proc~read_json_config_file</title>
+<g id="a_proc~~read_fukui_scf~~CalledByGraph_node3"><a xlink:href="../proc/read_json_config_file.html" xlink:title="read_json_config_file">
+<polygon fill="#d9534f" stroke="#d9534f" points="645.5,-108 521.5,-108 521.5,-84 645.5,-84 645.5,-108"/>
+<text text-anchor="middle" x="583.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_json_config_file</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_config_file&#45;&gt;proc~populate_config -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_edge2" class="edge">
+<title>proc~read_json_config_file&#45;&gt;proc~populate_config</title>
+<path fill="none" stroke="#ff0000" d="M645.78,-87.22C654.78,-85.93 664.03,-84.6 672.96,-83.32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="673.48,-86.78 682.88,-81.9 672.49,-79.85 673.48,-86.78"/>
+</g>
+<!-- proc~read_json_config_text -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_node4" class="node">
+<title>proc~read_json_config_text</title>
+<g id="a_proc~~read_fukui_scf~~CalledByGraph_node4"><a xlink:href="../proc/read_json_config_text.html" xlink:title="read_json_config_text">
+<polygon fill="#d9534f" stroke="#d9534f" points="647,-66 520,-66 520,-42 647,-42 647,-66"/>
+<text text-anchor="middle" x="583.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_json_config_text</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_config_text&#45;&gt;proc~populate_config -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_edge3" class="edge">
+<title>proc~read_json_config_text&#45;&gt;proc~populate_config</title>
+<path fill="none" stroke="#ff0000" d="M647.05,-62.97C655.57,-64.19 664.28,-65.44 672.72,-66.65"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="672.44,-70.14 682.84,-68.1 673.43,-63.21 672.44,-70.14"/>
+</g>
+<!-- proc~session_run -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_node5" class="node">
+<title>proc~session_run</title>
+<g id="a_proc~~read_fukui_scf~~CalledByGraph_node5"><a xlink:href="../proc/session_run.html" xlink:title="mqc_session_t%session_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="484,-66 323,-66 323,-42 484,-42 484,-66"/>
+<text text-anchor="middle" x="403.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_run</text>
+</a>
+</g>
+</g>
+<!-- proc~session_run&#45;&gt;proc~read_json_config_text -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_edge5" class="edge">
+<title>proc~session_run&#45;&gt;proc~read_json_config_text</title>
+<path fill="none" stroke="#00ffff" d="M484.13,-54C492.62,-54 501.22,-54 509.63,-54"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="509.76,-57.5 519.76,-54 509.76,-50.5 509.76,-57.5"/>
+</g>
+<!-- proc~worker_run -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_node6" class="node">
+<title>proc~worker_run</title>
+<g id="a_proc~~read_fukui_scf~~CalledByGraph_node6"><a xlink:href="../proc/worker_run.html" xlink:title="worker_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="440,-24 367,-24 367,0 440,0 440,-24"/>
+<text text-anchor="middle" x="403.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_run</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_run&#45;&gt;proc~read_json_config_text -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_edge6" class="edge">
+<title>proc~worker_run&#45;&gt;proc~read_json_config_text</title>
+<path fill="none" stroke="#00ffff" d="M440.09,-20.4C463.41,-25.9 494.48,-33.23 521.65,-39.64"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="520.92,-43.07 531.46,-41.96 522.53,-36.25 520.92,-43.07"/>
+</g>
+<!-- program~main -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_node7" class="node">
+<title>program~main</title>
+<g id="a_proc~~read_fukui_scf~~CalledByGraph_node7"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="430.5,-108 376.5,-108 376.5,-84 430.5,-84 430.5,-108"/>
+<text text-anchor="middle" x="403.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~read_json_config_file -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_edge4" class="edge">
+<title>program~main&#45;&gt;proc~read_json_config_file</title>
+<path fill="none" stroke="#ff0000" d="M430.76,-96C451.95,-96 482.79,-96 511.14,-96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="511.45,-99.5 521.45,-96 511.45,-92.5 511.45,-99.5"/>
+</g>
+<!-- proc~mqc_run -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_node8" class="node">
+<title>proc~mqc_run</title>
+<g id="a_proc~~read_fukui_scf~~CalledByGraph_node8"><a xlink:href="../proc/mqc_run.html" xlink:title="mqc_run">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="277.5,-66 218.5,-66 218.5,-42 277.5,-42 277.5,-66"/>
+<text text-anchor="middle" x="248" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_run</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_run&#45;&gt;proc~session_run -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_edge7" class="edge">
+<title>proc~mqc_run&#45;&gt;proc~session_run</title>
+<path fill="none" stroke="#ff0000" d="M277.51,-54C287.77,-54 299.97,-54 312.66,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="312.91,-57.5 322.91,-54 312.91,-50.5 312.91,-57.5"/>
+</g>
+<!-- proc~worker_loop -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_node9" class="node">
+<title>proc~worker_loop</title>
+<g id="a_proc~~read_fukui_scf~~CalledByGraph_node9"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="287,-24 209,-24 209,0 287,0 287,-24"/>
+<text text-anchor="middle" x="248" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_edge8" class="edge">
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#00ff00" d="M287.34,-12C308.34,-12 334.52,-12 356.61,-12"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="356.75,-15.5 366.75,-12 356.75,-8.5 356.75,-15.5"/>
+</g>
+<!-- proc~session_begin -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_node10" class="node">
+<title>proc~session_begin</title>
+<g id="a_proc~~read_fukui_scf~~CalledByGraph_node10"><a xlink:href="../proc/session_begin.html" xlink:title="mqc_session_t%session_begin">
+<polygon fill="#d9534f" stroke="#d9534f" points="173,-24 0,-24 0,0 173,0 173,-24"/>
+<text text-anchor="middle" x="86.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_begin</text>
+</a>
+</g>
+</g>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
+<g id="proc~~read_fukui_scf~~CalledByGraph_edge9" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#00ffff" d="M173.32,-12C181.93,-12 190.45,-12 198.47,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="198.69,-15.5 208.69,-12 198.69,-8.5 198.69,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocread_fukui_scfCalledByGraph = svgPanZoom('#procread_fukui_scfCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">read_fukui_scf</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Resolve `properties.fukui.scf` against `keywords.scf`</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! **Must run after the `keywords.scf` block.** Inheritance here is a</span>
+<span class="w">      </span><span class="c">!! seed followed by an overwrite: every field starts at the value that</span>
+<span class="w">      </span><span class="c">!! converged the neutral, and `optional_*` leaves it alone when the deck</span>
+<span class="w">      </span><span class="c">!! does not name the key. That is why nothing below tests for "absent"</span>
+<span class="w">      </span><span class="c">!! and why no field carries a sentinel -- the state "unset" is spelled by</span>
+<span class="w">      </span><span class="c">!! the field still holding the inherited value.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The three fields this replaced each needed a sentinel, and one of them</span>
+<span class="w">      </span><span class="c">!! could not have a clean one: zero is a real level shift meaning "off",</span>
+<span class="w">      </span><span class="c">!! so "unset" had to be spelled "any negative" and the meaning of a</span>
+<span class="w">      </span><span class="c">!! negative shift was quietly spent on bookkeeping.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! `inherit_scf: false` skips the seed, leaving the type defaults for</span>
+<span class="w">      </span><span class="c">!! anything the object does not name. It is for the case where the</span>
+<span class="w">      </span><span class="c">!! neutral was converged tightly, or with an accelerator picked for it,</span>
+<span class="w">      </span><span class="c">!! and carrying that onto a charged species is the wrong start rather</span>
+<span class="w">      </span><span class="c">!! than a careful one.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mqc_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.scf.inherit_scf"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                            </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">inherit_scf</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">inherit_scf</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_maxiter</span>
+<span class="w">         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">energy_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_tolerance</span>
+<span class="w">         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">density_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_density_tolerance</span>
+<span class="w">         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">grad_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_gradient_tolerance</span>
+<span class="w">         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">linear_dependence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_linear_dependence</span>
+<span class="w">         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">level_shift</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_level_shift</span>
+<span class="w">         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">use_diis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_use_diis</span>
+<span class="w">         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">diis_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_diis_size</span>
+<span class="w">         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">incremental_fock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_incremental_fock</span>
+<span class="w">         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">allow_crap_scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">allow_crap_scf</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">scf_accelerator</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">accelerator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_accelerator</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="w">         </span><span class="c">! Both spellings, in the order `config_to_driver` resolves them for the</span>
+<span class="w">         </span><span class="c">! neutral: `keywords.scf.guess` is the superseded one and</span>
+<span class="w">         </span><span class="c">! `keywords.guess.type` the current one, so the latter wins where a</span>
+<span class="w">         </span><span class="c">! deck somehow carries both. Copying only the superseded field left a</span>
+<span class="w">         </span><span class="c">! deck written the current way inheriting the ladder below while its</span>
+<span class="w">         </span><span class="c">! ions kept `auto` -- inheritance that worked for twelve keys and</span>
+<span class="w">         </span><span class="c">! quietly did not for the thirteenth.</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">scf_guess</span><span class="p">))</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">guess</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_guess</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">guess_type</span><span class="p">))</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">guess</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">guess_type</span>
+<span class="w">         </span><span class="c">! The ladder comes across whole or not at all. A rung names a basis,</span>
+<span class="w">         </span><span class="c">! and half a ladder is not a cheaper start -- it is a different one.</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">guess_steps</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">guess_steps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">guess_steps</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end if</span>
+
+<span class="k">      call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.scf.maxiter"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">max_iter</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">optional_real</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.scf.tolerance"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">energy_tol</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">optional_real</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.scf.density_tolerance"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">density_tol</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">optional_real</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.scf.gradient_tolerance"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">grad_tol</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">optional_real</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.scf.linear_dependence_threshold"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">linear_dependence</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">optional_real</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.scf.level_shift"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">level_shift</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.scf.diis"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">use_diis</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.scf.diis_size"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">diis_size</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.scf.incremental_fock"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                            </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">incremental_fock</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.scf.allow_crap_scf"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                            </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">allow_crap_scf</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">read_fixed_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.scf.accelerator"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                             </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">accelerator</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">read_fixed_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties.fukui.scf.guess"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">guess</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">read_fukui_scf</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-09-01 13:21 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

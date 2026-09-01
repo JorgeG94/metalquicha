@@ -1,0 +1,1010 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>scf_numerics_t &ndash; metalquicha </title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>scf_numerics_t
+      <small>Derived Type</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title="<p> 1.1% of total for derived types.</p>Including implementation: 15 statements,  0.4% of total for derived types.">15 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_config_types.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_config_types.f90.html'>mqc_config_types.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_config_types.html'>mqc_config_types</a></li>
+            <li class="breadcrumb-item active" aria-current="page">scf_numerics_t</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../type/scf_numerics_t.html#variable-accelerator~2">accelerator</a>
+            <a class="list-group-item" href="../type/scf_numerics_t.html#variable-allow_crap_scf~2">allow_crap_scf</a>
+            <a class="list-group-item" href="../type/scf_numerics_t.html#variable-density_tol">density_tol</a>
+            <a class="list-group-item" href="../type/scf_numerics_t.html#variable-diis_size~3">diis_size</a>
+            <a class="list-group-item" href="../type/scf_numerics_t.html#variable-energy_tol">energy_tol</a>
+            <a class="list-group-item" href="../type/scf_numerics_t.html#variable-grad_tol">grad_tol</a>
+            <a class="list-group-item" href="../type/scf_numerics_t.html#variable-guess~7">guess</a>
+            <a class="list-group-item" href="../type/scf_numerics_t.html#variable-guess_steps~2">guess_steps</a>
+            <a class="list-group-item" href="../type/scf_numerics_t.html#variable-incremental_fock~2">incremental_fock</a>
+            <a class="list-group-item" href="../type/scf_numerics_t.html#variable-level_shift~2">level_shift</a>
+            <a class="list-group-item" href="../type/scf_numerics_t.html#variable-linear_dependence~2">linear_dependence</a>
+            <a class="list-group-item" href="../type/scf_numerics_t.html#variable-max_iter~4">max_iter</a>
+            <a class="list-group-item" href="../type/scf_numerics_t.html#variable-use_diis~4">use_diis</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../type/scf_numerics_t.html#src">scf_numerics_t</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+      <h2 id="type-def-statement">
+        type, public :: scf_numerics_t</h2>
+    <p>How a self-consistent field is driven to convergence, defined once</p>
+<p>Split out of <code>scf_options_t</code> so that a <em>second</em> SCF in the same run
+can be configured without inheriting things that are not about
+convergence. The deltaSCF behind a Fukui analysis is the case that
+forced it: those ions need their own iteration limit and level shift,
+but they cannot have their own basis (the density difference is taken
+over the neutral&rsquo;s basis functions by construction) and they must not
+have their own <code>properties</code> &ndash; a Fukui analysis nested inside a Fukui
+analysis is not a thing anyone is asking for.</p>
+<p>That last point is not only taste. <code>scf_options_t</code> carries a
+<code>properties_config_t</code>, and <code>properties_config_t</code> is where the ion
+settings live, so a <code>deltascf_options_t</code> extending the <em>full</em> options
+type would contain itself. Fortran takes that if the component is
+allocatable, and it would mean nothing.</p>
+<p>The boundary is &ldquo;how the iteration is driven&rdquo;. Anything selecting
+<em>which</em> wave function is being converged &ndash; <code>unrestricted</code>,
+<code>density_fitting</code>, the basis, the frozen core &ndash; stays in
+<code>scf_options_t</code>, because a second SCF over the same molecule has no
+business disagreeing about those.</p>
+<br>      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Inherits</h3>
+        </div>
+        <div class="card-body">
+          <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: type~~scf_numerics_t~~InheritsGraph Pages: 1 -->
+<svg id="typescf_numerics_tInheritsGraph" width="275pt" height="32pt"
+ viewBox="0.00 0.00 275.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="type~~scf_numerics_t~~InheritsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>type~~scf_numerics_t~~InheritsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 271,-28 271,4 -4,4"/>
+<!-- type~scf_numerics_t -->
+<g id="type~~scf_numerics_t~~InheritsGraph_node1" class="node">
+<title>type~scf_numerics_t</title>
+<polygon fill="none" stroke="black" points="267,-24 176,-24 176,0 267,0 267,-24"/>
+<text text-anchor="middle" x="221.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">scf_numerics_t</text>
+</g>
+<!-- type~guess_step_t -->
+<g id="type~~scf_numerics_t~~InheritsGraph_node2" class="node">
+<title>type~guess_step_t</title>
+<g id="a_type~~scf_numerics_t~~InheritsGraph_node2"><a xlink:href="../type/guess_step_t.html" xlink:title="guess_step_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="80,-24 0,-24 0,0 80,0 80,-24"/>
+<text text-anchor="middle" x="40" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">guess_step_t</text>
+</a>
+</g>
+</g>
+<!-- type~scf_numerics_t&#45;&gt;type~guess_step_t -->
+<g id="type~~scf_numerics_t~~InheritsGraph_edge1" class="edge">
+<title>type~scf_numerics_t&#45;&gt;type~guess_step_t</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M175.67,-12C149.72,-12 117.03,-12 90.36,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="90.08,-8.5 80.08,-12 90.08,-15.5 90.08,-8.5"/>
+<text text-anchor="middle" x="128" y="-14.4" font-family="Helvetica,sans-Serif" font-size="9.50">guess_steps</text>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#InheritsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="InheritsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="186pt" height="32pt"
+ viewBox="0.00 0.00 185.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 181.5,-28 181.5,4 -4,4"/>
+<!-- Type -->
+<g id="node1" class="node">
+<title>Type</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="177.5,-24 72.5,-24 72.5,0 177.5,0 177.5,-24"/>
+<text text-anchor="middle" x="125" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a derived type to the parent type which it
+extends. Dashed arrows point from a derived type to the other
+types it contains as a components, with a label listing the name(s) of
+said component(s).
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Inherited by</h3>
+        </div>
+        <div class="card-body">
+          <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: type~~scf_numerics_t~~InheritedByGraph Pages: 1 -->
+<svg id="typescf_numerics_tInheritedByGraph" width="641pt" height="127pt"
+ viewBox="0.00 0.00 641.00 126.71" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="type~~scf_numerics_t~~InheritedByGraph" class="graph" transform="scale(0.53 0.53) rotate(0) translate(4 234)">
+<title>type~~scf_numerics_t~~InheritedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-234 1200,-234 1200,4 -4,4"/>
+<!-- type~scf_numerics_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node1" class="node">
+<title>type~scf_numerics_t</title>
+<polygon fill="none" stroke="black" points="91,-50 0,-50 0,-26 91,-26 91,-50"/>
+<text text-anchor="middle" x="45.5" y="-35.6" font-family="Helvetica,sans-Serif" font-size="10.50">scf_numerics_t</text>
+</g>
+<!-- type~deltascf_options_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node2" class="node">
+<title>type~deltascf_options_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node2"><a xlink:href="../type/deltascf_options_t.html" xlink:title="deltascf_options_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="236,-90 128,-90 128,-66 236,-66 236,-90"/>
+<text text-anchor="middle" x="182" y="-75.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">deltascf_options_t</text>
+</a>
+</g>
+</g>
+<!-- type~deltascf_options_t&#45;&gt;type~scf_numerics_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge2" class="edge">
+<title>type~deltascf_options_t&#45;&gt;type~scf_numerics_t</title>
+<path fill="none" stroke="#ff0000" d="M153.73,-65.94C145.29,-61.86 136.08,-57.05 128,-52 119.41,-46.63 120.04,-39.36 110,-38"/>
+</g>
+<!-- type~scf_options_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node3" class="node">
+<title>type~scf_options_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node3"><a xlink:href="../type/scf_options_t.html" xlink:title="scf_options_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="608,-66 527,-66 527,-42 608,-42 608,-66"/>
+<text text-anchor="middle" x="567.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">scf_options_t</text>
+</a>
+</g>
+</g>
+<!-- type~scf_options_t&#45;&gt;type~scf_numerics_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge1" class="edge">
+<title>type~scf_options_t&#45;&gt;type~scf_numerics_t</title>
+<path fill="none" stroke="#ff0000" d="M526.89,-55.25C447.42,-57.18 263.04,-58.72 110,-38"/>
+<path fill="none" stroke="#ff0000" d="M109,-38C106.47,-37.6 103.87,-37.27 101.24,-37.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="101.24,-33.5 91.02,-36.29 100.75,-40.49 101.24,-33.5"/>
+</g>
+<!-- type~properties_config_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node9" class="node">
+<title>type~properties_config_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node9"><a xlink:href="../type/properties_config_t.html" xlink:title="properties_config_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="429.5,-174 315.5,-174 315.5,-150 429.5,-150 429.5,-174"/>
+<text text-anchor="middle" x="372.5" y="-159.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">properties_config_t</text>
+</a>
+</g>
+</g>
+<!-- type~scf_options_t&#45;&gt;type~properties_config_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge12" class="edge">
+<title>type~scf_options_t&#45;&gt;type~properties_config_t</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M550.1,-66.24C525.3,-84.33 476.33,-118.51 431,-141 427.41,-142.78 423.62,-144.49 419.79,-146.12"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="418.18,-142.99 410.2,-149.97 420.79,-149.49 418.18,-142.99"/>
+<text text-anchor="middle" x="474" y="-132.4" font-family="Helvetica,sans-Serif" font-size="9.50">properties</text>
+</g>
+<!-- type~cuest_scf_settings_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node4" class="node">
+<title>type~cuest_scf_settings_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node4"><a xlink:href="../type/cuest_scf_settings_t.html" xlink:title="cuest_scf_settings_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="431,-132 314,-132 314,-108 431,-108 431,-132"/>
+<text text-anchor="middle" x="372.5" y="-117.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cuest_scf_settings_t</text>
+</a>
+</g>
+</g>
+<!-- type~cuest_scf_settings_t&#45;&gt;type~deltascf_options_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge5" class="edge">
+<title>type~cuest_scf_settings_t&#45;&gt;type~deltascf_options_t</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M317.48,-107.96C295.21,-103 269.25,-97.22 246.11,-92.06"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="246.57,-88.58 236.05,-89.82 245.05,-95.41 246.57,-88.58"/>
+<text text-anchor="middle" x="275" y="-104.4" font-family="Helvetica,sans-Serif" font-size="9.50">fukui_scf</text>
+</g>
+<!-- type~dft_options_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node5" class="node">
+<title>type~dft_options_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node5"><a xlink:href="../type/dft_options_t.html" xlink:title="dft_options_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="813.5,-108 733.5,-108 733.5,-84 813.5,-84 813.5,-108"/>
+<text text-anchor="middle" x="773.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dft_options_t</text>
+</a>
+</g>
+</g>
+<!-- type~dft_options_t&#45;&gt;type~scf_options_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge8" class="edge">
+<title>type~dft_options_t&#45;&gt;type~scf_options_t</title>
+<path fill="none" stroke="#00ffff" d="M745.3,-83.96C717.05,-71.55 676.4,-54 672.5,-54"/>
+</g>
+<!-- type~hf_options_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node6" class="node">
+<title>type~hf_options_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node6"><a xlink:href="../type/hf_options_t.html" xlink:title="hf_options_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="811.5,-66 735.5,-66 735.5,-42 811.5,-42 811.5,-66"/>
+<text text-anchor="middle" x="773.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hf_options_t</text>
+</a>
+</g>
+</g>
+<!-- type~hf_options_t&#45;&gt;type~scf_options_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge7" class="edge">
+<title>type~hf_options_t&#45;&gt;type~scf_options_t</title>
+<path fill="none" stroke="#00ffff" d="M735.46,-54C716.61,-54 693.33,-54 672.5,-54"/>
+</g>
+<!-- type~mcscf_options_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node7" class="node">
+<title>type~mcscf_options_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node7"><a xlink:href="../type/mcscf_options_t.html" xlink:title="mcscf_options_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="822,-24 725,-24 725,0 822,0 822,-24"/>
+<text text-anchor="middle" x="773.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mcscf_options_t</text>
+</a>
+</g>
+</g>
+<!-- type~mcscf_options_t&#45;&gt;type~scf_options_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge6" class="edge">
+<title>type~mcscf_options_t&#45;&gt;type~scf_options_t</title>
+<path fill="none" stroke="#00ffff" d="M745.3,-24.04C717.05,-36.45 676.4,-54 672.5,-54"/>
+<path fill="none" stroke="#00ffff" d="M670.5,-54C653.49,-54 634.88,-54 618.27,-54"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="618.22,-50.5 608.22,-54 618.22,-57.5 618.22,-50.5"/>
+</g>
+<!-- type~mqc_config_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node8" class="node">
+<title>type~mqc_config_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node8"><a xlink:href="../type/mqc_config_t.html" xlink:title="mqc_config_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="414,-90 331,-90 331,-66 414,-66 414,-90"/>
+<text text-anchor="middle" x="372.5" y="-75.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_config_t</text>
+</a>
+</g>
+</g>
+<!-- type~mqc_config_t&#45;&gt;type~deltascf_options_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge4" class="edge">
+<title>type~mqc_config_t&#45;&gt;type~deltascf_options_t</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M330.6,-78C305.91,-78 273.94,-78 246.07,-78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="246.01,-74.5 236.01,-78 246.01,-81.5 246.01,-74.5"/>
+<text text-anchor="middle" x="275" y="-80.4" font-family="Helvetica,sans-Serif" font-size="9.50">fukui_scf</text>
+</g>
+<!-- type~properties_config_t&#45;&gt;type~deltascf_options_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge3" class="edge">
+<title>type~properties_config_t&#45;&gt;type~deltascf_options_t</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M337.66,-149.92C329.86,-147.06 321.62,-143.98 314,-141 287.09,-130.49 280.1,-128.39 254,-116 240.41,-109.55 225.71,-101.81 213.22,-95.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="214.61,-91.78 204.16,-90.02 211.24,-97.91 214.61,-91.78"/>
+<text text-anchor="middle" x="275" y="-135.4" font-family="Helvetica,sans-Serif" font-size="9.50">fukui_scf</text>
+</g>
+<!-- type~dft_method_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node10" class="node">
+<title>type~dft_method_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node10"><a xlink:href="../type/dft_method_t.html" xlink:title="dft_method_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="1032,-108 950,-108 950,-84 1032,-84 1032,-108"/>
+<text text-anchor="middle" x="991" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dft_method_t</text>
+</a>
+</g>
+</g>
+<!-- type~dft_method_t&#45;&gt;type~dft_options_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge9" class="edge">
+<title>type~dft_method_t&#45;&gt;type~dft_options_t</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M949.97,-96C914.37,-96 862.18,-96 823.97,-96"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="823.59,-92.5 813.59,-96 823.59,-99.5 823.59,-92.5"/>
+<text text-anchor="middle" x="871" y="-98.4" font-family="Helvetica,sans-Serif" font-size="9.50">options</text>
+</g>
+<!-- type~hf_method_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node11" class="node">
+<title>type~hf_method_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node11"><a xlink:href="../type/hf_method_t.html" xlink:title="hf_method_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="1030.5,-66 951.5,-66 951.5,-42 1030.5,-42 1030.5,-66"/>
+<text text-anchor="middle" x="991" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hf_method_t</text>
+</a>
+</g>
+</g>
+<!-- type~hf_method_t&#45;&gt;type~hf_options_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge10" class="edge">
+<title>type~hf_method_t&#45;&gt;type~hf_options_t</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M951.47,-54C915.13,-54 860.57,-54 821.65,-54"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="821.61,-50.5 811.61,-54 821.61,-57.5 821.61,-50.5"/>
+<text text-anchor="middle" x="871" y="-56.4" font-family="Helvetica,sans-Serif" font-size="9.50">options</text>
+</g>
+<!-- type~mcscf_method_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node12" class="node">
+<title>type~mcscf_method_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node12"><a xlink:href="../type/mcscf_method_t.html" xlink:title="mcscf_method_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="1041,-24 941,-24 941,0 1041,0 1041,-24"/>
+<text text-anchor="middle" x="991" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mcscf_method_t</text>
+</a>
+</g>
+</g>
+<!-- type~mcscf_method_t&#45;&gt;type~mcscf_options_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge11" class="edge">
+<title>type~mcscf_method_t&#45;&gt;type~mcscf_options_t</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M940.83,-12C908.63,-12 866.41,-12 832.56,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="832.35,-8.5 822.35,-12 832.35,-15.5 832.35,-8.5"/>
+<text text-anchor="middle" x="871" y="-14.4" font-family="Helvetica,sans-Serif" font-size="9.50">options</text>
+</g>
+<!-- type~method_config_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node13" class="node">
+<title>type~method_config_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node13"><a xlink:href="../type/method_config_t.html" xlink:title="method_config_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="618,-174 517,-174 517,-150 618,-150 618,-174"/>
+<text text-anchor="middle" x="567.5" y="-159.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_config_t</text>
+</a>
+</g>
+</g>
+<!-- type~method_config_t&#45;&gt;type~properties_config_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge13" class="edge">
+<title>type~method_config_t&#45;&gt;type~properties_config_t</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M516.8,-162C493.34,-162 465.01,-162 439.75,-162"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="439.51,-158.5 429.51,-162 439.51,-165.5 439.51,-158.5"/>
+<text text-anchor="middle" x="474" y="-164.4" font-family="Helvetica,sans-Serif" font-size="9.50">properties</text>
+</g>
+<!-- type~driver_config_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node14" class="node">
+<title>type~driver_config_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node14"><a xlink:href="../type/driver_config_t.html" xlink:title="driver_config_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="819,-158 728,-158 728,-134 819,-134 819,-158"/>
+<text text-anchor="middle" x="773.5" y="-143.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">driver_config_t</text>
+</a>
+</g>
+</g>
+<!-- type~driver_config_t&#45;&gt;type~method_config_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge14" class="edge">
+<title>type~driver_config_t&#45;&gt;type~method_config_t</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M727.98,-149.49C698.79,-151.78 660.26,-154.8 628.39,-157.3"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="627.99,-153.82 618.29,-158.09 628.53,-160.8 627.99,-153.82"/>
+<text text-anchor="middle" x="671.5" y="-158.4" font-family="Helvetica,sans-Serif" font-size="9.50">method_config</text>
+</g>
+<!-- type~many_body_expansion_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node15" class="node">
+<title>type~many_body_expansion_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node15"><a xlink:href="../type/many_body_expansion_t.html" xlink:title="many_body_expansion_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="1062,-188 920,-188 920,-164 1062,-164 1062,-188"/>
+<text text-anchor="middle" x="991" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">many_body_expansion_t</text>
+</a>
+</g>
+</g>
+<!-- type~many_body_expansion_t&#45;&gt;type~method_config_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge15" class="edge">
+<title>type~many_body_expansion_t&#45;&gt;type~method_config_t</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M919.87,-176.87C913.83,-176.92 907.81,-176.97 902,-177 783.74,-177.67 753.92,-179 636,-170 633.48,-169.81 630.9,-169.59 628.31,-169.36"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="628.51,-165.86 618.22,-168.37 627.83,-172.83 628.51,-165.86"/>
+<text text-anchor="middle" x="773.5" y="-179.4" font-family="Helvetica,sans-Serif" font-size="9.50">method_config</text>
+</g>
+<!-- type~many_body_expansion_t&#45;&gt;type~driver_config_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge16" class="edge">
+<title>type~many_body_expansion_t&#45;&gt;type~driver_config_t</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M919.74,-166.22C890.44,-162.14 856.92,-157.47 829.47,-153.65"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="829.65,-150.14 819.26,-152.23 828.69,-157.08 829.65,-150.14"/>
+<text text-anchor="middle" x="871" y="-165.4" font-family="Helvetica,sans-Serif" font-size="9.50">driver_config</text>
+</g>
+<!-- type~fmo_context_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node16" class="node">
+<title>type~fmo_context_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node16"><a xlink:href="../type/fmo_context_t.html" xlink:title="fmo_context_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="1191,-230 1104,-230 1104,-206 1191,-206 1191,-230"/>
+<text text-anchor="middle" x="1147.5" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fmo_context_t</text>
+</a>
+</g>
+</g>
+<!-- type~fmo_context_t&#45;&gt;type~many_body_expansion_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge17" class="edge">
+<title>type~fmo_context_t&#45;&gt;type~many_body_expansion_t</title>
+<path fill="none" stroke="#00ffff" d="M1113.74,-205.84C1108.59,-203.29 1103.49,-200.33 1099,-197 1089.13,-189.67 1093.29,-176 1081,-176"/>
+</g>
+<!-- type~gmbe_context_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node17" class="node">
+<title>type~gmbe_context_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node17"><a xlink:href="../type/gmbe_context_t.html" xlink:title="gmbe_context_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="1196,-188 1099,-188 1099,-164 1196,-164 1196,-188"/>
+<text text-anchor="middle" x="1147.5" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t</text>
+</a>
+</g>
+</g>
+<!-- type~gmbe_context_t&#45;&gt;type~many_body_expansion_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge19" class="edge">
+<title>type~gmbe_context_t&#45;&gt;type~many_body_expansion_t</title>
+<path fill="none" stroke="#00ffff" d="M1098.92,-176C1092.89,-176 1086.8,-176 1081,-176"/>
+</g>
+<!-- type~mbe_context_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_node18" class="node">
+<title>type~mbe_context_t</title>
+<g id="a_type~~scf_numerics_t~~InheritedByGraph_node18"><a xlink:href="../type/mbe_context_t.html" xlink:title="mbe_context_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="1192.5,-146 1102.5,-146 1102.5,-122 1192.5,-122 1192.5,-146"/>
+<text text-anchor="middle" x="1147.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t</text>
+</a>
+</g>
+</g>
+<!-- type~mbe_context_t&#45;&gt;type~many_body_expansion_t -->
+<g id="type~~scf_numerics_t~~InheritedByGraph_edge18" class="edge">
+<title>type~mbe_context_t&#45;&gt;type~many_body_expansion_t</title>
+<path fill="none" stroke="#00ffff" d="M1113.74,-146.16C1108.59,-148.71 1103.49,-151.67 1099,-155 1089.13,-162.33 1093.29,-176 1081,-176"/>
+<path fill="none" stroke="#00ffff" d="M1080,-176C1077.46,-176 1074.88,-176 1072.27,-176"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1072.13,-172.5 1062.13,-176 1072.13,-179.5 1072.13,-172.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var pantypescf_numerics_tInheritedByGraph = svgPanZoom('#typescf_numerics_tInheritedByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#InheritedByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="InheritedByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="186pt" height="32pt"
+ viewBox="0.00 0.00 185.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 181.5,-28 181.5,4 -4,4"/>
+<!-- Type -->
+<g id="node1" class="node">
+<title>Type</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="177.5,-24 72.5,-24 72.5,0 177.5,0 177.5,-24"/>
+<text text-anchor="middle" x="125" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a derived type to the parent type which it
+extends. Dashed arrows point from a derived type to the other
+types it contains as a components, with a label listing the name(s) of
+said component(s).
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    <br>
+
+    <section>
+    <h2>Components</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-accelerator~2"></span>
+              character(len=32),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>accelerator</strong></td>
+<td> =</td>
+                <td>&#34;diis&#34;</td>
+            <td>
+                <p>&lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or &lsquo;ediis&rsquo;. The energy-based pair
+runs only while the error is large and hands over to DIIS, so
+naming one asks for a different opening, not a different endgame.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-allow_crap_scf~2"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>allow_crap_scf</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+                <p>Keep a non-converged SCF instead of failing</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-density_tol"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>density_tol</strong></td>
+<td> =</td>
+                <td>1.0e-6_dp</td>
+            <td>
+                <p>Density matrix convergence threshold</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-diis_size~3"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>diis_size</strong></td>
+<td> =</td>
+                <td>8</td>
+            <td>
+                <p>Number of Fock matrices for DIIS</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energy_tol"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>energy_tol</strong></td>
+<td> =</td>
+                <td>1.0e-8_dp</td>
+            <td>
+                <p>Energy convergence threshold</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-grad_tol"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>grad_tol</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Commutator threshold; zero derives <code>sqrt(energy_tol)</code>.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-guess~7"></span>
+              character(len=32),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>guess</strong></td>
+<td> =</td>
+                <td>&#34;auto&#34;</td>
+            <td>
+                <p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;basis_set_projection&rsquo;
+or &lsquo;auto&rsquo;, where the backend picks.</p>
+<p><strong>Not the same key as <code>mqc_config_t%fukui_guess</code></strong>, which takes
+&lsquo;neutral&rsquo; or &lsquo;independent&rsquo; and says whether the ion starts from the
+neutral&rsquo;s converged density at all. This one says how a density is
+built when it starts from nothing. They are one level apart in the
+deck and spelled the same, which is a trap: see <code>fukui_keys</code> in
+<code>mqc_json_schema</code>.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-guess_steps~2"></span>
+              type(<a href='guess_step_t.html'>guess_step_t</a>),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>guess_steps</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>The basis ladder for &lsquo;basis_set_projection&rsquo;, one entry per
+preliminary SCF in order.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-incremental_fock~2"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>incremental_fock</strong></td>
+<td> =</td>
+                <td>.true.</td>
+            <td>
+                <p>Build each Fock matrix from the density <em>change</em> since the last
+full build. Exact to the convergence threshold and several times
+cheaper late in an SCF; false forces a full build every iteration,
+which is the first thing to rule out when a run stalls.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-level_shift~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>level_shift</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Hartree added to the virtual block before each diagonalisation.
+Zero is off &ndash; which is why this could never carry a sentinel for
+&ldquo;unset&rdquo;, and why the ions used to spell theirs &ldquo;any negative&rdquo;.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-linear_dependence~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>linear_dependence</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Zero means the orthogonaliser&rsquo;s own cutoff.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_iter~4"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_iter</strong></td>
+<td> =</td>
+                <td>100</td>
+            <td>
+                <p>Maximum SCF iterations</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-use_diis~4"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>use_diis</strong></td>
+<td> =</td>
+                <td>.true.</td>
+            <td>
+                <p>Use DIIS acceleration</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+
+
+
+    <section>
+    <h3><span class="anchor" id="src"></span>Source Code</h3>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scf_numerics_t</span>
+<span class="w">      </span><span class="c">!! How a self-consistent field is driven to convergence, defined once</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Split out of `scf_options_t` so that a *second* SCF in the same run</span>
+<span class="w">      </span><span class="c">!! can be configured without inheriting things that are not about</span>
+<span class="w">      </span><span class="c">!! convergence. The deltaSCF behind a Fukui analysis is the case that</span>
+<span class="w">      </span><span class="c">!! forced it: those ions need their own iteration limit and level shift,</span>
+<span class="w">      </span><span class="c">!! but they cannot have their own basis (the density difference is taken</span>
+<span class="w">      </span><span class="c">!! over the neutral's basis functions by construction) and they must not</span>
+<span class="w">      </span><span class="c">!! have their own `properties` -- a Fukui analysis nested inside a Fukui</span>
+<span class="w">      </span><span class="c">!! analysis is not a thing anyone is asking for.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! That last point is not only taste. `scf_options_t` carries a</span>
+<span class="w">      </span><span class="c">!! `properties_config_t`, and `properties_config_t` is where the ion</span>
+<span class="w">      </span><span class="c">!! settings live, so a `deltascf_options_t` extending the *full* options</span>
+<span class="w">      </span><span class="c">!! type would contain itself. Fortran takes that if the component is</span>
+<span class="w">      </span><span class="c">!! allocatable, and it would mean nothing.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The boundary is "how the iteration is driven". Anything selecting</span>
+<span class="w">      </span><span class="c">!! *which* wave function is being converged -- `unrestricted`,</span>
+<span class="w">      </span><span class="c">!! `density_fitting`, the basis, the frozen core -- stays in</span>
+<span class="w">      </span><span class="c">!! `scf_options_t`, because a second SCF over the same molecule has no</span>
+<span class="w">      </span><span class="c">!! business disagreeing about those.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
+<span class="w">         </span><span class="c">!! Maximum SCF iterations</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0e-8_dp</span>
+<span class="w">         </span><span class="c">!! Energy convergence threshold</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">density_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0e-6_dp</span>
+<span class="w">         </span><span class="c">!! Density matrix convergence threshold</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">grad_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">         </span><span class="c">!! Commutator threshold; zero derives `sqrt(energy_tol)`.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">linear_dependence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">         </span><span class="c">!! Zero means the orthogonaliser's own cutoff.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">level_shift</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">         </span><span class="c">!! Hartree added to the virtual block before each diagonalisation.</span>
+<span class="w">         </span><span class="c">!! Zero is off -- which is why this could never carry a sentinel for</span>
+<span class="w">         </span><span class="c">!! "unset", and why the ions used to spell theirs "any negative".</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_diis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="c">!! Use DIIS acceleration</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">diis_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span>
+<span class="w">         </span><span class="c">!! Number of Fock matrices for DIIS</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">incremental_fock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="c">!! Build each Fock matrix from the density *change* since the last</span>
+<span class="w">         </span><span class="c">!! full build. Exact to the convergence threshold and several times</span>
+<span class="w">         </span><span class="c">!! cheaper late in an SCF; false forces a full build every iteration,</span>
+<span class="w">         </span><span class="c">!! which is the first thing to rule out when a run stalls.</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">accelerator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"diis"</span>
+<span class="w">         </span><span class="c">!! 'diis' (the default), 'adiis' or 'ediis'. The energy-based pair</span>
+<span class="w">         </span><span class="c">!! runs only while the error is large and hands over to DIIS, so</span>
+<span class="w">         </span><span class="c">!! naming one asks for a different opening, not a different endgame.</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">allow_crap_scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">         </span><span class="c">!! Keep a non-converged SCF instead of failing</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">guess</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"auto"</span>
+<span class="w">         </span><span class="c">!! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection'</span>
+<span class="w">         </span><span class="c">!! or 'auto', where the backend picks.</span>
+<span class="w">         </span><span class="c">!!</span>
+<span class="w">         </span><span class="c">!! **Not the same key as `mqc_config_t%fukui_guess`**, which takes</span>
+<span class="w">         </span><span class="c">!! 'neutral' or 'independent' and says whether the ion starts from the</span>
+<span class="w">         </span><span class="c">!! neutral's converged density at all. This one says how a density is</span>
+<span class="w">         </span><span class="c">!! built when it starts from nothing. They are one level apart in the</span>
+<span class="w">         </span><span class="c">!! deck and spelled the same, which is a trap: see `fukui_keys` in</span>
+<span class="w">         </span><span class="c">!! `mqc_json_schema`.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">guess_step_t</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">guess_steps</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! The basis ladder for 'basis_set_projection', one entry per</span>
+<span class="w">         </span><span class="c">!! preliminary SCF in order.</span>
+<span class="w">   </span><span class="k">end type </span><span class="n">scf_numerics_t</span>
+</pre></div>
+
+    </section>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-09-01 13:21 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

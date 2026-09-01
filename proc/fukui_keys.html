@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.0% of total for procedures.">8 statements</a>
+                 title=" 0.0% of total for procedures.">6 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -435,18 +435,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M277.51,-54C287.77,-54 299.97,-54 312.66,-54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="312.91,-57.5 322.91,-54 312.91,-50.5 312.91,-57.5"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="proc~~fukui_keys~~CalledByGraph_node9" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~fukui_keys~~CalledByGraph_node9"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_proc~~fukui_keys~~CalledByGraph_node9"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="287,-24 209,-24 209,0 287,0 287,-24"/>
 <text text-anchor="middle" x="248" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
 <g id="proc~~fukui_keys~~CalledByGraph_edge8" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#00ff00" d="M287.34,-12C308.34,-12 334.52,-12 356.61,-12"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="356.75,-15.5 366.75,-12 356.75,-8.5 356.75,-15.5"/>
 </g>
@@ -459,9 +459,9 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
 <g id="proc~~fukui_keys~~CalledByGraph_edge9" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
 <path fill="none" stroke="#00ffff" d="M173.32,-12C181.93,-12 190.45,-12 198.47,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="198.69,-15.5 208.69,-12 198.69,-8.5 198.69,-15.5"/>
 </g>
@@ -580,16 +580,20 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! JSON either way, so nothing is inherited silently.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">key_set_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">keys</span>
 <span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"population"</span><span class="p">)</span>
-<span class="w">      </span><span class="c">! The ions are their own SCF problem and are allowed to be configured as</span>
-<span class="w">      </span><span class="c">! one. They are harder than the neutral -- a charged species in a basis</span>
-<span class="w">      </span><span class="c">! that has to describe a diffuse tail -- so inheriting the settings that</span>
-<span class="w">      </span><span class="c">! converged the neutral is a default rather than a rule. Each of these</span>
-<span class="w">      </span><span class="c">! inherits `keywords.scf` when absent, so a deck that says nothing is</span>
-<span class="w">      </span><span class="c">! unchanged.</span>
+<span class="w">      </span><span class="c">! Which starting density each ion gets: "neutral" or "independent".</span>
+<span class="w">      </span><span class="c">!</span>
+<span class="w">      </span><span class="c">! **Deliberately a sibling of `scf`, not a key inside it**, even though</span>
+<span class="w">      </span><span class="c">! `scf` has a `guess` of its own. The two are different questions and the</span>
+<span class="w">      </span><span class="c">! spelling collides: this one says whether the ion starts from the</span>
+<span class="w">      </span><span class="c">! neutral's converged orbitals at all, while `scf.guess` says how a</span>
+<span class="w">      </span><span class="c">! density is built when it starts from nothing -- `core`, `gwh`, `sad`.</span>
+<span class="w">      </span><span class="c">! Nesting is what keeps them apart, so moving this one inside `scf` would</span>
+<span class="w">      </span><span class="c">! put two unrelated meanings on one name.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"guess"</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"maxiter"</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"diis_size"</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"level_shift"</span><span class="p">)</span>
+<span class="w">      </span><span class="c">! The ions are their own SCF problem and are configured as one, with the</span>
+<span class="w">      </span><span class="c">! same key spellings `keywords.scf` uses so a block can be moved between</span>
+<span class="w">      </span><span class="c">! them unchanged.</span>
+<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"scf"</span><span class="p">)</span>
 <span class="w">   </span><span class="k">end function </span><span class="n">fukui_keys</span>
 </pre></div>
 
@@ -614,7 +618,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-01 09:52 +0000             </p>
+ on 2026-09-01 13:21 +0000             </p>
           </div>
         </div>
         <br>

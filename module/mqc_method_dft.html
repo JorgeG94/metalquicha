@@ -197,17 +197,17 @@ cannot end up with mismatched Coulomb and XC definitions.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
-                  <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
+                  <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1343,18 +1343,18 @@ large graphs.</div>
 <path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M924.14,-362.51C878.48,-355.27 788.25,-340.97 733.36,-332.27"/>
 <polygon fill="#5cff00" stroke="#5cff00" points="733.63,-328.77 723.2,-330.66 732.53,-335.68 733.63,-328.77"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_method_dft~~UsedByGraph_node23" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_method_dft~~UsedByGraph_node23"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_method_dft~~UsedByGraph_node23"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="992.5,-337 914.5,-337 914.5,-313 992.5,-313 992.5,-337"/>
 <text text-anchor="middle" x="953.5" y="-322.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_method_dft~~UsedByGraph_edge23" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M914.25,-325C866.38,-325 784.47,-325 733.31,-325"/>
 <polygon fill="#5cff00" stroke="#5cff00" points="733.19,-321.5 723.19,-325 733.19,-328.5 733.19,-321.5"/>
 </g>
@@ -1574,7 +1574,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-accelerator~3"></span>
+              <span class="anchor" id="variable-accelerator~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1586,16 +1586,14 @@ large graphs.</div>
 <td> =</td>
                 <td>&#34;diis&#34;</td>
             <td>
-<p><code>keywords.scf.accelerator</code>: &lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or
-&lsquo;ediis&rsquo;. The energy-based pair runs only while the error is large
-and hands over to DIIS, so naming one asks for a different opening,
-not a different endgame. Shared here rather than repeated per
-method: <code>hf_options_t</code> and <code>dft_options_t</code> both extend this type.</p>
+<p>&lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or &lsquo;ediis&rsquo;. The energy-based pair
+runs only while the error is large and hands over to DIIS, so
+naming one asks for a different opening, not a different endgame.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~5"></span>
+              <span class="anchor" id="variable-allow_crap_scf~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1629,7 +1627,7 @@ method: <code>hf_options_t</code> and <code>dft_options_t</code> both extend thi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_named~3"></span>
+              <span class="anchor" id="variable-aux_basis_named~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1646,7 +1644,7 @@ method: <code>hf_options_t</code> and <code>dft_options_t</code> both extend thi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set~4"></span>
+              <span class="anchor" id="variable-aux_basis_set~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1663,7 +1661,7 @@ method: <code>hf_options_t</code> and <code>dft_options_t</code> both extend thi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~2"></span>
+              <span class="anchor" id="variable-backend~3"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1680,7 +1678,7 @@ method: <code>hf_options_t</code> and <code>dft_options_t</code> both extend thi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_set~2"></span>
+              <span class="anchor" id="variable-basis_set"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1715,7 +1713,7 @@ Number of angular grid points (Lebedev)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~3"></span>
+              <span class="anchor" id="variable-cartesian~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1732,7 +1730,7 @@ Number of angular grid points (Lebedev)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_fitting~3"></span>
+              <span class="anchor" id="variable-density_fitting~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1749,7 +1747,7 @@ Number of angular grid points (Lebedev)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~2"></span>
+              <span class="anchor" id="variable-density_tol"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1761,12 +1759,12 @@ Number of angular grid points (Lebedev)</p>
 <td> =</td>
                 <td>1.0e-6_dp</td>
             <td>
-
+<p>Density matrix convergence threshold</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-device_rank~2"></span>
+              <span class="anchor" id="variable-device_rank"></span>
               integer,
             </td>
               <td>public</td>
@@ -1817,7 +1815,7 @@ Number of angular grid points (Lebedev)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ecp_set~2"></span>
+              <span class="anchor" id="variable-ecp_set"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1834,7 +1832,7 @@ Number of angular grid points (Lebedev)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~2"></span>
+              <span class="anchor" id="variable-energy_tol"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1851,7 +1849,7 @@ Number of angular grid points (Lebedev)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-freeze_core~2"></span>
+              <span class="anchor" id="variable-freeze_core"></span>
               logical,
             </td>
               <td>public</td>
@@ -1868,7 +1866,7 @@ Number of angular grid points (Lebedev)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~3"></span>
+              <span class="anchor" id="variable-functional~4"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1885,7 +1883,7 @@ Number of angular grid points (Lebedev)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grad_tol~2"></span>
+              <span class="anchor" id="variable-grad_tol"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1897,9 +1895,7 @@ Number of angular grid points (Lebedev)</p>
 <td> =</td>
                 <td>0.0_dp</td>
             <td>
-<p>Commutator threshold; zero derives <code>sqrt(energy_tol)</code>. See
-<code>scf_config_t%gradient_convergence</code>.
-Density matrix convergence threshold</p>
+<p>Commutator threshold; zero derives <code>sqrt(energy_tol)</code>.</p>
             </td>
         </tr>
         <tr>
@@ -1938,7 +1934,7 @@ Density matrix convergence threshold</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~8"></span>
+              <span class="anchor" id="variable-guess~7"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1950,16 +1946,13 @@ Density matrix convergence threshold</p>
 <td> =</td>
                 <td>&#34;auto&#34;</td>
             <td>
-<p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;basis_set_projection&rsquo;,
-or &lsquo;auto&rsquo;. &lsquo;auto&rsquo; means the backend picks, because the best
-starting point is a property of the backend rather than of the
-request: the CPU path resolves it to &lsquo;sad&rsquo;, and cuEST to &lsquo;gwh&rsquo;.
-An explicit spelling always wins over both.</p>
+<p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;basis_set_projection&rsquo;
+or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~7" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~3"></span>
+              <span class="anchor" id="variable-guess_steps~2"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -1977,7 +1970,7 @@ preliminary SCF in order.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-incremental_fock~3"></span>
+              <span class="anchor" id="variable-incremental_fock~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1989,13 +1982,15 @@ preliminary SCF in order.</p>
 <td> =</td>
                 <td>.true.</td>
             <td>
-<p>Build each iteration&rsquo;s Fock matrix from the density <em>change</em> since
-the last full build, rather than from the density.</p><a href="../type/scf_options_t.html#variable-incremental_fock~3" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Build each Fock matrix from the density <em>change</em> since the last
+full build. Exact to the convergence threshold and several times
+cheaper late in an SCF; false forces a full build every iteration,
+which is the first thing to rule out when a run stalls.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_shift~3"></span>
+              <span class="anchor" id="variable-level_shift~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2008,12 +2003,13 @@ the last full build, rather than from the density.</p><a href="../type/scf_optio
                 <td>0.0_dp</td>
             <td>
 <p>Hartree added to the virtual block before each diagonalisation.
-Zero is off. See <code>scf_config_t</code>.</p>
+Zero is off &ndash; which is why this could never carry a sentinel for
+&ldquo;unset&rdquo;, and why the ions used to spell theirs &ldquo;any negative&rdquo;.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-linear_dependence~3"></span>
+              <span class="anchor" id="variable-linear_dependence~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2025,12 +2021,12 @@ Zero is off. See <code>scf_config_t</code>.</p>
 <td> =</td>
                 <td>0.0_dp</td>
             <td>
-<p>Zero means the orthogonaliser&rsquo;s own cutoff. See <code>scf_config_t</code>.</p>
+<p>Zero means the orthogonaliser&rsquo;s own cutoff.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~5"></span>
+              <span class="anchor" id="variable-max_iter~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2047,7 +2043,7 @@ Zero is off. See <code>scf_config_t</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen_core~2"></span>
+              <span class="anchor" id="variable-n_frozen_core"></span>
               integer,
             </td>
               <td>public</td>
@@ -2083,7 +2079,7 @@ production calculation should start from.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pcm~2"></span>
+              <span class="anchor" id="variable-pcm"></span>
               type(<a href='../type/pcm_config_t.html'>pcm_config_t</a>),
             </td>
               <td>public</td>
@@ -2104,7 +2100,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties~4"></span>
+              <span class="anchor" id="variable-properties"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
               <td>public</td>
@@ -2155,7 +2151,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spherical~2"></span>
+              <span class="anchor" id="variable-spherical"></span>
               logical,
             </td>
               <td>public</td>
@@ -2172,7 +2168,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unrestricted~3"></span>
+              <span class="anchor" id="variable-unrestricted~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2189,7 +2185,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~3"></span>
+              <span class="anchor" id="variable-use_diis~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -2223,7 +2219,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~9"></span>
+              <span class="anchor" id="variable-verbose~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2273,7 +2269,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~130"></span>
+              <span class="anchor" id="variable-this~116"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2288,7 +2284,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~35"></span>
+              <span class="anchor" id="variable-fragment~31"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2303,7 +2299,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~52"></span>
+              <span class="anchor" id="variable-result~53"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2343,7 +2339,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~132"></span>
+              <span class="anchor" id="variable-this~118"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2358,7 +2354,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~37"></span>
+              <span class="anchor" id="variable-fragment~33"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2373,7 +2369,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~54"></span>
+              <span class="anchor" id="variable-result~55"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2413,7 +2409,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~133"></span>
+              <span class="anchor" id="variable-this~119"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2428,7 +2424,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~38"></span>
+              <span class="anchor" id="variable-fragment~34"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2443,7 +2439,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~55"></span>
+              <span class="anchor" id="variable-result~56"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2483,7 +2479,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~131"></span>
+              <span class="anchor" id="variable-this~117"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2498,7 +2494,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~36"></span>
+              <span class="anchor" id="variable-fragment~32"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2513,7 +2509,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~53"></span>
+              <span class="anchor" id="variable-result~54"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2588,7 +2584,7 @@ qualify is a fact about that backend.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-01 09:52 +0000             </p>
+ on 2026-09-01 13:21 +0000             </p>
           </div>
         </div>
         <br>
