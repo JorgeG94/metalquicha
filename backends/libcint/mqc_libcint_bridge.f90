@@ -291,6 +291,10 @@ contains
                                   basis_name, mol, error)
       if (error%has_error()) return
 
+      ! mqc: scf-subset -- `run_libcint_charges` is a C API entry point and its
+      ! signature carries no SCF settings, so there is nothing here to forward.
+      ! Exposing them is an API question rather than a dropped setting; the
+      ! SCF_* constants are this entry's own documented defaults.
       call run_libcint_rhf(mol, nelec, SCF_MAX_ITER, SCF_ENERGY_TOL, SCF_DENSITY_TOL, &
                            .false., scf, error, grad_tol=SCF_GRAD_TOL)
       if (error%has_error()) return

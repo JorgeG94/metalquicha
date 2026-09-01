@@ -394,6 +394,12 @@ contains
 
       multiplicity = hund_multiplicity(atomic_number)
 
+      ! mqc: scf-subset -- a per-element atomic SCF that exists only to build the
+      ! SAD guess. Its thresholds are the ATOMIC_* constants above and are fixed
+      ! on purpose: this is a small, well-conditioned closed system whose answer
+      ! is a starting density, not a result. Inheriting the molecule's level
+      ! shift or linear-dependence cutoff would change a guess for no gain, and
+      ! inheriting a tight tolerance would make every SAD guess expensive.
       call run_libcint_uhf(atom_mol, atomic_number, multiplicity, ATOMIC_MAX_ITER, &
                            ATOMIC_ENERGY_TOL, ATOMIC_DENSITY_TOL, .false., scf, error, &
                            diis_vectors=8, in_core=(atom_mol%nao <= ATOMIC_INCORE_MAX), &

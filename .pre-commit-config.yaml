@@ -49,6 +49,17 @@ repos:
         language: system
         types: [file]
         files: '\.(f|F|f90|F90)$'
+      - id: mqc-scf-call-sites
+        name: SCF calls forward their settings
+        # An SCF call that drops a setting makes it silently inert: read from
+        # the deck, validated by the schema, carried through the config, and
+        # then never used. Three separate instances of this shipped before the
+        # check existed. Ratcheted against scf_call_sites_baseline.txt, which
+        # is meant to shrink.
+        entry: tools/lint/scf_call_sites.py
+        language: system
+        types: [file]
+        files: '\.(f|F|f90|F90)$'
       - id: fprettify
         name: fprettify
         entry: fprettify --silent -i 3 -l 122
