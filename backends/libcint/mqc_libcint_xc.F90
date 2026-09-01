@@ -868,17 +868,20 @@ contains
       ! the output to say a term was missing. The one consumer today checks
       ! this itself, which is exactly why the guard belongs on this side -- the
       ! second consumer will not know to.
-      if (want_kxc) then
-         do i = 1, ctx%n_func
-            if (ctx%family(i) == XC_FAMILY_MGGA .or. &
-                ctx%family(i) == XC_FAMILY_HYB_MGGA) then
-               call error%set(ERROR_VALIDATION, "third functional derivatives "// &
-                              "are not implemented for meta-GGAs: the tau channels "// &
-                              "of the third derivative would be needed and are not "// &
-                              "evaluated here.")
-               return
-            end if
-         end do
+      !
+      ! **`any_mgga` rather than the family constants**, which is not a style
+      ! choice: `XC_FAMILY_MGGA` and `XC_FAMILY_HYB_MGGA` come from libxc's own
+      ! module and are only in scope under `MQC_WITH_LIBXC`, while this routine
+      ! is compiled either way. Naming them here broke every build without
+      ! libxc. The flag is set from those two families and nothing else, so it
+      ! says the same thing and says it in both configurations --
+      ! `xc_kernel2_apply` already asks the question this way.
+      if (want_kxc .and. ctx%any_mgga) then
+         call error%set(ERROR_VALIDATION, "third functional derivatives "// &
+                        "are not implemented for meta-GGAs: the tau channels "// &
+                        "of the third derivative would be needed and are not "// &
+                        "evaluated here.")
+         return
       end if
       if (want_kxc) then
          allocate (grrr(npts), grrs(npts), grss(npts), gsss(npts))
