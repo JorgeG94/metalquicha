@@ -31,7 +31,8 @@ module mqc_libcint_fukui
    use mqc_libcint_integrals, only: libcint_molecule_t
    use mqc_libcint_pcm, only: pcm_context_t
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_uhf, &
-                              SCF_GUESS_GWH, SCF_GUESS_SAD
+                              SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
+   use mqc_libcint_atomic_guess, only: build_atomic_guess
    use mqc_scf_common, only: build_density_spin
    use mqc_libcint_charges, only: mulliken_charges, chelpg_charges
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
@@ -266,6 +267,7 @@ contains
       real(dp), allocatable :: overlap(:, :), total(:, :)
       real(dp), allocatable :: d_guess_a(:, :), d_guess_b(:, :)
       integer :: n_ao, n_occ_neutral, guess_kind
+      type(error_t) :: guess_error
       logical :: seeded, keep_unconverged
       logical :: loud
       integer :: natm
@@ -394,12 +396,12 @@ contains
       ! anion (n/2 + 1, n/2) and the cation (n/2, n/2 - 1) -- the right electron
       ! count and the right spin, where a halved density has neither.
       !
-      ! `d_guess_a` and `d_guess_b` stay unallocated when there are no orbitals
-      ! to seed from, and an unallocated allocatable actual argument is *absent*
-      ! at an optional non-allocatable dummy (F2018 15.5.2.13). That is what
-      ! makes one call site serve both paths: `guess_kind` falls back to GWH and
-      ! the two densities vanish from the call, which is exactly the old
-      ! behaviour rather than an error.
+      ! `d_guess_a` and `d_guess_b` stay unallocated only when neither the
+      ! neutral's orbitals nor the free atoms can supply a density, and an
+      ! unallocated allocatable actual argument is *absent* at an optional
+      ! non-allocatable dummy (F2018 15.5.2.13). That is what makes one call
+      ! site serve every path: on that last fallback `guess_kind` becomes GWH
+      ! and the two densities vanish from the call rather than erroring.
       keep_unconverged = .false.
       if (present(allow_unconverged)) keep_unconverged = allow_unconverged
       n_ao = size(neutral_density, 1)
@@ -420,6 +422,28 @@ contains
       if (seeded) then
          guess_kind = SCF_GUESS_SAD
          allocate (d_guess_a(n_ao, n_ao), d_guess_b(n_ao, n_ao))
+      else if (guess_kind == SCF_GUESS_SAD .or. guess_kind == SCF_GUESS_SAC) then
+         ! Only when the deck asked for one. `SCF_GUESS_SAD` is the kind that
+         ! says "the starting density is supplied", and in the seeded branch
+         ! above it is the neutral's orbitals supplying it. Asked for here with
+         ! nothing to seed from, it has to come from the free atoms -- and
+         ! without this the ions reached `run_libcint_uhf` naming an atomic
+         ! guess with no density behind it, which that routine refuses. That is
+         ! why `properties.fukui.scf.guess: "sad"` could not be used at all.
+         !
+         ! The default stays GWH: it costs nothing, and the atomic solves this
+         ! runs are not work to do on behalf of a deck that did not ask.
+         call build_atomic_guess(mol, guess_kind, d_guess_a, d_guess_b, guess_error)
+         if (guess_error%has_error()) then
+            ! A free atom that will not converge is a reason to start somewhere
+            ! else, not to fail the ion. Loud, because an open-shell ion really
+            ! can land on a different state from a different starting point.
+            call logger%warning("Fukui: atomic guess for the ions: "// &
+                                guess_error%get_message()//" -- falling back to gwh")
+            guess_kind = SCF_GUESS_GWH
+            if (allocated(d_guess_a)) deallocate (d_guess_a)
+            if (allocated(d_guess_b)) deallocate (d_guess_b)
+         end if
       end if
 
       if (loud) then

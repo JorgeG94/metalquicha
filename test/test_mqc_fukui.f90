@@ -17,7 +17,8 @@ module test_mqc_fukui
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_pcm, only: pcm_context_t
    use mqc_method_config, only: pcm_config_t
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, &
+                              SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
    use mqc_libcint_fukui, only: fukui_result_t, fukui_indices
    implicit none
    private
@@ -44,7 +45,9 @@ contains
                   new_unittest("values_have_not_drifted", values_have_not_drifted), &
                   new_unittest("the_ions_feel_the_solvent", the_ions_feel_the_solvent), &
                   new_unittest("the_global_descriptors_agree", the_global_descriptors_agree), &
-                  new_unittest("the_ions_start_from_the_neutral", the_ions_start_from_the_neutral) &
+                  new_unittest("the_ions_start_from_the_neutral", the_ions_start_from_the_neutral), &
+                  new_unittest("an_atomic_guess_reaches_the_ions", an_atomic_guess_reaches_the_ions), &
+                  new_unittest("a_spin_atomic_guess_reaches_the_ions", a_spin_atomic_guess_reaches_the_ions) &
                   ]
    end subroutine collect_mqc_fukui_tests
 
@@ -189,7 +192,83 @@ contains
                  more="the electrophilicity is not mu^2 / 2 eta")
    end subroutine the_global_descriptors_agree
 
-   subroutine water_fukui(scheme, res, err, ok, solvate, seed)
+   subroutine an_atomic_guess_reaches_the_ions(error)
+      !! `sad` on the deltaSCF ions runs, and agrees where it has to
+      !!
+      !! **The regression this guards is that it could not run at all.** The
+      !! ions borrow `SCF_GUESS_SAD` as the kind meaning "a starting density is
+      !! supplied", and in the normal path the neutral's orbitals supply it.
+      !! Asked for by name with nothing seeding the ions, nothing built the
+      !! atomic densities, so `run_libcint_uhf` was handed an atomic guess with
+      !! no density behind it and refused -- `properties.fukui.scf.guess: "sad"`
+      !! was unusable.
+      !!
+      !! What it checks beyond running is the part that is guess-independent.
+      !! The **ionisation potential is a bound state's** and must not move: the
+      !! cation is a real state and every guess has to find it. The electron
+      !! affinity is deliberately *not* pinned, because water in STO-3G does not
+      !! bind the extra electron -- the anion lies above the neutral, the code
+      !! says so in its own report, and `f+` then describes whichever orbital
+      !! the SCF was left holding. That is a property of the basis, not of this
+      !! change, and a test that pinned it would be pinning an artefact.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(fukui_result_t) :: sad_res, gwh_res
+      type(error_t) :: err
+      logical :: ok
+
+      call water_fukui("chelpg", sad_res, err, ok, ion_guess=SCF_GUESS_SAD)
+      call check(error, ok, "the sad-seeded analysis did not run: "//err%get_message())
+      if (allocated(error)) return
+
+      ! The sum rules hold for any guess: the two states still differ by one
+      ! electron however each was reached.
+      call check(error, sum(sad_res%f_plus), 1.0_dp, thr=1.0e-6_dp, &
+                 more="f+ does not account for the electron that was added")
+      if (allocated(error)) return
+      call check(error, sum(sad_res%f_minus), 1.0_dp, thr=1.0e-6_dp, &
+                 more="f- does not account for the electron that was removed")
+      if (allocated(error)) return
+
+      call water_fukui("chelpg", gwh_res, err, ok, ion_guess=SCF_GUESS_GWH)
+      call check(error, ok, "the gwh-seeded analysis did not run: "//err%get_message())
+      if (allocated(error)) return
+
+      call check(error, sad_res%ionisation_potential, gwh_res%ionisation_potential, &
+                 thr=1.0e-6_dp, &
+                 more="the cation is a bound state and both guesses must find it")
+   end subroutine an_atomic_guess_reaches_the_ions
+
+   subroutine a_spin_atomic_guess_reaches_the_ions(error)
+      !! `sac` on the deltaSCF ions runs, and its sum rules hold
+      !!
+      !! The same path as the test above, through the other atomic guess. It is
+      !! worth its own case rather than a parameter because `sac` is the one
+      !! that arrives with its spatial symmetry already broken, which is what an
+      !! open-shell doublet ion wants -- both Fukui ions are doublets, so this
+      !! is the guess with the best claim on them, and the one whose failure to
+      !! build would be least visible in a closed-shell test elsewhere.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(fukui_result_t) :: res
+      type(error_t) :: err
+      logical :: ok
+
+      call water_fukui("chelpg", res, err, ok, ion_guess=SCF_GUESS_SAC)
+      call check(error, ok, "the sac-seeded analysis did not run: "//err%get_message())
+      if (allocated(error)) return
+
+      call check(error, sum(res%f_plus), 1.0_dp, thr=1.0e-6_dp, &
+                 more="f+ does not account for the electron that was added")
+      if (allocated(error)) return
+      call check(error, sum(res%f_minus), 1.0_dp, thr=1.0e-6_dp, &
+                 more="f- does not account for the electron that was removed")
+      if (allocated(error)) return
+      call check(error, sum(res%dual), 0.0_dp, thr=1.0e-6_dp, &
+                 more="the dual descriptor should sum to zero")
+   end subroutine a_spin_atomic_guess_reaches_the_ions
+
+   subroutine water_fukui(scheme, res, err, ok, solvate, seed, ion_guess)
       !! Converge water and run the analysis on it
       character(len=*), intent(in) :: scheme
       type(fukui_result_t), intent(out) :: res
@@ -201,6 +280,11 @@ contains
          !! Hand the neutral's orbitals over, so the ions start from them.
          !! Absent is the old behaviour, where they fall back to GWH -- which
          !! is what makes the two runs comparable in the test below.
+      integer, intent(in), optional :: ion_guess
+         !! Which guess the ions get when nothing seeds them. Absent takes the
+         !! default, which is GWH; the tests that pin numbers name it anyway,
+         !! so a change of default shows up as a new test failing rather than
+         !! as a pinned value quietly describing a different calculation.
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
@@ -244,7 +328,7 @@ contains
       end if
       call fukui_indices(mol, 10, 1, scf%density, scf%energy, scheme, 100, &
                          1.0e-10_dp, 1.0e-8_dp, res, err, pcm=pcm_ctx, &
-                         neutral_orbitals=orbs)
+                         neutral_orbitals=orbs, unseeded_guess=ion_guess)
       call mol%destroy()
       ok = .not. err%has_error()
    end subroutine water_fukui
@@ -361,6 +445,12 @@ contains
       !! couple of figures move with anything that perturbs it; a tolerance
       !! tight enough to catch that would fail on a compiler change and teach
       !! everyone to update the number without looking.
+      !!
+      !! **The guess is named rather than inherited.** These numbers are a GWH
+      !! run, and the ions' guess changes them -- `f+` by 0.17 in STO-3G, for
+      !! the reason the two tests below exist. Pinning against whatever the
+      !! default happens to be would make this test quietly describe a
+      !! different calculation the day that default moves.
       type(error_type), allocatable, intent(out) :: error
 
       type(fukui_result_t) :: res
@@ -368,7 +458,7 @@ contains
       logical :: ok
       real(dp), parameter :: PIN = 1.0e-4_dp
 
-      call water_fukui("chelpg", res, err, ok)
+      call water_fukui("chelpg", res, err, ok, ion_guess=SCF_GUESS_GWH)
       call check(error, ok, "the analysis did not run: "//err%get_message())
       if (allocated(error)) return
 
