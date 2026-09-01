@@ -23,14 +23,20 @@ if(MQC_CUEST_BINDINGS STREQUAL "fetch")
     ${main_lib}
     PRIVATE ${mod_cuest_SOURCE_DIR}/cuest.f90
             ${mod_cuest_SOURCE_DIR}/cuest_helpers.f90
-            ${mod_cuest_SOURCE_DIR}/cudafort/cuda_runtime.f90
-            ${mod_cuest_SOURCE_DIR}/cudafort/cuda_helpers.f90)
-  # Upstream ships it as `.f90`, so nothing asks the compiler to preprocess it
-  # -- and it carries the one `#if MQC_CUDA_VERSION_MAJOR` guard that the
-  # vendored copy is renamed to `.F90` for. Without this the guard is invisible
-  # and the CUDA 13 entry-point rename is not handled on this path, which is a
-  # link error at best and the wrong symbol at worst.
-  set_source_files_properties(${mod_cuest_SOURCE_DIR}/cudafort/cuda_runtime.f90
+            ${mod_cuest_SOURCE_DIR}/cudafort/cuda_runtime.F90
+            ${mod_cuest_SOURCE_DIR}/cudafort/cuda_helpers.f90
+            # Ours, not mod_cuest's: hand-written, covering the handful of BLAS
+            # calls the SCF needs and the one dense eigensolver. Upstream has no
+            # equivalent, so this path has to take them from the vendored
+            # directory whichever way the generated bindings arrive -- without
+            # them the build stops at `Cannot open module file 'cublas.mod'`,
+            # which is what it did.
+            ${CMAKE_CURRENT_SOURCE_DIR}/bindings/cublas.f90
+            ${CMAKE_CURRENT_SOURCE_DIR}/bindings/cusolver.f90)
+  # `.F90` upstream as well as here, so the capital F asks for the preprocessing
+  # the CUDA 13 guards need on both paths. The property is set for the same
+  # belt-and-braces reason as on the vendored copy.
+  set_source_files_properties(${mod_cuest_SOURCE_DIR}/cudafort/cuda_runtime.F90
                               PROPERTIES Fortran_PREPROCESS ON)
 elseif(MQC_CUEST_BINDINGS STREQUAL "vendored")
   message(STATUS "cuEST bindings: vendored under backends/cuest/bindings")
