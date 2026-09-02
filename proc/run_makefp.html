@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">39 statements</a>
+                 title=" 0.2% of total for procedures.">53 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,11 +137,14 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/run_makefp.html#variable-err~3">err</a>
-            <a class="list-group-item" href="../proc/run_makefp.html#variable-i~21">i</a>
-            <a class="list-group-item" href="../proc/run_makefp.html#variable-name~2">name</a>
+            <a class="list-group-item" href="../proc/run_makefp.html#variable-i~131">i</a>
+            <a class="list-group-item" href="../proc/run_makefp.html#variable-makefp_scf">makefp_scf</a>
+            <a class="list-group-item" href="../proc/run_makefp.html#variable-name~19">name</a>
             <a class="list-group-item" href="../proc/run_makefp.html#variable-named_density_tol">named_density_tol</a>
             <a class="list-group-item" href="../proc/run_makefp.html#variable-named_energy_tol">named_energy_tol</a>
-            <a class="list-group-item" href="../proc/run_makefp.html#variable-path">path</a>
+            <a class="list-group-item" href="../proc/run_makefp.html#variable-named_grad_tol">named_grad_tol</a>
+            <a class="list-group-item" href="../proc/run_makefp.html#variable-named_max_iter">named_max_iter</a>
+            <a class="list-group-item" href="../proc/run_makefp.html#variable-path~21">path</a>
             <a class="list-group-item" href="../proc/run_makefp.html#variable-symbols~2">symbols</a>
         </div>
       </div>
@@ -186,10 +189,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -807,7 +810,7 @@ potential to overwrite the same path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~7"></span>
+              <span class="anchor" id="variable-config~38"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -822,7 +825,7 @@ potential to overwrite the same path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~8"></span>
+              <span class="anchor" id="variable-sys_geom~60"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -837,7 +840,7 @@ potential to overwrite the same path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-rank~4"></span>
+              <span class="anchor" id="variable-rank~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -852,7 +855,7 @@ potential to overwrite the same path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result_out~7"></span>
+              <span class="anchor" id="variable-result_out~8"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out),</td>
@@ -1555,7 +1558,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~21"></span>
+              <span class="anchor" id="variable-i~131"></span>
               integer,
             </td>
               <td>private</td>
@@ -1572,7 +1575,40 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~2"></span>
+              <span class="anchor" id="variable-makefp_scf"></span>
+              type(<a href='../type/scf_numerics_t.html'>scf_numerics_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>makefp_scf</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>What the deck asked for, if it asked at all</p>
+<p>Unallocated means it did not, and that is the signal rather than an
+oversight: an unallocated allocatable actual argument corresponding
+to an optional dummy that is neither allocatable nor a pointer <em>is</em>
+an absent argument (F2018 15.5.2.13). MAKEFP therefore sees nothing
+and keeps its own tighter pair.</p>
+<p>Initialising these to those defaults instead would look safer and
+would be worse twice over: a second copy of 1e-10/1e-8 to keep in
+agreement with the one that owns them, and arguments that are always
+present, which loses the difference between &ldquo;the deck asked for 1e-6&rdquo;
+and &ldquo;the deck said nothing&rdquo; &ndash; the difference <code>energy_convergence_set</code>
+exists to carry. Assigning only when the flag is set is what allocates
+them, so the branch above is the whole mechanism.</p>
+<p>Named for what they hold rather than for the dummy they feed, because
+<code>make_efp_potential</code> has locals of its own called <code>e_tol</code> and <code>d_tol</code>
+&ndash; plain reals, set to the defaults and then overridden &ndash; and the two
+pairs have now been read as one by more than one reviewer.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-name~19"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -1601,23 +1637,7 @@ large graphs.</div>
                 <td></td>
                 <td></td>
             <td>
-                <p>What the deck asked for, if it asked at all</p>
-<p>Unallocated means it did not, and that is the signal rather than an
-oversight: an unallocated allocatable actual argument corresponding
-to an optional dummy that is neither allocatable nor a pointer <em>is</em>
-an absent argument (F2018 15.5.2.13). MAKEFP therefore sees nothing
-and keeps its own tighter pair.</p>
-<p>Initialising these to those defaults instead would look safer and
-would be worse twice over: a second copy of 1e-10/1e-8 to keep in
-agreement with the one that owns them, and arguments that are always
-present, which loses the difference between &ldquo;the deck asked for 1e-6&rdquo;
-and &ldquo;the deck said nothing&rdquo; &ndash; the difference <code>energy_convergence_set</code>
-exists to carry. Assigning only when the flag is set is what allocates
-them, so the branch above is the whole mechanism.</p>
-<p>Named for what they hold rather than for the dummy they feed, because
-<code>make_efp_potential</code> has locals of its own called <code>e_tol</code> and <code>d_tol</code>
-&ndash; plain reals, set to the defaults and then overridden &ndash; and the two
-pairs have now been read as one by more than one reviewer.</p>
+                
             </td>
         </tr>
         <tr>
@@ -1634,28 +1654,46 @@ pairs have now been read as one by more than one reviewer.</p>
                 <td></td>
                 <td></td>
             <td>
-                <p>What the deck asked for, if it asked at all</p>
-<p>Unallocated means it did not, and that is the signal rather than an
-oversight: an unallocated allocatable actual argument corresponding
-to an optional dummy that is neither allocatable nor a pointer <em>is</em>
-an absent argument (F2018 15.5.2.13). MAKEFP therefore sees nothing
-and keeps its own tighter pair.</p>
-<p>Initialising these to those defaults instead would look safer and
-would be worse twice over: a second copy of 1e-10/1e-8 to keep in
-agreement with the one that owns them, and arguments that are always
-present, which loses the difference between &ldquo;the deck asked for 1e-6&rdquo;
-and &ldquo;the deck said nothing&rdquo; &ndash; the difference <code>energy_convergence_set</code>
-exists to carry. Assigning only when the flag is set is what allocates
-them, so the branch above is the whole mechanism.</p>
-<p>Named for what they hold rather than for the dummy they feed, because
-<code>make_efp_potential</code> has locals of its own called <code>e_tol</code> and <code>d_tol</code>
-&ndash; plain reals, set to the defaults and then overridden &ndash; and the two
-pairs have now been read as one by more than one reviewer.</p>
+                
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path"></span>
+              <span class="anchor" id="variable-named_grad_tol"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>named_grad_tol</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-named_max_iter"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>named_max_iter</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-path~21"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -1727,7 +1765,9 @@ pairs have now been read as one by more than one reviewer.</p>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">8</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">symbols</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">name</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">named_energy_tol</span><span class="p">,</span><span class="w"> </span><span class="n">named_density_tol</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">named_energy_tol</span><span class="p">,</span><span class="w"> </span><span class="n">named_density_tol</span><span class="p">,</span><span class="w"> </span><span class="n">named_grad_tol</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">named_max_iter</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">scf_numerics_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">makefp_scf</span>
 <span class="w">         </span><span class="c">!! What the deck asked for, if it asked at all</span>
 <span class="w">         </span><span class="c">!!</span>
 <span class="w">         </span><span class="c">!! Unallocated means it did not, and that is the signal rather than an</span>
@@ -1783,7 +1823,29 @@ pairs have now been read as one by more than one reviewer.</p>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">density_convergence_set</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">named_density_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">density_convergence</span>
 <span class="w">      </span><span class="k">end if</span>
-<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">density_fitting</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">      </span><span class="c">! Zero is this field's "not named" -- it is what the SCF reads as "derive</span>
+<span class="w">      </span><span class="c">! it from the energy tolerance" everywhere else, so there is no separate</span>
+<span class="w">      </span><span class="c">! flag to carry. Nothing forwarded it here before, so a MakeFP deck that</span>
+<span class="w">      </span><span class="c">! stated the commutator threshold outright had it dropped.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">gradient_convergence</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">named_grad_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">gradient_convergence</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="w">      </span><span class="c">! The iteration cap is this path's own 200 unless the deck named one, for</span>
+<span class="w">      </span><span class="c">! the reason the tolerances are: a fragment potential is converged tightly</span>
+<span class="w">      </span><span class="c">! and wants a budget larger than the shared default of 100. `max_iter_set`</span>
+<span class="w">      </span><span class="c">! is what tells a deck that asked for 100 from one that said nothing.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">max_iter_set</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">named_max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">max_iter</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="w">      </span><span class="c">! Everything else about how the SCF runs goes down whole. These are the</span>
+<span class="w">      </span><span class="c">! settings a MakeFP deck could set and then watch do nothing.</span>
+<span class="w">      </span><span class="n">makefp_scf</span><span class="p">%</span><span class="n">level_shift</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">level_shift</span>
+<span class="w">      </span><span class="n">makefp_scf</span><span class="p">%</span><span class="n">linear_dependence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">linear_dependence</span>
+<span class="w">      </span><span class="n">makefp_scf</span><span class="p">%</span><span class="n">use_diis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">use_diis</span>
+<span class="w">      </span><span class="n">makefp_scf</span><span class="p">%</span><span class="n">diis_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">diis_size</span>
+<span class="w">      </span><span class="n">makefp_scf</span><span class="p">%</span><span class="n">incremental_fock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">incremental_fock</span>
+<span class="w">      </span><span class="n">makefp_scf</span><span class="p">%</span><span class="n">accelerator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">accelerator</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">density_fitting</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">run_libcint_makefp</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">symbols</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">basis_set</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">err</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">charge</span><span class="o">=</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">charge</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="o">=</span><span class="p">.</span><span class="n">true</span><span class="p">.,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1791,6 +1853,8 @@ pairs have now been read as one by more than one reviewer.</p>
 <span class="w">                                 </span><span class="n">guess</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">guess</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">energy_tol</span><span class="o">=</span><span class="n">named_energy_tol</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">density_tol</span><span class="o">=</span><span class="n">named_density_tol</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="n">grad_tol</span><span class="o">=</span><span class="n">named_grad_tol</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="n">scf_in</span><span class="o">=</span><span class="n">makefp_scf</span><span class="p">,</span><span class="w"> </span><span class="n">max_iter_in</span><span class="o">=</span><span class="n">named_max_iter</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">vdwscl</span><span class="o">=</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">efp</span><span class="p">%</span><span class="n">vdw_scale</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">dynamic_tol</span><span class="o">=</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">efp</span><span class="p">%</span><span class="n">dynamic_tolerance</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">dynamic_maxiter</span><span class="o">=</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">efp</span><span class="p">%</span><span class="n">dynamic_maxiter</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1804,6 +1868,8 @@ pairs have now been read as one by more than one reviewer.</p>
 <span class="w">                                 </span><span class="n">guess</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">guess</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">energy_tol</span><span class="o">=</span><span class="n">named_energy_tol</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">density_tol</span><span class="o">=</span><span class="n">named_density_tol</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="n">grad_tol</span><span class="o">=</span><span class="n">named_grad_tol</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="n">scf_in</span><span class="o">=</span><span class="n">makefp_scf</span><span class="p">,</span><span class="w"> </span><span class="n">max_iter_in</span><span class="o">=</span><span class="n">named_max_iter</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">vdwscl</span><span class="o">=</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">efp</span><span class="p">%</span><span class="n">vdw_scale</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">dynamic_tol</span><span class="o">=</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">efp</span><span class="p">%</span><span class="n">dynamic_tolerance</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">dynamic_maxiter</span><span class="o">=</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">efp</span><span class="p">%</span><span class="n">dynamic_maxiter</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1840,7 +1906,7 @@ pairs have now been read as one by more than one reviewer.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 00:37 +0000             </p>
+ on 2026-09-02 04:03 +0000             </p>
           </div>
         </div>
         <br>

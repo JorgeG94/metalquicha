@@ -223,12 +223,12 @@ deliberately not done yet.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_determinants.html'>mqc_determinants</a></li>
                   <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_blas_interfaces</li>
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
+                  <li class="list-inline-item"><a href='mqc_determinants.html'>mqc_determinants</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -670,7 +670,7 @@ beta strings at a time, against the 18.5 GB it would take whole.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-npair~2"></span>
+              <span class="anchor" id="variable-npair"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -685,7 +685,7 @@ beta strings at a time, against the 18.5 GB it would take whole.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-na~3"></span>
+              <span class="anchor" id="variable-na"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -700,7 +700,7 @@ beta strings at a time, against the 18.5 GB it would take whole.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nb~3"></span>
+              <span class="anchor" id="variable-nb"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -750,7 +750,7 @@ beta strings at a time, against the 18.5 GB it would take whole.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-h1e~2"></span>
+              <span class="anchor" id="variable-h1e"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -765,7 +765,7 @@ beta strings at a time, against the 18.5 GB it would take whole.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-eri~2"></span>
+              <span class="anchor" id="variable-eri"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -811,7 +811,7 @@ multiplied by a half.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~80"></span>
+              <span class="anchor" id="variable-error~53"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -837,306 +837,6 @@ multiplied by a half.</p>
     <div class="card-body">
           
   <p><code>E_pq |c&gt;</code> for every orbital pair at once</p><a href="../proc/apply_excitations.html" class="pull-right"><emph>Read more&hellip;</emph></a>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-ci~3"></span>
-              real(kind=dp),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>ci</strong>(:,:)</td>
-            <td>
-<p>(n_alpha_strings, n_beta_strings)</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-alpha~4"></span>
-              type(<a href='../type/link_table_t.html'>link_table_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>alpha</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-beta~4"></span>
-              type(<a href='../type/link_table_t.html'>link_table_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>beta</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-gathered~3"></span>
-              real(kind=dp),
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>gathered</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-ci_diagonal"></span> <h3>public  subroutine <a href='../proc/ci_diagonal.html'>ci_diagonal</a>(h1e, eri, alpha, beta, diagonal, error)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>The diagonal of the CI Hamiltonian, without touching the rest of it</p><a href="../proc/ci_diagonal.html" class="pull-right"><emph>Read more&hellip;</emph></a>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-h1e~3"></span>
-              real(kind=dp),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>h1e</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-eri~3"></span>
-              real(kind=dp),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>eri</strong>(:,:,:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-alpha~7"></span>
-              type(<a href='../type/link_table_t.html'>link_table_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>alpha</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-beta~7"></span>
-              type(<a href='../type/link_table_t.html'>link_table_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>beta</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-diagonal"></span>
-              real(kind=dp),
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>diagonal</strong>(:,:)</td>
-            <td>
-<p>(n_alpha, n_beta)</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-error~83"></span>
-              type(<a href='../type/error_t.html'>error_t</a>),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>error</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-ci_hamiltonian"></span> <h3>public  subroutine <a href='../proc/ci_hamiltonian.html'>ci_hamiltonian</a>(folded, alpha, beta, matrix, error)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>The Hamiltonian as a dense matrix, one column at a time</p><a href="../proc/ci_hamiltonian.html" class="pull-right"><emph>Read more&hellip;</emph></a>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-folded~3"></span>
-              real(kind=dp),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>folded</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-alpha~6"></span>
-              type(<a href='../type/link_table_t.html'>link_table_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>alpha</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-beta~6"></span>
-              type(<a href='../type/link_table_t.html'>link_table_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>beta</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-matrix~3"></span>
-              real(kind=dp),
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>matrix</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-error~82"></span>
-              type(<a href='../type/error_t.html'>error_t</a>),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>error</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-excitations_block"></span> <h3>public  subroutine <a href='../proc/excitations_block.html'>excitations_block</a>(ci, alpha, beta, first_beta, last_beta, gathered)  
-</h3></div>
-    <div class="card-body">
-          
-  <p><code>E_pq |c&gt;</code> for every orbital pair, over one range of beta strings</p><a href="../proc/excitations_block.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1196,6 +896,306 @@ multiplied by a half.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-gathered~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>gathered</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-ci_diagonal"></span> <h3>public  subroutine <a href='../proc/ci_diagonal.html'>ci_diagonal</a>(h1e, eri, alpha, beta, diagonal, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The diagonal of the CI Hamiltonian, without touching the rest of it</p><a href="../proc/ci_diagonal.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-h1e~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>h1e</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-eri~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>eri</strong>(:,:,:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-alpha~6"></span>
+              type(<a href='../type/link_table_t.html'>link_table_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>alpha</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-beta~6"></span>
+              type(<a href='../type/link_table_t.html'>link_table_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>beta</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-diagonal"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>diagonal</strong>(:,:)</td>
+            <td>
+<p>(n_alpha, n_beta)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~56"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-ci_hamiltonian"></span> <h3>public  subroutine <a href='../proc/ci_hamiltonian.html'>ci_hamiltonian</a>(folded, alpha, beta, matrix, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The Hamiltonian as a dense matrix, one column at a time</p><a href="../proc/ci_hamiltonian.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-folded~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>folded</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-alpha~5"></span>
+              type(<a href='../type/link_table_t.html'>link_table_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>alpha</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-beta~5"></span>
+              type(<a href='../type/link_table_t.html'>link_table_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>beta</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-matrix"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>matrix</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~55"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-excitations_block"></span> <h3>public  subroutine <a href='../proc/excitations_block.html'>excitations_block</a>(ci, alpha, beta, first_beta, last_beta, gathered)  
+</h3></div>
+    <div class="card-body">
+          
+  <p><code>E_pq |c&gt;</code> for every orbital pair, over one range of beta strings</p><a href="../proc/excitations_block.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ci"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ci</strong>(:,:)</td>
+            <td>
+<p>(n_alpha_strings, n_beta_strings)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-alpha~2"></span>
+              type(<a href='../type/link_table_t.html'>link_table_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>alpha</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-beta~2"></span>
+              type(<a href='../type/link_table_t.html'>link_table_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>beta</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-first_beta"></span>
               integer,
             </td>
@@ -1226,7 +1226,7 @@ multiplied by a half.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gathered~2"></span>
+              <span class="anchor" id="variable-gathered"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1281,7 +1281,7 @@ multiplied by a half.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ci~4"></span>
+              <span class="anchor" id="variable-ci~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1296,7 +1296,7 @@ multiplied by a half.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~5"></span>
+              <span class="anchor" id="variable-alpha~4"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1311,7 +1311,7 @@ multiplied by a half.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~5"></span>
+              <span class="anchor" id="variable-beta~4"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1326,7 +1326,7 @@ multiplied by a half.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma~2"></span>
+              <span class="anchor" id="variable-sigma~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1341,7 +1341,7 @@ multiplied by a half.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~81"></span>
+              <span class="anchor" id="variable-error~54"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1426,7 +1426,7 @@ multiplied by a half.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-h1e~4"></span>
+              <span class="anchor" id="variable-h1e~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1529,7 +1529,7 @@ multiplied by a half.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 00:37 +0000             </p>
+ on 2026-09-02 04:03 +0000             </p>
           </div>
         </div>
         <br>

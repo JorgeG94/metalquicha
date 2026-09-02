@@ -266,6 +266,7 @@ contains
 
       ! ---- keywords --------------------------------------------------------
       call optional_int(json, "keywords.scf.maxiter", config%scf_maxiter)
+      call named(json, "keywords.scf.maxiter", config%scf_maxiter_set)
       call optional_real(json, "keywords.scf.tolerance", config%scf_tolerance)
       call named(json, "keywords.scf.tolerance", config%scf_tolerance_set)
       call optional_real(json, "keywords.scf.density_tolerance", config%scf_density_tolerance)
