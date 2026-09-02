@@ -148,7 +148,8 @@ contains
    subroutine run_libcint_fmo(atomic_numbers, element_symbols, coordinates, owner, &
                               basis_name, esp, expansion, far_field, resppc, &
                               level, max_outer, outer_tol, scf_max_iter, &
-                              scf_energy_tol, scf_density_tol, bond_breaking, &
+                              scf_energy_tol, scf_density_tol, scf_drive, &
+                              bond_breaking, &
                               cap_scale, energy, error, comm)
       !! Run FMO2 (or EE-MBE) over a partitioned system
       !!
@@ -159,6 +160,7 @@ contains
       use pic_types, only: dp
       use mqc_error, only: error_t
       use pic_mpi_lib, only: comm_t
+      use mqc_scf_types, only: scf_numerics_t
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in) :: coordinates(:, :)
@@ -170,6 +172,7 @@ contains
       real(dp), intent(in) :: outer_tol
       integer, intent(in) :: scf_max_iter
       real(dp), intent(in) :: scf_energy_tol, scf_density_tol
+      type(scf_numerics_t), intent(in) :: scf_drive
       character(len=*), intent(in) :: bond_breaking
       real(dp), intent(in) :: cap_scale
       real(dp), intent(out) :: energy
@@ -200,7 +203,7 @@ contains
       !! No-op stand-in: an effective fragment potential needs the CPU backend
       use pic_types, only: dp
       use mqc_error, only: error_t
-      use mqc_config_types, only: scf_numerics_t
+      use mqc_scf_types, only: scf_numerics_t
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in) :: coordinates(:, :)

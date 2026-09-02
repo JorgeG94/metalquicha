@@ -25,7 +25,7 @@ module test_mqc_makefp_scf
    !! the wrong thing, which is the failure the arrival cases cannot see.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_config_types, only: scf_numerics_t
+   use mqc_scf_types, only: scf_numerics_t
    use mqc_efp_potential, only: efp_potential_t, make_efp_potential
    use mqc_error, only: error_t
    implicit none

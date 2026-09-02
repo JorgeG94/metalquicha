@@ -30,6 +30,7 @@ module mqc_libcint_afo
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, atom_ao_blocks
    use mqc_libcint_rhf, only: run_libcint_rhf, rhf_result_t
    use mqc_libcint_localize, only: boys_localize
+   use mqc_scf_types, only: scf_numerics_t
    implicit none
    private
 
@@ -73,6 +74,19 @@ module mqc_libcint_afo
    !> What to solve the model system with
    type :: afo_options_t
       character(len=64) :: basis = "6-31g"
+      type(scf_numerics_t) :: scf
+         !! How the model system's SCF is driven. Its own type carried three
+         !! fields long before this, and the caller filled none of them -- only
+         !! `basis` was ever set -- so a model system converged on this type's
+         !! defaults whatever the deck or the enclosing FMO run said.
+         !! **Only the drive settings here are read** -- the accelerator, DIIS
+         !! subspace, level shift, linear-dependence threshold and incremental
+         !! Fock switch. Its `max_iter`, `energy_tol` and `density_tol` are
+         !! NOT: the three bare fields below are, and they are passed
+         !! positionally so they win. Two declarations of one concept in one
+         !! type is a trap, and this comment is the guard rail until the bare
+         !! three are folded in -- which cannot happen until their deliberately
+         !! tighter values have somewhere else to live.
       integer :: scf_max_iter = 100
       real(dp) :: scf_energy_tol = 1.0e-10_dp
       real(dp) :: scf_density_tol = 1.0e-8_dp
@@ -456,7 +470,7 @@ contains
       if (error%has_error()) return
 
       call run_libcint_rhf(mol, model%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                           opts%scf_density_tol, .false., scf, error)
+                           opts%scf_density_tol, .false., scf, error, scf=opts%scf)
       if (error%has_error()) return
       if (.not. scf%converged) then
          call error%set(ERROR_VALIDATION, "afo: the model system's SCF did not converge, "// &

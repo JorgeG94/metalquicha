@@ -25,7 +25,7 @@ module test_mqc_scf_options
    use mqc_method_config, only: scf_options_t, properties_config_t
    use mqc_cuest_iface, only: cuest_scf_settings_t, apply_scf_settings, &
                               apply_properties_settings
-   use mqc_config_types, only: guess_step_t
+   use mqc_scf_types, only: guess_step_t
    implicit none
    private
 

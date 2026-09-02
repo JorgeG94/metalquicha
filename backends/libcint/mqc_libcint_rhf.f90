@@ -30,6 +30,9 @@ module mqc_libcint_rhf
    use mqc_libcint_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks
    use mqc_libcint_pcm, only: pcm_context_t
    use mqc_program_limits, only: DF_AUX_CHUNK
+   use mqc_scf_convergence, only: scf_convergence_t, parse_convergence_metric
+   use mqc_scf_types, only: scf_numerics_t
+   use mqc_diis, only: parse_accelerator_name
    implicit none
    private
 
@@ -418,13 +421,46 @@ contains
                               verbose, result, error, aux, diis_vectors, in_core, &
                               guess, guess_density, xc, h_extra, pcm, projector, &
                               level_shift, linear_dependence, b_ao_out, accelerator, grad_tol, &
-                              incremental_fock)
+                              incremental_fock, convergence, scf)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
       real(dp), intent(in), optional :: grad_tol
+      type(scf_convergence_t), intent(in), optional :: convergence
+      type(scf_numerics_t), intent(in), optional :: scf
+         !! The whole configuration, as one argument.
+         !!
+         !! **Seven of its thirteen fields are honoured here, and the contract
+         !! matters because passing this looks like passing everything.** Read:
+         !! `level_shift`, `linear_dependence`, `accelerator`, `diis_size`,
+         !! `use_diis`, `incremental_fock`, `convergence_metric`, and
+         !! `grad_tol`. NOT read, for reasons rather than by oversight:
+         !!
+         !! * `max_iter`, `energy_tol`, `density_tol` are positional arguments
+         !!   to this routine and the caller has already supplied them. The
+         !!   group's copies exist for callers that carry a configuration
+         !!   around; whichever the caller passes positionally is what runs.
+         !! * `guess` is a deck spelling and turning it into an `SCF_GUESS_*`
+         !!   kind needs `mqc_libcint_atomic_guess`, which calls this routine --
+         !!   importing it here would be a cycle. The caller parses it and
+         !!   passes `guess=`.
+         !! * `allow_crap_scf` is not this routine's decision. It reports
+         !!   `result%converged` and the caller decides whether an unconverged
+         !!   SCF is acceptable; a fragment run and a single-point run answer
+         !!   that differently.
+         !!
+         !! **This is what a caller holding a config should pass.** The
+         !! individual optionals above predate it and still work -- and still
+         !! win, so a caller can pass the group and override one field -- but a
+         !! new call site should name this and nothing else. Six keyword
+         !! arguments repeated at every call is how settings went missing: FMO
+         !! has eight such sites, SAPT three, and each was one forgotten
+         !! keyword away from silently ignoring the deck.
+         !! The rule that decides this SCF has converged. Absent reproduces
+         !! what `energy_tol` and `grad_tol` meant before this existed, so a
+         !! caller that has not been updated is unaffected.
       logical, intent(in), optional :: incremental_fock
          !! Build each iteration from the density change. Default true; false
          !! forces a full build every iteration, which is what to reach for when
@@ -562,6 +598,10 @@ contains
       real(dp) :: e_elec, e_old, de, drms
       real(dp) :: gnorm
       real(dp) :: gtol
+      type(scf_convergence_t) :: conv
+      logical :: accel_ok_grp
+      integer :: metric_kind
+      logical :: metric_ok
       real(dp) :: shift, shift_now, drms_prev, taper
       real(dp), allocatable :: sd(:, :), sds(:, :)
       integer :: n_ao, n_mo, n_occ, iter
@@ -580,9 +620,14 @@ contains
       end if
 
       diis_size = 8
+      if (present(scf)) then
+         diis_size = scf%diis_size
+         if (.not. scf%use_diis) diis_size = 0
+      end if
       if (present(diis_vectors)) diis_size = diis_vectors
       use_in_core = .false.
       want_incremental = .true.
+      if (present(scf)) want_incremental = scf%incremental_fock
       if (present(incremental_fock)) want_incremental = incremental_fock
       if (present(in_core)) use_in_core = in_core
       guess_kind = SCF_GUESS_GWH
@@ -662,6 +707,7 @@ contains
       end if
 
       lindep = 0.0_dp
+      if (present(scf)) lindep = scf%linear_dependence
       if (present(linear_dependence)) lindep = linear_dependence
       call build_orthogonalizer(s, x, n_mo, error, smallest_overlap=s_min, &
                                 smallest_kept=s_kept, threshold=lindep)
@@ -730,17 +776,34 @@ contains
       call scf_table_header(verbose, kohn_sham_run)
 
       accel = ACCEL_DIIS
+      if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
       if (present(accelerator)) accel = accelerator
 
       ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
       ! caller states it. See the argument's own note for why a density
       ! consumer must.
-      gtol = sqrt(energy_tol)
-      if (present(grad_tol)) then
-         if (grad_tol > 0.0_dp) gtol = grad_tol
+      ! Assembled once. A caller that states nothing gets `CONV_METRIC_STANDARD`
+      ! with the same `sqrt(energy_tol)` bound this line used to compute, so
+      ! introducing the type moves no number.
+      if (present(convergence)) then
+         conv = convergence
+      else
+         conv%tolerance = energy_tol
+         if (present(scf)) conv%gradient_tolerance = scf%grad_tol
+         if (present(grad_tol)) conv%gradient_tolerance = grad_tol
+         ! The metric named by the group, when one was passed. A spelling the
+         ! caller has already validated; an unparseable one leaves the default
+         ! rather than failing a calculation from inside the SCF.
+         if (present(scf)) then
+            call parse_convergence_metric(scf%convergence_metric, metric_kind, metric_ok)
+            if (metric_ok) conv%metric = metric_kind
+         end if
       end if
+      gtol = conv%commutator_bound()
 
+      ! The group first, then any individual override on top of it.
       shift = 0.0_dp
+      if (present(scf)) shift = scf%level_shift
       if (present(level_shift)) shift = level_shift
       ! Refused rather than clamped. A negative shift lowers the virtuals into
       ! the occupied set, which is the opposite of the point: it narrows the gap
@@ -942,7 +1005,12 @@ contains
          ! system size in use, and be reachable by an open-shell
          ! range-separated case. `sqrt(energy_tol)` is 3.2e-5 at the new
          ! default and satisfies both by orders.
-         if (iter > 1 .and. de < energy_tol .and. gnorm < gtol .and. &
+         ! The rule lives in `scf_convergence_t`, not here. `shift_now` stays
+         ! in the caller because it is not a convergence measure: a shifted
+         ! Fock matrix is a different operator, so an iterate that met the
+         ! threshold under a shift has not converged the problem that was
+         ! asked for.
+         if (iter > 1 .and. conv%is_converged(de, drms, gnorm) .and. &
              shift_now == 0.0_dp) then
             result%converged = .true.
             exit
@@ -999,7 +1067,7 @@ contains
                               verbose, result, error, diis_vectors, in_core, diis_start, &
                               guess, guess_density_alpha, guess_density_beta, xc, pcm, &
                               level_shift, linear_dependence, accelerator, grad_tol, &
-                              incremental_fock)
+                              incremental_fock, convergence, scf)
       !! Drive an unrestricted SCF to convergence
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
@@ -1018,6 +1086,39 @@ contains
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
       real(dp), intent(in), optional :: grad_tol
+      type(scf_convergence_t), intent(in), optional :: convergence
+      type(scf_numerics_t), intent(in), optional :: scf
+         !! The whole configuration, as one argument.
+         !!
+         !! **Seven of its thirteen fields are honoured here, and the contract
+         !! matters because passing this looks like passing everything.** Read:
+         !! `level_shift`, `linear_dependence`, `accelerator`, `diis_size`,
+         !! `use_diis`, `incremental_fock`, `convergence_metric`, and
+         !! `grad_tol`. NOT read, for reasons rather than by oversight:
+         !!
+         !! * `max_iter`, `energy_tol`, `density_tol` are positional arguments
+         !!   to this routine and the caller has already supplied them. The
+         !!   group's copies exist for callers that carry a configuration
+         !!   around; whichever the caller passes positionally is what runs.
+         !! * `guess` is a deck spelling and turning it into an `SCF_GUESS_*`
+         !!   kind needs `mqc_libcint_atomic_guess`, which calls this routine --
+         !!   importing it here would be a cycle. The caller parses it and
+         !!   passes `guess=`.
+         !! * `allow_crap_scf` is not this routine's decision. It reports
+         !!   `result%converged` and the caller decides whether an unconverged
+         !!   SCF is acceptable; a fragment run and a single-point run answer
+         !!   that differently.
+         !!
+         !! **This is what a caller holding a config should pass.** The
+         !! individual optionals above predate it and still work -- and still
+         !! win, so a caller can pass the group and override one field -- but a
+         !! new call site should name this and nothing else. Six keyword
+         !! arguments repeated at every call is how settings went missing: FMO
+         !! has eight such sites, SAPT three, and each was one forgotten
+         !! keyword away from silently ignoring the deck.
+         !! The rule that decides this SCF has converged. Absent reproduces
+         !! what `energy_tol` and `grad_tol` meant before this existed, so a
+         !! caller that has not been updated is unaffected.
       logical, intent(in), optional :: incremental_fock
          !! Build each iteration from the density change. Default true; false
          !! forces a full build every iteration, which is what to reach for when
@@ -1098,6 +1199,10 @@ contains
       real(dp) :: e_elec, e_old, de, drms
       real(dp) :: gnorm
       real(dp) :: gtol
+      type(scf_convergence_t) :: conv
+      logical :: accel_ok_grp
+      integer :: metric_kind
+      logical :: metric_ok
       real(dp) :: shift, shift_now, drms_prev, taper
       real(dp), allocatable :: sd(:, :), sds(:, :)
       integer :: n_ao, n_mo, n_alpha, n_beta, iter, nsq, msq
@@ -1114,11 +1219,16 @@ contains
       character(len=LINE_LEN) :: line
 
       diis_size = 8
+      if (present(scf)) then
+         diis_size = scf%diis_size
+         if (.not. scf%use_diis) diis_size = 0
+      end if
       if (present(diis_vectors)) diis_size = diis_vectors
       start_cycle = DEFAULT_UHF_DIIS_START
       if (present(diis_start)) start_cycle = diis_start
       use_in_core = .false.
       want_incremental = .true.
+      if (present(scf)) want_incremental = scf%incremental_fock
       if (present(incremental_fock)) want_incremental = incremental_fock
       if (present(in_core)) use_in_core = in_core
       guess_kind = SCF_GUESS_GWH
@@ -1176,6 +1286,7 @@ contains
       end if
 
       lindep = 0.0_dp
+      if (present(scf)) lindep = scf%linear_dependence
       if (present(linear_dependence)) lindep = linear_dependence
       call build_orthogonalizer(s, x, n_mo, error, smallest_overlap=s_min, &
                                 smallest_kept=s_kept, threshold=lindep)
@@ -1255,17 +1366,34 @@ contains
       call scf_table_header(verbose, kohn_sham_run)
 
       accel = ACCEL_DIIS
+      if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
       if (present(accelerator)) accel = accelerator
 
       ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
       ! caller states it. See the argument's own note for why a density
       ! consumer must.
-      gtol = sqrt(energy_tol)
-      if (present(grad_tol)) then
-         if (grad_tol > 0.0_dp) gtol = grad_tol
+      ! Assembled once. A caller that states nothing gets `CONV_METRIC_STANDARD`
+      ! with the same `sqrt(energy_tol)` bound this line used to compute, so
+      ! introducing the type moves no number.
+      if (present(convergence)) then
+         conv = convergence
+      else
+         conv%tolerance = energy_tol
+         if (present(scf)) conv%gradient_tolerance = scf%grad_tol
+         if (present(grad_tol)) conv%gradient_tolerance = grad_tol
+         ! The metric named by the group, when one was passed. A spelling the
+         ! caller has already validated; an unparseable one leaves the default
+         ! rather than failing a calculation from inside the SCF.
+         if (present(scf)) then
+            call parse_convergence_metric(scf%convergence_metric, metric_kind, metric_ok)
+            if (metric_ok) conv%metric = metric_kind
+         end if
       end if
+      gtol = conv%commutator_bound()
 
+      ! The group first, then any individual override on top of it.
       shift = 0.0_dp
+      if (present(scf)) shift = scf%level_shift
       if (present(level_shift)) shift = level_shift
       ! Refused rather than clamped. A negative shift lowers the virtuals into
       ! the occupied set, which is the opposite of the point: it narrows the gap
@@ -1436,7 +1564,12 @@ contains
          ! system size in use, and be reachable by an open-shell
          ! range-separated case. `sqrt(energy_tol)` is 3.2e-5 at the new
          ! default and satisfies both by orders.
-         if (iter > 1 .and. de < energy_tol .and. gnorm < gtol .and. &
+         ! The rule lives in `scf_convergence_t`, not here. `shift_now` stays
+         ! in the caller because it is not a convergence measure: a shifted
+         ! Fock matrix is a different operator, so an iterate that met the
+         ! threshold under a shift has not converged the problem that was
+         ! asked for.
+         if (iter > 1 .and. conv%is_converged(de, drms, gnorm) .and. &
              shift_now == 0.0_dp) then
             result%converged = .true.
             exit

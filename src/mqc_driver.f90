@@ -28,7 +28,8 @@ module mqc_driver
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, &
                              CALC_TYPE_OPTIMIZE, CALC_TYPE_CONFORMERS, &
                              CALC_TYPE_HESSIAN, CALC_TYPE_MAKEFP
-   use mqc_config_types, only: bond_t, mqc_config_t, scf_numerics_t
+   use mqc_config_types, only: bond_t, mqc_config_t
+   use mqc_scf_types, only: scf_numerics_t
    use mqc_mbe, only: compute_gmbe
    use mqc_result_types, only: calculation_result_t
    use mqc_scf_common, only: lindep_tally_t, lindep_collect_begin, lindep_collect_end, &
@@ -673,6 +674,19 @@ contains
             expansion%scf_max_iter = config%fmo_scf_max_iter
             expansion%scf_energy_tol = config%fmo_scf_energy_tol
             expansion%scf_density_tol = config%fmo_scf_density_tol
+            ! From `keywords.scf`, the same source the unfragmented path reads.
+            ! The three above stay on `keywords.fragmentation` because they are
+            ! per-fragment by intent; these are not.
+            expansion%scf_drive%level_shift = config%method_config%scf%level_shift
+            expansion%scf_drive%linear_dependence = config%method_config%scf%linear_dependence
+            expansion%scf_drive%use_diis = config%method_config%scf%use_diis
+            expansion%scf_drive%diis_size = config%method_config%scf%diis_size
+            expansion%scf_drive%incremental_fock = config%method_config%scf%incremental_fock
+            expansion%scf_drive%accelerator = config%method_config%scf%accelerator
+            expansion%scf_drive%convergence_metric = config%method_config%scf%convergence_metric
+            expansion%scf_drive%guess = config%method_config%scf%guess
+            expansion%scf_drive%allow_crap_scf = config%method_config%scf%allow_crap_scf
+            expansion%scf_drive%grad_tol = config%method_config%scf%gradient_convergence
             expansion%resources => resources
             expansion%node_leader_ranks = node_leader_ranks
             expansion%num_nodes = num_nodes

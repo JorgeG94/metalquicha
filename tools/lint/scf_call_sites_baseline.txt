@@ -1,0 +1,29 @@
+# SCF call sites that do not yet forward their caller's settings.
+#
+# Each line is a file and the number of incomplete call sites it is allowed to
+# still have. `tools/lint/scf_call_sites.py` fails on anything above these
+# counts, so a new one is caught immediately while the existing ones are
+# visible and finite.
+#
+# **This file is meant to shrink.** When a site is fixed, lower the count or
+# delete the line. Nothing should ever be added: a new call site forwards the
+# settings, or carries a `! mqc: scf-subset -- <reason>` marker saying why it
+# should not.
+#
+# What each entry costs, as measured on the sites already fixed: a dropped
+# `linear_dependence` means an SCF builds its orthogonaliser at a threshold the
+# deck never reached, a dropped `accelerator` means a deck cannot change how a
+# stalling fragment converges, and a dropped `incremental_fock` means the one
+# switch for ruling out the incremental Fock build does nothing.
+
+# The monomer SCFs behind a SAPT interaction energy. Like the ladder before it,
+# the routine holds no configuration at all -- one has to be threaded in from
+# the caller before there is anything to forward.
+backends/libcint/mqc_sapt.f90 3
+
+
+# The Fukui deltaSCF ions and the basis-projection ladder rungs. Both already
+# forward everything their callee accepts; what is missing is the convergence
+# rule itself, which needs `fukui_indices` and `climb_basis_ladder` to take it.
+backends/libcint/mqc_libcint_fukui.f90 2
+backends/libcint/mqc_libcint_projection.f90 2

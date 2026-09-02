@@ -279,6 +279,8 @@ contains
       call named(json, "keywords.scf.density_tolerance", config%scf_density_tolerance_set)
       call optional_string(json, "keywords.scf.guess", config%scf_guess)
       call optional_string(json, "keywords.scf.accelerator", config%scf_accelerator)
+      call optional_string(json, "keywords.scf.convergence_metric", &
+                           config%scf_convergence_metric)
       call optional_logical(json, "keywords.scf.incremental_fock", config%scf_incremental_fock)
       call optional_string(json, "keywords.guess.type", config%guess_type)
       call read_guess_steps(json, config, error)
@@ -888,6 +890,9 @@ contains
          ! ions kept `auto` -- inheritance that worked for twelve keys and
          ! quietly did not for the thirteenth.
          if (allocated(config%scf_guess)) config%fukui_scf%guess = config%scf_guess
+         if (allocated(config%scf_convergence_metric)) then
+            config%fukui_scf%convergence_metric = config%scf_convergence_metric
+         end if
          if (allocated(config%guess_type)) config%fukui_scf%guess = config%guess_type
          ! The ladder comes across whole or not at all. A rung names a basis,
          ! and half a ladder is not a cheaper start -- it is a different one.
@@ -914,6 +919,8 @@ contains
                             config%fukui_scf%allow_crap_scf)
       call read_fixed_string(json, "properties.fukui.scf.accelerator", &
                              config%fukui_scf%accelerator)
+      call read_fixed_string(json, "properties.fukui.scf.convergence_metric", &
+                             config%fukui_scf%convergence_metric)
       call read_fixed_string(json, "properties.fukui.scf.guess", config%fukui_scf%guess)
    end subroutine read_fukui_scf
 

@@ -93,6 +93,7 @@ contains
                   new_unittest("fukui_scf_inherits_the_current_guess_spelling", &
                                test_fukui_scf_guess_spelling), &
                   new_unittest("scf_maxiter_named_flag", test_maxiter_named), &
+                  new_unittest("scf_convergence_metric", test_convergence_metric), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -2072,6 +2073,37 @@ contains
       call check(error, config%fukui_scf%level_shift == 0.5_dp, &
                  "a named key wins whatever inherit_scf says")
    end subroutine test_fukui_scf_no_inherit
+
+   subroutine test_convergence_metric(error)
+      !! `keywords.scf.convergence_metric` reaches the config
+      !!
+      !! The fifth step AGENTS.md asks for. A key added everywhere but here is
+      !! one nothing would notice losing.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"convergence_metric": "commutator"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%scf_convergence_metric), &
+                 "the metric must reach the config")
+      if (allocated(error)) return
+      call check(error, config%scf_convergence_metric == "commutator", "commutator")
+      if (allocated(error)) return
+
+      ! Unmentioned stays unallocated, so the default in the method layer is
+      ! the single copy rather than one written again here.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"maxiter": 50}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. allocated(config%scf_convergence_metric), &
+                 "an unmentioned metric must not be invented")
+   end subroutine test_convergence_metric
 
    subroutine test_maxiter_named(error)
       !! Whether the deck named `keywords.scf.maxiter`, not just its value

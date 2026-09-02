@@ -390,6 +390,13 @@ endif()
 addtest(mqc_pcm_radii)
 addtest(mqc_atomic_radii)
 addtest(mqc_scf_common)
+
+# The rule that stops an SCF, tested as the pure decision it is. The case worth
+# having is an iterate whose energy has stopped moving while its commutator has
+# not -- what an interpolating accelerator produces, and what an energy-only
+# test gets wrong. Driving that through a real SCF would need a molecule, basis
+# and accelerator that stall together; here it is two numbers.
+addtest(mqc_scf_convergence)
 # Unconditional on purpose: mqc_population_analysis lives in src/ and is
 # compiled in every configuration, unlike the backend-gated tests above.
 addtest(mqc_population_analysis)

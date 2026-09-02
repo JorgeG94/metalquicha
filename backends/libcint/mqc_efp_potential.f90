@@ -53,7 +53,7 @@ module mqc_efp_potential
    use pic_timer, only: timer_type
    use libcint_fortran, only: LIBCINT_ANG_OF
    use pic_logger, only: logger => global_logger
-   use mqc_config_types, only: scf_numerics_t, print_scf_config
+   use mqc_scf_types, only: scf_numerics_t, print_scf_config
    use mqc_diis, only: parse_accelerator_name, ACCEL_DIIS
    use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
@@ -555,35 +555,38 @@ contains
       ! effect can be checked against what arrived rather than against the
       ! source. This path dropped six settings silently; the block is the
       ! cheapest guard against a seventh.
-      if (talk) then
-         echo = scf_numerics_t()
-         if (present(scf_in)) echo = scf_in
-         echo%max_iter = n_iter
-         echo%energy_tol = e_tol
-         echo%density_tol = d_tol
-         echo%grad_tol = g_tol
-         echo%diis_size = scf_diis
-         echo%level_shift = shift
-         echo%linear_dependence = lindep
-         echo%incremental_fock = incr
-         ! The resolved guess, not the deck spelling. `build_restricted_guess`
-         ! has already turned "auto" into a real choice by this point, and
-         ! echoing "auto" would name the request rather than the run.
-         echo%guess = guess_display_name(guess_kind)
-         call print_scf_config(echo, "MAKEFP SCF")
-      end if
+      ! Assembled whether or not it is printed, because this is now what the
+      ! SCF is GIVEN and not merely what gets reported. A configuration echoed
+      ! but not passed would be the very failure this echo exists to catch.
+      echo = scf_numerics_t()
+      if (present(scf_in)) echo = scf_in
+      echo%max_iter = n_iter
+      echo%energy_tol = e_tol
+      echo%density_tol = d_tol
+      echo%grad_tol = g_tol
+      echo%diis_size = scf_diis
+      echo%level_shift = shift
+      echo%linear_dependence = lindep
+      echo%incremental_fock = incr
+      ! The resolved guess, not the deck spelling. `build_restricted_guess` has
+      ! already turned "auto" into a real choice by this point, and echoing
+      ! "auto" would name the request rather than the run.
+      echo%guess = guess_display_name(guess_kind)
+      if (talk) call print_scf_config(echo, "MAKEFP SCF")
       if (present(aux_basis)) then
          call run_libcint_rhf(mol, n_electrons, n_iter, e_tol, d_tol, &
                               talk, scf, error, guess=guess_kind, guess_density=guess_total, &
                               aux=aux, grad_tol=g_tol, diis_vectors=scf_diis, &
                               level_shift=shift, linear_dependence=lindep, &
-                              accelerator=accel_kind, incremental_fock=incr)
+                              accelerator=accel_kind, incremental_fock=incr, &
+                              scf=echo)
       else
          call run_libcint_rhf(mol, n_electrons, n_iter, e_tol, d_tol, &
                               talk, scf, error, guess=guess_kind, guess_density=guess_total, &
                               grad_tol=g_tol, diis_vectors=scf_diis, &
                               level_shift=shift, linear_dependence=lindep, &
-                              accelerator=accel_kind, incremental_fock=incr)
+                              accelerator=accel_kind, incremental_fock=incr, &
+                              scf=echo)
       end if
       if (error%has_error()) then
          call mol%destroy()

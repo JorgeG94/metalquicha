@@ -15,7 +15,7 @@ module mqc_method_dft
    !! it is queried from cuEST's XC plan and handed to the DF plan, so a hybrid
    !! cannot end up with mismatched Coulomb and XC definitions.
    use pic_types, only: dp
-   use mqc_config_types, only: guess_step_t
+   use mqc_scf_types, only: guess_step_t
    use mqc_method_config, only: scf_options_t, pcm_config_t, properties_config_t
    use mqc_method_base, only: qc_method_t
    use mqc_result_types, only: calculation_result_t

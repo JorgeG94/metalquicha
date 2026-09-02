@@ -11,7 +11,7 @@ module mqc_cuest_iface
    !! which has a stub form fpm compiles and a real form CMake compiles -- lets
    !! the method files carry no preprocessor conditionals at all.
    use pic_types, only: dp
-   use mqc_config_types, only: guess_step_t, deltascf_options_t
+   use mqc_scf_types, only: guess_step_t, deltascf_options_t
    use mqc_method_config, only: pcm_config_t, mcscf_config_t, scf_options_t, properties_config_t
    implicit none
    private
@@ -59,7 +59,8 @@ module mqc_cuest_iface
       logical :: aux_basis_named = .false.
          !! Whether `aux_basis_set` was asked for or merely defaulted. The
          !! default exists because cuEST needs one, so its presence says nothing.
-      logical :: freeze_core = .false.
+      logical :: freeze_core = .true.
+         !! Matches `correlation_config_t`; see `scf_options_t`.
       integer :: n_frozen_core = -1     !! -1 means count it from the elements
       logical :: corr_density_fitting = .false.  !! RI for the correlation step
       real(dp) :: scs_ss = 1.0_dp       !! Spin-component scaling, one for plain MP2
@@ -133,6 +134,8 @@ module mqc_cuest_iface
       logical :: verbose = .false.
          !! Print the SCF iteration table
       character(len=32) :: accelerator = "diis"
+      character(len=32) :: convergence_metric = "standard"
+         !! See `mqc_scf_convergence`.
          !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
          !! 'ediis'. The energy-based pair runs only while the error is large
          !! and hands over to DIIS, so naming one asks for a different opening,
@@ -265,6 +268,7 @@ contains
       settings%diis_size = options%diis_size
       settings%incremental_fock = options%incremental_fock
       settings%accelerator = options%accelerator
+      settings%convergence_metric = options%convergence_metric
       settings%verbose = options%verbose
       settings%device_rank = options%device_rank
       settings%pcm = options%pcm
