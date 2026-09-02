@@ -17,6 +17,22 @@ macro(ADDTEST name)
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endmacro(ADDTEST)
 
+# A test that is correct but slow, excluded from a routine run by `ctest -LE
+# LONG` and included when the whole suite is wanted.
+#
+# Four tests are 80 per cent of this suite's wall time -- 1532 s of 1909 s
+# measured, against 376 s for the other 124 together -- and every one of them
+# earns it by converging a sequence of SCFs to difference something. They are
+# not slow by accident and trimming them would cost the checks their reach, so
+# the label separates *when* they run from *whether* they do.
+#
+# `LONG` rather than a name for what makes them slow: a reader running `ctest`
+# needs to know the cost, and the cause is in each test's own header.
+macro(ADDLONGTEST name)
+  addtest(${name})
+  set_tests_properties(${project_name}/${name} PROPERTIES LABELS "LONG")
+endmacro(ADDLONGTEST)
+
 # Macro to add a test executable for preprocessed .F90 files
 macro(ADDTESTPP name)
   add_executable(test_${name} test_${name}.F90)
@@ -100,11 +116,11 @@ if(MQC_ENABLE_LIBCINT)
   # The exchange-correlation Hessian, against differences of its own gradient.
   # The test skips itself when the build has no libxc, so it is registered
   # beside its neighbours rather than behind another condition.
-  addtest(mqc_xc_hessian)
+  addlongtest(mqc_xc_hessian)
   target_link_libraries(test_mqc_xc_hessian PRIVATE cint_fortran cint)
   # The second exchange derivative a range-separated functional needs, against a
   # difference of its own energy. Skips itself without libxc.
-  addtest(mqc_rsh_gradient)
+  addlongtest(mqc_rsh_gradient)
   target_link_libraries(test_mqc_rsh_gradient PRIVATE cint_fortran cint)
   # Fukui indices by difference in the electron count.
   addtest(mqc_fukui)
@@ -367,7 +383,7 @@ if(MQC_ENABLE_LIBCINT)
   # The only check that runs the whole assembly rather than one contraction, so
   # it is the gate on the analytic double-hybrid path. Skips itself without
   # libxc; ~2.5 min, which is what six converged SCF+gradient points cost.
-  addtest(mqc_dh_hessian_fd)
+  addlongtest(mqc_dh_hessian_fd)
 
   # `int1e_irp` against a difference of the dipole integrals it differentiates.
   # Pins the component layout, which is a measurement and not a convention.
@@ -376,7 +392,7 @@ if(MQC_ENABLE_LIBCINT)
   # The double hybrid's own contribution to the dipole derivative, differenced
   # against its dipole -- which is itself pinned to a field difference of
   # PySCF's B2PLYP energy. Skips itself without libxc.
-  addtest(mqc_dh_dipole_deriv)
+  addlongtest(mqc_dh_dipole_deriv)
 
   # The whole dipole derivative, response included, against a difference of the
   # converged dipole. Hartree-Fock and Kohn-Sham; the KS case skips itself

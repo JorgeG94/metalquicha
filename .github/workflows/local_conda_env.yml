@@ -1,6 +1,10 @@
 name: Build MQC using local conda env (MPI, OpenMP, BLAS)
 
-on: [push]
+# `workflow_dispatch` so the long tests can be asked for on a branch before it
+# merges. There is no `pull_request` trigger here, so there is no PR event to
+# hang a pre-merge gate on; adding one would change when CI fires for every
+# branch, which is a bigger decision than this change.
+on: [push, workflow_dispatch]
 
 # One build per branch. A push supersedes the one before it on the same branch,
 # and the superseded run is cancelled rather than left to finish work nobody
@@ -78,8 +82,14 @@ jobs:
           - name: "no tblite"
             tblite: false
             legacy_mpi: false
-          - name: "with tblite + legacy MPI"
-            tblite: true
+          # Legacy MPI, and nothing else on. This job exists to catch a compile
+          # failure in the legacy path, so it isolates that one variable:
+          # against "no tblite" above, which is everything off, the only
+          # difference is `PIC_USE_LEGACY_MPI`. It used to build tblite too,
+          # which added minutes without adding coverage of the thing being
+          # tested.
+          - name: "legacy MPI"
+            tblite: false
             legacy_mpi: true
           # Integrals with libxc explicitly off -- a reduced build now that both
           # are on by default, and worth keeping: it is what you get asking only
@@ -289,11 +299,38 @@ jobs:
           conda activate mqc
           tools/check_cuest_compiles.sh build
 
+      # Four tests are 80 per cent of this suite's wall time and they are
+      # labelled `LONG`; `-LE LONG` leaves them out. The whole suite still runs
+      # -- see the job below -- but not on every push of every branch, and not
+      # once per matrix entry.
+      #
+      # Skipped entirely for two jobs. The Python one has *identical* flags to
+      # the default build, so its unit-test run repeated that job exactly rather
+      # than approximately; what it uniquely covers is the interface, exercised
+      # by the examples further down. And the tblite job says "build only" in
+      # its name, which until now was true of the xTB validation and not of
+      # this step.
       - name: Run unit tests
+        if: '!matrix.python && !matrix.build_only'
         shell: bash -el {0}
         run: |
           conda activate mqc
-          ctest --test-dir build -V -R "mqc"
+          ctest --test-dir build -V -R "mqc" -LE LONG
+
+      # The four `LONG` tests, on the build the step above already made rather
+      # than in a job of their own -- a separate job would rebuild everything to
+      # run twenty-five minutes of tests.
+      #
+      # On `main`, so anything merged is covered, and on demand, so a branch can
+      # be checked before it merges. Not on every branch push, which is what
+      # made them cost three times over: they need libxc, so they ran in the
+      # default, libcint and Python jobs alike.
+      - name: Run long unit tests
+        if: matrix.defaults && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          ctest --test-dir build -V -R "mqc" -L LONG
 
       # The CPU Hartree-Fock decks, run through mqc the way a user would, and
       # checked against PySCF rather than against numbers this program printed
