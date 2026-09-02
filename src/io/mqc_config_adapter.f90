@@ -833,15 +833,13 @@ contains
    end subroutine copy_fragment_potentials
 
    pure function fragmentation_allows_overlap(mqc_config) result(yes)
-      !! Whether primaries may overlap, derived the same way everywhere
+      !! Whether primaries may overlap, derived from `method` alone
       !!
-      !! **This exists because `driver_config` is not the only consumer.**
-      !! `config_to_system_geometry` builds the geometry on a different path
-      !! and refuses overlapping fragments on its own, reading the raw deck
-      !! flag. When `method: gmbe` started deriving that flag, the derived
-      !! value reached the driver and not the geometry, so a GMBE deck that had
-      !! dropped the now-deprecated key was refused at the door -- caught by
-      !! the tblite suite, on `hess_gly3_ov`.
+      !! **Two consumers, one derivation.** `config_to_system_geometry` refuses
+      !! overlapping fragments on its own path, reading this rather than a deck
+      !! flag -- when `method: gmbe` first started deriving the switch, only
+      !! the driver got it and a GMBE deck was refused at the door by the
+      !! geometry, telling it to set the key the migration had just removed.
       use mqc_fragmentation_method, only: parse_fragmentation_method, &
                                           fragmentation_method_overlapping
       type(mqc_config_t), intent(in) :: mqc_config
@@ -850,13 +848,10 @@ contains
       integer :: method
       logical :: ok
 
-      ! The deprecated flag still stands on its own for a deck that names it
-      ! and no method, which is what an unfragmented or hand-written deck may
-      ! still look like.
-      yes = mqc_config%allow_overlapping_fragments
+      yes = .false.
       if (.not. allocated(mqc_config%frag_method)) return
       call parse_fragmentation_method(mqc_config%frag_method, method, ok)
-      if (ok) yes = yes .or. fragmentation_method_overlapping(method)
+      if (ok) yes = fragmentation_method_overlapping(method)
    end function fragmentation_allows_overlap
 
    subroutine resolve_fragmentation_method(mqc_config, driver_config, error)
@@ -906,30 +901,6 @@ contains
 
       derived_kind = fragmentation_method_expansion(method)
       derived_overlap = fragmentation_method_overlapping(method)
-
-      ! The deprecated pair, when a deck still writes them. Agreement is
-      ! required; see the note at the call site for why they are not ranked.
-      if (allocated(mqc_config%expansion_kind)) then
-         if (trim(mqc_config%expansion_kind) /= trim(derived_kind)) then
-            if (present(error)) call error%set(ERROR_VALIDATION, &
-                                               "keywords.fragmentation.method is '"// &
-                                               fragmentation_method_name(method)//"' but expansion is '"// &
-                                               trim(mqc_config%expansion_kind)//"'. These name the same "// &
-                                               "choice and disagree. `expansion` is deprecated -- delete "// &
-                                               "it and let `method` say which expansion to run.")
-            return
-         end if
-      end if
-      if (mqc_config%allow_overlapping_fragments .neqv. derived_overlap) then
-         if (mqc_config%allow_overlapping_fragments) then
-            if (present(error)) call error%set(ERROR_VALIDATION, &
-                                               "allow_overlapping_fragments is true, which is GMBE, but "// &
-                                               "keywords.fragmentation.method is '"// &
-                                               fragmentation_method_name(method)//"'. The flag is "// &
-                                               "deprecated -- write method: gmbe instead.")
-            return
-         end if
-      end if
 
       driver_config%expansion_kind = derived_kind
       driver_config%allow_overlapping_fragments = derived_overlap

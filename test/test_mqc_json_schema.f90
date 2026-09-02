@@ -43,11 +43,38 @@ contains
                   new_unittest("ecp_refused_for_xtb", test_ecp_xtb), &
                   new_unittest("ecp_refused_for_mcscf", test_ecp_mcscf), &
                   new_unittest("empty_ecp_is_not_a_request", test_ecp_empty), &
+                  new_unittest("retired_fragmentation_keys_are_refused", test_retired_frag_keys), &
                   new_unittest("unrestricted moved to model", test_unrestricted_moved) &
                   ]
    end subroutine collect_mqc_json_schema_tests
 
    ! ---- the cases ----------------------------------------------------------
+
+   subroutine test_retired_frag_keys(error)
+      !! `expansion` and `allow_overlapping_fragments` are gone, and say so
+      !!
+      !! They named the same choice as `method`, so the resolver had to
+      !! reconcile three inputs into one decision -- and got it wrong for an
+      !! explicit `{"method": "gmbe", "allow_overlapping_fragments": false}`,
+      !! silently flipping the flag back to true. Deleting them removes the
+      !! class rather than fixing the instance.
+      !!
+      !! What matters for a deck already written against them is that the
+      !! validator refuses an unknown key BY NAME, so such a deck stops at
+      !! parse time with the key quoted rather than quietly running a different
+      !! expansion. That is the whole reason this is worth a test.
+      type(error_type), allocatable, intent(out) :: error
+
+      call write_minimal('"keywords": {"fragmentation": {"method": "mbe", '// &
+                         '"level": 2, "expansion": "fmo"}},')
+      call expect_rejected(error, "expansion", "the retired expansion key")
+      if (allocated(error)) return
+
+      call write_minimal('"keywords": {"fragmentation": {"method": "gmbe", '// &
+                         '"level": 2, "allow_overlapping_fragments": false}},')
+      call expect_rejected(error, "allow_overlapping_fragments", &
+                           "the retired allow_overlapping_fragments key")
+   end subroutine test_retired_frag_keys
 
    subroutine test_valid(error)
       !! Everything the schema allows, together, must still be accepted
@@ -70,7 +97,6 @@ contains
                        '  "xtb": {"solvent": "water", "solvation_model": "cpcm", "dielectric": 80.0,', &
                        '          "cpcm_nang": 230, "cpcm_rscale": 1.2, "use_cds": true, "use_shift": true},', &
                        '  "fragmentation": {"method": "MBE", "level": 3, "embedding": "none",', &
-                       '                    "allow_overlapping_fragments": false,', &
                        '                    "max_intersection_level": 2, "cutoff_method": "distance",', &
                        '                    "distance_metric": "min", "global_groups": 2,', &
                        '                    "cutoffs": {"dimer": 6.0, "3": 4.0}}},', &
