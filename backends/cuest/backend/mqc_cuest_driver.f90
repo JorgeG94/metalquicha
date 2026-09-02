@@ -2,9 +2,8 @@
 module mqc_cuest_driver
    !! One place where a `physical_fragment_t` becomes a converged SCF result.
    !!
-   !! Hartree-Fock and Kohn-Sham differ only in whether a functional is named,
-   !! so both methods funnel through here rather than each carrying its own
-   !! copy of the basis loading, context acquisition and teardown.
+   !! Hartree-Fock and Kohn-Sham both come through here; they differ only in
+   !! whether a functional is named.
    use pic_types, only: dp
    use mqc_string_utils, only: int_to_text
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
@@ -36,18 +35,13 @@ module mqc_cuest_driver
 
    public :: run_cuest_scf         !! Fragment -> converged result
 
-! cuest_scf_settings_t now lives in mqc_cuest_iface (src/), so the method
-   ! files can reach it without pulling the backend into the fpm build.
-
 contains
 
    subroutine run_cuest_scf(settings, fragment, result, want_gradient)
-      !! Run a closed-shell cuEST SCF for one fragment
+      !! Run a cuEST SCF for one fragment, restricted or unrestricted
       !!
       !! With `want_gradient`, the analytic nuclear gradient is evaluated from
-      !! the converged density before the cuEST objects are torn down -- they
-      !! describe this geometry and this basis, so reusing them is both
-      !! cheaper and safer than rebuilding.
+      !! the converged density before the cuEST objects are torn down.
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
@@ -72,11 +66,9 @@ contains
       need_gradient = .false.
       if (present(want_gradient)) need_gradient = want_gradient
 
-      ! cuEST exposes ECP entry points -- cuestECPIntPlanCreate, cuestECPCompute
-      ! and their derivatives -- and this backend calls none of them. So an ECP
-      ! deck here would run all-electron with the full nuclear charge and the
-      ! full electron count, converge, and report a number hundreds of Hartree
-      ! from what was asked for. Refused by name until those are wired.
+      ! cuEST exposes ECP entry points and this backend calls none of them, so
+      ! an ECP deck would run all-electron, converge, and report a number
+      ! hundreds of Hartree out. Refused by name until those are wired.
       if (len_trim(settings%ecp_set) > 0) then
          call error%set(ERROR_VALIDATION, "model.ecp is set, but the GPU backend does "// &
                         "not apply effective core potentials: cuEST provides the entry "// &
@@ -87,22 +79,10 @@ contains
          return
       end if
 
-      ! Same principle as the ECP refusal above, and the same failure it
-      ! prevents. This backend's DIIS is device-resident and Pulay-only: there
-      ! is no EDIIS or ADIIS under `backends/cuest`, and nothing here read
-      ! `settings%accelerator` at all -- so a deck naming one got a plain DIIS
-      ! run with nothing to say so.
-      !
-      ! That also silently defeated the check for whether the setting is live.
-      ! On the CPU path a misspelled accelerator is refused by name, so an
-      ! invalid one is the reliable way to confirm the keyword arrives; here it
-      ! was accepted, which made a GPU run indistinguishable from a correctly
-      ! plumbed one.
-      !
-      ! Refusing the unimplemented and the misspelled through one branch is
-      ! deliberate. Parsing it, refusing the unknown and ignoring the
-      ! known-but-unimplemented would answer a deck asking for EDIIS with DIIS,
-      ! which is the thing being fixed.
+      ! This backend's DIIS is device-resident and Pulay-only -- there is no
+      ! EDIIS or ADIIS under `backends/cuest` -- so anything else is refused
+      ! rather than run as DIIS without saying so. The unimplemented and the
+      ! misspelled go through the one branch.
       if (len_trim(settings%accelerator) > 0 .and. &
           trim(adjustl(settings%accelerator)) /= "diis") then
          call error%set(ERROR_VALIDATION, "keywords.scf.accelerator is '"// &
@@ -147,9 +127,9 @@ contains
       ! ---- per-rank handle and device scratch -------------------------------
       !
       ! One handle and one set of scratch pools per rank, reused by every
-      ! fragment this rank evaluates. The node-local rank spreads ranks across
-      ! the GPUs on the node; it is ignored after the first call, since the
-      ! context is created once and then shared.
+      ! fragment that rank evaluates. `device_rank` spreads ranks across the
+      ! node's GPUs and is ignored after the first call: the context is created
+      ! once and then shared.
       call get_cuest_context(settings%device_rank, context, error)
       if (error%has_error()) then
          call record_failure(result, error)
@@ -204,12 +184,10 @@ contains
 
       ! ---- which initial guess? ---------------------------------------------
       !
-      ! Same principle as the two refusals above. `case default` used to answer
-      ! every unhandled name with GWH, so a deck asking for `sad` got a GWH run
-      ! and nothing said so -- and a misspelling got one too, which meant an
-      ! invalid name could not be used to check that the keyword arrived. The
-      ! shared settings type even carried a comment claiming this path refused
-      ! what it could not run; it did not, and now it does.
+      ! Same principle as the two refusals above: an unhandled name is refused
+      ! rather than answered with GWH, so a deck asking for `sad` cannot get a
+      ! GWH run with nothing said, and a misspelling is caught rather than
+      ! quietly accepted.
       !
       ! `auto` and `gwh` are GWH deliberately, not by default: `auto` means
       ! "the backend picks" and this backend picks GWH, having measured it.
@@ -232,9 +210,9 @@ contains
 
       ! ---- restricted or unrestricted? --------------------------------------
       !
-      ! An odd electron count forces unrestricted regardless of what the input
-      ! claims, so a mis-stated multiplicity fails as a validation error rather
-      ! than silently halving an odd number of electrons.
+      ! An odd electron count forces unrestricted whatever the input claims, so
+      ! a mis-stated multiplicity is a validation error rather than a silently
+      ! halved odd electron count.
       call spin_occupations(fragment%nelec, fragment%multiplicity, n_alpha, n_beta, occupations_ok)
       if (.not. occupations_ok) then
          call error%set(ERROR_VALIDATION, "Electron count and multiplicity are inconsistent")
@@ -287,8 +265,7 @@ contains
       !
       ! Built before the molecular system so its width is known: the guess
       ! carries the summed atomic occupations, usually more columns than the
-      ! molecule has electrons, and the device pools must be sized for that up
-      ! front rather than grown later under a live system.
+      ! molecule has electrons, and the device pools are sized for that up front.
       n_guess_columns = 0
       if (guess_type == SCF_GUESS_SAC) then
          call build_atom_bases(settings, element_symbols, atom_bases, atom_aux_bases, error)
@@ -371,11 +348,6 @@ contains
       result%energy%scf = scf%total_energy
       result%has_energy = .true.
 
-      ! The SCF has known this all along; it simply was not carried out of
-      ! here. Without it a fragment that ran out of iterations contributes its
-      ! last-cycle energy to the expansion, has_error stays false, and the
-      ! total is wrong by however far that SCF still had to go -- with nothing
-      ! anywhere saying so.
       if (scf%converged) then
          result%scf_status = SCF_CONVERGED
       else
@@ -383,10 +355,9 @@ contains
       end if
       result%scf_iterations = scf%iterations
 
-      ! cuEST reports eigenvalues but not occupations, so they are rebuilt
-      ! from the electron count: doubly occupied up to nelec/2 for a closed
-      ! shell, singly up to n_alpha when unrestricted. Same routine as the
-      ! xTB path picks the pair, so one definition of "frontier" serves both.
+      ! cuEST reports eigenvalues but not occupations, so they are rebuilt from
+      ! the electron count: doubly occupied up to nelec/2 for a closed shell,
+      ! singly up to n_alpha when unrestricted.
       if (allocated(scf%orbital_energies)) then
          block
             real(dp), allocatable :: occupations(:)
@@ -411,33 +382,25 @@ contains
          end block
       end if
 
-      ! Same policy as xTB, deliberately. One physical condition -- an SCF that
-      ! ran out of iterations -- must not stop the job on one backend and pass
-      ! silently on the other, which is what it did while this was only
-      ! recorded here.
+      ! Same policy as xTB: an SCF that ran out of iterations must not stop the
+      ! job on one backend and pass silently on the other.
       if (.not. scf%converged .and. .not. settings%allow_crap_scf) then
          call error%set(ERROR_GENERIC, scf_not_converged_message(scf%iterations))
          call record_failure(result, error)
          return
       end if
 
-      ! The dipole is what IR intensities are built from: the Hessian path
-      ! collects it at every displacement and differences it.
       if (scf%has_dipole) then
          result%dipole = scf%dipole
          result%has_dipole = .true.
       end if
 
-      ! Atomic charges, from the density this calculation converged to.
-      !
-      ! Done here rather than in the SCF because `system` is still alive and
-      ! owns the overlap, and done before the gradient for no reason other than
-      ! that both need the same live objects.
+      ! Atomic charges, from the density this calculation converged to. Done
+      ! while `system` is still alive, since it owns the overlap.
       !
       ! The arithmetic is `mqc_population_analysis`, the same code the CPU path
-      ! runs. Only the AO-to-atom map is built differently: cuEST lays its AO
-      ! basis out per atom in atom order, so a count per atom is the whole of
-      ! it.
+      ! runs; only the AO-to-atom map differs. cuEST lays its AO basis out per
+      ! atom in atom order, so a count per atom is the whole of it.
       if (allocated(settings%charges_scheme)) then
          block
             real(dp), allocatable :: q(:), q_spin(:), s_ao(:, :), spin_density(:, :)
@@ -459,7 +422,7 @@ contains
                   ! `scf%density` is already the total on this backend -- the
                   ! unrestricted path stores density_a + density_b there, where
                   ! the CPU path stores alpha alone. So the spin density is
-                  ! total - 2*beta, and not the difference of the two stored
+                  ! total - 2*beta, not the difference of the two stored
                   ! matrices.
                   call mulliken_atomic_charges(owner, real(fragment%element_numbers, dp), &
                                                scf%density, s_ao, q, analysis_error)
@@ -471,11 +434,8 @@ contains
                                                         analysis_error)
                end if
             case ("chelpg")
-               ! Not a refusal that can be lifted by wiring one more call: the
-               ! fit needs the electrostatic potential at points off the atoms,
-               ! which this backend has no integral for. Named rather than
-               ! silently answered with Mulliken, because the two schemes
-               ! disagree by design.
+               ! The fit needs the electrostatic potential at points off the
+               ! atoms, which this backend has no integral for.
                call analysis_error%set(ERROR_GENERIC, "CHELPG charges are not implemented "// &
                                        "on the GPU backend; it builds no electrostatic "// &
                                        "potential integrals. Use 'mulliken' here, or run "// &
@@ -531,13 +491,8 @@ contains
       !! Basis Set Exchange JSON is the only format; `find_basis_file` walks
       !! the search path and reports where it looked if nothing turns up.
       !!
-      !! A Cartesian basis is refused here, and that one is not a gap waiting to
-      !! be filled the way the CPU backend's was. cuEST builds its AO shells
-      !! pure, every plan and every device buffer is sized from the spherical
-      !! function count, and there is no per-call convention to route on the way
-      !! libcint has. Reading 6-31G* as spherical anyway is precisely the silent
-      !! wrong answer this was all fixed for, so the deck is told to change the
-      !! basis instead.
+      !! A Cartesian basis is refused: cuEST builds its AO shells pure and
+      !! sizes every plan and device buffer from the spherical function count.
       character(len=*), intent(in) :: basis_name
       character(len=*), intent(in) :: element_symbols(:)
       type(molecular_basis_type), intent(out) :: mol_basis
@@ -575,13 +530,10 @@ contains
    subroutine check_basis_covers_atoms(basis_name, basis_path, element_symbols, mol_basis, error, role)
       !! Fail unless every atom came back with at least one shell
       !!
-      !! The readers already refuse an element that is absent from the file,
-      !! but each of the three has its own notion of "absent" and a block that
-      !! parses to nothing would slip through all of them. An atom with no
-      !! basis functions is not a small error: cuEST would build a system whose
-      !! AO space simply omits that centre and converge an SCF for a different
-      !! molecule than the one that was asked for. Refuse it here, once, on the
-      !! only path any of the readers can reach the backend by.
+      !! Each reader has its own notion of an absent element, and a block that
+      !! parses to nothing slips through all of them. cuEST would then build a
+      !! system whose AO space omits that centre and converge an SCF for a
+      !! different molecule.
       character(len=*), intent(in) :: basis_name, basis_path
       character(len=*), intent(in) :: element_symbols(:)
       type(molecular_basis_type), intent(in) :: mol_basis

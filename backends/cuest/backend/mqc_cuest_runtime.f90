@@ -39,9 +39,9 @@ module mqc_cuest_runtime
 
    integer(c_size_t), parameter :: BYTES_PER_DOUBLE = 8_c_size_t
 
-   !! Plain C malloc/free for the host half of a cuEST workspace. The buffer
-   !  must outlive the scoping unit that created it and is freed through a raw
-   !  address, so a Fortran allocatable is not a substitute.
+   ! Plain C malloc/free for the host half of a cuEST workspace. The buffer
+   ! must outlive the scoping unit that created it and is freed through a raw
+   ! address, so a Fortran allocatable is not a substitute.
    interface
       function c_malloc(nbytes) result(ptr) bind(C, name="malloc")
          import :: c_ptr, c_size_t
@@ -115,10 +115,9 @@ contains
    subroutine copy_int_to_host(value, device_ptr, context, error)
       !! Read one 32-bit integer back from the device
       !!
-      !! cuSOLVER reports convergence through a DEVICE int rather than the
-      !! return status, so checking it means a transfer. It is four bytes and
-      !! happens once per diagonalization, which is not worth avoiding -- and
-      !! not checking it means a non-converged eigensolve looks like a
+      !! cuSOLVER reports convergence through a **device** int rather than the
+      !! return status, so checking it costs a four-byte transfer per
+      !! diagonalization. Unchecked, a non-converged eigensolve looks like a
       !! converged one with wrong orbitals.
       integer(c_int), intent(out), target :: value
       type(c_ptr), intent(in) :: device_ptr
@@ -150,6 +149,9 @@ contains
       type(cuestWorkspaceDescriptor_t), intent(in) :: descriptor
       type(error_t), intent(inout) :: error
 
+      ! TODO(mqc): a device allocation that fails after the host one succeeded
+      ! returns with `hostBuffer` set and no free, so the host block leaks
+      ! unless the caller calls `workspace_free` on the failed workspace.
       type(c_ptr) :: host_ptr, device_ptr
 
       workspace%hostBufferSizeInBytes = descriptor%hostBufferSizeInBytes
@@ -230,9 +232,8 @@ contains
       !! Address `n_doubles` doubles past `base`, for slicing one allocation
       !!
       !! A ring of history vectors is one buffer with a column per slot, so the
-      !! slot addresses are offsets into it. The arithmetic goes through
-      !! `c_intptr_t` because `c_ptr` is opaque and has no arithmetic of its
-      !! own; there is no bounds check, so the caller owns the indexing.
+      !! slot addresses are offsets into it. **No bounds check**: the caller
+      !! owns the indexing.
       type(c_ptr), intent(in) :: base
       integer(c_int64_t), intent(in) :: n_doubles  !! Element offset, not bytes
       type(c_ptr) :: ptr

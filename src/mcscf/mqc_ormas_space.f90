@@ -1,40 +1,22 @@
 !! Occupation-restricted active spaces: the partition, and where a determinant lives
 module mqc_ormas_space
-   !! A CAS says how many electrons go into how many orbitals and stops there.
    !! ORMAS cuts the active orbitals into consecutive subspaces and puts a
-   !! window on the electron count of each, which is enough to express RAS, a
-   !! truncated CI, several non-communicating active spaces, or a fragment
-   !! model with limited charge transfer -- all as the same object.
+   !! window on the electron count of each, which expresses RAS, a truncated CI,
+   !! several non-communicating active spaces, or a fragment model with limited
+   !! charge transfer as one object.
    !!
-   !! The whole restriction turns out to be one bitmap. Enumerate, per spin, the
-   !! *occupation classes* -- the ways the electrons of that spin can be spread
-   !! over the subspaces -- and then a determinant is allowed exactly when the
-   !! two classes its strings belong to sum, subspace by subspace, into every
-   !! window. Nothing depends on which string within a class, so the test is
-   !! made once per pair of classes and never again. That is `compatible` below,
-   !! and everything else in this module is bookkeeping around it.
+   !! The whole restriction is one bitmap. Per spin, the *occupation classes*
+   !! are the ways that spin's electrons can be spread over the subspaces; a
+   !! determinant is allowed exactly when the two classes its strings belong to
+   !! sum, subspace by subspace, into every window. That is `compatible` below.
    !!
-   !! The consequence worth stating plainly: the CI vector stops being a matrix.
-   !! Some class pairs are allowed and some are not, so the alpha-by-beta
-   !! rectangle acquires holes. What is left is a *list of dense rectangles* --
-   !! one per allowed class pair -- laid out alpha-major, and the address of a
-   !! determinant is a base for its alpha string plus an offset for its beta
-   !! class plus its beta string's rank. A CAS is the case where there is one
-   !! class of each spin and the list is a single rectangle, which is why the
-   !! formula here reduces to the obvious one and must be checked that it does.
+   !! So the CI vector is not a matrix but a *list of dense rectangles*, one per
+   !! allowed class pair, laid out alpha-major: the address of a determinant is
+   !! a base for its alpha string, plus an offset for its beta class, plus its
+   !! beta string's rank. A CAS is the single-rectangle case.
    !!
-   !! No point-group symmetry. It is what makes this layout ragged rather than
-   !! blocked -- with irreps, the row belonging to an alpha string depends on
-   !! that string and not merely on its class -- and this code has no orbital
-   !! symmetry anywhere to draw on. The seam for adding it later is narrow and
-   !! deliberate: `alpha_base` is stored per string, not recomputed from its
-   !! class, and `block_offset` is a table rather than an expression. Both keep
-   !! their shape and their consumers when an irrep index appears.
-   !!
-   !! Like `mqc_determinants`, everything here is checkable without physics.
-   !! The class lists are integer compositions, the counts are products of
-   !! binomial coefficients, and the address is a bijection onto `1 ..
-   !! n_determinants` that has to be dense and has to round trip.
+   !! No point-group symmetry: nothing here is blocked by irrep, and
+   !! `alpha_base` is stored per string rather than recomputed from its class.
    use pic_types, only: int64, int32
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -55,19 +37,15 @@ module mqc_ormas_space
    public :: closure_address
 
    integer, parameter :: MAX_SUBSPACES = 16
-      !! Far above anything meaningful -- the cost of a subspace is another
-      !! factor in the class count, and partitions past a handful stop being
-      !! interpretable long before they stop being computable. GAMESS allows 50
-      !! and checks nothing; a partition that needs more than sixteen is a
-      !! mistake worth catching rather than a calculation worth running.
+      !! Each subspace is another factor in the class count, so a partition
+      !! needing more than this is a mistake rather than a calculation.
 
    type :: ormas_space_t
       !! A partition of the active orbitals, and the addressing it implies
       !!
       !! Built once by `build_ormas_space` and read-only afterwards. Every
       !! index is 1-based; `alpha_base` and `block_offset` are offsets and so
-      !! count from zero, which is the one place the two conventions meet and
-      !! the one place to look first when an address comes out wrong.
+      !! count from zero.
       integer :: n_subspaces = 0
       integer :: n_alpha = 0, n_beta = 0
       integer :: n_active_orbitals = 0
@@ -85,11 +63,7 @@ module mqc_ormas_space
       integer, allocatable :: alpha_class(:, :), beta_class(:, :)
          !! `(subspace, class)` -- every way that spin's electrons can be spread
          !! over the subspaces, in enumeration order, whether or not the windows
-         !! leave any use for it. Classes that pair with nothing cost a row of
-         !! `compatible` and are worth that: the alternative is a per-spin bound
-         !! that is necessary but not sufficient, which means a second, wider
-         !! list of strings the moment anything needs to step outside the space
-         !! -- and stepping outside is what an excitation does.
+         !! leave any use for it.
       integer(int64), allocatable :: alpha_class_size(:), beta_class_size(:)
          !! Strings in each class: the product over subspaces of `C(orbitals,
          !! electrons)`, since within a class the subspaces are independent
@@ -101,8 +75,7 @@ module mqc_ormas_space
          !! it is read in the innermost loop of everything downstream.
 
       logical, allocatable :: compatible(:, :)
-         !! `(beta class, alpha class)` -- the entire ORMAS restriction. Beta
-         !! first because that is the order it is consumed in.
+         !! `(beta class, alpha class)` -- the entire ORMAS restriction
 
       integer(int64), allocatable :: row_length(:)
          !! Determinants carried by one alpha string of each class
@@ -123,17 +96,13 @@ module mqc_ormas_space
    type :: ormas_closure_t
       !! The space plus one excitation, and where a determinant sits in it
       !!
-      !! A sigma build applies an excitation to the vector, contracts, and
-      !! applies another. The vector in the middle is the trouble: an excitation
-      !! may take a determinant out of the space and the second bring it back,
-      !! so the intermediate does not live on the space -- it lives on the space
-      !! widened by one excitation. Truncating it to the space loses exactly
-      !! those terms, quietly, in a way no symmetry or count would reveal.
+      !! An excitation may take a determinant out of the space and a second
+      !! bring it back, so the intermediate vector of a sigma build lives on the
+      !! space widened by one excitation, not on the space. Truncating it to the
+      !! space loses those terms silently.
       !!
-      !! Membership depends on the strings only through their classes, as
-      !! everything here does, so this is another grid over the same class lists
-      !! and the same strings, addressed by the same three tables. Nothing about
-      !! the layout is new; only which pairs are in it.
+      !! Same class lists, same strings and the same three addressing tables as
+      !! `ormas_space_t`; only which pairs are in it differs.
       logical, allocatable :: present(:, :)
          !! `(beta class, alpha class)` -- reachable in one excitation, or in
          !! the space already
@@ -164,10 +133,9 @@ contains
    pure subroutine first_composition(capacity, minimum, total, occupation)
       !! The first way to spread `total` particles over the boxes
       !!
-      !! Every box starts at its minimum, then the surplus is poured in from
-      !! the left until it runs out. Filling greedily from the left is what
-      !! makes the enumeration order descending-lexicographic, which
-      !! `next_composition` then walks and which the addressing assumes.
+      !! Boxes start at their minima and the surplus fills from the left, which
+      !! puts the enumeration in descending-lexicographic order -- what
+      !! `next_composition` walks and what the addressing assumes.
       integer, intent(in) :: capacity(:), minimum(:)
       integer, intent(in) :: total
       integer, intent(out) :: occupation(:)
@@ -186,10 +154,8 @@ contains
    pure subroutine next_composition(capacity, minimum, total, occupation, exhausted)
       !! The next way, or a flag saying there is none
       !!
-      !! Find the rightmost box that can give a particle to some box on its
-      !! right, move one out of it, and repack everything to its right greedily
-      !! from the left. That is the successor in descending-lexicographic
-      !! order, and it visits every composition exactly once.
+      !! The successor in descending-lexicographic order; the walk visits every
+      !! composition exactly once.
       integer, intent(in) :: capacity(:), minimum(:)
       integer, intent(in) :: total
       integer, intent(inout) :: occupation(:)
@@ -218,9 +184,6 @@ contains
 
    subroutine enumerate_classes(capacity, minimum, total, classes, n_classes)
       !! Every occupation vector allowed by the per-spin bounds
-      !!
-      !! Counted first and then filled, because the count is wanted on its own
-      !! and running the walk twice is cheaper than growing an array.
       integer, intent(in) :: capacity(:), minimum(:)
       integer, intent(in) :: total
       integer, allocatable, intent(out) :: classes(:, :)
@@ -266,6 +229,8 @@ contains
 
       if (error%has_error()) return
 
+      ! TODO(mqc): `build_ormas_space` makes this same check, with the same
+      ! message, before it calls here, so this copy can never fire.
       if (space%n_subspaces < 1 .or. space%n_subspaces > MAX_SUBSPACES) then
          call error%set(ERROR_VALIDATION, "an active space cut into "// &
                         to_char(space%n_subspaces)//" subspaces is not one this "// &
@@ -316,14 +281,9 @@ contains
       !! Shrink the windows to what the other subspaces actually leave available
       !!
       !! A window can promise more room than the rest of the partition can
-      !! spare: if every other subspace must hold at least so many electrons,
-      !! this one cannot exceed what is left over however large its own maximum
-      !! reads. Tightening first means the compatibility test sees the real
-      !! bounds, and it is why the numbers reported back may not be the numbers
-      !! that were asked for.
-      !!
-      !! Order matters -- the minima are tightened against the *already*
-      !! tightened maxima.
+      !! spare, so the bounds stored afterwards may not be the ones that were
+      !! asked for. The minima are tightened against the *already* tightened
+      !! maxima, so the order matters.
       type(ormas_space_t), intent(inout) :: space
       integer, intent(in) :: n_electrons
 
@@ -376,9 +336,6 @@ contains
       !! beta classes appear in order, each contributing a dense block of its own
       !! strings. Three tables say it all -- how long a row is, where each beta
       !! class starts within one, and where each alpha string's row begins.
-      !!
-      !! Written against a grid rather than against a space because the space
-      !! and its one-excitation closure differ in nothing else.
       logical, intent(in) :: grid(:, :)
       integer(int64), intent(in) :: alpha_size(:), beta_size(:), alpha_offset(:)
       integer, intent(in) :: alpha_string_class(:)
@@ -458,22 +415,13 @@ contains
       !! Keep the classes the space uses and the ones an excitation can reach
       !!
       !! A class earns its place by appearing in some allowed pair, or by being
-      !! one excitation away from one that does. Anything further away can hold
-      !! no determinant of the space and can be reached by nothing the sigma
-      !! build ever forms, so its strings are weight without use.
+      !! one excitation away from one that does. Anything further can hold no
+      !! determinant of the space and can be reached by nothing the sigma build
+      !! forms.
       !!
       !! **One move, not none.** Pruning to the classes that appear in the space
-      !! would be tighter -- it is what GAMESS does -- and it would be wrong
-      !! here. An excitation routinely leaves the space and the intermediate has
-      !! to name where it went; a program whose sigma works on determinant pairs
-      !! never names that string and can afford the tighter bound. Ours is a
-      !! vector indexed by determinant, so every class the closure touches needs
-      !! to exist.
-      !!
-      !! The saving is nothing on a small space and decisive on a real one:
-      !! singles and doubles from seven orbitals into twenty-nine keeps 136,620
-      !! alpha strings out of 8,347,680, and every per-string table shrinks with
-      !! them.
+      !! is wrong here: the sigma intermediate is a vector indexed by
+      !! determinant, so every class the closure touches has to exist.
       type(ormas_space_t), intent(inout) :: space
 
       logical, allocatable :: keep_alpha(:), keep_beta(:)
@@ -559,8 +507,7 @@ contains
       !! `first_orbital` gives the active orbital each subspace begins at, so
       !! its length is the number of subspaces and its first entry is 1. The
       !! windows are on the *total* electron count of a subspace, both spins
-      !! together, which is what makes them independent of how the spins are
-      !! distributed and what lets the whole restriction reduce to a bitmap.
+      !! together.
       integer, intent(in) :: first_orbital(:)
       integer, intent(in) :: n_active_orbitals, n_alpha, n_beta
       integer, intent(in) :: min_electrons(:), max_electrons(:)
@@ -655,10 +602,9 @@ contains
       !!
       !! The three terms are the alpha string's row, the beta class's block
       !! within that row, and the beta string's rank within its class. Valid
-      !! only for a pair whose classes are compatible -- an incompatible pair
-      !! names no determinant, and this returns a plausible-looking number for
-      !! it rather than a signal, which is why the caller gates on
-      !! `compatible` and not on the answer.
+      !! only for a compatible pair of classes: an incompatible pair names no
+      !! determinant and gets a plausible-looking number rather than a signal,
+      !! so the caller checks `compatible` and not the answer.
       type(ormas_space_t), intent(in) :: space
       integer, intent(in) :: alpha_string, beta_string
       integer(int64) :: address
@@ -676,12 +622,11 @@ contains
    pure function describes_a_cas(space) result(is_cas)
       !! Whether this partition restricts anything at all
       !!
-      !! Windows that happen to allow every distribution leave a complete
-      !! active space, however many subspaces are drawn on it. The test is
-      !! whether the determinant count matches the unrestricted one, not
-      !! whether there is more than one subspace -- the distinction matters
-      !! downstream, where a genuine CAS makes rotations between active
-      !! orbitals redundant and an ORMAS space does not.
+      !! Windows that happen to allow every distribution leave a complete active
+      !! space, however many subspaces are drawn on it, so the test is on the
+      !! determinant count and not on the number of subspaces. A genuine CAS
+      !! makes rotations between active orbitals redundant; an ORMAS space does
+      !! not.
       type(ormas_space_t), intent(in) :: space
       logical :: is_cas
 
@@ -719,10 +664,6 @@ contains
 
    pure function class_holding(classes, occupation) result(which)
       !! Which class an occupation vector is, or zero if the bounds exclude it
-      !!
-      !! A scan, because the class list is short -- a partition with enough
-      !! subspaces for this to matter would be unreadable long before it was
-      !! slow. If that ever stops being true this is the one place to change.
       integer, intent(in) :: classes(:, :), occupation(:)
       integer :: which
 
@@ -741,12 +682,10 @@ contains
       !! Every string of one spin, in global index order
       !!
       !! Within a class the subspaces are independent, so the strings are the
-      !! product of each subspace's own strings -- taken with the *last*
-      !! subspace varying fastest, which is the order the mixed-radix address
-      !! in `within_class_rank` inverts. Each subspace's own strings come from
-      !! `mqc_determinants`, so the ordering inside a subspace is the same
-      !! ascending-bit-pattern one used everywhere else in this code and there
-      !! is only one combinatorial kernel to be wrong.
+      !! product of each subspace's own strings, with the *last* subspace
+      !! varying fastest -- the order the mixed-radix address in
+      !! `within_class_rank` inverts. Inside a subspace the strings come from
+      !! `mqc_determinants`, in ascending bit-pattern order.
       type(ormas_space_t), intent(in) :: space
       integer, intent(in) :: classes(:, :)
       integer(int64), intent(in) :: offsets(:)
@@ -818,11 +757,8 @@ contains
    subroutine ormas_strings(space, alpha, beta, error)
       !! Every alpha and beta string of the space, in global index order
       !!
-      !! Both spins together because nothing wants one without the other, and
-      !! because when the two spins have the same electron count the lists are
-      !! identical -- a property the spin-transpose bookkeeping later depends
-      !! on, and one that follows from the per-spin bounds being derived by the
-      !! same expression from the same windows.
+      !! When the two spins have the same electron count the two lists are
+      !! identical, which the spin-transpose bookkeeping downstream depends on.
       type(ormas_space_t), intent(in) :: space
       integer(int64), allocatable, intent(out) :: alpha(:), beta(:)
       type(error_t), intent(inout) :: error
@@ -836,10 +772,9 @@ contains
       !! Where a string sits in its spin's list, 1-based, or zero if it is not
       !! in the space at all
       !!
-      !! Zero rather than an error because this is the inverse an excitation
-      !! generator calls on every string it produces, most of which are inside
-      !! the space and some of which are not -- leaving the space is the normal
-      !! case ORMAS exists to express, not a fault. The caller must check.
+      !! Zero rather than an error: an excitation generator calls this on every
+      !! string it produces, and leaving the space is the normal case ORMAS
+      !! exists to express. The caller must check.
       type(ormas_space_t), intent(in) :: space
       integer(int64), intent(in) :: string
       logical, intent(in) :: alpha_spin
@@ -867,9 +802,8 @@ contains
    pure function one_move_apart(left, right) result(reachable)
       !! Whether two occupation vectors differ by moving one electron
       !!
-      !! Equal counts too: an excitation inside a subspace changes no
-      !! occupation at all, and those determinants are in the closure as surely
-      !! as the ones that move between subspaces.
+      !! True for equal vectors too: an excitation inside a subspace changes no
+      !! occupation at all.
       integer, intent(in) :: left(:), right(:)
       logical :: reachable
 

@@ -13,20 +13,14 @@ contains
                                        task_rows, task_offset, frag_natoms, total_tasks, world_comm)
       !! Expand the screened fragment list into the flat list of independent evaluations
       !!
-      !! A Hessian needs 6*n_atoms + 1 gradient evaluations per fragment and none of
-      !! them depend on each other. Keeping the whole fragment as one work unit puts a
-      !! hard floor of (6*n_max + 1) sequential gradients on the wall time and caps
-      !! strong scaling at the fragment count -- which is brutal for a handful of large
-      !! fragments. Making every displacement its own schedulable task removes both.
+      !! A Hessian needs 6*n_atoms + 1 gradient evaluations per fragment, none of
+      !! them dependent on any other, and each becomes its own schedulable task.
       !!
       !! A task row is the fragment's polymer row plus one trailing column holding the
       !! displacement code:
       !!    0   -> undisplaced reference (supplies the fragment's energy and gradient)
       !!   +k   -> atom (k-1)/3+1 displaced by +h along coordinate mod(k-1,3)+1
       !!   -k   -> the same coordinate displaced by -h
-      !!
-      !! Packing the code into the row means the existing shard machinery, which ships
-      !! an arbitrary integer matrix, carries tasks with no change.
       !!
       !! Tasks are emitted fragment-major so the digest walks one contiguous block per
       !! fragment and can release it as soon as that Hessian is assembled.
@@ -157,9 +151,8 @@ contains
                                       print_geometry)
       !! Process a single fragment for quantum chemistry calculation
       !!
-      !! Performs energy and gradient calculation on a molecular fragment using
-      !! the factory pattern to create a calculator from the provided method_config.
-      !! Verbosity is controlled by the global logger level.
+      !! The calculator comes from `method_config`; verbosity follows the global
+      !! logger level.
 
       use pic_logger, only: verbose_level
 
@@ -187,9 +180,8 @@ contains
       is_verbose = (current_log_level >= verbose_level)
 
       ! Print fragment geometry if provided and verbose mode is enabled.
-      ! Suppressed for displaced tasks: a flattened Hessian has 6N+1 tasks per
-      ! fragment, and dumping a near-identical geometry for every one of them buries
-      ! the log without adding anything the reference geometry does not already show.
+      ! Suppressed for displaced tasks: 6N+1 near-identical geometries per
+      ! fragment bury the log and add nothing the reference does not show.
       if (present(phys_frag)) then
          if (is_verbose .and. show_geometry) then
             call print_fragment_xyz(fragment_idx, phys_frag)
@@ -242,10 +234,8 @@ contains
       !! Fold one fragment's displacement results into its Hessian, then release them
       !!
       !! The fragment owns a contiguous block of task results laid out by
-      !! build_hessian_task_table as [reference, +1, -1, +2, -2, ...]. Gathering that
-      !! block gives exactly the forward/backward gradient arrays the serial path
-      !! builds, so the same finite-difference routines produce a bit-identical
-      !! Hessian.
+      !! `build_hessian_task_table` as [reference, +1, -1, +2, -2, ...], which is
+      !! exactly the forward/backward gradient arrays the serial path builds.
       use mqc_error, only: error_t
       use mqc_finite_differences, only: finite_diff_hessian_from_gradients, &
                                         finite_diff_dipole_derivatives, DEFAULT_DISPLACEMENT
@@ -340,15 +330,13 @@ contains
                                        next_frag, scan_pos, world_comm)
       !! Fold every fragment whose displacement results have all landed
       !!
-      !! Called from the coordinator loop so a fragment's Hessian is assembled and its
-      !! gradients released while the rest of the queue is still running, instead of
-      !! holding every task result until the end. Memory then tracks the number of
-      !! fragments in flight rather than the total task count.
+      !! Called from the coordinator loop, so a fragment's Hessian is assembled
+      !! and its gradients released while the rest of the queue is still running.
+      !! Memory then tracks the fragments in flight rather than the task count.
       !!
-      !! Completion is detected by a monotone scan from the oldest unfolded fragment,
-      !! so the bookkeeping is O(1) amortised per task and the drain routines need to
-      !! report nothing. A straggler at the head stalls the scan, in which case this
-      !! degrades to folding everything at the end -- never worse than that.
+      !! Completion is detected by a monotone scan from the oldest unfolded
+      !! fragment, `O(1)` amortised per task. A straggler at the head stalls the
+      !! scan, which degrades to folding everything at the end.
       integer, intent(in) :: polymers(:, :)
       integer(int64), intent(in) :: total_fragments
       type(system_geometry_t), intent(in) :: sys_geom
@@ -461,6 +449,8 @@ contains
 
       ! MPI request handles for non-blocking operations
       type(request_t) :: req
+      ! TODO(mqc): `req` is declared here and never used; every non-blocking
+      ! call in this routine happens inside a helper with its own handle.
 
       calc_type_local = ctx%calc_type
 
@@ -514,12 +504,10 @@ contains
       end do
       group0_node_count = group_node_counts(1)
 
-      ! Fragments an earlier run already finished are taken from the
-      ! checkpoint here, before anything is scheduled: a term that is never
-      ! enqueued is never sent to a worker, so the saving is the whole
-      ! calculation and not merely the arithmetic. `results_received` starts
-      ! at the number reclaimed because the main loop below counts up to
-      ! total_tasks, and those results are already in hand.
+      ! Fragments an earlier run finished are reclaimed here, before anything is
+      ! scheduled, so a reused term is never enqueued at all. `results_received`
+      ! starts at the number reclaimed, because the loop below counts up to
+      ! `total_tasks`.
       allocate (task_done(max(total_tasks, 1_int64)))
       task_done = .false.
       n_reused = 0_int64
@@ -833,17 +821,13 @@ contains
       !! Append one finished task to the checkpoint, if there is one
       !!
       !! **Keyed on the task row, not on the fragment.** A Hessian run expands
-      !! each fragment into 1 + 6N schedulable tasks -- a reference point and a
-      !! forward/backward gradient per Cartesian coordinate -- so `task_idx` is
-      !! not a fragment index, and `polymers(task_idx, :)` is somebody else's
-      !! monomers. It was, briefly, and the checkpoint it wrote carried a
-      !! plausible tuple on every record with the wrong data underneath.
+      !! each fragment into 1 + 6N tasks, so `task_idx` is not a fragment index
+      !! and `polymers(task_idx, :)` is somebody else's monomers.
       !!
-      !! The task row already holds what tells them apart: the monomers, plus
-      !! the displacement code in the last column (DISP_WHOLE_FRAGMENT when
+      !! The row holds what tells them apart: the monomers, plus the
+      !! displacement code in the last column (`DISP_WHOLE_FRAGMENT` when
       !! nothing is displaced). Keying on the whole row makes each displaced
-      !! gradient its own resumable unit, which is the granularity a
-      !! finite-difference Hessian wants -- a killed job keeps the
+      !! gradient its own resumable unit, so a killed job keeps the
       !! displacements it finished instead of losing the fragment.
       use mqc_many_body_expansion, only: mbe_context_t
       type(mbe_context_t), intent(inout) :: ctx
@@ -906,6 +890,8 @@ contains
                            TAG_WORKER_SCALAR_RESULT, req)
          call wait(req)
 
+         ! TODO(mqc): recorded before `has_error` is checked below, so a failed
+         ! task is written to the checkpoint and reused by the next run.
          call record_task(ctx, task_rows, worker_fragment_map(worker_source), &
                           results(worker_fragment_map(worker_source)))
 
@@ -952,10 +938,10 @@ contains
                            TAG_NODE_SCALAR_RESULT, req)
          call wait(req)
 
-         ! Recorded the moment rank 0 owns it. This is the only rank that sees
-         ! every result -- its own workers below, and forwarded ones here -- so
-         ! it is the only one that can write a single complete file, and it
-         ! already holds the rows to key them by.
+         ! Recorded the moment rank 0 owns it: the only rank that sees every
+         ! result, its own workers' and the forwarded ones alike.
+         ! TODO(mqc): recorded before `has_error` is checked below, so a failed
+         ! task is written to the checkpoint and reused by the next run.
          call record_task(ctx, task_rows, fragment_idx, results(fragment_idx))
 
          if (results(fragment_idx)%has_error) then
@@ -1180,13 +1166,11 @@ contains
 call result_isend(worker_result, ctx%resources%mpi_comms%world_comm, group_leader_rank, TAG_NODE_SCALAR_RESULT, req)  ! result
             call wait(req)
 
-            ! Release before the next receive. pic-mpi's array recv only
-            ! allocates when the target is unallocated -- it does not resize a
-            ! buffer that is already there, but still receives the sender's full
-            ! count into it. Reusing this one across fragments of different sizes
-            ! therefore writes past the end of the smaller allocation and
-            ! corrupts the heap, surfacing later as an abort in an unrelated
-            ! deallocate.
+            ! Release before the next receive. pic-mpi's array recv allocates
+            ! only when the target is unallocated -- it does not resize a buffer
+            ! that is already there, but still receives the sender's full count
+            ! into it, so reusing one across fragments of different sizes writes
+            ! past the end of the smaller allocation and corrupts the heap.
             call worker_result%destroy()
 
             ! Clear the mapping

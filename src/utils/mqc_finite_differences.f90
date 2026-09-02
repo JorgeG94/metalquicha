@@ -31,27 +31,17 @@ contains
    subroutine generate_perturbed_geometries(reference_geom, displacement, forward_geoms, backward_geoms)
       !! Generate all forward and backward displaced geometries for finite difference calculations
       !!
-      !! For a system with N atoms, this generates:
-      !!   - 3N forward-displaced geometries (+x, +y, +z for each atom)
-      !!   - 3N backward-displaced geometries (-x, -y, -z for each atom)
-      !!
-      !! These can be used to compute:
-      !!   - Gradient: from energies at ±displacement
-      !!   - Hessian: from gradients at ±displacement
-      !!
-      !! Args:
-      !!   reference_geom: The reference geometry to perturb
-      !!   displacement: Step size in Bohr (typical: 0.005 Bohr)
-      !!   forward_geoms: Output array of forward-displaced geometries (size: 3*n_atoms)
-      !!   backward_geoms: Output array of backward-displaced geometries (size: 3*n_atoms)
+      !! `3N` of each for `N` atoms: `+x, +y, +z` and `-x, -y, -z` per atom, in
+      !! that order.
       type(physical_fragment_t), intent(in) :: reference_geom
-      real(dp), intent(in) :: displacement
-      type(displaced_geometry_t), intent(out), allocatable :: forward_geoms(:)
-      type(displaced_geometry_t), intent(out), allocatable :: backward_geoms(:)
+      real(dp), intent(in) :: displacement  !! Step size in Bohr, typically 0.005
+      type(displaced_geometry_t), intent(out), allocatable :: forward_geoms(:)  !! (3*n_atoms)
+      type(displaced_geometry_t), intent(out), allocatable :: backward_geoms(:)  !! (3*n_atoms)
 
       integer :: n_atoms, n_displacements
       integer :: iatom, icoord, idx
       integer :: i
+      ! TODO(mqc): `i` is declared here and never used.
 
       n_atoms = reference_geom%n_atoms
       n_displacements = 3*n_atoms  ! x, y, z for each atom
@@ -87,16 +77,13 @@ contains
 
    subroutine copy_and_displace_geometry(reference_geom, atom_idx, coord_idx, displacement, displaced_geom)
       !! Create a copy of reference geometry with one coordinate displaced
-      !!
-      !! Args:
-      !!   reference_geom: Original geometry to copy
-      !!   atom_idx: Atom to displace (1-based)
-      !!   coord_idx: Coordinate to displace (1=x, 2=y, 3=z)
-      !!   displacement: Amount to displace in Bohr (positive or negative)
-      !!   displaced_geom: Output displaced geometry
+      ! TODO(mqc): copies `cap_replaces_atom` but not `cap_bonded_to` or
+      ! `cap_scale`, and not `is_ghost` either, so a displaced fragment
+      ! redistributes its cap derivatives by weights the reference did not use
+      ! and its ghost centres come back as real atoms.
       type(physical_fragment_t), intent(in) :: reference_geom
-      integer, intent(in) :: atom_idx, coord_idx
-      real(dp), intent(in) :: displacement
+      integer, intent(in) :: atom_idx, coord_idx  !! 1-based atom; 1=x, 2=y, 3=z
+      real(dp), intent(in) :: displacement  !! Signed, in Bohr
       type(physical_fragment_t), intent(out) :: displaced_geom
 
       ! Copy basic properties
@@ -129,10 +116,10 @@ contains
       displaced_geom%coordinates(coord_idx, atom_idx) = &
          displaced_geom%coordinates(coord_idx, atom_idx) + displacement
 
-      ! Copy basis set if present (same basis, just different geometry)
       if (allocated(reference_geom%basis)) then
-         ! Note: Basis set will need to be rebuilt with new coordinates
-         ! For now, we don't copy it - it should be set up during calculation
+         ! TODO(mqc): empty, and so is the copy -- a displaced geometry comes
+         ! back with no basis and the caller has to build one against the new
+         ! coordinates.
       end if
 
    end subroutine copy_and_displace_geometry
@@ -141,18 +128,12 @@ contains
                                                  displacement, hessian)
       !! Compute Hessian matrix from finite differences of gradients
       !!
-      !! Uses central finite differences: H_ij = (grad_i(+h) - grad_i(-h)) / (2h)
-      !!
-      !! Args:
-      !!   reference_geom: Reference geometry (for dimensioning)
-      !!   forward_gradients: Gradients at forward-displaced geometries (3*n_atoms, 3, n_atoms)
-      !!   backward_gradients: Gradients at backward-displaced geometries (3*n_atoms, 3, n_atoms)
-      !!   displacement: Step size used in Bohr
-      !!   hessian: Output Hessian matrix (3*n_atoms, 3*n_atoms)
-      type(physical_fragment_t), intent(in) :: reference_geom
+      !! Central differences, `H_ij = (grad_i(+h) - grad_i(-h)) / (2h)`, then
+      !! symmetrized.
+      type(physical_fragment_t), intent(in) :: reference_geom  !! For dimensioning
       real(dp), intent(in) :: forward_gradients(:, :, :)   !! (n_displacements, 3, n_atoms)
       real(dp), intent(in) :: backward_gradients(:, :, :)  !! (n_displacements, 3, n_atoms)
-      real(dp), intent(in) :: displacement
+      real(dp), intent(in) :: displacement  !! Step size in Bohr
       real(dp), intent(out), allocatable :: hessian(:, :)  !! (3*n_atoms, 3*n_atoms)
 
       integer :: n_atoms, n_coords
@@ -166,9 +147,7 @@ contains
       allocate (hessian(n_coords, n_coords))
       hessian = 0.0_dp
 
-      ! Build Hessian using central differences
-      ! H[i,j] = d²E/(dx_i dx_j) = (dE/dx_j at x_i+h - dE/dx_j at x_i-h) / (2h)
-
+      ! H[i,j] = d2E/(dx_i dx_j) = (dE/dx_j at x_i+h - dE/dx_j at x_i-h) / (2h)
       disp_idx = 0
       do iatom = 1, n_atoms
          do icoord = 1, 3
@@ -189,8 +168,7 @@ contains
          end do
       end do
 
-      ! Symmetrize the Hessian: H = (H + H^T) / 2
-      ! This reduces numerical noise from finite differences
+      ! Symmetrize, H = (H + H^T) / 2, which cancels some of the difference noise
       do i_global = 1, n_coords
          do j_global = i_global + 1, n_coords
             hessian(i_global, j_global) = 0.5_dp*(hessian(i_global, j_global) + hessian(j_global, i_global))
@@ -210,22 +188,13 @@ contains
                                              displacement, dipole_derivatives)
       !! Compute dipole moment derivatives via central finite differences
       !!
-      !! Computes: d_mu_k/d_x_j = (mu_k(+h) - mu_k(-h)) / (2h)
-      !!
-      !! This is used for IR intensity calculations, where we need the dipole
-      !! moment derivatives with respect to Cartesian nuclear coordinates.
-      !!
-      !! Args:
-      !!   n_atoms: Number of atoms
-      !!   forward_dipoles: Dipoles at forward-displaced geometries (3*n_atoms, 3)
-      !!   backward_dipoles: Dipoles at backward-displaced geometries (3*n_atoms, 3)
-      !!   displacement: Step size in Bohr
-      !!   dipole_derivatives: Output derivatives (3, 3*n_atoms) in a.u.
+      !! `d_mu_k/d_x_j = (mu_k(+h) - mu_k(-h)) / (2h)`, with respect to the
+      !! Cartesian nuclear coordinates, which is what IR intensities need.
       integer, intent(in) :: n_atoms
       real(dp), intent(in) :: forward_dipoles(:, :)   !! (3*n_atoms, 3)
       real(dp), intent(in) :: backward_dipoles(:, :)  !! (3*n_atoms, 3)
-      real(dp), intent(in) :: displacement
-      real(dp), intent(out), allocatable :: dipole_derivatives(:, :)  !! (3, 3*n_atoms)
+      real(dp), intent(in) :: displacement  !! Step size in Bohr
+      real(dp), intent(out), allocatable :: dipole_derivatives(:, :)  !! (3, 3*n_atoms), a.u.
 
       integer :: n_coords, j, k
 

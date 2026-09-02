@@ -2,13 +2,12 @@
 module mqc_thermochemistry
    !! Computes thermodynamic properties from vibrational frequencies and molecular geometry.
    !!
-   !! This module implements standard RRHO thermochemistry calculations including:
-   !! - Zero-point vibrational energy (ZPE)
-   !! - Translational, rotational, vibrational, and electronic contributions
-   !! - Thermal corrections to energy, enthalpy, and Gibbs free energy
+   !! Zero-point energy, the translational, rotational, vibrational and
+   !! electronic contributions, and the thermal corrections to energy, enthalpy
+   !! and Gibbs free energy.
    !!
-   !! Default conditions: T = 298.15 K, P = 1 atm
-   !! Output follows Gaussian-style formatting for compatibility.
+   !! Default conditions: T = 298.15 K, P = 1 atm. Output follows Gaussian-style
+   !! formatting.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -35,17 +34,18 @@ module mqc_thermochemistry
    public :: compute_thermochemistry
    public :: print_thermochemistry
 
-   !! Default symmetry number
    integer, parameter, public :: DEFAULT_SYMMETRY_NUMBER = 1
+      !! Default rotational symmetry number
 
-   !! Default spin multiplicity (singlet)
    integer, parameter, public :: DEFAULT_SPIN_MULTIPLICITY = 1
+      !! Default spin multiplicity, a singlet
 
-   !! Threshold for considering a moment of inertia as zero (linear molecule detection)
    real(dp), parameter :: LINEAR_THRESHOLD = 1.0e-6_dp
+      !! A moment of inertia below this counts as zero, which is how a linear
+      !! molecule is detected. In amu*Angstrom^2.
 
-   !! Threshold for considering a frequency as imaginary
    real(dp), parameter :: IMAG_FREQ_THRESHOLD = 0.0_dp
+      !! A frequency below this is imaginary. In cm^-1.
 
    type :: thermochemistry_result_t
       !! Container for thermochemistry calculation results
@@ -234,6 +234,11 @@ contains
       n_real = 0
       n_imag = 0
 
+      ! TODO(mqc): every positive frequency counts here, where
+      ! `compute_vibrational_thermo` and `compute_partition_functions` both
+      ! drop everything below 10 cm^-1. The ZPE and `n_real_freqs` therefore
+      ! include the near-zero translation and rotation residuals that the
+      ! thermal terms exclude.
       do i = 1, n_freqs
          if (frequencies(i) > IMAG_FREQ_THRESHOLD) then
             freq_sum = freq_sum + frequencies(i)
@@ -396,6 +401,9 @@ contains
 
          ! Skip imaginary and near-zero frequencies
          if (freq <= IMAG_FREQ_THRESHOLD) cycle
+         ! TODO(mqc): 10 cm^-1 is spelled as a literal here, again in
+         ! `compute_partition_functions`, and a third time in
+         ! `print_vibrational_analysis`. One named constant, three copies.
          if (freq < 10.0_dp) cycle  ! Skip very low frequencies (likely trans/rot residuals)
 
          ! Vibrational temperature: theta_v = h*c*nu / k = 1.4388 * nu (cm^-1)
@@ -406,7 +414,7 @@ contains
 
          ! Avoid numerical issues for very large u (very low T or high freq)
          if (u > VIB_CLASSICAL_LIMIT) then
-            ! Classical limit: modes are frozen out
+            ! theta_v far above T: the mode is frozen out and contributes nothing
             cycle
          end if
 
@@ -476,6 +484,9 @@ contains
 
       ! Rotational partition function
       ! theta_rot = h^2 / (8*pi^2*I*k_B) = ROTTEMP_AMUA2_TO_K / I (for I in amu*Angstrom^2)
+      ! TODO(mqc): `1.0e-6_dp` here and `100.0_dp` below are `LINEAR_THRESHOLD`
+      ! and `VIB_CLASSICAL_LIMIT` written out again, both of which this module
+      ! already has in scope.
       do i = 1, 3
          if (moments(i) > 1.0e-6_dp) then
             theta_rot(i) = ROTTEMP_AMUA2_TO_K/moments(i)
@@ -519,7 +530,7 @@ contains
                                       result, temperature, pressure, symmetry_number, spin_multiplicity)
       !! Main driver for thermochemistry calculations.
       !!
-      !! Computes all thermodynamic quantities from molecular geometry and vibrational frequencies.
+      !! Every thermodynamic quantity, from a geometry and its frequencies.
       real(dp), intent(in) :: coords(:, :)           !! Coordinates (3, n_atoms) in Bohr
       integer, intent(in) :: atomic_numbers(:)       !! Atomic numbers
       real(dp), intent(in) :: frequencies(:)         !! Frequencies in cm^-1

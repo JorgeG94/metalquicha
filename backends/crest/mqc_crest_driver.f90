@@ -3,20 +3,15 @@ module mqc_crest_driver
    !! CREST keeps its own algorithms, defaults and bookkeeping; what changes is
    !! only where the energies come from.
    !!
-   !! **Two calculation levels, and the split is the point.** An iMTD-GC run
-   !! asks for tens of thousands of gradients and almost none of them need to
-   !! be good, so level one is xTB in process and level two is mqc, applied to
-   !! the ensemble the search leaves behind. On water with an HF/STO-3G
-   !! refinement that measured 1432 mqc calls against roughly 56000 gradients.
-   !! Sending every gradient to mqc would work and nobody would wait for it.
+   !! **Two calculation levels.** Level one is xTB in process, sampling; level
+   !! two is mqc, applied to the ensemble the search leaves behind. An iMTD-GC
+   !! run asks for tens of thousands of gradients and almost none of them need
+   !! to be good.
    !!
-   !! **CREST is configured by its own parser, not field by field here.**
-   !! `systemdata` carries on the order of a hundred fields and the algorithms
-   !! read more of them than their entry points name; filling it by hand would
-   !! be a slow way of reimplementing `confparse` and getting the defaults
-   !! subtly wrong. An argument vector is built in memory instead -- no command
-   !! line, no configuration file -- and handed to `parseflags`, exactly as
-   !! `crest_main` does with the real argv.
+   !! **CREST is configured by its own parser, not field by field here.** An
+   !! argument vector is built in memory -- no command line, no configuration
+   !! file -- and handed to `parseflags`, exactly as `crest_main` does with the
+   !! real argv.
    use, intrinsic :: iso_fortran_env, only: output_unit
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
@@ -43,11 +38,11 @@ module mqc_crest_driver
          implicit none
          type(systemdata), intent(inout) :: env
          integer, intent(in) :: nra
+         ! allow(missing-intent)
+         character(len=*) :: arg(nra)
          !! No intent, matching the definition in confparse.f90; intent is part
          !! of a procedure's characteristics, so declaring one here would make
          !! this interface disagree with the procedure it describes.
-         ! allow(missing-intent)
-         character(len=*) :: arg(nra)
       end subroutine parseflags
 
       subroutine crest_search_imtdgc(env, tim)
@@ -58,12 +53,10 @@ module mqc_crest_driver
       end subroutine crest_search_imtdgc
    end interface
 
-   !! What the refinement level needs, waiting for a callback that is handed a
-   !! geometry and nothing else.
-   !!
-   !! Module state for the same reason `mqc_geometry_optimizer` keeps its
-   !! `ctx_config` and `ctx_resources` that way. It also means only one search
-   !! can be in flight, which is true anyway: CREST runs on a single rank.
+   ! What the refinement level needs, waiting for a callback that is handed a
+   ! geometry and nothing else. Module state because that callback takes no
+   ! context of its own, so only one search can be in flight -- true anyway,
+   ! since CREST runs on a single rank.
    type(system_geometry_t), save :: ctx_geom
    type(driver_config_t), save :: ctx_config
    type(resources_t), save :: ctx_resources
@@ -189,14 +182,10 @@ contains
       ctx_geom = sys_geom
       ctx_config = config
       ! **An energy, not a gradient.** The level this installs is registered
-      ! as `refine%singlepoint`, and CREST uses it to re-rank an ensemble --
-      ! it reads the energy and never looks at the gradient. Computing one
-      ! anyway is invisible at HF/STO-3G, where the arithmetic rounds to zero
-      ! against the per-call overhead, and is most of the cost at anything
-      ! worth refining with: an RI-MP2 gradient is several times its energy.
-      !
-      ! If a level is ever registered as `refine%geoopt`, which does need
-      ! gradients, this has to become conditional on the stage.
+      ! as `refine%singlepoint`, and CREST uses it to re-rank an ensemble: it
+      ! reads the energy and never looks at the gradient. A level registered as
+      ! `refine%geoopt` does need gradients, and would make this conditional on
+      ! the stage.
       ctx_config%calc_type = CALC_TYPE_ENERGY
       ctx_resources = resources
       ctx_ready = .true.

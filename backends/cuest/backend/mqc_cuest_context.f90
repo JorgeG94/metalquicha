@@ -4,8 +4,7 @@ module mqc_cuest_context
    !!
    !! Handle creation is expensive and the handle is reusable across any number
    !! of molecules, so it is created once per rank and shared by every fragment
-   !! that rank evaluates. This matters for fragmented runs, where a rank may
-   !! process thousands of fragments.
+   !! that rank evaluates.
    !!
    !! GPU selection is by *node-local* rank: with several ranks per node the
    !! devices are handed out round-robin, so ranks 0,1,2,3 on a 4-GPU node land
@@ -40,11 +39,10 @@ module mqc_cuest_context
    type :: device_pool_t
       !! A device buffer that grows to a high-water mark and is never shrunk
       !!
-      !! Fragmented runs evaluate thousands of small molecules on one rank. A
-      !! `cudaMalloc` per fragment would dominate the runtime -- it is a
-      !! synchronizing call -- so scratch is allocated once at the largest size
-      !! any fragment has needed and handed out again for every fragment that
-      !! fits. Growth reallocates; there is no shrink, by design.
+      !! `cudaMalloc` is a synchronizing call, and a fragmented run evaluates
+      !! thousands of small molecules on one rank, so scratch is allocated at
+      !! the largest size any fragment has needed and handed out again for every
+      !! fragment that fits. Growth reallocates, and **discards the contents**.
       type(c_ptr) :: ptr = c_null_ptr        !! Device address, null until first use
       integer(c_int64_t) :: capacity = 0     !! Current capacity in doubles
    contains
@@ -79,10 +77,8 @@ module mqc_cuest_context
       type(device_pool_t) :: scratch_gradient  !! natom x 3 gradient output
       type(device_pool_t) :: scratch_charge_gradient  !! Hellmann-Feynman half
 
-      ! One output buffer per Fock term. `scratch_result` alone cannot serve
-      ! all three: J, K and Vxc would each have to be pulled to the host before
-      ! the next call overwrote it, which is what forced the round trip the
-      ! device-resident path exists to remove.
+      ! One output buffer per Fock term: sharing `scratch_result` would mean
+      ! pulling J, K and Vxc to the host before the next call overwrote it.
       type(device_pool_t) :: scratch_j     !! Coulomb output
       type(device_pool_t) :: scratch_k     !! Exchange output
       type(device_pool_t) :: scratch_xc    !! XC potential output
@@ -100,9 +96,8 @@ module mqc_cuest_context
       type(device_pool_t) :: scratch_commutator   !! FDS - SDF in the AO basis
       type(device_pool_t) :: scratch_work         !! Intermediate for the above
 
-      ! DIIS history. The largest single allocation here -- diis_size copies of
-      ! the Fock matrix -- which is exactly why it is pooled across fragments
-      ! rather than allocated per SCF.
+      ! DIIS history: the largest single allocation here, `diis_size` copies of
+      ! the Fock matrix, and so pooled across fragments rather than per SCF.
       type(device_pool_t) :: scratch_diis_fock   !! n_fock x max_vectors
       type(device_pool_t) :: scratch_diis_error  !! n_error x max_vectors
       type(device_pool_t) :: scratch_diis_row    !! max_vectors, one overlap row
@@ -224,9 +219,8 @@ contains
 
       this%initialized = .true.
 
-      ! Say which device this rank took. Without it a misbinding -- every rank
-      ! piling onto GPU 0 -- looks exactly like a slow run, and that is an
-      ! expensive thing to diagnose after the fact.
+      ! Say which device this rank took: a misbinding, every rank piling onto
+      ! GPU 0, otherwise looks exactly like a slow run.
       call logger%info("cuEST: node-local rank "//to_char(local_rank)// &
                        " bound to GPU "//to_char(this%device_id)// &
                        " of "//to_char(int(device_count)))

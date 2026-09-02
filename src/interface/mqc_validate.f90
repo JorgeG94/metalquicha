@@ -8,19 +8,14 @@ module mqc_validate
    !! are about the thing the document describes, and apply equally to a system
    !! assembled through the C interface, which never sees a document at all.
    !!
-   !! **Everything here has bitten somebody.** The checks are not hypothetical
-   !! failure modes; they are the ones this code has actually produced, and
-   !! they share a shape: none of them crashes. A term list that is not closed
-   !! under subsets, fragment charges that do not sum, an atom in no monomer --
-   !! each yields a converged number that is wrong, which is the most expensive
-   !! kind of bug a calculation can have.
+   !! **None of these failures crashes.** A term list that is not closed under
+   !! subsets, fragment charges that do not sum, an atom in no monomer -- each
+   !! yields a converged number that is wrong.
    !!
-   !! `strict` is the default and refuses. The permissive mode exists because
-   !! some of these are conventions rather than laws -- a partition that
-   !! deliberately omits atoms, a hand-built term list with a scheme of its own
-   !! -- and a user who knows which one they are breaking should not be stopped
-   !! by a tool that does not. It reports rather than refusing; it does not
-   !! stop checking.
+   !! `strict` is the default and refuses. The permissive mode warns instead,
+   !! for the cases that are conventions rather than laws -- a partition that
+   !! deliberately omits atoms, a hand-built term list with a scheme of its
+   !! own. It does not stop checking.
    use pic_types, only: dp, default_int, int64
    use mqc_string_utils, only: int_to_text
    use mqc_physical_fragment, only: system_geometry_t
@@ -39,10 +34,13 @@ contains
    subroutine validate_system(sys_geom, strict, error, check_bonds)
       !! Check a system before it is fragmented
       !!
-      !! `check_bonds` runs the perception audit, which is O(N^2) in the atom
-      !! count and so is asked for rather than assumed -- on a twenty-thousand
-      !! atom cluster it is not free, and for a molecular cluster it has
-      !! nothing to find.
+      !! `check_bonds` runs the perception audit, which is `O(N^2)` in the atom
+      !! count and so is asked for rather than assumed.
+      ! TODO(mqc): reads `fragment_sizes` and `fragment_atoms` without checking
+      ! that either is allocated, where the rest of the code branches on
+      ! `allocated(sys_geom%fragment_atoms)`. A fixed-size-monomer geometry --
+      ! what `initialize_system_geometry` builds -- reaches here from the
+      ! driver and dereferences both.
       type(system_geometry_t), intent(in) :: sys_geom
       logical, intent(in) :: strict
       type(error_t), intent(inout) :: error
@@ -130,9 +128,8 @@ contains
    subroutine validate_terms(terms, sys_geom, strict, error)
       !! Check a term list can be assembled into an expansion
       !!
-      !! The subset check is the one worth the cost. Everything else here is a
-      !! typo detector; that one catches a screen that looked entirely
-      !! reasonable and produces a list the assembly cannot use.
+      !! The subset check is the one worth the cost; everything else here is a
+      !! typo detector.
       type(fraglist_t), intent(in) :: terms
       type(system_geometry_t), intent(in) :: sys_geom
       logical, intent(in) :: strict
@@ -184,9 +181,11 @@ contains
       !!
       !! An n-body contribution is the term's energy less the delta of each
       !! proper subset, so a missing one is not an approximation -- the
-      !! assembly looks it up and fails. A screen that keeps a trimer while
-      !! dropping its dimers looks perfectly sensible and produces exactly
-      !! this. `fraglist_t%close_subsets` is the fix.
+      !! assembly looks it up and fails. `fraglist_t%close_subsets` is the fix.
+      ! TODO(mqc): `contains_term` scans the whole list for each subset of each
+      ! term, so this is quadratic in the term count on a check every run pays.
+      ! It also compares slots in order, so a supplied term whose monomers are
+      ! not in ascending order is reported missing when it is present.
       type(fraglist_t), intent(in) :: terms
       logical, intent(in) :: strict
       type(error_t), intent(inout) :: error
@@ -198,10 +197,9 @@ contains
          level = terms%level_of(iterm)
          if (level < 2) cycle
 
-         ! Only the (n-1)-subsets are checked. If every one of those is
-         ! present, its own subsets are guaranteed by the same check applied
-         ! to it -- so the whole closure follows without enumerating 2^n sets
-         ! per term.
+         ! Only the (n-1)-subsets are checked: if each is present, its own
+         ! subsets follow from the same check applied to it, so the closure
+         ! holds without enumerating 2^n sets per term.
          missing_slot = first_missing_subset(terms, iterm, level)
          if (missing_slot > 0) then
             call complain(strict, error, "term "//text64(iterm)// &

@@ -1,7 +1,7 @@
 !! Periodic table data and element utilities
 module mqc_elements
-   !! Provides atomic numbers, element symbols, and atomic masses for the complete
-   !! periodic table (elements 1-118) with conversion functions between representations.
+   !! Atomic numbers, element symbols, masses and radii for the complete
+   !! periodic table (elements 1-118), and the conversions between them.
    use pic_ascii, only: to_upper, to_lower
    use mqc_atomic_radii, only: covalent_radius_cordero
    use pic_types, only: dp
@@ -13,7 +13,7 @@ module mqc_elements
    public :: element_mass              !! Get atomic mass by atomic number
    public :: element_covalent_radius   !! Get covalent radius by atomic number
    public :: element_vdw_radius        !! Get van der Waals radius by atomic number
-   ! TODO: refactr to use findloc
+
    ! Periodic table data as module-level parameters
    integer, parameter :: n_elements = 118
    character(len=2), parameter :: element_symbols(n_elements) = [character(len=2) :: &
@@ -52,10 +52,10 @@ module mqc_elements
                           262.0_dp, 267.0_dp, 268.0_dp, 271.0_dp, 272.0_dp, 270.0_dp, 276.0_dp, 281.0_dp, &  ! Lr-Ds
                           280.0_dp, 285.0_dp, 284.0_dp, 289.0_dp, 288.0_dp, 293.0_dp, 294.0_dp, 294.0_dp]   ! Rg-Og
 
-   !! Van der Waals radii in Angstrom, Bondi (1964) with Rowland and Taylor's
-   !! hydrogen. Zero where Bondi tabulates none -- see `element_vdw_radius`.
    integer, parameter :: n_vdw = 96
    real(dp), parameter :: vdw_radii(n_vdw) = [ &
+      !! Van der Waals radii in Angstrom, Bondi (1964) with Rowland and Taylor's
+      !! hydrogen. Zero where Bondi tabulates none -- see `element_vdw_radius`.
                           1.10_dp, 1.40_dp, 1.81_dp, 1.53_dp, 1.92_dp, 1.70_dp, 1.55_dp, 1.52_dp, &
                           1.47_dp, 1.54_dp, 2.27_dp, 1.73_dp, 1.84_dp, 2.10_dp, 1.80_dp, 1.80_dp, &
                           1.75_dp, 1.88_dp, 2.75_dp, 2.31_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, &
@@ -131,10 +131,6 @@ contains
       !! therefore the charges it returns. Comparing charges against another
       !! program means checking it uses these radii, not merely that it calls
       !! the method CHELPG.
-      !!
-      !! Zero for anything untabulated, for the same reason the covalent radii
-      !! refuse: a caller has to decide what to do about an element nobody
-      !! measured, and a made-up sphere would silently exclude or include points.
       integer, intent(in) :: atomic_number
       real(dp) :: radius
 
@@ -149,10 +145,9 @@ contains
    pure function element_covalent_radius(atomic_number) result(radius)
       !! Covalent radius in Angstrom, or 0 where none is tabulated
       !!
-      !! The Cordero set, which is the one bond perception wants. Kept as a
-      !! name on `mqc_elements` because that is where callers look for
-      !! per-element data; the table itself lives in `mqc_atomic_radii`
-      !! alongside the other parametrisations it must not be confused with.
+      !! The Cordero set, which is the one bond perception wants. The table
+      !! itself lives in `mqc_atomic_radii`, beside the other parametrisations
+      !! it must not be confused with.
       integer, intent(in) :: atomic_number
       real(dp) :: radius
 

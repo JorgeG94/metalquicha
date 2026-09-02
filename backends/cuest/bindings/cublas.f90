@@ -1,20 +1,14 @@
 ! ============================================================================
 !  cublas.f90 -- Fortran 2008 iso_c_binding interface to NVIDIA cuBLAS
 !
-!  Hand-written, covering only the calls the SCF needs. cuBLAS has hundreds of
-!  entry points; binding the six used here keeps the surface reviewable and the
-!  file short enough to extend by hand when something else is needed.
+!  Hand-written, covering only the calls the SCF needs.
 !
-!  Why the C API rather than CUDA Fortran
-!  -------------------------------------
-!  `cudafor` would tie every file that touches the device to nvfortran. That is
-!  a hard constraint here, not a preference: toml-f -- reached through tblite --
-!  does not compile with nvfortran (a backslash literal it rejects, with no flag
-!  to disable), so an nvfortran-only device path would force a choice between
-!  the xTB backend and the GPU backend in any single build. Binding the C ABI
-!  through iso_c_binding compiles under gfortran, ifx and nvfortran alike, and
-!  the device memory it operates on already comes from the CUDA runtime
-!  bindings in cuda_runtime.f90.
+!  The C ABI rather than CUDA Fortran: `cudafor` would tie every file that
+!  touches the device to nvfortran, and toml-f -- reached through tblite -- does
+!  not compile with nvfortran, so an nvfortran-only device path would force a
+!  choice between the xTB backend and the GPU backend in any single build.
+!  iso_c_binding compiles under gfortran, ifx and nvfortran alike, and the
+!  device memory it operates on already comes from cuda_runtime.f90.
 !
 !  Conventions
 !  -----------
@@ -36,8 +30,7 @@
 !    to CUBLAS_POINTER_MODE_DEVICE would make these device addresses and break
 !    every call below.
 !
-!  Build:  gfortran -c cublas.f90     (produces cublas.mod)
-!  Link :  ... -lcublas
+!  Links against -lcublas.
 ! ============================================================================
 module cublas
    use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double
@@ -174,10 +167,10 @@ module cublas
          bind(C, name="cublasDdot_v2")
          !! result := x . y
          !!
-         !! One DIIS overlap entry. Note that the result crossing to the host
-         !! forces a synchronize: for a subspace of any size prefer cublasDgemv
-         !! of the new error vector against the whole history, one call instead
-         !! of n_stored round trips.
+         !! One DIIS overlap entry. The result crossing to the host forces a
+         !! synchronize, so for a subspace of any size prefer `cublasDgemv` of
+         !! the new error vector against the whole history -- one call instead
+         !! of `n_stored` round trips.
          import :: c_ptr, c_int, c_double
          implicit none
          type(c_ptr), value :: handle

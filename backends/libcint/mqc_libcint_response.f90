@@ -11,14 +11,9 @@ module mqc_libcint_response
    !! overlap derivative, and the vector stops being a rectangle.
    !!
    !! So the solver is written against a flat vector and an abstract operator,
-   !! and the two cases differ only in what they put behind it. That is the
-   !! arrangement `mqc_davidson` already uses for the same reason -- a
-   !! restricted active space cannot shape its vector either -- and following it
-   !! makes this read as the house pattern rather than as an invention.
-   !!
-   !! Dispatch costs nothing here. `apply` is called once per iteration, a
-   !! handful of times in total, and each call does a Fock build over the whole
-   !! basis. One indirect call against that is not measurable.
+   !! and the two cases differ only in what they put behind it -- the same
+   !! arrangement `mqc_davidson` uses. Dispatch costs nothing: `apply` is called
+   !! once per iteration and each call does a Fock build over the whole basis.
    use pic_types, only: dp, default_int
    use mqc_error, only: error_t, ERROR_VALIDATION
    use pic_lapack_interfaces, only: pic_getrf, pic_getrs
@@ -73,39 +68,30 @@ contains
       !! right-hand side divided by the orbital energy differences -- and each
       !! pass adds the response the current estimate induces.
       !!
-      !! **A Krylov subspace method, because a pass is what costs.** Straight
-      !! iteration converges geometrically and took 34 to 35 passes on a water
-      !! dimer in cc-pVDZ. Every pass is a Fock build over the whole basis, so
-      !! passes *are* the cost: a subspace method does not make one cheaper, it
-      !! needs far fewer of them, and that is the whole of the argument.
+      !! **A Krylov subspace method, because a pass is what costs.** Every pass
+      !! is a Fock build over the whole basis, and a subspace method needs far
+      !! fewer of them than straight geometric iteration.
       !!
-      !! The equation is `(1 - K) x = rhs`. Each cycle orthogonalises the
-      !! current residual against the basis built so far, spends its one
-      !! operator application on that new direction, and then solves the
-      !! projected problem in the whole subspace exactly. Note what the last
-      !! step gets for free: `K x` is the same combination of the images the
-      !! basis vectors already produced, so the residual is assembled from
-      !! vectors in hand rather than from a second pass.
+      !! The equation is `(1 - K) x = rhs`. Each cycle orthogonalises the current
+      !! residual against the basis built so far, spends its one operator
+      !! application on that new direction, and then solves the projected problem
+      !! in the whole subspace exactly. `K x` is the same combination of the
+      !! images the basis vectors already produced, so the residual is assembled
+      !! from vectors in hand rather than from a second pass.
       !!
-      !! It keeps the whole subspace: `basis` and `images` are each `n` by
-      !! `max_iter`, so the memory is two vectors per cycle allowed rather than
-      !! per cycle used. At fourteen cycles against a default fifty that is
-      !! three times more than it needs, which is invisible at the sizes this
-      !! runs at and is the first thing to bound if it stops being -- by
-      !! restarting the subspace, not by shortening it, since a shorter one
-      !! converges more slowly and each cycle is a Fock build.
+      !! `basis` and `images` are each `n` by `max_iter`, so the memory is two
+      !! vectors per cycle *allowed* rather than per cycle used. Bound it by
+      !! restarting the subspace, not by shortening it: a shorter one converges
+      !! more slowly and each cycle is a Fock build.
       !!
-      !! Where it will not do is still near a triplet instability, and the
-      !! failure is still loud, only differently shaped: `1 - K` stops being
-      !! positive definite and the projected system goes singular, which is
-      !! reported rather than iterated through. A subspace method does not
-      !! rescue a reference that is not a minimum; it reaches the same answer
-      !! sooner when there is one.
+      !! Near a triplet instability `1 - K` stops being positive definite and the
+      !! projected system goes singular, which is reported rather than iterated
+      !! through. A subspace method does not rescue a reference that is not a
+      !! minimum.
       class(response_operator_t), intent(inout) :: operator
       real(dp), intent(in) :: rhs(:)
          !! The uncoupled solution, already scaled by the energy denominators.
-         !! Named for what it is to this routine rather than for where it came
-         !! from, since the two operators build it differently.
+         !! The two operators build it differently.
       real(dp), intent(in) :: seed(:)
          !! Where to start. Usually `rhs` itself; a previous solution when a
          !! caller is walking a sequence of related perturbations.

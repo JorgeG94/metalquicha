@@ -1,8 +1,6 @@
 !! Factory for creating quantum chemistry method instances
 module mqc_method_factory
-   !! Provides centralized creation of quantum chemistry method instances.
-   !! The factory pattern encapsulates method instantiation and configuration,
-   !! making it easy to add new methods without modifying calling code.
+   !! One place that turns a `method_config_t` into an allocated `qc_method_t`.
    use pic_types, only: int32, dp
    use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_HF, &
                                METHOD_TYPE_DFT, METHOD_TYPE_MCSCF, METHOD_TYPE_MP2, &
@@ -26,16 +24,6 @@ module mqc_method_factory
 
    type :: method_factory_t
       !! Factory for creating quantum chemistry method instances
-      !!
-      !! Usage:
-      !!   type(method_factory_t) :: factory
-      !!   type(method_config_t) :: config
-      !!   class(qc_method_t), allocatable :: method
-      !!
-      !!   config%method_type = METHOD_TYPE_DFT
-      !!   config%basis_set = "cc-pvdz"
-      !!   config%dft%functional = "pbe0"
-      !!   method = factory%create(config)
    contains
       procedure :: create => factory_create
    end type method_factory_t
@@ -45,16 +33,13 @@ contains
    pure function method_backend_built(method_type) result(built)
       !! Whether the backend this method needs was compiled into this binary
       !!
-      !! Asked before the factory is, because the factory cannot answer: it
-      !! returns a polymorphic allocatable and has no error to set, so a method
-      !! whose backend is absent can only `ERROR STOP` -- which ends the process
-      !! and, when the process is a Python interpreter driving a session, takes
-      !! the caller's whole script and every other rank with it.
+      !! **Ask this before calling the factory.** The factory returns a
+      !! polymorphic allocatable and has no error to set, so a method whose
+      !! backend is absent can only `ERROR STOP`.
       !!
       !! Only tblite is asked about here. The libcint and cuEST paths each have
-      !! a stub that reports the missing build on the result, so they refuse
-      !! cleanly on their own; tblite has no stub, because the method type it
-      !! backs is not compiled at all without it.
+      !! a stub that reports the missing build on the result; tblite has none,
+      !! because the method type it backs is not compiled at all without it.
       integer, intent(in) :: method_type
       logical :: built
 
@@ -68,9 +53,6 @@ contains
 
    function factory_create(this, config) result(method)
       !! Create a quantum chemistry method instance from configuration
-      !!
-      !! Instantiates the appropriate concrete method type based on
-      !! config%method_type and configures it from the nested config.
       class(method_factory_t), intent(in) :: this
       type(method_config_t), intent(in) :: config
       class(qc_method_t), allocatable :: method
@@ -80,9 +62,7 @@ contains
       !     allocate(<type> :: method); call configure_x(method, config)
       ! passes a polymorphic allocatable function result to a CLASS(..),
       ! INTENT(INOUT) dummy, which gfortran 13.2.0 miscompiles: the callee
-      ! updates a temporary and every assignment is silently discarded, so the
-      ! method comes back holding its defaults. Concrete dummies avoid the
-      ! problem entirely and need no SELECT TYPE.
+      ! updates a temporary and every assignment is silently discarded.
       select case (config%method_type)
 #ifndef MQC_WITHOUT_TBLITE
       case (METHOD_TYPE_GFN1, METHOD_TYPE_GFN2)
@@ -110,12 +90,9 @@ contains
             allocate (method, source=hf)
          end block
 
-         ! Both spellings land on the same method object, as MP2 does, and for
-         ! the same reason: coupled cluster is a Hartree-Fock calculation plus a
-         ! correction built from its orbitals. Which of the two ran is carried by
-         ! config%cc%include_triples, which the adapter set from the method type
-         ! -- so the two cases are identical here on purpose rather than by
-         ! oversight.
+         ! Both spellings land on the same method object. Which of the two ran
+         ! is carried by config%cc%include_triples, which the adapter set from
+         ! the method type.
       case (METHOD_TYPE_CCSD, METHOD_TYPE_CCSD_T)
          block
             type(hf_method_t) :: hf
@@ -155,8 +132,11 @@ contains
       m%max_iter = config%scf%max_iter
       m%allow_crap_scf = config%scf%allow_crap_scf
 
-      ! Electronic temperature (convert K to Hartree)
-      ! kt = T * k_B, where k_B = 3.166808578545117e-06 Hartree/K
+      ! Electronic temperature, Kelvin to Hartree: kt = T * k_B.
+      ! TODO(mqc): a second, different Boltzmann constant. `KB_HARTREE` in
+      ! `mqc_physical_constants` is 3.1668115634556e-6 and this literal is
+      ! 3.166808578545117e-6, so the xTB electronic temperature is about one
+      ! part in a million off the value every other module uses.
       m%kt = real(config%xtb%electronic_temp, wp)*3.166808578545117e-06_wp
 
       ! Solvation settings from config%xtb
@@ -179,14 +159,8 @@ contains
    subroutine configure_scf(options, config)
       !! Fill everything a self-consistent-field method shares, from the deck
       !!
-      !! **The shared type was not enough on its own.** Making `hf_options_t`
-      !! and `dft_options_t` extend `scf_options_t` collapses the *declaration*
-      !! of a shared field, but each `configure_*` still had to assign it by
-      !! hand -- so a field could exist on both types and still be filled for
-      !! only one. That is precisely how `allow_crap_scf` reached the Kohn-Sham
-      !! options and stayed `.false.` whatever the deck said. Assigning them
-      !! here, once, is what removes the second copy; the caller then adds only
-      !! what is specific to its own reference.
+      !! Every field declared on `scf_options_t` is assigned here, once. A
+      !! caller adds only what is specific to its own reference.
       class(scf_options_t), intent(inout) :: options
       type(method_config_t), intent(in) :: config
 
@@ -227,18 +201,13 @@ contains
       type(hf_method_t), intent(inout) :: m
       type(method_config_t), intent(in) :: config
       logical, intent(in), optional :: with_cc
-         !! Follow the reference with coupled cluster. Same argument as
-         !! `with_mp2`: a method, not an option.
+         !! Follow the reference with coupled cluster.
       logical, intent(in), optional :: with_mp2
-         !! Follow the reference with MP2. MP2 is dispatched onto the same
-         !! method object rather than a class of its own, because that is what
-         !! it is: a Hartree-Fock calculation and a correction built from its
-         !! orbitals. A separate class would duplicate every SCF setting to
-         !! reach the same code.
+         !! Follow the reference with MP2. MP2 and coupled cluster are
+         !! dispatched onto this same method object rather than classes of
+         !! their own: each is a Hartree-Fock calculation plus a correction
+         !! built from its orbitals.
 
-      ! Common settings
-
-      ! SCF settings from shared config%scf
       call configure_scf(m%options, config)
       if (present(with_mp2)) m%options%run_mp2 = with_mp2
       if (present(with_cc)) m%options%run_cc = with_cc
@@ -258,11 +227,6 @@ contains
          m%options%scs_ss = config%corr%scs_ss
          m%options%scs_os = config%corr%scs_os
       end if
-
-      ! Not from `config%dft`, and so easy to leave out: the continuum sits on
-      ! the shared config beside the SCF settings precisely because it applies
-      ! to any reference. `configure_dft` copied it and this did not, which made
-      ! `keywords.pcm` a no-op for Hartree-Fock, MP2 and coupled cluster.
    end subroutine configure_hf
 
    subroutine configure_dft(m, config)
@@ -270,11 +234,6 @@ contains
       type(dft_method_t), intent(inout) :: m
       type(method_config_t), intent(in) :: config
 
-      ! Common settings
-
-      ! SCF settings from shared config%scf
-
-      ! DFT-specific from config%dft
       call configure_scf(m%options, config)
       m%options%functional = config%dft%functional
       m%options%grid_type = config%dft%grid_type
@@ -285,28 +244,21 @@ contains
       m%options%radial_points = config%dft%radial_points
       m%options%angular_points = config%dft%angular_points
 
-      ! Density fitting. The auxiliary basis normally comes from the shared
-      ! SCF settings, which is what the %model `aux_basis` keyword fills; a
-      ! DFT-specific override wins only when it was actually set.
-      ! `density_fitting` itself comes from the shared settings via
-      ! `configure_scf`. It used to be OR-ed here with
-      ! `config%dft%use_density_fitting`, which the reader and the adapter never
-      ! write -- its only assignment anywhere is to `.false.` in the defaults --
-      ! so that term was always false and the OR was reading a field nothing
-      ! set. The DFT-specific *auxiliary basis* override below is different: it
-      ! is filled, and it still wins where it is given.
+      ! The auxiliary basis comes from the shared SCF settings, which is what
+      ! `model.aux_basis` fills; a DFT-specific override wins where it is given.
+      ! `density_fitting` itself arrives through `configure_scf`.
+      ! TODO(mqc): the `else` branch is empty -- dead since the removal of the
+      ! OR against `config%dft%use_density_fitting`.
       if (len_trim(config%dft%aux_basis_set) > 0) then
          m%options%aux_basis_set = config%dft%aux_basis_set
          m%options%aux_basis_named = .true.
       else
       end if
 
-      ! Correlation, which on this path means a double hybrid's perturbative
-      ! term and nothing else. From `config%corr`, the same place Hartree-Fock
-      ! reads it, so one deck keyword means one thing whichever method carries
-      ! the MP2.
-
-      ! Dispersion
+      ! TODO(mqc): nothing copies `config%corr` on this path, and
+      ! `dft_options_t` declares no correlation fields, so a double hybrid's
+      ! perturbative term never sees `keywords.correlation.use_df` or the
+      ! spin-component scaling that Hartree-Fock reads from the same block.
       m%options%use_dispersion = config%dft%use_dispersion
       m%options%dispersion_type = config%dft%dispersion_type
    end subroutine configure_dft
@@ -316,9 +268,8 @@ contains
       type(mcscf_method_t), intent(inout) :: m
       type(method_config_t), intent(in) :: config
 
-      ! Everything the reference SCF shares, through the one routine that fills
-      ! it. A CASSCF starts from a closed-shell SCF, and a deck that tightened
-      ! `keywords.scf` meant that one too.
+      ! Everything the reference SCF shares: a CASSCF starts from a closed-shell
+      ! SCF, and a deck that tightened `keywords.scf` meant that one too.
       call configure_scf(m%options, config)
 
       ! Active space from config%mcscf
@@ -359,23 +310,17 @@ contains
    end subroutine configure_mcscf
 
    function create_method(config) result(method)
-      !! Convenience function to create a method without instantiating factory
-      !!
-      !! Usage:
-      !!   use mqc_method_factory, only: create_method
-      !!   method = create_method(config)
+      !! Create a method without instantiating a factory first
       type(method_config_t), intent(in) :: config
       class(qc_method_t), allocatable :: method
 
       type(method_factory_t) :: factory
 
-      ! NOTE: intentionally allocate(..., source=) rather than the more natural
+      ! Intentionally allocate(..., source=) rather than the more natural
       ! `method = factory%create(config)`. gfortran 13.2.0 miscompiles intrinsic
-      ! assignment from a CLASS(...), ALLOCATABLE *function result*: the result's
-      ! _vptr is not set up, so the assignment jumps through a null pointer and
-      ! segfaults. ALLOCATE with SOURCE= is equivalent here and is correct on
-      ! every compiler. Reproduced with a 25-line standalone test; do not
-      ! "simplify" this back.
+      ! assignment from a CLASS(...), ALLOCATABLE *function result*: the
+      ! result's _vptr is not set up, so the assignment jumps through a null
+      ! pointer and segfaults. Do not "simplify" this back.
       allocate (method, source=factory%create(config))
    end function create_method
 

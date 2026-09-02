@@ -1,27 +1,19 @@
 !! Closed-shell MP2 from stored AO integrals
 module mqc_libcint_mp2
    !! Conventional restricted MP2: the reference the fitted version is checked
-   !! against, in the same relationship the in-core Fock build has to the direct
-   !! one.
+   !! against.
    !!
-   !! **The transformation is the whole of it.** Going from (mu nu|la si) to
-   !! (ia|jb) directly is an eight-index sum, N^8, and unusable at any size. Done
-   !! one index at a time it is four N^5 steps, each a matrix multiply:
+   !! **The transformation is the whole of it.** One index at a time it is four
+   !! N^5 steps, each a gemm:
    !!
    !!     (mu nu|la si) --C_occ--> (i nu|la si) --C_vir--> (ia|la si)
    !!                   --C_occ--> (ia|j si)   --C_vir--> (ia|jb)
    !!
-   !! Every step contracts one AO index against one MO coefficient matrix, and
-   !! each is expressed as a gemm rather than a loop nest, so the cost sits in
-   !! BLAS where it belongs. The saving is not marginal: for a hundred basis
-   !! functions N^8 is 10^16 operations and this is 10^10.
-   !!
    !! Memory is the price, and it is why this is a reference rather than a
-   !! method. The first intermediate is n_occ * n^3 -- 80 MB at a hundred
-   !! functions with ten occupied -- and the AO tensor it reads is n^4 on top of
-   !! that. The fitted version exists to avoid exactly this.
+   !! method: the first intermediate is n_occ * n^3, and the AO tensor it reads
+   !! is n^4 on top of that.
    !!
-   !! The energy is decomposed as it is accumulated, because the two spin cases
+   !! The energy is decomposed as it is accumulated, since the two spin cases
    !! are what SCS-MP2 scales separately and recovering them afterwards from a
    !! total is not possible:
    !!
@@ -45,8 +37,7 @@ module mqc_libcint_mp2
    public :: run_libcint_uri_mp2
    public :: mp2_result_t
    ! Exported for coupled cluster, which needs every MO block rather than just
-   ! (ia|jb). Lives here because this is where the two-half transform is, and a
-   ! second copy of it in the CC module is a second chance to transpose a half.
+   ! (ia|jb).
    public :: transform_block
    public :: transform_ovov   !! The MP2 gradient builds its own amplitudes from this
 
@@ -75,11 +66,9 @@ contains
       type(mp2_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: n_frozen
-         !! Core orbitals to leave uncorrelated. Defaults to none, which is
-         !! what makes this comparable to a reference run with frozen=0 --
-         !! most programs freeze by default, and comparing a frozen number
-         !! against an unfrozen one disagrees by tens of millihartree for a
-         !! reason that has nothing to do with the implementation.
+         !! Core orbitals to leave uncorrelated. Defaults to none, where most
+         !! programs freeze by default -- a frozen number against an unfrozen
+         !! one disagrees by tens of millihartree.
 
       real(dp), allocatable :: ao_eri(:, :)
       real(dp), allocatable :: ovov(:, :, :, :)
@@ -123,10 +112,11 @@ contains
       call clk%lap()
 
       ! The denominators are all strictly negative for a stable reference, so a
-      ! non-negative one means the SCF solution is not a minimum. Rather than
-      ! guard every term, the sum is checked afterwards: MP2 correlation is
-      ! negative, and a positive total says the reference was wrong, which is a
-      ! more useful thing to report than a divide-by-near-zero here.
+      ! non-negative one means the SCF solution is not a minimum.
+      ! TODO(mqc): nothing guards the division and nothing checks the sum
+      ! afterwards either -- no caller of `mp2_result_t` tests the sign of the
+      ! correlation -- so a vanishing denominator returns an infinity, and a
+      ! positive one a silently wrong energy.
       call clk%begin("energy denominators")
       e_ss = 0.0_dp
       e_os = 0.0_dp
@@ -163,22 +153,19 @@ contains
                                  result, error, n_frozen, b_ao_in)
       !! E(2) from a fitted (ia|jb), never forming the four-index tensor
       !!
-      !! `build_df_tensor` already returns B(mu nu, P) with the inverse-root
-      !! metric folded in, which is exactly the object this needs:
+      !! `build_df_tensor` returns B(mu nu, P) with the inverse-root metric
+      !! folded in, which is exactly the object this needs:
       !!
       !!     (ia|jb) = sum_P B^P_ia B^P_jb
       !!
       !! So the work is a transform of the AO pair index into (occupied,
-      !! virtual) and then one gemm per occupied pair. The saving over the
-      !! conventional route is where the memory goes: n_occ*n_vir*n_aux held
-      !! here against the n^4 tensor and its n_occ*n^3 intermediate there. For
-      !! water in cc-pVDZ that is kilobytes against megabytes, and the gap is
-      !! two powers of the system size.
+      !! virtual) and then one gemm per occupied pair, holding n_occ*n_vir*n_aux
+      !! against the conventional route's n^4 tensor and n_occ*n^3 intermediate.
       !!
       !! The error against conventional MP2 is the fitting error and nothing
-      !! else -- typically a few tenths of a millihartree with a matched RIFIT
-      !! set, and much worse with a JKFIT one, which is fitted for the Coulomb
-      !! and exchange blocks rather than for this.
+      !! else -- a few tenths of a millihartree with a matched RIFIT set, and
+      !! much worse with a JKFIT one, which is fitted for the Coulomb and
+      !! exchange blocks rather than for this.
       type(libcint_molecule_t), intent(in) :: mol
       type(libcint_molecule_t), intent(in) :: aux    !! Auxiliary basis, same atoms
       real(dp), intent(in) :: coeff(:, :)
@@ -189,10 +176,9 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: n_frozen
       real(dp), intent(in), optional :: b_ao_in(:, :)
-         !! The AO-basis fitted tensor a fitted SCF already built with this
-         !! same auxiliary basis -- `model.aux_basis` names one fitting set, so
-         !! a fitted reference and a fitted correlation always share it. Given
-         !! it, this reduces to the MO transform: see `build_df_mo_block`.
+         !! The AO-basis fitted tensor a fitted SCF already built with this same
+         !! auxiliary basis. Given it, this reduces to the MO transform; see
+         !! `build_df_mo_block`.
 
       real(dp), allocatable :: bia(:, :, :), g(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
@@ -224,10 +210,9 @@ contains
       c_occ = coeff(:, frozen + 1:n_occ)
       c_vir = coeff(:, n_occ + 1:n_mo)
 
-      ! Transformed before it is fitted, which is where the saving is -- see
-      ! `build_df_mo_tensor`. Fitting the whole AO pair space first and reading
-      ! the occupied-virtual corner out of it costs the same answer several
-      ! times over.
+      ! Transformed before it is fitted, which is where the saving is: fitting
+      ! the whole AO pair space first and reading the occupied-virtual corner
+      ! out of it costs the same answer several times over.
       call clk%start()
       call clk%begin("B tensor (3c/2c fit)")
       ! Energy only: `bia` is contracted with another `bia` and nothing
@@ -242,22 +227,14 @@ contains
 
       ! One gemm per occupied pair rebuilds that pair's whole (a,b) block:
       ! g(a,b) = sum_P B^P_ia B^P_jb, which is (ia|jb), and g(b,a) is (ib|ja).
-      ! Only the lower triangle of occupied pairs. Exchanging i with j and a
-      ! with b leaves every term unchanged -- (ia|jb) becomes (jb|ia), which is
-      ! the same integral -- so the (j,i) pair contributes exactly what (i,j)
-      ! does and is counted by weight instead of by a second gemm. Half the
-      ! work for the same sum, and the gemm is where the time is.
+      ! Only the lower triangle of occupied pairs: exchanging i with j and a
+      ! with b leaves every term unchanged, so the (j,i) pair is counted by
+      ! weight instead of by a second gemm.
       !
-      ! Threaded over the occupied pairs, which is the whole of the cost: the
-      ! two energies are the only shared state and they are a reduction. `g` is
-      ! per-thread scratch, so it is allocated inside the region -- one
-      ! (n_v, n_v) block each rather than one shared block, which is why the
-      ! region is explicit instead of a bare `parallel do`.
-      !
-      ! `schedule(dynamic)` because the inner loop runs to `i`, so the last
-      ! occupied orbital does n_o times the work of the first. A static
-      ! schedule hands the high-numbered pairs to whichever threads drew them
-      ! and leaves the rest waiting.
+      ! `g` is per-thread scratch, allocated inside the region, which is why the
+      ! region is explicit instead of a bare `parallel do`. `schedule(dynamic)`
+      ! because the inner loop runs to `i`, so the last occupied orbital does
+      ! n_o times the work of the first.
       call clk%begin("gemm + denominators")
       e_ss = 0.0_dp
       e_os = 0.0_dp
@@ -314,16 +291,8 @@ contains
    ! fields already mean in the restricted result.
    !
    ! The like-spin terms are written as 1/2 sum (ia|jb)[(ia|jb) - (ib|ja)]/D
-   ! rather than 1/4 sum [(ia|jb) - (ib|ja)]^2/D. They are equal -- expanding
-   ! the square gives x^2 - 2xy + y^2, and relabelling a with b turns sum y^2/D
-   ! into sum x^2/D because D is symmetric in a and b -- and the first form is
-   ! half the arithmetic and the same shape as the restricted loop above it, so
-   ! the two can be read against each other.
-   !
-   ! THE CLOSED-SHELL LIMIT IS THE TEST that says the factors are right. With
-   ! alpha and beta identical the two like-spin terms sum to
-   ! sum x(x - y)/D, which is exactly `e_ss` in the restricted routines, and
-   ! the mixed term is `e_os`. check_ump2_matches_rmp2 asserts it.
+   ! rather than the equal 1/4 sum [(ia|jb) - (ib|ja)]^2/D: half the arithmetic
+   ! and the same shape as the restricted loop above it.
    !
    ! Frozen orbitals are counted per spin, the same number from each. For a
    ! doublet that leaves one more correlated beta hole than alpha, which is
@@ -397,10 +366,10 @@ contains
       !!     (ia|JB) = sum_P B(a)^P_ia B(b)^P_JB
       !!
       !! The like-spin blocks reuse the occupied-pair weighting of the
-      !! restricted routine -- exchanging i with j and a with b leaves the term
-      !! unchanged, so the lower triangle is enough. **The mixed block gets no
-      !! such weighting**: i is alpha and j is beta, so (i,j) and (j,i) are
-      !! different pairs of different spins and the full rectangle is the sum.
+      !! restricted routine, so the lower triangle is enough. **The mixed block
+      !! gets no such weighting**: i is alpha and j is beta, so (i,j) and (j,i)
+      !! are different pairs of different spins and the full rectangle is the
+      !! sum.
       type(libcint_molecule_t), intent(in) :: mol
       type(libcint_molecule_t), intent(in) :: aux
       real(dp), intent(in) :: coeff_a(:, :), coeff_b(:, :)
@@ -469,9 +438,7 @@ contains
       !! The shape checks both unrestricted routines need, in one place
       !!
       !! Checked per spin rather than once: a doublet has a different occupied
-      !! count in each, so "at least one occupied left after freezing" and "at
-      !! least one virtual" are two questions, and the beta channel is the one
-      !! that runs out first.
+      !! count in each, and the beta channel is the one that runs out first.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coeff_a(:, :), coeff_b(:, :)
       real(dp), intent(in) :: eps_a(:), eps_b(:)
@@ -523,9 +490,8 @@ contains
       result%scf_energy = scf_energy
       result%total = scf_energy + result%correlation
       result%n_frozen = frozen
-      !! Summed over spins, so these count spin orbitals where the restricted
-      !! routines count spatial ones. There is no single number that means the
-      !! same thing in both cases and the totals are what a report shows.
+      ! Summed over spins, so these count spin orbitals where the restricted
+      ! routines count spatial ones.
       result%n_occupied = n_o
       result%n_virtual = n_v
    end subroutine fill_ump2_result
@@ -580,6 +546,9 @@ contains
 
    function ri_like_spin_energy(bia, eps, frozen, n_occ, n_o, n_v) result(e)
       !! The like-spin term from a fitted B, lower occupied triangle only
+      ! TODO(mqc): serial, where `run_libcint_ri_mp2` threads the identical
+      ! occupied-pair loop over the same gemm. The unrestricted fitted path
+      ! runs both spin blocks and the mixed one on a single thread.
       real(dp), intent(in) :: bia(:, :, :)
       real(dp), intent(in) :: eps(:)
       integer, intent(in) :: frozen, n_occ, n_o, n_v
@@ -610,9 +579,6 @@ contains
 
    subroutine transform_ovov(eri, coeff, frozen, n_occ, n_ao, n_mo, ovov)
       !! (pq|rs) over packed AO pairs -> (ia|jb)
-      !!
-      !! A thin caller for `transform_block`, kept so the MP2 path reads as the
-      !! one block it wants rather than as the general routine underneath.
       real(dp), intent(in) :: eri(:, :)      !! (n_pair, n_pair), see `pair_index`
       real(dp), intent(in) :: coeff(:, :)
       integer, intent(in) :: frozen, n_occ, n_ao, n_mo
@@ -639,16 +605,10 @@ contains
       !!
       !!     (pq|rs) --unpack pq--> (ia|rs) --unpack rs--> (ia|jb)
       !!
-      !! The unpack is the price of the packing, and it is a good trade: it
-      !! touches nao^2 elements where the dense form wrote nao^4 across eight
-      !! stride patterns to avoid it.
-      !!
       !! Which blocks come out is entirely the caller's four coefficient
       !! matrices: C_occ/C_vir twice over gives (ia|jb) for MP2, and C_act four
       !! times over gives the whole active MO tensor, which is what coupled
-      !! cluster needs. Nothing here knows the difference, which is the point --
-      !! the alternative was six near-identical transforms and six chances to
-      !! transpose one.
+      !! cluster needs.
       real(dp), intent(in) :: eri(:, :)      !! (n_pair, n_pair), see `pair_index`
       real(dp), intent(in) :: c1(:, :), c2(:, :)   !! Bra pair, left and right
       real(dp), intent(in) :: c3(:, :), c4(:, :)   !! Ket pair, left and right

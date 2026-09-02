@@ -5,36 +5,28 @@ module mqc_libcint_hess_abi
    !!
    !! **This is what lets one source file serve both backends.** libcint and
    !! libfint export these under the same names with the same signatures --
-   !! libfint's `cint_c_abi` exists to make that true, and since v0.1.1 it
-   !! covers the second derivatives -- so a declaration here resolves against
-   !! whichever library the build linked, and nothing above this module has to
-   !! know which. The alternative was a second dispatch per contraction
-   !! routine, one calling libfint's Fortran modules and one calling C, which
-   !! is two things to keep in step for no gain.
+   !! libfint's `cint_c_abi` exists to make that true, and covers the second
+   !! derivatives since v0.1.1 -- so a declaration here resolves against
+   !! whichever library the build linked.
    !!
-   !! **The CINT2 spelling, deliberately.** Both libraries offer these twice:
-   !! as `int1e_ipipovlp_sph(out, dims, shls, ..., opt, cache)` and as
+   !! **The CINT2 spelling, deliberately.** Both libraries offer these twice: as
+   !! `int1e_ipipovlp_sph(out, dims, shls, ..., opt, cache)` and as
    !! `cint1e_ipipovlp_sph(buf, shls, ..., env)`. The second has no `dims`, no
-   !! `cache`, and -- for one-electron integrals -- no optimizer, which removes
-   !! the only awkward part of the interface: libcint wants a scratch buffer
-   !! whose size is obtained by calling the same function with a null output
-   !! pointer, while libfint ignores the argument and uses its own workspace.
-   !! Taking the spelling with no cache means neither library needs special
-   !! handling. The buffer comes back packed with the natural shell dimensions,
-   !! which is what every caller here already assumes.
+   !! `cache`, and -- for one-electron integrals -- no optimizer, so neither
+   !! library needs special handling for the scratch buffer libcint would
+   !! otherwise want sized by a null-output call. The buffer comes back packed
+   !! with the natural shell dimensions.
    !!
    !! Two-electron entry points take an optimizer and one-electron ones do not.
-   !! That is libcint's convention rather than a choice made here; a null
-   !! pointer is a valid optimizer and is what the callers pass.
+   !! That is libcint's convention; a null pointer is a valid optimizer and is
+   !! what the callers pass.
    !!
-   !! **Assumed-size arrays are the point, not an oversight.** A `bind(C)`
-   !! dummy has to match what C passes, which is a bare pointer; an assumed
-   !! shape argument would pass a descriptor and corrupt the call. Same reason
-   !! `mqc_hdf5_bindings` allows them, and marked the same way.
+   !! **Assumed-size arrays are the point, not an oversight.** A `bind(C)` dummy
+   !! has to match what C passes, which is a bare pointer; an assumed-shape
+   !! argument would pass a descriptor and corrupt the call.
    !!
-   !! Written out rather than generated at build time because a wrong
-   !! declaration here is a silent stack corruption at run time, not a compile
-   !! error -- there is nothing on the far side of a `bind(C)` boundary to
+   !! A wrong declaration here is a silent stack corruption at run time, not a
+   !! compile error: there is nothing on the far side of a `bind(C)` boundary to
    !! check it against.
    use, intrinsic :: iso_c_binding, only: c_double, c_int, c_ptr
    implicit none

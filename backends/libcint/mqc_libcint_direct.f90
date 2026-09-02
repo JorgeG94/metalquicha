@@ -1,10 +1,9 @@
 module mqc_libcint_direct
    !! Direct Fock construction: integrals consumed as produced, never stored
    !!
-   !! The in-core path in `mqc_libcint_integrals` holds all n^4 integrals and
-   !! contracts them each iteration. That is 800 MB at a hundred basis functions
-   !! and 65 GB at three hundred, so it is a reference implementation and not a
-   !! method. This builds the Fock matrix without ever forming the tensor.
+   !! The in-core path in `mqc_libcint_integrals` holds all n^4 integrals -- 65 GB
+   !! at three hundred basis functions -- and is a reference implementation rather
+   !! than a method. This builds the Fock matrix without ever forming the tensor.
    !!
    !! Three things make it work, following Huang, Sherrill and Chow
    !! [JCP 152, 024122 (2020)], Algorithm 1:
@@ -16,21 +15,17 @@ module mqc_libcint_direct
    !!
    !! **Schwarz screening.** |(MN|PQ)| <= Q_MN Q_PQ with Q_MN = sqrt(max|(MN|MN)|),
    !! by Cauchy-Schwarz. Quartets whose bound is below threshold are skipped
-   !! without being computed. This is what turns the formal n^4 into roughly n^2
-   !! for extended systems, and it is the reason recomputing integrals every
-   !! iteration is cheaper than streaming them from memory.
+   !! without being computed, which turns the formal n^4 into roughly n^2 for
+   !! extended systems.
    !!
-   !! **libcint's optimizer.** CINTOpt precomputes per-shell-pair data that is
-   !! reused across quartet calls. It is created once per Fock build and costs
-   !! nothing to use.
+   !! **libcint's optimizer.** CINTOpt precomputes per-shell-pair data reused
+   !! across quartet calls. Created once per Fock build.
    !!
-   !! The degeneracy factors deserve care. A quartet where M == N still has both
-   !! (mu nu|..) and (nu mu|..) inside its own block -- the block enumerates all
-   !! function pairs -- so the permutation is already covered and must not be
-   !! counted again. That is why the factors test shell equality, not function
-   !! equality, and why getting it wrong produces a Fock matrix that is wrong by
-   !! a factor of two on its diagonal blocks only. `check_direct` compares
-   !! against the in-core build elementwise, which catches exactly that.
+   !! **The degeneracy factors test shell equality, not function equality.** A
+   !! quartet where M == N already has both (mu nu|..) and (nu mu|..) inside its
+   !! own block, so that permutation must not be counted again. Getting it wrong
+   !! produces a Fock matrix wrong by a factor of two on its diagonal blocks
+   !! only; `check_direct` compares against the in-core build elementwise.
    use pic_types, only: dp, int64, int_index
    use pic_sorting, only: sort_index
    use pic_timer, only: timer_type
@@ -53,12 +48,11 @@ module mqc_libcint_direct
    public :: direct_stats_t
    public :: DEFAULT_SCREEN_TOL
 
-   !! Quartets whose Schwarz bound falls below this are skipped.
-   !!
-   !! The GTFock paper uses 1e-11 on shell quartets. That is tighter than the
-   !! 1e-10 often seen and costs little, since the count of surviving quartets
-   !! is insensitive to the threshold over a decade or so.
    real(dp), parameter :: DEFAULT_SCREEN_TOL = 1.0e-11_dp
+      !! Quartets whose Schwarz bound falls below this are skipped.
+      !!
+      !! The GTFock paper's value. The count of surviving quartets is
+      !! insensitive to the threshold over a decade or so.
 
    type :: direct_stats_t
       !! What a Fock build did, so screening can be reported rather than assumed
@@ -70,20 +64,13 @@ module mqc_libcint_direct
          !! basis and the geometry only, so this number is the same at every
          !! iteration of an SCF.
       real(dp) :: thread_imbalance = 1.0_dp
-         !! Slowest thread's time on the quartet loop divided by the mean.
-         !!
-         !! One is perfect balance. This is what a work-ordering change has to
-         !! move, and it is measurable where wall time is not: it is a ratio
-         !! within a single run, so the contention that swamps a before/after
-         !! comparison on a shared node largely divides out.
+         !! Slowest thread's time on the quartet loop divided by the mean. One is
+         !! perfect balance. A ratio within a single run, so contention on a
+         !! shared node largely divides out.
       integer(int64) :: screened_density = 0
          !! Skipped because the *contribution* is negligible although the
-         !! integral is not -- the extra reach the density weighting buys.
-         !!
-         !! Counted separately because it is the only honest way to measure that
-         !! weighting on a shared machine: run-to-run wall time on a contended
-         !! node varies by more than the effect, but these counts are exactly
-         !! reproducible.
+         !! integral is not -- the extra reach the density weighting buys, and
+         !! exactly reproducible where a wall-time measurement of it is not.
    contains
       procedure :: screened_fraction => stats_screened_fraction
    end type direct_stats_t
@@ -105,9 +92,9 @@ contains
    subroutine schwarz_bounds(mol, bounds, error)
       !! Q_MN = sqrt(max |(MN|MN)|) for every shell pair
       !!
-      !! Costs n_shells^2 quartet evaluations, done once per geometry -- the
-      !! bounds depend only on the basis and the positions, not the density, so
-      !! a whole SCF reuses one set.
+      !! Costs n_shells^2 quartet evaluations, done once per geometry: the bounds
+      !! depend on the basis and the positions, not the density, so a whole SCF
+      !! reuses one set.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), allocatable, intent(out) :: bounds(:, :)
       type(error_t), intent(inout) :: error
@@ -169,15 +156,11 @@ contains
       !!
       !! `schedule(dynamic)` hands tasks out in order, so ascending order
       !! dispatches the most expensive task last and finishes with every other
-      !! thread idle behind it. Reversing fixes the trend but not the variation
-      !! within it; sorting on the actual cost fixes both, and `pic_sorting`'s
-      !! `sort_index` is an introsort that returns the permutation rather than
-      !! the sorted values, which is exactly the question being asked.
+      !! thread idle behind it. Sorting on the estimated cost fixes both the
+      !! trend and the variation within it.
       !!
-      !! The cost is the unscreened function-quartet count. Screening will remove
-      !! some of it unevenly, so this is an estimate -- but it is the estimate
-      !! available before the work is done, and the ordering only has to be
-      !! roughly right for the tail to disappear.
+      !! The cost is the unscreened function-quartet count, so screening makes
+      !! this an estimate; the ordering only has to be roughly right.
       integer, intent(in) :: pair_i(:), pair_j(:), dims(:)
       integer, allocatable, intent(out) :: order(:)
 
@@ -203,20 +186,14 @@ contains
    subroutine shell_density_max(mol, density, dsh)
       !! The largest |D| in each shell-pair block
       !!
-      !! The Schwarz bound says how big an integral can be. It says nothing about
-      !! whether that integral matters, and by the middle of an SCF most of them
-      !! do not: a quartet multiplies six density elements, and if all six are
-      !! negligible the quartet contributes nothing however large it is.
+      !! A quartet multiplies six density elements, and if all six are negligible
+      !! it contributes nothing however large the integral is. The Schwarz bound
+      !! alone cannot see that.
       !!
-      !! Blocked to shells rather than kept per function because the screening
-      !! decision is made per shell quartet -- one number per pair is all the test
-      !! can use, and it has to be the largest in the block or the bound would not
-      !! be one.
-      !!
-      !! Rebuilt every Fock build, unlike the Schwarz bounds: this one is a
-      !! property of the density and the density is what changes. It costs one
-      !! pass over an n-by-n matrix against a quartet loop that is the rest of the
-      !! iteration, so the cost does not show up.
+      !! Blocked to shells because the screening decision is made per shell
+      !! quartet, and it has to be the largest in the block or the bound would
+      !! not be one. Rebuilt every Fock build, unlike the Schwarz bounds: this
+      !! one is a property of the density.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
       real(dp), allocatable, intent(out) :: dsh(:, :)
@@ -238,9 +215,7 @@ contains
       !! Split out so the Fock builders can block the density to whatever shell
       !! table their quartet loop runs over -- the fused-sp view when the
       !! molecule carries one -- while `shell_density_max` keeps answering per
-      !! split shell for any caller blocked that way. The SCF gradient, once
-      !! the reason this note said "never fused", now blocks against the view
-      !! it loops over, inline in `two_electron_deriv`.
+      !! split shell for any caller blocked that way.
       real(dp), intent(in) :: density(:, :)
       integer, intent(in) :: nbas
       integer, intent(in) :: offs(:)   !! First AO of each shell, 0-based
@@ -266,17 +241,13 @@ contains
    pure function density_weight(dsh, s1, s2, s3, s4, jf, kq, deg) result(denmax)
       !! Largest density contribution this quartet can make, per unit integral
       !!
-      !! The six elements are the six the Fock updates read, and the weights are
-      !! the ones they are multiplied by, so `bound * denmax` is an upper bound on
-      !! the largest change any one Fock element can see from this quartet. That
-      !! is what the screening test should compare against a tolerance -- the
-      !! Schwarz bound alone compares the integral, which is not the quantity
-      !! anyone cares about being small.
+      !! The six elements are the six the Fock updates read, with the weights
+      !! they are multiplied by, so `bound * denmax` bounds the largest change any
+      !! one Fock element can see from this quartet.
       !!
-      !! `deg` belongs in here. The permutational factor multiplies the
+      !! `deg` belongs in here: the permutational factor multiplies the
       !! contribution, so leaving it out would make the bound smaller than the
-      !! thing it bounds and the test could discard a quartet that mattered.
-      !! Including it costs a little screening and buys rigour.
+      !! thing it bounds.
       real(dp), intent(in) :: dsh(:, :)
       integer, intent(in) :: s1, s2, s3, s4
       real(dp), intent(in) :: jf, kq, deg
@@ -316,37 +287,32 @@ contains
       real(dp), intent(in), optional :: screen_tol
       real(dp), intent(in), optional :: k_scale
          !! Fraction of exact exchange to keep. One is Hartree-Fock and the
-         !! default; zero is pure density-functional exchange; a hybrid is between.
-         !! Present so a Kohn-Sham build needs no second routine and cannot drift
-         !! out of step with this one.
+         !! default; zero is pure density-functional exchange; a hybrid is
+         !! between.
       real(dp), intent(in), optional :: j_scale
          !! Fraction of the Coulomb term, default one. Zero is what a
-         !! range-separated hybrid's *second* pass wants: it needs a long-range
-         !! exchange matrix and nothing else, and asking for it here rather than in
-         !! an exchange-only routine avoids a second copy of the quartet loop.
+         !! range-separated hybrid's *second* pass wants: a long-range exchange
+         !! matrix and nothing else.
       real(dp), intent(in), optional :: omega
          !! Range-separation parameter. Zero, the default, is the full Coulomb
          !! kernel. Positive gives the long-range erf-attenuated one and negative
-         !! the short-range complement -- libcint switches on this through
-         !! `env(PTR_RANGE_OMEGA)`, so the same entry points and the same optimizer
-         !! serve both and no new integral code is needed.
+         !! the short-range complement, through `env(PTR_RANGE_OMEGA)`.
          !!
          !! The Schwarz bounds passed in are the full-kernel ones and stay valid
          !! here without being rebuilt: erf(omega r)/r <= 1/r pointwise, so an
          !! attenuated quartet is never larger than the bound screening it, and
          !! the screening can only become conservative rather than wrong.
       logical, intent(in), optional :: density_screen
-         !! Weight the Schwarz bound by the density it multiplies before screening
-         !! (default true). An SCF wants it: a quartet whose six density elements
-         !! are all negligible contributes nothing however large its integral, so
-         !! dropping it is free accuracy. A CPHF response build must pass false.
-         !! Its `density` is a Krylov trial vector the solver drives towards zero,
-         !! so a screen keyed on the density's magnitude tightens as the solve
-         !! proceeds -- the operator stops being the same linear map from one
-         !! matvec to the next and the iteration cannot converge. False recovers
-         !! the plain Schwarz screen, which depends on the basis alone and leaves
-         !! the operator fixed. Bit-for-bit equal to `build_fock_direct_many` with
-         !! one density, which is the invariant the response path relies on.
+         !! Weight the Schwarz bound by the density it multiplies before
+         !! screening (default true). An SCF wants it.
+         !!
+         !! **A CPHF response build must pass false.** Its `density` is a Krylov
+         !! trial vector the solver drives towards zero, so a screen keyed on the
+         !! density's magnitude tightens as the solve proceeds: the operator
+         !! stops being the same linear map from one matvec to the next and the
+         !! iteration cannot converge. False recovers the plain Schwarz screen,
+         !! which depends on the basis alone, and is bit-for-bit equal to
+         !! `build_fock_direct_many` with one density.
 
       real(dp), allocatable :: buf(:), g(:, :), g_local(:, :), d_half(:, :)
       real(dp), allocatable :: dsh(:, :)
@@ -384,15 +350,10 @@ contains
 
       ! The shells the quartet loop runs over: the fused-sp view when the
       ! molecule carries one, its split shells otherwise. libfint's `int2e` is
-      ! the one driver that reads a fused L shell, and it is exactly what this
-      ! loop calls, so the view is safe here and nowhere looser -- and since
-      ! libfint learned to carry a derivative's tensor component through an L
-      ! shell, the SCF gradient's int2e_ip1 loop takes the view too. The
-      ! Schwarz bounds arrive per split shell either way, straight from
-      ! `schwarz_bounds`, and are collapsed to match. Dimensions
-      ! and offsets are copied out up front: both are needed inside the
-      ! parallel region, and looking them up there would mean every thread
-      ! reaching into `bas` for something that does not change.
+      ! one of the two drivers that read a fused L shell, and is exactly what
+      ! this loop calls. The Schwarz bounds arrive per split shell either way and
+      ! are collapsed to match. Dimensions and offsets are copied out up front:
+      ! both are read inside the parallel region.
       call eri_shell_table(mol, tab)
       call eri_schwarz_collapse(mol, bounds, bq)
       dims = tab%dims
@@ -400,12 +361,8 @@ contains
       block_max = tab%block_max
 
       ! The quartet loop, flattened onto one index so it can be handed out.
-      !
-      ! The nested form -- s3 up to s1, and s4 up to s2 only when s3 equals s1 --
-      ! is exactly "every shell pair (s3,s4) at or before (s1,s2)" in the
-      ! canonical pair ordering, so enumerating pairs and taking kl <= ij covers
-      ! the same quartets once each. Flattening is what makes the outer loop
-      ! divisible; the triangular nest is not.
+      ! Enumerating shell pairs and taking `kl <= ij` covers the same quartets
+      ! once each as the triangular nest, and is divisible where that is not.
       npair = tab%nbas*(tab%nbas + 1)/2
       allocate (pair_i(npair), pair_j(npair))
       ipair = 0
@@ -428,10 +385,9 @@ contains
       d_half = 0.5_dp*density
 
       ! Built from `d_half` rather than `density` because `d_half` is what the six
-      ! updates below actually multiply -- a bound has to be on the quantity that
-      ! is used, not on a factor of two away from it. Skipped when the caller has
-      ! opted out: `dsh` is then never read, so a zero-size placeholder keeps the
-      ! `shared` clause legal without paying for the pass over the density.
+      ! updates below multiply. Skipped when the caller has opted out: `dsh` is
+      ! then never read, and a zero-size placeholder keeps the `shared` clause
+      ! legal.
       if (weight_density) then
          call block_density_max(d_half, tab%nbas, offs, dims, dsh)
       else
@@ -446,15 +402,14 @@ contains
       if (present(j_scale)) jf = j_scale
 
       ! A copy, because the range-separation parameter lives in `env` and the
-      ! molecule is read-only here. Cheap -- env is a few thousand doubles -- and it
-      ! keeps a range-separated build from mutating state a caller shares.
+      ! molecule is read-only here.
       !
-      ! `+ 1` because the `env` pointer constants are libcint's own 0-based
-      ! offsets and are *not* converted by the Fortran interface -- unlike the
+      ! **`+ 1` because the `env` pointer constants are libcint's own 0-based
+      ! offsets and are not converted by the Fortran interface**, unlike the
       ! `atm`/`bas` column constants, which are. Getting this wrong is silent:
       ! slot 8 is `PTR_RINV_ZETA`, which a plain two-electron integral ignores,
-      ! so the attenuated build returns full-range exchange, the two passes sum
-      ! back to unscaled K, and the SCF converges several Hartree out.
+      ! so the attenuated build returns full-range exchange and the SCF converges
+      ! several Hartree out.
       env_local = tab%env
       if (present(omega)) env_local(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
@@ -471,26 +426,21 @@ contains
       t_thread_max = 0.0_dp
       t_thread_sum = 0.0_dp
 
-      ! Threaded over bra pairs. libcint carries no mutable state across calls
-      ! -- the 2e path has no static globals, and `opt` is written once here and
-      ! only read inside -- so the integrals themselves need nothing but a
-      ! private buffer each.
+      ! Threaded over bra pairs. libcint carries no mutable state across calls --
+      ! the 2e path has no static globals, and `opt` is written once here and
+      ! only read inside -- so the integrals need nothing but a private buffer
+      ! each.
       !
-      ! The accumulator is the part that does need care. The six updates below
-      ! scatter into `g` at positions that depend on all four shells, so two
-      ! threads holding different quartets can land on the same element. Each
-      ! thread therefore fills its own copy and adds it in once at the end.
-      ! Atomics on the innermost statement would be correct too and far slower:
-      ! six of them per integral, on the hottest line in the program.
-      !
-      ! The cost of that is one n*n array per thread. At forty threads it is 18
-      ! MB for the 237-function case here, and it grows as n^2 -- worth watching
-      ! if this ever meets a few thousand functions, where a blocked scheme
-      ! along the lines of GTFock's would be the answer.
+      ! The accumulator does need care. The updates below scatter at positions
+      ! that depend on all four shells, so two threads holding
+      ! different quartets can land on the same element. Each thread fills its
+      ! own copy and adds it in once at the end; atomics on the innermost
+      ! statement would be correct too and far slower. The cost is one n*n array
+      ! per thread, growing as n^2 -- **worth watching at a few thousand
+      ! functions**, where a blocked scheme like GTFock's would be the answer.
       !
       ! `schedule(dynamic)`: pair ij does ij quartets, so the last chunk is
-      ! thousands of times the first, and a static split would leave most
-      ! threads idle waiting for the tail.
+      ! thousands of times the first.
       !$omp parallel default(none) &
       !$omp    shared(mol, tab, bq, dsh, d_half, g, dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
       !$omp           block_max, kq, jf, env_local, weight_density) &
@@ -527,9 +477,8 @@ contains
             ! One criterion, not two. The quantity that must be small is the
             ! *contribution*, so that is what the test compares; screening on the
             ! bare Schwarz bound as well would discard quartets whose weight
-            ! exceeds one -- `deg` reaches eight -- and those are exactly the ones
-            ! that matter most. The two counters only attribute the decision:
-            ! whether the Schwarz bound alone would have been enough to reach it.
+            ! exceeds one -- `deg` reaches eight. The two counters only attribute
+            ! the decision.
             deg = pair_degeneracy(s1, s2, s3, s4)
             schwarz = bq(s1, s2)*bq(s3, s4)
             if (weight_density) then
@@ -589,8 +538,8 @@ contains
          end do
       end do
       !$omp end do nowait
-      ! `nowait`, so what is timed is this thread's share of the loop and not
-      ! the wait for the slowest one -- the wait is the thing being measured.
+      ! `nowait`, so what is timed is this thread's share of the loop and not the
+      ! wait for the slowest one, which is the thing being measured.
       call thread_clock%stop()
       t_thread = thread_clock%get_elapsed_time()
       t_thread_max = max(t_thread_max, t_thread)
@@ -623,47 +572,29 @@ contains
                                      screen_tol, k_scale, j_scale, omega)
       !! F = H + J - K/2 for many densities, over one pass of the integrals
       !!
-      !! **Why this exists.** In a direct scheme the integral evaluation dominates
-      !! and the contractions against it are nearly free, so computing a quartet
-      !! once and contracting it against every density in hand is the difference
-      !! between one integral pass and N of them. The coupled-perturbed equations
-      !! for the dynamic polarizabilities need roughly a hundred right-hand sides
-      !! -- nine perturbations times twelve imaginary frequencies -- and the matvec
-      !! for each is a Fock build on a different response density, so without this
-      !! the frequency loop pays for the integrals a hundred times over. DIIS trial
-      !! densities and the distributed multipoles want the same amortization.
+      !! In a direct scheme the integral evaluation dominates and the contractions
+      !! against it are nearly free, so one quartet contracted against every
+      !! density in hand is the difference between one integral pass and N of
+      !! them.
       !!
       !! **Screening is shared, deliberately.** The Schwarz bound depends on the
-      !! basis and not on any density, so every set sees exactly the same quartets
-      !! and no set can be screened differently from its neighbours. That keeps a
-      !! batch bit-for-bit equal to the same densities passed one at a time, which
-      !! is what makes the single-density wrapper above safe.
+      !! basis and not on any density, so every set sees exactly the same
+      !! quartets. That keeps a batch bit-for-bit equal to the same densities
+      !! passed one at a time, which is what makes the single-density wrapper
+      !! above safe.
       !!
-      !! **The win saturates around fourfold, and the accumulator is why.** Measured
-      !! on methanol in cc-pVTZ, 116 functions, against the same densities passed one
-      !! at a time: 3.9x at 6 densities, 4.3x at 12, and 3.8x at 24 -- so it stops
-      !! improving and then reverses. The reason is that this is not
-      !! integral-dominated once several sets are in flight. The six updates below
-      !! scatter into an `n^2 * n_set` accumulator per thread, which is memory-bound
-      !! and grows with the batch, while the integral it reuses does not; at forty
-      !! threads and 24 densities that accumulator is already 100 MB and stops
-      !! fitting in cache.
+      !! **Batch in chunks of about a dozen**, not a hundred at once: the win
+      !! saturates around fourfold and then reverses, because the updates scatter
+      !! into an `n^2 * n_set` accumulator per thread which grows with the batch
+      !! while the integral it reuses does not.
       !!
-      !! So batch in **chunks of about a dozen** rather than passing a hundred
-      !! right-hand sides at once. A hundred solved twelve at a time is nine integral
-      !! passes instead of a hundred, which is the fourfold that is actually
-      !! available -- not the hundredfold that counting integral passes alone would
-      !! suggest.
-      !!
-      !! **Symmetric densities only.** The six updates below, with their degeneracy
-      !! factors, assume `D` is symmetric in two separate places: the factor of two
-      !! for `s1 /= s2` stands in for the `mu <-> nu` permutation without adding
-      !! `D(nu,mu)`, and likewise for `s3 /= s4`. Hand this an antisymmetric density
-      !! and those permutations double where they should cancel, so the Coulomb term
-      !! comes back at twice its value instead of at zero. Nothing here detects it.
-      !! The `A - B` matvec that frequency-dependent response needs is exactly that
-      !! case, and it needs its own accumulation with the eight permutations written
-      !! out rather than folded into `deg`.
+      !! **Symmetric densities only.** The six updates below assume `D` is
+      !! symmetric in two places: the factor of two for `s1 /= s2` stands in for
+      !! the `mu <-> nu` permutation without ever adding `D(nu,mu)`, and likewise
+      !! for `s3 /= s4`. Hand this an antisymmetric density and those
+      !! permutations double where they should cancel, so the Coulomb term comes
+      !! back at twice its value instead of at zero, and nothing here detects it.
+      !! Use `build_fock_direct_nosym` for that case.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: h(:, :)          !! Core Hamiltonian, added to every set
       real(dp), intent(in) :: densities(:, :, :)  !! (n_ao, n_ao, n_set), each 2 C C^T
@@ -714,15 +645,10 @@ contains
 
       ! The shells the quartet loop runs over: the fused-sp view when the
       ! molecule carries one, its split shells otherwise. libfint's `int2e` is
-      ! the one driver that reads a fused L shell, and it is exactly what this
-      ! loop calls, so the view is safe here and nowhere looser -- and since
-      ! libfint learned to carry a derivative's tensor component through an L
-      ! shell, the SCF gradient's int2e_ip1 loop takes the view too. The
-      ! Schwarz bounds arrive per split shell either way, straight from
-      ! `schwarz_bounds`, and are collapsed to match. Dimensions
-      ! and offsets are copied out up front: both are needed inside the
-      ! parallel region, and looking them up there would mean every thread
-      ! reaching into `bas` for something that does not change.
+      ! one of the two drivers that read a fused L shell, and is exactly what
+      ! this loop calls. The Schwarz bounds arrive per split shell either way and
+      ! are collapsed to match. Dimensions and offsets are copied out up front:
+      ! both are read inside the parallel region.
       call eri_shell_table(mol, tab)
       call eri_schwarz_collapse(mol, bounds, bq)
       dims = tab%dims
@@ -730,12 +656,8 @@ contains
       block_max = tab%block_max
 
       ! The quartet loop, flattened onto one index so it can be handed out.
-      !
-      ! The nested form -- s3 up to s1, and s4 up to s2 only when s3 equals s1 --
-      ! is exactly "every shell pair (s3,s4) at or before (s1,s2)" in the
-      ! canonical pair ordering, so enumerating pairs and taking kl <= ij covers
-      ! the same quartets once each. Flattening is what makes the outer loop
-      ! divisible; the triangular nest is not.
+      ! Enumerating shell pairs and taking `kl <= ij` covers the same quartets
+      ! once each as the triangular nest, and is divisible where that is not.
       npair = tab%nbas*(tab%nbas + 1)/2
       allocate (pair_i(npair), pair_j(npair))
       ipair = 0
@@ -775,26 +697,21 @@ contains
       n_computed = 0_int64
       n_screened = 0_int64
 
-      ! Threaded over bra pairs. libcint carries no mutable state across calls
-      ! -- the 2e path has no static globals, and `opt` is written once here and
-      ! only read inside -- so the integrals themselves need nothing but a
-      ! private buffer each.
+      ! Threaded over bra pairs. libcint carries no mutable state across calls --
+      ! the 2e path has no static globals, and `opt` is written once here and
+      ! only read inside -- so the integrals need nothing but a private buffer
+      ! each.
       !
-      ! The accumulator is the part that does need care. The six updates below
-      ! scatter into `g` at positions that depend on all four shells, so two
-      ! threads holding different quartets can land on the same element. Each
-      ! thread therefore fills its own copy and adds it in once at the end.
-      ! Atomics on the innermost statement would be correct too and far slower:
-      ! six of them per integral, on the hottest line in the program.
-      !
-      ! The cost of that is one n*n array per thread. At forty threads it is 18
-      ! MB for the 237-function case here, and it grows as n^2 -- worth watching
-      ! if this ever meets a few thousand functions, where a blocked scheme
-      ! along the lines of GTFock's would be the answer.
+      ! The accumulator does need care. The updates below scatter at positions
+      ! that depend on all four shells, so two threads holding
+      ! different quartets can land on the same element. Each thread fills its
+      ! own copy and adds it in once at the end; atomics on the innermost
+      ! statement would be correct too and far slower. The cost is one n*n array
+      ! per thread, growing as n^2 -- **worth watching at a few thousand
+      ! functions**, where a blocked scheme like GTFock's would be the answer.
       !
       ! `schedule(dynamic)`: pair ij does ij quartets, so the last chunk is
-      ! thousands of times the first, and a static split would leave most
-      ! threads idle waiting for the tail.
+      ! thousands of times the first.
       !$omp parallel default(none) &
       !$omp    shared(kx, jxm, env_many, mol, tab, bq, d_half, g, dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
       !$omp           block_max, n_set) &
@@ -912,19 +829,15 @@ contains
                                       screen_tol)
       !! J - K/2 for densities of **any** symmetry, over one pass of the integrals
       !!
-      !! `build_fock_direct_many` is faster and cannot be used here. It folds three
-      !! of the eightfold permutations into a `deg` factor -- doubling for
-      !! `s1 /= s2` rather than ever touching `D(nu,mu)` -- which is only the same
-      !! thing when `D` is symmetric. Hand it an antisymmetric density and those
-      !! permutations reinforce where they must cancel, so the Coulomb term comes
-      !! back at twice its size instead of at zero. Nothing detects that, and it is
-      !! not repairable by changing the final symmetrisation, because the error is
-      !! already in the accumulation.
+      !! `build_fock_direct_many` is faster and cannot be used here: it folds
+      !! three of the eightfold permutations into a `deg` factor, which is only
+      !! the same thing when `D` is symmetric. The error is in the accumulation,
+      !! so no change to the final symmetrisation repairs it.
       !!
-      !! So this routine writes the permutations out. For each computed integral it
-      !! generates the distinct index tuples that the block enumeration does not
-      !! already cover -- exactly the ones `deg` was standing in for, under the same
-      !! three conditions -- and applies to each
+      !! This routine writes the permutations out instead. For each computed
+      !! integral it generates the distinct index tuples the block enumeration
+      !! does not already cover -- exactly the ones `deg` was standing in for --
+      !! and applies to each
       !!
       !!     g(p,q) += V D(r,s)          the Coulomb contribution
       !!     g(p,r) -= V D(q,s) / 2      the exchange contribution
@@ -938,19 +851,16 @@ contains
       !! `build_fock_direct_many` computes, which is asserted in the tests rather
       !! than asserted here.
       !!
-      !! **Why this is the wanted operator.** The frequency-dependent
-      !! coupled-perturbed equations need `A - B` as well as `A + B`, and both are
-      !! this same contraction: symmetrise the response density and get `A + B`,
-      !! antisymmetrise it and get `A - B`. The Coulomb term dropping out of the
-      !! second is not a special case to code around -- it happens by itself,
-      !! because the two-electron integral is symmetric in its ket pair while the
-      !! density is not.
+      !! The frequency-dependent coupled-perturbed equations need `A - B` as well
+      !! as `A + B`, and both are this same contraction: symmetrise the response
+      !! density for `A + B`, antisymmetrise it for `A - B`. The Coulomb term
+      !! dropping out of the second happens by itself, because the two-electron
+      !! integral is symmetric in its ket pair while the density is not.
       !!
       !! **Cost.** Up to eight tuples times two updates against six updates, so
-      !! roughly 2.7x the contraction work per integral. Since the batched build is
-      !! contraction-bound rather than integral-bound past a few densities, prefer
-      !! two passes -- symmetric densities through `build_fock_direct_many` and
-      !! antisymmetric ones through here -- over routing everything through this one.
+      !! roughly 2.7x the contraction work per integral. Prefer two passes --
+      !! symmetric densities through `build_fock_direct_many`, antisymmetric ones
+      !! through here -- over routing everything through this one.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: h(:, :)             !! Added to every set
       real(dp), intent(in) :: densities(:, :, :)  !! (n_ao, n_ao, n_set), any symmetry
@@ -992,15 +902,10 @@ contains
 
       ! The shells the quartet loop runs over: the fused-sp view when the
       ! molecule carries one, its split shells otherwise. libfint's `int2e` is
-      ! the one driver that reads a fused L shell, and it is exactly what this
-      ! loop calls, so the view is safe here and nowhere looser -- and since
-      ! libfint learned to carry a derivative's tensor component through an L
-      ! shell, the SCF gradient's int2e_ip1 loop takes the view too. The
-      ! Schwarz bounds arrive per split shell either way, straight from
-      ! `schwarz_bounds`, and are collapsed to match. Dimensions
-      ! and offsets are copied out up front: both are needed inside the
-      ! parallel region, and looking them up there would mean every thread
-      ! reaching into `bas` for something that does not change.
+      ! one of the two drivers that read a fused L shell, and is exactly what
+      ! this loop calls. The Schwarz bounds arrive per split shell either way and
+      ! are collapsed to match. Dimensions and offsets are copied out up front:
+      ! both are read inside the parallel region.
       call eri_shell_table(mol, tab)
       call eri_schwarz_collapse(mol, bounds, bq)
       dims = tab%dims
@@ -1174,15 +1079,14 @@ contains
       !! F_sigma = H + J(D_alpha + D_beta) - K(D_sigma), without the tensor
       !!
       !! The same quartet loop as the closed-shell build, differing only in what
-      !! the six updates read. Coulomb draws on half the total density and
-      !! exchange on the same-spin density -- and in the closed-shell case those
-      !! are the same matrix, D/2, which is why one form covers both.
+      !! the updates read: Coulomb draws on half the total density and exchange
+      !! on the same-spin density, which in the closed-shell case are the same
+      !! matrix, D/2.
       !!
-      !! Kept as its own routine rather than folded into `build_fock_direct`
-      !! with a flag: the closed-shell path would then carry two accumulators
-      !! and two sets of updates to do one spin's work, and that path is the hot
-      !! one. The cost is that the two loops have to stay in step; the
-      !! elementwise check against the in-core UHF build is what enforces it.
+      !! **The two loops have to stay in step** -- this one is a copy rather than
+      !! a flag on `build_fock_direct`, so the hot closed-shell path carries one
+      !! accumulator. The elementwise check against the in-core UHF build is what
+      !! enforces the agreement.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: h(:, :)          !! Core Hamiltonian
       real(dp), intent(in) :: d_alpha(:, :)    !! D_alpha = C_alpha C_alpha^T
@@ -1234,15 +1138,10 @@ contains
 
       ! The shells the quartet loop runs over: the fused-sp view when the
       ! molecule carries one, its split shells otherwise. libfint's `int2e` is
-      ! the one driver that reads a fused L shell, and it is exactly what this
-      ! loop calls, so the view is safe here and nowhere looser -- and since
-      ! libfint learned to carry a derivative's tensor component through an L
-      ! shell, the SCF gradient's int2e_ip1 loop takes the view too. The
-      ! Schwarz bounds arrive per split shell either way, straight from
-      ! `schwarz_bounds`, and are collapsed to match. Dimensions
-      ! and offsets are copied out up front: both are needed inside the
-      ! parallel region, and looking them up there would mean every thread
-      ! reaching into `bas` for something that does not change.
+      ! one of the two drivers that read a fused L shell, and is exactly what
+      ! this loop calls. The Schwarz bounds arrive per split shell either way and
+      ! are collapsed to match. Dimensions and offsets are copied out up front:
+      ! both are read inside the parallel region.
       call eri_shell_table(mol, tab)
       call eri_schwarz_collapse(mol, bounds, bq)
       dims = tab%dims
@@ -1250,12 +1149,8 @@ contains
       block_max = tab%block_max
 
       ! The quartet loop, flattened onto one index so it can be handed out.
-      !
-      ! The nested form -- s3 up to s1, and s4 up to s2 only when s3 equals s1 --
-      ! is exactly "every shell pair (s3,s4) at or before (s1,s2)" in the
-      ! canonical pair ordering, so enumerating pairs and taking kl <= ij covers
-      ! the same quartets once each. Flattening is what makes the outer loop
-      ! divisible; the triangular nest is not.
+      ! Enumerating shell pairs and taking `kl <= ij` covers the same quartets
+      ! once each as the triangular nest, and is divisible where that is not.
       npair = tab%nbas*(tab%nbas + 1)/2
       allocate (pair_i(npair), pair_j(npair))
       ipair = 0
@@ -1279,14 +1174,12 @@ contains
       jf = 1.0_dp
       if (present(j_scale)) jf = j_scale
 
-      ! Coulomb sees half the total density, exchange sees the same-spin one.
+      ! Coulomb sees half the total density, exchange sees the same-spin one. The
+      ! closed-shell build passes D/2 to both because there D_alpha = D_beta =
+      ! D/2, so the two forms are one form.
       !
-      ! The closed-shell build passes D/2 to both, and that is not a coincidence
-      ! worth losing: there D_alpha = D_beta = D/2, so half the total density is
-      ! D/2 and the same-spin density is D/2. The two forms are one form.
-      !
-      ! `j_scale` rides on this matrix rather than on the two Coulomb updates,
-      ! which is the same arithmetic one level out.
+      ! `j_scale` rides on this matrix rather than on the Coulomb updates, which
+      ! is the same arithmetic one level out.
       d_coul = jf*0.5_dp*(d_alpha + d_beta)
 
       ! Elementwise largest of the three matrices the updates read. Taking the
@@ -1312,26 +1205,21 @@ contains
       n_schwarz = 0_int64
       n_density = 0_int64
 
-      ! Threaded over bra pairs. libcint carries no mutable state across calls
-      ! -- the 2e path has no static globals, and `opt` is written once here and
-      ! only read inside -- so the integrals themselves need nothing but a
-      ! private buffer each.
+      ! Threaded over bra pairs. libcint carries no mutable state across calls --
+      ! the 2e path has no static globals, and `opt` is written once here and
+      ! only read inside -- so the integrals need nothing but a private buffer
+      ! each.
       !
-      ! The accumulator is the part that does need care. The six updates below
-      ! scatter into `g` at positions that depend on all four shells, so two
-      ! threads holding different quartets can land on the same element. Each
-      ! thread therefore fills its own copy and adds it in once at the end.
-      ! Atomics on the innermost statement would be correct too and far slower:
-      ! six of them per integral, on the hottest line in the program.
-      !
-      ! The cost of that is one n*n array per thread. At forty threads it is 18
-      ! MB for the 237-function case here, and it grows as n^2 -- worth watching
-      ! if this ever meets a few thousand functions, where a blocked scheme
-      ! along the lines of GTFock's would be the answer.
+      ! The accumulator does need care. The updates below scatter at positions
+      ! that depend on all four shells, so two threads holding
+      ! different quartets can land on the same element. Each thread fills its
+      ! own copy and adds it in once at the end; atomics on the innermost
+      ! statement would be correct too and far slower. The cost is one n*n array
+      ! per thread, growing as n^2 -- **worth watching at a few thousand
+      ! functions**, where a blocked scheme like GTFock's would be the answer.
       !
       ! `schedule(dynamic)`: pair ij does ij quartets, so the last chunk is
-      ! thousands of times the first, and a static split would leave most
-      ! threads idle waiting for the tail.
+      ! thousands of times the first.
       !$omp parallel default(none) &
       !$omp    shared(mol, tab, bq, dsh, d_coul, d_alpha, d_beta, ga, gb, dims, offs, pair_i, pair_j, &
       !$omp            order, &
@@ -1371,9 +1259,8 @@ contains
             ! One criterion, not two. The quantity that must be small is the
             ! *contribution*, so that is what the test compares; screening on the
             ! bare Schwarz bound as well would discard quartets whose weight
-            ! exceeds one -- `deg` reaches eight -- and those are exactly the ones
-            ! that matter most. The two counters only attribute the decision:
-            ! whether the Schwarz bound alone would have been enough to reach it.
+            ! exceeds one -- `deg` reaches eight. The two counters only attribute
+            ! the decision.
             deg = pair_degeneracy(s1, s2, s3, s4)
             schwarz = bq(s1, s2)*bq(s3, s4)
             if (schwarz*density_weight(dsh, s1, s2, s3, s4, 1.0_dp, kq, deg) < tol) then
@@ -1408,10 +1295,10 @@ contains
                         value = buf(idx)
                         scaled = value*deg
 
-                        ! Two Coulomb and four exchange contributions. g is
-                        ! not symmetric as it stands; symmetrising at the
-                        ! end is what makes these six updates equivalent to
-                        ! the full sum over all eight permutations.
+                        ! Two Coulomb and four exchange contributions per spin.
+                        ! `ga` and `gb` are not symmetric as they stand;
+                        ! symmetrising at the end is what makes these updates
+                        ! equivalent to the full sum over all eight permutations.
                         ga_local(b1, b2) = ga_local(b1, b2) + d_coul(b3, b4)*scaled
                         ga_local(b3, b4) = ga_local(b3, b4) + d_coul(b1, b2)*scaled
                         ga_local(b1, b3) = ga_local(b1, b3) - kq*d_alpha(b2, b4)*scaled

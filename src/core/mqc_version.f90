@@ -6,26 +6,24 @@ module mqc_version
 
    public :: MQC_VERSION_STR, print_version
 
-   ! TODO JORGE: UPDATE
+   ! TODO(mqc): nothing checks that this and `VERSION` in the top-level
+   ! CMakeLists agree, and they have drifted apart before.
    character(len=*), parameter :: MQC_VERSION_STR = "0.2.0"
       !! Kept in step with `VERSION` in the top-level CMakeLists by hand.
-      !! Nothing checks that they agree, and they had already drifted once.
 
 contains
 
    subroutine print_version()
       !! Version, and which optional backends this binary actually has
       !!
-      !! The feature list is here so that something outside the program can
-      !! find out what this build can do without trying it and reading the
-      !! failure. `run_validation.py` gates on it: a deck needing an optional
-      !! backend is skipped rather than failed on a build configured without
-      !! one, which is the difference between "not tested here" and "broken".
+      !! The feature list lets something outside the program find out what this
+      !! build can do without trying it and reading the failure;
+      !! `run_validation.py` gates on it to skip rather than fail a deck whose
+      !! backend was not configured in.
       !!
-      !! Asked of the backends themselves rather than of preprocessor symbols.
-      !! Each of these resolves to a real module or to its stub at link time,
-      !! so the answer is a property of the binary that exists rather than of
-      !! the flags somebody believes they configured with.
+      !! Asked of the backends rather than of preprocessor symbols: each call
+      !! resolves to a real module or to its stub at link time, so the answer
+      !! describes the binary that exists.
       use mqc_libcint_bridge, only: libcint_backend_available, xc_available, ecp_backend_available
       use mqc_method_factory, only: method_backend_built
       use mqc_method_types, only: METHOD_TYPE_GFN2

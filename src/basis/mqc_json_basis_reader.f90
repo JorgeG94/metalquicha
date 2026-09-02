@@ -15,17 +15,14 @@ module mqc_json_basis_reader
    public :: read_json_basis_element    !! Parse one element from a BSE JSON file
    public :: build_molecular_basis_json  !! Build a molecular basis from a BSE JSON file
 
-   !! A basis file, parsed once and kept
    type :: cached_basis_t
+      !! A basis file, parsed once and kept
       character(len=:), allocatable :: path
       type(json_file), pointer :: json => null()
       ! Heap-allocated, and a pointer on purpose. `json_file` has a
       ! finaliser, so holding one by value would mean that growing the cache
       ! array -- copy into a bigger array, `move_alloc`, old array finalised
       ! -- destroys the parsed tree that the surviving copy still points at.
-      ! Every basis loaded before the second one would go stale the moment
-      ! the second arrived. Storing pointers means growth copies addresses
-      ! and nothing is finalised.
    end type cached_basis_t
 
    type(cached_basis_t), allocatable, target :: basis_cache(:)
@@ -35,6 +32,10 @@ contains
 
    subroutine cached_basis_json(json_path, json, error)
       !! The parsed basis file, loading it the first time it is asked for
+      ! TODO(mqc): a file that fails to parse stays in the cache under its
+      ! path, so the next request for it matches, clears the exception and
+      ! hands back the empty tree with no error. The parse failure is reported
+      ! once and reads as "element not found" from then on.
       character(len=*), intent(in) :: json_path
       type(json_file), pointer, intent(out) :: json
       type(error_t), intent(out) :: error
@@ -140,10 +141,9 @@ contains
       end if
 
       ! One element, two conventions. libcint chooses spherical or Cartesian
-      ! per *call*, not per shell, so there is no way to honour both -- and
-      ! silently picking one would be the bug this reader was fixed for, only
-      ! quieter. 6-31G* does this on Sc through Zn, where the d shell is marked
-      ! Cartesian and the f shell spherical.
+      ! per *call*, not per shell, so there is no way to honour both. 6-31G*
+      ! does this on Sc through Zn, where the d shell is marked Cartesian and
+      ! the f shell spherical.
       if (saw_cartesian .and. saw_spherical) then
          call error%set(ERROR_PARSE, "Element "//trim(element_symbol)//" in "// &
                         trim(json_path)//" mixes Cartesian and spherical shells "// &
@@ -173,10 +173,8 @@ contains
 
          shell_path = "elements."//element_key//".electron_shells("//int_to_text(ishell)//")"
 
-         ! Values are read one at a time by indexed path. BSE stores them as
-         ! strings to preserve every digit, and json-fortran's scalar string
-         ! accessor is the portable way to reach them; basis sets are small
-         ! enough that the extra lookups do not matter.
+         ! Values are read one at a time by indexed path: BSE stores them as
+         ! strings to preserve every digit.
          call json%info(shell_path//".exponents", found=found, n_children=n_prim)
          if (.not. found .or. n_prim <= 0) then
             call error%set(ERROR_PARSE, "Shell without exponents in "//trim(json_path))
@@ -184,12 +182,9 @@ contains
          end if
 
          ! One shell per *coefficient column*, not per angular momentum. The
-         ! two coincide for an SP shell, where each column carries its own l --
-         ! which is why 6-31G was right. They do not for a general contraction:
-         ! cc-pVDZ oxygen is nine s primitives with three columns and a single
-         ! l, so looping over angular momenta read column one and discarded the
-         ! other two. That gave oxygen nine basis functions instead of
-         ! fourteen, and an SCF that converged a full Hartree high.
+         ! two coincide for an SP shell, where each column carries its own l.
+         ! They do not for a general contraction: cc-pVDZ oxygen is nine s
+         ! primitives with three columns and a single l.
          n_contract = shell_contractions(json, element_key, ishell, size(angular_momenta))
          do imom = 1, n_contract
             shell_index = shell_index + 1
@@ -241,15 +236,10 @@ contains
       !! What one shell entry's `function_type` says about the angular form
       !!
       !! Returns `ANGULAR_FORM_UNSET` for anything at or below p, whatever the
-      !! file calls it. An s shell is one function and a p shell is three in
-      !! both conventions, so those entries carry no information -- and BSE
-      !! labels them the neutral `gto` for exactly that reason. Only d and
-      !! above distinguish 6d from 5d, and only those are evidence.
+      !! file calls it: an s shell is one function and a p shell three in both
+      !! conventions, so only d and above are evidence.
       !!
-      !! Anything that is not spelled `gto_cartesian` reads as spherical. That
-      !! is the same default the reader had before it looked at the key at all,
-      !! so an unfamiliar spelling behaves as it always did rather than
-      !! flipping the convention on a typo.
+      !! Anything not spelled `gto_cartesian` reads as spherical.
       type(json_file), intent(inout) :: json
       character(len=*), intent(in) :: element_key
       integer, intent(in) :: ishell
@@ -328,11 +318,9 @@ contains
          end if
       end do
 
-      ! One convention for the molecule, from the atoms that are actually in
-      ! it. Hydrogen in 6-31G* has no shell above s and so votes for nothing;
-      ! oxygen has a Cartesian d and settles it. An element that genuinely
-      ! disagrees with another is refused rather than resolved -- the integrals
-      ! are built one way for every shell at once.
+      ! One convention for the molecule, from the atoms actually in it: an
+      ! element with no shell above p votes for nothing. Two that genuinely
+      ! disagree are refused rather than resolved.
       molecule_form = ANGULAR_FORM_UNSET
       do iunique = 1, n_unique
          if (unique_bases(iunique)%angular_form == ANGULAR_FORM_UNSET) cycle
@@ -374,9 +362,8 @@ contains
       !!
       !! The length of the `coefficients` array, which is the number of
       !! columns -- one per contracted function sharing this shell's
-      !! exponents. Falls back to the angular momentum count if the key
-      !! cannot be read, which keeps a malformed file behaving as it did
-      !! rather than silently producing no shells at all.
+      !! exponents. Falls back to the angular momentum count if the key cannot
+      !! be read.
       type(json_file), intent(inout) :: json
       character(len=*), intent(in) :: element_key
       integer, intent(in) :: ishell, n_angular

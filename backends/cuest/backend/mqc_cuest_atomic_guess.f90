@@ -12,16 +12,13 @@ module mqc_cuest_atomic_guess
    !! exchange only accepts occupied MO coefficients. A density guess would
    !! need a Fock build that skips exchange on the first iteration.
    !!
-   !! Why it matters here: a core-Hamiltonian guess gets the sigma/pi ordering
-   !! wrong in radicals, and since a wrong occupation can be perfectly
-   !! self-consistent, the SCF then converges tidily onto an excited state. OH
-   !! lands ~4 eV high that way, which is its A2Sigma+ <- X2Pi gap almost
-   !! exactly.
+   !! A core-Hamiltonian guess gets the sigma/pi ordering wrong in radicals, and
+   !! a wrong occupation can be perfectly self-consistent, so the SCF then
+   !! converges tidily onto an excited state.
    !!
    !! Atomic solutions are cached for the lifetime of the process, keyed by the
-   !! settings they were converged under. That matters more than it looks: a
-   !! Hessian is 6N SCFs on the same elements, and a fragmented run is
-   !! thousands.
+   !! settings they were converged under, since a Hessian is 6N SCFs on the same
+   !! elements and a fragmented run is thousands.
    use, intrinsic :: iso_c_binding, only: c_int64_t
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -99,6 +96,11 @@ contains
 
    subroutine invalidate_if_settings_changed(basis_name, functional_id, use_spherical)
       !! An atomic solution is only reusable under the settings it was made with
+      ! TODO(mqc): the only caller passes the module variable `cache_basis` as
+      ! `basis_name`, so the basis comparison is against itself and a change of
+      ! basis set never clears the cache -- and the assignment below writes to
+      ! the very variable this `intent(in)` dummy is argument-associated with,
+      ! which is not standard-conforming.
       character(len=*), intent(in) :: basis_name
       integer, intent(in) :: functional_id
       logical, intent(in) :: use_spherical
@@ -220,6 +222,9 @@ contains
                call error%set(ERROR_VALIDATION, "atomic guess: cache exhausted")
                return
             end if
+            ! TODO(mqc): the slot is claimed before the atom is converged, so a
+            ! failed free-atom SCF leaves `n_cached` counting an invalid entry
+            ! that nothing ever reclaims.
             n_cached = n_cached + 1
             call solve_free_atom(context, atomic_numbers(iatom), atom_bases(iatom), &
                                  atom_aux_bases(iatom), use_spherical, functional_id, &

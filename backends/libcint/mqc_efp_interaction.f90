@@ -3,29 +3,18 @@ module mqc_efp_interaction
    !! What a fragment potential is *for*: given several of them placed in space,
    !! the energy of their interaction.
    !!
-   !! **Electrostatics first, and only electrostatics so far.** An EFP2 interaction
-   !! is five terms -- electrostatics, polarization, exchange repulsion, dispersion
-   !! and charge transfer -- and they differ enormously in what they need.
-   !! Electrostatics and dispersion are geometry and stored tensors; polarization
-   !! needs a self-consistent solve for the induced dipoles; exchange repulsion and
-   !! charge transfer need integrals between *two fragments' basis sets*, which
-   !! means building a combined molecule. This module carries the first.
+   !! Of the five EFP2 terms this carries electrostatics, polarization and the
+   !! undamped dispersion `E6`. Exchange repulsion and charge transfer need
+   !! integrals between *two fragments' basis sets*, which means building a
+   !! combined molecule, and are absent.
    !!
-   !! **The layout is flat on purpose.** Every fragment's expansion points are
-   !! concatenated into one set of arrays with a fragment index per point, so the
-   !! energy is one loop over point pairs that skips same-fragment pairs. That is
-   !! the shape a parallel version wants: no nested dispatch over fragments to
-   !! unpick, no per-fragment allocation inside the hot loop, and a reduction over
-   !! a single scalar. Making it parallel is adding a directive, not a rewrite.
+   !! Every fragment's expansion points are concatenated into one set of arrays
+   !! with a fragment index per point, so an energy is one loop over point pairs
+   !! that skips same-fragment pairs.
    !!
-   !! **Every convention here was measured against GAMESS, not assumed.** The
-   !! ladder is in `tools/efp_validation/zero_sections.py`: zero all the multipoles
-   !! but one rank, ask GAMESS for the electrostatic energy of a dimer, and compare.
-   !! With monopoles alone there is nothing to get wrong and it agreed to 4e-10,
-   !! which fixed the geometry -- plain translation, bond midpoints included, the
-   !! charge being electronic plus nuclear. Each higher rank was pinned the same
-   !! way. Signs and component orders in a multipole expansion are exactly the
-   !! things that look right and are wrong.
+   !! The signs and component orders were pinned against GAMESS rank by rank
+   !! with `tools/efp_validation/zero_sections.py`, which zeroes all the
+   !! multipoles but one and compares a dimer energy.
    use pic_types, only: dp
    use mqc_physical_constants, only: PI
    use pic_logger, only: logger => global_logger, verbose_level
@@ -42,27 +31,23 @@ module mqc_efp_interaction
    public :: polarization_energy
    public :: CP_WEIGHT
 
-   !! Components of each stored multipole, in the file's own order.
    integer, parameter :: N_DIPOLE = 3
    integer, parameter :: N_QUADRUPOLE = 6
    integer, parameter :: N_OCTUPOLE = 10
+      !! Components of each stored multipole, in the file's own order.
 
-   !! Row and column of each stored quadrupole component. The file carries six
-   !! numbers for a symmetric 3x3, ordered xx, yy, zz, xy, xz, yz.
    integer, parameter :: QUAD_I(N_QUADRUPOLE) = [1, 2, 3, 1, 1, 2]
    integer, parameter :: QUAD_J(N_QUADRUPOLE) = [1, 2, 3, 2, 3, 3]
+      !! Row and column of each stored quadrupole component. The file carries
+      !! six numbers for a symmetric 3x3, ordered xx, yy, zz, xy, xz, yz.
 
-   !! Indices of each stored octupole component. Ten numbers for a fully symmetric
-   !! 3x3x3, ordered xxx, yyy, zzz, xxy, xxz, xyy, yyz, xzz, yzz, xyz -- which is
-   !! GAMESS's order, read off how `efelec.src` unpacks `EFOCT` rather than guessed.
    integer, parameter :: OCT_I(N_OCTUPOLE) = [1, 2, 3, 1, 1, 1, 2, 1, 2, 1]
    integer, parameter :: OCT_J(N_OCTUPOLE) = [1, 2, 3, 1, 1, 2, 2, 3, 3, 2]
    integer, parameter :: OCT_K(N_OCTUPOLE) = [1, 2, 3, 2, 3, 2, 3, 3, 3, 3]
+      !! Indices of each stored octupole component. Ten numbers for a fully
+      !! symmetric 3x3x3, ordered xxx, yyy, zzz, xxy, xxz, xyy, yyz, xzz, yzz,
+      !! xyz, which is GAMESS's order in `efelec.src`.
 
-   !! The twelve Casimir-Polder quadrature weights, as GAMESS carries them in
-   !! `efdrvr.src`. They are 12-point Gauss-Legendre weights times the Jacobian of
-   !! `nu = w0 (1 + t)/(1 - t)` at `w0 = 0.3` -- checked against that construction
-   !! rather than only copied, and the two agree to every digit.
    integer, parameter :: N_FREQUENCIES = 12
    real(dp), parameter :: CP_WEIGHT(N_FREQUENCIES) = [ &
                           0.72086099022968040154e-02_dp, 0.17697067815034886394e-01_dp, &
@@ -71,6 +56,9 @@ module mqc_efp_interaction
                           0.19535413832209084204e+00_dp, 0.35055692324483221824e+00_dp, &
                           0.71577113554429568336e+00_dp, 1.81409759976323969729e+00_dp, &
                           6.97923445114870823247e+00_dp, 83.2480938829658453917e+00_dp]
+      !! The twelve Casimir-Polder quadrature weights, as GAMESS carries them in
+      !! `efdrvr.src`: 12-point Gauss-Legendre weights times the Jacobian of
+      !! `nu = w0 (1 + t)/(1 - t)` at `w0 = 0.3`.
 
    type :: efp_system_t
       !! Several placed fragments, flattened into one set of point arrays
@@ -114,14 +102,10 @@ contains
    subroutine build_efp_system(fragments, translations, system, error)
       !! Flatten placed fragments into one point set
       !!
-      !! **Translation only, for now.** A fragment placed by rotation as well as
-      !! translation needs its multipoles rotated with it -- the dipole as a vector,
-      !! the quadrupole and octupole as tensors of their rank -- and that is a
-      !! separate piece of work with its own conventions to pin down. A translated
-      !! copy needs none of it, and is enough to establish every term of the
-      !! interaction energy, which is what comes first. Rotating a fragment whose
-      !! multipoles were not rotated with it would be silently wrong, so it is not
-      !! offered rather than offered and approximate.
+      !! **Translation only.** A fragment placed by rotation needs its multipoles
+      !! rotated with it -- the dipole as a vector, the quadrupole and octupole
+      !! as tensors of their rank -- which is not done here, so no rotation is
+      !! accepted rather than one silently ignored.
       type(efp_fragment_t), intent(in) :: fragments(:)
       real(dp), intent(in) :: translations(:, :)   !! (3, n_fragments), Bohr
       type(efp_system_t), intent(out) :: system
@@ -166,13 +150,11 @@ contains
             at = at + 1
             system%fragment_of(at) = f
             system%points(:, at) = fragments(f)%points(:, i) + translations(:, f)
-            ! The monopole a multipole expansion sees is the total at the point:
-            ! GAMESS stores the electronic and nuclear parts separately because
-            ! they come from different places, not because they act differently.
+            ! The monopole a multipole expansion sees is the total at the point.
             system%charge(at) = fragments(f)%q_elec(i) + fragments(f)%q_nuc(i)
-            ! Kept apart as well as summed: the penetration correction screens the
-            ! electronic cloud against the other point's electrons and nucleus by
-            ! different amounts, so their sum is not enough there.
+            ! Kept apart as well as summed: the penetration correction screens
+            ! the electronic cloud against the other point's electrons and
+            ! nucleus by different amounts, so their sum is not enough there.
             system%q_elec(at) = fragments(f)%q_elec(i)
             system%q_nuc(at) = fragments(f)%q_nuc(i)
             if (fragments(f)%has_screen2) then
@@ -184,17 +166,18 @@ contains
                system%dipole(:, at) = fragments(f)%dipole(:, i)
             end if
             if (allocated(fragments(f)%quadrupole)) then
-               ! The file packs a symmetric 3x3 as six numbers, xx yy zz xy xz yz.
-               ! Unpacked here rather than in the energy so the inner loop sees
-               ! plain matrix-vector products.
+               ! The file packs a symmetric 3x3 as six numbers, xx yy zz xy xz
+               ! yz. Unpacked here so the inner loop sees plain matrix-vector
+               ! products.
                do k = 1, N_QUADRUPOLE
                   system%quad(QUAD_I(k), QUAD_J(k), at) = fragments(f)%quadrupole(k, i)
                   system%quad(QUAD_J(k), QUAD_I(k), at) = fragments(f)%quadrupole(k, i)
                end do
             end if
             if (allocated(fragments(f)%octopole)) then
-               ! Every permutation of each index triple carries the same value: the
-               ! moment is fully symmetric and the file stores one of each set.
+               ! Every permutation of each index triple carries the same
+               ! value: the moment is fully symmetric and the file stores one of
+               ! each set.
                do k = 1, N_OCTUPOLE
                   call spread_octupole(system%oct(:, :, :, at), OCT_I(k), OCT_J(k), &
                                        OCT_K(k), fragments(f)%octopole(k, i))
@@ -207,21 +190,14 @@ contains
    function electrostatic_energy(system, max_rank, screen) result(energy)
       !! The multipole interaction energy between different fragments
       !!
-      !! With `screen` the charge-penetration correction is added; without it this is
-      !! the bare multipole sum. Keeping them separable is what let each rank be
-      !! checked on its own against GAMESS.
-      !!
-      !! `max_rank` truncates the expansion -- 0 for charges only, 1 through the
-      !! dipole, 2 the quadrupole, 3 the octupole. Present because it is what the
-      !! validation ladder needs, and useful in its own right: the higher ranks fall
-      !! off fast and a screening study wants to switch them off.
+      !! `max_rank` truncates the expansion: 0 for charges only, 1 through the
+      !! dipole, 2 the quadrupole, 3 the octupole.
       type(efp_system_t), intent(in) :: system
       integer, intent(in) :: max_rank
       logical, intent(in), optional :: screen
          !! Add the charge-penetration correction. Off by default, so the bare
-         !! multipole sum stays reachable -- it is what each rank was validated
-         !! against, and the correction is a separate physical approximation with
-         !! its own fitted parameters.
+         !! multipole sum -- what each rank was validated against -- stays
+         !! reachable.
       real(dp) :: energy
 
       real(dp) :: r(3)
@@ -234,21 +210,12 @@ contains
 
       energy = 0.0_dp
       ! One loop over ordered pairs of points on different fragments. Each
-      ! unordered pair is visited once, so nothing is double counted and no factor
-      ! of a half appears anywhere.
+      ! unordered pair is visited once, so nothing is double counted and no
+      ! factor of a half appears anywhere.
       !
-      ! Ready to thread: the iterations are independent and the only shared write
-      ! is the reduction. Not threaded yet -- correctness first, and a directive
-      ! here would be measuring nothing until the higher ranks are in.
-      !
-      ! Threaded over the outer index with a reduction on the one scalar. The pair
-      ! count is triangular so the work per outer iteration falls linearly, and a
-      ! static schedule would leave the threads that drew the high indices idle --
-      ! hence `guided`. `pair_energy` and `penetration` are `pure`, which is what
-      ! makes calling them from here safe with nothing shared but the reduction.
-      !
-      ! Threshold rather than always: a dimer of two waters is ten points and 25
-      ! pairs, where the barriers cost more than the arithmetic.
+      ! Threaded over the outer index with a reduction on the one scalar. The
+      ! pair count is triangular, so a static schedule would leave the threads
+      ! that drew the high indices idle -- hence `guided`.
       !$omp parallel do default(none) private(a, b, r, pair) &
       !$omp shared(system, max_rank, screening) schedule(guided) &
       !$omp reduction(+:energy) if(system%n_points >= 64)
@@ -269,10 +236,10 @@ contains
    pure function pair_energy(system, a, b, r, max_rank) result(e)
       !! One point pair, through the requested rank
       !!
-      !! `r` points from `a` to `b`. Every term below is written in terms of that
-      !! direction, so the antisymmetry between the two points -- a dipole on `a`
-      !! sees the opposite field to one on `b` -- appears as the sign of `r` and
-      !! nowhere else.
+      !! `r` points from `a` to `b`, and every term is written in terms of that
+      !! direction, so the antisymmetry between the two points -- a dipole on
+      !! `a` sees the opposite field to one on `b` -- appears as the sign of `r`
+      !! and nowhere else.
       type(efp_system_t), intent(in) :: system
       integer, intent(in) :: a, b
       real(dp), intent(in) :: r(3)
@@ -307,15 +274,11 @@ contains
 
       ! --- charge-dipole -------------------------------------------------------
       !
-      ! A dipole in a potential has energy `mu . grad phi`, so for a charge at `a`
-      ! and a dipole at `b` that is `-q_a (mu_b . r) / R^3`, and the other way round
-      ! it is `+q_b (mu_a . r) / R^3` because the separation is `-r` seen from `b`.
-      !
-      ! Both signs were checked against GAMESS rather than trusted: with only
-      ! monopoles and dipoles left in the potential the two possibilities differ by
-      ! 4e-03 Hartree on a water dimer, which is not a subtle discrepancy, and the
-      ! first version of this line had it backwards. GAMESS's stored dipoles are in
-      ! the ordinary convention -- there is nothing to undo on the way in.
+      ! A dipole in a potential has energy `mu . grad phi`, so for a charge at
+      ! `a` and a dipole at `b` that is `-q_a (mu_b . r) / R^3`, and the other
+      ! way round it is `+q_b (mu_a . r) / R^3` because the separation is `-r`
+      ! seen from `b`. GAMESS's stored dipoles are in the ordinary convention,
+      ! so there is nothing to undo on the way in.
       e = e - qa*rb_dot_db*inv3 + qb*ra_dot_da*inv3
 
       ! --- dipole-dipole -------------------------------------------------------
@@ -325,19 +288,10 @@ contains
 
       ! --- rank two ------------------------------------------------------------
       !
-      ! Written as closed-form contractions of the derivative tensors rather than
-      ! as loops over their components: the quadrupole-quadrupole term is a
-      ! rank-four tensor with 81 entries, and contracting it literally costs 81
-      ! multiply-adds per pair where the closed form costs two matrix-vector
-      ! products. Correct either way, and this one stays cheap when the pair count
-      ! grows.
-      !
-      ! The three factors -- a half, minus a half, a quarter -- were each solved
-      ! for against GAMESS on a potential with everything but the relevant ranks
-      ! zeroed, and each came out an exact rational to seven figures. GAMESS's own
-      ! source groups them differently, carrying a ninth on a differently
-      ! normalized quadrupole expression; the physics is the same and this grouping
-      ! is the one that follows from the derivative tensors.
+      ! Written as closed-form contractions of the derivative tensors rather
+      ! than as loops over their components. GAMESS's own source groups the
+      ! prefactors differently, carrying a ninth on a differently normalized
+      ! quadrupole expression; the physics is the same.
       qa_r = matmul(system%quad(:, :, a), r)
       qb_r = matmul(system%quad(:, :, b), r)
       r_qa_r = dot_product(r, qa_r)
@@ -371,17 +325,14 @@ contains
 
       ! --- rank three: charge-octupole, and nothing else ------------------------
       !
-      ! GAMESS's electrostatic total is ECC + ECD + EDD + ECQ + ECO + EDQ + EQQ.
-      ! There is no dipole-octupole, quadrupole-octupole or octupole-octupole term
-      ! in it -- that is the truncation, read off `FFELEC` in `efelec.src` rather
-      ! than inferred from the energy, which could not have distinguished a missing
-      ! term from a small one.
+      ! GAMESS's electrostatic total is ECC + ECD + EDD + ECQ + ECO + EDQ + EQQ,
+      ! with no dipole-octupole, quadrupole-octupole or octupole-octupole term.
+      ! That truncation is `FFELEC` in `efelec.src`, and it is matched here.
       !
-      ! The trace of the stored octupole cannot contribute, because `T3` is itself
-      ! traceless in any index pair, which is why the raw file values serve with a
-      ! single factor and no traceless projection. GAMESS projects and carries a
-      ! fifteenth; the same physics arrives here as a sixth on the unprojected
-      ! moment.
+      ! The raw file values serve with a single factor and no traceless
+      ! projection: `T3` is itself traceless in any index pair. GAMESS projects
+      ! and carries a fifteenth, which arrives here as a sixth on the
+      ! unprojected moment.
       oa_rrr = triple_contract(system%oct(:, :, :, a), r)
       ob_rrr = triple_contract(system%oct(:, :, :, b), r)
       oa_tr = octupole_trace(system%oct(:, :, :, a))
@@ -401,24 +352,16 @@ contains
       !!
       !!     E = -(1/2) sum_k mu_k . F_k
       !!
-      !! against the **static** field -- the field from the permanent multipoles
-      !! only, not including the induced dipoles' own contribution. That is what
-      !! makes the half correct rather than double counting.
+      !! against the **static** field -- from the permanent multipoles only, not
+      !! including the induced dipoles' own contribution, which is what makes the
+      !! half correct rather than double counting.
       !!
-      !! **The field runs to the quadrupole and stops.** Charges, dipoles and
-      !! quadrupoles contribute; octupoles do not. That is not an omission --
-      !! GAMESS's polarization energy is identical for a potential with octupoles
-      !! and one with them zeroed, while every lower rank changes it.
+      !! **The field runs to the quadrupole and stops**, as GAMESS's does:
+      !! charges, dipoles and quadrupoles contribute, octupoles do not.
       !!
-      !! Each term was pinned on the same ladder the electrostatics used, and two of
-      !! the three were confirmed rather than guessed: charges alone reproduce
-      !! GAMESS's monopole-only number to 1e-9, charges and dipoles its
-      !! monopole-plus-dipole number exactly, and the quadrupole field then needed
-      !! only its sign settling -- the two choices differ by 1.3e-04 Hartree.
-      !!
-      !! The tensor is not symmetric. A localized-orbital polarizability has an
-      !! antisymmetric part, so `alpha F` is a genuine matrix-vector product and the
-      !! order matters.
+      !! The polarizability tensor is not symmetric -- a localized-orbital
+      !! polarizability has an antisymmetric part -- so `alpha F` is a genuine
+      !! matrix-vector product and the order matters.
       type(efp_system_t), intent(in) :: system
       type(efp_fragment_t), intent(in) :: fragments(:)
       type(error_t), intent(inout) :: error
@@ -445,10 +388,8 @@ contains
       use_tol = DEFAULT_TOL
       if (present(tol)) use_tol = tol
 
-      ! The induced-dipole solve is the one iterative step in an EFP-EFP
-      ! interaction -- there is no SCF, the wavefunctions were fixed when the
-      ! potentials were made -- so at verbose it is the convergence worth watching.
-      ! The caller (run_efp) is already rank-0 only, so no leader guard is needed.
+      ! The caller (`run_efp`) is already rank-0 only, so no leader guard is
+      ! needed around the per-iteration logging.
       call logger%configuration(level=log_level)
       show_iter = log_level >= verbose_level
 
@@ -458,9 +399,8 @@ contains
       end do
       if (n_pol == 0) return
 
-      ! Flattened exactly as the multipole points are, and for the same reason: the
-      ! induction loop is then over pairs of polarizable points with a fragment
-      ! index to skip on, which threads without restructuring.
+      ! Flattened exactly as the multipole points are, so the induction loop is
+      ! over pairs of polarizable points with a fragment index to skip on.
       allocate (centres(3, n_pol), pol(3, 3, n_pol), owner(n_pol))
       allocate (fstat(3, n_pol), mu(3, n_pol), mu_new(3, n_pol))
       at = 0
@@ -477,7 +417,7 @@ contains
       ! The static field, from the permanent multipoles of the other fragments.
       fstat = 0.0_dp
       ! Each polarizable point writes only its own column, so no reduction is
-      ! needed here -- just an independent row per thread.
+      ! needed here.
       !$omp parallel do default(none) private(i, k, r, dist, inv3, inv5) &
       !$omp shared(n_pol, system, centres, owner, fstat) schedule(static) &
       !$omp if(n_pol >= 32)
@@ -488,9 +428,8 @@ contains
             dist = sqrt(r(1)*r(1) + r(2)*r(2) + r(3)*r(3))
             inv3 = 1.0_dp/(dist*dist*dist)
             inv5 = inv3/(dist*dist)
-            ! charge, then dipole, then quadrupole -- the quadrupole carrying the
-            ! same half the charge-quadrupole energy does, with the sign that
-            ! GAMESS's own polarization energy picks out.
+            ! Charge, then dipole, then quadrupole -- the quadrupole carrying
+            ! the same half the charge-quadrupole energy does.
             fstat(:, i) = fstat(:, i) + system%charge(k)*r*inv3 &
                           + 3.0_dp*r*dot_product(system%dipole(:, k), r)*inv5 &
                           - system%dipole(:, k)*inv3 &
@@ -502,10 +441,8 @@ contains
       mu = 0.0_dp
       change = huge(1.0_dp)
       do iter = 1, limit
-         ! A Jacobi sweep: every new dipole is built from the previous iteration's
-         ! set, so the points are independent within a sweep and this threads
-         ! directly. `field` has to be private, which is why it is a local array
-         ! rather than a shared scratch buffer.
+         ! A Jacobi sweep: every new dipole is built from the previous
+         ! iteration's set, so the points are independent within a sweep.
          change = 0.0_dp
          !$omp parallel do default(none) private(i, j, r, dist, inv3, inv5, field) &
          !$omp shared(n_pol, owner, centres, mu, mu_new, fstat, pol) &
@@ -522,10 +459,8 @@ contains
                        - mu(:, j)*inv3
             end do
             mu_new(:, i) = matmul(pol(:, :, i), field)
-            ! Convergence measured inside the same loop rather than by a pass over
-            ! the whole array afterwards: it is a max reduction, it costs three
-            ! comparisons on values already in registers, and it removes one of the
-            ! two serial sweeps that stood between the parallel regions.
+            ! Convergence measured inside the same loop, as a max reduction,
+            ! rather than by a serial pass over the whole array afterwards.
             change = max(change, maxval(abs(mu_new(:, i) - mu(:, i))))
          end do
          !$omp end parallel do
@@ -571,23 +506,23 @@ contains
       !!     E6 = - sum_ij C6_ij / R_ij^6,   C6_ij = (3/pi) sum_k w_k a_i(k) a_j(k)
       !!
       !! summed over localized orbitals on different fragments, with `a` the
-      !! isotropic dynamic polarizability -- a third of the tensor trace -- at each
-      !! of the twelve Casimir-Polder frequencies. The form and the factor of
-      !! `3/pi` are GAMESS's, from `efdrvr.src`, and the weights are its own.
+      !! isotropic dynamic polarizability -- a third of the tensor trace -- at
+      !! each of the twelve Casimir-Polder frequencies. The form, the factor of
+      !! `3/pi` and the weights are GAMESS's, from `efdrvr.src`.
       !!
-      !! **Undamped, where GAMESS reports a damped number.** Its output says
-      !! `DISPERSION EFP-EFP SCREENING CHOICE IS USING OVERLAP`: the damping is
-      !! built from overlaps between the two fragments' localized orbitals, which
-      !! needs integrals over both fragments' basis sets -- the same machinery
-      !! exchange repulsion needs, and not yet present. So this reproduces
-      !! GAMESS's E6 to about two parts in a thousand, that difference being the
-      !! damping and not an error in the coefficient: undamped is larger in
-      !! magnitude, which is the direction damping works in.
+      !! **Undamped, where GAMESS reports a damped number.** Its damping is
+      !! built from overlaps between the two fragments' localized orbitals,
+      !! which needs integrals over both fragments' basis sets and is not
+      !! present here, so this runs about two parts in a thousand larger in
+      !! magnitude than GAMESS's E6.
       !!
-      !! Not truncated at the fragment's own points: dispersion sits on the
-      !! localized orbital centroids, which are a different set from the multipole
-      !! expansion points, so it takes the fragments rather than the flattened
-      !! system.
+      !! Takes the fragments rather than the flattened system: dispersion sits
+      !! on the localized orbital centroids, a different set of points from the
+      !! multipole expansion.
+      ! TODO(mqc): the quadrature index runs to the smaller of the two
+      ! fragments' `n_freq`, which `mqc_efp_read` takes from the file without
+      ! checking it against `N_FREQUENCIES`. A potential written with more than
+      ! twelve frequency blocks reads past the end of `CP_WEIGHT`.
       type(efp_system_t), intent(in) :: system
       type(efp_fragment_t), intent(in) :: fragments(:)
       real(dp) :: energy
@@ -597,9 +532,8 @@ contains
       integer :: fa, fb, ia, ib, k
 
       energy = 0.0_dp
-      ! Threaded over the first fragment with a reduction, like the multipole loop
-      ! and for the same reason: the pair set is triangular, so `guided` keeps the
-      ! threads that drew the high indices from finishing early and idling.
+      ! Threaded over the first fragment with a reduction, `guided` because the
+      ! pair set is triangular.
       !$omp parallel do default(none) private(fa, fb, ia, ib, k, c6, sep, dist, r6) &
       !$omp shared(fragments, system) schedule(guided) reduction(+:energy) &
       !$omp if(size(fragments) >= 8)
@@ -639,28 +573,19 @@ contains
    pure function penetration(system, a, b, r) result(e)
       !! Charge-charge penetration between two points
       !!
-      !! The multipole expansion treats each fragment's charge density as a set of
-      !! points, which overstates the repulsion where the two densities actually
-      !! overlap: real electron clouds penetrate each other and screen the nuclei
-      !! they surround. This is the correction for that, and it is short ranged --
-      !! exponential in `alpha R` -- so it matters at hydrogen-bond distances and
+      !! A multipole expansion overstates the repulsion where the two charge
+      !! densities actually overlap, since real electron clouds penetrate each
+      !! other and screen the nuclei they surround. The correction is
+      !! exponential in `alpha R`, so it matters at hydrogen-bond distances and
       !! vanishes by a few Angstrom.
       !!
-      !! Taken from `EPENCHCH` and its call site in GAMESS's `efelec.src`, not
-      !! fitted: the electronic and nuclear monopoles are screened by different
-      !! factors and no amount of comparing totals would have revealed which pairing
-      !! goes with which exponent. It reproduces GAMESS's own screening contribution
-      !! exactly.
+      !! Only the charge-charge term, from `EPENCHCH` in GAMESS's `efelec.src`.
+      !! GAMESS's further corrections for the dipole, quadrupole and octupole
+      !! sit behind its `HOCHPEN` flag, which a default run does not set.
       !!
-      !! Only the charge-charge term. GAMESS also has penetration corrections for
-      !! the dipole, quadrupole and octupole, behind its `HOCHPEN` flag, which its
-      !! default run does not set -- and the number this reproduces was produced by
-      !! a default run.
-      !!
-      !! GAMESS treats a point whose screening *coefficient* is zero as unscreened,
-      !! by setting its exponent to 1e20. Every potential this program writes carries
-      !! a coefficient of one at every point, so that case cannot arise here and the
-      !! coefficient is not read.
+      !! The screening *coefficient* is not read: every potential this program
+      !! writes carries a coefficient of one at every point, where GAMESS treats
+      !! a zero coefficient as unscreened by setting the exponent to 1e20.
       type(efp_system_t), intent(in) :: system
       integer, intent(in) :: a, b
       real(dp), intent(in) :: r(3)
@@ -690,9 +615,8 @@ contains
          p0_n2 = -exp(-ap)
       end if
 
-      ! `a`'s electrons screened against `b`'s nucleus carry `a`'s own exponent, and
-      ! the other way round carries `b`'s -- which is the pairing that cannot be
-      ! guessed from a total.
+      ! `a`'s electrons screened against `b`'s nucleus carry `a`'s own exponent,
+      ! and the other way round carries `b`'s.
       e = (system%q_elec(a)*system%q_elec(b)*p0_e &
            + system%q_elec(a)*system%q_nuc(b)*p0_n2 &
            + system%q_elec(b)*system%q_nuc(a)*p0_n1)/dist

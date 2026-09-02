@@ -11,18 +11,14 @@ module mqc_ecp
    !!
    !!     U_l(r) = sum_k d_k r^(n_k - 2) exp(-z_k r^2)
    !!
-   !! so a channel is three parallel arrays: radial powers, coefficients and
-   !! exponents. The `-2` in the exponent is a convention difference between
-   !! tabulations; the powers here are stored exactly as the source file gives
-   !! them, and it is the consumer's business to know which convention its
-   !! library wants.
+   !! Radial powers are stored exactly as the source file gives them; the `-2`
+   !! is a convention difference between tabulations, and the consumer has to
+   !! know which one its library wants.
    !!
-   !! The number an ECP is really defined by is `core_electrons` -- how many
-   !! electrons it stands in for. Everything downstream has to agree on it: the
-   !! atom contributes `Z - core_electrons` electrons to the SCF, screens the
-   !! nucleus to the same effective charge, and repels other nuclei with it.
-   !! Those three are separate pieces of code and none of them will complain if
-   !! one is missed.
+   !! `core_electrons` is how many electrons the potential stands in for.
+   !! Everything downstream has to agree on it: the atom contributes
+   !! `Z - core_electrons` electrons to the SCF, screens the nucleus to the
+   !! same effective charge, and repels other nuclei with it.
    use pic_types, only: dp
    implicit none
    private
@@ -65,15 +61,17 @@ module mqc_ecp
    type :: molecular_ecp_type
       !! One entry per atom, parallel to `molecular_basis_type%elements`
       !!
-      !! Indexed by atom rather than by element so an entry lines up with the
-      !! atom index everything else uses -- coordinates, nuclear charges, and
-      !! the active-atom list an ECP integral plan is built from. Atoms without
-      !! an ECP get an entry with `has_ecp` false rather than being skipped, so
-      !! the indexing never has to be translated.
+      !! Indexed by atom, not by element, so an entry lines up with the atom
+      !! index everything else uses. Atoms without an ECP get an entry with
+      !! `has_ecp` false rather than being skipped.
       type(atomic_ecp_type), allocatable :: atoms(:)
       integer :: natoms = 0
       integer :: n_ecp_atoms = 0
          !! How many of them actually carry a potential
+      ! TODO(mqc): maintained only by `build_molecular_ecp_json`, and `any_ecp`
+      ! reads nothing else. A `molecular_ecp_type` filled any other way reports
+      ! no ECPs from `any_ecp` while `core_electrons`, which scans `atoms`,
+      ! reports them.
    contains
       procedure :: allocate_atoms => molecular_ecp_allocate
       procedure :: destroy => molecular_ecp_destroy
@@ -162,8 +160,8 @@ contains
    pure function molecular_ecp_core_electrons(this) result(total)
       !! Electrons replaced across the whole molecule
       !!
-      !! This is what the SCF's electron count has to drop by, and it is a sum
-      !! over ATOMS -- two rubidiums replace 56 electrons, not 28.
+      !! What the SCF's electron count has to drop by. A sum over atoms, not
+      !! over elements.
       class(molecular_ecp_type), intent(in) :: this
       integer :: total
       integer :: iatom

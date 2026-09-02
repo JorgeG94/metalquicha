@@ -1,7 +1,8 @@
 !! Main calculation driver module for metalquicha
 module mqc_driver
-   !! Handles both fragmented (many-body expansion) and unfragmented calculations
-   !! with MPI parallelization and node-based work distribution.
+   !! Routes a configured system to the fragmented (many-body expansion) or
+   !! unfragmented path, and holds the run types that take neither: MAKEFP, EFP
+   !! and SAPT.
    use pic_types, only: int32, int64, dp, default_int
    use pic_mpi_lib, only: comm_t, abort_comm, bcast, allgather
    use mqc_resources, only: resources_t
@@ -51,27 +52,17 @@ contains
 
    subroutine run_calculation(resources, config, sys_geom, bonds, result_out, all_ranks_write_json, &
                               supplied_terms, n_supplied_terms, write_output)
-      !! Main calculation dispatcher - routes to fragmented or unfragmented calculation
+      !! Dispatch a configured system to the calculation it asks for
       !!
-      !! Determines calculation type based on nlevel and dispatches to appropriate
-      !! calculation routine with proper MPI setup and validation.
-      !! `result_out` and `write_output` are independent. A caller can take the
-      !! energy back, write the files, or both -- the common case for a driven
-      !! run being both, so a script can print or branch on a number without
-      !! re-reading the file this just wrote. They used to be one switch, which
-      !! meant asking for the result silently suppressed the output.
+      !! `config%nlevel` chooses fragmented or unfragmented; MAKEFP, EFP and
+      !! SAPT take neither path. `result_out` and `write_output` are
+      !! independent: a caller can take the energy back, write the files, or
+      !! both.
       !!
-      !! `supplied_terms` hands over a term list instead of generating one, which
-      !! is how a caller applies a criterion this code knows nothing about --
-      !! an energy threshold from a previous run's breakdown, the terms a dead
-      !! run never reached, a hand-picked set. Distance screening and sorting
-      !! are skipped with it: the list is taken as given, in the order given.
-      !!
-      !! Only rank 0 needs it. The coordinator hands individual fragment
-      !! definitions to workers as tasks and they build them from `sys_geom`,
-      !! so the list itself never leaves rank 0 -- but every rank must already
-      !! have `sys_geom`, which the normal program gets by having every rank
-      !! parse the input and a session gets by broadcasting it.
+      !! `supplied_terms` hands over a term list instead of generating one.
+      !! Distance screening and sorting are skipped with it: the list is taken
+      !! as given, in the order given. Only rank 0 needs it -- workers build
+      !! each fragment from `sys_geom`, which every rank must already have.
       !!
       !! **The list must be closed under subsets.** An n-body term's delta is
       !! its energy less every proper subset's delta, so keeping a trimer whose
@@ -107,7 +98,7 @@ contains
       type(error_t) :: geometry_error  !! Two atoms in the same place, if any
       type(lindep_tally_t) :: lindep   !! One report for every fragment SCF
 
-      !! TODO JORGE: REFACTOR
+      ! TODO(mqc): refactor
 
       ! Set max_level from config
       max_level = config%nlevel
@@ -134,11 +125,9 @@ contains
       end if
 
       ! Before anything is dispatched, and on every path. Two atoms in the same
-      ! place make the electron count wrong, so nothing computed afterwards
-      ! means anything -- and the per-fragment check that would eventually
-      ! notice does so a long way into a large expansion, on whichever rank drew
-      ! that term, or never at all if screening drops the fragment that would
-      ! have paired the two copies. It costs one sorted sweep.
+      ! place make the electron count wrong, and the per-fragment check that
+      ! would eventually notice does so a long way into a large expansion, or
+      ! never at all if screening drops the fragment holding both copies.
       call check_system_geometry(sys_geom, geometry_error)
       if (geometry_error%has_error()) then
          if (resources%mpi_comms%world_comm%rank() == 0) then
@@ -146,18 +135,15 @@ contains
          end if
          ! `abort_comm` rather than `error stop`: under MPI the latter reaches
          ! MPI_ABORT before anything written above it is flushed, so the run
-         ! dies with a rank number and no reason -- which is a worse failure
-         ! than the late discovery this check exists to replace.
+         ! dies with a rank number and no reason.
          call abort_comm(resources%mpi_comms%world_comm, 1)
       end if
 
       ! An optimization is a loop over calculations and is driven from above
       ! this routine, so reaching here with one means a caller took a path that
-      ! does not know about it -- the multi-molecule loop, a session, the C
-      ! API. Refused by name rather than left to fall through: `calc_type`
-      ! reaches the method layer as an unhandled value, and what that produced
-      ! was a backtrace out of `unfragmented_calculation` rather than anything
-      ! a user could act on.
+      ! does not know about it -- the multi-molecule loop, a session, the C API.
+      ! Refused by name: left to fall through, `calc_type` reaches the method
+      ! layer as an unhandled value and the run dies in a backtrace.
       if (config%calc_type == CALC_TYPE_CONFORMERS) then
          if (resources%mpi_comms%world_comm%rank() == 0) then
             call logger%error('driver "conformers" is not available on this path.')
@@ -184,8 +170,7 @@ contains
 
       ! Resolved before the branches below rather than beside the JSON write at
       ! the end, because those branches write their own summary and return
-      ! without ever reaching it. Left where it was, a SAPT run asked for no
-      ! files wrote one anyway.
+      ! without ever reaching it.
       wants_output = .true.
       if (present(write_output)) wants_output = write_output
 
@@ -198,10 +183,9 @@ contains
          return
       end if
 
-      ! EFP takes neither path either, for the opposite reason to MAKEFP: the
-      ! fragments already carry their wavefunctions, so there is no SCF to fragment
-      ! and nothing for a many-body expansion to expand. What is evaluated is the
-      ! interaction between potentials that already exist.
+      ! EFP takes neither path either: the fragments already carry their
+      ! wavefunctions, so there is no SCF to fragment and nothing for a
+      ! many-body expansion to expand.
       if (config%method_config%method_type == METHOD_TYPE_EFP2) then
          call run_efp(config, sys_geom, resources%mpi_comms%world_comm%rank(), &
                       wants_output, result_out)
@@ -209,8 +193,7 @@ contains
       end if
 
       ! SAPT takes neither path either: it returns the interaction between two
-      ! monomers rather than the energy of one system, so there is nothing for a
-      ! many-body expansion to expand and no single wavefunction to fragment.
+      ! monomers rather than the energy of one system.
       if (config%method_config%method_type == METHOD_TYPE_SAPT0 .or. &
           config%method_config%method_type == METHOD_TYPE_SAPT2) then
          call run_sapt(config, sys_geom, resources%mpi_comms%world_comm%rank(), &
@@ -226,26 +209,15 @@ contains
          end if
       end if
 
-      ! GMBE (overlapping fragments) with inclusion-exclusion principle
-      ! GMBE(1): Base fragments are monomers
-      ! GMBE(N): Base fragments are N-mers (e.g., dimers for N=2)
-      ! Algorithm: Generate primaries, use DFS to enumerate overlapping cliques,
-      ! accumulate PIE coefficients per unique atom set, evaluate each once
-
       if (max_level == 0) then
          ! One thread, for the methods that need it rather than for all of them.
+         ! tblite run threaded corrupts a result instead of failing, so xTB is
+         ! clamped here; the ab initio path keeps the threads it was given.
          !
-         ! tblite is the reason this pin exists: run threaded it corrupts a
-         ! result instead of failing, so xTB is clamped here and stays clamped.
-         ! The libcint Hartree-Fock path is a different case -- libcint keeps no
-         ! state across calls, and its Fock build threads its own quartet loop --
-         ! so clamping it does not make it safer, only slower, and on this box
-         ! by a factor of the core count.
-         !
-         ! The clamp is deliberately not restored afterwards. `omp_set_num_threads(1)`
-         ! makes `omp_get_max_threads()` report 1, so the value has to be saved
-         ! before the call to be recoverable; an unfragmented run ends here, and
-         ! the one path that does need the count back saves it first. See
+         ! The clamp is not restored afterwards. `omp_set_num_threads(1)` makes
+         ! `omp_get_max_threads()` report 1, so the value has to be saved before
+         ! the call to be recoverable; an unfragmented run ends here, and the
+         ! one path that does need the count back saves it first. See
          ! mqc_serial_fragment_processor.
          if (needs_serial_execution(config%method_config%method_type)) then
             call omp_set_num_threads(1)
@@ -261,17 +233,11 @@ contains
          ! json_data is collected whether or not it will be written, because it
          ! is also where a fragmented result comes from -- the expansion has no
          ! other route back to a calculation_result_t.
-         ! Fold every fragment SCF's linear-dependence report into one.
          !
-         ! Each fragment raises its own otherwise, and the block is eight to
-         ! twelve lines -- an expansion over a few thousand fragments buries the
-         ! run in warnings about calculations that are, in the near-dependent
-         ! case, perfectly fine. Unfragmented runs are left alone: there is one
-         ! SCF, so the per-SCF report is already the summary.
-         !
-         ! The window is per rank, so with MPI each rank reports its own
-         ! fragments rather than the run's. That still turns thousands of blocks
-         ! into one per rank, and a cross-rank reduction is a separate change.
+         ! Fold every fragment SCF's linear-dependence report into one, rather
+         ! than a block per fragment. Unfragmented runs are left alone: there is
+         ! one SCF, so the per-SCF report is already the summary. The window is
+         ! per rank, so with MPI each rank reports its own fragments.
          call lindep_collect_begin()
          call run_fragmented_calculation(resources, config, sys_geom, bonds, json_data, &
                                          supplied_terms=supplied_terms, &
@@ -281,9 +247,8 @@ contains
          if (present(result_out)) call result_from_json(json_data, result_out)
       end if
 
-      ! Stamped whether or not it is written, because the fingerprint is part
-      ! of the result rather than part of the reporting -- a caller taking the
-      ! energy back without files still needs to know what produced it.
+      ! Stamped whether or not it is written: a caller taking the energy back
+      ! without files still needs to know what produced it.
       json_data%fingerprint = calculation_fingerprint(sys_geom, config%method_config, &
                                                       config%calc_type)
 
@@ -316,12 +281,8 @@ contains
    subroutine result_from_json(json_data, result_out)
       !! Take a fragmented run's headline numbers back to the caller
       !!
-      !! The expansion assembles into `json_output_data_t` and has no other
-      !! route to a `calculation_result_t`, so this reads across rather than
-      !! recomputing. Only what a driving script would branch on: the total,
-      !! and the gradient and dipole when the run produced them. The
-      !! per-fragment detail stays in the CSV, where twenty million rows
-      !! belong.
+      !! The total, and the gradient and dipole when the run produced them. The
+      !! per-fragment detail stays in the CSV.
       type(json_output_data_t), intent(in) :: json_data
       type(calculation_result_t), intent(inout) :: result_out
 
@@ -338,12 +299,11 @@ contains
    end subroutine result_from_json
 
    subroutine run_unfragmented_calculation(world_comm, sys_geom, config, result_out, json_data)
-      !! Handle unfragmented calculation (nlevel=0)
+      !! Run the whole system as one calculation (`nlevel = 0`)
       !!
-      !! For single-molecule mode: Only rank 0 runs (validates single rank)
-      !! For multi-molecule mode: ALL ranks can run (each with their own molecule)
-      !! For Hessian calculations with multiple ranks: Uses distributed parallelization
-      !! If result_out is present, returns result instead of writing JSON
+      !! Rank 0 alone for a single molecule; every rank for a multi-molecule
+      !! run, each with its own. A Hessian across more than one rank goes to
+      !! `distributed_unfragmented_hessian`, which spreads the displacements.
       type(comm_t), intent(in) :: world_comm  !! Global MPI communicator
       type(system_geometry_t), intent(in) :: sys_geom  !! Complete system geometry
       type(driver_config_t), intent(in) :: config  !! Driver configuration (includes method_config, calc_type, etc.)
@@ -382,11 +342,11 @@ contains
 
    subroutine run_fragmented_calculation(resources, config, sys_geom, bonds, json_data, &
                                          supplied_terms, n_supplied_terms)
-      !! Handle fragmented calculation (nlevel > 0)
+      !! Run a many-body expansion (`nlevel > 0`)
       !!
-      !! Generates fragments, distributes work across MPI processes organized in nodes,
-      !! and coordinates many-body expansion calculation using hierarchical parallelism.
-      !! If allow_overlapping_fragments=true, uses GMBE with intersection correction.
+      !! Builds the term list, groups the ranks into nodes and groups, and hands
+      !! the work to an expansion context. `allow_overlapping_fragments` selects
+      !! GMBE with its inclusion-exclusion terms instead of plain MBE.
 
       type(resources_t), intent(in), target :: resources  !! Resources container (MPI comms, etc.)
       type(driver_config_t), intent(in) :: config  !! Driver configuration (includes method_config, calc_type, etc.)
@@ -416,7 +376,7 @@ contains
       integer, allocatable :: group_leader_ranks(:)  !! Group leader rank for each node leader
       integer, allocatable :: group_ids(:)  !! Group id for each node leader
       integer, allocatable :: monomers(:)     !! Temporary monomer list for fragment generation
-      integer(int64) :: n_expected_frags  !! Expected number of fragments based on combinatorics (int64 to handle large systems)
+      integer(int64) :: n_expected_frags  !! Fragment count the combinatorics predict
       integer(int64) :: n_rows      !! Number of rows needed for polymers array (int64 to handle large systems)
       integer :: global_node_rank  !! Global rank if this process leads a node, -1 otherwise
       integer, allocatable :: all_node_leader_ranks(:)  !! Node leader status for all ranks
@@ -472,9 +432,7 @@ contains
             ! The caller's array is as wide as their highest term, which need
             ! not be `max_level`: a screen that keeps no trimers hands over a
             ! two-column list for a level-3 expansion, and copying `max_level`
-            ! columns from it reads off the end. That produced a monomer index
-            ! of 0 the once, which the validator caught; it is undefined
-            ! memory and could as easily have been a plausible index.
+            ! columns from it reads off the end.
             supplied_width = int(size(supplied_terms, 2), default_int)
             if (supplied_width > max_level) then
                ! Wider than the expansion allows. Truncating would silently
@@ -492,10 +450,9 @@ contains
                polymers(1:total_fragments, 1:supplied_width) = &
                   supplied_terms(1:total_fragments, 1:supplied_width)
             end if
-            ! A supplied list has had no screening or sorting applied to it and
-            ! comes from outside, so it is checked before anything is spent on
-            ! it -- above all for subset closure, which a reasonable-looking
-            ! screen breaks silently.
+            ! A supplied list comes from outside unscreened and unsorted, so it
+            ! is checked before anything is spent on it -- above all for subset
+            ! closure, which a reasonable-looking screen breaks silently.
             call supplied_check%replace(polymers, total_fragments, max_level, validation_error)
             if (.not. validation_error%has_error()) then
                call validate_terms(supplied_check, sys_geom,.not. config%unchecked_input, &
@@ -548,7 +505,10 @@ contains
                end if
 
                ! Sort primaries by size (largest first)
-               ! TODO: Currently disabled - see comment in MBE section above
+               ! TODO(mqc): with the line below commented out, `total_fragments`
+               ! is whatever screening left it. That equals `n_primaries` only
+               ! because screening always runs on this branch, so the sort is
+               ! correct by accident rather than by construction.
                ! total_fragments = int(n_primaries, int64)
                call sort_fragments_by_size(polymers, total_fragments, max_level)
             end if
@@ -570,9 +530,9 @@ contains
             total_fragments = n_pie_terms
          else
             ! Standard MBE mode. Monomers, then n-mers, then screening, then
-            ! the size sort -- all of it in `generate_mbe_term_list`, which a
-            ! geometry optimization also calls so that the list it freezes is
-            ! the same one this would have built.
+            ! the size sort, all of it in `generate_mbe_term_list` -- which a
+            ! geometry optimization also calls, so the list it freezes is the
+            ! one this would have built.
             call generate_mbe_term_list(sys_geom, config, max_level, polymers, total_fragments)
 
             call logger%info("Generated fragments:")
@@ -645,10 +605,9 @@ contains
 
       ! Build polymorphic expansion context
       if (config%expansion_kind == "fmo" .or. config%expansion_kind == "ee-mbe") then
-         ! FMO or electrostatically embedded MBE. Both are the same machinery
-         ! and differ only in what a fragment sees of its neighbours and how
-         ! the pieces are added up, so one context serves both and the deck
-         ! chooses by name rather than by setting two switches consistently.
+         ! FMO or electrostatically embedded MBE. Both are the same machinery,
+         ! differing only in what a fragment sees of its neighbours and how the
+         ! pieces are added up, so one context serves both.
          allocate (fmo_context_t :: expansion)
          select type (expansion)
          type is (fmo_context_t)
@@ -672,13 +631,12 @@ contains
             ! `embedding` overrides what the expansion implies, which is how a
             ! deck reaches the third pairing the backend supports: esp "none"
             ! with an mbe expansion, a plain many-body expansion through this
-            ! module. It was parsed and dropped before this, so a deck asking for
-            ! it silently got the embedded method instead.
+            ! module.
             if (trim(config%embedding) == "none") then
                expansion%esp = "none"
             end if
 
-            ! TODO JORGE: refactor this ugly ass code, in general the expansion assignemtn
+            ! TODO(mqc): refactor this ugly ass code, in general the expansion assignemtn
             expansion%far_field = config%fmo_far_field
             ! The deck's fragmentation level means the same thing here as it
             ! does for MBE: how many fragments at a time.
@@ -690,8 +648,8 @@ contains
             expansion%scf_energy_tol = config%fmo_scf_energy_tol
             expansion%scf_density_tol = config%fmo_scf_density_tol
             ! From `keywords.scf`, the same source the unfragmented path reads.
-            ! The three above stay on `keywords.fragmentation` because they are
-            ! per-fragment by intent; these are not.
+            ! The three above stay on `keywords.fragmentation`, being
+            ! per-fragment by intent.
             expansion%scf_drive%level_shift = config%method_config%scf%level_shift
             expansion%scf_drive%linear_dependence = config%method_config%scf%linear_dependence
             expansion%scf_drive%use_diis = config%method_config%scf%use_diis
@@ -724,6 +682,10 @@ contains
                if (allocated(expansion%sys_geom%bonds)) deallocate (expansion%sys_geom%bonds)
                allocate (expansion%sys_geom%bonds, source=bonds)
             end if
+            ! TODO(mqc): `n_pie_terms` is set inside the rank-0 block above, so
+            ! every other rank copies an undefined value here. Harmless only
+            ! because the coordinator is the sole reader; `total_fragments`
+            ! carries the same number and is the one that gets broadcast.
             expansion%n_pie_terms = n_pie_terms
             if (resources%mpi_comms%world_comm%rank() == 0) then
                allocate (expansion%pie_atom_sets, source=pie_atom_sets)
@@ -766,13 +728,12 @@ contains
          end select
       end if
 
-      ! Opened on rank 0 only: it is the rank that collects every result, so
-      ! it is the only one with anything to write, and N ranks appending to one
-      ! file would interleave.
-      ! GMBE keys its terms by atom set, not by monomer tuple, so the file
-      ! this writes would not describe them. Announced rather than opened and
-      ! left unused -- a checkpoint that silently records nothing is worse
-      ! than no checkpoint, because it is believed.
+      ! Opened on rank 0 only: it is the rank that collects every result, and N
+      ! ranks appending to one file would interleave.
+      !
+      ! GMBE keys its terms by atom set, not by monomer tuple, so the file this
+      ! writes would not describe them. Announced rather than opened and left
+      ! unused: a checkpoint that silently records nothing is believed.
       if (len_trim(config%checkpoint_file) > 0 .and. allow_overlapping_fragments .and. &
           resources%mpi_comms%world_comm%rank() == 0) then
          call logger%warning("Checkpointing does not support GMBE; this run will write "// &
@@ -790,7 +751,7 @@ contains
                                         config%calc_type == CALC_TYPE_ENERGY, &
                                         checkpoint_error)
          if (checkpoint_error%has_error()) then
-            ! A checkpoint from another calculation is not a warning. Its
+            ! A checkpoint from another calculation is not a warning: its
             ! energies would be spliced into this one and the total would come
             ! out converged and meaningless.
             call logger%error(checkpoint_error%get_message())
@@ -1066,21 +1027,13 @@ contains
    subroutine run_sapt(config, sys_geom, rank, write_output, result_out)
       !! SAPT0 or SAPT2 between the deck's two fragments
       !!
-      !! The monomers are the deck's own `fragments`, so no new keyword is needed
-      !! -- a SAPT deck is a geometry, a basis, and the partition that says which
-      !! atoms are which monomer:
-      !!
-      !!     "model":     {"method": "sapt0", "basis": "6-31g"},
-      !!     "molecules": [{"xyz": "dimer.xyz", "fragments": [[0,1,2],[3,4,5]], ...}]
+      !! The monomers are the deck's own `fragments`, so no new keyword is
+      !! needed. Rank zero only.
       !!
       !! **Exactly two fragments.** SAPT partitions the Hamiltonian as
-      !! `H_A + H_B + V`; there is no slot for a third monomer, and a cluster is
-      !! a separate SAPT calculation per pair rather than one calculation. That
-      !! is the theory rather than a limit of this code -- see
-      !! `validation/check_sapt.f90`, which walks the pairs of a six-water prism.
-      !!
-      !! Rank zero only. The pairs of a cluster are the obvious thing to
-      !! distribute, and a single pair is not.
+      !! `H_A + H_B + V`; there is no slot for a third monomer, so a cluster is
+      !! one SAPT calculation per pair. See `validation/check_sapt.f90`, which
+      !! walks the pairs of a six-water prism.
       use mqc_libcint_bridge, only: run_libcint_sapt0, run_libcint_sapt2
       use mqc_method_types, only: METHOD_TYPE_SAPT2
       use mqc_program_limits, only: N_SAPT_TERMS, N_SAPT2_TERMS
@@ -1113,11 +1066,8 @@ contains
       end if
 
       ! The monomers' own charges and multiplicities, which decide how many
-      ! electrons each SCF is run with. Absent them a charged monomer is solved
-      ! as the neutral species and the interaction energy is quietly wrong, so
-      ! they are read here and passed on rather than defaulted downstream. The
-      ! arrays are optional in `system_geometry_t`; a deck that omits them means
-      ! neutral singlets.
+      ! electrons each SCF is run with. The arrays are optional in
+      ! `system_geometry_t`; a deck that omits them means neutral singlets.
       charge_a = 0
       charge_b = 0
       mult_a = 1
@@ -1131,10 +1081,10 @@ contains
          mult_b = sys_geom%fragment_multiplicities(2)
       end if
 
-      ! Both monomer references are RHF. An open-shell monomer is refused here
-      ! rather than at the electron-count parity check further in, which only
-      ! catches the odd-electron half of the problem: a triplet has an even
-      ! count and would otherwise be solved as the singlet.
+      ! Both monomer references are RHF. Refused here rather than at the
+      ! electron-count parity check further in, which catches only the
+      ! odd-electron half: a triplet has an even count and would otherwise be
+      ! solved as the singlet.
       if (mult_a /= 1 .or. mult_b /= 1) then
          call refuse(result_out, "SAPT: both monomers must be closed shell; "// &
                      "this deck asks for multiplicities "//to_char(mult_a)// &
@@ -1178,10 +1128,9 @@ contains
          return
       end if
 
-      ! The response terms are what enters the total; the uncoupled ones and
-      ! the S^2 exchange are printed beside them because they are what another
-      ! code's output is quoted in, and a term can only be checked against the
-      ! same term.
+      ! The response terms are what enters the total; the uncoupled ones and the
+      ! S^2 exchange are printed beside them because that is what another code's
+      ! output is usually quoted in.
       call logger%info("============================================")
       if (is_sapt2) then
          call logger%info("  SAPT2 interaction energy, Hartree")
@@ -1216,8 +1165,8 @@ contains
       call logger%info("============================================")
 
       if (present(result_out)) then
-         ! The `scf` slot, being the reference `energy_t%total()` sums. This is an
-         ! interaction energy and not an SCF energy; nothing here pretends otherwise.
+         ! The `scf` slot, being the reference `energy_t%total()` sums. This is
+         ! an interaction energy and not an SCF energy.
          result_out%energy%scf = terms(size(terms))
          result_out%has_energy = .true.
       end if
@@ -1239,18 +1188,14 @@ contains
    subroutine run_efp(config, sys_geom, rank, write_output, result_out)
       !! The interaction energy of a set of effective fragments
       !!
-      !! Each fragment of the deck names a potential; the backend loads them, places
-      !! each on the atoms the deck gave it, turns it into that orientation and
-      !! evaluates the five EFP2 terms. There is no SCF here: the wavefunctions were
-      !! solved when the potentials were made.
+      !! Each fragment of the deck names a potential; the backend loads them,
+      !! places each on the atoms the deck gave it, turns it into that
+      !! orientation and evaluates the five EFP2 terms. There is no SCF here:
+      !! the wavefunctions were solved when the potentials were made.
       !!
-      !! The work itself is in `run_libcint_efp` rather than here, because all of it
-      !! lives behind `MQC_ENABLE_LIBCINT` and this file compiles either way. The stub
-      !! declines with the same signature and names the build option.
-      !!
-      !! Rank zero only, for now. The pair loop is the obvious thing to distribute and
-      !! is already flat, but the terms are milliseconds on a dimer and shaping that
-      !! before there is a cluster to shape it around would be guessing.
+      !! Rank zero only. The work is in `run_libcint_efp`, which lives behind
+      !! `MQC_ENABLE_LIBCINT`; the stub declines with the same signature and
+      !! names the build option.
       use mqc_libcint_bridge, only: run_libcint_efp
       use mqc_program_limits, only: N_EFP_TERMS
       use mqc_json_output_types, only: OUTPUT_MODE_UNFRAGMENTED
@@ -1299,18 +1244,15 @@ contains
       call logger%info("============================================")
 
       if (present(result_out)) then
-         ! In the `scf` slot because that is the one `energy_t%total()` sums as the
-         ! reference, and an EFP interaction energy has no correlation correction
-         ! sitting on top of it. It is not an SCF energy and nothing here pretends
-         ! otherwise -- there is no wavefunction solved in this routine at all.
+         ! In the `scf` slot because that is the one `energy_t%total()` sums as
+         ! the reference. It is not an SCF energy: no wavefunction is solved
+         ! here at all.
          result_out%energy%scf = terms(6)
          result_out%has_energy = .true.
       end if
 
-      ! The same summary every other run leaves behind, so a driven run or the
-      ! validation harness can read the number back rather than scrape the log.
-      ! `UNFRAGMENTED` because that is the shape of what is written -- one energy for
-      ! one system -- not a claim that the system has no fragments.
+      ! `UNFRAGMENTED` because that is the shape of what is written -- one
+      ! energy for one system -- not a claim that the system has no fragments.
       if (write_output .and. .not. config%skip_json_output) then
          json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
          json_data%total_energy = terms(6)
@@ -1324,12 +1266,9 @@ contains
    subroutine refuse(result_out, message)
       !! Log a refusal and, when there is a caller, put it on the result
       !!
-      !! The two interaction-energy paths used to log and return. From `main`
-      !! that is a red line on the terminal and an exit; from a session it was
-      !! a clean zero handed back as a success, because `mqc_run` reads the
-      !! energy off a result nothing had marked as failed. A zero interaction
-      !! energy is a physically plausible number, which is what makes it the
-      !! worst shape a failure can take here.
+      !! Marking the result matters on the interaction-energy paths: `mqc_run`
+      !! reads the energy off a result nothing marked as failed, and a zero
+      !! interaction energy is a physically plausible number.
       type(calculation_result_t), intent(inout), optional :: result_out
       character(len=*), intent(in) :: message
 
@@ -1343,10 +1282,8 @@ contains
    subroutine run_makefp(config, sys_geom, rank, result_out)
       !! Build an effective fragment potential for the whole system and write it
       !!
-      !! Only rank zero does anything: the work is one SCF and a set of response
-      !! solves, all of them threaded inside the integral backend, and the write is
-      !! a single file. Distributing it would mean every rank recomputing the same
-      !! potential to overwrite the same path.
+      !! Rank zero only: the work is one SCF and a set of response solves, all
+      !! threaded inside the integral backend, and the write is a single file.
       use mqc_calc_types, only: CALC_TYPE_MAKEFP
       use mqc_elements, only: element_number_to_symbol
       use mqc_libcint_bridge, only: run_libcint_makefp
@@ -1366,7 +1303,7 @@ contains
       integer :: i
       real(dp), allocatable :: named_energy_tol, named_density_tol, named_grad_tol
       integer, allocatable :: named_max_iter
-      type(scf_numerics_t) :: makefp_scf !! the scf configuration for makeefp
+      type(scf_numerics_t) :: makefp_scf  !! SCF settings the MAKEFP run uses
 
       if (rank /= 0) return
 
@@ -1375,8 +1312,8 @@ contains
          symbols(i) = element_number_to_symbol(sys_geom%element_numbers(i))
       end do
 
-      ! Named and placed off the deck, the way the JSON output is: a run on
-      ! water.json leaves water.efp beside it.
+      ! Named off the deck, the way the JSON output is: a run on water.json
+      ! leaves water.efp beside it.
       name = trim(get_basename())
       path = trim(name)//".efp"
 
@@ -1405,7 +1342,7 @@ contains
       makefp_scf%incremental_fock = config%method_config%scf%incremental_fock
       makefp_scf%accelerator = config%method_config%scf%accelerator
       if (config%method_config%scf%density_fitting) then
-         ! TODO JORGE: make good
+         ! TODO(mqc): make good
          call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
                                  config%method_config%basis_set, name, path, err, &
                                  charge=sys_geom%charge, verbose=.true., &

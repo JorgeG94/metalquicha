@@ -1,60 +1,43 @@
 !! The fixed-density second-derivative skeleton of the MP2 correlation Hessian
 module mqc_libcint_mp2_hessian
-   !! Units 1.3-1.6 of the MP2 Hessian ladder (`mp2-hessian-phased-plan.md`).
+   !! The analytic MP2 correlation Hessian, in two passes, transcribed from
+   !! pycc's `_hessian_blocks` (`route == 'aod'`).
    !!
-   !! Unit 1.3, `mp2_skeleton_hessian`: the per-atom-pair scalar
+   !! Pass 1, `mp2_skeleton_hessian`: the per-atom-pair scalar
    !!
    !!     s = Gamma_eff . (mu nu|la si)^{XY} + D_rel . h^{XY} + I . S^{XY}
    !!
-   !! contracted against the **unperturbed** densities -- pass 1 of the
-   !! two-pass assembly, mirrored from pycc's `_hessian_blocks` (`route ==
-   !! 'aod'`). The perturbed densities are later units and deliberately
-   !! absent here.
+   !! contracted against the **unperturbed** densities. The SCF reference's
+   !! skeleton rides the same sweep -- the second-derivative two-electron
+   !! integrals dominate the cost and both blocks contract the same ones -- so
+   !! they are generated once and deposited into two accumulators. That also
+   !! makes the reference block checkable against `partial_hessian`, which
+   !! walks its own quartets.
    !!
-   !! **The reference skeleton rides in the same sweep.** The second-derivative
-   !! two-electron integrals dominate the cost of a correlated Hessian, and the
-   !! SCF reference needs the same ones contracted against its own separable
-   !! density. Generating them once and depositing into two accumulators is
-   !! pycc's `Href` fold, and it is also what makes the reference block
-   !! checkable against `partial_hessian`, which walks its own quartets.
+   !! Pass 2: the per-perturbation first-order skeletons `f^(X)`, `S^(X)`,
+   !! `<pq|rs>^(X)`; the skeleton Lagrangian `I'^(X)` and its orbital-response
+   !! carriers; and the perturbed response, where the CPHF-folded `d_Y f` and
+   !! `d_Y <pq|rs>` feed the closed-form perturbed amplitudes, and those feed
+   !! the perturbed relaxed density, energy-weighted density and cumulant
+   !! through one Z-vector solve per perturbation.
    !!
-   !! Units 1.4-1.6: the per-perturbation first-order skeletons `f^(X)`,
-   !! `S^(X)`, `<pq|rs>^(X)`; the skeleton Lagrangian `I'^(X)` and its
-   !! orbital-response carriers; and the orbital-response term of pass 2.
+   !! **Storage.** The per-perturbation `d_Y <pq|rs>` and its spin-adapted `L`
+   !! live one at a time inside the response driver's loop; what the perturbed
+   !! energy-weighted density needs after the batched Z-vector solve is folded
+   !! out *before* the tensor is dropped, so nothing `nmo^4` is ever
+   !! `3N`-resident. The exception is the skeleton stack `erix`, which is dense
+   !! `nmo^4 x 3N`.
    !!
-   !! Units 1.7-1.8: the perturbed response. The full CPHF-folded derivatives
-   !! `d_Y f` and `d_Y <pq|rs>` -- skeleton plus all four `U^Y` rotations --
-   !! feed the closed-form perturbed amplitudes, and those feed the perturbed
-   !! relaxed density, energy-weighted density and cumulant through one
-   !! perturbed Z-vector solve per perturbation (`mp2_perturbed_response`).
+   !! **MO tensors here are physicist-ordered, `<pq|rs>`**, matching the pycc
+   !! routines these transcribe index for index, where the gradient's AO side
+   !! is chemist. `<pq|rs> = (pr|qs)`; the reorder happens once, where the AO
+   !! transform lands (`tools/mp2_hessian_oracle/CONVENTIONS.md` s.1-2).
    !!
-   !! **Storage, decided rather than inherited.** pycc persist every `nmo^4`
-   !! perturbed quantity and stream them back one perturbation at a time. Here
-   !! the per-perturbation `d_Y <pq|rs>` and its spin-adapted `L` live one at
-   !! a time inside the response driver's loop and are gone when it moves on;
-   !! what the perturbed energy-weighted density will need after the batched
-   !! Z-vector solve is folded out *before* the tensor is dropped, so nothing
-   !! `nmo^4` is ever `3N`-resident. The exception is the *skeleton* stack
-   !! `erix` inherited from Unit 1.4, which is dense `nmo^4 x 3N` and already
-   !! flagged there as what a blocked analog replaces.
-   !!
-   !! **MO tensors here are physicist-ordered, `<pq|rs>`.** The gradient's AO
-   !! side is chemist because the integrals are; these routines transcribe
-   !! pycc's `_skeleton_lagrangian` and `_augment_with_canonical_pair_rotations`
-   !! index for index, and holding the MO tensors in that code's order is what
-   !! makes the transcription checkable line against line rather than through a
-   !! layer of swaps. `<pq|rs> = (pr|qs)`; the reorder happens once, where the
-   !! AO transform lands (`tools/mp2_hessian_oracle/CONVENTIONS.md` s.1-2).
-   !!
-   !! **One routine also serves the double hybrid**, for the reason
-   !! `libcint_mp2_gradient` gives: the Kohn-Sham assembly differs from the
-   !! Hartree-Fock one in a short list of places and agrees everywhere else.
-   !! With `xc` present, every reference-operator weight becomes
-   !! `2 <pq|rs> - k <pq|sr>` plus an exchange-correlation kernel term, and
-   !! no four-index `f_xc` tensor is ever built for that term: every kernel
-   !! contraction here is the reference operator applied to a symmetric
-   !! generalized density -- the identity `test_mqc_mp2_hessian_ks_operator`
-   !! pins, factor included -- through `ks_pair_kernel` and its derivative
+   !! **The same routines serve the double hybrid.** With `xc` present, every
+   !! reference-operator weight becomes `2 <pq|rs> - k <pq|sr>` plus an
+   !! exchange-correlation kernel term. No four-index `f_xc` tensor is built for
+   !! it: every kernel contraction is the reference operator applied to a
+   !! symmetric generalized density, through `ks_pair_kernel` and its derivative
    !! companions at the bottom of this file.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
@@ -109,28 +92,26 @@ contains
       !! skeleton over the same integrals -- the `partial_hessian` numbers,
       !! deposited from this sweep rather than a second one.
       !!
-      !! **`energy_weighted_ao` is the total, and the trap is documented.**
-      !! The gradient's `W` carries the reference's energy-weighted density,
-      !! which is most of its norm; pycc's `I` is correlation only. The split
-      !! is done here, once, rather than left to every caller:
+      !! **`energy_weighted_ao` is the total, not the correlation share.** The
+      !! gradient's `W` carries the reference's energy-weighted density, which
+      !! is most of its norm, where pycc's `I` is correlation only. The split
+      !! is done here, once:
       !!
       !!     I_corr = (W_total + 2 W_ref) / 2,   W_ref = 2 sum_i eps_i C_i C_i^T
       !!
-      !! measured in `tools/mp2_hessian_oracle/CONVENTIONS.md` s.4a. Handing
-      !! this routine a correlation-only `W` would double-count the reference's
-      !! share -- give it exactly what `libcint_mp2_gradient` returns.
+      !! (`tools/mp2_hessian_oracle/CONVENTIONS.md` s.4a). Handing this routine
+      !! a correlation-only `W` double-counts the reference's share -- give it
+      !! exactly what `libcint_mp2_gradient` returns.
       !!
-      !! **With `xc` the convention flips**, because with `xc` the gradient
-      !! returns something else: its double-hybrid `W` never took the
-      !! reference's share on board, so here it is halved and nothing is added
-      !! back -- reconstructing against the Hartree-Fock total would
-      !! double-count the reference. The sweep otherwise changes twice: the
-      !! reference deposit's exchange carries the functional's fraction, and
+      !! **With `xc` the convention flips.** The double-hybrid gradient's `W`
+      !! never took the reference's share on board, so here it is halved and
+      !! nothing is added back. The sweep changes twice more: the reference
+      !! deposit's exchange carries the functional's fraction, and
       !! `Tr(D_rel V_xc^{XY})` -- the piece of `D_rel f^{XY}` no density fold
-      !! can carry -- lands from `xc_potential_hessian`. `hess_ref` is still
-      !! the Hartree-Fock-shaped skeleton over `dref` and is **discarded** by
+      !! can carry -- lands from `xc_potential_hessian`. `hess_ref` is still the
+      !! Hartree-Fock-shaped skeleton over `dref` and is to be **discarded** by
       !! a double-hybrid caller, whose reference block comes whole from
-      !! `ks_hessian`; it is not adapted here.
+      !! `ks_hessian`.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: gamma_eff_ao(:, :, :, :)
          !! From `build_effective_2pdm_ao`: chemist ordered, bra-ket
@@ -230,10 +211,10 @@ contains
       ! ---- one electron, both derivatives on basis centres ------------------
       !
       ! `partial_hessian`'s deposits with two sets of densities instead of one.
-      ! The factor of two is bra and ket contributing the same number; the
-      ! signs follow the energy expression -- `+ D h^{XY}` against
-      ! `- W_ref S^{XY}` for the reference, while the correlation's
-      ! energy-weighted term enters with pycc's sign, `+ I S^{XY}`.
+      ! The factor of two is bra and ket contributing the same number; the signs
+      ! follow the energy expression -- `+ D h^{XY}` against `- W_ref S^{XY}`
+      ! for the reference, while the correlation's energy-weighted term enters
+      ! with pycc's sign, `+ I S^{XY}`.
       call hess_1e_block(mol, HESS_KIN_II, h2, error)
       call hess_1e_block(mol, HESS_NUC_II, tmp, error)
       if (error%has_error()) return
@@ -251,13 +232,12 @@ contains
       if (error%has_error()) return
 
       ! **Statement for statement `partial_hessian`'s deposits**, not merely
-      ! term for term. The second-derivative one-electron integrals on a steep
-      ! core exponent reach ~1e5, so the accumulator swings through values that
-      ! large before cancelling to order one -- and any regrouping (one fused
-      ! update instead of an add and a subtract) moves the reference block by
-      ! ~1e-11 absolute, which is exactly the divergence the 1e-13 gate against
-      ! `partial_hessian` exists to catch. Measured here before the statements
-      ! were split to match; do not fuse them back for tidiness.
+      ! term for term. Second-derivative one-electron integrals on a steep core
+      ! exponent reach ~1e5, so the accumulator swings that far before
+      ! cancelling to order one, and any regrouping -- one fused update instead
+      ! of an add and a subtract -- moves the reference block by ~1e-11, which
+      ! is what the 1e-13 gate against `partial_hessian` catches. Do not fuse
+      ! them back for tidiness.
       do comp = 1, 9
          a = (comp - 1)/3 + 1
          b = comp - 3*(a - 1)
@@ -284,9 +264,9 @@ contains
 
       ! ---- one electron, at least one derivative on a nucleus ---------------
       !
-      ! The operator-centre terms of the nuclear attraction, exactly as
-      ! `partial_hessian` assembles them, run once per nucleus with both
-      ! densities deposited from the same integral blocks.
+      ! The operator-centre terms of the nuclear attraction, as
+      ! `partial_hessian` assembles them: once per nucleus, both densities
+      ! deposited from the same integral blocks.
       allocate (cross_c(3, 3, natm), cross_r(3, 3, natm))
       do c = 1, natm
          call hess_rinv_block(mol, c, HESS_RINV_II, r2, error)
@@ -340,10 +320,10 @@ contains
 
       ! ---- two electron -----------------------------------------------------
       !
-      ! Quartet-driven: evaluate, deposit, forget. The general orbit-weight
-      ! fold lives with the integrals in `hess_2e_skeleton_contract`, and the
-      ! reference deposits from the same buffers, so the second-derivative
-      ! ERIs -- the dominant cost -- are generated exactly once.
+      ! Quartet-driven: evaluate, deposit, forget. The orbit-weight fold lives
+      ! with the integrals in `hess_2e_skeleton_contract`, and the reference
+      ! deposits from the same buffers, so the second-derivative ERIs -- the
+      ! dominant cost -- are generated exactly once.
       call hess_2e_skeleton_contract(mol, gamma_eff_ao, dref, owner, &
                                      hess_corr, hess_ref, error, k_scale=kf)
       if (error%has_error()) return
@@ -365,9 +345,8 @@ contains
    subroutine ao_to_mo_chem(a_ao, coeff, a_mo)
       !! Four-index MO transform of a chemist-ordered AO tensor
       !!
-      !! Dense and unblocked on purpose: every Phase 1 tensor fits with room
-      !! to spare (s.5 of the conventions note), and the blocked analog
-      !! belongs to the unit that first needs it, not here.
+      !! Dense and unblocked -- every tensor on this path fits (s.5 of the
+      !! conventions note).
       real(dp), intent(in) :: a_ao(:, :, :, :)
       real(dp), intent(in) :: coeff(:, :)
       real(dp), allocatable, intent(out) :: a_mo(:, :, :, :)
@@ -394,7 +373,7 @@ contains
    end subroutine ao_to_mo_chem
 
    subroutine mp2_first_order_skeletons(mol, coeff, n_occ, fx, sx, erix, error)
-      !! Unit 1.4: the per-perturbation first-order skeleton derivatives
+      !! The per-perturbation first-order skeleton derivatives
       !!
       !! For every nuclear perturbation `X = (atom, component)`, at **fixed**
       !! MO coefficients:
@@ -403,10 +382,10 @@ contains
       !!     f^(X)_pq   = C^T dh/dX C + sum_m [2 <pm|qm>^(X) - <pm|mq>^(X)]
       !!     <pq|rs>^(X)
       !!
-      !! with `m` over the **full** occupied space, core included -- pycc's
-      !! `fX` (`_hessian_blocks`), whose trace convention frozen-core work
-      !! inherits. The perturbations stack as `x = 3*(atom-1) + component`,
-      !! matching the oracle's `[3*atom + cart]`.
+      !! with `m` over the **full** occupied space, core included -- pycc's `fX`
+      !! trace convention, which frozen-core work inherits. The perturbations
+      !! stack as `x = 3*(atom-1) + component`, matching the oracle's
+      !! `[3*atom + cart]`.
       !!
       !! The AO derivative is assembled the way `make_h1_atom` does it: the
       !! library puts the nabla on the bra's first index, so each of the four
@@ -518,7 +497,7 @@ contains
    subroutine mp2_mo_eri_physicist(mol, coeff, eri_mo, error)
       !! The unperturbed MO integrals, physicist order, `<pq|rs> = (pr|qs)`
       !!
-      !! The unperturbed companion of `mp2_first_order_skeletons`' `erix`:
+      !! The unperturbed companion of `mp2_first_order_skeletons`' `erix`, and
       !! what the Lagrangian and the pair-rotation augmentation contract.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coeff(:, :)
@@ -558,11 +537,10 @@ contains
       !!
       !!     Gamma_ijab = 2 t2_ijab - t2_ijba,   Gamma_abij = Gamma_ijab
       !!
-      !! Only the oovv/vvoo blocks are nonzero for MP2 (`_mp2_tpdm`). This is
-      !! **not** the gradient's `gamma_ao` and must not be conflated with it:
-      !! that one carries the energy's coefficient and a different
-      !! symmetrisation (conventions note, s.4a). Active amplitudes land at
-      !! the active slices, so frozen rows and columns stay zero.
+      !! Only the oovv/vvoo blocks are nonzero for MP2. This is **not** the
+      !! gradient's `gamma_ao`: that one carries the energy's coefficient and a
+      !! different symmetrisation (conventions note, s.4a). Active amplitudes
+      !! land at the active slices, so frozen rows and columns stay zero.
       real(dp), intent(in) :: t2(:, :, :, :)   !! (i, j, a, b), active occupied
       integer, intent(in) :: n_frozen, n_occ, n_mo
       real(dp), allocatable, intent(out) :: gam(:, :, :, :)
@@ -594,12 +572,10 @@ contains
       !!                    + delta_{q occ} D_rs (L_rpsq + L_rqsp)
       !!                    + 4 <pr|st> Gamma_qrst ]
       !!
-      !! Transcribed from `_spatial_lagrangian`. This is the correlation-only
-      !! matrix that multiplies `dS/dR`; the gradient's `imat` is a *part* of
-      !! it and its `energy_weighted_ao` is the total including the
-      !! reference's share -- the reconciliations are in the conventions note,
-      !! s.4a, and `test_mqc_mp2_hessian_response` checks this routine against
-      !! that reconstruction.
+      !! Transcribed from `_spatial_lagrangian`. The correlation-only matrix
+      !! that multiplies `dS/dR`; the gradient's `imat` is a *part* of it and
+      !! its `energy_weighted_ao` is the total including the reference's share
+      !! (conventions note, s.4a).
       real(dp), intent(in) :: eri_mo(:, :, :, :)   !! Physicist, unperturbed
       real(dp), intent(in) :: orbital_energies(:)
       real(dp), intent(in) :: drel(:, :)           !! Relaxed 1-PDM, MO
@@ -644,7 +620,7 @@ contains
 
    subroutine mp2_skeleton_lagrangian(fx1, sx1, erix1, drel, gam, imat, n_occ, &
                                       ip, xov, i2)
-      !! Unit 1.5: the skeleton-perturbed orbital Lagrangian for one `X`
+      !! The skeleton-perturbed orbital Lagrangian for one `X`
       !!
       !! `_skeleton_lagrangian`, transcribed at fixed unperturbed densities:
       !!
@@ -655,10 +631,10 @@ contains
       !!
       !! with `X^(X) = I'^(X)T - I'^(X)` the orbital-response driver and
       !! `I''^(X)` the energy-weighted rewrite -- `I'^(X)` with its
-      !! virtual-occupied block replaced by the transposed occupied-virtual
-      !! one. All-electron non-canonical work uses these as they are; a frozen
-      !! core or the canonical gauge sends them through
-      !! `mp2_pair_rotation_augment` first.
+      !! virtual-occupied block replaced by the transposed occupied-virtual one.
+      !! All-electron non-canonical work uses these as they are; a frozen core
+      !! or the canonical gauge sends them through `mp2_pair_rotation_augment`
+      !! first.
       real(dp), intent(in) :: fx1(:, :), sx1(:, :)   !! One perturbation's f^(X), S^(X)
       real(dp), intent(in), target, contiguous :: erix1(:, :, :, :)
          !! `<pq|rs>^(X)`, physicist
@@ -680,11 +656,9 @@ contains
       n_cube = n_mo*n_mo*n_mo
       allocate (ip(n_mo, n_mo), xov(n_mo, n_mo), i2(n_mo, n_mo), two_e(n_mo, n_mo))
 
-      ! One- and two-particle terms with both derivative placements. Every one
-      ! of these five sums is a matrix product; see the note in
-      ! `mp2_perturbed_lagrangian`, which had the identical shape and the same
-      ! treatment. The four one-electron terms differ only in which operand is
-      ! transposed, and the `4 <pr|st>^(X) Gamma_qrst` term contracts a
+      ! One- and two-particle terms with both derivative placements, each a
+      ! matrix product. The four one-electron terms differ only in which operand
+      ! is transposed, and the `4 <pr|st>^(X) Gamma_qrst` term contracts a
       ! contiguous trailing `(r,s,t)` against `p` and `q` leading, so it is one
       ! gemm rather than an `n_mo^5` nest.
       call pic_gemm(fx1, drel, ip, transb="T")
@@ -698,10 +672,9 @@ contains
       ip = ip + 4.0_dp*two_e
 
       ! The occupied-column term folds L^(X) on the spot, as the Fock skeleton
-      ! build does. It stays a loop for the reason the sibling routine's second
-      ! nest does -- `p` and `q` are strided inside `erix1`, and it is one power
-      ! of `n_mo` cheaper than the term above -- so the independent `(p,q)` is
-      ! what gets parallelised.
+      ! build does. It stays a loop: `p` and `q` are strided inside `erix1`, and
+      ! it is one power of `n_mo` cheaper than the term above, so the
+      ! independent `(p,q)` is what gets parallelised.
       !$omp parallel do collapse(2) default(none) schedule(static) &
       !$omp    shared(ip, drel, erix1, n_mo, n_occ) private(p, q, r, s, acc)
       do q = 1, n_occ
@@ -740,10 +713,8 @@ contains
       !!   the numerator vanishes by the same symmetry that makes the divide
       !!   ill-conditioned.
       !!
-      !! All-electron non-canonical, this is arithmetically the identity --
-      !! both guards skip and `xt`, `it` copy through. Written against pycc
-      !! in Phase 1 (the plan's Unit 1.5 note); a frozen core reaches it on
-      !! the live path through `mp2_correlation_hessian`.
+      !! All-electron non-canonical, this is arithmetically the identity: both
+      !! guards skip and `xt`, `it` copy through.
       real(dp), intent(in) :: ip(:, :), xov(:, :), i2(:, :)
       real(dp), intent(in) :: l_mo(:, :, :, :)
          !! Unperturbed orbital-Hessian weight `L_pqrs = 2 <pq|rs> - <pq|sr>`
@@ -844,11 +815,10 @@ contains
    subroutine dependent_pairs(iblock, eps_block, p)
       !! `P_mn = (I_mn - I_nm) / (eps_m - eps_n)`, gap-gated
       !!
-      !! The gate is on the **gap**, not the numerator: a numerator gate would
-      !! zero small-but-nonzero rotations whose derivative is not zero,
-      !! leaving `P` and `dP` inconsistent -- pycc's `_dependent_pairs`
-      !! records that as a genuine low-symmetry Hessian error, not a style
-      !! choice.
+      !! The gate is on the **gap**, not the numerator: a numerator gate zeroes
+      !! small-but-nonzero rotations whose derivative is not zero, leaving `P`
+      !! and `dP` inconsistent, which pycc's `_dependent_pairs` records as a
+      !! genuine low-symmetry Hessian error.
       real(dp), intent(in) :: iblock(:, :)
       real(dp), intent(in) :: eps_block(:)
       real(dp), allocatable, intent(out) :: p(:, :)
@@ -870,17 +840,15 @@ contains
    end subroutine dependent_pairs
 
    subroutine mp2_orbital_response_term(mo1, sx, fx, xt, i2t, orb, pf)
-      !! Unit 1.6: the orbital-response share of the pass-2 response
+      !! The orbital-response share of the pass-2 response
       !!
       !!     orb(X, Y) = 2 U^Y_ai X~^(X)_ai + S^(Y)_pq I~''^(X)_pq
       !!                 [+ P^(X)_pq f^(Y)_pq when augmented]
       !!
-      !! `U^Y` is `solve_mo1_batch`'s first-order orbitals: its virtual rows
-      !! are the solved response and its occupied rows the `-S/2` the
-      !! orthonormality fixes, which is exactly pycc's non-canonical `full_U`
-      !! -- only the virtual-occupied block is read here. `pf` accompanies the
-      !! augmented carriers and is meaningless without them; all-electron
-      !! non-canonical passes neither.
+      !! `U^Y` is `solve_mo1_batch`'s first-order orbitals -- virtual rows the
+      !! solved response, occupied rows the `-S/2` orthonormality fixes -- and
+      !! only its virtual-occupied block is read here. `pf` accompanies the
+      !! augmented carriers and is meaningless without them.
       real(dp), intent(in) :: mo1(:, :, :, :)   !! (n_mo, n_occ, 3, natm)
       real(dp), intent(in) :: sx(:, :, :)       !! (n_mo, n_mo, 3*natm)
       real(dp), intent(in) :: fx(:, :, :)       !! Same layout; read only with `pf`
@@ -918,9 +886,9 @@ contains
                          orbital_energies)
       !! The full `nmo x nmo` orbital rotation `U^X` for one perturbation
       !!
-      !! pycc's `full_U`: `solve_mo1_batch`'s first-order orbitals already
-      !! carry the whole occupied-column block -- the solved virtual rows and
-      !! the `-S^(X)/2` occupied rows the orthonormality fixes -- so only the
+      !! pycc's `full_U`. `solve_mo1_batch`'s first-order orbitals already carry
+      !! the whole occupied-column block -- the solved virtual rows and the
+      !! `-S^(X)/2` occupied rows the orthonormality fixes -- so only the
       !! virtual columns are assembled here:
       !!
       !!     U^X_ab = -1/2 S^(X)_ab
@@ -928,10 +896,9 @@ contains
       !!
       !! With a frozen core the core<->active-occupied rotation is
       !! **independent** -- it moves the frozen/active partition -- so that
-      !! block is not left at the orthonormality value but rewritten from the
-      !! canonical Brillouin condition `d_X f_ci = 0`, with `U_ic` eliminated
-      !! through `U_ic = -S^(X)_ci - U_ci` (pycc `full_U`'s `if ncore:`
-      !! branch, `cphf.py`):
+      !! block is rewritten from the canonical Brillouin condition
+      !! `d_X f_ci = 0` rather than left at the orthonormality value, with
+      !! `U_ic` eliminated through `U_ic = -S^(X)_ci - U_ci`:
       !!
       !!     U^X_ci = -[ f^(X)_ci - S^(X)_ci eps_i
       !!                 - 1/2 S^(X)_nm (L_cnim + L_cmin)
@@ -1001,11 +968,10 @@ contains
       !!                - 1/2 S^(X)_nm (L_pnqm + L_pmqn)
       !!                + U^X_cm (L_pcqm + L_pmqc)
       !!
-      !! with `n, m` over the full occupied space and `c` over the virtuals.
-      !! The oo/vv blocks of this matrix are the non-canonical coupling the
-      !! perturbed amplitudes fold in; its diagonal is `d_X eps` -- but it is
-      !! the **whole matrix** the perturbed Lagrangian multiplies, never just
-      !! that diagonal (design plan s.4b).
+      !! with `n, m` over the full occupied space and `c` over the virtuals. The
+      !! oo/vv blocks are the non-canonical coupling the perturbed amplitudes
+      !! fold in and the diagonal is `d_X eps`, but it is the **whole matrix**
+      !! the perturbed Lagrangian multiplies, never just that diagonal.
       real(dp), intent(in) :: fx1(:, :), sx1(:, :)   !! f^(X), S^(X), MO
       real(dp), intent(in) :: u(:, :)                !! From `mp2_full_u`
       real(dp), intent(in) :: l_mo(:, :, :, :)
@@ -1045,7 +1011,6 @@ contains
       !!     d_X <pq|rs> = <pq|rs>^(X) + U^X_tp <tq|rs> + U^X_tq <pt|rs>
       !!                              + U^X_tr <pq|ts> + U^X_ts <pq|rt>
       !!
-      !! Nothing else on the ladder builds the rotated `nmo^4` derivative.
       !! Each rotation is one matrix product over a reshaped view; the caller
       !! holds one perturbation's tensor at a time (module header, storage).
       real(dp), intent(in) :: erix1(:, :, :, :)   !! `<pq|rs>^(X)`, physicist
@@ -1075,7 +1040,7 @@ contains
    end subroutine mp2_perturbed_eri
 
    subroutine mp2_perturbed_t2(deri, df, t2, orbital_energies, n_frozen, n_occ, dt2)
-      !! Unit 1.7: the first-order response of the MP2 amplitudes, `d_X t2`
+      !! The first-order response of the MP2 amplitudes, `d_X t2`
       !!
       !! Closed form, pycc's `_perturbed_t2` -- the amplitudes are not
       !! iterative, so their response is a divide:
@@ -1083,8 +1048,8 @@ contains
       !!     d_X t2_ijab = [ d_X<ij|ab> + d_X f_ac t2_ijcb + d_X f_bc t2_ijac
       !!                     - d_X f_ik t2_kjab - d_X f_jk t2_ikab ] / D_ijab
       !!
-      !! with `D_ijab = eps_i + eps_j - eps_a - eps_b`. The Fock blocks are
-      !! the full oo/vv matrices of `d_X f`: the diagonal alone recovers the
+      !! with `D_ijab = eps_i + eps_j - eps_a - eps_b`. The Fock blocks are the
+      !! full oo/vv matrices of `d_X f`: the diagonal alone recovers the
       !! `-t2 d_X D` of a canonical gauge, and the off-diagonal rows are the
       !! non-canonical coupling this gauge carries instead.
       real(dp), intent(in) :: deri(:, :, :, :)   !! From `mp2_perturbed_eri`
@@ -1203,10 +1168,10 @@ contains
       !! **The one-electron derivative is the full matrix product
       !! `d_X f (D + D^T)`, never the diagonal `d_X eps` stencil** -- the
       !! off-diagonal `d_X f` couples the ov block a relaxed density carries,
-      !! and the fixed-basis checks that would catch the diagonal shortcut
-      !! share its assumption and are blind to it (design plan s.4b).
-      !! Evaluated at the unrelaxed density and its response this drives the
-      !! perturbed Z-vector; at the relaxed pair it is `d_X I`.
+      !! and the fixed-basis checks that would catch the shortcut share its
+      !! assumption and are blind to it. Evaluated at the unrelaxed density and
+      !! its response this drives the perturbed Z-vector; at the relaxed pair it
+      !! is `d_X I`.
       real(dp), intent(in) :: df(:, :)             !! `d_X f`, full
       real(dp), intent(in), target, contiguous :: deri(:, :, :, :)
          !! `d_X <pq|rs>`, full
@@ -1231,10 +1196,8 @@ contains
       ! The `4 (d_X<pr|st> Gam_qrst + <pr|st> dGam_qrst)` term is two matrix
       ! products, not a loop nest: `p` and `q` lead their arrays and Fortran
       ! stores columns first, so `(r,s,t)` is one contiguous trailing index and
-      ! each contraction is `A B^T` over it. Written out it was `n_mo^5` by
-      ! hand and 30 per cent of an MP2 Hessian run, measured; as a gemm the
-      ! same flops go through the BLAS. The remapping is a pointer view, so no
-      ! `n_mo^4` copy is made to get it.
+      ! each contraction is `A B^T` over it. The remapping is a pointer view, so
+      ! no `n_mo^4` copy is made to get it.
       deri2(1:n_mo, 1:n_cube) => deri
       gam2(1:n_mo, 1:n_cube) => gam
       eri2(1:n_mo, 1:n_cube) => eri_mo
@@ -1242,8 +1205,7 @@ contains
       call pic_gemm(deri2, gam2, two_e, transb="T")
       call pic_gemm(eri2, dgam2, two_e, transb="T", beta=1.0_dp)
 
-      ! `d_X f (D + D^T)` -- the full matrix product s.4b insists on, and it
-      ! was always a gemm wearing a loop.
+      ! `d_X f (D + D^T)` -- the full matrix product the docstring insists on.
       dsym = d + transpose(d)
       call pic_gemm(df, dsym, dip)
 
@@ -1254,11 +1216,11 @@ contains
          end do
       end do
 
-      ! This one stays a loop: `p` and `q` sit in the second and fourth slots
-      ! of `l_mo`, so the `(r,s)` pair it contracts is strided rather than
-      ! contiguous and no reshape makes it a gemm without a transpose that
-      ! costs more than the contraction. It is `n_mo^4` against the term above's
-      ! `n_mo^5`, so threading the independent `(p,q)` is the whole win.
+      ! This one stays a loop: `p` and `q` sit in the second and fourth slots of
+      ! `l_mo`, so the `(r,s)` pair it contracts is strided and no reshape makes
+      ! it a gemm without a transpose costing more than the contraction. It is
+      ! `n_mo^4` against the term above's `n_mo^5`, so threading the independent
+      ! `(p,q)` is the whole win.
       !$omp parallel do collapse(2) default(none) schedule(static) &
       !$omp    shared(dip, dd, d, l_mo, dl, n_mo, n_occ) private(p, q, r, s, acc)
       do q = 1, n_occ
@@ -1284,12 +1246,10 @@ contains
       !!     (G^X z)_ia = (dL_ajib + dL_abij) z_jb + d_X f_ab z_ib - d_X f_ij z_ja
       !!
       !! `G^X z` is the perturbed orbital Hessian acting on the *unperturbed*
-      !! Z-vector -- the term that lets the perturbed solve reuse the
-      !! unperturbed operator. Returned as `(n_vir, n_occ)` with the sign
-      !! `cphf_solve`'s internal negation expects: handing this stack to
-      !! `mo_rhs` makes the returned response exactly the block that is
-      !! **added** to `d_X D_rel`'s vo block, mirroring the gradient's own
-      !! Z-vector arrangement.
+      !! Z-vector, which is what lets the perturbed solve reuse the unperturbed
+      !! operator. Returned as `(n_vir, n_occ)` with the sign `cphf_solve`'s
+      !! internal negation expects, so the response it returns is exactly the
+      !! block **added** to `d_X D_rel`'s vo block.
       real(dp), intent(in) :: dip(:, :)      !! From `mp2_perturbed_lagrangian`
       real(dp), intent(in) :: df(:, :)
       real(dp), intent(in) :: dl(:, :, :, :)
@@ -1327,8 +1287,8 @@ contains
                                      n_frozen, fx, sx, erix, mo1, t2, eri_mo, &
                                      l_mo, gam, drel, dt2, ddrel, di, error, &
                                      tol, zvec, xc, scf_density)
-      !! Units 1.7-1.8 and 2.3: the perturbed amplitudes, relaxed density and
-      !! energy-weighted density for every nuclear perturbation
+      !! The perturbed amplitudes, relaxed density and energy-weighted density
+      !! for every nuclear perturbation
       !!
       !! pycc's `_perturbed_relaxed_density`, non-canonical, frozen-core
       !! aware. Per perturbation:
@@ -1338,8 +1298,8 @@ contains
       !!     d_Y I    = d_Y I'(Drel, d_Y Drel, Gam, d_Y Gam)
       !!
       !! **The core<->active derivative is a Sylvester relation, not a
-      !! quotient rule** (design plan s.4a; Baeck, Watts and Bartlett, JCP
-      !! 107, 3853 (1997), Eqs. 22-28). The gradient's divide
+      !! quotient rule** (Baeck, Watts and Bartlett, JCP 107, 3853 (1997),
+      !! Eqs. 22-28). The gradient's divide
       !! `P_co[c,i] = (I'[c,i] - I'[i,c])/(eps_c - eps_i)` is the canonical
       !! collapse of `f P - P f = I' - I'^T`; a displacement leaves both
       !! blocks non-canonical, so the derivative keeps the off-diagonal
@@ -1350,31 +1310,28 @@ contains
       !!                       + Sum_j P_co[c,j] d_Y f[j,i] ] / (eps_c - eps_i)
       !!
       !! `d` over the core, `j` over the active occupied. Dropping the
-      !! off-diagonal terms costs ~7e-7 on this molecule and basis (pycc's
-      !! measurement, the field case of the same relation); the perturbed
+      !! off-diagonal terms is a real error, not a rounding one. The perturbed
       !! ov right-hand side picks up the derivative of the core<->active
-      !! coupling as well, both the rotation's response against `L` and the
+      !! coupling as well: both the rotation's response against `L` and the
       !! unperturbed rotation against `d_Y L`.
       !!
       !! Two passes around one batched CPHF call. Pass 1 holds one
-      !! perturbation's `nmo^4` derivative at a time and folds out everything
-      !! the second pass will need from it -- the Z-vector right-hand side and
-      !! `d_Y I` evaluated at the *pre-solve* density response. Pass 2 adds
-      !! the solved blocks; their share of `d_Y I` involves only the
-      !! unperturbed `L`, because the response enters the Lagrangian linearly
-      !! through terms that never touch the perturbed integrals. That
-      !! linearity is what lets the tensor be dropped before the solve instead
-      !! of being rebuilt after it (module header, storage).
+      !! perturbation's `nmo^4` derivative at a time and folds out what pass 2
+      !! needs from it -- the Z-vector right-hand side and `d_Y I` at the
+      !! *pre-solve* density response. Pass 2 adds the solved blocks; their
+      !! share of `d_Y I` involves only the unperturbed `L`, because the
+      !! response enters the Lagrangian linearly, which is what lets the tensor
+      !! be dropped before the solve rather than rebuilt after it.
       !!
-      !! The cumulant's response is deliberately not stacked: it is
-      !! `mp2_cumulant_2pdm` evaluated at `dt2(:, :, :, :, y)`, and `o^2 v^2`
-      !! amplitudes are the compact carrier where `nmo^4` cumulants are not.
+      !! The cumulant's response is not stacked: it is `mp2_cumulant_2pdm`
+      !! evaluated at `dt2(:, :, :, :, y)`, and `o^2 v^2` amplitudes are the
+      !! compact carrier where `nmo^4` cumulants are not.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coeff(:, :)
       real(dp), intent(in) :: orbital_energies(:)
       integer, intent(in) :: n_occ
       integer, intent(in) :: n_frozen
-      real(dp), intent(in) :: fx(:, :, :), sx(:, :, :)   !! Unit 1.4 stacks
+      real(dp), intent(in) :: fx(:, :, :), sx(:, :, :)   !! From `mp2_first_order_skeletons`
       real(dp), intent(in) :: erix(:, :, :, :, :)
       real(dp), intent(in) :: mo1(:, :, :, :)   !! (n_mo, n_occ, 3, natm)
       real(dp), intent(in) :: t2(:, :, :, :)    !! Active-occupied amplitudes
@@ -1386,9 +1343,9 @@ contains
       real(dp), allocatable, intent(out) :: di(:, :, :)
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: tol
-         !! Solver tolerance for both Z-vector solves. Defaults to 1e-13:
-         !! pycc's reference solve is dense, so the entire iterative floor in
-         !! any comparison is ours.
+         !! Solver tolerance for both Z-vector solves. Defaults to 1e-13,
+         !! because the references it is gated against are dense solves and the
+         !! whole iterative floor in a comparison is this side's.
       real(dp), allocatable, intent(out), optional :: zvec(:, :)
          !! The unperturbed Z-vector `z_ia`, `(n_occ, n_vir)`, for a caller
          !! that wants to cross-check it against the gradient's relaxed
@@ -1453,9 +1410,8 @@ contains
       ! ---- the unperturbed pieces the response reuses ----------------------
       ! The unrelaxed density from the amplitudes (active blocks only -- the
       ! core rows carry no correlation), its Lagrangian, the core<->active
-      ! divide, and the Z-vector in pycc's convention: z = G^-1 X,
-      ! X_ia = I'_ia - I'_ai over the full occupied space, minus the
-      ! core-rotation coupling when a core exists.
+      ! divide, and the Z-vector: z = G^-1 X, X_ia = I'_ia - I'_ai over the full
+      ! occupied space, minus the core-rotation coupling when a core exists.
       allocate (d0(n_mo, n_mo))
       d0 = 0.0_dp
       do j = 1, n_act
@@ -1681,8 +1637,8 @@ contains
          if (n_frozen > 0) then
             ! The Sylvester derivative of the core<->active divide (header):
             ! the off-diagonal d_Y f couplings within the core and active
-            ! blocks, then the rotation's response folded into the ov
-            ! right-hand side alongside the unperturbed rotation against d_Y L.
+            ! blocks, then the rotation's response folded into the ov right-hand
+            ! side alongside the unperturbed rotation against d_Y L.
             allocate (dpco(n_frozen, n_act))
             do i = 1, n_act
                do c = 1, n_frozen
@@ -1806,7 +1762,7 @@ contains
    subroutine mp2_correlation_hessian(mol, coeff, orbital_energies, density, &
                                       n_occ, n_frozen, hess_corr, hess_ref, &
                                       error, tol, xc, pt2_scale, dipole_derivatives)
-      !! Unit 1.9: the analytic MP2 correlation Hessian, `(3, 3, natm, natm)`
+      !! The analytic MP2 correlation Hessian, `(3, 3, natm, natm)`
       !!
       !! The three groups of pycc's `_hessian_blocks` (`route == 'aod'`)
       !! combined: the fixed-density second skeletons (pass 1,
@@ -1816,33 +1772,28 @@ contains
       !!     d_Y D_rel . f^(X) + d_Y Gamma . <pq|rs>^(X) + d_Y I . S^(X)
       !!
       !! from `mp2_perturbed_response` (pass 2). **Two passes, not one fused
-      !! loop**: the second-derivative block never meets `erix`/`d_Y Gamma`
-      !! in a contraction, so the `nao^4` effective density is built, swept
-      !! and freed before any pass-2 tensor is allocated -- peak
-      !! `max(9, 6+6)` working sets instead of `9+6+6` (pycc's own comment,
-      !! and the plan's s.11.2).
+      !! loop**: the second-derivative block never meets `erix`/`d_Y Gamma` in a
+      !! contraction, so the `nao^4` effective density is built, swept and freed
+      !! before any pass-2 tensor is allocated -- peak `max(9, 6+6)` working
+      !! sets instead of `9+6+6`.
       !!
       !! `hess_corr` is the correlation block alone. `hess_ref` is the SCF
       !! reference's AO-dependent skeleton, deposited from pass 1's shared
-      !! integral sweep -- the caller completes the reference by delegating
-      !! its CPHF response to `response_hessian`, which is `rhf_hessian`'s
-      !! own split, and the total Hessian is
+      !! integral sweep; the caller completes the reference by delegating its
+      !! CPHF response to `response_hessian`, so the total Hessian is
       !!
       !!     nuclear_repulsion_hessian + hess_ref + response_hessian + hess_corr
       !!
-      !! Frozen-core aware: `n_frozen > 0` runs the Unit 2.1 core<->active
-      !! rewrite of `U^X`, the Unit 2.2 pair augmentation and the Unit 2.3
-      !! Sylvester derivative; `n_frozen = 0` reproduces the all-electron
-      !! path verbatim.
+      !! Frozen-core aware: `n_frozen > 0` runs the core<->active rewrite of
+      !! `U^X`, the pair augmentation and the Sylvester derivative;
+      !! `n_frozen = 0` reproduces the all-electron path verbatim.
       !!
-      !! **With `xc`, this returns something else**: the correlation block of
-      !! a double hybrid, over the Kohn-Sham reference whose orbitals and
-      !! `density` arrive here, scaled by `pt2_scale` -- the second-order
-      !! analogue of `libcint_mp2_gradient`'s own switch, one routine because
-      !! the two assemblies differ in an enumerable list of sites and agree
-      !! everywhere else. `hess_ref` is then still the Hartree-Fock-shaped
-      !! skeleton and is to be **discarded**: a double-hybrid caller takes
-      !! its whole reference block from `ks_hessian` instead.
+      !! **With `xc`, this returns something else**: the correlation block of a
+      !! double hybrid, over the Kohn-Sham reference whose orbitals and
+      !! `density` arrive here, scaled by `pt2_scale`. `hess_ref` is then still
+      !! the Hartree-Fock-shaped skeleton and is to be **discarded**: a
+      !! double-hybrid caller takes its whole reference block from `ks_hessian`
+      !! instead.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coeff(:, :)            !! C, (n_ao, n_mo)
       real(dp), intent(in) :: orbital_energies(:)    !! (n_mo), Hartree
@@ -1853,38 +1804,28 @@ contains
       real(dp), allocatable, intent(out) :: hess_ref(:, :, :, :)
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: tol
-         !! Solver tolerance for the CPHF and both Z-vector solves. Defaults
-         !! to 1e-13, below the solvers' own defaults on purpose: the
-         !! references this assembly is gated against are dense solves, so
-         !! the entire iterative floor in any comparison is ours.
+         !! Solver tolerance for the CPHF and both Z-vector solves. Defaults to
+         !! 1e-13, below the solvers' own defaults, because the references this
+         !! assembly is gated against are dense solves.
       type(xc_context_t), intent(inout), optional :: xc
          !! The functional the Kohn-Sham reference used. Present switches the
          !! whole ladder to the double hybrid's correlation block -- see the
          !! header. `density` is then where every kernel is evaluated.
       real(dp), intent(in), optional :: pt2_scale
          !! The functional's PT2 coefficient. Applied once, to the finished
-         !! correlation block, for the gradient's reason: the perturbed
-         !! Z-vector solves are linear, so scaling their inputs and scaling
-         !! their outputs are the same operation and doing both is the error.
+         !! correlation block: the perturbed Z-vector solves are linear, so
+         !! scaling their inputs and scaling their outputs are the same
+         !! operation and doing both is the error.
       real(dp), allocatable, intent(out), optional :: dipole_derivatives(:, :)
          !! The perturbative term's share of `d mu_a / dR_(X,b)`, `(3, 3*natm)`,
-         !! scaled by `pt2_scale` like the correlation block itself.
+         !! scaled by `pt2_scale` like the correlation block itself. A double
+         !! hybrid's dipole is the relaxed one, so its infrared intensity needs
+         !! this on top of the reference's derivative, exactly as its Hessian
+         !! needs `hess_corr` on top of `ks_hessian`.
          !!
-         !! A double hybrid's dipole is the *relaxed* one -- the perturbative
-         !! term contributes to it -- so a double hybrid's infrared intensity
-         !! needs this on top of the reference's derivative, exactly as its
-         !! Hessian needs `hess_corr` on top of `ks_hessian`. Handing over the
-         !! reference's number alone would be the same failure the Hessian gate
-         !! in the bridge exists to prevent, one property along.
-         !!
-         !! Free in the same sense the reference's is: what it needs is the
-         !! derivative of the relaxed density, and the perturbed Z-vector that
-         !! produces it has just been solved for the Hessian.
-         !!
-         !! Requires `xc` -- it is the double hybrid's term or nothing. Over a
-         !! Hartree-Fock reference an MP2 dipole derivative is a different
-         !! quantity with a different assembly, and this refuses rather than
-         !! returning something shaped like it.
+         !! Requires `xc`, and errors without it: over a Hartree-Fock reference
+         !! an MP2 dipole derivative is a different quantity with a different
+         !! assembly.
 
       real(dp), allocatable :: gradient(:, :), dm1mo(:, :), w_ao(:, :)
       real(dp), allocatable :: eri_packed(:, :), ovov(:, :, :, :), t2(:, :, :, :)
@@ -2012,10 +1953,8 @@ contains
          call ks_occ_fold_patch(eri_mo, dm1mo, n_occ, kf, vk_drel, imat)
       end if
 
-      ! All-electron non-canonical, the bare carriers are the augmented ones
-      ! (the augmentation is the exact identity there, and the response test
-      ! pins that), so `mp2_pair_rotation_augment` is skipped. A frozen core
-      ! forces it -- pycc gate it `if canonical or ncore:` -- because the
+      ! All-electron non-canonical, the augmentation is the exact identity, so
+      ! `mp2_pair_rotation_augment` is skipped. A frozen core forces it: the
       ! independent core<->active rotation has no CPHF counterpart and its
       ! `P^(X)` carrier must meet `f^(Y)` in the orbital response.
       allocate (xov_st(n_mo, n_mo, n_pert), i2_st(n_mo, n_mo, n_pert))
@@ -2138,9 +2077,9 @@ contains
       ! ---- fold pass 2 into the correlation block ---------------------------
       !
       ! pycc's `_resp(ix, iy)`: the density responses carry the second
-      ! perturbation `Y`, the first-order skeletons the first `X`, and the
-      ! cumulant's response is `mp2_cumulant_2pdm` at `d_Y t2` -- built one
-      ! perturbation at a time so no `nmo^4 x 3N` response stack ever exists.
+      ! perturbation `Y` and the first-order skeletons the first `X`. The
+      ! cumulant's response is `mp2_cumulant_2pdm` at `d_Y t2`, built one
+      ! perturbation at a time so no `nmo^4 x 3N` stack ever exists.
       do iy = 1, n_pert
          by = (iy - 1)/3 + 1
          cy = iy - 3*(by - 1)

@@ -1,17 +1,11 @@
 !! AVAS: choosing an active space by projecting onto atomic valence orbitals
 module mqc_libcint_avas
-   !! Deciding *which* orbitals go in an active space is the hard part of using
-   !! CASSCF, and the part that stops it being usable by anyone who is not
-   !! already expert in the molecule. AVAS answers it mechanically: say which
+   !! Which orbitals go in an active space, chosen mechanically: say which
    !! *atomic* orbitals the chemistry lives in -- "the nitrogen 2p", "the
    !! chromium 3d" -- and let the projection decide which molecular orbitals
-   !! carry that character.
-   !!
-   !! `valence_select` answers it a second way, by not asking at all: take the
-   !! whole valence shell. That space is not a judgement about the molecule, so
-   !! there is nothing to get wrong about it, and it is the one an old paper
-   !! means by a full optimised reaction space. What it is instead is large --
-   !! see the note there.
+   !! carry that character. `valence_select` answers the same question by taking
+   !! the whole valence shell instead, which is a larger space and no judgement
+   !! about the molecule.
    !!
    !! Sayfutyarova, Sun, Chan and Knizia, JCTC 13, 4063 (2017).
    !!
@@ -29,13 +23,12 @@ module mqc_libcint_avas
    !! usually sits in a gap rather than through a cluster.
    !!
    !! **The reference basis is this code's own accurate atomic minimal basis,
-   !! not the one the paper used.** AVAS as published projects onto MINAO;
-   !! `aambs.json` is the free-atom set transcribed from GAMESS. They are
-   !! different bases and the eigenvalues differ in consequence. What should not
-   !! differ is the *selection*: a well-posed request separates near zero and
-   !! near one, and a cut at 0.2 lands in the same place either way. The tests
-   !! check the active space and the converged CASSCF energy against PySCF for
-   !! that reason, and not the intermediate weights.
+   !! not the one the paper used.** AVAS as published projects onto MINAO, where
+   !! `aambs.json` is the free-atom set transcribed from GAMESS, so the
+   !! eigenvalues differ. The *selection* should not: a well-posed request
+   !! separates near zero and near one, and a cut at 0.2 lands in the same place
+   !! either way. The tests therefore check the active space and the converged
+   !! CASSCF energy against PySCF, not the intermediate weights.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
@@ -68,10 +61,8 @@ module mqc_libcint_avas
          !! (n_ao, n_mo), reordered so the active orbitals are contiguous and
          !! begin at `n_inactive + 1`, which is what the CASSCF driver assumes.
       real(dp), allocatable :: occupied_weights(:), virtual_weights(:)
-         !! The projector eigenvalues, ascending within each block. Worth
-         !! keeping: they say whether the cut fell in a gap or through a cluster,
-         !! which is the difference between a well-posed request and a threshold
-         !! that happened to work.
+         !! The projector eigenvalues, ascending within each block. They say
+         !! whether the cut fell in a gap or through a cluster.
    end type avas_result_t
 
 contains
@@ -79,9 +70,8 @@ contains
    subroutine parse_orbital_label(label, symbol, principal, angular, error)
       !! `"N 2p"` into a symbol, a principal quantum number and an l
       !!
-      !! Deliberately strict about the shape. A label that cannot be parsed is a
-      !! deck asking for something specific and getting silence, which is the
-      !! failure this whole selection exists to avoid.
+      !! Strict about the shape: a label that cannot be parsed is refused rather
+      !! than ignored.
       character(len=*), intent(in) :: label
       character(len=:), allocatable, intent(out) :: symbol
       integer, intent(out) :: principal, angular
@@ -141,21 +131,17 @@ contains
       !! Every occupied orbital that is not core, plus the valence-virtual
       !! orbitals that complete the minimal basis. No threshold and no labels:
       !! the size is fixed by counting the free-atom minimal basis, so the same
-      !! molecule gives the same space in any basis set, which is the property
-      !! that makes it reproducible where a judgement is not.
+      !! molecule gives the same space in any basis set.
       !!
-      !! The valence-virtual orbitals are the work, and they already exist --
-      !! `mqc_libcint_quao` extracts them for the bonding analysis. There they
-      !! are a basis to analyse in; here they are the empty half of an active
-      !! space. Same orbitals, and no threshold decides how many: `n_vvo =
-      !! n_mbs - n_occupied`, exactly.
+      !! The valence-virtual orbitals come from `mqc_libcint_quao`, which
+      !! extracts them for the bonding analysis. No threshold decides how many:
+      !! `n_vvo = n_mbs - n_occupied`, exactly.
       !!
-      !! **It gets big quickly.** Nitrogen is CAS(10,8) and comfortable; water
-      !! is CAS(8,6); but the count grows with the molecule and not with what is
-      !! interesting in it, so a full valence space on anything of size is past
-      !! what a complete expansion can hold. That is what `keywords.mcscf.ormas`
-      !! is for -- restrict the occupations of a space chosen this way and the
-      !! two answer each other.
+      !! **It gets big quickly.** Nitrogen is CAS(10,8) and water is CAS(8,6),
+      !! but the count grows with the molecule and not with what is interesting
+      !! in it, so a full valence space on anything of size is past what a
+      !! complete expansion can hold. `keywords.mcscf.ormas` restricts the
+      !! occupations of a space chosen this way.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
@@ -215,11 +201,10 @@ contains
          result%orbitals(:, filled + 1:n_mo) = vvo%external_orbitals
       end if
 
-      ! The gap between these is the diagnostic the paper reports: a clean
-      ! valence space has the retained singular values at essentially one and
-      ! the rejected ones far below. No gap means the minimal basis is not
-      ! finding a valence space, and the count that fixed the size was the only
-      ! thing holding the answer together.
+      ! The gap between the smallest kept and largest rejected singular value is
+      ! the diagnostic the paper reports: a clean valence space keeps values at
+      ! essentially one and rejects ones far below. No gap means the minimal
+      ! basis is not finding a valence space.
       if (loud) then
          call logger%info("")
          call logger%info("  full valence active space")
@@ -267,6 +252,8 @@ contains
       integer :: n_ao, n_mo, n_mbs, n_ref, n_virtual, i, j, k, info
       integer :: want_n, want_l, n_keep_occ, n_keep_vir, cursor
       logical :: loud
+      ! TODO(mqc): `info` is declared and never used here; `block_eigen` and
+      ! `symmetric_inverse` each have their own.
 
       if (error%has_error()) return
       cut = DEFAULT_THRESHOLD

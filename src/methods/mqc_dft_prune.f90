@@ -1,24 +1,14 @@
 module mqc_dft_prune
    !! Angular pruning: fewer Lebedev points where the density does not need them
    !!
-   !! An unpruned grid uses the same Lebedev order at every radius, which is
-   !! wasteful at both ends. Very close to a nucleus the density is nearly
-   !! spherical, so a high-order sphere resolves nothing; very far out it is
-   !! almost gone. Pruning drops the order in those regions and keeps it in the
-   !! valence shell where the structure is.
-   !!
    !! The NWChem scheme divides each atom's radial range into five zones by
    !! r/R_bragg, with thresholds depending on whether the element is H/He,
    !! second row, or heavier, and assigns orders
    !!
    !!    50, 86, one below the target, the target, one below the target
    !!
-   !! reading outwards. It is what PySCF uses by default, so a pruned grid here
-   !! can be compared against a pruned grid there point for point.
-   !!
-   !! Pruning changes the answer -- it is an approximation, not a
-   !! reorganisation. What it must not change is the answer beyond the accuracy
-   !! the grid claims, which is what the validation checks.
+   !! reading outwards. Pruning is an approximation and changes the answer,
+   !! within the accuracy the grid claims.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_dft_radial, only: bragg_radius
@@ -36,25 +26,24 @@ module mqc_dft_prune
    integer, parameter :: N_ZONES = 5
    integer, parameter :: N_THRESHOLDS = 4
 
-   !! Lebedev orders the scheme may select, from 38 upwards
-   !!
-   !! This is the Lebedev sequence starting at 38 rather than 6: the scheme
-   !! indexes into it, and the three smallest grids are never chosen.
    integer, parameter :: N_PRUNE_ORDERS = 29
    integer, parameter :: PRUNE_ORDERS(N_PRUNE_ORDERS) = &
                          [38, 50, 74, 86, 110, 146, 170, 194, 230, 266, 302, 350, 434, 590, 770, &
                           974, 1202, 1454, 1730, 2030, 2354, 2702, 3074, 3470, 3890, 4334, 4802, &
                           5294, 5810]
+      !! Lebedev orders the scheme may select: the sequence from 38 upwards, not
+      !! from 6. The scheme indexes into it, so the three smallest grids are
+      !! never chosen.
 
-   !! Zone boundaries in r/R_bragg, one row per element class
    real(dp), parameter :: ALPHAS(N_THRESHOLDS, 3) = reshape([ &
                                                             0.25_dp, 0.5_dp, 1.0_dp, 4.5_dp, &
                                                             0.1667_dp, 0.5_dp, 0.9_dp, 3.5_dp, &
                                                             0.1_dp, 0.4_dp, 0.8_dp, 2.5_dp], &
                                                             [N_THRESHOLDS, 3])
+      !! Zone boundaries in r/R_bragg, one row per element class
 
-   !! Below this order there is nothing to gain, so pruning is skipped
    integer, parameter :: MIN_PRUNABLE = 50
+      !! Below this order there is nothing to gain, so pruning is skipped
 
 contains
 

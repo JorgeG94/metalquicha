@@ -16,7 +16,7 @@ contains
 
    subroutine set_output_json_filename(input_filename)
       !! Set the JSON output filename based on input filename
-      !! Example: "water.mqc" -> "output_water.json"
+      !! Example: "water.json" -> "output_water.json"
       character(len=*), intent(in) :: input_filename
       integer :: dot_pos, slash_pos
       character(len=256) :: basename
@@ -108,9 +108,7 @@ contains
       !!
       !! Insensitive because every caller is matching a file extension, and an
       !! extension's case is the user's typing rather than a fact about the
-      !! file: `WATER.JSON` is a JSON deck. This used to exist twice, sensitive
-      !! here and insensitive in the checkpoint reader, so the same name meant
-      !! two things depending on which module you were in.
+      !! file: `WATER.JSON` is a JSON deck.
       character(len=*), intent(in) :: text, suffix
       logical :: matches
 

@@ -1,26 +1,17 @@
 !! Adjusted frozen orbitals: the small system a cut bond's orbital comes from
 module mqc_libcint_afo
    !! A bond that fragmentation cuts has to be represented to both sides, and
-   !! the way FMO does it is to freeze an orbital rather than cap the bond. This
+   !! FMO does it by freezing an orbital rather than capping the bond. This
    !! module builds the thing that orbital is derived from: a small model system
    !! around the cut, closed off with hydrogens, which is solved and localized so
    !! that the orbital sitting on the bond can be lifted out of it.
    !!
-   !! **Why a model system rather than the fragment.** Capping a *fragment* is
-   !! what was tried first and withdrawn: a cap belongs to a group, so a dimer
-   !! spanning a cut bond must carry no cap there, and n-mers assembled from
-   !! their members arrive holding caps that stand in the middle of a bond the
-   !! dimer restored. A model system has none of that difficulty. It is built
-   !! once per bond, is never assembled into anything, and contributes no energy
-   !! -- only an orbital. The capping rule is the same one `cap_targets` already
-   !! implements, applied where it is unambiguous.
+   !! A model system is built once per bond, is never assembled into anything,
+   !! and contributes no energy -- only an orbital.
    !!
-   !! **The scale is derived rather than declared.** A deck's `cap_scale` is a
-   !! choice about a fragment; here the cap only has to make a chemically
-   !! sensible small molecule, so the hydrogen goes at the standard bond length
-   !! for the atom it hangs off -- covalent radii summed -- as a fraction of the
-   !! real internuclear distance. This is what GAMESS's automatic model does,
-   !! with its own table of X-H lengths in place of the radius sum.
+   !! A deck's `cap_scale` does not apply to these caps. The hydrogen goes at
+   !! the standard bond length for the atom it hangs off -- covalent radii
+   !! summed -- as a fraction of the real internuclear distance.
    use pic_types, only: dp
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -45,67 +36,50 @@ module mqc_libcint_afo
    public :: DEFAULT_MODEL_RADIUS
    public :: BOND_ORBITAL_REACH
 
-   !! How far from either end of the cut bond the model reaches, in Angstrom.
-   !!
-   !! Wide enough to carry the bond's immediate chemical environment -- the
-   !! substituents that decide what the hybrid looks like -- and no wider, since
-   !! every atom past that is an SCF cost paid once per cut bond for an orbital
-   !! that has stopped moving. GAMESS calls this RAFO and defaults it to a
-   !! similar distance.
    real(dp), parameter :: DEFAULT_MODEL_RADIUS = 2.5_dp
+      !! How far from either end of the cut bond the model reaches, in Angstrom.
+      !! Wide enough to carry the bond's immediate chemical environment; GAMESS
+      !! calls this RAFO and defaults it to a similar distance.
 
-   !! How close to the bond midpoint a localized orbital's centroid must sit to
-   !! count as being *on* that bond, as a fraction of the bond length.
-   !!
-   !! **It must be well under a half, and that is structural rather than
-   !! empirical.** Anything atom-centred -- a core orbital, a lone pair -- has
-   !! its centroid on a nucleus, which is at exactly half the bond length from
-   !! the midpoint. So a half admits every core on both atoms: measured on
-   !! ethane the two carbon 1s orbitals come in at 1.4513013 Bohr against a
-   !! half-bond of 1.4513096, inside it by eight decimal places, and a single
-   !! sigma bond reports three orbitals on it and looks like a triple one.
-   !!
-   !! The measured spectrum for ethane, in Bohr: the C-C orbital at 8e-11, the
-   !! two cores at 1.4513, the six C-H orbitals at 2.3546. A third of the bond
-   !! length sits in the wide gap between the first two, with room for a polar
-   !! bond whose orbital leans towards the electronegative end.
    real(dp), parameter :: BOND_ORBITAL_REACH = 0.35_dp
+      !! How close to the bond midpoint a localized orbital's centroid must sit
+      !! to count as being *on* that bond, as a fraction of the bond length.
+      !!
+      !! **It must be well under a half.** Anything atom-centred -- a core
+      !! orbital, a lone pair -- has its centroid on a nucleus, which is at
+      !! exactly half the bond length from the midpoint, so a half admits every
+      !! core on both atoms and a single sigma bond looks like a triple one.
 
-   !! What to solve the model system with
    type :: afo_options_t
+      !! What to solve the model system with
       character(len=64) :: basis = "6-31g"
       type(scf_numerics_t) :: scf
-         !! How the model system's SCF is driven. Its own type carried three
-         !! fields long before this, and the caller filled none of them -- only
-         !! `basis` was ever set -- so a model system converged on this type's
-         !! defaults whatever the deck or the enclosing FMO run said.
-         !! **Only the drive settings here are read** -- the accelerator, DIIS
-         !! subspace, level shift, linear-dependence threshold and incremental
-         !! Fock switch. Its `max_iter`, `energy_tol` and `density_tol` are
-         !! NOT: the three bare fields below are, and they are passed
-         !! positionally so they win. Two declarations of one concept in one
-         !! type is a trap, and this comment is the guard rail until the bare
-         !! three are folded in -- which cannot happen until their deliberately
-         !! tighter values have somewhere else to live.
+         !! How the model system's SCF is driven. **Only the drive settings are
+         !! read** -- the accelerator, DIIS subspace, level shift,
+         !! linear-dependence threshold and incremental Fock switch.
+      ! TODO(mqc): `scf%max_iter`, `scf%energy_tol` and `scf%density_tol` are
+      ! ignored -- the three bare fields below are passed positionally and win.
+      ! Two declarations of one concept in one type, so setting the `scf` ones
+      ! has no effect and no complaint.
       integer :: scf_max_iter = 100
       real(dp) :: scf_energy_tol = 1.0e-10_dp
       real(dp) :: scf_density_tol = 1.0e-8_dp
    end type afo_options_t
 
-   !! One cut bond's frozen orbital, over its bond-detached atom's functions
    type :: afo_hybrid_t
-      !! Held one per cut bond rather than in a rectangular array, because two
-      !! bonds can be detached at atoms of different elements and their hybrids
-      !! are then different lengths.
+      !! One cut bond's frozen orbital, over its bond-detached atom's functions
+      !!
+      !! Held one per cut bond rather than in a rectangular array: two bonds can
+      !! be detached at atoms of different elements, and their hybrids are then
+      !! different lengths.
       real(dp), allocatable :: coeff(:)
    end type afo_hybrid_t
 
-   !! The small molecule a frozen orbital is derived from
    type :: afo_model_t
+      !! The small molecule a frozen orbital is derived from
+      !!
       !! Caps are the last `n_caps` entries of `z`, `sym` and `xyz`, and have no
-      !! entry in `from_system`. That is the same layout `fragment_t` uses and
-      !! for the same reason: an index into the system is meaningless for an
-      !! atom the system does not contain.
+      !! entry in `from_system`.
       integer :: n_atoms = 0
       integer :: n_caps = 0
       integer, allocatable :: z(:)
@@ -124,13 +98,13 @@ contains
       !!
       !! Both ends of the bond, everything within `radius` of either of them,
       !! every hydrogen hanging off what that selected, and a hydrogen cap for
-      !! each bond that leaves the set.
+      !! each bond that leaves the set. `radius` is in Angstrom and defaults to
+      !! `DEFAULT_MODEL_RADIUS`.
       !!
-      !! Hydrogens are pulled in wholesale rather than by distance because the
-      !! alternative is absurd: a hydrogen just outside the radius would be
-      !! replaced by a cap hydrogen a few hundredths of an Angstrom away, which
-      !! is a different molecule for no reason and a discontinuity in anything
-      !! that moves the geometry.
+      !! Hydrogens come in wholesale rather than by distance, so that one just
+      !! outside the radius is not replaced by a cap hydrogen a few hundredths
+      !! of an Angstrom away -- a discontinuity in anything that moves the
+      !! geometry.
       integer, intent(in) :: z(:)
       real(dp), intent(in) :: coords(:, :)
       type(severed_bond_t), intent(in) :: cut
@@ -243,19 +217,16 @@ contains
    subroutine build_group_frozen(mol, bda_slot, occupied, hybrids, frozen, n_frozen_occ, error)
       !! Place each boundary's hybrid into this group's own basis
       !!
-      !! A hybrid is stored over its bond-detached atom's functions alone, which
-      !! is what makes it transferable. Putting it to work means writing it into
-      !! that atom's block of whichever molecule is being solved and leaving the
-      !! rest zero -- an index map, because the atom's functions are the same
-      !! functions wherever it appears.
+      !! A hybrid is stored over its bond-detached atom's functions alone, so
+      !! putting it to work is an index map: write it into that atom's block of
+      !! whichever molecule is being solved and leave the rest zero.
       !!
-      !! **Occupied first, and that is not a formatting choice.** The constraint
-      !! names its blocks by index range and `build_frozen_basis` orthonormalises
-      !! them separately, so an occupied orbital sitting after a virtual one
-      !! would be held at the level shift. Which of the two a boundary is comes
-      !! from the assignment `$FMOBND` states: the fragment that gets all of the
-      !! bond holds its hybrid occupied, the one that gets nothing of it holds
-      !! the same hybrid empty.
+      !! **Columns come back occupied first.** The constraint names its blocks
+      !! by index range and `build_frozen_basis` orthonormalises them
+      !! separately, so an occupied orbital sitting after a virtual one would be
+      !! held at the level shift. The fragment that gets all of the bond holds
+      !! its hybrid occupied, the one that gets nothing of it holds the same
+      !! hybrid empty.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: bda_slot(:)
          !! Where each boundary's bond-detached atom sits in `mol`, 1-based. It
@@ -338,17 +309,13 @@ contains
    subroutine cuts_outside_group(cuts, n_cuts, members, outside, n_outside)
       !! Which cut bonds this n-mer is still cut across
       !!
-      !! **The rule that the hydrogen caps got wrong.** A cut belongs to a
-      !! *group*, not to a fragment. A bond severed between monomers I and J is
-      !! whole again inside the dimer IJ, so that dimer must carry nothing
-      !! standing in for it -- no cap, and no frozen orbital -- while still
-      !! being cut against every fragment outside itself. Decide this per
-      !! fragment and inherit it, and an n-mer arrives holding a stand-in for a
-      !! bond it contains: 11.25 Hartree on a tripeptide, which is what
-      !! `a605ee50d` withdrew.
+      !! **A cut belongs to a group, not to a fragment.** A bond severed between
+      !! monomers I and J is whole again inside the dimer IJ, so that dimer
+      !! carries nothing standing in for it -- no cap, and no frozen orbital --
+      !! while still being cut against every fragment outside itself.
       !!
-      !! So it is computed from the group's own member list, every time, and
-      !! never passed down from the members.
+      !! Computed from the group's own member list every time, and never passed
+      !! down from the members.
       type(severed_bond_t), intent(in) :: cuts(:)
       integer, intent(in) :: n_cuts
       integer, intent(in) :: members(:)   !! Fragment indices making up this n-mer
@@ -388,16 +355,11 @@ contains
    pure function group_electron_shift(cuts, n_cuts, members) result(shift)
       !! How many electrons this group gains or loses at its boundaries
       !!
-      !! GAMESS's `$FMOBND` documentation states the convention outright: of the
-      !! pair `I J`, "the I-atom will get nothing of it, effectively remove one
-      !! electron (1/2 of a single covalent bond) from its fragment. The J-atom
-      !! will get all of the bond and thus adds one electron to its fragment".
-      !!
-      !! So a group holding the bond-detached end of a bond it does not contain
-      !! is one electron short of the naive sum over its atoms, and one holding
-      !! the attached end is one electron over. Summed over every fragment the
-      !! shifts cancel, which is the check worth writing down: the electrons
-      !! are moved between fragments, never created.
+      !! By the `$FMOBND` convention, of the pair `I J` the I-atom gets nothing
+      !! of the bond and the J-atom gets all of it. So a group holding the
+      !! bond-detached end of a bond it does not contain is one electron short
+      !! of the naive sum over its atoms, and one holding the attached end is
+      !! one electron over. Summed over every fragment the shifts cancel.
       type(severed_bond_t), intent(in) :: cuts(:)
       integer, intent(in) :: n_cuts
       integer, intent(in) :: members(:)
@@ -419,27 +381,19 @@ contains
    subroutine bond_hybrid(model, opts, hybrid, n_on_bond, error, centroid_distance)
       !! The orbital on the cut bond, expressed over the BDA's own basis functions
       !!
-      !! Solve the model, localize its occupied orbitals, take the one sitting on
-      !! the cut bond, and keep the part of it that lives on the atom the
-      !! fragment will own.
+      !! Solve the model, localize its occupied orbitals, take the one whose
+      !! centroid sits on the cut bond, and keep the part of it that lives on
+      !! the bond-detached atom -- the one block the model and the fragment
+      !! certainly share, which is what makes the hybrid transferable.
       !!
-      !! **Why only that atom's coefficients.** The frozen orbital has to be
-      !! transferable into a fragment that does not contain the model system, and
-      !! the one thing the two certainly share is the bond-detached atom and its
-      !! basis functions. Restricting to that block turns the transfer into an
-      !! index map rather than a projection between different molecules.
+      !! Normalised against that atom's diagonal block of `S`, which is an
+      !! integral over the atom's own functions and so is identical in the model
+      !! and in the fragment. Nothing is renormalised on arrival.
       !!
-      !! **Normalisation carries across for free.** An atom's diagonal block of
-      !! `S` is an integral over that atom's own functions and does not know what
-      !! else is in the molecule, so it is bit-identical in the model and in the
-      !! fragment. Normalising here is therefore normalising there, and nothing
-      !! has to be renormalised on arrival.
-      !!
-      !! `n_on_bond` is the multiplicity question that geometry could not answer.
-      !! A single sigma bond puts one localized orbital on the midpoint; a double
-      !! bond puts two. Returned rather than acted on, because what to do about
-      !! it -- refuse, or freeze both -- belongs to the caller. GAMESS makes the
-      !! same choice available as `MODAFO`.
+      !! `n_on_bond` counts the orbitals within `BOND_ORBITAL_REACH` of the
+      !! midpoint: one for a single sigma bond, two for a double. Returned
+      !! rather than acted on -- whether to refuse or to freeze both belongs to
+      !! the caller.
       type(afo_model_t), intent(in) :: model
       type(afo_options_t), intent(in) :: opts
       real(dp), allocatable, intent(out) :: hybrid(:)
@@ -538,10 +492,8 @@ contains
       !! `R_H = R_kept + s (R_gone - R_kept)`, with `s` the standard bond length
       !!
       !! The same placement `cap_targets` uses, so a gradient through this cap
-      !! has the weights that routine already returns. What differs is only
-      !! where `s` comes from: there it is a declared fraction, here it is the
-      !! covalent-radius sum over the real internuclear distance, which puts the
-      !! hydrogen at a sensible bond length whatever the bond was.
+      !! has the weights that routine returns. Only `s` differs: here it is the
+      !! covalent-radius sum over the real internuclear distance, capped at 1.
       integer, intent(in) :: z(:)
       real(dp), intent(in) :: coords(:, :)
       integer, intent(in) :: kept, gone
@@ -555,8 +507,7 @@ contains
       wanted = to_bohr(element_covalent_radius(z(kept)) + element_covalent_radius(1))
 
       ! An element with no tabulated radius, or a contact so short the standard
-      ! length is longer than it: leave the hydrogen where the atom was, which
-      ! is the old unscaled behaviour and never worse than a negative scale.
+      ! length is longer than it: leave the hydrogen where the atom was.
       s = 1.0_dp
       if (wanted > 0.0_dp .and. distance > 0.0_dp) s = min(wanted/distance, 1.0_dp)
 
@@ -575,10 +526,8 @@ contains
    pure function bonded_pair(z, coords, i, j, tol) result(is_bond)
       !! The same criterion `mqc_bond_perception` uses, on two atoms
       !!
-      !! Restated here rather than reached for because that module's test takes
-      !! a whole `system_geometry_t` and this is asked once per candidate pair
-      !! inside two nested loops. The rule is one line and the tolerance is
-      !! imported, so the two cannot drift on anything that matters.
+      !! Restated here because that module's test takes a whole
+      !! `system_geometry_t`; the tolerance is imported from it.
       integer, intent(in) :: z(:)
       real(dp), intent(in) :: coords(:, :)
       integer, intent(in) :: i, j

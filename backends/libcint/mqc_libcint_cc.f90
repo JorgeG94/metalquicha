@@ -3,56 +3,34 @@ module mqc_libcint_cc
    !! CCSD and CCSD(T) over a restricted or an unrestricted reference,
    !! written in spin orbitals.
    !!
-   !! Spin orbitals rather than a spin-adapted closed-shell formulation, and the
-   !! arithmetic argument loses on purpose. This is the reference path -- the same
-   !! one where conventional MP2 exists so RI-MP2 has something exact to be
-   !! checked against -- so one set of equations out of any textbook, correct and
-   !! checkable term by term, is worth more than four times the speed on the half
-   !! of cases that are closed shell. Revisit if CCSD becomes something people
-   !! run rather than something people check against.
-   !!
-   !! The consequence is that everything here is indexed by spin orbital, and
-   !! which spatial orbital each one belongs to is a table -- `so_map_t` -- rather
-   !! than the arithmetic it used to be. Where the two spins have the same
-   !! occupied and virtual counts that table is exactly the old interleaving,
-   !! alpha at `2p-1` and beta at `2p`, so nothing closed shell changed --
-   !! including an unrestricted reference on a closed-shell system, which lands
-   !! there too. Where the counts differ it blocks instead,
-   !! `[occ_a, occ_b, vir_a, vir_b]`, because interleaving keeps occupied
-   !! contiguous only while the counts agree.
-   !!
-   !! The branch is on the counts and not on the reference, which is worth
-   !! stating because "unrestricted" and "blocked" are not the same condition
-   !! and the difference is invisible until a closed-shell UHF deck is being
-   !! debugged. See `build_so_map`.
+   !! Every index is a spin orbital, and which spatial orbital each one belongs
+   !! to is the table `so_map_t`. Equal occupied and virtual counts interleave --
+   !! alpha at `2p-1`, beta at `2p` -- and unequal counts block as
+   !! `[occ_a, occ_b, vir_a, vir_b]`, because interleaving keeps the occupied
+   !! space contiguous only while the counts agree. The branch is on the counts
+   !! and not on the reference, so a closed-shell unrestricted deck interleaves
+   !! too. See `build_so_map`.
    !!
    !! The antisymmetrised integrals are
    !!
    !!     <pq||rs> = (pr|qs) - (ps|qr)
    !!
    !! with each spatial integral surviving only if the spins on the two indices
-   !! it pairs agree. Note the index reordering: the transform produces chemists'
-   !! notation and the equations are written in physicists'. That conversion is
-   !! the single most likely place for a sign or index error in the whole module,
-   !! so it happens in exactly one function -- `asym` -- and that function is unit
-   !! tested on its own antisymmetry.
+   !! it pairs agree. The transform produces chemists' notation and the equations
+   !! are written in physicists'; that conversion happens in `asym` alone.
    !!
    !! The amplitude equations follow Stanton, Gauss, Watts and Bartlett (JCP 94,
-   !! 4334 (1991)) with their one- and two-body intermediates. Written without
-   !! them the equations are both unreadable and slow; written with them they are
-   !! neither, and the table in that paper is worth following literally.
+   !! 4334 (1991)) with their one- and two-body intermediates.
    !!
    !! **Frozen core** drops orbitals from the active space before anything else
    !! happens, so nothing below this line knows they existed.
    !!
-   !! **What this is not.** Every antisymmetrised block is materialised in spin
-   !! orbitals, so `<ma||ef>` and `<ab||ej>` at n_occ n_vir^3 are the wall --
-   !! sixteen times their spatial size, which is the price of the formulation
-   !! above and is paid on both paths. What is *not* materialised is `<ab||cd>`,
-   !! assembled in batches by `particle_ladder`, and on the fitted path the
-   !! n_act^4 spatial tensor with it: RI-CCSD holds five spatial blocks with an
-   !! occupied index and the three-index `b_vv`, and nothing of fourth order in
-   !! the virtuals. See the memory note in `run_libcint_ccsd`.
+   !! Every antisymmetrised block is materialised in spin orbitals, sixteen times
+   !! its spatial size, so `<ma||ef>` and `<ab||ej>` at n_occ n_vir^3 are the
+   !! wall. `<ab||cd>` is not materialised -- `particle_ladder` assembles it in
+   !! batches -- and on the fitted path neither is the n_act^4 spatial tensor:
+   !! RI-CCSD holds five spatial blocks with an occupied index and the
+   !! three-index `b_vv`.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_timing, only: timing_report_t
@@ -73,41 +51,23 @@ module mqc_libcint_cc
    public :: so_source_t              !! ... and the tensors it reads
    public :: build_so_map
 
-   !! Columns of the compound (ef) index assembled per pass of the
-   !! particle-particle ladder. The array held is n_vir^2 by this, so the memory
-   !! is O(n_vir^2) rather than the O(n_vir^4) of holding <ab||ef> whole -- which
-   !! is the entire point, and only true if this stays a fixed count rather than a
-   !! fraction of n_vir^2.
-   !!
-   !! A larger value opens fewer parallel regions and at small n_vir that is
-   !! visible, because each pass then has too little arithmetic to amortise the
-   !! barrier. It stays small anyway: the sizes where the memory matters are also
-   !! the sizes where a pass has plenty of work.
    integer, parameter :: LADDER_BATCH = 256
+      !! Columns of the compound (ef) index assembled per pass of the
+      !! particle-particle ladder. The block held is n_vir^2 by this, so it has
+      !! to stay a fixed count rather than a fraction of n_vir^2.
 
-   !! The stage name the amplitude update accumulates under. Named because the
-   !! per-iteration row reads it back with `seconds_of` to print one iteration's
-   !! time, and a typo between the two would silently print zero.
    character(len=*), parameter :: STAGE_ITER = "CCSD iterations"
+      !! Timing stage the amplitude update accumulates under; the per-iteration
+      !! row reads it back with `seconds_of`.
 
    type :: so_map_t
       !! Which spatial orbital, and which spin, each spin orbital is
       !!
-      !! Was two arithmetic functions -- `spatial(s) = (s+1)/2` and
-      !! `is_alpha(s) = mod(s,2) == 1` -- which encode the assumption that spin
-      !! orbitals `2p-1` and `2p` share spatial orbital `p`. That is true of a
-      !! restricted reference and false of an unrestricted one, where the two
-      !! spins have different orbitals and, worse, different *counts*.
-      !!
-      !! The count is what breaks the interleaving. It kept occupied contiguous
-      !! only because `n_alpha == n_beta` made the first `2*n_occ` spin orbitals
-      !! occupied; with `n_alpha > n_beta` interleaving puts beta virtuals in
-      !! among alpha occupieds, and every `do i = 1, no` in the amplitude
-      !! equations walks into the virtual space. It converges, to a wrong number.
-      !!
-      !! So the ordering is a table rather than a formula. For a restricted
-      !! reference it reproduces the interleaving exactly, which is why the
-      !! closed-shell results are unchanged to the last bit.
+      !! Occupied before virtual. Equal alpha and beta counts interleave, spin
+      !! orbitals `2p-1` and `2p` sharing spatial orbital `p`; unequal counts
+      !! block, because interleaving would put beta virtuals among the alpha
+      !! occupieds and every `do i = 1, no` below would walk into the virtual
+      !! space -- converging, to a wrong number.
       integer, allocatable :: spat(:)   !! spin orbital -> spatial index, within its spin
       logical, allocatable :: is_a(:)   !! spin orbital -> alpha?
       integer :: n_so = 0
@@ -119,13 +79,8 @@ module mqc_libcint_cc
       !! One tensor for a restricted reference, three for an unrestricted one:
       !! `(aa|aa)`, `(bb|bb)` and the mixed `(aa|bb)`. There is no fourth --
       !! `(bb|aa)` is `(aa|bb)` with the electron pairs swapped, which is what
-      !! `chem` does rather than storing it twice.
-      !!
-      !! `restricted` is not a convenience. The conventional path's memory
-      !! ceiling *is* this tensor at `n_act^4`, so allocating three copies of the
-      !! same numbers to avoid a branch would triple the largest array in the
-      !! calculation. When restricted, only `aa` is allocated and every spin case
-      !! reads it.
+      !! `chem` does rather than storing it twice. When `restricted`, only `aa`
+      !! is allocated and every spin case reads it.
       logical :: restricted = .true.
       real(dp), allocatable :: aa(:, :, :, :)
       real(dp), allocatable :: bb(:, :, :, :)
@@ -135,10 +90,8 @@ module mqc_libcint_cc
    type :: cc_eris_t
       !! Antisymmetrised integrals, by block
       !!
-      !! `vvvv` is deliberately absent. It is n_vir^4, it is read in exactly one
-      !! place -- the particle-particle ladder -- and it is assembled there in
-      !! batches straight from the spatial tensor. Keeping it out of this type is
-      !! what makes the memory argument in `build_cc_eris` true.
+      !! No `vvvv`: at n_vir^4 it is the largest block, and it is read in exactly
+      !! one place -- `particle_ladder`, which assembles it in batches.
       real(dp), allocatable :: oooo(:, :, :, :)   !! <ij||kl>
       real(dp), allocatable :: ooov(:, :, :, :)   !! <mn||ie>
       real(dp), allocatable :: oovv(:, :, :, :)   !! <ij||ab>
@@ -153,10 +106,8 @@ module mqc_libcint_cc
       !! Fitted spatial integrals, in chemists' notation, by block
       !!
       !! Only the blocks with at least one occupied index. `(vv|vv)` is absent
-      !! for the same reason `cc_eris_t` has no `vvvv`: it is read in one place
-      !! and assembled there, here from `b_vv` rather than from a stored tensor.
-      !! Together those two absences are what keeps RI-CCSD off the n_act^4
-      !! ceiling the conventional path sits on.
+      !! for the same reason `cc_eris_t` has no `vvvv`: `particle_ladder`
+      !! assembles it, here from `b_vv` rather than from a stored tensor.
       real(dp), allocatable :: oooo(:, :, :, :)   !! (ij|kl)
       real(dp), allocatable :: ooov(:, :, :, :)   !! (ij|ka)
       real(dp), allocatable :: oovv(:, :, :, :)   !! (ij|ab)
@@ -170,10 +121,10 @@ module mqc_libcint_cc
       real(dp) :: e_doubles = 0.0_dp    !! The t2 part
       real(dp) :: e_triples = 0.0_dp    !! (T), zero unless it was asked for
       real(dp) :: e_mp2 = 0.0_dp
-         !! MP2 from these same spin-orbital integrals. Free -- it is the first
-         !! iteration's energy -- and the sharpest check available on the
-         !! antisymmetrisation and the denominators, because `run_libcint_mp2`
-         !! already agrees with PySCF and this must reproduce it exactly.
+         !! MP2 from these same spin-orbital integrals, which must reproduce
+         !! `run_libcint_mp2` exactly. It is the first iteration's energy, so it
+         !! costs nothing, and it checks the antisymmetrisation and the
+         !! denominators.
       real(dp) :: e_correlation = 0.0_dp  !! singles + doubles + triples
       integer :: iterations = 0
       logical :: converged = .false.
@@ -184,9 +135,8 @@ contains
    pure function integral_megabytes(no, nv) result(mb)
       !! What the integral blocks and the ladder batch cost, in MB
       !!
-      !! Everything except the particle-particle ladder, which is never held --
-      !! its contribution is the batch, n_vir^2 by EF_BATCH, and that is the whole
-      !! reason this number is n_occ n_vir^3 rather than n_vir^4.
+      !! `<ab||ef>` is never held, so its contribution is one batch, n_vir^2 by
+      !! `LADDER_BATCH`; that is why this is n_occ n_vir^3 and not n_vir^4.
       integer, intent(in) :: no, nv
       real(dp) :: mb
 
@@ -203,14 +153,10 @@ contains
    subroutine build_so_map(n_occ_a, n_occ_b, n_vir_a, n_vir_b, map)
       !! The spin orbital ordering, occupied first
       !!
-      !! Restricted (`n_occ_a == n_occ_b` and `n_vir_a == n_vir_b`) reproduces the
-      !! interleaving this module used to compute: spin orbital `2p-1` is alpha
-      !! spatial `p`, `2p` is beta spatial `p`, occupied before virtual. Bit for
-      !! bit the same ordering, so nothing closed shell moves.
-      !!
-      !! Unrestricted blocks instead -- `[occ_a, occ_b, vir_a, vir_b]` -- which is
-      !! the only ordering that keeps occupied contiguous when the two spins have
-      !! different occupation counts.
+      !! Equal counts (`n_occ_a == n_occ_b` and `n_vir_a == n_vir_b`) interleave:
+      !! spin orbital `2p-1` is alpha spatial `p`, `2p` is beta spatial `p`.
+      !! Unequal counts block as `[occ_a, occ_b, vir_a, vir_b]`, the only ordering
+      !! that keeps the occupied space contiguous.
       integer, intent(in) :: n_occ_a, n_occ_b, n_vir_a, n_vir_b
       type(so_map_t), intent(out) :: map
 
@@ -269,11 +215,9 @@ contains
    pure function tensor(src, s1, s2, a, b, c, d) result(v)
       !! `(ab|cd)` from spatial indices whose spins the caller has already resolved
       !!
-      !! `chem` below does the same choice from spin orbitals. This form exists
-      !! for the particle-particle ladder, which hoists the spin bookkeeping out
-      !! of its innermost loop and so arrives holding spins and spatial indices
-      !! rather than spin orbitals. `s1` is the spin of the first electron's pair,
-      !! `s2` the second's; 1 is alpha and 0 beta.
+      !! `s1` is the spin of the first electron's pair, `s2` the second's; 1 is
+      !! alpha and 0 beta. `chem` makes the same choice from spin orbitals, for
+      !! callers that still hold them.
       type(so_source_t), intent(in) :: src
       integer, intent(in) :: s1, s2, a, b, c, d
       real(dp) :: v
@@ -295,10 +239,9 @@ contains
       !! The spatial integral `(ab|cd)`, for spin orbitals whose spins already agree
       !!
       !! Callers guarantee `spin(a) == spin(b)` and `spin(c) == spin(d)`, so this
-      !! only has to decide which of the three tensors holds that combination. The
-      !! last branch is the one worth reading: a beta-alpha pairing is stored as
-      !! alpha-beta with the electron pairs swapped, and `(ab|cd) = (cd|ab)` is
-      !! what makes that legitimate.
+      !! only chooses which of the three tensors holds that combination. A
+      !! beta-alpha pairing is stored as alpha-beta with the electron pairs
+      !! swapped, which `(ab|cd) = (cd|ab)` makes legitimate.
       type(so_source_t), intent(in) :: src
       type(so_map_t), intent(in) :: map
       integer, intent(in) :: a, b, c, d
@@ -320,16 +263,14 @@ contains
    pure function asym(src, map, p, q, r, s) result(v)
       !! <pq||rs> from the spatial MO tensors, in spin orbitals
       !!
-      !! The one place chemists' notation becomes physicists'. `chem` returns
-      !! (ab|cd) as the transform produced it, so
+      !! The one place chemists' notation becomes physicists':
       !!
       !!     <pq||rs> = (pr|qs) - (ps|qr)
       !!
-      !! and a spatial integral contributes only when both index pairs it
-      !! couples share a spin -- (pr|qs) needs spin(p) == spin(r) and
-      !! spin(q) == spin(s), which is the Kronecker delta the spin integration
-      !! leaves behind. Those two guards are also what lets `chem` assume the
-      !! spins within each pair already agree.
+      !! A spatial integral contributes only when both index pairs it couples
+      !! share a spin -- (pr|qs) needs spin(p) == spin(r) and spin(q) == spin(s),
+      !! the Kronecker delta the spin integration leaves behind. Those guards are
+      !! what lets `chem` assume the spins within each pair already agree.
       type(so_source_t), intent(in) :: src
       type(so_map_t), intent(in) :: map
       integer, intent(in) :: p, q, r, s
@@ -347,17 +288,13 @@ contains
    subroutine build_cc_eris(src, map, no, nv, eris)
       !! The antisymmetrised blocks the amplitude equations actually read
       !!
-      !! Replaces the single (2 n_act)^4 tensor. Every block below is a slice of
-      !! it, and the slice that is missing -- `vvvv` -- is the one that dominates:
-      !! at ten occupied and thirty-eight virtual spin orbitals the whole tensor
-      !! is 42 MB, of which the blocks here are 13 MB and `vvvv` alone is 17 MB
-      !! again as `wabef`. Assembling `vvvv` in batches instead (see
-      !! `ladder_from_batches`) takes the total from 59 MB to 14, and changes the
-      !! scaling from n_vir^4 to n_occ n_vir^3 -- a factor n_vir/n_occ, which is
-      !! the ratio that grows with basis size at fixed electron count.
+      !! Every block is a slice of the single (2 n_act)^4 tensor. The slice that
+      !! is missing -- `vvvv` -- is the one that dominates; `particle_ladder`
+      !! assembles it in batches instead, which takes the scaling from n_vir^4 to
+      !! n_occ n_vir^3.
       !!
       !! `spin_orbital_integrals` is kept for the tests, which check antisymmetry
-      !! over the whole tensor. Nothing in the calculation builds it any more.
+      !! over the whole tensor. Nothing in the calculation builds it.
       type(so_source_t), intent(in) :: src
       type(so_map_t), intent(in) :: map
       integer, intent(in) :: no, nv
@@ -479,12 +416,9 @@ contains
    pure function asym2(direct, keep_direct, exchange, keep_exchange) result(v)
       !! <pq||rs> = (pr|qs) - (ps|qr), given the two chemists' integrals
       !!
-      !! `asym` for the fitted path. It cannot look the integrals up itself --
-      !! which block they live in depends on which of the four indices are
-      !! occupied, and that is known at the call site and nowhere else -- so the
-      !! caller fetches and this decides. What stays here is the part worth
-      !! having in one place: which term is the direct one, which the exchange,
-      !! and that the exchange carries the minus.
+      !! `asym` for the fitted path, where which block an integral lives in
+      !! depends on which of the four indices are occupied and is known only at
+      !! the call site. The caller fetches both terms; this applies the signs.
       real(dp), intent(in) :: direct, exchange
       logical, intent(in) :: keep_direct, keep_exchange
          !! Whether the spins of the pair each term couples agree
@@ -500,27 +434,19 @@ contains
       !!
       !! Block for block the same result as `build_cc_eris`, reached without a
       !! full spatial tensor to slice. Each of the eight is written against
-      !! whichever chemists' block its two terms fall in, using the pair
-      !! symmetry (pq|rs) = (qp|rs) = (pq|sr) = (rs|pq) to put the occupied
-      !! indices where the stored block has them; the mapping is stated above
-      !! each one because it is the only place it can be checked by reading.
+      !! whichever chemists' block its two terms fall in, using the pair symmetry
+      !! (pq|rs) = (qp|rs) = (pq|sr) = (rs|pq); the mapping is stated above each
+      !! one.
       !!
       !! **This routine indexes `map` with within-space indices, and only the
       !! interleaved ordering makes that legal.** `same_spin(map, n, e)` below
       !! passes a virtual's index `e` in `1..nv` where `map` is indexed by spin
       !! orbital in `1..n_so`, so the lookup lands in the occupied block. Under
       !! the interleaving that is harmless: spins alternate and `no` is even, so
-      !! `is_a(e)` and `is_a(no+e)` agree. `build_cc_eris` next door does the
-      !! same contractions and offsets properly, `no + e`, because it also has
-      !! to work blocked.
-      !!
-      !! What keeps this safe is not local. A blocked map reaches here only if
-      !! an unrestricted reference reaches the fitted path, and that is refused
-      !! in `run_libcint_ccsd` -- `b_vv` has no spin blocks, so the refusal
-      !! exists for its own reason and this depends on it. **Enabling fitted
-      !! UCCSD means offsetting every index in this routine first**, and the
-      !! symptom of forgetting would be spin logic read out of the occupied
-      !! block: a converged, plausible, wrong number.
+      !! `is_a(e)` and `is_a(no+e)` agree. A blocked map reaches here only
+      !! because `run_libcint_ccsd` refuses an unrestricted reference on the
+      !! fitted path. **Enabling fitted UCCSD means offsetting every index in
+      !! this routine first**; forgetting converges to a wrong number.
       type(so_map_t), intent(in) :: map
       type(cc_chem_t), intent(in) :: chem
       integer, intent(in) :: no, nv
@@ -681,9 +607,8 @@ contains
    subroutine spin_orbital_integrals(src, map, n_so, w)
       !! The full antisymmetrised spin-orbital tensor <pq||rs>
       !!
-      !! Built whole rather than as blocks. The blocks below are slices of it, and
-      !! carving them out of one tensor cannot disagree about a sign the way six
-      !! separate constructions could.
+      !! Kept for the antisymmetry test. The calculation reads the blocks
+      !! `build_cc_eris` carves instead.
       type(so_source_t), intent(in) :: src
       type(so_map_t), intent(in) :: map
       integer, intent(in) :: n_so
@@ -713,14 +638,12 @@ contains
       !! Drive CCSD, and optionally (T), to convergence
       !!
       !! **Memory.** The spin-orbital blocks are sixteen times their spatial
-      !! size, and the two n_occ n_vir^3 ones set the ceiling. On the
-      !! conventional path the n_act^4 spatial tensor sits on top of them,
-      !! because the ladder reads (ae|bf) out of it and there is nowhere else to
-      !! get it; on the fitted path there is no such tensor at all -- the ladder
-      !! builds what it needs from `b_vv` for a few per cent of its own cost, so
-      !! RI-CCSD reaches further than CCSD rather than merely differing from it
-      !! by the fitting error. The (T) step holds no triples amplitude either --
-      !! it works one occupied triple at a time, n_vir^3 at once.
+      !! size, and the two n_occ n_vir^3 ones set the ceiling. The conventional
+      !! path adds the n_act^4 spatial tensor, which the ladder reads (ae|bf) out
+      !! of; the fitted path has no such tensor -- the ladder builds what it needs
+      !! from `b_vv`, so RI-CCSD reaches further than CCSD rather than merely
+      !! differing by the fitting error. (T) holds no triples amplitude either:
+      !! one occupied triple at a time, n_vir^3 at once.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coeff(:, :)              !! MO coefficients, (n_ao, n_mo)
       real(dp), intent(in) :: orbital_energies(:)
@@ -734,23 +657,15 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: diis_vectors
       type(libcint_molecule_t), intent(in), optional :: aux
+         !! Auxiliary basis. Present means every MO integral is density-fitted
+         !! rather than transformed exactly -- RI-CCSD. *Every* class is fitted,
+         !! not only the particle-particle ladder, which is what PySCF's `dfccsd`
+         !! does and what the comparison against it requires.
       real(dp), intent(in), optional :: coeff_b(:, :)
          !! Beta MO coefficients. Present means an unrestricted reference, and
          !! the other two beta arguments must come with it.
       real(dp), intent(in), optional :: orbital_energies_b(:)
       integer, intent(in), optional :: n_occ_b
-         !! Auxiliary basis. Present means every MO integral is density-fitted
-         !! rather than transformed exactly -- RI-CCSD.
-         !!
-         !! *Every* class, not just the particle-particle ladder, because that is
-         !! what PySCF's `dfccsd` does and the comparison is only possible against
-         !! the same approximation. Its `ao2mo` returns `_make_df_eris`, which
-         !! builds oooo, ovov, ovvo, oovv and ovvv from the fitted tensor and
-         !! keeps `vvL` for the ladder -- so "it overrides `_add_vvvv`" describes
-         !! where the ladder is contracted, not which integrals are fitted. Fitting
-         !! only the ladder would leave us permanently ~1e-5 from the reference,
-         !! which is close enough to a convergence threshold to be argued about
-         !! rather than diagnosed.
 
       real(dp), allocatable :: eri(:, :), mo(:, :, :, :), b_vv(:, :)
       type(cc_eris_t) :: eris
@@ -761,6 +676,7 @@ contains
       type(diis_state_t) :: diis
       logical :: extrapolated
       integer :: n_ao, n_mo, n_act, n_o, n_v, no, nv, n_so, iter, diis_size
+      ! TODO(mqc): `i` and `a` are declared and never used here.
       integer :: i, a, s
       real(dp) :: e_corr, e_old, de, t_iter
 
@@ -863,10 +779,8 @@ contains
       n_so = no + nv
 
       ! Restricted: the two spins have the same orbitals and the same counts, so
-      ! this reproduces the interleaving the module used to compute
-      ! arithmetically and nothing below can tell the difference. Unrestricted:
-      ! blocked, because interleaving stops keeping occupied contiguous the
-      ! moment the counts differ.
+      ! the map interleaves. Unrestricted: blocked, because interleaving stops
+      ! keeping occupied contiguous the moment the counts differ.
       call build_so_map(n_o, n_ob, n_v, n_vb, map)
 
       diis_size = 8
@@ -880,16 +794,14 @@ contains
             write (line, "(a,i0,a)") "  frozen core: ", frozen, " spatial orbitals"
             call logger%info(trim(line))
          end if
-         ! Reported because the memory is the interesting constraint here, and
-         ! because the number makes the claim checkable rather than asserted. The
-         ! comparison worth knowing is the whole spin-orbital tensor, n_so^4, which
-         ! is what this used to build and no longer does.
+         ! Memory is the interesting constraint here, and the comparison worth
+         ! reporting is against the whole spin-orbital tensor, n_so^4.
          write (line, "(a,f0.1,a,f0.1,a)") "  integrals: ", integral_megabytes(no, nv), &
             " MB in blocks, against ", real(n_so, dp)**4*8.0_dp/1.0e6_dp, " MB for the full tensor"
          call logger%info(trim(line))
-         ! The spatial tensor is the conventional path's alone. Said out loud
-         ! because it is the difference between the two paths' ceilings and it
-         ! is otherwise invisible -- both report the same block total above.
+         ! The spatial tensor is the conventional path's alone, and it is the
+         ! difference between the two paths' ceilings -- both report the same
+         ! block total above.
          if (.not. present(aux)) then
             write (line, "(a,f0.1,a)") "  plus the spatial tensor: ", &
                real(n_act, dp)**4*8.0_dp/1.0e6_dp, " MB, which density fitting does not build"
@@ -942,7 +854,7 @@ contains
       deallocate (c_act)
 
       ! Blocks rather than the whole (2 n_act)^4 tensor. On the conventional path
-      ! `mo` is kept afterwards because the ladder assembles its own from it in
+      ! `src` is kept afterwards because the ladder assembles its own from it in
       ! batches; on the fitted one the spatial blocks are finished with here and
       ! only `b_vv` outlives them.
       call clk%lap()
@@ -1056,10 +968,9 @@ contains
       !! (pq|rs) = sum_P B^P_pq B^P_rs for one pair of fitted blocks
       !!
       !! The product is a matrix over the two compound indices and the caller
-      !! wants it with four; an explicit-shape dummy takes the destination by
+      !! wants it with four; the explicit-shape `block` takes the destination by
       !! sequence association, so the gemm writes straight into the rank-four
-      !! array rather than into a temporary that is then reshaped. At `(ov|vv)`,
-      !! n_occ n_vir^3, that temporary was the peak.
+      !! array rather than into a temporary that is then reshaped.
       real(dp), intent(in) :: bl(:, :), br(:, :)
       integer, intent(in) :: nl, nr
       real(dp), intent(out) :: block(nl, nr)
@@ -1071,17 +982,11 @@ contains
       !! The fitted spatial integrals RI-CCSD actually reads
       !!
       !! Every antisymmetrised block the amplitude equations want carries at
-      !! least one occupied index -- the sole exception is `<ab||ef>`, which the
-      !! particle-particle ladder assembles for itself from `b_vv`. So the five
-      !! blocks below are the whole of what has to be materialised, and the
-      !! largest of them is `(ov|vv)` at n_occ n_vir^3.
-      !!
-      !! This is what RI buys, and until now it bought nothing: the previous
-      !! version formed the same n_act^4 tensor the conventional path forms, so
-      !! the ceiling was identical and only the numbers moved, by the fitting
-      !! error. Against that tensor these blocks are smaller by roughly
-      !! n_vir/n_occ -- and the one-time n_act^4 gemm that built it, naux n_act^4,
-      !! is gone with it.
+      !! least one occupied index -- the sole exception is `<ab||ef>`, which
+      !! `particle_ladder` assembles for itself from `b_vv`. So the five blocks
+      !! below are the whole of what has to be materialised, and the largest of
+      !! them is `(ov|vv)` at n_occ n_vir^3, smaller than the conventional path's
+      !! n_act^4 tensor by roughly n_vir/n_occ.
       type(libcint_molecule_t), intent(in) :: mol, aux
       real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
       type(cc_chem_t), intent(out) :: chem
@@ -1130,10 +1035,9 @@ contains
       !!
       !!     t_ij^ab = <ij||ab> / D_ij^ab,   E = 1/4 sum <ij||ab> t_ij^ab
       !!
-      !! This is the free checkpoint the plan asks for: it must reproduce
-      !! `run_libcint_mp2` exactly, and that already agrees with PySCF. If it
-      !! does not, the antisymmetrisation or the spin-orbital index map is wrong
-      !! and no amplitude equation after it can be right.
+      !! Must reproduce `run_libcint_mp2` exactly. If it does not, the
+      !! antisymmetrisation or the spin-orbital index map is wrong and no
+      !! amplitude equation after it can be right.
       type(cc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: eps(:)
       integer, intent(in) :: no, nv
@@ -1163,9 +1067,8 @@ contains
    subroutine ccsd_energy(eris, t1, t2, no, nv, e_singles, e_doubles)
       !! E_CCSD = 1/4 sum <ij||ab> t_ij^ab + 1/2 sum <ij||ab> t_i^a t_j^b
       !!
-      !! Reported as two numbers because `cc_energy_t` carries them separately and
-      !! a lumped correlation energy cannot be taken apart afterwards. The f_ia
-      !! t_i^a term of the general expression is absent: the reference is
+      !! Reported as two numbers because `cc_energy_t` carries them separately.
+      !! The f_ia t_i^a term of the general expression is absent: the reference is
       !! canonical, so the occupied-virtual Fock block is zero.
       type(cc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
@@ -1197,14 +1100,14 @@ contains
    subroutine ccsd_iteration(src, map, b_vv, eris, eps, no, nv, t1, t2, t1n, t2n)
       !! One CCSD amplitude update, through the Stanton et al. intermediates
       type(so_source_t), intent(in) :: src
+         !! The spatial tensors, on the conventional path. Read only by
+         !! `particle_ladder`, which assembles <ab||ef> in batches rather than
+         !! holding it.
       type(so_map_t), intent(in) :: map
-         !! The spatial tensor, on the conventional path. Read only by the
-         !! particle-particle ladder, which assembles <ab||ef> in batches rather
-         !! than holding it -- see `particle_ladder`.
       real(dp), allocatable, intent(in) :: b_vv(:, :)
          !! The fitted three-index virtual block, on the RI path. Exactly one of
-         !! this and `mo` is allocated; the ladder is the only thing that cares
-         !! which.
+         !! this and `src%aa` is allocated; the ladder is the only thing that
+         !! cares which.
       type(cc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: eps(:)
       integer, intent(in) :: no, nv
@@ -1231,6 +1134,8 @@ contains
       real(dp), allocatable :: ttnf(:, :)        !! the damped doubles as (nf, bj)
       real(dp), allocatable :: pz(:, :, :, :)    !! sum_e <mb||ej> t1(e,i)
       real(dp), allocatable :: zz(:, :, :, :)    !! the t1 t1 half of the ring
+      ! TODO(mqc): `ab` and `mn` are declared and never used -- left behind when
+      ! the compound-index loops became gemms.
       integer :: i, j, m, n, a, b, e, f, ab, ij, mn, ef
       integer :: ai, aj, bi, bj
       real(dp) :: acc, d
@@ -1624,11 +1529,9 @@ contains
       !!
       !!     lad(ab,ij) += 1/2 sum_ef Wabef(ab,ef) tau(ef,ij)
       !!
-      !! Wabef is n_vir^4 and is the largest array coupled cluster asks for -- 17
-      !! MB at thirty-eight virtual spin orbitals, and the term that decided
-      !! whether CCSD was usable here. It is also read exactly once, by this
-      !! contraction, which is what makes batching it possible rather than merely
-      !! desirable: a block of `ef` columns is built, contracted, and dropped.
+      !! Wabef is n_vir^4, the largest array coupled cluster asks for, and it is
+      !! read exactly once -- by this contraction -- so a block of `ef` columns is
+      !! built, contracted and dropped.
       !!
       !! The batching is over `ef` and every operand stays contiguous, which is
       !! the only reason this is still gemms:
@@ -1637,19 +1540,17 @@ contains
       !!   * `tau2` is passed whole for the quadratic term;
       !!   * the accumulation needs tau(ef, ij) over the batch, which is a *row*
       !!     range of tau2 and so not contiguous -- hence `tau2t`, the transpose,
-      !!     built once per iteration for 1.4 MB and sliced by column instead.
+      !!     built once per iteration and sliced by column instead.
       !!
-      !! Nothing about the arithmetic changes. The energies are bit-identical to
-      !! the version that held the whole array.
+      !! The arithmetic is unchanged: the energies are bit-identical to the
+      !! version that held the whole array.
       !!
-      !! **Where <ab||ef> comes from.** Exactly one of `mo` and `b_vv` is
-      !! allocated. `mo` is the conventional path's spatial tensor, read at
+      !! **Where <ab||ef> comes from.** Exactly one of `src%aa` and `b_vv` is
+      !! allocated. `src` holds the conventional path's spatial tensors, read at
       !! permuted indices. `b_vv` is the fitted three-index block, and the
       !! spatial (a e | b f) for one pair of spatial (e, f) is then a gemm over
-      !! the auxiliary index -- which is why the fitted path never needs a
-      !! spatial tensor at all. Those gemms cost naux n_vir^4 an iteration
-      !! against the n_occ^2 n_vir^4 of the contraction they feed, so a few per
-      !! cent of the ladder buys the whole n_act^4 array.
+      !! the auxiliary index. Those gemms cost naux n_vir^4 an iteration against
+      !! the n_occ^2 n_vir^4 of the contraction they feed.
       type(so_source_t), intent(in) :: src
       type(so_map_t), intent(in) :: map
       real(dp), allocatable, intent(in) :: b_vv(:, :)   !! (P, ab), spatial virtuals
@@ -1658,12 +1559,6 @@ contains
       integer, intent(in) :: no, nv
       real(dp), intent(inout) :: lad(:, :)
 
-      !! Columns of (ef) per pass. n_vir^2 by this, so 12 MB at thirty-eight
-      !! virtuals against the 17 MB the whole array would take -- and the ratio
-      !! improves as n_vir grows, which is the point. Chosen large because the
-      !! assembly is cheap and it is the *number of passes* that costs: each one
-      !! opens a parallel region, and at 256 the barrier time was larger than all
-      !! the arithmetic in the routine.
       real(dp), allocatable :: wblk(:, :), tau2t(:, :), tblk(:, :)
       real(dp), allocatable :: gvv(:, :), gvt(:, :)
       integer :: nv2, no2, ef0, ef1, nb, col, ef, a, b, e, f
@@ -1675,11 +1570,11 @@ contains
       nv2 = nv*nv
       no2 = no*no
       ! The occupied spin orbitals are the first `no`, and `no` is even, so a
-      ! virtual spin orbital `a` carries spin `mod(a,2)` and sits in spatial
-      ! orbital `nocc2 + (a+1)/2` -- or, counting virtuals only as `b_vv` does,
-      ! in `(a+1)/2`. Hoisting that out of `asym` is what lets the loop below
-      ! read plain 2-D slices instead of recomputing four index maps and two spin
-      ! tests for every one of the n_vir^4 elements.
+      ! virtual spin orbital `a` carries spin `mod(a,2)` and sits, counting
+      ! virtuals only as `b_vv` does, in spatial orbital `(a+1)/2`.
+      ! TODO(mqc): `nocc2` is assigned here and read nowhere -- a dead local left
+      ! behind when the fitted branch stopped offsetting past the occupied
+      ! spatial orbitals.
       nocc2 = no/2
       nvs = nv/2
       fitted = allocated(b_vv)
@@ -1787,9 +1682,7 @@ contains
                f = (ef - 1)/nv + 1
                ! Virtual `e` here is spin orbital `no + e`; the map carries both
                ! its spin and its spatial index, the latter already offset past
-               ! that spin's occupied orbitals. For a restricted reference
-               ! `map%spat(no + e)` is `nocc2 + (e+1)/2` exactly, which is what
-               ! this used to compute.
+               ! that spin's occupied orbitals.
                se = merge(1, 0, map%is_a(no + e))
                sf = merge(1, 0, map%is_a(no + f))
                pe = map%spat(no + e)
@@ -1830,10 +1723,9 @@ contains
    subroutine ladder_t1_block(no, nv, nb, t1, ovvv_blk, tmat)
       !! sum_m t1(b,m) <ma||ef> over one batch of the compound (ef)
       !!
-      !! The whole of this routine is one gemm. It exists because `eris%ovvv` is
-      !! rank four and the product wants it as the (no, nv*nb) matrix its memory
-      !! already is: an explicit-shape dummy takes the block by sequence
-      !! association, which an assumed-shape one cannot do. Nothing is copied.
+      !! One gemm. `eris%ovvv` is rank four and the product wants it as the
+      !! (no, nv*nb) matrix its memory already is; the explicit-shape dummy takes
+      !! the block by sequence association, so nothing is copied.
       integer, intent(in) :: no, nv, nb
       real(dp), intent(in) :: t1(nv, no)
       real(dp), intent(in) :: ovvv_blk(no, nv*nb)   !! <ma||ef>, (m, (a,ef))
@@ -1848,9 +1740,9 @@ contains
       !!     tau      = t2 + t1 t1 - t1 t1   (transposed)
       !!     tau~     = t2 + 1/2 (t1 t1 - t1 t1)
       !!
-      !! Two of them, differing only in that half, and mixing them up is a
-      !! mistake that still converges -- to the wrong energy by a few
-      !! millihartree. Built together so the difference is visible in one place.
+      !! They differ only in that half, and mixing them up still converges -- to
+      !! the wrong energy. Built together so the difference is visible in one
+      !! place.
       real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
       integer, intent(in) :: no, nv
       real(dp), intent(out) :: tau2(:, :)          !! (ab, ij)
@@ -1878,10 +1770,9 @@ contains
    subroutine triples_correction(eris, eps, t1, t2, no, nv, e_triples)
       !! (T), the perturbative triples correction
       !!
-      !! Non-iterative, so one pass after CCSD converges, and n_occ^3 n_vir^4 --
-      !! the wall. No triples amplitude is stored: the two n_vir^3 blocks are
-      !! rebuilt for each occupied triple, which is what keeps this inside memory
-      !! when a full t3 would be n_o^3 n_v^3.
+      !! Non-iterative, so one pass after CCSD converges, and n_occ^3 n_vir^4.
+      !! No triples amplitude is stored: the two n_vir^3 blocks are rebuilt for
+      !! each occupied triple, where a full t3 would be n_o^3 n_v^3.
       !!
       !!     E(T) = 1/36 sum t3c D (t3c + t3d)
       !!
@@ -1892,12 +1783,10 @@ contains
       !!                               - sum_m t2(b,c,i,m) <ma||jk> ]
       !!
       !! Both numerators are fully antisymmetric in (i,j,k), so the summand is
-      !! symmetric under permuting them and vanishes when two of them coincide.
-      !! Only i > j > k is therefore visited, weighted by six: exactly the same
-      !! number, a sixth of the work. The virtual permutations are *not*
-      !! restricted -- P(a/bc) is applied inside `triples_block`, which needs the
-      !! whole (a,b,c) cube to read at permuted indices, so there is nothing to
-      !! skip there.
+      !! symmetric under permuting them and vanishes when two coincide. Only
+      !! i > j > k is visited, weighted by six. The virtual permutations are
+      !! *not* restricted: P(a/bc) is applied inside `triples_block`, which needs
+      !! the whole (a,b,c) cube to read at permuted indices.
       type(cc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: eps(:), t1(:, :), t2(:, :, :, :)
       integer, intent(in) :: no, nv
@@ -1914,9 +1803,8 @@ contains
 
       ! Four integral blocks and one amplitude block, repacked so the
       ! contractions below are gemms over contiguous memory rather than strided
-      ! reads out of the full spin-orbital tensor. All of them are small -- the
-      ! largest is n_o n_v^3, 4.4 MB at 38 virtuals -- and each is touched
-      ! n_occ^3 times, so packing once is the whole optimisation.
+      ! reads out of the full spin-orbital tensor. The largest is n_o n_v^3 and
+      ! each is touched n_occ^3 times, so packing once is the whole point.
       call pack_triples_blocks(eris, t2, no, nv, ovvv_p, t2bc, ovoo_p, oovv_p)
 
       !$omp parallel default(none) &
@@ -2026,10 +1914,8 @@ contains
       !! The connected and disconnected triples numerators for one (i,j,k)
       !!
       !! P(i/jk) is the three-term permutation f(ijk) - f(jik) - f(kji), and
-      !! P(a/bc) likewise, so each numerator is nine signed contributions. The
-      !! nine are not nine pieces of work, though, and that is the whole point of
-      !! this arrangement: for a fixed occupied permutation the quantity being
-      !! permuted over the virtuals,
+      !! P(a/bc) likewise, so each numerator is nine signed contributions. For a
+      !! fixed occupied permutation the quantity permuted over the virtuals,
       !!
       !!     G(a,b,c) = -sum_e t2(a,e,j,k) <ie||bc> - sum_m t2(b,c,i,m) <ma||jk>
       !!
@@ -2037,14 +1923,8 @@ contains
       !! permuted indices. So three occupied permutations give three pairs of
       !! gemms, and the virtual permutations cost nothing but the indexing.
       !!
-      !! Written the direct way -- nine calls to a function computing one element
-      !! -- this was 118 of 260 seconds of the whole program, because every one of
-      !! the nine redid an O(n_vir) sum for every (a,b,c). The equations are
-      !! unchanged; only the order of the loops is.
-      !!
       !! The scratch arrays come in from the caller rather than being allocated
-      !! here: this runs n_occ^3 times, and four allocations per call was itself
-      !! measurable.
+      !! here, because this runs n_occ^3 times.
       real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
       integer, intent(in) :: no, nv, i, j, k
       real(dp), intent(in) :: ovvv_p(:, :, :), t2bc(:, :, :)
@@ -2139,10 +2019,9 @@ contains
    subroutine pack_step(t1n, t2n, t1, t2, no, nv, flat)
       !! The change in the amplitudes, which is the DIIS error vector
       !!
-      !! It vanishes exactly at a fixed point of the amplitude equations, which
-      !! is what convergence means here, so it is the right quantity to
-      !! extrapolate against -- the same argument as the FDS - SDF commutator in
-      !! the SCF.
+      !! It vanishes exactly at a fixed point of the amplitude equations, so it
+      !! is the right quantity to extrapolate against -- the same argument as the
+      !! FDS - SDF commutator in the SCF.
       real(dp), intent(in) :: t1n(:, :), t2n(:, :, :, :), t1(:, :), t2(:, :, :, :)
       integer, intent(in) :: no, nv
       real(dp), intent(out) :: flat(:)

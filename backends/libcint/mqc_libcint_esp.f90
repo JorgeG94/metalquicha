@@ -2,32 +2,25 @@
 module mqc_libcint_esp
    !! `<chi_u| 1/|r - R_g| |chi_v>` for a list of points `R_g`.
    !!
-   !! Contracted against a density this gives the electronic electrostatic
-   !! potential the molecule produces at each point, which is what a charge-
-   !! penetration screening fit is fitted *to*: GAMESS optimizes its damping
-   !! exponents by matching a damped classical multipole potential to the quantum
-   !! one on a grid, so the quantum potential is the target and this is how it is
-   !! computed. The same integral is what a CPU polarizable-continuum model would
-   !! need; only the GPU path has one today.
+   !! Contracted against a density these give the electronic electrostatic
+   !! potential the molecule produces at each point, which is what a
+   !! charge-penetration screening fit is fitted to.
    !!
    !! **libcint's grid integral is shaped differently from its other one-electron
    !! integrals, in three ways that all have to be right at once.**
    !!
    !!   * The points live in `env`, at the offset stored in `env(PTR_GRIDS)` --
-   !!     an offset into `env` itself, not a coordinate. `PTR_GRIDS` is 12 and, like
-   !!     `PTR_COMMON_ORIG` and `PTR_RANGE_OMEGA`, is one of libcint's own 0-based
-   !!     slot constants that the Fortran interface does *not* convert, so it
-   !!     carries a `+ 1` here. It is also not among the constants that interface
-   !!     exports, hence the local parameter.
+   !!     an offset into `env` itself, not a coordinate. `PTR_GRIDS` is 12 and,
+   !!     like `PTR_COMMON_ORIG` and `PTR_RANGE_OMEGA`, is one of libcint's own
+   !!     0-based slot constants that the Fortran interface neither converts nor
+   !!     exports, so it carries a `+ 1` and a local parameter here.
    !!   * The grid range is passed in `shls`, which is four long rather than two:
    !!     `[ish, jsh, first_grid, last_grid]`, and libcint takes
-   !!     `ngrids = shls(4) - shls(3)`. So the shell pair and the grid block travel
-   !!     in the same array.
+   !!     `ngrids = shls(4) - shls(3)`.
    !!   * The signature has ten arguments, not seven -- `dims`, an optimizer and a
    !!     cache join the usual list. All three are passed null: null `dims` means
-   !!     the natural block shape, there is no optimizer for this integral
-   !!     (`int1e_grids_optimizer` sets it to null itself), and a null cache makes
-   !!     libcint allocate and free its own.
+   !!     the natural block shape, there is no optimizer for this integral, and a
+   !!     null cache makes libcint allocate and free its own.
    use pic_types, only: dp
    use, intrinsic :: iso_c_binding, only: c_int, c_double, c_ptr, c_loc, c_null_ptr
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -41,8 +34,10 @@ module mqc_libcint_esp
    public :: drinv_matrices
    public :: ddrinv_matrices
 
-   !! `PTR_GRIDS` from libcint's `cint.h`. Not exported by the Fortran interface,
-   !! and 0-based like every other `PTR_*`, so it is used as `+ 1`.
+   ! `PTR_GRIDS` from libcint's `cint.h`. Not exported by the Fortran interface,
+   ! and 0-based like every other `PTR_*`, so it is used as `+ 1`.
+   ! TODO(mqc): `mqc_libcint_pcm` declares the same slot number under the same
+   ! name. Two spellings of one constant, which is what MQC002 exists to prevent.
    integer, parameter :: LIBCINT_PTR_GRIDS = 12
 
    interface
@@ -151,16 +146,10 @@ contains
       !! `values(g) = -sum_uv D_uv <chi_u| 1/|r - R_g| |chi_v>`, contracted inside the
       !! integral loop rather than after it.
       !!
-      !! **Why this exists next to `esp_matrices`.** That one returns the whole
-      !! `(n_ao, n_ao, n_grid)` tensor, and a screening fit uses it once, to form
-      !! exactly this vector. The tensor is the problem: a charge-penetration grid
-      !! runs to about thirty thousand points, so at 58 orbitals it is 786 MB and at
-      !! 115 it is 3.1 GB -- allocated, filled, read once and thrown away. Contracting
-      !! as the blocks come out needs the grid vector and nothing else.
-      !!
-      !! The matrices are still worth having for anything that needs them more than
-      !! once, or that needs them separately -- a continuum model, for instance -- so
-      !! both are kept.
+      !! `esp_matrices` returns the whole `(n_ao, n_ao, n_grid)` tensor, which a
+      !! charge-penetration grid of tens of thousands of points cannot hold;
+      !! contracting as the blocks come out needs the grid vector and nothing
+      !! else. Use the matrices when they are needed more than once.
       use omp_lib, only: omp_get_max_threads
       type(libcint_molecule_t), intent(in), target :: mol
       real(dp), intent(in) :: grids(:, :)          !! (3, n_points), Bohr
@@ -202,15 +191,10 @@ contains
       allocate (values(n_grid))
       values = 0.0_dp
 
-      ! Half the shell pairs, because the integral is symmetric in the bra and ket
-      ! -- `<u|1/|r-R||v>` is `<v|1/|r-R||u>` for real functions -- and so is the
-      ! density contracted against it. An off-diagonal block therefore stands for
-      ! itself and its transpose, counted once and doubled.
-      !
-      ! Walked as a flat pair list rather than as a nested triangle so the schedule
-      ! still balances: the triangle's rows run from one pair to `nbas`, and a
-      ! thread handed the first row would finish while the one handed the last was
-      ! still starting.
+      ! Half the shell pairs: the integral is symmetric in the bra and ket for
+      ! real functions, and so is the density contracted against it, so an
+      ! off-diagonal block stands for itself and its transpose. Walked as a flat
+      ! pair list rather than as a nested triangle so the schedule balances.
       n_pair = mol%nbas*(mol%nbas + 1)/2
       allocate (pair_i(n_pair), pair_j(n_pair))
       p = 0
@@ -222,9 +206,7 @@ contains
          end do
       end do
 
-      ! Threaded over shell pairs, each thread accumulating its own grid vector. The
-      ! vector is small -- a few hundred kilobytes -- so a private copy per thread
-      ! costs nothing next to what the tensor cost.
+      ! Threaded over shell pairs, each thread accumulating its own grid vector.
       !$omp parallel default(none) &
       !$omp    shared(mol, env_local, density, values, n_grid, block_max, &
       !$omp           n_pair, pair_i, pair_j) &
@@ -285,27 +267,21 @@ contains
       !! The gradient of `1/|r - C|` with respect to `C`, over every shell pair
       !!
       !! Returns `(n_ao, n_ao, 3, n_centres)`. This is what a point *dipole*'s
-      !! potential needs: the field of a dipole `d` at `C` is `d . grad_C (1/|r - C|)`,
-      !! so a rank the electrostatics stops one short of is one gradient away from the
-      !! rank below it.
+      !! potential needs: the field of a dipole `d` at `C` is
+      !! `d . grad_C (1/|r - C|)`.
       !!
-      !! **The operator carries the derivative, not the basis.** libcint calls this
-      !! `nabla-rinv` (`scripts/auto_intor.cl:48`), meaning `grad` applied to `1/r_C`
-      !! itself, with the Gaussians left alone -- so no integration by parts and no
-      !! pairing with a transpose is needed here, unlike the `int1e_grids_ip` route the
-      !! plan sketched for a build that lacked this integral.
+      !! **The operator carries the derivative, not the basis.** libcint's
+      !! `nabla-rinv` is `grad` applied to `1/r_C` itself, with the Gaussians left
+      !! alone, so there is no integration by parts and no pairing with a
+      !! transpose.
       !!
-      !! **Its sign convention is asserted rather than assumed.** The gradient could be
-      !! with respect to `r` or to `C`, and those differ by exactly a minus. Rather than
-      !! read it out of the generated code, `test_mqc_libcint_esp` differences
-      !! `esp_matrices` about each centre and requires this to reproduce it. That test
-      !! is what defines the convention for every caller, and it is why the dipole rank
-      !! could be written without a sign to guess at.
+      !! **The sign convention is the test's.** The gradient could be with respect
+      !! to `r` or to `C`, and those differ by a minus; `test_mqc_libcint_esp`
+      !! differences `esp_matrices` about each centre and requires this to
+      !! reproduce it, which is what defines the convention for every caller.
       !!
       !! Unlike the grid integral this takes **one centre per call**, in
-      !! `env(PTR_RINV_ORIG)`, so `env` is rewritten per centre. A fragment has a
-      !! handful of expansion points, so that is a handful of passes over the shell
-      !! pairs and not worth restructuring.
+      !! `env(PTR_RINV_ORIG)`, so `env` is rewritten per centre.
       type(libcint_molecule_t), intent(in), target :: mol
       real(dp), intent(in) :: centres(:, :)        !! (3, n_centres), Bohr
       real(dp), allocatable, intent(out) :: matrices(:, :, :, :)
@@ -359,9 +335,8 @@ contains
                end if
                if (ret == 0) cycle      ! screened away, leave the block zero
 
-               ! The Cartesian component is *slowest* here, the opposite of the grid
-               ! integral where the point runs fastest. Both orderings are libcint's
-               ! own and neither is inferable from the other.
+               ! The Cartesian component is *slowest* here, the opposite of the
+               ! grid integral where the point runs fastest.
                do x = 1, 3
                   do j = 1, dj
                      do i = 1, di
@@ -395,16 +370,15 @@ contains
       !! which is `int1e_ipiprinv` (`nabla nabla | rinv |`) plus its transpose, plus
       !! `int1e_iprinvip` (`nabla | rinv | nabla`) plus *its* index-swapped self.
       !!
-      !! **Two of libcint's conventions cancel here rather than needing to be known.**
-      !! Whether its `nabla` carries a minus does not matter, because every term above
-      !! carries exactly two of them. And whether its nine components run `a` fastest or
-      !! `b` fastest does not matter either, because the expression is symmetrized over
-      !! `(a,b)`: `ipiprinv` is symmetric in the pair to begin with, and `iprinvip`
-      !! enters as `ab` plus `ba`. That is worth stating because the same two questions
-      !! were live and load-bearing for `drinv_matrices`, which has one derivative.
+      !! **Two of libcint's conventions cancel here rather than needing to be
+      !! known.** Whether its `nabla` carries a minus does not matter, since every
+      !! term above carries exactly two of them; and whether its nine components
+      !! run `a` fastest or `b` fastest does not matter either, since the
+      !! expression is symmetrized over `(a,b)`. Both questions are live for
+      !! `drinv_matrices`, which has one derivative.
       !!
-      !! What is *not* free is the overall correctness, so `test_mqc_libcint_esp`
-      !! requires this to reproduce a second difference of `esp_matrices`.
+      !! `test_mqc_libcint_esp` requires this to reproduce a second difference of
+      !! `esp_matrices`.
       type(libcint_molecule_t), intent(in), target :: mol
       real(dp), intent(in) :: centres(:, :)        !! (3, n_centres), Bohr
       real(dp), allocatable, intent(out) :: matrices(:, :, :, :, :)
@@ -574,9 +548,9 @@ contains
 
             ! The grid index runs fastest, then the bra, then the ket -- the
             ! opposite nesting from the multipole blocks, where the component is
-            ! slowest. Getting it backwards gives a matrix that is plausible at one
-            ! point and wrong at every other, so the check against PySCF is
-            ! elementwise over all points rather than on a contracted potential.
+            ! slowest. Backwards it gives a matrix that is plausible at one point
+            ! and wrong at every other, so the check against PySCF is elementwise
+            ! over all points rather than on a contracted potential.
             do j = 1, dj
                do i = 1, di
                   do g = 1, n_grid

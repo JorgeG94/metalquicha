@@ -8,26 +8,19 @@ module mqc_libcint_multipole
    !! module is bindings and bookkeeping, not new integral code.
    !!
    !! **The entry points are declared here rather than imported.** The Fortran
-   !! interface shipped with the libcint fork wraps overlap, kinetic, nuclear
-   !! attraction and a handful of derivatives, but not the multipoles. Declaring
-   !! the three `bind(C)` interfaces locally keeps the addition inside this
-   !! repository: no fork change, no version of libcint we have to wait for. The
-   !! symbols are in the library either way -- `cint1e_r_sph` and friends -- and
-   !! the signature is the same seven-argument form the fork's own wrappers use --
-   !! except that the array arguments are declared `type(c_ptr), value` and passed
-   !! through `c_loc`, rather than as assumed-size dummies. That is what a C
-   !! pointer actually is, it matches the cuEST bindings, and it keeps this file
-   !! inside the prohibition on assumed-size arrays in FORTRAN_STYLE.
+   !! interface shipped with the libcint fork does not wrap the multipoles, so the
+   !! three `bind(C)` interfaces are declared locally. The signature is the same
+   !! seven-argument form the fork's own wrappers use, except that the array
+   !! arguments are `type(c_ptr), value` passed through `c_loc` rather than
+   !! assumed-size dummies, which FORTRAN_STYLE prohibits.
    !!
    !! **The origin is passed through `env`, and that is the trap.** libcint reads
    !! it from `env(PTR_COMMON_ORIG)`, and the slot constants are libcint's own
    !! 0-based offsets which the Fortran interface does *not* convert -- unlike the
-   !! `atm`/`bas` column constants, which it does. So the index carries a `+ 1`.
+   !! `atm`/`bas` column constants, which it does -- so the index carries a `+ 1`.
    !! Getting it wrong is silent: the moments come back expanded about whatever
-   !! happened to be in the neighbouring slot, usually the origin, which for a
-   !! neutral molecule's dipole is the right answer anyway and for every
-   !! quadrupole is not. The same mistake cost a day on the range-separated
-   !! exchange, where omega went into `PTR_RINV_ZETA` and was ignored.
+   !! happened to be in the neighbouring slot, which for a neutral molecule's
+   !! dipole is the right answer anyway and for every quadrupole is not.
    use pic_types, only: dp
    use, intrinsic :: iso_c_binding, only: c_int, c_double, c_ptr, c_loc
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -40,30 +33,26 @@ module mqc_libcint_multipole
    public :: dipole_integral_derivatives
    public :: DIPOLE_COMPONENTS, QUADRUPOLE_COMPONENTS, OCTOPOLE_COMPONENTS
 
-   !! Components libcint returns, as full Cartesian tensors.
-   !!
-   !! Full, not packed: 9 quadrupole components rather than the 6 unique ones and
-   !! 27 octopole rather than 10. Anything writing a GAMESS-style potential has to
-   !! pack them, and that packing is a place a tensor transposes without
-   !! complaint -- so it belongs to whoever writes the file, with a test, and not
-   !! here where it would be invisible.
-   !! Whether `int1e_irp`'s nine components run with the dipole direction
-   !! fastest (`r` fastest) or the gradient direction fastest.
-   !!
-   !! Measured, not assumed, and it is the *gradient* that runs fastest:
-   !! `test_mqc_dipole_deriv` differences `multipole_matrices` and compares
-   !! against both readings, giving 1.5e-09 for this one and 6.1e-01 for the
-   !! other. The name reads false because the answer is false; it is kept as a
-   !! statement about `r` so the two readings are named the same way round in
-   !! the code and in the test.
-   !!
-   !! Worth measuring rather than reading off a convention: both orders give a
-   !! matrix of the right shape and magnitude, and the wrong one is a dipole
-   !! derivative transposed in its two Cartesian indices. That error survives
-   !! the translational sum rule, which runs over atoms and not over the
-   !! component pair, so nothing cheap would catch it.
    logical, parameter :: IRP_R_FASTEST = .false.
+      !! Whether `int1e_irp`'s nine components run with the dipole direction
+      !! fastest, rather than the gradient direction fastest. It is the gradient
+      !! that runs fastest, so this is false; `test_mqc_dipole_deriv` differences
+      !! `multipole_matrices` against both readings and gets 1.5e-09 for this one
+      !! and 6.1e-01 for the other.
 
+   ! The name reads false because the answer is false. It is kept as a statement
+   ! about `r` so the two readings are named the same way round here and in the
+   ! test. Worth measuring rather than reading off a convention: both orders give
+   ! a matrix of the right shape and magnitude, and the wrong one is a dipole
+   ! derivative transposed in its two Cartesian indices -- an error the
+   ! translational sum rule does not catch, running over atoms rather than over
+   ! the component pair.
+
+   ! Components libcint returns, as full Cartesian tensors: 9 quadrupole
+   ! components rather than the 6 unique ones and 27 octopole rather than 10.
+   ! Anything writing a GAMESS-style potential packs them itself, since that
+   ! packing is a place a tensor transposes without complaint and belongs where a
+   ! test can see it.
    integer, parameter :: DIPOLE_COMPONENTS = 3
    integer, parameter :: QUADRUPOLE_COMPONENTS = 9
    integer, parameter :: OCTOPOLE_COMPONENTS = 27
@@ -187,10 +176,10 @@ contains
    subroutine multipole_matrices(mol, origin, order, matrices, error)
       !! Multipole integrals of one order, over every shell pair
       !!
-      !! Returns `(n_ao, n_ao, n_components)`, the components in the order
-      !! libcint produces them: x,y,z for the dipole; xx,xy,xz,yx,...,zz for the
-      !! quadrupole; and the 27 of the octopole with z fastest. That is the *full*
-      !! Cartesian tensor, deliberately -- see the component parameters above.
+      !! Returns `(n_ao, n_ao, n_components)`, the components in the order libcint
+      !! produces them: x,y,z for the dipole; xx,xy,xz,yx,...,zz for the
+      !! quadrupole; and the 27 of the octopole with z fastest. The *full*
+      !! Cartesian tensor, not the unique components.
       type(libcint_molecule_t), intent(in), target :: mol
          !! `target` so its atm/bas/env can be addressed for the C call.
       real(dp), intent(in) :: origin(3)
@@ -224,9 +213,8 @@ contains
       end select
 
       ! A copy, because the origin lives in `env` and the molecule is read-only
-      ! here -- the same reason the range-separated exchange copies it. `+ 1`
-      ! because the slot constant is libcint's own 0-based offset and the Fortran
-      ! interface does not convert it.
+      ! here. `+ 1` because the slot constant is libcint's own 0-based offset and
+      ! the Fortran interface does not convert it.
       env_local = mol%env
       env_local(LIBCINT_PTR_COMMON_ORIG + 1:LIBCINT_PTR_COMMON_ORIG + 3) = origin
 

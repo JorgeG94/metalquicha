@@ -1,8 +1,7 @@
 !! Calculation type constants for quantum chemistry calculations
 module mqc_calc_types
-   !! Defines integer constants for calculation types to avoid string comparisons
-   !! throughout the codebase. Provides conversion utilities between string
-   !! representations and integer constants.
+   !! The `CALC_TYPE_*` constants, and conversion between them and the driver
+   !! names a deck spells.
    use pic_types, only: int32
    implicit none
    private
@@ -28,18 +27,16 @@ module mqc_calc_types
    !! Minimize the geometry, which is a loop over gradient calculations rather
    !! than a calculation. Handled above `run_calculation`, not inside it.
    integer(int32), parameter :: CALC_TYPE_CONFORMERS = 6
-   !! Search for conformers, which is a sampling run wrapped around tens of
-   !! thousands of gradients rather than a calculation. Like OPTIMIZE it is
-   !! driven above `run_calculation` and therefore cannot be dispatched from
-   !! inside it.
+   !! Search for conformers, a sampling run wrapped around many gradients
+   !! rather than a calculation. Driven above `run_calculation`, like OPTIMIZE,
+   !! and not dispatchable from inside it.
 
 contains
 
    pure function calc_type_from_string(calc_type_str) result(calc_type)
-      !! Convert calculation type string to integer constant
+      !! Calculation type for a driver name
       !!
-      !! Performs case-insensitive comparison and returns appropriate constant.
-      !! Returns CALC_TYPE_UNKNOWN for unrecognized strings.
+      !! Case-insensitive. `CALC_TYPE_UNKNOWN` for anything unrecognized.
       character(len=*), intent(in) :: calc_type_str  !! Input string (e.g., "energy", "gradient")
       integer(int32) :: calc_type                     !! Output integer constant
 
@@ -63,16 +60,12 @@ contains
       case ("hessian")
          calc_type = CALC_TYPE_HESSIAN
       case ("makefp", "makeefp")
-         ! Both spellings: GAMESS calls the run type MAKEFP, and "makeefp" is what
-         ! people type when they are thinking of the file it produces.
+         ! GAMESS spells the run type MAKEFP; "makeefp" is the common variant.
          calc_type = CALC_TYPE_MAKEFP
       case ("optimize", "optimization", "opt")
-         ! "optimize" is what the QCSchema-shaped decks here already use for a
-         ! driver; the other two are what people type.
+         ! "optimize" is the QCSchema driver name the decks here use.
          calc_type = CALC_TYPE_OPTIMIZE
       case ("conformers", "conformer", "crest")
-         ! "crest" because that is what the sampling is, and people will reach
-         ! for the program's name before the word for what it produces.
          calc_type = CALC_TYPE_CONFORMERS
       case default
          calc_type = CALC_TYPE_UNKNOWN
@@ -81,9 +74,7 @@ contains
    end function calc_type_from_string
 
    pure function calc_type_to_string(calc_type) result(calc_type_str)
-      !! Convert calculation type integer constant to string
-      !!
-      !! Provides human-readable string representation of calculation type.
+      !! The driver name a calculation type constant stands for
       integer(int32), intent(in) :: calc_type         !! Input integer constant
       character(len=:), allocatable :: calc_type_str  !! Output string representation
 

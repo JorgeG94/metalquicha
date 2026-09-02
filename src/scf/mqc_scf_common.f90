@@ -3,13 +3,10 @@ module mqc_scf_common
    !! The parts of an SCF that do not depend on how the integrals were made.
    !!
    !! Orthogonalising the overlap, forming a density from occupied orbitals and
-   !! measuring spin contamination are all pure linear algebra: the libcint and
-   !! cuEST paths had line-for-line copies of each, down to the same tolerance
-   !! declared under two different names. They live here so the two backends
-   !! cannot drift apart on the numerics while agreeing on the physics.
+   !! measuring spin contamination are pure linear algebra, and live here so
+   !! the libcint and cuEST paths cannot drift apart on the numerics.
    !!
-   !! What is *not* here is anything that touches integrals, DIIS or the
-   !! iteration itself -- those differ between the backends for real reasons.
+   !! Nothing here touches integrals, DIIS or the iteration itself.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use pic_blas_interfaces, only: pic_gemm
@@ -30,33 +27,25 @@ module mqc_scf_common
    public :: LINEAR_DEPENDENCE_TOL
    public :: GWH_K
 
-   !! Overlap eigenvalues at or below this are dropped as linearly dependent.
-   !!
-   !! One number for both backends. It used to be `NULL_THRESHOLD` on the
-   !! libcint side and `LINEAR_DEPENDENCE_TOL` on the cuEST side, both 1.0e-7,
-   !! which meant the two paths agreed only by coincidence.
    real(dp), parameter :: LINEAR_DEPENDENCE_TOL = 1.0e-7_dp
+      !! Overlap eigenvalues at or below this are dropped as linearly
+      !! dependent. One number for both backends.
 
-   !! Overlap eigenvalues above the drop threshold but below this one are kept
-   !! and said out loud.
-   !!
-   !! The zone between the two is the one that hurts. A mode below
-   !! `LINEAR_DEPENDENCE_TOL` is discarded and the basis is smaller, which is
-   !! a decision with a number attached; a mode just above it is *retained*,
-   !! and X carries a 1/sqrt(s) of ten thousand or more into every iteration.
-   !! Nothing fails. DIIS extrapolates along a direction that is mostly noise,
-   !! convergence slows or stalls, and two runs of the same molecule in
-   !! slightly different orientations can settle on different solutions.
-   !! Diffuse functions on a large or compact system are how a basis gets
-   !! here, which is precisely when nobody is watching for it.
    real(dp), parameter :: LINEAR_DEPENDENCE_WARN_TOL = 1.0e-5_dp
+      !! Overlap eigenvalues above the drop threshold but below this one are
+      !! kept and said out loud.
+      !!
+      !! The zone between the two is the one that hurts: a mode just above
+      !! `LINEAR_DEPENDENCE_TOL` is *retained*, and X carries a `1/sqrt(s)` of
+      !! ten thousand or more into every iteration. Nothing fails. DIIS
+      !! extrapolates along a direction that is mostly noise, convergence slows
+      !! or stalls, and two runs of the same molecule in slightly different
+      !! orientations can settle on different solutions.
    public :: LINEAR_DEPENDENCE_WARN_TOL
 
-   !! The empirical scale on the GWH off-diagonal. 1.75 is the value in
-   !! universal use, and both backends have to start from the same matrix or
-   !! comparing their iteration counts means nothing -- which is exactly why it
-   !! is one constant here rather than one in each of them.
    real(dp), parameter :: GWH_K = 1.75_dp
+      !! The empirical scale on the GWH off-diagonal, 1.75 in universal use.
+      !! One constant, so both backends start from the same matrix.
 
    type :: lindep_tally_t
       !! What a run of many SCFs saw, instead of what each one saw
@@ -69,17 +58,16 @@ module mqc_scf_common
    end type lindep_tally_t
 
    logical, save :: collecting = .false.
-      !! Set while a caller is running many SCFs and wants one report, not many.
-      !!
-      !! **Why this is module state rather than an argument.** The report is
-      !! raised deep inside `run_libcint_rhf`, which is reached from the fragment
-      !! bridge, SAPT, AFO, Fukui and the atomic guess. Threading a collector
-      !! through all of them would change eight signatures across six files to
-      !! carry something only one caller sets, and every future call site would
-      !! have to remember it. Fragments are distributed over MPI and pinned to
-      !! one thread apiece -- `omp_set_num_threads(1)` on that path -- so this is
-      !! written and read by one thread per rank, which is what makes it safe
-      !! here and would not be if fragments were threaded.
+      !! Set while a caller is running many SCFs and wants one report, not
+      !! many. Module state because the report is raised deep inside
+      !! `run_libcint_rhf`, which is reached from the fragment bridge, SAPT,
+      !! AFO, Fukui and the atomic guess.
+   ! TODO(mqc): the thread-safety argument this carried is stale. It rested on
+   ! fragment workers being pinned to one thread by `omp_set_num_threads(1)`,
+   ! and `set_worker_threads` now applies that clamp only to tblite -- every ab
+   ! initio fragment worker keeps the threads the launcher gave it. Nothing yet
+   ! enters a fragment loop from more than one thread, so this is
+   ! unwritten-down luck rather than a guarantee.
    type(lindep_tally_t), save :: tally
       !! What the open window has accumulated so far
 
@@ -118,14 +106,9 @@ contains
          !! divides by and therefore what the SCF has to live with.
       real(dp), intent(in), optional :: threshold
          !! Overlap eigenvalues at or below this are dropped. Defaults to
-         !! `LINEAR_DEPENDENCE_TOL`, and `keywords.scf.linear_dependence_threshold`
-         !! is how a deck overrides it. A non-positive value is ignored rather
-         !! than obeyed: zero would keep every mode including the numerically
-         !! null ones, which is not a basis anyone means to ask for.
-         !!
-         !! Optional, all of them, so the call sites that only want X are
-         !! unchanged -- there are five across two backends and only the ones
-         !! that report need the numbers.
+         !! `LINEAR_DEPENDENCE_TOL`, and
+         !! `keywords.scf.linear_dependence_threshold` is how a deck overrides
+         !! it. A non-positive value is ignored rather than obeyed.
 
       real(dp), allocatable :: eigenvectors(:, :), eigenvalues(:)
       integer :: n_ao, i, kept, info
@@ -176,10 +159,7 @@ contains
       !! **The warnings are not gated on `verbose`, deliberately.** Dropping a
       !! basis function changes the space every method downstream works in:
       !! the SCF, the virtuals an MP2 or CC run correlates, the count in the
-      !! output file. A quiet run that silently solves a different problem
-      !! than the one asked for is the failure this exists to prevent, and
-      !! `logger%info` on its own would hide it at exactly the verbosity most
-      !! production runs use. Only the healthy-basis line is verbose-only.
+      !! output file. Only the healthy-basis line is verbose-only.
       integer, intent(in) :: n_ao      !! Basis functions the basis set defines
       integer, intent(in) :: n_mo      !! Orbitals that survived orthogonalisation
       real(dp), intent(in) :: smallest_overlap
@@ -187,9 +167,7 @@ contains
       logical, intent(in) :: verbose
       real(dp), intent(in), optional :: threshold
          !! The cutoff actually applied, which the message quotes. Passed
-         !! rather than read from the parameter because a deck can move it,
-         !! and a warning naming a cutoff the run did not use is worse than
-         !! one that names none.
+         !! rather than read from the parameter because a deck can move it.
 
       character(len=160) :: line
       integer :: n_dropped
@@ -203,10 +181,8 @@ contains
       n_dropped = n_ao - n_mo
 
       ! Collecting: fold this SCF into the tally and say nothing. One
-      ! fragmented run is thousands of SCFs, and the block below is eight to
-      ! twelve lines apiece -- the advisory branch especially, which reports a
-      ! calculation that is *fine*. The information is kept; only the repetition
-      ! is dropped. See `report_linear_dependence_tally`.
+      ! fragmented run is thousands of SCFs against eight to twelve lines
+      ! apiece. See `report_linear_dependence_tally`.
       if (collecting) then
          if (n_dropped > 0) then
             tally%n_reports = tally%n_reports + 1
@@ -220,9 +196,8 @@ contains
             tally%n_reports = tally%n_reports + 1
             tally%n_near_scf = tally%n_near_scf + 1
          end if
-         ! Tracked for every SCF that reported, dropped or not: the smallest
-         ! surviving eigenvalue is what X actually divides by, and it is the
-         ! number that says how bad the worst fragment was.
+         ! Tracked whether or not anything was dropped: the smallest surviving
+         ! eigenvalue is what X actually divides by.
          if (smallest_kept > 0.0_dp) then
             if (tally%worst_kept <= 0.0_dp .or. smallest_kept < tally%worst_kept) then
                tally%worst_kept = smallest_kept
@@ -285,9 +260,7 @@ contains
    subroutine report_linear_dependence_tally(result, context)
       !! One report for many SCFs, in place of one report each
       !!
-      !! Says nothing when nothing was seen, which is the ordinary case -- a
-      !! summary that prints "0 of 5000 fragments" every run trains people to
-      !! skip it, and then it is not read on the run where it matters.
+      !! Says nothing when nothing was seen, which is the ordinary case.
       type(lindep_tally_t), intent(in) :: result
       character(len=*), intent(in) :: context
          !! What the SCFs were, for the message: "fragment SCFs" and so on.
@@ -343,10 +316,9 @@ contains
    subroutine build_density_spin(coeff, n_occ, density)
       !! D_sigma = C_occ C_occ^T, one electron per occupied orbital
       !!
-      !! Deliberately a separate routine rather than the closed-shell one with a
-      !! factor: that one carries the two electrons per spatial orbital, and
-      !! reusing it here would double every spin density. That error converges,
-      !! which is what makes it worth keeping the two names apart.
+      !! Separate from `build_density_closed_shell`, which carries the factor
+      !! of two: reusing that one here doubles every spin density, and the
+      !! error converges rather than failing.
       real(dp), intent(in) :: coeff(:, :)        !! C_sigma, (n_ao, n_mo)
       integer, intent(in) :: n_occ               !! Occupied orbitals of this spin
       real(dp), intent(inout) :: density(:, :)   !! D_sigma, (n_ao, n_ao)
@@ -362,11 +334,10 @@ contains
       !!
       !!   <S^2> = S_z(S_z+1) + n_beta - sum_ij |<phi_i^a|phi_j^b>|^2
       !!
-      !! The exact value for a pure spin state is S_z(S_z+1); the excess is
-      !! spin contamination, and reporting it is the cheapest way to notice
-      !! that an open-shell answer is not describing the state intended. A UHF
-      !! solution that has collapsed onto the restricted one, or onto a badly
-      !! broken-symmetry state, says so here and nowhere else.
+      !! The exact value for a pure spin state is `S_z(S_z+1)`; the excess is
+      !! spin contamination. A UHF solution that has collapsed onto the
+      !! restricted one, or onto a badly broken-symmetry state, says so here
+      !! and nowhere else.
       real(dp), intent(in) :: occ_alpha(:, :), occ_beta(:, :), overlap(:, :)
       integer, intent(in) :: n_alpha, n_beta
       real(dp) :: s_squared

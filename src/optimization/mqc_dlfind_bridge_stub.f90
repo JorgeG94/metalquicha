@@ -1,11 +1,7 @@
 !! Stand-in for DL-FIND when the build has no libdlfind
 module mqc_dlfind_bridge
    !! Same name and same entry points as the real bridge, declining.
-   !!
-   !! A stub rather than a preprocessor guard at the call site, matching
-   !! mqc_libcint_bridge_stub and mqc_cuest_bridge_stub: the optimizer reads
-   !! the same either way, and `dlfind_available` is how it asks in advance so
-   !! the refusal can name the build option.
+   !! `dlfind_available` is how a caller asks in advance.
    use pic_types, only: dp
    use mqc_optimizer_types, only: optimizer_settings_t, energy_gradient_i, step_callback_i, &
                                   hessian_i
@@ -45,11 +41,10 @@ contains
                               energy_gradient, step_taken, final_energy, error, &
                               hessian, endpoint)
       !! No-op stand-in: optimizing a geometry needs the DL-FIND backend
-      !!
-      !! The argument list has to track the real bridge's exactly, including the
-      !! arguments nothing here reads: the caller is compiled once against
-      !! whichever of the two is present, so a signature that has drifted is a
-      !! compile error in a build nobody makes locally.
+      ! The argument list has to track the real bridge's exactly, including the
+      ! arguments nothing here reads: the caller is compiled once against
+      ! whichever of the two is present, so a signature that has drifted is a
+      ! compile error only in a build nobody makes locally.
       type(optimizer_settings_t), intent(in) :: opt_settings
       integer, intent(in) :: natoms
       integer, intent(in) :: znuc(natoms)

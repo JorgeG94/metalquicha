@@ -4,23 +4,19 @@ module mqc_dlfind_bridge
    !! `api_dl_find`, and turns DL-FIND's seven callbacks back into calls to
    !! that evaluator.
    !!
-   !! **Why the state is at module scope.** DL-FIND's callbacks are plain
-   !! function pointers with no user-data argument -- there is nowhere to hang
-   !! a context, so the system being optimized has to be somewhere the
-   !! callbacks can see without being handed it. One optimization at a time
-   !! follows from that, and `mqc_geometry_optimizer` is what enforces it.
+   !! **One optimization at a time.** DL-FIND's callbacks are plain function
+   !! pointers with no user-data argument, so the system being optimized lives
+   !! in module state where they can see it. `mqc_geometry_optimizer` enforces
+   !! the one-at-a-time part.
    !!
-   !! **The interface is C, deliberately.** `api_dl_find` is bind(c), so
+   !! `api_dl_find` is bind(c) and declared in the interface block below, so
    !! nothing here needs libdlfind's .mod files and the two projects may be
-   !! built by different compilers. The interface block below is this
-   !! program's own declaration of it; there is no `use` of anything from
-   !! libdlfind anywhere in this file.
+   !! built by different compilers.
    !!
    !! **A DL-FIND failure ends the process.** libdlfind's `dlf_error` calls
    !! back here and then executes `error stop` regardless of what this does, so
    !! `cb_error` gets one chance to say what was being optimized before the job
-   !! dies. There is no way to turn that into a returned error without patching
-   !! libdlfind.
+   !! dies.
    use, intrinsic :: iso_c_binding, only: c_int, c_double, c_funptr, c_funloc
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
@@ -51,28 +47,20 @@ module mqc_dlfind_bridge
    integer(c_int), parameter :: DLF_COORDS_HDLC_TC = 2
    integer(c_int), parameter :: DLF_COORDS_DLC_TC = 4
 
-   ! Chain-of-states runs are selected through `icoord`, not through `iopt`:
-   ! DL-FIND reads the unit place as the coordinate system and the hundreds and
-   ! tens as what the band is. 10X is NEB with free endpoints, 11X endpoints
-   ! moving only perpendicular to their tangent, 12X frozen endpoints. 190 is
-   ! not NEB at all -- it is the quantum transition state search -- which is why
-   ! the offsets stop at 120 and are added to a unit place rather than used
-   ! whole. The implementation is improved-tangent NEB with a climbing image.
-   ! The dimer occupies the 200 band, with the tens place choosing how the pair
-   ! is rotated: 20X leaves translation and rotation to the optimizer named by
-   ! `iopt`, 21X and 22X do the rotation by a line search inside DL-FIND's own
-   ! dimer module at the cost of extra energy evaluations per rotation. 20X is
-   ! taken here because it is the one that respects the algorithm the deck
-   ! chose.
+   ! Chain-of-states runs are selected through `icoord`, not `iopt`: the unit
+   ! place is the coordinate system and the tens and hundreds are the band. 10X
+   ! is NEB with free endpoints, 11X endpoints moving only perpendicular to
+   ! their tangent, 12X frozen endpoints; 190 is not NEB at all but the quantum
+   ! transition state search, which is why the offsets stop at 120. The dimer
+   ! occupies the 200 band, and the tens place chooses how the pair is rotated:
+   ! 20X leaves translation and rotation to the optimizer named by `iopt`, 21X
+   ! and 22X rotate by a line search inside DL-FIND's own dimer module.
    integer(c_int), parameter :: DLF_DIMER = 200
 
    ! DL-FIND's task numbers. 1011 is "TS search, then find both downhill
    ! structures": it runs the saddle search as configured, stores the geometry
    ! and the imaginary mode, then displaces along that mode in each direction
-   ! and minimises, which is the practical answer to what the saddle connects.
-   ! DL-FIND has no IRC -- there is no `dlf_irc.f90` -- so this is the closest
-   ! thing to one it offers, and it answers the question an IRC is usually run
-   ! to answer.
+   ! and minimises. DL-FIND has no IRC, and this is the closest it offers.
    integer(c_int), parameter :: DLF_TASK_TS_AND_DOWNHILL = 1011
 
    ! Which structure `cb_put_coords` is being handed. 1 is an ordinary step, 2
@@ -109,11 +97,9 @@ module mqc_dlfind_bridge
       !! A `spec` entry of -1 removes the atom's three coordinates from the
       !! optimization entirely. DL-FIND also has -2/-3/-4 for freezing single
       !! Cartesian components and -23/-24/-34 for pairs; only the whole-atom
-      !! case is offered here, because the others are a coordinate-frame choice
-      !! disguised as a chemistry one -- they mean nothing unless the caller
-      !! knows which way the input axes point.
+      !! case is offered here.
 
-   ! The optimization in progress. See the note above on why this is here.
+   ! The optimization in progress.
    procedure(energy_gradient_i), pointer, save :: evaluator => null()
    procedure(hessian_i), pointer, save :: hessian_evaluator => null()
       !! Null when the caller has none to offer, which is not an error: the
@@ -127,16 +113,14 @@ module mqc_dlfind_bridge
    real(dp), allocatable, save :: downhill_a(:, :), downhill_b(:, :)
    real(dp), save :: energy_a = 0.0_dp, energy_b = 0.0_dp
    real(dp), save :: saddle_energy = 0.0_dp
-   logical, save :: have_saddle = .false.
       !! The transition structure's own energy. A `connect` run does not stop
       !! there -- it carries on downhill twice -- so the energy the optimizer
       !! finishes with belongs to the last minimum, not to the saddle.
+   logical, save :: have_saddle = .false.
    logical, save :: have_downhill_a = .false., have_downhill_b = .false.
       !! The two minima a `connect` run falls to, kept for the caller to report.
    real(dp), allocatable, save :: endpoint_coords(:, :)
-      !! The second structure of a chain-of-states run, held here for the same
-      !! reason the geometry is: `cb_get_params` is a C callback and takes no
-      !! context of its own.
+      !! The second structure of a chain-of-states run.
    real(dp), allocatable, save :: latest_coords(:, :)
    real(dp), save :: latest_energy = 0.0_dp
    logical, save :: have_result = .false.
@@ -194,13 +178,12 @@ contains
       real(dp), intent(out) :: final_energy
       type(error_t), intent(inout) :: error
       procedure(hessian_i), optional :: hessian
+         !! Second derivatives, for the algorithms that climb rather than
+         !! descend. Absent is not a refusal: DL-FIND falls back to two-point
+         !! finite differences of the gradients it is already asking for.
       real(dp), intent(in), optional :: endpoint(:, :)
          !! The product geometry, Bohr, same atom order as `coords`. Present
          !! turns this into a chain-of-states run.
-         !! Second derivatives, for the algorithms that climb rather than
-         !! descend. Absent is not a refusal: DL-FIND falls back to two-point
-         !! finite differences of the gradients it is already asking for, which
-         !! costs `6N` of them per Hessian and gets the same answer.
 
       integer(c_int) :: nvar, nspec, nvar2_in
       integer :: k, n_cons_atoms, ncons_here
@@ -272,9 +255,7 @@ contains
       evaluator => energy_gradient
       on_step => step_taken
 
-      ! Only for the algorithms that hold one. Pointing it at a live evaluator
-      ! for L-BFGS would be harmless -- nothing would call it -- but it would
-      ! also be a lie about what the run is going to do.
+      ! Only for the algorithms that hold one.
       nullify (hessian_evaluator)
       if (present(hessian) .and. algorithm_needs_hessian(opt_settings%algorithm)) then
          hessian_evaluator => hessian
@@ -289,9 +270,9 @@ contains
       allocate (atomic_numbers(natoms), source=znuc)
       allocate (atom_residues(natoms), source=residues)
       allocate (initial_coords(3, natoms), source=coords)
-      ! Held for `cb_get_params`, and cleared when absent: this module's state is
-      ! `save`, so a second optimization in the same process would otherwise
-      ! inherit the previous run's path and quietly become a chain-of-states run.
+      ! Held for `cb_get_params`, and cleared when absent: this module's state
+      ! is `save`, so a second optimization in the same process would otherwise
+      ! inherit the previous run's path.
       have_downhill_a = .false.
       have_downhill_b = .false.
       have_saddle = .false.
@@ -305,31 +286,28 @@ contains
 
       ! nspec is fixed by DL-FIND as nat + nz + 5*ncons + 2*nconn + nat, and it
       ! checks: a mismatch is refused as an interface error rather than read
-      ! past. With nz = nat and no constraints that is 3*nat, laid out as
-      ! [frozen(nat), znuc(nat), micspec(nat)]. Passing znuc rather than
-      ! leaving nz at zero is what lets HDLC and DLC perceive connectivity --
-      ! without it those coordinate systems have no elements to work from.
+      ! past. Laid out as
       ! [residue(nat), znuc(nat), icons(5*ncons), iconn(2*nconn), micspec(nat)].
       ! The constraint block sits between the charges and the microiterative
       ! flags, so adding constraints moves micspec -- which is why the offset
-      ! below is computed rather than written as 2*nat.
+      ! below is computed rather than written as 2*nat. Passing znuc rather than
+      ! leaving nz at zero is what lets HDLC and DLC perceive connectivity.
       !
       ! `nconn` stays zero. DL-FIND reads `iconn` from `nat+nz+ncons` while it
       ! reads `micspec` from `nat+nz+5*ncons+2*nconn`; the two disagree about
       ! how long the constraint block is, so a deck using both would have its
-      ! connections read out of the middle of the constraints. Constraints are
-      ! the half worth having, so they are the half that is offered.
+      ! connections read out of the middle of the constraints.
       ncons_here = 0
       if (allocated(opt_settings%constraints)) ncons_here = size(opt_settings%constraints)
       nspec = int(3*natoms + 5*ncons_here, c_int)
 
       ! The second coordinate array carries NEB images, a reaction endpoint or
-      ! per-atom masses and weights. A minimization uses none of them and
-      ! passes zero, and DL-FIND still hands the callback a length of
-      ! max(nvarin2,1). A chain-of-states run passes one frame: the product.
-      ! DL-FIND interpolates the images between it and the geometry it was
-      ! given, so a path is two structures and a count rather than a file of
-      ! guesses.
+      ! per-atom masses and weights. A minimization uses none of them and passes
+      ! zero, and DL-FIND still hands the callback a length of max(nvarin2,1). A
+      ! chain-of-states run passes one frame, the product, and DL-FIND
+      ! interpolates the images between it and the geometry it was given.
+      ! TODO(mqc): the third assignment below is dead -- it can only fire when
+      ! `endpoint_coords` is unallocated, and then `nvar2_in` is already zero.
       nvar2_in = 0_c_int
       if (allocated(endpoint_coords)) nvar2_in = int(3*natoms, c_int)
       if (opt_settings%saddle_method == SADDLE_METHOD_DIMER .and. &
@@ -350,10 +328,8 @@ contains
                         "The message above says which.")
       else if (.not. have_result) then
          ! DL-FIND reports geometries through dlf_put_coords, and only when
-         ! printf >= 1 -- which cb_get_params sets. Reaching here means it
-         ! returned without ever offering one, so there is nothing to hand
-         ! back and overwriting the caller's geometry with the starting one
-         ! dressed as a result would be worse than saying so.
+         ! printf >= 1, which cb_get_params sets. Reaching here means it returned
+         ! without ever offering one, so there is nothing to hand back.
          call error%set(ERROR_GENERIC, &
                         "DL-FIND returned no geometry. Nothing was optimized.")
       else
@@ -430,19 +406,17 @@ contains
 
       coords(1:nvar) = reshape(initial_coords, [3*n_atoms])
 
-      ! [residue(nat), znuc(nat), micspec(nat)]. The first block is not a
-      ! frozen/free flag, which is what it looks like and what this passed at
-      ! first: a negative entry freezes an atom, but a positive one is the
-      ! *residue* the atom belongs to. All zeros means no atom is in any
-      ! residue, which Cartesians ignore and HDLC cannot survive -- it builds
-      ! internal coordinates per residue, found none, and segfaulted.
+      ! `spec` is [residue(nat), znuc(nat), icons(5*ncons), micspec(nat)]. The
+      ! first block is not a frozen/free flag: a negative entry freezes an
+      ! atom, but a positive one is the *residue* the atom belongs to. All zeros
+      ! means no atom is in any residue, which Cartesians ignore and HDLC cannot
+      ! survive -- it builds internal coordinates per residue.
       !
       ! The residues are this program's monomers, which is the mapping that
       ! makes HDLC worth having: internals inside each molecule, Cartesians
       ! between them. Pure DLC is the other extreme, one residue over
       ! everything, and it fails outright on a cluster ("cyclic failure at
-      ! residue 1") because the molecules are not bonded to each other and
-      ! there is no connected internal-coordinate system to build.
+      ! residue 1") because the molecules are not bonded to each other.
       !
       ! micspec must be 0 or 1 and DL-FIND validates it, so 1 (this atom takes
       ! part) is the only safe fill whether or not microiterations run.
@@ -451,9 +425,8 @@ contains
       end do
 
       ! A frozen atom's residue is overwritten rather than annotated: the entry
-      ! is one number and DL-FIND reads a negative one as "held still". So a
-      ! frozen atom belongs to no residue, which is DL-FIND's model and not a
-      ! choice made here -- it has no coordinates for a residue to contain.
+      ! is one number and DL-FIND reads a negative one as "held still", so a
+      ! frozen atom belongs to no residue.
       if (allocated(settings%frozen_atoms)) then
          do i = 1, size(settings%frozen_atoms)
             spec(settings%frozen_atoms(i)) = DLF_SPEC_FROZEN
@@ -485,23 +458,16 @@ contains
       nz = int(n_atoms, c_int)
       ncons = int(n_constraints, c_int)
       nconn = 0_c_int
-      tatoms = 1_c_int  !! The variables really are atoms; HDLC needs to know
+      tatoms = 1_c_int  ! The variables really are atoms; HDLC needs to know
 
-      ! Not optional, whatever the comment above about defaults says.
-      ! `dlf_default_init` sets most of these arguments and then dlf_read_in
-      ! sets nz and nweight itself -- but nframe, nmass and n_po_scaling are
-      ! plain uninitialized locals in dlf_read_in, passed here intent(inout),
-      ! and ntasks is initialized to -1 on purpose ("why??? no real need for
-      ! this not to be 1" is the comment in DL-FIND's own source) and then
-      ! checked for being positive. Leaving any of them alone means reading an
-      ! uninitialized integer: nframe and nmass are validated against
-      ! nvarin2 = nframe*nat*3 + nweight + nmass, which is 0 here, so a garbage
-      ! value is a hard failure with a confusing message, and ntasks at -1 is
-      ! the "Number of task farms must be positive" refusal.
+      ! Not optional, whatever the docstring above says about defaults. nframe,
+      ! nmass and n_po_scaling are plain uninitialized locals in dlf_read_in,
+      ! passed here intent(inout), and ntasks arrives at -1 and is then checked
+      ! for being positive. Leaving any of them alone means reading an
+      ! uninitialized integer.
       !
       ! One task farm: this program does its own MPI, and DL-FIND is linked
-      ! against its serial stubs. Splitting the job again underneath would be
-      ! two schedulers dividing the same ranks.
+      ! against its serial stubs.
       ntasks = 1_c_int
       if (settings%zero_modes >= 0) nzero = int(settings%zero_modes, c_int)
       if (settings%soft_mode_threshold > 0.0_dp) then
@@ -524,18 +490,14 @@ contains
       ! silently running one from a single geometry would optimize something
       ! nobody described.
       if (settings%saddle_method == SADDLE_METHOD_DIMER) then
-         ! The dimer needs a direction to start from, and randomises one when
-         ! it is given nothing -- which on any real system means starting the
-         ! search along an arbitrary direction in 3N space. An endpoint, when
-         ! there is one, points the pair along the reaction instead.
+         ! The dimer needs a direction to start from and randomises one when
+         ! given nothing. An endpoint, when there is one, points the pair along
+         ! the reaction instead.
          !
          ! Handed over as the geometry, not as the displacement to it. DL-FIND
          ! reads `coords2` as an absolute structure and takes the difference
          ! itself unless `tsrelative` says otherwise, so passing a difference
-         ! while leaving that flag alone has it subtract the coordinates a
-         ! second time. The resulting axis points somewhere arbitrary, the
-         ! first translation lands on a geometry with no SCF, and the run dies
-         ! as "energy evaluation failed" several cycles later.
+         ! while leaving that flag alone has it subtract the coordinates twice.
          icoord = dlfind_coordinates(settings%coordinates, DLF_DIMER)
          if (settings%dimer_separation > 0.0_dp) delta = real(settings%dimer_separation, c_double)
          if (settings%dimer_max_rotations > 0) maxrot = int(settings%dimer_max_rotations, c_int)
@@ -574,9 +536,7 @@ contains
       ! A `connect` run needs 4. DL-FIND hands back the transition structure and
       ! the two minima it relaxed to only from inside `printf >= 4` blocks --
       ! the same blocks that write TS.xyz and minimum_+.xyz -- so at the default
-      ! the downhill runs happen, report themselves as finished, and are never
-      ! passed to the caller. It costs a handful of files in the working
-      ! directory, which is a fair price for the answer being reachable.
+      ! the downhill runs happen and are never passed to the caller.
       if (settings%connect) printf = 4_c_int
 
       ! Curvature settings, which only P-RFO and Newton-Raphson read. Asking
@@ -598,14 +558,12 @@ contains
       ! as everywhere else here.
       if (settings%algorithm == OPT_ALGO_DAMPED) then
          if (settings%timestep > 0.0_dp) timestep = real(settings%timestep, c_double)
-         ! **Zero cannot be asked for, and saying so is the only honest option.**
-         ! This gate is `>=` deliberately -- zero friction is a meaningful
-         ! request and the rest of this module treats only a NEGATIVE value as
-         ! "engine default". But DL-FIND's own `dlf_default_set` tests
-         ! `if (glob%fric0 <= 0.D0) glob%fric0 = 0.3D0`, so a zero that crosses
-         ! the boundary intact is overwritten with 0.3 on the far side before
-         ! the optimisation starts. `timestep` and `friction_factor` above use
-         ! `>` and are not affected, because that matches DL-FIND's convention.
+         ! **Zero friction cannot be asked for.** This gate is `>=` because a
+         ! negative value is what means "engine default" here, but DL-FIND's own
+         ! `dlf_default_set` tests `if (glob%fric0 <= 0.D0) glob%fric0 = 0.3D0`,
+         ! so a zero that crosses the boundary intact is overwritten with 0.3
+         ! before the optimisation starts. `timestep` and `friction_factor` use
+         ! `>` rather than `>=`, matching DL-FIND's convention for those two.
          if (settings%friction == 0.0_dp .or. settings%friction_rising == 0.0_dp) then
             call logger%warning("  keywords.optimization: DL-FIND treats a friction "// &
                                 "of zero as 'unset' and will use 0.3 instead. Ask for "// &
@@ -711,16 +669,14 @@ contains
    subroutine cb_get_hessian(nvar, coords, hessian, status) bind(c)
       !! DL-FIND asking for second derivatives at a geometry
       !!
-      !! **Declining is a supported answer.** A non-zero status tells DL-FIND
-      !! to build its own by two-point finite difference of the gradients it is
-      !! already requesting, and it says so and carries on. So this returns 1
-      !! whenever there is no evaluator rather than failing the run -- a
-      !! minimiser never asks, and an algorithm that does asks for something it
-      !! can get another way.
+      !! **Declining is a supported answer.** A non-zero status tells DL-FIND to
+      !! build its own by two-point finite difference of the gradients it is
+      !! already requesting, so this returns 1 whenever there is no evaluator
+      !! rather than failing the run.
       !!
       !! Cartesian on the way out. DL-FIND calls `dlf_coords_hessian_xtoi` on
-      !! whatever it gets, so handing it a matrix already in internals would be
-      !! transformed a second time.
+      !! whatever it gets, so a matrix already in internals would be transformed
+      !! a second time.
       integer(c_int), intent(in), value :: nvar
       real(c_double), intent(in) :: coords(nvar)
       real(c_double), intent(out) :: hessian(nvar, nvar)
@@ -792,16 +748,14 @@ contains
    function dlfind_print_level() result(printl)
       !! How loud DL-FIND should be, from how loud this program was asked to be
       !!
-      !! DL-FIND writes with `write(stdout,...)` throughout and cannot be
-      !! routed into pic's logger without editing every one of its thirty
-      !! source files, so the next best thing is to make its own verbosity dial
-      !! follow ours. `keywords.optimization.print_level` still overrides this
-      !! outright, which is the escape hatch for debugging an optimization.
+      !! DL-FIND writes with `write(stdout,...)` and cannot be routed into
+      !! pic's logger, so its own verbosity dial follows this program's instead.
+      !! `keywords.optimization.print_level` overrides this outright.
       !!
-      !! The default is quiet at info level rather than DL-FIND's own 2,
-      !! because this program already prints a line per step with the energy
-      !! and the largest gradient component. DL-FIND's convergence table on top
-      !! of that is the same information a second time, six lines per step.
+      !! Quiet at info level rather than DL-FIND's own 2: this program already
+      !! prints a line per step with the energy and the largest gradient
+      !! component, and DL-FIND's convergence table repeats it six lines at a
+      !! time.
       use pic_logger, only: debug_level, verbose_level, info_level
       integer(c_int) :: printl
 

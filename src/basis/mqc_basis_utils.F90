@@ -30,14 +30,6 @@ contains
       !!   * -> _st_   (the only character BSE escapes, being awkward in a filename)
       !!   spaces dropped
       !!   everything else kept, `+` and parentheses included
-      !!
-      !! Examples:
-      !!   6-31G*       -> 6-31g_st_
-      !!   6-311++G**   -> 6-311++g_st__st_
-      !!   6-311G(d,p)  -> 6-311g(d,p)
-      !!   def2-SV(P)   -> def2-sv(p)
-      !!   def2-SVP     -> def2-svp
-      !!   cc-pVDZ      -> cc-pvdz
       character(len=*), intent(in) :: basis_name
       character(len=:), allocatable :: normalized
       integer :: i, out_pos, code
@@ -76,12 +68,8 @@ contains
       !!
       !! 1. every entry of $MQC_BASIS_PATH, colon-separated
       !! 2. ./basis_sets, so a run from the source tree works with no setup
-      !! 3. the basis_sets/ of the tree this binary was configured from
-      !!
-      !! Three because each covers a case the others do not: the variable lets
-      !! a user point at their own collection, the relative path is what the
-      !! test suite and the validation scripts rely on, and the compiled-in
-      !! default is what makes `mqc` work from an arbitrary directory.
+      !! 3. the basis_sets/ of the tree this binary was configured from, absent
+      !!    in an fpm build, which has no configure step to learn it
       character(len=:), allocatable :: directories(:)
 
       character(len=MAX_PATH) :: env_value

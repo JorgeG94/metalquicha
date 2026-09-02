@@ -5,11 +5,8 @@ module mqc_hdf5_bindings
    !! **The C API rather than HDF5's Fortran interface, deliberately.**
    !! `hdf5.mod` is compiled by, and only readable by, the compiler that built
    !! it -- a gfortran-built module cannot be used from ifx or nvfortran, and
-   !! this project claims all of them. Binding the C entry points sidesteps
-   !! that entirely: the ABI is stable and compiler-independent, and the
-   !! machine that has libhdf5 but no matching module is the normal case
-   !! rather than the broken one. The cuBLAS and cuSOLVER bindings in this
-   !! tree were written the same way for the same reason.
+   !! this project claims all of them. The C ABI is stable and
+   !! compiler-independent.
    !!
    !! **The type constants are variables, not parameters.** `H5T_NATIVE_DOUBLE`
    !! is a C macro over a global that the library fills in during
@@ -18,10 +15,9 @@ module mqc_hdf5_bindings
    !! and the C macros both hide an implicit `H5open`; binding the raw globals
    !! does not, so `h5_start` exists and must be called first.
    !!
-   !! Sizes taken from the installed headers rather than assumed:
-   !! `hid_t` is int64_t, `herr_t` is int, `hsize_t` is unsigned long long.
-   !! Getting one of those wrong is not a compile error, it is silent memory
-   !! corruption, which is why they are written down here with their source.
+   !! Sizes are taken from the installed headers rather than assumed: `hid_t`
+   !! is int64_t, `herr_t` is int, `hsize_t` is unsigned long long. Getting one
+   !! wrong is silent memory corruption, not a compile error.
    use, intrinsic :: iso_c_binding, only: c_int, c_int64_t, c_char, c_ptr, c_size_t, c_null_char
    implicit none
    private
@@ -38,19 +34,18 @@ module mqc_hdf5_bindings
              H5Sget_simple_extent_dims, H5Sget_simple_extent_ndims, &
              H5Tclose, H5Tcopy, H5Tset_size, H5open
 
-   !! Assumed-size dummies below are allowed deliberately and individually.
-   !  `dimension(*)` is the correct interop declaration for a C parameter that
-   !  is a plain pointer: the assumed-shape alternative the rule recommends is
-   !  passed as a descriptor under `bind(C)`, which is not what HDF5 expects
-   !  and would corrupt every call. The rule is right about Fortran and wrong
-   !  about this boundary.
+   ! Assumed-size dummies below are allowed deliberately and individually.
+   ! `dimension(*)` is the correct interop declaration for a C parameter that
+   ! is a plain pointer: the assumed-shape alternative the rule recommends is
+   ! passed as a descriptor under `bind(C)`, which is not what HDF5 expects
+   ! and would corrupt every call.
 
    integer, parameter :: hid_t = c_int64_t     !! H5Ipublic.h: typedef int64_t hid_t
    integer, parameter :: herr_t = c_int        !! H5public.h:  typedef int herr_t
    integer, parameter :: hsize_t = c_int64_t   !! H5public.h:  unsigned long long
 
-   !! Flags, from H5Fpublic.h. Unsigned in C; these values all fit in a
-   !  positive default integer, so the kind mismatch cannot bite.
+   ! Flags, from H5Fpublic.h. Unsigned in C; these values all fit in a
+   ! positive default integer, so the kind mismatch cannot bite.
    integer(c_int), parameter :: H5F_ACC_RDONLY = 0
    integer(c_int), parameter :: H5F_ACC_RDWR = 1
    integer(c_int), parameter :: H5F_ACC_TRUNC = 2
@@ -66,8 +61,8 @@ module mqc_hdf5_bindings
    integer(c_int), parameter :: H5S_SELECT_SET = 0     !! H5S_seloper_t
    integer(c_int), parameter :: H5F_SCOPE_LOCAL = 0    !! H5F_scope_t
 
-   !! Datatype ids, filled in by the library at start-up. See the note above:
-   !  these are zero until `h5_start` has run.
+   ! Datatype ids, filled in by the library at start-up. See the note above:
+   ! these are zero until `h5_start` has run.
    integer(hid_t), bind(C, name="H5T_NATIVE_DOUBLE_g") :: H5T_NATIVE_DOUBLE
    integer(hid_t), bind(C, name="H5T_NATIVE_INT_g") :: H5T_NATIVE_INT
    integer(hid_t), bind(C, name="H5T_NATIVE_LLONG_g") :: H5T_NATIVE_LLONG
@@ -75,8 +70,8 @@ module mqc_hdf5_bindings
    integer(hid_t), bind(C, name="H5T_STD_I64LE_g") :: H5T_STD_I64LE
    integer(hid_t), bind(C, name="H5T_C_S1_g") :: H5T_C_S1
 
-   !! Property-list classes are globals too, for the same reason and with the
-   !  same trap. `H5P_DATASET_CREATE` is a macro over this in C.
+   ! Property-list classes are globals too, for the same reason and with the
+   ! same trap. `H5P_DATASET_CREATE` is a macro over this in C.
    integer(hid_t), bind(C, name="H5P_CLS_DATASET_CREATE_ID_g") :: H5P_CLS_DATASET_CREATE_ID
 
    interface
@@ -125,10 +120,9 @@ module mqc_hdf5_bindings
       end function H5Fclose
 
       function H5Fflush(object, scope) result(status) bind(C, name="H5Fflush")
-         !! Pushes the library's cache to the file. This is what bounds how
-         !! much a killed process loses -- without it, HDF5 can leave metadata
-         !! the library will later refuse to open at all, losing not the last
-         !! record but every one of them.
+         !! Pushes the library's cache to the file, which is what bounds how
+         !! much a killed process loses. Without it HDF5 can leave metadata the
+         !! library later refuses to open at all.
          import :: hid_t, herr_t, c_int
          implicit none
          integer(hid_t), value :: object
@@ -163,10 +157,9 @@ module mqc_hdf5_bindings
          integer(herr_t) :: status
       end function H5Sclose
 
-      !! Shape of a stored dataset, so a reader can allocate before it reads.
-      !  `maxdims` is a real array rather than an optional C null: nothing here
-      !  needs the unlimited bounds, and a dummy array costs one stack slot
-      !  against a c_ptr dance at every call site.
+      ! Shape of a stored dataset, so a reader can allocate before it reads.
+      ! `maxdims` is a real array rather than an optional C null: nothing here
+      ! needs the unlimited bounds.
       function H5Sget_simple_extent_ndims(space) result(rank) &
          bind(C, name="H5Sget_simple_extent_ndims")
          import :: hid_t, c_int
@@ -415,13 +408,10 @@ contains
       !! Fortran interface each smuggle this in; a raw binding does not, and
       !! the failure -- a zero type id -- is accepted by the library as a
       !! different type rather than rejected as an error.
-      !! It also refuses HDF5 older than 1.10, and that check is not
-      !! decoration. `hid_t` was `int` until 1.10 and has been `int64_t`
-      !! since; the declarations above assume the latter. Built or run
-      !! against 1.8, every id would be assembled from the wrong eight bytes
-      !! and the failure would be a wrong file rather than a bad status. A
-      !! newer library is fine -- the C ABI has been stable since 1.10 for
-      !! everything used here -- so this is a floor, not a pin.
+      !!
+      !! It also refuses HDF5 older than 1.10: `hid_t` was `int` until then and
+      !! `int64_t` since, which the declarations above assume. A newer library
+      !! is fine, so this is a floor and not a pin.
       logical :: ok
 
       integer :: major, minor, release

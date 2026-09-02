@@ -1,7 +1,7 @@
 !! External calculation interface for geometry optimization, AIMD, and Monte Carlo
 module mqc_calculation_interface
-   !! Provides a clean interface for computing energies and forces
-   !! that can be used by optimization algorithms, MD integrators, and MC samplers
+   !! Energies and forces for a geometry, in the shape an optimizer, an MD
+   !! integrator or an MC sampler wants them.
    use pic_types, only: int32, dp
    use pic_mpi_lib, only: comm_t, bcast, abort_comm
    use pic_logger, only: logger => global_logger
@@ -20,35 +20,24 @@ module mqc_calculation_interface
 contains
 
    subroutine sync_geometry_to_workers(sys_geom, comm)
-      !! Synchronize geometry coordinates from master rank to all worker ranks
-      !! This is needed when master rank updates coordinates for optimization/dynamics
+      !! Where a broadcast of updated coordinates to the workers would go
       !!
-      !! TODO: Implement explicit broadcast if needed. Currently, the fragmented
-      !! calculation infrastructure may already handle geometry distribution.
-      !! For unfragmented calculations on master rank only, this is not needed.
+      !! Does nothing today.
+      ! TODO(mqc): a no-op that touches neither of its arguments, called on
+      ! every energy of an optimization or dynamics loop. The ranks agree on a
+      ! geometry only if `run_calculation` distributes it, so a caller reading
+      ! the name of this routine is told something that is not being done.
       type(system_geometry_t), intent(inout) :: sys_geom
       type(comm_t), intent(in) :: comm
-
-      ! NOTE: For now, we rely on the existing calculation infrastructure
-      ! to handle geometry as needed. If explicit broadcasting is required,
-      ! we can add MPI send/recv logic here later.
 
    end subroutine sync_geometry_to_workers
 
    subroutine compute_energy_and_forces(sys_geom, driver_config, resources, &
                                         energy, gradient, hessian, bonds, write_output)
-      !! Compute energy and forces for current geometry
-      !! This is the main interface for optimization/dynamics codes
+      !! Compute energy and forces for the current geometry
       !!
-      !! Master rank provides updated geometry, all ranks compute fragments,
-      !! results are returned on master rank only
-      !!
-      !! Usage:
-      !!   1. Master rank updates sys_geom%coordinates
-      !!   2. Call this subroutine (all ranks)
-      !!   3. Master rank receives energy/gradient/hessian
-      !!   4. Master rank updates geometry based on forces
-      !!   5. Repeat from step 1
+      !! Called on all ranks. The master rank provides the updated geometry and
+      !! is the only one where `energy`, `gradient` and `hessian` are set.
       use mqc_driver, only: run_calculation
       use mqc_config_adapter, only: driver_config_t
       type(system_geometry_t), intent(inout) :: sys_geom
@@ -60,11 +49,8 @@ contains
       type(bond_t), intent(in), optional :: bonds(:)
       logical, intent(in), optional :: write_output
          !! Whether the driver writes its JSON output file. Defaults to what
-         !! `run_calculation` defaults to, which is yes.
-         !!
-         !! A caller that drives this in a loop wants no: a sampling run asking
-         !! for thousands of energies produced thousands of `results.json`
-         !! writes, one per call, each immediately overwritten by the next.
+         !! `run_calculation` defaults to, which is yes. A caller driving this
+         !! in a loop wants no: one write per call, each overwriting the last.
 
       type(calculation_result_t) :: result
       logical :: need_gradient, need_hessian

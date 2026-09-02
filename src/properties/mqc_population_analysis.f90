@@ -2,16 +2,12 @@
 module mqc_population_analysis
    !! The Mulliken partition needs a density, an overlap and a statement of
    !! which atom each basis function belongs to. None of that is particular to
-   !! an integrals backend, so none of it is written twice: this module holds
-   !! the arithmetic and each backend supplies the three arrays its own way.
+   !! an integrals backend: this module holds the arithmetic and each backend
+   !! supplies the three arrays its own way.
    !!
-   !! What differs between backends is only how the AO-to-atom map is arrived
-   !! at. libcint reads it off the shell table it hands to the library; cuEST
-   !! builds its basis from the per-atom shell list in atom order, so its map
-   !! comes from a count per atom. Both end up as the same `owner` array, and
-   !! from there the two backends are running identical code -- which is the
-   !! point, because a charge that disagreed between them would be a difference
-   !! nobody could attribute.
+   !! Backends differ only in how the AO-to-atom map is arrived at -- libcint
+   !! reads it off its shell table, cuEST counts functions per atom -- and both
+   !! end up as the same `owner` array.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
@@ -50,9 +46,7 @@ contains
       !!
       !! The diagonal of `D S` is the gross population of each basis function,
       !! and summing it over an atom's functions charges that atom with every
-      !! overlap it takes part in, half of which belongs to its neighbour. That
-      !! halving is the whole of Mulliken's arbitrariness and the whole of its
-      !! cheapness.
+      !! overlap it takes part in, half of which belongs to its neighbour.
       !!
       !! `density` is the *total* density: an unrestricted caller adds its two
       !! spin blocks before calling, and a closed-shell one already has it,
@@ -74,7 +68,7 @@ contains
       end if
 
       allocate (charges(size(nuclear_charges)))
-      charges = nuclear_charges     !! nuclear charge to start from
+      charges = nuclear_charges     ! nuclear charge to start from
 
       do mu = 1, nao
          population = 0.0_dp
@@ -96,9 +90,9 @@ contains
       !! charge, and it sums to `n_alpha - n_beta` and not to the molecular
       !! charge.
       !!
-      !! `natm` is passed rather than taken from a charge array because there
-      !! is no charge array here, and `maxval(owner)` would silently shrink the
-      !! result for a molecule whose last atom carries no basis functions.
+      !! `natm` is passed rather than inferred: `maxval(owner)` would silently
+      !! shrink the result for a molecule whose last atom carries no basis
+      !! functions.
       integer, intent(in) :: owner(:)               !! (nao) atom of each function
       integer, intent(in) :: natm                   !! Number of atoms
       real(dp), intent(in) :: spin_density(:, :), overlap(:, :)

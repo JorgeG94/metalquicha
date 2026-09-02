@@ -4,26 +4,18 @@ module mqc_libcint_vv10
    !!
    !!     E_c^nl = int rho(r) [ 1/2 int rho(r') Phi(r,r') dr' + beta ] dr
    !!
-   !! **This is not a functional of the density at a point**, which is why it
-   !! cannot ride along inside libxc the way everything else here does. libxc
-   !! supplies the semilocal half of a `-V` functional and hands back the two
-   !! parameters `b` and `c`; the double integral is the program's job. Skipping
-   !! it does not approximate the functional -- on water/STO-3G it moves
-   !! wB97X-V by 43 mHa, 27 kcal/mol -- so `mqc_libcint_xc` refuses a `-V`
-   !! functional outright unless this is available.
+   !! **Not a functional of the density at a point**, so it cannot ride along
+   !! inside libxc: libxc supplies the semilocal half of a `-V` functional and
+   !! the two parameters `b` and `c`, and the double integral is the program's
+   !! job. `mqc_libcint_xc` refuses a `-V` functional outright unless this is
+   !! available, since skipping it does not approximate the functional.
    !!
-   !! **Cost is the design constraint.** The pair sum is O(N_out * N_in) in
-   !! grid points, per SCF iteration, and mqc's default grid puts 33,704 points
-   !! on water and 84,712 on benzene. Evaluating this on the exchange grid is
-   !! not viable, so the caller is expected to pass a coarser one for the inner
-   !! sum, and the density threshold below removes most of what is left: a
-   !! molecular grid is mostly vacuum, and a point with no density contributes
-   !! nothing to either side of the integral.
+   !! The pair sum is O(N_out * N_in) in grid points, per SCF iteration, so the
+   !! caller is expected to pass a coarser grid for the inner sum; the density
+   !! threshold below removes most of what is left.
    !!
-   !! The arithmetic follows PySCF's `_vv10nlc` term for term, deliberately, so
-   !! that a disagreement is a porting bug rather than a difference of
-   !! convention. Its published pure-Python inner loop is the reference this was
-   !! written from and the unit test checks against.
+   !! The arithmetic follows PySCF's `_vv10nlc` term for term, so that a
+   !! disagreement is a porting bug rather than a difference of convention.
    use pic_types, only: dp
    use mqc_physical_constants, only: PI
    implicit none
@@ -34,22 +26,19 @@ module mqc_libcint_vv10
    public :: VV10_RHO_THRESHOLD
 
    real(dp), parameter :: VV10_RHO_THRESHOLD = 1.0e-8_dp
-
-   !! Beyond this separation, in Bohr, an inner point is not summed. Negative
-   !! disables the cutoff and restores the full double sum.
-   !!
-   !! The kernel falls off as r^-6: at large separation `g -> r^2 w0`,
-   !! `gp -> r^2 w0p` and `gt -> r^2 (w0 + w0p)`, so `t = rpw/(g gp gt)` goes as
-   !! `rpw / r^6`. The number of points at a separation grows as r^2, so the
-   !! tail this drops integrates as r^-3 -- fast, but not so fast that the
-   !! radius can be picked by eye. It is measured, not assumed.
-   real(dp), parameter, public :: VV10_CUTOFF = -1.0_dp
       !! Points below this density are dropped from both grids.
       !!
-      !! Not a tuning knob so much as the boundary of where the expression is
-      !! defined: `omega_g` divides by rho squared and `kappa` takes rho to the
-      !! sixth root, so vacuum points are simultaneously worthless and
-      !! numerically hostile. PySCF uses the same 1e-8.
+      !! The boundary of where the expression is defined rather than a tuning
+      !! knob: `omega_g` divides by rho squared and `kappa` takes rho to the
+      !! sixth root. PySCF uses the same 1e-8.
+
+   real(dp), parameter, public :: VV10_CUTOFF = -1.0_dp
+      !! Beyond this separation, in Bohr, an inner point is not summed.
+      !! Negative disables the cutoff and restores the full double sum.
+      !!
+      !! The kernel falls off as `r^-6` and the number of points at a given
+      !! separation grows as `r^2`, so the tail this drops integrates as
+      !! `r^-3`.
 
 contains
 
@@ -68,9 +57,7 @@ contains
       !!     E_nl = sum_g w_g rho_g exc_g
       !!
       !! and `vrho`, `vsigma` add into the quantities `xc_grid_gga_quantities`
-      !! already returns. That is the whole point of this signature: VV10
-      !! becomes another contribution to numbers the Fock build already
-      !! consumes, rather than a second path through the SCF.
+      !! already returns.
       real(dp), intent(in) :: b, c            !! libxc's nlc_b and nlc_c
       real(dp), intent(in) :: coords(:, :)    !! (3, n_out), Bohr
       real(dp), intent(in) :: rho(:)          !! (n_out)
@@ -87,30 +74,26 @@ contains
          !! a point, which a nuclear gradient needs because the Becke partition
          !! moves with the nuclei.
          !!
-         !! **It is not `rho*exc`.** For a semilocal functional it would be:
-         !! the energy is a sum of independent per-point terms and the weight
-         !! of one multiplies one of them. Here point `k` appears twice, once
-         !! as the outer point and once inside every other point's inner sum,
-         !! and the kernel's symmetry makes those two contributions equal. So
-         !! this carries `beta + f` where `exc` carries `beta + f/2` -- the
-         !! same doubling that distinguishes `vrho` from `exc` just above.
+         !! **It is not `rho*exc`.** Point `k` appears twice, once as the outer
+         !! point and once inside every other point's inner sum, and the
+         !! kernel's symmetry makes those two contributions equal, so this
+         !! carries `beta + f` where `exc` carries `beta + f/2`.
       real(dp), intent(out), optional :: fexp(:, :)
          !! (3, n_out), dE/dr_i at fixed density and weights, per unit weight
          !!
          !! The energy depends on *where the points are* and not only on what
-         !! the density is there: `r^2` sits inside the kernel. Nothing in a
-         !! semilocal functional does this, which is why a gradient assembled
-         !! from the usual three terms is incomplete here by about 4e-4 on
-         !! water and does not converge away with the grid.
+         !! the density is there, since `r^2` sits inside the kernel. Nothing
+         !! in a semilocal functional does this, so a gradient assembled from
+         !! the usual three terms is incomplete without this term, and the
+         !! shortfall does not converge away with the grid.
          !!
          !! Per unit weight, so the caller multiplies by `w_i` exactly as it
          !! does for `exc`, and sums onto the atom that owns the point.
       real(dp), intent(out), optional :: hess_u(:), hess_w(:)
          !! (n_out) each. The pair sums a second derivative needs, in PySCF's
-         !! `VXC_vv10nlc_hessian_eval_UWABCE` normalisation, so that every
-         !! formula in the Hessian papers can be transcribed rather than
-         !! re-derived. With Phi the pair kernel and g, g', g_s = g + g' its
-         !! denominators evaluated at the outer point's omega and kappa:
+         !! `VXC_vv10nlc_hessian_eval_UWABCE` normalisation. With Phi the pair
+         !! kernel and g, g', g_s = g + g' its denominators evaluated at the
+         !! outer point's omega and kappa:
          !!
          !!     U = -sum_j w_j rho_j Phi (1/g + 1/g_s)
          !!     W = -sum_j w_j rho_j Phi (1/g + 1/g_s) r^2
@@ -118,21 +101,19 @@ contains
          !! These are the same sums `vrho` is built from, scaled: PySCF's
          !! U is `1.5*u_sum` here, W is `1.5*w_sum`.
       real(dp), intent(out), optional :: hess_a(:), hess_b(:), hess_c(:)
-         !! (n_out) each. The genuinely new pair sums, quadratic in the
-         !! denominators -- what differentiating U and W a second time
-         !! produces:
+         !! (n_out) each. The pair sums quadratic in the denominators, which is
+         !! what differentiating U and W a second time produces:
          !!
          !!     A = 2 sum_j w_j rho_j Phi (1/g^2 + 1/(g g_s) + 1/g_s^2)
          !!     B = A's sum with one factor of r^2
          !!     C = A's sum with two
       real(dp), intent(out), optional :: hess_e(:)
          !! (n_out). E = sum_j w_j rho_j Phi -- the inner sum itself, which is
-         !! `2*(exc - beta)`. Returned anyway because PySCF's Hessian formulas
-         !! consume it under this name and normalisation.
+         !! `2*(exc - beta)`. PySCF's Hessian formulas consume it under this
+         !! name and normalisation.
       integer, intent(out), optional :: n_inner_kept
          !! How many inner points survived the density threshold. The pair sum
-         !! is this times the outer count, so it is the one number that says
-         !! what the double integral actually costs.
+         !! costs this times the outer count.
       real(dp), intent(out), optional :: domega_drho(:), domega_dgamma(:)
       real(dp), intent(out), optional :: d2omega_drho2(:), d2omega_dgamma2(:)
       real(dp), intent(out), optional :: d2omega_drho_dgamma(:)
@@ -140,8 +121,7 @@ contains
          !! (n_out) each: analytic derivatives of omega_0 and kappa at the
          !! outer points, with respect to rho and gamma = sigma themselves --
          !! **not** premultiplied by rho the way the inline `dw0_drho` and
-         !! `dw0_dsigma` below are. PySCF's convention again, and the test
-         !! pins the relation: `rho*domega_drho` must rebuild `dw0_drho`.
+         !! `dw0_dsigma` below are. `rho*domega_drho` rebuilds `dw0_drho`.
 
       real(dp) :: pi43, kvv, beta
       real(dp) :: w0, k_out, dw0_drho, dw0_dsigma, dk_drho, w0tmp
@@ -166,9 +146,8 @@ contains
       want_grad = present(dedw) .or. present(fexp)
       if (present(dedw)) dedw = 0.0_dp
       if (present(fexp)) fexp = 0.0_dp
-      ! Guarded separately from `want_grad` because these are Hessian-only and
-      ! the potential path runs every SCF iteration: A, B and C add work to
-      ! the inner loop, which is the whole cost of this routine.
+      ! Guarded separately from `want_grad`: A, B and C are Hessian-only and
+      ! add work to the inner loop, which is the whole cost of this routine.
       want_hess = present(hess_a) .or. present(hess_b) .or. present(hess_c)
       want_curv = present(domega_drho) .or. present(domega_dgamma) .or. &
                   present(d2omega_drho2) .or. present(d2omega_dgamma2) .or. &
@@ -192,9 +171,7 @@ contains
       kvv = b*1.5_dp*PI*(9.0_dp*PI)**(-1.0_dp/6.0_dp)
       beta = ((3.0_dp/(b*b))**0.75_dp)/32.0_dp
 
-      ! The inner grid is precomputed once and then read n_out times, so the
-      ! threshold pays for itself twice: it shrinks the array and it shortens
-      ! every one of the outer loop's passes over it.
+      ! The inner grid is precomputed once and then read n_out times.
       allocate (keep(n_in))
       n_kept = 0
       do j = 1, n_in
@@ -207,9 +184,8 @@ contains
       if (n_kept == 0) return
 
       ! The coordinates are gathered alongside, rather than reached through
-      ! `keep` in the inner loop. That loop is the whole cost of VV10, and an
-      ! indirection inside it is an extra load per pair and a barrier to
-      ! vectorising the three differences.
+      ! `keep` in the inner loop: that indirection blocks vectorising the three
+      ! differences.
       allocate (w0p(n_kept), kp(n_kept), rpw(n_kept))
       allocate (cx(n_kept), cy(n_kept), cz(n_kept))
       do j = 1, n_kept
@@ -227,11 +203,8 @@ contains
       r2_cut = huge(1.0_dp)
       if (VV10_CUTOFF > 0.0_dp) r2_cut = VV10_CUTOFF*VV10_CUTOFF
 
-      ! Every outer point is independent: it writes only its own three
-      ! outputs and reads a shared inner grid that nothing mutates. The
-      ! accumulators are per-point and so private. This loop is the whole cost
-      ! of the term -- the two AO sweeps around it are linear in points and
-      ! disappear against it -- so it is the only thing here worth threading.
+      ! Every outer point is independent: it writes only its own three outputs
+      ! and reads a shared inner grid that nothing mutates.
       !$omp parallel do default(none) &
       !$omp    shared(n_out, n_kept, rho, sigma, coords, inner_coords, keep, &
       !$omp           w0p, kp, rpw, cx, cy, cz, r2_cut, exc, vrho, vsigma, c, kvv, pi43, beta, &
@@ -279,10 +252,8 @@ contains
             dy = cy(j) - coords(2, i)
             dz = cz(j) - coords(3, i)
             r2 = dx*dx + dy*dy + dz*dz
-            ! Three divisions and a dozen multiplies are skipped for the price
-            ! of a compare. Visiting the pair at all is still O(n^2); making it
-            ! sub-quadratic needs the inner list binned in space, which this is
-            ! the prerequisite for rather than a substitute for.
+            ! Visiting the pair at all is still O(n^2); making it
+            ! sub-quadratic needs the inner list binned in space.
             if (r2 > r2_cut) cycle
             gp = r2*w0p(j) + kp(j)
             g = r2*w0 + k_out
@@ -325,8 +296,7 @@ contains
          end if
          ! PySCF's signs and scales, term for term: its per-pair kernel is
          ! `-1.5*t`, its U and W carry an overall minus, its A, B, C a factor
-         ! of two. Written out so that a disagreement with its Hessian is a
-         ! porting bug and not a convention.
+         ! of two.
          if (present(hess_u)) hess_u(i) = 1.5_dp*u_sum
          if (present(hess_w)) hess_w(i) = 1.5_dp*w_sum
          if (present(hess_a)) hess_a(i) = -3.0_dp*a_sum
@@ -336,10 +306,9 @@ contains
          if (want_curv) then
             ! Derivatives of omega_0 and kappa with respect to rho and
             ! gamma = sigma, PySCF's `_omega_derivative` verbatim. Every
-            ! expression is polynomial in gamma -- gamma multiplies, it never
-            ! divides -- so the sigma -> 0 limit that `dw0_dsigma` above has
-            ! to take explicitly is automatic here. Writing these via
-            ! `w0tmp/sigma` instead would reintroduce that 0/0 at every
+            ! expression is polynomial in gamma, so the sigma -> 0 limit that
+            ! `dw0_dsigma` above takes explicitly is automatic here; writing
+            ! these via `w0tmp/sigma` would reintroduce that 0/0 at every
             ! nucleus and density extremum.
             rho_1 = 1.0_dp/r_i
             rho_3 = rho_1*rho_1*rho_1
@@ -376,26 +345,21 @@ contains
       !! The VV10 kernel applied to a batch of density perturbations
       !!
       !! PySCF's `VXC_vv10nlc_hessian_eval_f_t`, transcribed term for term.
-      !! For each trial pair `(rho_t, gamma_t)` -- in a Hessian these are
-      !! `drho/dA` and `dgamma/dA` for one nuclear perturbation, but nothing
-      !! here knows that -- it returns the second functional derivative of
-      !! `E_nl` applied to it:
+      !! For each trial pair `(rho_t, gamma_t)` it returns the second
+      !! functional derivative of `E_nl` applied to it:
       !!
       !!     f_rho_t(i)   = sum_j w_j [ f_rr(i,j) rho_t(j) + f_rg(i,j) gamma_t(j) ]
       !!                  + f_rr_ii rho_t(i) + f_rg_ii gamma_t(i)
       !!
-      !! and its gamma-channel twin. The double sum is the kernel's genuinely
-      !! non-local part -- the potential at `i` feels the density at `j`
-      !! through the pair kernel Phi -- and the unpaired diagonal is the
-      !! potential's dependence on its *own* point's rho and gamma through
-      !! omega and kappa, which is where the pair sums U..C and the second
-      !! derivatives of omega and kappa enter. The inner quadrature weight
-      !! `w_j` is applied here; the outer `w_i` is the caller's, exactly as
-      !! PySCF weights `f_rho_t` only when contracting it.
+      !! and its gamma-channel twin. The double sum is the kernel's non-local
+      !! part; the unpaired diagonal is the potential's dependence on its *own*
+      !! point's rho and gamma through omega and kappa, which is where the pair
+      !! sums U..C and the second derivatives of omega and kappa enter. The
+      !! inner quadrature weight `w_j` is applied here; the outer `w_i` is the
+      !! caller's.
       !!
-      !! One grid plays both roles, unlike `vv10_nlc`'s two: the Hessian's
-      !! trial densities live on the grid the intermediates were built on,
-      !! and passing them separately would only invite a mismatch.
+      !! One grid plays both roles, unlike `vv10_nlc`'s two: the trial
+      !! densities live on the grid the intermediates were built on.
       real(dp), intent(in) :: b, c              !! libxc's nlc_b and nlc_c
       real(dp), intent(in) :: coords(:, :)      !! (3, n), Bohr
       real(dp), intent(in) :: rho(:), sigma(:), weights(:)
@@ -424,9 +388,8 @@ contains
       pi43 = 4.0_dp*PI/3.0_dp
       kvv = b*1.5_dp*PI*(9.0_dp*PI)**(-1.0_dp/6.0_dp)
 
-      ! The same threshold, on both roles at once: PySCF removes these points
-      ! from the quadrature before its kernel ever runs, and omega and kappa
-      ! are not defined below it anyway.
+      ! The same threshold, on both roles at once: omega and kappa are not
+      ! defined below it.
       allocate (keep(n))
       n_kept = 0
       do i = 1, n
@@ -506,9 +469,8 @@ contains
          end do
 
          ! The diagonal: omega and kappa at `i` moving with rho and gamma
-         ! there, felt through every pair `i` participates in -- which is
-         ! exactly what the pair sums U..C already integrated, `w_j` and all,
-         ! so no quadrature weight is applied here.
+         ! there, felt through every pair `i` participates in. The pair sums
+         ! U..C already carry `w_j`, so no weight is applied here.
          f_rr = 2.0_dp*dor_i*hess_w(i) + 2.0_dp*dkr_i*hess_u(i) &
                 + r_i*(d2omega_drho2(i)*hess_w(i) + d2kappa_drho2(i)*hess_u(i) &
                        + dkr_i*dkr_i*hess_a(i) + dor_i*dor_i*hess_c(i) &

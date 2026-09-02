@@ -49,7 +49,7 @@ contains
       logical, intent(in), optional :: vmfc
          !! Subtract each subset *in this fragment's basis* rather than in its
          !! own -- the counterpoise correction. Absent means the ordinary
-         !! expansion, which is every caller that predates it.
+         !! expansion.
       real(dp) :: delta_E
 
       integer :: subset_size, i
@@ -123,25 +123,21 @@ contains
    subroutine compute_mbe_coefficients(polymers, fragment_count, max_level, lookup, coeffs)
       !! Collapse the recursive MBE delta definition into one scalar weight per fragment
       !!
-      !! The recursion  delta_i = X_i - sum_{S proper subset of i} delta_S  is linear
-      !! in the fragment quantities X, and its structure depends only on which
-      !! fragments survived screening -- never on the data itself. So the total
+      !! The recursion  delta_i = X_i - sum_{S proper subset of i} delta_S  is
+      !! linear in the fragment quantities X and depends only on which fragments
+      !! survived screening, so the total can be written once as
       !!
-      !!   X_total = sum_i delta_i          (over fragments with |i| <= max_level)
+      !!     X_total = sum_i coeffs(i) * X_i
       !!
-      !! can be rewritten once as  X_total = sum_i coeffs(i) * X_i.  That lets
-      !! gradients, Hessians and dipole derivatives be folded straight into a single
-      !! system-sized array as each fragment arrives, instead of materialising a
-      !! system-sized delta per fragment (which is O(fragment_count * (3N)^2) and
-      !! becomes the memory wall long before the fragment results themselves do).
+      !! and each fragment folded straight into one system-sized array as it
+      !! arrives, rather than materialising a system-sized delta per fragment.
       !!
       !! Fragments are expanded largest-first: a weight can only be modified by
-      !! strict supersets, which are strictly larger, so every weight at level n is
-      !! final by the time level n is reached.
+      !! a strict superset, so every weight at level n is final by the time
+      !! level n is reached.
       !!
-      !! Derived by running the recursion on scalars rather than using the closed
-      !! form (-1)^(L-n) * C(N-n-1, L-n), because distance screening removes
-      !! fragments and the surviving coefficients are then not the textbook ones.
+      !! Run on scalars rather than using the closed form
+      !! (-1)^(L-n) * C(N-n-1, L-n), which distance screening invalidates.
       integer, intent(in) :: polymers(:, :)
       integer(int64), intent(in) :: fragment_count
       integer, intent(in) :: max_level
@@ -204,10 +200,9 @@ contains
                                               do_grad, do_hess, do_dipole_derivs, world_comm)
       !! Fold coeff * (one fragment's derivatives) into the system-sized totals
       !!
-      !! The fragment is rebuilt once and shared by all three quantities, and each is
-      !! scatter-accumulated over that fragment's own atoms only -- no system-sized
-      !! temporary is allocated or zeroed anywhere.
-      !! Bond connectivity is accessed via sys_geom%bonds.
+      !! The fragment is rebuilt once and shared by all three quantities, each
+      !! accumulated over that fragment's own atoms alone, with no system-sized
+      !! temporary. Bond connectivity comes from `sys_geom%bonds`.
       use mqc_result_types, only: calculation_result_t, mbe_result_t
       use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_gradients, &
                                        redistribute_cap_hessian, redistribute_cap_dipole_derivatives
@@ -315,8 +310,14 @@ contains
 
    subroutine compute_mbe_dipole(fragment_idx, fragment, lookup, results, delta_dipoles, n, world_comm, vmfc)
       !! Bottom-up computation of n-body dipole correction
-      !! Exactly mirrors the energy MBE logic: deltaDipole = Dipole - sum(all subset deltaDipoles)
-      !! Dipoles are additive vectors in the system frame, no coordinate mapping needed
+      !!
+      !! Mirrors the energy: deltaDipole = Dipole - sum(all subset deltaDipoles).
+      !! Dipoles are additive vectors in the system frame, so no coordinate
+      !! mapping is needed.
+      ! TODO(mqc): `counterpoise` below is declared and never assigned, then
+      ! read to choose the subset key. The branch is taken on an undefined
+      ! value, where `compute_mbe_delta` sets the same flag from its `vmfc`
+      ! argument.
       use mqc_result_types, only: calculation_result_t
       integer(int64), intent(in) :: fragment_idx
       integer, intent(in) ::  n
@@ -433,32 +434,15 @@ contains
    subroutine collect_unconverged(scf_status, polymers, fragment_count, ids, monomers)
       !! The fragments that failed, and which monomers each was built from
       !!
-      !! Both are already known -- convergence comes back on every result and
-      !! the composition is the row of `polymers` the fragment was built from --
-      !! so this gathers rather than computes. What it buys is that the pair
-      !! survives into the output together: an identifier on its own is not
-      !! enough to rebuild a dimer, and at a million fragments the table that
-      !! holds the composition is not something a follow-up script should have
-      !! to read back.
-      !!
-      !! **Only genuine failures are listed.** `SCF_UNKNOWN` means the method
-      !! never reported, which is every fragment of a method that does not, and
-      !! putting those here would make the list useless in exactly the runs it
-      !! exists for.
-      !!
       !! **Three outcomes, and the caller tells them apart by allocation.** A
       !! method that reported returns a list, empty when nothing failed -- a
       !! `count` of zero is the statement that everything converged. A method
       !! that never reported returns *nothing allocated*, and the writer omits
       !! the section entirely, so a consumer reads its absence as "no
-      !! information" rather than as success. Returning an empty list for both
-      !! would collapse the two claims into one, which is the distinction
-      !! `report_unconverged` already makes in the log and the JSON section is
-      !! documented to make in the output.
+      !! information" rather than as success.
       !!
-      !! Not truncated. Ten thousand unconverged fragments is a large list and
-      !! also the situation this is for; silently keeping the first hundred
-      !! would produce a follow-up job that looked complete and was not.
+      !! `SCF_UNKNOWN` is not a failure and is never listed. The list is not
+      !! truncated.
       integer, intent(in) :: scf_status(:)
       integer, intent(in) :: polymers(:, :)
       integer(int64), intent(in) :: fragment_count
@@ -488,25 +472,14 @@ contains
                                 culprits, counts)
       !! What the failures cost, and which monomers keep turning up in them
       !!
-      !! Two questions follow "which fragments failed", and neither is
-      !! answerable from a list of identifiers.
+      !! `deltas` is each failed fragment's own contribution to the total, so a
+      !! run whose failures contribute almost nothing can be accepted rather
+      !! than repeated.
       !!
-      !! **Does it matter.** Each fragment's contribution to the total is
-      !! already known, so gathering it for the failures turns a count into an
-      !! exposure. Screening and cancellation mean most fragments contribute
-      !! almost nothing, and a hundred failures among those is a run to accept
-      !! rather than repeat.
-      !!
-      !! **Why.** A monomer with a wrecked geometry, a mis-assigned charge or an
-      !! accidental radical drags down every fragment it belongs to, so failures
-      !! cluster on their cause. Counting how often each monomer appears turns
-      !! four hundred failures into a short list of suspects, and the ordering
-      !! is what makes it readable at all -- the culprit is otherwise one row
-      !! among four hundred that all look alike.
-      !!
-      !! Sorted by count, descending, by insertion: the list is as long as the
-      !! number of distinct monomers involved, which is small whenever this is
-      !! worth reading.
+      !! `culprits` and `counts` are the distinct monomers involved and how many
+      !! failures each appears in, sorted by count, descending. A monomer with a
+      !! wrecked geometry, a mis-assigned charge or an accidental radical drags
+      !! down every fragment it belongs to, so failures cluster on their cause.
       integer(int64), intent(in) :: ids(:)
       integer, intent(in) :: monomers(:, :)
       real(dp), intent(in) :: delta_energies(:)
@@ -556,8 +529,8 @@ contains
       deallocate (seen, tally)
 
       ! Descending by count. Selection sort: `n_seen` is the number of distinct
-      ! monomers caught up in failures, and a run where that is large enough for
-      ! the sort to matter has a problem this report cannot help with.
+      ! monomers caught up in failures, which is small whenever this is worth
+      ! reading.
       do i = 1, n_seen - 1
          slot = i
          do j = i + 1, n_seen
@@ -661,13 +634,13 @@ contains
                           mbe_result, sys_geom, world_comm, json_data)
       !! Compute many-body expansion (MBE) energy with optional gradient, hessian, and dipole
       !!
-      !! This is the core routine that handles all MBE computations.
-      !! The caller pre-allocates desired components in mbe_result before calling:
-      !!   - mbe_result%gradient allocated: compute gradient (requires sys_geom)
-      !!   - mbe_result%hessian allocated: compute hessian (requires sys_geom)
-      !!   - mbe_result%dipole allocated: compute total dipole moment
-      !! If json_data is present, populates it for centralized JSON output
-      !! Bond connectivity is accessed via sys_geom%bonds
+      !! What is computed follows what the caller pre-allocated in `mbe_result`:
+      !!   - `gradient` allocated: compute gradient (requires `sys_geom`)
+      !!   - `hessian` allocated: compute hessian (requires `sys_geom`)
+      !!   - `dipole` allocated: compute the total dipole moment
+      !!
+      !! Bond connectivity comes from `sys_geom%bonds`, and `json_data`, when
+      !! present, is filled for the JSON writer.
       use mqc_result_types, only: calculation_result_t, mbe_result_t
 
       ! Required arguments
@@ -801,9 +774,8 @@ contains
       end block
 
       ! Counterpoise is read off the term list rather than passed in: the rows
-      ! are what a ghosted expansion actually differs by, so a flag could
-      ! disagree with them and this cannot. An all-positive table is the
-      ! ordinary expansion, which is every table built before this existed.
+      ! are what a ghosted expansion differs by, so a flag could disagree with
+      ! them and this cannot. An all-positive table is the ordinary expansion.
       use_vmfc = .false.
       do i = 1_int64, fragment_count
          if (is_auxiliary_row(polymers(i, :))) then
@@ -812,9 +784,8 @@ contains
          end if
       end do
 
-      ! Bottom-up computation: process fragments by size (1-body, then 2-body, etc.)
-      ! This makes the algorithm independent of input fragment order
-      ! We process by n-mer level to ensure all subsets are computed before they're needed
+      ! By n-mer level, so every subset is computed before it is needed and the
+      ! result does not depend on the order the fragments arrived in.
       do nlevel = 1, max_level
          do i = 1_int64, fragment_count
             ! The *real* monomers set the level, so a counterpoise row like
@@ -870,13 +841,11 @@ contains
       ! table is still alive. Only needed for the quantities that are mapped into
       ! system coordinates; energy and dipole stay on the O(fragment_count) path.
       if (use_vmfc .and. (compute_grad .or. compute_hess .or. compute_dipole_derivs)) then
-         ! `compute_mbe_coefficients` collapses the delta recursion into one
-         ! weight per fragment, and it does so with unghosted subset keys -- it
-         ! predates counterpoise and does not know a ghosted row from an
-         ! ordinary one. Under VMFC the weights would be assembled from the
-         ! wrong terms and the derivative would be wrong without being
-         ! obviously wrong, which is worse than not having it. Refused until
-         ! that routine learns the same key rule `compute_mbe_delta` now uses.
+         ! `compute_mbe_coefficients` collapses the delta recursion with
+         ! unghosted subset keys and cannot tell a ghosted row from an ordinary
+         ! one, so under VMFC it would assemble the weights from the wrong
+         ! terms and return a derivative that was wrong without looking wrong.
+         ! Refused until it learns the key rule `compute_mbe_delta` uses.
          call logger%error("counterpoise: energies only for now. The gradient, "// &
                            "Hessian and dipole-derivative path collapses the "// &
                            "expansion with uncorrected subset weights, so it "// &
@@ -920,6 +889,9 @@ contains
          if (compute_dipole_derivs) mbe_result%has_dipole_derivatives = .true.
       end if
 
+      ! TODO(mqc): every row is summed here, auxiliary ones included, where the
+      ! energy sum skips `is_auxiliary_row`. A counterpoise table therefore
+      ! double counts its ghosted rows into the total dipole.
       if (compute_dipole) then
          do i = 1_int64, fragment_count
             ! An auxiliary row is a ghosted copy of a smaller fragment, present
@@ -1113,14 +1085,9 @@ contains
             end if
          end do
 
-         ! Said once, at the end, where it cannot be scrolled past. A warning
-         ! per fragment is invisible in a run with a million of them, and a
-         ! total assembled from unconverged pieces is otherwise indistinguishable
-         ! from a good one.
-         ! The same fragments, in a form something other than a human can act
-         ! on. `report_unconverged` names the first ten in the log, which is the
-         ! right thing for a reader and useless to a script; this is the list a
-         ! follow-up job is built from.
+         ! The failures in a form a script can act on. `report_unconverged`
+         ! names the first ten in the log, which is right for a reader and
+         ! useless to a follow-up job; this is the list one is built from.
          call collect_unconverged(json_data%fragment_scf_status, &
                                   polymers(1:fragment_count, 1:max_level), &
                                   fragment_count, json_data%unconverged_ids, &
@@ -1165,11 +1132,9 @@ contains
                            sys_geom, total_gradient, total_hessian, bonds, world_comm)
       !! Compute generalized many-body expansion (GMBE) energy with optional gradient and/or hessian
       !!
-      !! This is the core routine that handles all GMBE computations using
-      !! the inclusion-exclusion principle for overlapping fragments.
-      !! Optional arguments control what derivatives are computed:
-      !!   - If sys_geom and total_gradient are present: compute gradient
-      !!   - If total_hessian is also present: compute hessian
+      !! Inclusion-exclusion over overlapping fragments. The optional arguments
+      !! decide what is computed: `sys_geom` with `total_gradient` gives the
+      !! gradient, and `total_hessian` alongside them gives the Hessian.
       use mqc_result_types, only: calculation_result_t
       use mqc_physical_fragment, only: build_fragment_from_indices, build_fragment_from_atom_list, &
                                        redistribute_cap_gradients, redistribute_cap_hessian

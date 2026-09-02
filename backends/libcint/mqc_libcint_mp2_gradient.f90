@@ -1,43 +1,19 @@
 !! The MP2 nuclear gradient over a closed-shell reference
 module mqc_libcint_mp2_gradient
-   !! **Why this is not the shape of every gradient before it.** Hartree-Fock,
-   !! density fitting and Kohn-Sham are all variational: the energy is
-   !! stationary with respect to the orbitals, so moving a nucleus changes the
-   !! energy only through the integrals, and the orbital response never appears.
-   !! MP2 is not stationary in the reference orbitals. Its derivative therefore
-   !! carries a term for how the orbitals themselves relax, and that term is the
-   !! solution of a linear system the size of the occupied-virtual space -- the
-   !! Z-vector equation, solved once rather than once per displacement, which is
-   !! the whole reason an analytic MP2 gradient is affordable at all.
+   !! MP2 is not stationary in the reference orbitals, so its derivative carries
+   !! a term for how the orbitals themselves relax: the Z-vector equation, a
+   !! linear system over the occupied-virtual space, solved once rather than
+   !! once per displacement.
    !!
    !! The assembly follows Handy and Schaefer's interchange, in the arrangement
-   !! `pyscf.grad.mp2` uses, because that is what these numbers are checked
-   !! against and a different but equivalent grouping would make a disagreement
-   !! impossible to localise.
+   !! `pyscf.grad.mp2` uses, which is what these numbers are checked against.
    !!
-   !! **What is built, in order.**
-   !!
-   !! 1. `t2(i,j,a,b) = (ia|jb) / (e_i + e_j - e_a - e_b)`, the amplitudes.
-   !! 2. `doo` and `dvv`, the occupied-occupied and virtual-virtual blocks of
-   !!    the unrelaxed one-particle correction.
-   !! 3. `gamma`, the two-particle density in the AO basis. This is the
-   !!    expensive object -- `n_ao^4` -- and the reason this routine is for
-   !!    validation-sized systems until the blocked version replaces it.
-   !! 4. `Imat`, that two-particle density contracted with the *undifferentiated*
-   !!    integrals, which is what makes the Lagrangian.
-   !! 5. The Z-vector solve, through the response operator the CPHF module
-   !!    already applies -- it is the same operator, and writing a second one
-   !!    would mean two things to keep in agreement.
-   !! 6. The contraction with the differentiated integrals.
-   !!
-   !! **Restricted and exact ERIs.** Both are refusals rather than
-   !! approximations: an unrestricted reference needs separate alpha and beta
-   !! amplitudes, and a fitted one differentiates a different energy. A frozen
-   !! core is not a third refusal: the amplitudes and the two-particle density
-   !! span the active occupied space only, and the relaxed density gains an
-   !! occupied-frozen block resolved directly from the Lagrangian -- both
-   !! orbitals are occupied, so that rotation never enters the Z-vector, whose
-   !! occupied index nevertheless runs over the frozen orbitals too.
+   !! Restricted references and exact ERIs only: an unrestricted reference needs
+   !! separate alpha and beta amplitudes, and a fitted one differentiates a
+   !! different energy. A frozen core is allowed -- the amplitudes and the
+   !! two-particle density span the active occupied space only, and the relaxed
+   !! density gains an occupied-frozen block resolved directly from the
+   !! Lagrangian rather than from the Z-vector.
    use pic_types, only: dp, int64
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, max_block, atom_ao_blocks, &
@@ -62,8 +38,7 @@ module mqc_libcint_mp2_gradient
    private
 
    public :: libcint_mp2_gradient
-   ! Shared with the fitted gradient next door, which differs from this one in
-   ! the two-particle term and the Lagrangian and in nothing else.
+   ! Shared with the fitted gradient next door.
    public :: gamma1_intermediates
    public :: two_electron_potential
    public :: two_electron_mp2_terms
@@ -74,7 +49,7 @@ module mqc_libcint_mp2_gradient
       !! Bytes the blocked path aims to hold in its two live block arrays. Not a
       !! hard limit on the routine -- the half-transformed amplitudes and the
       !! one-particle quantities sit outside it -- but it is what sets the block
-      !! size, and it is the number to raise on a machine with room.
+      !! size.
 
 contains
 
@@ -85,24 +60,11 @@ contains
                                    energy_weighted_ao, fixed_grid)
       !! dE(MP2)/dR for a closed-shell reference, in Hartree/Bohr
       !!
-      !! **With `xc`, this returns something else**: the correlation part alone,
-      !! over a Kohn-Sham reference, scaled by `pt2_scale`. That is a double
-      !! hybrid's perturbative term, and it is this routine rather than a second
-      !! one because the two differ in four places and agree everywhere else --
-      !! two copies of an assembly whose factor conventions cost a day to
-      !! establish is the worse risk. What changes:
-      !!
-      !! 1. The reference operator is the Kohn-Sham one. Every response built
-      !!    here scales exact exchange by the functional's fraction and gains the
-      !!    exchange-correlation kernel -- the Z-vector's operator, the
-      !!    Lagrangian's `veff`, and the occupied-block term.
-      !! 2. The reference's own gradient is not assembled. `libcint_scf_gradient`
-      !!    has already returned it, so the reference density leaves the
-      !!    one-electron, overlap and energy-weighted terms.
-      !! 3. The derivative of the exchange-correlation potential appears, since
-      !!    the relaxed density contracts against the reference operator's
-      !!    derivative and that operator contains `V_xc`.
-      !! 4. Everything is scaled once, at the end.
+      !! **With `xc`, this returns something else**: a double hybrid's
+      !! perturbative correlation term alone, over a Kohn-Sham reference and
+      !! scaled by `pt2_scale`. The reference's own gradient is not part of it --
+      !! `libcint_scf_gradient` has already returned that -- so the caller adds
+      !! the two.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coeff(:, :)            !! C, (n_ao, n_mo)
       real(dp), intent(in) :: orbital_energies(:)    !! (n_mo), Hartree
@@ -117,70 +79,54 @@ contains
          !! The converged reference density, where the kernel is evaluated and
          !! the potential differentiated. Required with `xc`.
       real(dp), intent(in), optional :: pt2_scale
-         !! The functional's PT2 coefficient. Applied once, to everything,
-         !! including the Lagrangian that feeds the Z-vector -- but *after* the
-         !! solve, since scaling a linear system's right-hand side and scaling
-         !! its solution are the same thing and doing both is the error to avoid.
+         !! The functional's PT2 coefficient, applied once to the assembled
+         !! gradient.
       logical, intent(in), optional :: fixed_grid
          !! Leave the quadrature grid where it is, so the only motion this
-         !! differentiates is the density's. Defaults to `.false.` -- the
-         !! physical gradient, which is what a deck wants.
+         !! differentiates is the density's. Defaults to `.false.`, the physical
+         !! gradient a deck wants.
          !!
-         !! `.true.` exists for one caller: the double hybrid's *Hessian* holds
-         !! the grid fixed, as `ks_hessian` and `xc_hessian` do, so the gradient
-         !! it can be differenced against is this one and not the physical one.
-         !! `xc_gradient_fixed_grid` and `vv10_gradient_fixed_grid` are public
-         !! for exactly the same reason. Comparing the fixed-grid Hessian
-         !! against the moving-grid gradient instead does not fail cleanly: it
-         !! leaves a residual that shrinks with grid level -- 5.5e-4 at level 3
-         !! against 6.5e-5 at level 5 was measured on the reference term -- and
-         !! so reads as a convergence problem rather than as the two quantities
-         !! being different derivatives.
+         !! `.true.` is for the double hybrid's Hessian, which holds the grid
+         !! fixed as `ks_hessian` and `xc_hessian` do; that is the gradient it
+         !! can be differenced against, and differencing it against the physical
+         !! one instead leaves a residual that shrinks with grid level and so
+         !! reads as a convergence problem rather than as a different derivative.
       integer, intent(in), optional :: n_frozen
          !! Core orbitals excluded from the correlation. The amplitudes and the
          !! two-particle density span the active occupied space only; the
          !! relaxed density, the Lagrangian and the Z-vector still span every
-         !! occupied orbital, which is where the occupied-frozen coupling lives.
+         !! occupied orbital.
       real(dp), intent(in), optional :: block_bytes
          !! Byte target for the block sizes, in place of `BLOCK_TARGET`. Small
          !! enough, it forces several blocks of both the first index and the
-         !! occupied one, which is what the check harness passes: a single
-         !! block exercises neither loop nor the offsets they carry.
+         !! occupied one.
       logical, intent(in), optional :: force_blocked
-         !! Take the blocked path whatever the size. Separate from the target
-         !! on purpose -- the dense path blocks over the occupied index too,
-         !! and a knob that forced the other path would leave that untested.
+         !! Take the blocked path whatever the size.
       real(dp), allocatable, intent(out), optional :: relaxed_density_mo(:, :)
          !! The relaxed one-particle density in the MO basis, after the
-         !! core-active divide and the Z-vector -- what a Hessian differentiates
-         !! rather than reassembles. Handed out here because it is built here;
-         !! see `tools/mp2_hessian_oracle/` for the ladder that gates it.
+         !! core-active divide and the Z-vector.
       real(dp), allocatable, intent(out), optional :: lagrangian_mo(:, :)
          !! The orbital Lagrangian in the MO basis, with the virtual-occupied
          !! block already filled from its transpose.
       real(dp), allocatable, intent(out), optional :: two_particle_ao(:, :, :, :)
          !! The non-separable two-particle density in the AO basis, chemist
          !! ordered. **Only on the dense path** -- the blocked one never
-         !! materialises it, and asking for it there returns it unallocated
-         !! rather than forcing `n_ao^4` into memory behind the caller's back.
+         !! materialises it, and returns this unallocated.
       real(dp), allocatable, intent(out), optional :: energy_weighted_ao(:, :)
-         !! The energy-weighted density in the AO basis: precisely the matrix
-         !! that multiplies `dS/dR` in the assembly below, which is the object
-         !! a Hessian needs and the one an external code calls `I` or `W`.
-         !! Not `lagrangian_mo` transformed -- that is only the two-particle
-         !! density's share of it, as the comment at its assembly says.
+         !! The energy-weighted density in the AO basis: the matrix that
+         !! multiplies `dS/dR` in the assembly below, which an external code
+         !! calls `I` or `W`. **Not `lagrangian_mo` transformed** -- that is
+         !! only the two-particle density's share of it.
       type(libcint_molecule_t), intent(in), optional :: aux
          !! Present, the reference was density fitted and this differentiates
          !! that one. Only the reference moves: the response operator, both
          !! potentials built from the relaxed density, and the reference's
-         !! two-electron derivative term, which stops being a four-centre object
-         !! and becomes three- and two-centre ones.
+         !! two-electron derivative term, which becomes three- and two-centre.
          !!
          !! The *correlation* stays exact throughout, which is what makes this
-         !! different from `libcint_ri_mp2_gradient`. Its two-particle density is
+         !! different from `libcint_ri_mp2_gradient`: its two-particle density is
          !! four-index and contracts against four-centre derivatives whatever the
-         !! reference fitted, so the integrals are still built -- fitting the SCF
-         !! does not make an MP2 gradient cheap, it makes it consistent.
+         !! reference fitted, so the integrals are still built.
 
       real(dp), allocatable :: eri_packed(:, :)
       real(dp), allocatable, target :: eri(:, :, :, :)
@@ -255,12 +201,9 @@ contains
       end if
 
       ! Dense or blocked. Dense keeps two `n_ao^4` arrays live -- the integrals
-      ! and the two-particle density -- and is worth taking whenever it fits,
-      ! because one gemm over the whole first index beats the same gemm run
-      ! block by block, and because the integrals get built once with their full
-      ! eightfold symmetry instead of once per block with only the ket pair's.
-      ! Blocked pays roughly four times the integral work for a memory ceiling
-      ! that is a choice rather than the basis size.
+      ! and the two-particle density -- and is taken whenever that fits. Blocked
+      ! pays roughly four times the integral work for a memory ceiling set by
+      ! choice rather than by the basis size.
       dense = 2.0_dp*real(n_ao, dp)**4*8.0_dp <= IN_CORE_LIMIT
       target_bytes = BLOCK_TARGET
       if (present(block_bytes)) target_bytes = block_bytes
@@ -298,6 +241,10 @@ contains
       dm1mo(n_o + 1:n_mo, n_o + 1:n_mo) = dvv + transpose(dvv)
 
       ! ---- the two-particle density, and what it contracts against ----------
+      ! TODO(mqc): `bounds` gets a zero-sized allocation so the dense path can
+      ! still pass it, but `eri` gets none on the blocked path, where it is
+      ! handed unallocated to `reference_potential` and `two_electron_potential`
+      ! through non-optional assumed-shape dummies.
       if (.not. dense) then
          ! The direct Fock builds below need these, and so does the response
          ! solve, which cannot be handed a tensor that was never formed.
@@ -317,8 +264,7 @@ contains
 
       ! The reference's own fitting, built once and kept: `bref` for the three
       ! potentials and the Z-vector, the raw integrals and metric for the
-      ! derivative term. Formed here rather than through `build_df_tensor`,
-      ! which would build the three-centre integrals a second time.
+      ! derivative term.
       fitted = present(aux)
       if (fitted) then
          call three_centre(mol, aux, three_ao)
@@ -330,15 +276,13 @@ contains
       else
          allocate (bref(0, 0))
       end if
-      ! A disassociated pointer reaches an optional dummy as absent, which is
-      ! what keeps the four call sites below one branch each instead of two.
+      ! A disassociated pointer reaches an optional dummy as absent.
       bref_arg => null()
       if (fitted) bref_arg => bref
 
       ! `vhf1` is the reference operator's derivative, so its exchange carries
       ! the fraction the reference kept -- one for Hartree-Fock, the
-      ! functional's for a hybrid. `de2` is not scaled with it: that term is the
-      ! two-particle density against full integrals, and the perturbative
+      ! functional's for a hybrid. `de2` is not scaled with it: the perturbative
       ! correlation uses the true interaction whatever the functional does with
       ! exchange.
       if (dense) then
@@ -388,8 +332,7 @@ contains
       allocate (dm1(n_ao, n_ao))
       dm1 = matmul(coeff, matmul(dm1mo, transpose(coeff)))
       ! `build_fock` returns `H + J - K/2`; a zero core Hamiltonian leaves the
-      ! two-electron part alone, which is what a response wants. Threaded over
-      ! the target element, and already the hot routine of the CPHF solver.
+      ! two-electron part alone, which is what a response wants.
       allocate (zero_h(n_ao, n_ao), veff(n_ao, n_ao))
       zero_h = 0.0_dp
       if (dh) then
@@ -411,32 +354,14 @@ contains
          end do
       end do
 
-      ! Tighter than the solver's default. The Z-vector residual enters the
-      ! gradient directly rather than quadratically -- there is no variational
-      ! principle to make it second order here -- so the default 1e-9 leaves
+      ! Tighter than the solver's default: the Z-vector residual enters the
+      ! gradient directly rather than quadratically, so the default 1e-9 leaves
       ! ~1e-7 in the answer, which is the size of the terms being checked.
-      ! In core, not screened, and over the tensor already in hand. The
-      ! solver's default is integral-direct with a Schwarz bound, which is right
-      ! where the response is one quantity among many; here the screening error
-      ! would land in the gradient undiluted. Handing over the tensor built for
-      ! the Lagrangian rather than letting it build its own saves a second
-      ! identical pass over every integral -- 10% of this routine at cc-pVTZ.
       !
-      ! `xc` is the whole point of the double hybrid branch. Omitting it solves
-      ! the Hartree-Fock equations against a Kohn-Sham reference: a different
-      ! linear system, converging cleanly to the answer to a question nobody
-      ! asked.
       ! One of the two integral sources, never both -- `cphf_solve` refuses a
-      ! fitted tensor and an exact one together, and is right to: they are
-      ! different operators rather than two routes to one. A fitted reference
-      ! therefore hands over `bmat` and withholds `eri`, even though `eri` was
-      ! built and is sitting right there for the *correlation* term. Passing it
-      ! anyway is what this branch got wrong first, and the refusal caught it.
-      !
-      ! Integral-direct otherwise, with the same Schwarz bound the Fock builds
-      ! use. Measured against the stored path on water/cc-pVDZ, the screening
-      ! moves the gradient by less than 1e-12 -- it is the reference's own
-      ! Krylov solver, not screening, that put 4e-8 between the two codes.
+      ! fitted tensor and an exact one together. A fitted reference therefore
+      ! hands over `bmat` and withholds `eri`, even though `eri` was built for
+      ! the *correlation* term.
       eri_arg => null()
       if (dense .and. .not. fitted) eri_arg => eri
       if (dh) then
@@ -458,8 +383,8 @@ contains
       ! construction rather than by computation.
       imat(n_o + 1:n_mo, 1:n_o) = transpose(imat(1:n_o, n_o + 1:n_mo))
 
-      ! Both are final here: `dm1mo` has taken the Z-vector just above and
-      ! nothing below writes to it, and `imat`'s last block is the line above.
+      ! Both are final here: `dm1mo` has taken the Z-vector just above, and
+      ! `imat`'s last block is the line above.
       if (present(relaxed_density_mo)) relaxed_density_mo = dm1mo
       if (present(lagrangian_mo)) lagrangian_mo = imat
 
@@ -507,10 +432,6 @@ contains
 
       ! The reference's own contribution to each of these, which a double
       ! hybrid leaves out because `libcint_scf_gradient` already returned it.
-      ! Adding it here is the single most likely error in this routine: the
-      ! answer comes out roughly the reference gradient plus a small correction,
-      ! which is the right shape and the wrong number, and finite difference is
-      ! what catches it.
       allocate (dm1p(n_ao, n_ao), dm1_total(n_ao, n_ao))
       if (dh) then
          dm1p = 2.0_dp*dm1
@@ -545,15 +466,13 @@ contains
       gradient = 0.0_dp
       ! The nuclei repel each other in the reference energy, not in the
       ! correlation one, so a double hybrid's perturbative term has no such
-      ! contribution -- `libcint_scf_gradient` carried it.
+      ! contribution.
       if (.not. dh) call nuclear_repulsion_gradient(mol, gradient)
       gradient = gradient + de2
 
       ! The derivative of the exchange-correlation potential, contracted with
-      ! the relaxed correlation density. This is the term with no counterpart in
-      ! the Hartree-Fock assembly: there the reference operator is entirely
-      ! two-electron, so `vhf1` below is all of it, while a Kohn-Sham reference
-      ! keeps part of its operator on a quadrature grid.
+      ! the relaxed correlation density. No counterpart in the Hartree-Fock
+      ! assembly, where the reference operator is entirely two-electron.
       if (dh) then
          call xc_potential_gradient(xc, mol, scf_density, dm1, gradient, error, &
                                     fixed_grid=fixed_grid)
@@ -561,11 +480,10 @@ contains
       end if
 
       ! The reference's two-electron derivative, when that reference was fitted.
-      ! `vhf1` is zero in this case and the loop below contributes nothing, so
-      ! this is a replacement rather than an addition. The half is the factor
-      ! `two_electron_mp2_terms` carries implicitly by building two of the four
-      ! differentiated positions and letting the integral's symmetry supply the
-      ! rest; `fitted_reference_gradient` returns the honest derivative instead.
+      ! `vhf1` is zero in this case, so this is a replacement rather than an
+      ! addition. The half matches the factor `two_electron_mp2_terms` carries
+      ! implicitly by building two of the four differentiated positions;
+      ! `fitted_reference_gradient` returns the whole derivative instead.
       if (fitted) then
          allocate (ref_grad(3, mol%natm))
          ref_grad = 0.0_dp
@@ -582,8 +500,8 @@ contains
       im1_t = transpose(im1)
       work_t = transpose(work)
 
-      ! The whole coefficient of `s1`, assembled once here rather than left
-      ! implicit in the three contractions below.
+      ! The whole coefficient of `s1`, which the three contractions below leave
+      ! implicit.
       if (present(energy_weighted_ao)) then
          energy_weighted_ao = im1 + im1_t - work - work_t - 2.0_dp*vhf_s1occ
       end if
@@ -624,11 +542,9 @@ contains
          end do
       end do
 
-      ! Once, here, and nowhere else. The coefficient scales the correlation
-      ! energy, so it scales every term derived from it exactly once -- and
-      ! since the Z-vector solves a linear system, scaling its right-hand side
-      ! and scaling its solution are the same operation. Doing both is the
-      ! error, and it would be invisible at a coefficient of one.
+      ! Once, here, and nowhere else: the Z-vector solves a linear system, so
+      ! scaling its right-hand side and scaling its solution are the same
+      ! operation, and doing both would square the coefficient.
       if (dh) gradient = cscale*gradient
 
    end subroutine libcint_mp2_gradient
@@ -716,10 +632,9 @@ contains
       !!
       !! `J - K/2` for Hartree-Fock; for a Kohn-Sham reference the exchange
       !! carries the functional's fraction and the exchange-correlation kernel
-      !! is added. It is the operator the coupled-perturbed solver applies, and
-      !! it has to be the same one here: the Lagrangian's right-hand side and
-      !! the linear system it is solved against belong to a single reference,
-      !! and mixing them converges to a plausible wrong Z-vector.
+      !! is added. The same operator the coupled-perturbed solver applies, and
+      !! it has to stay the same one: the Lagrangian's right-hand side and the
+      !! system it is solved against belong to a single reference.
       logical, intent(in) :: dense
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: eri(:, :, :, :), bounds(:, :)
@@ -733,10 +648,8 @@ contains
       real(dp), intent(in), optional :: bmat(:, :)
          !! The reference's fitted tensor `B(mu nu, P)`. Present, the two-electron
          !! half comes from it and neither `eri` nor the direct build is touched.
-         !! `density` here is a relaxed correlation density, so this cannot go
-         !! through the SCF's own fitted build -- see `fitted_potential_general`.
-         !! The kernel below is unaffected either way: `f_xc` is a grid quantity
-         !! and knows nothing about where J and K came from.
+         !! `density` here is a relaxed correlation density, so this goes through
+         !! `fitted_potential_general` rather than the SCF's own fitted build.
 
       if (present(bmat)) then
          call fitted_potential_general(bmat, density, veff, k_scale=k_scale)
@@ -753,9 +666,8 @@ contains
                                      veff, error, k_scale)
       !! `J - K/2`, from the stored tensor or from the integrals directly
       !!
-      !! Which one is not a choice about accuracy -- the two agree to better
-      !! than 1e-12 here -- but about whether a tensor exists to read. The
-      !! blocked path never forms one.
+      !! `dense` picks between them, and picks on whether a tensor exists to
+      !! read: the blocked path never forms one.
       logical, intent(in) :: dense
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: eri(:, :, :, :), bounds(:, :)
@@ -786,13 +698,9 @@ contains
       !! `4 t2(i,j,a,b) - 2 t2(i,j,b,a)` is the coefficient the energy gives
       !! each integral.
       !!
-      !! Whole, this is `n_o^2 n_ao^2` -- smaller than `n_ao^4` by
-      !! `(n_o/n_ao)^2`, and still unbounded, which past a few hundred
-      !! functions made it the footprint rather than the block target. `j` is
-      !! the index to cut on because it is contracted last, against `C_occ`, so
-      !! a range of it contributes an addend to the two-particle density rather
-      !! than a slice of one. When the whole range fits, the caller asks for it
-      !! in one call and this is what it always was.
+      !! `j` is the index cut on because it is contracted last, against `C_occ`,
+      !! so a range of it contributes an addend to the two-particle density
+      !! rather than a slice of one. Whole, this array is `n_o^2 n_ao^2`.
       real(dp), intent(in) :: t2(:, :, :, :)
       real(dp), intent(in) :: c_vir(:, :)
       integer, intent(in) :: n_ao, n_o, n_v, j_lo, j_hi
@@ -834,10 +742,8 @@ contains
       !! How many occupied orbitals one pass over `j` may carry
       !!
       !! Sized on the two arrays that scale with it: the half-transformed
-      !! amplitudes at `n_o n_ao^2` per `j`, and the transformation
-      !! intermediate at `n_ao^3` per `j`. At least one, always -- a single
-      !! occupied orbital is the smallest pass there is, and if that does not
-      !! fit, nothing else here will either.
+      !! amplitudes at `n_o n_ao^2` per `j`, and the transformation intermediate
+      !! at `n_ao^3` per `j`. Never less than one, whatever the target.
       integer, intent(in) :: n_ao, n_o
       real(dp), intent(in) :: target_bytes
       integer :: nj
@@ -854,15 +760,11 @@ contains
       !! The same two contractions the dense path makes, with the first index
       !! restricted -- and the bra-pair term written out rather than obtained by
       !! transposing, because the transpose of a block is not a block: the
-      !! `sum_i C(q,i) half(i,p,r,j)` term needs `p` restricted and `q` free,
-      !! which is a different contraction rather than a rearrangement of the
-      !! first one.
+      !! `sum_i C(q,i) half(i,p,r,j)` term needs `p` restricted and `q` free.
       !!
       !! Blocked over `j` as well, on the same target, so nothing here is
-      !! `n_o^2 n_ao^2`. The price is that the half transform is redone for
-      !! each block of the first index; it is `n_o^2 n_v^2 n_ao` against the
-      !! `n_ao^4` of integrals a block already pays for, and it is what buys a
-      !! footprint that does not grow with the basis.
+      !! `n_o^2 n_ao^2`. The half transform is redone for each block of the
+      !! first index.
       real(dp), intent(in) :: t2(:, :, :, :)
       real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
       integer, intent(in) :: n_ao, n_o, n_v, p_lo, p_hi
@@ -945,17 +847,14 @@ contains
       !!
       !! **Not the gradient's `gamma_ao`.** That one carries the energy's
       !! coefficient `4 t2 - 2 t2^T`, places its indices `(o,v,v,o)` -- chemist
-      !! pairs `(ia|bj)`, ket reversed -- and is symmetrised `1<->2`, because
-      !! its consumer exploits `(grad i j|k l) = (grad i j|l k)`. A second
-      !! derivative has no such permutation, and what makes a density contract
-      !! correctly against the raw derivative integral is bra-ket symmetry
-      !! instead. The two symmetrisations are not interchangeable, so this
-      !! builds its own rather than reusing what the gradient already has.
-      !! See `tools/mp2_hessian_oracle/CONVENTIONS.md` s.4a.
+      !! pairs `(ia|bj)`, ket reversed -- and is symmetrised `1<->2`. A second
+      !! derivative has no such permutation, and needs bra-ket symmetry instead;
+      !! the two symmetrisations are not interchangeable. See
+      !! `tools/mp2_hessian_oracle/CONVENTIONS.md` s.4a.
       !!
-      !! **The fold is what removes `f^{XY}`.** Adding the two-electron half of
-      !! `D_rel f^{XY}` into the cumulant turns the whole two-electron skeleton
-      !! into one density contraction, so no Fock build is needed per atom pair:
+      !! Adding the two-electron half of `D_rel f^{XY}` into the cumulant turns
+      !! the whole two-electron skeleton into one density contraction, so no
+      !! Fock build is needed per atom pair:
       !!
       !!     Gam_D[a,b,c,d] = 2 D[a,c] P[b,d] - D[a,d] P[b,c]   (physicist)
       !!     Gam_eff        = Gam + Gam_D
@@ -1088,24 +987,18 @@ contains
                                          target_bytes, gamma_ao)
       !! The non-separable two-particle density, in the AO basis
       !!
-      !! **Two occupied transformations, as two matrix multiplies.** Written
-      !! elementwise -- one small `matmul` per `(p,q,r,s)` -- this was 65% of
-      !! the whole gradient, because `n_ao^4` is eleven million calls at
-      !! cc-pVTZ and each one costs more in call overhead than in arithmetic.
-      !! Contracted instead as `(n_ao x n_o) (n_o x n_ao^2 n_j)` and then
-      !! `(n_ao^3 x n_j) (n_j x n_ao)`, the same flops sit in two gemms.
-      !! Pointer bounds remapping is what lets the intermediate be read as
-      !! `(p, q r j)` by the first and `(p q r, j)` by the second without a
-      !! copy: the memory order is the same either way.
+      !! Two occupied transformations, as two matrix multiplies:
+      !! `(n_ao x n_o) (n_o x n_ao^2 n_j)` and then `(n_ao^3 x n_j) (n_j x
+      !! n_ao)`. Pointer bounds remapping is what lets the intermediate be read
+      !! as `(p, q r j)` by the first and `(p q r, j)` by the second without a
+      !! copy.
       !!
       !! `j` is contracted last, so a range of it gives an addend rather than a
       !! slice: the second gemm accumulates. One pass when the whole occupied
       !! range fits, which is the ordinary case.
       !!
-      !! `n_ao^4` and dense in its result, which is the point: this is the path
-      !! taken when the whole thing fits, where one gemm over the full first
-      !! index beats the same gemm run block by block.
-      !! `build_gamma_block` is the other path, and the driver picks on size.
+      !! `n_ao^4` and dense in its result. `build_gamma_block` is the blocked
+      !! path, and the driver picks on size.
       real(dp), intent(in) :: t2(:, :, :, :)
       real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
       integer, intent(in) :: n_ao, n_o, n_v
@@ -1149,15 +1042,10 @@ contains
       ! with `p` and `q` exchanged -- so it needs no second contraction, only a
       ! transpose-add on each `(r,s)` slice.
       !
-      ! **The ket pair is deliberately not symmetrised.** Both consumers
-      ! contract this against something already symmetric in `(r,s)`: the
-      ! integrals for the Lagrangian, and the differentiated integrals for the
-      ! gradient, where the nabla sits on the bra and leaves `(rs|` alone. For a
-      ! symmetric partner `sum B(r,s) X(s,r)` equals `sum B(r,s) X(r,s)`, so
-      ! symmetrising here would compute a quantity that contracts to the same
-      ! number -- at the cost of a second `n_ao^4` array and a strided pass over
-      ! it. That pass, and the packing half it carried, cancel exactly against
-      ! each other.
+      ! The ket pair is deliberately not symmetrised. Both consumers contract
+      ! this against something already symmetric in `(r,s)`: the integrals for
+      ! the Lagrangian, and the differentiated integrals for the gradient, where
+      ! the nabla sits on the bra and leaves `(rs|` alone.
       !$omp parallel do collapse(2) default(none) &
       !$omp    shared(gamma_ao, n_ao) private(p, q, r, s, acc)
       do s = 1, n_ao
@@ -1183,14 +1071,10 @@ contains
       !!
       !! Neither the integrals nor the two-particle density is ever whole here.
       !! Both are built for one range of the first index, contracted, and
-      !! discarded, so the peak is `BLOCK_TARGET` rather than `2 n_ao^4`.
-      !!
-      !! **What blocking costs.** The undifferentiated integrals are rebuilt for
-      !! each block instead of being stored, and within a block only the ket
-      !! pair's symmetry is available -- the first index is pinned to the block,
-      !! which is what rules the other permutations out. That is roughly four
-      !! times the integral work of the dense path's one symmetric build. It
-      !! buys a ceiling set by choice instead of by the basis.
+      !! discarded, so the peak is `BLOCK_TARGET` rather than `2 n_ao^4`. The
+      !! integrals are rebuilt per block, and within a block only the ket pair's
+      !! symmetry is available, so this is roughly four times the dense path's
+      !! integral work.
       !!
       !! Blocks are cut on shell boundaries, since a shell's functions share a
       !! quartet and cannot be split across two passes.
@@ -1205,15 +1089,14 @@ contains
       real(dp), intent(in), optional :: k_scale
          !! The reference's exchange fraction, passed through to `vhf1`.
       logical, intent(in), optional :: with_reference
-         !! Passed straight through, and meaning what it means there: false with
-         !! a fitted reference, whose derivative is not a four-centre object.
+         !! Passed straight through: false with a fitted reference, whose
+         !! derivative is not a four-centre object.
 
       real(dp), allocatable, target :: gamma_blk(:, :, :, :)
       real(dp), allocatable :: eri_blk(:, :, :, :), local(:, :)
       integer :: ish, ish_lo, ish_hi, p_lo, p_hi, np, per_block, r, s
 
-      ! How many functions of the first index one block may carry, from the
-      ! target and the two arrays that scale with it.
+      ! How many functions of the first index one block may carry.
       per_block = max(1, int(target_bytes/(2.0_dp*real(n_ao, dp)**3*8.0_dp)))
 
       ish_lo = 1
@@ -1239,8 +1122,7 @@ contains
                                      p_offset=p_lo - 1, eri_blk=eri_blk, &
                                      k_scale=k_scale, with_reference=with_reference)
 
-         ! The Lagrangian, over this block of the contracted first index. Same
-         ! product as the dense path, with `k` the block rather than `n_ao`.
+         ! The Lagrangian, over this block of the contracted first index.
          !$omp parallel default(none) shared(eri_blk, gamma_blk, imat_ao, n_ao) &
          !$omp    private(r, s, local)
          allocate (local(n_ao, n_ao))
@@ -1263,18 +1145,19 @@ contains
          ish_lo = ish_hi + 1
       end do
 
+      ! TODO(mqc): nothing in this routine ever sets `error`, and this check is
+      ! the last statement, so it can only return where the routine ends anyway.
       if (error%has_error()) return
    end subroutine blocked_two_electron_terms
 
    subroutine contract_gamma_eri(eri, gamma_ao, n_ao, imat_ao)
       !! `Imat(p,q) = sum_{u,r,s} (u p|r s) gamma(u,q,r,s)`
       !!
-      !! `n_ao^5` either way; the question is only whether those flops sit in a
-      !! loop nest or in BLAS. Fixing the ket pair leaves an ordinary
+      !! `n_ao^5`. Fixing the ket pair leaves an ordinary
       !! `(n_ao x n_ao) (n_ao x n_ao)` product of two contiguous slices -- the
       !! integrals are symmetric in `(u,p)`, so the slice can be read with
-      !! either index first -- and the outer pair parallelises with no
-      !! reduction beyond one accumulator per thread.
+      !! either index first -- and the outer pair parallelises over one
+      !! accumulator per thread.
       real(dp), intent(in) :: eri(:, :, :, :), gamma_ao(:, :, :, :)
       integer, intent(in) :: n_ao
       real(dp), allocatable, intent(out) :: imat_ao(:, :)
@@ -1312,23 +1195,19 @@ contains
       !! Once against the two-particle density, which gives a gradient
       !! contribution directly, and once against the reference density, which
       !! gives the per-atom matrices the relaxed density is contracted with
-      !! afterwards. One quartet loop rather than two because the integrals are
-      !! the expensive part and both contractions want the same ones.
+      !! afterwards. One quartet loop serves both.
       !!
-      !! **One permutation survives, and it is used.** A differentiated quartet
-      !! has none of the eightfold symmetry of an ordinary one: the nabla
-      !! distinguishes the first index from the second and the bra from the
-      !! ket. What is untouched is the ket pair, `(∇i j|k l) = (∇i j|l k)`, so
-      !! this walks `l <= k` and writes the transposed contribution out rather
-      !! than doubling -- the two-particle density is deliberately not
+      !! A differentiated quartet has none of the eightfold symmetry of an
+      !! ordinary one: only the ket pair survives, `(∇i j|k l) = (∇i j|l k)`.
+      !! So this walks `l <= k` and writes the transposed contribution out
+      !! rather than doubling -- the two-particle density is deliberately not
       !! symmetric in that pair, so `k` and `l` exchanged is a different
       !! contraction rather than the same number twice.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: gamma_ao(:, :, :, :)
          !! Required, but ignored when `with_gamma` is false -- pass a
          !! zero-sized array then. Not optional, because an absent optional
-         !! cannot be named in a data-sharing clause and this one has to be:
-         !! routing it through a pointer instead was tried and still faulted.
+         !! cannot be named in an OpenMP data-sharing clause.
       real(dp), intent(in) :: hf_density(:, :)
       real(dp), intent(inout) :: de2(:, :)        !! (3, natm), accumulated into
       real(dp), intent(inout) :: vhf1(:, :, :, :)  !! (nao, nao, 3, natm), likewise
@@ -1338,14 +1217,12 @@ contains
       real(dp), intent(in), optional :: k_scale
          !! How much exchange the *reference* kept, which scales `vhf1` and
          !! nothing else. `de2` contracts the two-particle density against the
-         !! full interaction whatever the functional does with exchange, because
-         !! perturbative correlation is not part of the functional's exchange.
+         !! full interaction whatever the functional does with exchange.
       logical, intent(in), optional :: with_reference
          !! False leaves `vhf1` alone and builds only the two-particle term,
          !! which is what a *fitted* reference wants: its operator has no
-         !! four-centre derivative at all, so the matrices built here would be
-         !! the derivative of an interaction the SCF never used. The correlation
-         !! half is unaffected -- it is exact whatever the reference fitted.
+         !! four-centre derivative at all. The correlation half is unaffected --
+         !! it is exact whatever the reference fitted.
       integer, intent(in), optional :: ish_lo, ish_hi
          !! Shells to differentiate over. Absent means all of them, which is the
          !! dense path; present is one block of the first index.
@@ -1354,9 +1231,8 @@ contains
       real(dp), intent(inout), optional, target :: eri_blk(:, :, :, :)
          !! Present, the undifferentiated integrals of the same quartets are
          !! stored here as they are computed. The blocked path needs them for
-         !! the Lagrangian and cannot afford to keep the whole tensor; the dense
-         !! path already has the tensor and leaves this absent, which is why the
-         !! two share this loop rather than each having one.
+         !! the Lagrangian; the dense path already has the whole tensor and
+         !! leaves this absent.
 
       real(dp), allocatable :: buf(:)
       real(dp), allocatable :: de_local(:, :), vhf_local(:, :, :, :)
@@ -1394,15 +1270,14 @@ contains
       off = 0
       if (present(p_offset)) off = p_offset
       ! Through a pointer rather than the dummy itself: an absent optional
-      ! cannot appear in a data-sharing clause, and naming it there costs more
-      ! than the branch it saves.
+      ! cannot appear in a data-sharing clause.
       want_eri = present(eri_blk)
       want_gamma = .true.
       if (present(with_gamma)) want_gamma = with_gamma
       want_ref = .true.
       if (present(with_reference)) want_ref = with_reference
-      ! The exchange half-coefficient, scaled. One for Hartree-Fock, giving back
-      ! the -0.5 this loop carried before there was a choice.
+      ! The exchange half-coefficient, scaled by the reference's exchange
+      ! fraction. One for Hartree-Fock, leaving the -0.5 this loop carries.
       kx = 0.5_dp
       if (present(k_scale)) kx = 0.5_dp*k_scale
       eri_out => null()
@@ -1427,17 +1302,11 @@ contains
       de_local = 0.0_dp
       vhf_local = 0.0_dp
 
-      ! **Collapsed, because the outer loop is a block and a block can be one
-      ! shell.** `first..last` is however much of the first index the caller
-      ! could afford to hold, and that is set by memory rather than by the
-      ! machine: at 500 MB the MP2 gradient gets three basis functions per block
-      ! by n_ao = 200 and one by n_ao = 300, so threading on `ish` alone leaves
-      ! every core but one idle exactly when the system is large enough to care.
-      ! Collapsing with `jsh` gives the schedule `nbas` times more to hand out,
-      ! which does not depend on the block at all. Measured on ethane/cc-pVTZ
-      ! through the MCSCF gradient: 39.7 s to 7.4 s, the same number a block big
-      ! enough to hold the whole basis reaches, and now reached without the
-      ! memory.
+      ! Collapsed because the outer loop is a block and a block can be one
+      ! shell: `first..last` is however much of the first index the caller could
+      ! afford to hold, so threading on `ish` alone leaves every core but one
+      ! idle exactly when the system is large enough to care. Collapsing with
+      ! `jsh` gives the schedule `nbas` times more to hand out.
       !
       ! Both counters are per-iteration rather than hoisted, which is what
       ! collapsing requires -- the loops have to nest perfectly.
@@ -1467,8 +1336,8 @@ contains
                   if (ret == 0) cycle
 
                   ! The same quartet undifferentiated, where the caller wants
-                  ! it. Written straight into the block rather than accumulated,
-                  ! because each quartet appears once in this loop.
+                  ! it. Written rather than accumulated, because each quartet
+                  ! appears once in this loop.
                   if (want_eri) then
                      ret = two_electron_block(mol%cartesian, eri_local, shls, mol%atm, &
                                               mol%natm, mol%bas, nbas, mol%env)

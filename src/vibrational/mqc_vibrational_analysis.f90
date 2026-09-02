@@ -5,6 +5,8 @@ module mqc_vibrational_analysis
    use pic_types, only: dp
    use pic_lapack_interfaces, only: pic_syev, pic_gesvd
    use pic_logger, only:
+   ! TODO(mqc): an empty `only` list that imports nothing, with the real import
+   ! two lines below. Dead line.
    use mqc_elements, only: element_mass, element_number_to_symbol
    use pic_logger, only: logger => global_logger
    use mqc_physical_constants, only: AU_TO_CM1, AU_TO_MDYNE_ANG, AU_TO_KMMOL, AMU_TO_AU
@@ -22,17 +24,18 @@ module mqc_vibrational_analysis
    public :: compute_ir_intensities
    public :: print_vibrational_analysis
 
-   !! A direction in the translation-rotation basis counts as real above this,
-   !! and is discarded below it. Applied to a column norm before normalising and
-   !! to the singular values that follow, which are the same question asked twice:
-   !! a linear molecule has five of these directions rather than six, and it is
-   !! the vanishing singular value that says so.
    real(dp), parameter :: TR_NULL_TOL = 1.0e-10_dp
+      !! A direction in the translation-rotation basis counts as real above
+      !! this and is discarded below it. Applied to a column norm before
+      !! normalising and to the singular values that follow: a linear molecule
+      !! has five such directions rather than six, and it is the vanishing
+      !! singular value that says so.
 
-   !! Denominators below this are left alone rather than divided by. Every use
-   !! is a normalisation whose scale is a sum of squares, so the guard is against
-   !! a mode that is identically zero, not against ordinary smallness.
    real(dp), parameter :: NORMALISE_FLOOR = 1.0e-14_dp
+      !! Denominators below this are left alone rather than divided by. Every
+      !! use is a normalisation whose scale is a sum of squares, so the guard
+      !! is against a mode that is identically zero, not against ordinary
+      !! smallness.
 
 contains
 
@@ -42,14 +45,11 @@ contains
                                               projected_hessian_out)
       !! Compute vibrational frequencies from the Hessian matrix.
       !!
-      !! Algorithm:
-      !! 1. Mass-weight the Hessian: H_mw = M^{-1/2} * H * M^{-1/2}
-      !! 2. Optionally project out translation/rotation modes
-      !! 3. Diagonalize H_mw to get eigenvalues
-      !! 4. Convert eigenvalues to frequencies in cm⁻¹
+      !! The Hessian is mass-weighted, `H_mw = M^{-1/2} H M^{-1/2}`, optionally
+      !! projected free of translation and rotation, then diagonalized.
       !!
-      !! Negative eigenvalues produce negative frequencies (imaginary modes,
-      !! indicating transition states or saddle points).
+      !! A negative eigenvalue comes back as a negative frequency: an imaginary
+      !! mode, so a transition state or a saddle point.
       real(dp), intent(in) :: hessian(:, :)
          !! Hessian matrix in Hartree/Bohr² (3*N x 3*N)
       integer, intent(in) :: element_numbers(:)
@@ -113,7 +113,9 @@ contains
       call pic_syev(mw_hessian, eigenvalues, info=info)
 
       if (info /= 0) then
-         ! Eigenvalue decomposition failed
+         ! TODO(mqc): returns with `eigenvalues_out` and `eigenvectors`
+         ! unallocated, and `compute_vibrational_analysis` hands both straight
+         ! to `compute_reduced_masses` without checking.
          call logger%error("Eigenvalue decomposition in vibrational frequencies failed")
          allocate (frequencies(n_coords))
          frequencies = 0.0_dp
@@ -157,14 +159,9 @@ contains
                                            dipole_derivatives, ir_intensities)
       !! Perform complete vibrational analysis from Hessian matrix.
       !!
-      !! This is a convenience wrapper that computes:
-      !! - Vibrational frequencies in cm⁻¹
-      !! - Reduced masses in amu
-      !! - Force constants in Hartree/Bohr² (and optionally mdyne/Å)
-      !! - Cartesian displacement vectors (normalized)
-      !! - IR intensities in km/mol (if dipole_derivatives provided)
-      !!
-      !! Optionally projects out translation/rotation modes.
+      !! Frequencies, reduced masses, force constants, normalized Cartesian
+      !! displacements, and IR intensities where dipole derivatives are given.
+      !! Optionally projects out translation and rotation.
       real(dp), intent(in) :: hessian(:, :)
          !! Hessian matrix in Hartree/Bohr² (3*N x 3*N)
       integer, intent(in) :: element_numbers(:)
@@ -444,12 +441,10 @@ contains
    subroutine compute_reduced_masses(eigenvectors, element_numbers, reduced_masses)
       !! Compute reduced masses for each normal mode.
       !!
-      !! The reduced mass μ_k for mode k is defined as:
+      !! The reduced mass μ_k for mode k is
       !!   μ_k = 1 / Σ_i (L_mw_{i,k}² / m_i)
       !!
-      !! where L_mw is the mass-weighted eigenvector (normalized to 1).
-      !! This formula arises from the relationship Q_k = Σ_i √m_i * x_i * L_mw_{i,k}
-      !! and ensures that the harmonic oscillator relation ω² = k/μ holds.
+      !! where L_mw is the mass-weighted eigenvector, normalized to 1.
       real(dp), intent(in) :: eigenvectors(:, :)
          !! Mass-weighted eigenvectors from diagonalization (3*N x 3*N)
          !! Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)
@@ -607,7 +602,6 @@ contains
       !!   dipd(k,j) = ∂μ_k/∂x_j (Cartesian dipole derivative)
       !!   L(j,i) = mass-weighted eigenvector component
       !!   m_j = atomic mass for coordinate j
-      !!
       real(dp), intent(in) :: dipole_derivatives(:, :)
          !! Cartesian dipole derivatives (3, 3*N) in atomic units
       real(dp), intent(in) :: eigenvectors(:, :)
@@ -633,7 +627,6 @@ contains
          ! Transform dipole derivative from Cartesian to normal mode coordinates
          ! trdip(k) = Σ_j dipd(k,j) * L(j,i) * amass_au(j)
          ! where amass_au(j) = 1/√(m_j in atomic units) = 1/√(m_amu * AMU_TO_AU)
-         ! This matches xtb's formula in hessian.F90 lines 526-535
          do j = 1, n_coords
             iatom = (j - 1)/3 + 1
             mass = element_mass(element_numbers(iatom))

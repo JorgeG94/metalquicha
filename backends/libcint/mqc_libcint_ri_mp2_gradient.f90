@@ -1,15 +1,12 @@
 !! The RI-MP2 nuclear gradient over a closed-shell reference
 module mqc_libcint_ri_mp2_gradient
-   !! **What is differentiated.** An exact-ERI restricted Hartree-Fock
-   !! reference with a *fitted* correlation energy -- which is what an `ri-mp2`
-   !! deck asks for, the auxiliary basis naming the correlation fit and not the
-   !! SCF. That is why the four-centre coupling tensor and the Fock derivative
-   !! below are never fitted: approximating them would differentiate an energy
-   !! nobody computed.
+   !! An exact-ERI restricted Hartree-Fock reference with a *fitted* correlation
+   !! energy, which is what an `ri-mp2` deck asks for: the auxiliary basis names
+   !! the correlation fit and not the SCF, so the four-centre coupling tensor
+   !! and the Fock derivative below are never fitted.
    !!
-   !! The formulation is Stocks, Palethorpe and Barca, J. Chem. Theory Comput.
-   !! 2024, 20, 2505, section 3. Only two things differ from the conventional
-   !! MP2 gradient next door:
+   !! Stocks, Palethorpe and Barca, J. Chem. Theory Comput. 2024, 20, 2505,
+   !! section 3. Two things differ from the conventional MP2 gradient next door:
    !!
    !! * the two-particle density stays three-index, `Gamma^P_ia`, and contracts
    !!   against three- and two-centre derivative integrals rather than against
@@ -18,38 +15,18 @@ module mqc_libcint_ri_mp2_gradient
    !!   density.
    !!
    !! Everything one-particle -- the relaxed density, the energy-weighted
-   !! density, the Z-vector, and the core-Hamiltonian, overlap and
-   !! Hartree-Fock two-electron derivative terms -- is
-   !! `mqc_libcint_mp2_gradient`'s, reused rather than rewritten.
+   !! density, the Z-vector, and the core-Hamiltonian, overlap and Hartree-Fock
+   !! two-electron derivative terms -- is `mqc_libcint_mp2_gradient`'s.
    !!
-   !! **Conventions that cost a day to establish**, none of them in the paper,
-   !! all of them settled against the numpy prototype in
-   !! `tools/cpu_validation/ri_mp2_gradient.py`:
-   !!
-   !! 1. The paper's `L'` and `L''` index the Lagrangian's own index first; the
-   !!    assembly this feeds carries it second, so `imat` is their transpose.
-   !!    The diagonals and the norms agree either way -- only the full matrix
-   !!    comparison shows it.
-   !! 2. The paper's `A_pqrs` contracted with a density is *twice* the response
-   !!    operator the conventional assembly uses.
-   !! 3. Terms 3 and 4 stayed wrong through three revisions while translational
-   !!    invariance held at 1e-15. It is blind to every one of these.
-   !!
-   !! **Reproducibility under OpenMP.** This pipeline carries ~5e-11 of
-   !! run-to-run scatter at more than one thread -- two 8-thread runs of
-   !! `validation/check_ri_mp2_gradient` differ by that much, two
-   !! single-threaded runs are bit-identical -- and the mechanism is known:
-   !! the unordered `!$omp critical(mqc_direct_fock_accumulate)` merge of
-   !! thread-local accumulators in `mqc_libcint_direct.f90`. Correctly
-   !! synchronised, but whichever thread reaches the merge first adds first,
-   !! so the summation order varies between runs. Measured, not guessed:
-   !! `MKL_NUM_THREADS=1 OMP_NUM_THREADS=8` still varies while
-   !! `OMP_NUM_THREADS=1 MKL_NUM_THREADS=8` is byte-identical, so it is our
-   !! OpenMP and not threaded BLAS; and eight runs land on five contiguous
-   !! values in the 11th digit, which is a handful of merge orders, not a
-   !! race. The practical consequence: bit-identity claims about this
-   !! gradient -- a refactor "changing nothing", a comparison "to rounding"
-   !! -- are testable only at one thread.
+   !! Bit-reproducible at one thread only: threaded, the Fock accumulators in
+   !! `mqc_libcint_direct.f90` merge in arrival order, which moves the result by
+   !! ~5e-11.
+   ! Translational invariance held at 1e-15 through three revisions in which
+   ! assembly terms 3 and 4 were wrong, so it validates nothing here. The numpy
+   ! prototype in `tools/cpu_validation/ri_mp2_gradient.py` is what settled the
+   ! index conventions: `imat` is the transpose of the paper's `L'` and `L''`,
+   ! and the paper's `A_pqrs` contracted with a density is twice the response
+   ! operator the conventional assembly uses.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -86,35 +63,29 @@ contains
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: n_frozen
-         !! Core orbitals excluded from the correlation, exactly the
-         !! conventional gradient's split: the fitted tensor, the amplitudes and
-         !! both fitted densities span the active occupied space only, while the
-         !! reference density, the response and every one-particle quantity keep
-         !! the full occupied space.
+         !! Core orbitals excluded from the correlation. The fitted tensor, the
+         !! amplitudes and both fitted densities span the active occupied space
+         !! only; the reference density, the response and every one-particle
+         !! quantity keep the full occupied space.
       logical, intent(in), optional :: force_direct
          !! Recompute the reference integrals rather than storing them, whatever
-         !! the size. The check harness passes it so both paths are exercised on
-         !! a case small enough to take either -- a threshold nothing ever
-         !! crosses in a test is a threshold nothing ever tests.
+         !! the size.
       logical, intent(in), optional :: fitted_reference
          !! The SCF underneath fitted its own J and K, so differentiate that
          !! rather than the exact reference.
          !!
-         !! This is a different energy, not a cheaper route to the same one, and
-         !! everything the reference touches moves with it: the response
-         !! operator the Z-vector is solved against, the two potentials built
-         !! from the relaxed density, and the two-electron derivative term,
-         !! which stops being a four-centre contraction entirely. Absent is the
-         !! exact-reference case an `ri-mp2` deck asks for -- the auxiliary basis
-         !! naming only the correlation fit.
-         !!
-         !! One auxiliary basis serves both, which is what a deck can express:
-         !! `model.aux_basis` is the only place a fitting set is named.
+         !! A different energy, not a cheaper route to the same one: the
+         !! response operator the Z-vector is solved against, the two potentials
+         !! built from the relaxed density, and the two-electron derivative term
+         !! all move with it, the last ceasing to be a four-centre contraction
+         !! at all. Absent is the exact-reference case an `ri-mp2` deck asks
+         !! for. One auxiliary basis serves both; `model.aux_basis` is the only
+         !! place a fitting set is named.
       type(xc_context_t), intent(inout), optional :: xc
          !! Present, this returns a *double hybrid's* perturbative term rather
          !! than an MP2 gradient -- the correlation alone, over a Kohn-Sham
-         !! reference, scaled by `pt2_scale`. The same four differences the
-         !! conventional gradient next door documents apply here:
+         !! reference, scaled by `pt2_scale`. Four things follow, as in the
+         !! conventional gradient next door:
          !!
          !! 1. Every response is the Kohn-Sham one: exact exchange scaled by the
          !!    functional's fraction, plus the exchange-correlation kernel.
@@ -123,17 +94,14 @@ contains
          !! 3. The derivative of the exchange-correlation potential appears.
          !! 4. Everything is scaled once, at the end.
          !!
-         !! What differs from that routine is what this one was for: the
-         !! correlation is *fitted*, so the perturbative term costs `n^2 n_aux`
-         !! rather than `n^4`. That is the whole reason a double hybrid gradient
-         !! would come through here.
+         !! The correlation is *fitted* here, so the perturbative term costs
+         !! `n^2 n_aux` rather than `n^4`.
       real(dp), intent(in), optional :: scf_density(:, :)
          !! The converged reference density. Required with `xc`.
       real(dp), intent(in), optional :: pt2_scale
          !! The functional's PT2 coefficient, applied once and after the
          !! Z-vector solve -- scaling a linear system's right-hand side and
-         !! scaling its solution are the same thing, and doing both is the error
-         !! that hides at a coefficient of one.
+         !! scaling its solution are the same thing.
 
       real(dp), allocatable :: bmat(:, :), bia_raw(:, :, :), metric(:, :), jm12(:, :)
       real(dp), allocatable :: ovov(:, :), xm(:, :)
@@ -206,14 +174,8 @@ contains
 
       ! Stored or recomputed, for the *reference* integrals only -- the ones the
       ! Z-vector's operator and the reference potential are built from. Those
-      ! stay exact whatever the correlation is fitted with, because an `ri-mp2`
-      ! energy fits nothing in its SCF, so the response has to be the exact
-      ! reference's or it answers a question nobody asked.
-      !
-      ! What is fitted is not what makes this decision. Storing `n_ao^4` doubles
-      ! would put the ceiling of a method chosen to avoid `n_ao^4` back where RI
-      ! removed it, so past the limit the same integrals are recomputed instead
-      ! and nothing about the answer changes.
+      ! stay exact whatever the correlation is fitted with, since an `ri-mp2`
+      ! energy fits nothing in its SCF.
       fitted = .false.
       if (present(fitted_reference)) fitted = fitted_reference
 
@@ -239,25 +201,21 @@ contains
          if (force_direct) dense = .false.
       end if
       ! With the reference fitted there are no four-centre integrals in the
-      ! whole routine, so neither branch of the storage decision applies and
-      ! both are left empty rather than chosen between.
+      ! whole routine, so neither branch of the storage decision applies.
       if (fitted) dense = .false.
 
-      ! Two occupied spaces from here on, the conventional gradient's split:
-      ! the full one, `c_occ`, is what the reference density, the response and
-      ! every one-particle quantity run over; the active one, `c_act`, is all
-      ! the fitted tensor and the amplitudes ever see. With no frozen core the
-      ! two are the same columns.
+      ! Two occupied spaces from here on: the full one, `c_occ`, for the
+      ! reference density, the response and every one-particle quantity; the
+      ! active one, `c_act`, for the fitted tensor and the amplitudes. With no
+      ! frozen core the two are the same columns.
       allocate (c_occ(n_ao, n_o), c_vir(n_ao, n_v), c_act(n_ao, n_oa))
       c_occ = coeff(:, 1:n_o)
       c_vir = coeff(:, n_o + 1:n_mo)
       c_act = coeff(:, frozen + 1:n_o)
 
       ! ---- the fitted integrals, and the amplitudes over them --------------
-      ! `build_df_mo_tensor` lays its result out `(a, P, i)`, the shape the
-      ! energy's gemms want. Everything below indexes `(i, a, P)` instead,
-      ! matching the equations and the numpy reference, so it is repacked once
-      ! here rather than transposed at every use.
+      ! `build_df_mo_tensor` lays its result out `(a, P, i)`. Everything below
+      ! indexes `(i, a, P)` instead, so it is repacked once here.
       call build_df_mo_tensor(mol, aux, c_act, c_vir, bia_raw, error)
       if (error%has_error()) return
       n_aux = size(bia_raw, 2)
@@ -279,9 +237,8 @@ contains
       ! undoubled and unfitted -- for its own derivative term.
       call three_centre(mol, aux, three_ao)
       if (fitted) then
-         ! `B(mu nu, P)`, the same tensor the SCF built. Formed from the
-         ! integrals and metric already in hand rather than through
-         ! `build_df_tensor`, which would repeat both.
+         ! `B(mu nu, P)`, the same tensor the SCF built, formed from the
+         ! integrals and metric already in hand.
          allocate (bref(n_ao*n_ao, n_aux))
          call pic_gemm(three_ao, jm12, bref)
       else
@@ -290,9 +247,7 @@ contains
 
       ! `(ia|jb)_RI = sum_P B^P_ia B^P_jb` is one gemm once `B` is held as a
       ! matrix in the compound `(i,a)` index, which is the shape the repack
-      ! above produces. Written as `n_o^2 n_v^2` separate dot products it is the
-      ! same arithmetic against `B`'s longest stride, and it was the second most
-      ! expensive step in the routine.
+      ! above produces.
       allocate (ovov(n_ov, n_ov))
       call pic_gemm(bmat, bmat, ovov, transb="T")
 
@@ -379,22 +334,20 @@ contains
 
       ! Transposed into the slot: the paper indexes the Lagrangian's own index
       ! first, the assembly below carries it second. `imat`'s column is the
-      ! fitted density's own MO index, so its frozen columns are zero --
-      ! exactly what the conventional gradient's AO back-transform produces,
-      ! where the two-particle density has no frozen component to land there.
+      ! fitted density's own MO index, so its frozen columns are zero.
       allocate (imat(n_mo, n_mo))
       imat = 0.0_dp
       imat(:, frozen + 1:n_o) = -transpose(lag_o)
       imat(:, n_o + 1:n_mo) = -transpose(lag_v)
 
-      ! The occupied-frozen block of the relaxed density, the conventional
-      ! gradient's construction verbatim. The amplitudes never touch a frozen
-      ! orbital, but the Lagrangian does, and dividing its occupied-frozen
-      ! elements by the orbital-energy gap is that rotation's own first-order
-      ! response -- resolved directly because both orbitals are occupied and
-      ! the coupled equations below span only occupied-virtual. It has to land
-      ! before the `veff` build: the Z-vector's right-hand side is the response
-      ! of the reference to the whole unrelaxed density, this block included.
+      ! The occupied-frozen block of the relaxed density. The amplitudes never
+      ! touch a frozen orbital, but the Lagrangian does, and dividing its
+      ! occupied-frozen elements by the orbital-energy gap is that rotation's
+      ! own first-order response -- resolved directly, since both orbitals are
+      ! occupied and the coupled equations below span only occupied-virtual. It
+      ! has to land before the `veff` build: the Z-vector's right-hand side is
+      ! the response of the reference to the whole unrelaxed density, this
+      ! block included.
       do i = frozen + 1, n_o
          do p = 1, frozen
             dm1mo(p, i) = imat(p, i)/(orbital_energies(p) - orbital_energies(i))
@@ -432,20 +385,13 @@ contains
          end do
       end do
 
-      ! Tighter than the solver's default, for the reason the conventional
-      ! gradient gives: the Z-vector residual enters the answer directly rather
-      ! than quadratically. Handing over the tensor when there is one saves a
-      ! second identical pass; when there is not, the solver goes direct with
-      ! the same Schwarz bound the potentials above used.
-      ! One integral source, never both: `cphf_solve` refuses a fitted tensor
-      ! and an exact one together and is right to, since they are different
-      ! operators. A fitted reference hands over `bmat` -- the operator the SCF
-      ! actually used, because the orbitals are stationary for the fitted energy
-      ! and for no other -- and withholds `eri`.
-      !
-      ! `xc` makes it the Kohn-Sham operator rather than the Hartree-Fock one.
-      ! Omitting it there solves a different linear system, cleanly, and returns
-      ! the answer to a question nobody asked.
+      ! Tighter than the solver's default: the Z-vector residual enters the
+      ! answer directly rather than quadratically. One integral source, never
+      ! both -- `cphf_solve` refuses a fitted tensor and an exact one together,
+      ! since they are different operators. A fitted reference hands over
+      ! `bmat`, the operator its orbitals are stationary for, and withholds
+      ! `eri`. `xc` makes it the Kohn-Sham operator rather than the
+      ! Hartree-Fock one.
       bref_arg => null()
       if (fitted) bref_arg => bref
       eri_arg => null()
@@ -498,10 +444,9 @@ contains
 
       allocate (dm1p(n_ao, n_ao), dm1_total(n_ao, n_ao))
       ! A double hybrid leaves the reference's own contribution out of both:
-      ! `libcint_scf_gradient` already returned it. Adding it here is the single
-      ! most likely error in this routine -- the answer comes out roughly the
-      ! reference gradient plus a small correction, right in shape and wrong in
-      ! value, and only a finite difference catches it.
+      ! `libcint_scf_gradient` already returned it. Adding it here gives roughly
+      ! the reference gradient plus a small correction -- right in shape, wrong
+      ! in value, and only a finite difference catches it.
       if (dh) then
          dm1p = 2.0_dp*dm1
          dm1_total = dm1
@@ -533,8 +478,7 @@ contains
 
       ! The derivative of the exchange-correlation potential, contracted with
       ! the relaxed correlation density. No counterpart in the Hartree-Fock
-      ! assembly: there the reference operator is entirely two-electron, while a
-      ! Kohn-Sham one keeps part of itself on a quadrature grid.
+      ! assembly, whose reference operator is entirely two-electron.
       if (dh) then
          call xc_potential_gradient(xc, mol, scf_density, dm1, gradient, error)
          if (error%has_error()) return
@@ -546,11 +490,10 @@ contains
       allocate (gamma_null(0, 0, 0, 0))
       if (fitted) then
          ! The reference's own two-electron gradient and its cross term with the
-         ! relaxed density, both from the fitted integrals. The half is the same
-         ! one the exact branch below carries implicitly: `two_electron_mp2_terms`
-         ! builds two of the four differentiated positions and lets the
-         ! integral's symmetry supply the rest, so what it hands back is already
-         ! halved. This one is not, and says so.
+         ! relaxed density, both from the fitted integrals. The half is explicit
+         ! here; `two_electron_mp2_terms` returns an already halved result,
+         ! building two of the four differentiated positions and letting the
+         ! integral's symmetry supply the rest.
          allocate (ref_grad(3, mol%natm))
          ref_grad = 0.0_dp
          call fitted_reference_gradient(mol, aux, three_ao, jm12, hf_density, &
@@ -608,11 +551,9 @@ contains
          end do
       end do
 
-      ! Once, here, and nowhere else. The coefficient scales the correlation
-      ! energy, so it scales every term derived from it exactly once -- and
-      ! since the Z-vector solves a linear system, scaling its right-hand side
-      ! and scaling its solution are the same operation. Doing both is the
-      ! error, and it is invisible at a coefficient of one.
+      ! Once, here, and nowhere else. Scaling the Z-vector's right-hand side
+      ! and scaling its solution are the same operation, and doing both is an
+      ! error that is invisible at a coefficient of one.
       if (dh) gradient = cscale*gradient
 
    end subroutine libcint_ri_mp2_gradient
@@ -623,13 +564,10 @@ contains
       !!
       !! Four combinations behind one call: fitted or exact integrals, and
       !! Hartree-Fock or Kohn-Sham. The kernel is an addend over whichever
-      !! source ran rather than a fifth path -- `f_xc` is a grid quantity and
-      !! knows nothing about where J and K came from.
+      !! source ran, `f_xc` being a grid quantity.
       !!
-      !! Whatever built the Z-vector's operator has to build this too: the
-      !! Lagrangian's right-hand side and the linear system it is solved against
-      !! belong to one reference, and mixing them converges to a plausible wrong
-      !! Z-vector.
+      !! Whatever built the Z-vector's operator has to build this too -- mixing
+      !! the two converges to a plausible wrong Z-vector.
       logical, intent(in) :: fitted
       real(dp), intent(in) :: b(:, :)
       logical, intent(in) :: dense
@@ -660,10 +598,9 @@ contains
    subroutine build_gamma(xm, bmat, jm12, n_o, n_v, n_aux, gamma)
       !! `Gamma^P_ia = sum_{bjQ} (2 X^ab_ij - X^ba_ij) B^Q_jb J^{-1/2}_PQ` (eq 8)
       !!
-      !! Two gemms over the compound `(i,a)` index. The `sum_{jb}` is the first
-      !! and the metric contraction is the second, and neither needs the rank-4
-      !! form the equation is written in -- which is the whole reason `xm` and
-      !! `bmat` are built as matrices upstream rather than reshaped here.
+      !! Two gemms over the compound `(i,a)` index: the `sum_{jb}` first, the
+      !! metric contraction second. Neither needs the rank-4 form the equation
+      !! is written in.
       real(dp), intent(in) :: xm(:, :)      !! `2X - X^swap` as `((i,a), (j,b))`
       real(dp), intent(in) :: bmat(:, :)    !! `B` as `((j,b), P)`
       real(dp), intent(in) :: jm12(:, :)
@@ -680,8 +617,7 @@ contains
       deallocate (half)
 
       ! Back to `(P, i, a)`, the layout the Lagrangian and the AO
-      ! back-transform read. One `n_ov` by `n_aux` transpose against two gemms
-      ! of `n_ov^2 n_aux` and `n_ov n_aux^2`.
+      ! back-transform read.
       allocate (gamma(n_aux, n_o, n_v))
       do a = 1, n_v
          do i = 1, n_o
@@ -696,9 +632,8 @@ contains
    subroutine build_gamma_metric(gamma, bmat, jm12, n_o, n_v, n_aux, gamma_pq)
       !! `gamma_PQ = sum_{iaR} Gamma^P_ia B^R_ia J^{-1/2}_QR` (eq 10)
       !!
-      !! Two gemms, in place of the `n_o n_v` rank-one updates this was: the
-      !! `sum_ia` is an inner product over the compound index and the metric
-      !! contraction follows it.
+      !! Two gemms: the `sum_ia` is an inner product over the compound index,
+      !! and the metric contraction follows it.
       real(dp), intent(in) :: gamma(:, :, :), bmat(:, :), jm12(:, :)
       integer, intent(in) :: n_o, n_v, n_aux
       real(dp), allocatable, intent(out) :: gamma_pq(:, :)
@@ -784,8 +719,7 @@ contains
          p1 = offsets(iatom) + counts(iatom)
          if (counts(iatom) == 0) cycle
          ! Hoisted out of the component loop: it depends on the atom block and
-         ! not on which Cartesian direction is being differentiated, so inside
-         ! it was the same transpose and the same allocation done three times.
+         ! not on which Cartesian direction is being differentiated.
          gt = transpose_first_two(gamma_ao, p0, p1)
          do comp = 1, 3
             ! The bra index on this atom, and then the ket: `(mu nu|P)` is

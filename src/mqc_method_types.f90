@@ -1,8 +1,6 @@
 !! Method type constants for quantum chemistry methods
 module mqc_method_types
-   !! Defines integer constants for quantum chemistry methods to avoid string comparisons
-   !! throughout the codebase. Provides conversion utilities between string
-   !! representations and integer constants.
+   !! The `METHOD_TYPE_*` constants, and what an input-file spelling parses to.
    use pic_types, only: int32, dp
    implicit none
    private
@@ -51,10 +49,9 @@ module mqc_method_types
    integer(int32), parameter :: METHOD_TYPE_MCSCF = 20
 
    integer(int32), parameter :: METHOD_TYPE_EFP2 = 60
-   !! Effective fragment potentials (60-69). Unlike every other entry here, this
-   !! solves no wavefunction of its own: each fragment carries one already, computed
-   !! when its potential was made, and what is evaluated is the interaction between
-   !! them.
+   !! Effective fragment potentials (60-69). Solves no wavefunction of its own:
+   !! each fragment carries one already, computed when its potential was made,
+   !! and what is evaluated is the interaction between them.
 
    ! Perturbation theory (30-39)
    integer(int32), parameter :: METHOD_TYPE_MP2 = 30
@@ -68,12 +65,12 @@ module mqc_method_types
 
    integer(int32), parameter :: METHOD_TYPE_SAPT0 = 61
    integer(int32), parameter :: METHOD_TYPE_SAPT2 = 62
-   !! Interaction energies that come out decomposed (60-69). Unlike the entries
-   !! above, these do not return the energy of *a* system: they return the
-   !! interaction between two of them, broken into named physical terms.
-   !!
-   !! 60 is EFP2 on `feat/efp-efp`; SAPT0 takes 61 so the two branches can merge
-   !! without either constant moving.
+   !! Interaction energies that come out decomposed. Unlike the entries above,
+   !! these do not return the energy of *a* system: they return the interaction
+   !! between two of them, broken into named physical terms.
+   ! TODO(mqc): 61 and 62 sit inside the 60-69 block `METHOD_TYPE_EFP2`
+   ! documents as its own, so the next member of either family has no
+   ! unambiguous number to take.
 
 contains
 
@@ -83,15 +80,17 @@ contains
       logical :: serial
 
       ! tblite. Threaded it corrupts a result rather than stopping, which is
-      ! why this is not merely a performance choice. JORGE FIXME
+      ! why this is not merely a performance choice.
+      ! TODO(mqc): revisit once tblite is thread-safe.
       serial = (method_type == METHOD_TYPE_GFN1 .or. method_type == METHOD_TYPE_GFN2)
    end function needs_serial_execution
 
+   ! TODO(mqc): the same lowercasing loop is open-coded in five routines below,
+   ! one of which allocates `lower_str` before an assignment that reallocates it.
    pure function method_type_from_string(method_str) result(method_type)
-      !! Convert method type string to integer constant
+      !! Method type for an input-file spelling
       !!
-      !! Performs case-insensitive comparison and returns appropriate constant.
-      !! Returns METHOD_TYPE_UNKNOWN for unrecognized strings.
+      !! Case-insensitive. `METHOD_TYPE_UNKNOWN` for anything unrecognized.
       character(len=*), intent(in) :: method_str
       !! Input string (e.g., "gfn1", "gfn2", "hf")
       integer(int32) :: method_type
@@ -129,9 +128,7 @@ contains
          ! Effective fragment potentials. "efp" alone means EFP2
       case ("efp2", "efp")
          method_type = METHOD_TYPE_EFP2
-         ! Interaction energies. "sapt" alone means SAPT0: the bare name has
-         ! always meant the base order here, and changing what an old deck
-         ! computes would be worse than asking for the 2.
+         ! Interaction energies. "sapt" alone means SAPT0.
       case ("sapt0", "sapt")
          method_type = METHOD_TYPE_SAPT0
       case ("sapt2")
@@ -160,9 +157,7 @@ contains
    end function method_type_from_string
 
    pure function method_type_to_string(method_type) result(method_str)
-      !! Convert method type integer constant to string
-      !!
-      !! Provides human-readable string representation of method type.
+      !! The canonical spelling of a method type constant
       integer(int32), intent(in) :: method_type         !! Input integer constant
       character(len=:), allocatable :: method_str       !! Output string representation
 
@@ -247,9 +242,7 @@ contains
          os_scale = 1.3_dp
          ss_scale = 0.0_dp
       case default
-         ! Every other spelling, including plain "mp2", is unscaled. The values
-         ! set above the select already say so; this is here to be explicit
-         ! that no scaling is the deliberate answer rather than a gap.
+         ! Every other spelling, including plain "mp2", is unscaled.
       end select
    end subroutine method_spin_scaling
 

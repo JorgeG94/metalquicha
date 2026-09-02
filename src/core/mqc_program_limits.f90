@@ -1,7 +1,7 @@
 !! Program limits and default parameter, publics
 module mqc_program_limits
-   !! Contains compile-time limits and default values for the metalquicha program.
-   !! These are tunable parameter that control memory allocation and algorithm behavior.
+   !! Compile-time limits and defaults that control memory allocation and
+   !! algorithm behaviour.
    use pic_types, only: dp
    implicit none
    private
@@ -16,27 +16,19 @@ module mqc_program_limits
 
    integer, parameter, public :: N_EFP_TERMS = 6
    !! Terms in an EFP2 interaction energy: electrostatics, polarization,
-   !! exchange repulsion, dispersion, charge transfer, and their total. Here
-   !! rather than beside the EFP code because the real CPU bridge and the stub
-   !! that stands in for it must agree, and only one of those is compiled with
-   !! the backend present.
+   !! exchange repulsion, dispersion, charge transfer, and their total.
 
    integer, parameter, public :: N_SAPT_TERMS = 12
-   !! Terms a SAPT0 interaction energy is reported as: electrostatics, exchange,
-   !! induction, exchange-induction, dispersion, exchange-dispersion, the
-   !! delta-HF correction, the supermolecular HF reference, and the total. Here
-   !! rather than beside the SAPT code because the real CPU bridge and the stub
-   !! standing in for it must agree, and only one is compiled with the backend.
+   !! Terms a SAPT0 interaction energy is reported as; `SAPT_TERM_NAMES` names
+   !! them in slot order.
 
    character(len=*), parameter, public :: SAPT_TERM_NAMES(N_SAPT_TERMS) = &
                                           [character(len=12) :: "elst10", "exch10_s2", "exch10", &
                                                                  "ind20_u", "ind20_r", "exch_ind20_u", "exch_ind20_r", &
                                                               "disp20", "exch_disp20", "delta_hf", "e_int_hf_cp", "total"]
    !! The slot each SAPT term occupies, and the name it is written out under.
-   !! Both sides of the backend gate index this array, and so does the JSON
-   !! writer, so the order is fixed in exactly one place. The names are the
-   !! literature's rather than the console's prose, because their reason to
-   !! exist is being compared against another code's output.
+   !! The names are the literature's rather than the console's prose, since
+   !! these exist to be compared against another code's output.
    !!
    !! `_u` is uncoupled and `_r` is response (coupled); `_s2` is the single
    !! exchange approximation against the full `S^inf`. A code that reports only
@@ -60,43 +52,23 @@ module mqc_program_limits
    !---------------------------------------------------------------------------
 
    ! How much memory a rank will spend on stored two-electron integrals.
-   !
-   ! Here rather than beside the CPU backend that reads them because they are
-   ! what this module is for, and because that backend is not always compiled:
-   ! a number describing a policy should not disappear with whichever code
-   ! happens to enforce it today.
 
    real(dp), parameter, public :: ERI_CORE_BUDGET_CAP = 2.0e9_dp
       !! Ceiling on what one rank may spend on stored two-electron integrals.
       !!
-      !! The tensor is the full n^4, not the eightfold-unique set, so this is
-      !! reached at 128 functions. Packing it would push that to 215, which is
-      !! worth doing when something needs it -- `eris_packed` already exists for
-      !! the correlated methods -- but the contraction in `build_fock` addresses
-      !! the tensor as four indices and would have to be rewritten with it.
+      !! The tensor is the full n^4, not the eightfold-unique set, so the cap is
+      !! reached at 128 functions.
 
    real(dp), parameter, public :: ERI_CORE_BUDGET_SHARE = 0.25_dp
       !! Fraction of *currently available* memory a rank will claim.
       !!
-      !! This used to be a flat two gigabytes, on the reasoning that a
-      !! fragmented run puts one MPI rank per fragment on a node and sizing
-      !! from total memory would have every rank conclude it could have all of
-      !! it. That is right for a cluster node and wrong for the machine this
-      !! project also aims at: four ranks on a sixteen-gigabyte laptop, each
-      !! helping itself to two gigabytes of integrals, is most of the machine
-      !! before anything else is counted -- and the laptop is running a browser.
-      !!
-      !! Reading what is *available* rather than what is installed handles the
-      !! several-ranks-per-node case without needing to know how many there
-      !! are, which is not discoverable here: there is no node-local
-      !! communicator to ask. Ranks that decide earlier have already allocated,
-      !! so the ones deciding later see less and claim less. That degrades
-      !! rather than resolving -- ranks deciding at the same instant see the
-      !! same number -- which is why the share is a quarter and not a half.
-      !!
-      !! The asymmetry is what sets the direction. Claiming too much is fatal;
+      !! Available rather than installed, so several ranks on one node degrade
+      !! toward smaller claims -- a rank deciding later sees what the earlier
+      !! ones already took -- without needing a count that is not discoverable
+      !! here. Ranks deciding at the same instant see the same number, which is
+      !! why the share is a quarter and not a half. Claiming too much is fatal;
       !! claiming too little falls back to a direct build, which is slower and
-      !! correct. So this errs low on purpose.
+      !! correct.
 
    real(dp), parameter, public :: ERI_CORE_BUDGET_BLIND = 5.0e8_dp
       !! What to allow when available memory cannot be read at all.
@@ -109,18 +81,11 @@ module mqc_program_limits
    real(dp), parameter, public :: SAPT_CORE_BUDGET_SHARE = 0.8_dp
       !! Fraction of available memory a SAPT run may size itself against.
       !!
-      !! Deliberately far above `ERI_CORE_BUDGET_SHARE`, and for a reason that
-      !! is about consequences rather than appetite. An SCF that decides the
-      !! integrals do not fit falls back to a direct build and returns the same
-      !! energy more slowly, so claiming too little there costs time. SAPT has
-      !! no direct path: every term is a contraction over the stored dimer
-      !! tensor, so refusing is refusing the calculation. A quarter-of-memory
-      !! rule would turn runs that complete today into errors.
-      !!
-      !! So this guard exists only to convert the failure that would happen
-      !! anyway -- an OOM kill, or an hour of swapping -- into a message that
-      !! names the basis as the thing to change. It should refuse only what
-      !! genuinely cannot run.
+      !! Far above `ERI_CORE_BUDGET_SHARE` because SAPT has no direct path:
+      !! every term is a contraction over the stored dimer tensor, so refusing
+      !! the memory refuses the calculation, where an SCF only gets slower. The
+      !! guard turns an OOM kill into a message naming the basis, and should
+      !! refuse only what genuinely cannot run.
 
    !---------------------------------------------------------------------------
    ! Density Fitting
@@ -131,10 +96,11 @@ module mqc_program_limits
       !!
       !! `B = (mn|Q) J^(-1/2)` is split over the pair index so that each thread
       !! reads its own slice of the three-centre tensor rather than all of it,
-      !! and this is how tall a slice is. Two megabytes because the panel is
-      !! packed per thread and lives for the whole call: a hundred threads
-      !! holding it is two hundred megabytes, where a panel sized for GEMM
-      !! efficiency alone would be gigabytes for a few per cent more throughput.
+      !! and this is how tall a slice is. The panel is packed per thread and
+      !! lives for the whole call, so the cost is this times the thread count.
+   ! TODO(mqc): 8 MB here, where the sizing argument that came with it was
+   ! written for two -- a hundred threads hold 800 MB of panel, not the 200 MB
+   ! the choice was justified by. Value and reasoning disagree by four times.
 
    real(dp), parameter, public :: DF_PAIR_SCREEN = 1.0e-12_dp
       !! Below this, a shell pair contributes no three-centre integral.
@@ -143,21 +109,17 @@ module mqc_program_limits
       !! bound times the largest auxiliary diagonal falls under this cannot
       !! reach it, for any P, and the whole shell triplet is skipped.
       !!
-      !! 1e-12 rather than the 1e-10 the literature usually quotes, because
-      !! the validation suite compares total energies at 1e-9 and a fitted
-      !! energy has already spent its error budget on the fit. The cost of the
-      !! stricter threshold is small: the bound falls off exponentially with
-      !! pair separation, so two orders cost far less than two orders' worth
-      !! of pairs.
+      !! 1e-12 rather than the 1e-10 the literature usually quotes, because the
+      !! validation suite compares total energies at 1e-9 and a fitted energy
+      !! has already spent its error budget on the fit.
 
    integer, parameter, public :: DF_AUX_CHUNK = 32
       !! Auxiliary functions per thread chunk in the fitted Coulomb build.
       !!
       !! Both halves of J are BLAS-2 over a column block of B, and this is how
-      !! wide a block is. Small enough that a few thousand auxiliary functions
-      !! still make many more chunks than there are threads -- the balance a
-      !! static schedule needs -- and large enough that the per-call overhead of
-      !! BLAS is amortised rather than paid n_aux times.
+      !! wide a block is: small enough that a few thousand auxiliary functions
+      !! still make many more chunks than there are threads, large enough that
+      !! the per-call BLAS overhead is not paid n_aux times.
 
    !---------------------------------------------------------------------------
    ! Numerical Differentiation Defaults
@@ -175,12 +137,15 @@ module mqc_program_limits
    !! Maximum length for input file lines
 
    integer, parameter, public :: MAX_ORBITAL_LABEL_LEN = 8
-   !! Maximum length for element symbols (e.g., "He", "Uue")
-
-   integer, parameter, public :: MAX_ELEMENT_SYMBOL_LEN = 4
       !! "Cr 3d" and its longest relatives. An atomic orbital label is an
       !! element symbol, a space, a principal quantum number and a subshell
       !! letter, so eight characters is generous.
+
+   integer, parameter, public :: MAX_ELEMENT_SYMBOL_LEN = 4
+   !! Maximum length for element symbols (e.g., "He", "Uue")
+   ! TODO(mqc): redefined privately, and identically, in `mqc_geometry` and
+   ! `mqc_xyz_reader` rather than used from here -- three spellings of one
+   ! constant, which is what MQC002 exists to prevent.
 
    character(len=*), parameter, public :: JSON_REAL_FORMAT = "ES"
    !! JSON output format for real numbers (scientific notation)

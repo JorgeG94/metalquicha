@@ -20,9 +20,8 @@ module mqc_aambs
    public :: aambs_shell_labels  !! Principal and angular numbers, per minimal-basis function
 
    integer, parameter :: MAX_Z = 54
-      !! The non-relativistic table covers hydrogen to xenon. Beyond that GAMESS
-      !! switches to a relativistic set which is not shipped here, and which needs
-      !! a relativistic Hamiltonian this code does not have.
+      !! The non-relativistic table covers hydrogen to xenon. The relativistic
+      !! set beyond it is not shipped.
 
    type :: aambs_dimensions_t
       !! Every orbital-space dimension the QUAO construction needs
@@ -42,13 +41,10 @@ contains
       !! In the order `build_aambs_molecule` lays them out -- atoms outermost,
       !! then the element's shells in the order `aambs.json` lists them, then
       !! `2l+1` functions per shell. That ordering is an invariant of the basis
-      !! file rather than of this routine, and the same one `aambs_atom_ranges`
-      !! relies on.
+      !! file, not of this routine.
       !!
-      !! The principal quantum number is the reason this exists. It is in the
-      !! file and in nothing else: libcint knows an angular momentum and an atom
-      !! but has no notion of a `2p` as opposed to a `3p`, and telling those
-      !! apart is exactly what selecting an active space by orbital label needs.
+      !! The principal quantum number is in the file and in nothing else:
+      !! libcint has no notion of a `2p` as opposed to a `3p`.
       integer, intent(in) :: atomic_numbers(:)
       integer, allocatable, intent(out) :: atom_of(:)     !! 1-based atom index
       integer, allocatable, intent(out) :: principal(:)   !! n
@@ -60,6 +56,8 @@ contains
       integer, allocatable :: shell_n(:), shell_l(:)
       integer :: iatom, ishell, icomp, total, cursor, n_shells
       logical :: found
+      ! TODO(mqc): `key`, `n_shells` and `found` are declared here and never
+      ! used.
 
       if (error%has_error()) return
       call aambs_file(path, error)
@@ -73,9 +71,7 @@ contains
       end if
 
       ! Two passes: the first counts so the arrays can be sized exactly, the
-      ! second fills them. Cheaper than growing them and much easier to read
-      ! than predicting the size from the orbital counts, which would duplicate
-      ! the relationship between shells and functions that this is establishing.
+      ! second fills them.
       total = 0
       do iatom = 1, size(atomic_numbers)
          call element_shells(json, atomic_numbers(iatom), shell_n, shell_l, error)
@@ -153,17 +149,13 @@ contains
 
    subroutine aambs_file(filename, error)
       !! Locate `aambs/aambs.json` on the basis search path
-      !!
-      !! In a subdirectory rather than beside the other basis sets, and
-      !! deliberately: `mqc_extract_basis_sets` deletes any `*.json` under
-      !! `basis_sets/` that `MQC_BASIS_SETS` does not name, and this file is
-      !! tracked rather than extracted from the Basis Set Exchange bundle. The
-      !! subdirectory is what keeps a configure from removing it.
-      !!
-      !! The glob is written `*.json` under `basis_sets/` rather than the
-      !! obvious way round because CMake's Ninja generator preprocesses every
-      !! Fortran source to scan module dependencies, and `cpp` reads a literal
-      !! slash-star as the start of a C comment that never closes.
+      ! In a subdirectory rather than beside the other basis sets:
+      ! `mqc_extract_basis_sets` deletes any `*.json` under `basis_sets/` that
+      ! `MQC_BASIS_SETS` does not name, and this file is tracked rather than
+      ! extracted. Written `*.json` under `basis_sets/` rather than the other
+      ! way round because CMake's Ninja generator preprocesses every Fortran
+      ! source to scan module dependencies, and `cpp` reads a literal
+      ! slash-star as the start of a C comment that never closes.
       character(len=:), allocatable, intent(out) :: filename
       type(error_t), intent(out) :: error
 
@@ -244,11 +236,9 @@ contains
    subroutine aambs_dimensions(atomic_numbers, n_electrons, dims, error)
       !! The orbital-space dimensions of a molecule in the minimal basis
       !!
-      !! `n_vvo` can come out negative, and that is a real condition rather than
-      !! an arithmetic accident: it means the molecule has more occupied orbitals
-      !! than its minimal basis has room for. Paper I's construction has nothing
-      !! to say about that case, so it is refused here rather than propagated as
-      !! a negative dimension into an allocate.
+      !! A molecule with more occupied orbitals than its minimal basis has room
+      !! for gives a negative `n_vvo`; that is refused here rather than
+      !! propagated into an allocate.
       integer, intent(in) :: atomic_numbers(:)
       integer, intent(in) :: n_electrons
       type(aambs_dimensions_t), intent(out) :: dims

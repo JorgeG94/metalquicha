@@ -24,11 +24,10 @@ module mqc_libcint_ecp
    !! this module only reads it.
    !!
    !! **What an ECP changes elsewhere, and this module does not do.** The
-   !! nuclear charge an atom presents to everything else drops by the number
-   !! of core electrons replaced, which changes the nuclear attraction, the
-   !! nuclear repulsion and the electron count. Those belong to the molecule
-   !! and the fragment respectively, and doing them here would be doing them
-   !! twice.
+   !! nuclear charge an atom presents to everything else drops by the number of
+   !! core electrons replaced, which changes the nuclear attraction, the nuclear
+   !! repulsion and the electron count. Those belong to the molecule and the
+   !! fragment respectively.
    use pic_types, only: dp
    use, intrinsic :: iso_c_binding, only: c_int, c_ptr, c_loc, c_null_ptr
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -40,15 +39,10 @@ module mqc_libcint_ecp
    public :: ecp_refuses_derivatives
    public :: ecp_refuses_auto_frozen_core
 
-   !! Whether this build can evaluate an ECP at all.
-   !!
-   !! The integrals come from libfint. libcint has no ECP code, so a build
-   !! configured with `-DMQC_USE_LIBFINT=OFF` has no `ECPscalar_sph` to link
-   !! against -- and before this was guarded, that configuration failed at the
-   !! linker with two undefined references and nothing to say why.
-   !!
-   !! Read by `build_libcint_molecule`, which refuses a deck naming a potential
-   !! rather than letting one reach an evaluator that is not there.
+   ! Whether this build can evaluate an ECP at all. libcint has no ECP code, so
+   ! a build configured with `-DMQC_USE_LIBFINT=OFF` has no `ECPscalar_sph` to
+   ! link against. Read by `build_libcint_molecule`, which refuses a deck naming
+   ! a potential rather than letting one reach an evaluator that is not there.
 #ifdef MQC_WITH_LIBFINT
    logical, parameter :: ECP_AVAILABLE = .true.
 #else
@@ -88,19 +82,14 @@ contains
    function ecp_refuses_auto_frozen_core(core_electrons, error) result(refused)
       !! Refuse an *automatically counted* frozen core when an ECP is present
       !!
-      !! `core_orbital_count` counts filled shells below the valence one from
-      !! the atomic number. An ECP has already removed a core, so those
-      !! orbitals are not there to freeze and the count would freeze valence
-      !! instead -- silently, and by an amount that looks like a small energy
-      !! difference rather than a mistake.
+      !! `core_orbital_count` counts filled shells below the valence one from the
+      !! atomic number. An ECP has already removed a core, so those orbitals are
+      !! not there to freeze and the count would silently freeze valence instead.
       !!
-      !! The two cores are not the same size either, which is why this refuses
-      !! rather than subtracting one from the other: iodine's def2-ECP replaces
-      !! 28 electrons while the usual frozen core for iodine is 36, and no
-      !! arithmetic on those two numbers is obviously right.
-      !!
-      !! An explicit `n_frozen_core` is honoured. The caller knows what its
-      !! potential replaced and this does not.
+      !! The two cores are not the same size either -- iodine's def2-ECP replaces
+      !! 28 electrons where the usual frozen core is 36 -- so this refuses rather
+      !! than subtracting one from the other. An explicit `n_frozen_core` is
+      !! honoured.
       integer, allocatable, intent(in) :: core_electrons(:)
       type(error_t), intent(inout) :: error
       logical :: refused
@@ -126,19 +115,11 @@ contains
       !! differentiated anywhere in this program -- libfint carries the energy
       !! integrals only, not PySCF's `nr_ecp_deriv.c`.
       !!
-      !! **Why refuse rather than omit.** Every check a user can make passes:
-      !! the SCF converges, the energy agrees with PySCF to 1e-12, and the
-      !! forces are simply missing a term. An optimisation on those walks
-      !! confidently to a geometry that is not a stationary point of the energy
-      !! it reports, and a frequency built from them is wrong in a way that
-      !! looks like a physical result.
-      !!
-      !! One function rather than the same `if` in four places, because there
-      !! are four derivative paths -- SCF, MP2, RI-MP2 and the analytic RHF
-      !! Hessian -- and a fifth added later should fail to compile against a
-      !! missing call rather than silently return a wrong number. It takes the
-      !! per-atom core count rather than the molecule, for the same reason
-      !! `ecp_matrix` takes arrays.
+      !! **Why refuse rather than omit.** Every check a user can make passes: the
+      !! SCF converges, the energy agrees with PySCF to 1e-12, and the forces are
+      !! missing a term. An optimisation on those walks to a geometry that is not
+      !! a stationary point of the energy it reports, and a frequency built from
+      !! them looks like a physical result.
       integer, allocatable, intent(in) :: core_electrons(:)
       character(len=*), intent(in) :: what   !! Named in the message, e.g. "MP2 gradient"
       type(error_t), intent(inout) :: error
@@ -164,19 +145,15 @@ contains
       !! caller adds this unconditionally and a zero matrix is the right answer
       !! for a molecule no potential touches.
       !!
-      !! **Plain arrays rather than `libcint_molecule_t`**, which is not a
-      !! style preference. `molecule_core_hamiltonian` has to add this term,
-      !! and taking the type here would make the two modules mutually
-      !! dependent -- so the molecule passes its own arrays and this module
-      !! depends on nothing of mqc's.
+      !! **Plain arrays rather than `libcint_molecule_t`**:
+      !! `molecule_core_hamiltonian` has to add this term, and taking the type
+      !! here would make the two modules mutually dependent.
       !!
       !! `bas` is the table *with* the ECP rows appended, while `nbas` is the
       !! orbital count alone. Those disagreeing is the whole convention.
       !!
-      !! The loop mirrors `one_electron` in `mqc_libcint_integrals` -- same
-      !! shell-pair walk, same column-major block, same "return zero means
-      !! screened" reading. Shell extents come from `shell_offset` differences
-      !! rather than from `shell_dim`, which keeps this free of that module.
+      !! The loop mirrors `one_electron` in `mqc_libcint_integrals`, but shell
+      !! extents come from `shell_offset` differences rather than `shell_dim`.
       integer, intent(in) :: nao, nbas, natm
       logical, intent(in) :: cartesian
       integer, intent(in) :: atm(:, :)
@@ -239,8 +216,7 @@ contains
             ret = 0
 #endif
             ! Zero means the overlap screen rejected the pair and the library
-            ! zeroed the block. Skipping the copy is an optimisation; the
-            ! block is correct either way.
+            ! zeroed the block; skipping the copy is an optimisation.
             if (ret == 0) cycle
 
             do j = 1, dj

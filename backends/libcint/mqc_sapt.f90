@@ -12,10 +12,8 @@ module mqc_sapt
    !! **The three molecules share one atom ordering, and that is load-bearing.**
    !! A monomer built in its own atom order rather than the dimer's spans the same
    !! space with a *permuted* AO basis, so every matrix built from one molecule and
-   !! contracted against another is silently wrong. It is not a hypothetical: the
-   !! PySCF prototype this is checked against was written that way first, and the
-   !! symptom was `Tr(D_B S) = 5.46` where it has to be the occupied count. That
-   !! trace is asserted here for the same reason.
+   !! contracted against another is silently wrong. `Tr(D_B S)` has to be the
+   !! occupied count, and is asserted here for that reason.
    !!
    !! Reference values come from `validation/check_sapt0.py`, a conventional
    !! four-index SAPT0 in PySCF. psi4 cannot serve as the reference: its
@@ -88,7 +86,7 @@ module mqc_sapt
       real(dp) :: exch12 = 0.0_dp
       real(dp) :: ind22 = 0.0_dp
       real(dp) :: exch_ind22 = 0.0_dp
-         !! Not computed: `Ind22` scaled by `Exch-Ind20,r / Ind20,r`
+         !! Not computed directly: `Ind22` scaled by `Exch-Ind20,r / Ind20,r`
          !! (`ind22.cc:52`). Zero when `Ind20,r` is too small for the ratio
          !! to mean anything -- psi4 does not guard that division; we do.
       real(dp) :: total_sapt2 = 0.0_dp
@@ -111,13 +109,12 @@ module mqc_sapt
       real(dp), allocatable :: k_o(:, :)
          !! `K[D_A S D_B]`, from the inter-monomer transition density.
          !!
-         !! **Not symmetric**, and that matters everywhere it is used. psi4 builds
-         !! it with the JK pair reversed and transposes in place afterwards
-         !! (`sapt_jk_terms.py:96-111`); it is built here in FISAPT's orientation
-         !! (`fisapt.cc:3665`) so no transpose is needed and the most bug-prone
-         !! line in that file has no counterpart here.
+         !! **Not symmetric**, and that matters everywhere it is used. Built in
+         !! FISAPT's orientation (`fisapt.cc:3665`), not psi4's reversed one
+         !! (`sapt_jk_terms.py:96-111`), so no transpose is needed.
       real(dp), allocatable :: s(:, :)
       real(dp), allocatable :: eri(:, :, :, :)
+         !! Dense `(nao, nao, nao, nao)`, for the `J`/`K` builds
       real(dp), allocatable :: eri_packed(:, :)   !! For the four-index transforms
    contains
       procedure :: destroy => sapt_cache_destroy
@@ -280,13 +277,14 @@ contains
       !!
       !! **`D` carries no factor of two.** It is `C_occ C_occ^T`, and every factor
       !! of 2 and 4 in the terms exists because of that. Adopting the doubled
-      !! density while keeping those factors doubles half the expression -- and it
-      !! is invisible, because the shapes are unchanged.
+      !! density while keeping those factors doubles half the expression, and the
+      !! shapes are unchanged so nothing objects.
       !!
       !! `V` is the nuclear attraction of one monomer's nuclei *alone*, in the
-      !! dimer basis. That falls out of ghosting for nothing: a ghosted monomer's
-      !! core Hamiltonian carries only its own nuclei, so `V = H_core - T` with
-      !! both taken from that molecule.
+      !! dimer basis, which ghosting supplies with no new integral.
+      ! TODO(mqc): fills both `eri` and `eri_packed` and holds them for the whole
+      ! run, so the AO integrals are stored twice over in two different layouts
+      ! -- the dense copy is four times the packed one.
       type(sapt_molecules_t), intent(inout) :: mols
       type(sapt_cache_t), intent(out) :: cache
       type(error_t), intent(inout) :: error
@@ -306,9 +304,8 @@ contains
          return
       end if
 
-      ! Tight on purpose. A SAPT term is a small difference of large quantities,
-      ! and Exch10 in particular tracks the monomer density closely enough that a
-      ! 1e-9 density threshold shows up in the ninth decimal of the answer.
+      ! Tight on purpose: a SAPT term is a small difference of large quantities,
+      ! and a 1e-9 density threshold shows up in Exch10's ninth decimal.
       call run_libcint_rhf(mols%mono_a, mols%n_elec_a, 200, 1.0e-12_dp, 1.0e-11_dp, &
                            .false., scf_a, error, in_core=.true.)
       if (error%has_error()) return
@@ -341,15 +338,11 @@ contains
       call mols%dimer%eris(cache%eri)
       call mols%dimer%eris_packed(cache%eri_packed)
 
-      ! V for each monomer: the nuclear attraction of its nuclei alone, in the
-      ! dimer basis. Ghosting gives it without a new integral, because the kinetic
-      ! part is common to all three molecules:
+      ! V for each monomer, using that the kinetic part is common to all three
+      ! molecules:
       !
       !     H(dimer)  = T + V_A + V_B          H(mono_b) = T + V_B
       !     => V_A = H(dimer) - H(mono_b),  and V_B = H(dimer) - H(mono_a)
-      !
-      ! The alternative, H(mono_a) minus a kinetic integral, would need an
-      ! accessor this backend does not have -- and SAPT0 never wants T on its own.
       call mols%dimer%core_hamiltonian(h)
       call mols%mono_b%core_hamiltonian(t)
       allocate (cache%v_a(nao, nao))
@@ -360,19 +353,17 @@ contains
       cache%v_b = h - t
       deallocate (h, t)
 
-      ! J from each monomer's own density. `build_fock` is `H + J - K/2`, so a
-      ! zero core and no exchange leaves exactly J -- and it is linear in the
-      ! density, so passing the undoubled D gives J[D] as the terms want.
+      ! J from each monomer's own density. `build_fock` is linear in the density,
+      ! so passing the undoubled D gives J[D] as the terms want.
       allocate (cache%j_a(nao, nao), cache%j_b(nao, nao))
       allocate (cache%k_a(nao, nao), cache%k_b(nao, nao))
       allocate (cache%k_o(nao, nao))
       call coulomb_exchange(cache%eri, cache%d_a, cache%j_a, cache%k_a)
       call coulomb_exchange(cache%eri, cache%d_b, cache%j_b, cache%k_b)
 
-      ! The inter-monomer transition density, and the exchange over it. It is
-      ! NOT symmetric -- one index runs through an occupied orbital of A and the
-      ! other through one of B -- so K_O and its transpose are different matrices
-      ! and both appear in the terms below.
+      ! The inter-monomer transition density, and the exchange over it. NOT
+      ! symmetric, so `K_O` and its transpose are different matrices and both
+      ! appear in the terms below.
       allocate (zero(nao, nao), tmp(nao, nao))
       call pic_gemm(cache%d_a, cache%s, tmp)
       call pic_gemm(tmp, cache%d_b, zero)          ! zero now holds D_A S D_B
@@ -395,9 +386,9 @@ contains
       !! `J[D]` and `K[D]` for an arbitrary, possibly non-symmetric, density
       !!
       !! `build_fock` is `H + J - K/2`, so with a zero core it gives `J` at
-      !! `k_scale = 0` and `J - K/2` at 1, and the difference is `K/2`. Two calls
-      !! rather than a new integral routine, and correct for a non-symmetric
-      !! density because `build_fock` assumes neither symmetry nor antisymmetry.
+      !! `k_scale = 0` and `J - K/2` at 1, and the difference is `K/2`. Correct
+      !! for a non-symmetric density, because `build_fock` assumes neither
+      !! symmetry nor antisymmetry.
       real(dp), intent(in) :: eri(:, :, :, :)
       real(dp), intent(in) :: d(:, :)
       real(dp), intent(out) :: j(:, :), k(:, :)
@@ -422,14 +413,13 @@ contains
       !!     -2 (D_A S D_B).K_O
       !!
       !! Preferred over the DCBS form of `sapt_jk_terms.py:215-222`, which needs
-      !! the virtual density `P` and is valid only while `D + P = S^-1`. That
-      !! identity fails silently if the monomer SCF drops linearly dependent MOs,
-      !! and this form never mentions `P` at all.
+      !! the virtual density `P` and is valid only while `D + P = S^-1` -- an
+      !! identity that fails silently if the monomer SCF drops linearly dependent
+      !! MOs.
       !!
       !! **Every contraction is elementwise**, `sum_pq X_pq Y_pq` -- psi4's
-      !! `vector_dot`. The last term has two non-symmetric operands, where that is
-      !! *not* `Tr(X Y)`; taking the trace convention there puts the answer 55%
-      !! high, which is how it was found in the PySCF reference.
+      !! `vector_dot`. The last term has two non-symmetric operands, where that
+      !! is *not* `Tr(X Y)`.
       type(sapt_cache_t), intent(in) :: c
       real(dp) :: energy
 
@@ -464,19 +454,18 @@ contains
    function sapt_exch10(c, error) result(energy)
       !! `Exch10` at `S^inf` -- `sapt_jk_terms.py:169-237`
       !!
-      !! **This is the one the SAPT0 total uses** (`sapt0.cc:231`).
-      !! `Exch10(S^2)` is computed and printed but only forms the ratio that
-      !! sSAPT0's exchange scaling needs, so a total built from the `S^2` form is
-      !! not comparable to any published SAPT0 number.
+      !! **This is the one the SAPT0 total uses** (`sapt0.cc:231`), not
+      !! `Exch10(S^2)`, which only forms the ratio sSAPT0's exchange scaling
+      !! needs.
       !!
       !! The single-exchange approximation is lifted by inverting the overlap
       !! metric over both monomers' occupied spaces:
       !!
       !!     Sab = [[1, S_AB], [S_AB^T, 1]]     Tmo = Sab^-1 - 1
       !!
-      !! psi4 spells the inverse `Matrix::power(-1.0, 1e-14)`, an eigendecomposition
-      !! with a *relative* cutoff that zeroes small eigenvalues rather than
-      !! inverting them; that is what is done here.
+      !! The inverse is psi4's `Matrix::power(-1.0, 1e-14)`: an
+      !! eigendecomposition with a *relative* cutoff that zeroes small
+      !! eigenvalues rather than inverting them.
       type(sapt_cache_t), intent(in) :: c
       type(error_t), intent(inout) :: error
       real(dp) :: energy
@@ -527,8 +516,8 @@ contains
             sab(i, j) = sum(work(i, :)*vals(:)*work(j, :))
          end do
       end do
-      ! `- 1` on the diagonal. Note the induction path's S^inf branch builds the
-      ! same object WITHOUT this subtraction (`sapt_jk_terms.py:387-388` against
+      ! `- 1` on the diagonal. The induction path's S^inf branch builds the same
+      ! object WITHOUT this subtraction (`sapt_jk_terms.py:387-388` against
       ! `:175-177`) under the same variable names -- do not share a helper.
       do i = 1, no
          sab(i, i) = sab(i, i) - 1.0_dp
@@ -547,9 +536,9 @@ contains
 
       ! **`JT_AB`/`KT_AB` come from T_AB TRANSPOSED.** psi4 feeds the pair as
       ! (C_left = Cocc_B, C_right = Cocc_A Tmo_AB), so the implied density is
-      ! `T_AB^T` (`sapt_jk_terms.py:201-202`), and the `.T` on `KT_AB` in the last
-      ! term below puts it back. Building `T_AB` here instead is a silent 55%
-      ! error and changes nothing else.
+      ! `T_AB^T` (`sapt_jk_terms.py:201-202`), and the transpose on `KT_AB` in
+      ! the last term below puts it back. Building `T_AB` here instead is a
+      ! silent error and changes nothing else.
       allocate (jt_a(n, n), kt_a(n, n), jt_ab(n, n), kt_ab(n, n))
       call coulomb_exchange(c%eri, t_a, jt_a, kt_a)
       call coulomb_exchange(c%eri, transpose(t_ab), jt_ab, kt_ab)
@@ -570,10 +559,8 @@ contains
       !! `Ind20` and `Exch-Ind20`, uncoupled and coupled
       !!
       !! **Uncoupled and coupled differ only in how `x` is obtained**; the
-      !! contraction after is identical (`sapt_jk_terms.py:350` against `:523`).
-      !! So both come out of one code path, and the uncoupled half is computable
-      !! with no solver at all -- which is how the sign and scale conventions here
-      !! were pinned before `cphf_solve` was involved.
+      !! contraction after is identical (`sapt_jk_terms.py:350` against `:523`),
+      !! so both come out of one code path.
       !!
       !!     w_B_MOA = C_occ_A^T w_B C_vir_A
       !!     uncoupled: x = w / (eps_occ - eps_vir)
@@ -679,8 +666,8 @@ contains
    subroutine exch_ind_potential(c, this, other, ex)
       !! The exchange-induction potential, USAPT0's factorisation
       !!
-      !! `usapt0.cc:1261-1315`. Two triplet products where `sapt_jk_terms.py`
-      !! spends eighteen matrix chains, and verified equal to them to 4.5e-17.
+      !! `usapt0.cc:1261-1315`, which is two triplet products where
+      !! `sapt_jk_terms.py` spends eighteen matrix chains.
       !!
       !!     W  = -K_o - 2 J_O + K_O + 2 J[D_o S D_t S D_o]
       !!     T1 = -h_t + S D_t w_o + w_t D_o S - K_O^T
@@ -693,9 +680,8 @@ contains
       !! partner's.** The outer `S D_o` supplies the other projector, and getting
       !! it wrong is dimensionally invisible.
       !!
-      !! One routine serves both directions: called the other way round the only
-      !! further change is `K_O -> K_O^T`, which is why it is written this way
-      !! rather than twice.
+      !! One routine serves both directions; the only difference between them is
+      !! `K_O -> K_O^T`.
       type(sapt_cache_t), intent(in) :: c
       character(len=1), intent(in) :: this, other
       real(dp), allocatable, intent(out) :: ex(:, :)
@@ -791,14 +777,12 @@ contains
       !! and the ket pair (occ B, vir B). Pairing `(ab)` with `(rs)` instead gives
       !! a plausible and entirely wrong number.
       !!
-      !! **Not the routine in `disp20.cc`**, which is debug-only Laplace code
-      !! called under `if (debug_)`, and whose neighbouring block computes a
-      !! natural-orbital variant assigning a different variable.
+      !! **Not the routine in `disp20.cc`**, which is debug-only Laplace code.
       !!
       !! The denominator is negative, so `Disp20` is negative. Factor 4, not 2 --
       !! the closed-shell spin sum over both monomers. Its same-spin and
-      !! opposite-spin halves are exactly equal by construction, so a decomposition
-      !! that is not 50/50 is a bug rather than physics.
+      !! opposite-spin halves are exactly equal by construction, so a
+      !! decomposition that is not 50/50 is a bug rather than physics.
       type(sapt_cache_t), intent(in) :: c
       real(dp) :: energy
 
@@ -836,17 +820,18 @@ contains
       !! `Exch-Disp20`, the S^2 form -- FISAPT's, `fisapt.cc:4351-4733`
       !!
       !! `libsapt_solver`'s version is factorised into some twenty `h`/`q` pieces
-      !! and is not term-comparable; FISAPT's is the readable one and the two
-      !! agree to 2.6e-8, that being libsapt's Laplace denominators.
+      !! and is not term-comparable; FISAPT's is the readable one, and the two
+      !! differ only by libsapt's Laplace denominators.
       !!
       !! Four extra `(occ,vir)` transforms per monomer with modified coefficient
       !! sets, plus four rank-one terms built from `J`, `K` and `V`. The shapes
-      !! are Disp20's throughout, so there is no new bottleneck -- about five
-      !! times its integral cost and none of its scaling.
+      !! are Disp20's throughout, so there is no new bottleneck.
       !!
-      !! **Not optional if a total is to be reported.** It runs 10-25% of `Disp20`
-      !! across psi4's own tests and always with the opposite sign; omitting it
-      !! makes a total systematically and plausibly wrong.
+      !! **Not optional if a total is to be reported.** It runs at 10-25% of
+      !! `Disp20` and always with the opposite sign.
+      ! TODO(mqc): built out of chained `matmul` where every other routine in
+      ! this module goes through `pic_gemm`, so these `nao` by `nao` chains miss
+      ! BLAS entirely and allocate a temporary per link.
       type(sapt_cache_t), intent(in) :: c
       real(dp) :: energy
 
@@ -999,21 +984,18 @@ contains
       !! from `sapt0.cc:229-231`. Three things in that are not guessable and each
       !! changes the answer:
       !!
-      !! * **`dHF(2)` is in the total, unconditionally.** There is no option to
-      !!   disable it, so every SAPT0 number in the literature includes it. On a
-      !!   water dimer it is worth around a sixth of the total.
-      !! * **The total uses `Exch10`, not `Exch10(S^2)`.** The `S^2` form is
-      !!   computed and printed but only forms the ratio sSAPT0's exchange scaling
-      !!   needs, so a total built from it is comparable to nothing.
+      !! * **`dHF(2)` is in the total, unconditionally**, so every SAPT0 number
+      !!   in the literature includes it.
+      !! * **The total uses `Exch10`, not `Exch10(S^2)`.** A total built from the
+      !!   `S^2` form is comparable to nothing.
       !! * **`Ind20,r`, the response form** -- `COUPLED_INDUCTION` defaults true.
       !!   But `Exch-Ind20` and `Exch-Disp20` are always the `S^2` approximation
-      !!   in SAPT0; their `S^inf` variants are not implemented in psi4 at all.
+      !!   in SAPT0; their `S^inf` variants are not in psi4 at all.
       !!
       !! `dHF(2)` is *defined* as the residual, so the first four terms plus it
       !! are the counterpoise-corrected supermolecular Hartree-Fock interaction
-      !! energy by construction. That identity is the sharpest check available on
-      !! those four collectively, and it needs no SAPT reference -- see
-      !! `test_mqc_sapt`.
+      !! energy by construction -- an identity `test_mqc_sapt` checks with no
+      !! SAPT reference.
       type(sapt_molecules_t), intent(inout) :: mols
       type(sapt_terms_t), intent(out) :: terms
       type(error_t), intent(inout) :: error
@@ -1030,8 +1012,8 @@ contains
       !! The SAPT0 terms from an already-built cache
       !!
       !! Split out of `run_sapt0` so that `run_sapt2` computes its SAPT0 part
-      !! through exactly this code -- with the amplitudes zeroed, SAPT2 falls
-      !! back to these numbers because they *are* these numbers.
+      !! through exactly this code: with the amplitudes zeroed, SAPT2 falls back
+      !! to these numbers identically.
       type(sapt_molecules_t), intent(inout) :: mols
       type(sapt_cache_t), intent(in) :: c
       type(sapt_terms_t), intent(out) :: terms
@@ -1050,8 +1032,8 @@ contains
       terms%disp20 = sapt_disp20(c)
       terms%exch_disp20 = sapt_exch_disp20(c)
 
-      ! The supermolecular reference. Counterpoise-corrected for free: the
-      ! monomer energies already came from SCFs in the dimer basis.
+      ! The supermolecular reference, counterpoise-corrected for free because
+      ! the monomer energies came from SCFs in the dimer basis.
       call run_libcint_rhf(mols%dimer, mols%n_elec_a + mols%n_elec_b, 200, &
                            1.0e-12_dp, 1.0e-11_dp, .false., scf_d, error, &
                            in_core=.true.)
@@ -1075,8 +1057,8 @@ contains
       !!
       !! Each contraction is elementwise -- `sum_pq X_pq Y_pq`, psi4's
       !! `vector_dot`. Every operand here is symmetric so it coincides with
-      !! `Tr(X Y)`, but the exchange terms have operands that are not, and there
-      !! the two differ by 55% of the answer. Uniform is safer than case by case.
+      !! `Tr(X Y)`, but the exchange terms have operands that are not, so the
+      !! elementwise convention is used uniformly.
       type(sapt_cache_t), intent(in) :: c
       real(dp) :: energy
 
@@ -1102,10 +1084,11 @@ contains
       !! The three-index factors, one-electron MO matrices and omega blocks
       !!
       !! The factorization diagonalizes the packed AO ERI matrix and keeps the
-      !! positive spectrum: `(pq|rs) = sum_k B^k_pq B^k_rs` to machine
-      !! precision, because the ERI matrix is a Gram matrix and its negative
-      !! eigenvalues are roundoff. Rank is about `nao(nao+1)/2`, so this is an
-      !! in-core object on the same footing as the cache's full `eri`.
+      !! positive spectrum: `(pq|rs) = sum_k B^k_pq B^k_rs` to machine precision,
+      !! because the ERI matrix is a Gram matrix and its negative eigenvalues are
+      !! roundoff. Rank is about `nao(nao+1)/2`, so this is an in-core object on
+      !! the same footing as the cache's full `eri`, and the eigensolve needs a
+      !! second copy of the packed matrix on top of it.
       type(sapt_cache_t), intent(in) :: c
       type(sapt2_cache_t), intent(out) :: c2
       type(error_t), intent(inout) :: error
@@ -1149,8 +1132,8 @@ contains
       c2%nea = 2*no_a
       c2%neb = 2*no_b
       c2%enuc = c%e_nuc
-      ! The intermolecular nuclear repulsion is positive whenever both
-      ! monomers carry nuclei, so the square root is safe.
+      ! The intermolecular nuclear repulsion is positive whenever both monomers
+      ! carry nuclei, so the square root is safe.
       c2%esq = sqrt(c%e_nuc/real(c2%nea*c2%neb, dp))
       c2%eps_a = c%eps_a
       c2%eps_b = c%eps_b
@@ -1686,11 +1669,10 @@ contains
    function sapt2_amps_mp2_energy(c2, amps, side) result(e2)
       !! The monomer MP2 correlation energy the amplitudes imply
       !!
-      !! `E2 = sum t theta D`, since `v = t D` elementwise and the denominator
-      !! is symmetric under the occupied swap. Must equal `run_libcint_mp2` on
-      !! the same ghosted monomer to machine precision before anything
-      !! downstream is trusted -- the plan's section 0.2, and the sharpest
-      !! check available on the amplitude conventions.
+      !! `E2 = sum t theta D`, since `v = t D` elementwise and the denominator is
+      !! symmetric under the occupied swap. Must equal `run_libcint_mp2` on the
+      !! same ghosted monomer to machine precision: the sharpest check available
+      !! on the amplitude conventions.
       type(sapt2_cache_t), intent(in) :: c2
       type(sapt2_amps_t), intent(in) :: amps
       character(len=1), intent(in) :: side
@@ -1733,8 +1715,7 @@ contains
       !! outputs differ only in a few coefficients.
       !!
       !! `vAR` must equal minus the USAPT0-factorized exchange-induction
-      !! potential already in this module, which is asserted in the tests --
-      !! it validates the entire dressed machinery in one shot.
+      !! potential of `exch_ind_potential`, which the tests assert.
       type(sapt2_cache_t), intent(in) :: c2
       real(dp), allocatable, intent(out) :: u_ar(:, :), v_ar(:, :)
       real(dp), allocatable, intent(out) :: u_bs(:, :), v_bs(:, :)
@@ -3748,8 +3729,8 @@ contains
       !! `run_sapt0` runs, so zeroed amplitudes reproduce it identically.
       !! `Exch-Ind22` is `Ind22` scaled by `Exch-Ind20,r / Ind20,r`
       !! (`ind22.cc:52`); psi4 does not guard that division, and for a
-      !! weakly-polarizable pair at long range the ratio is noise over noise
-      !! -- below the floor the scaled term is set to zero instead.
+      !! weakly-polarizable pair at long range the ratio is noise over noise, so
+      !! below `IND20_FLOOR` the scaled term is set to zero instead.
       type(sapt_molecules_t), intent(inout) :: mols
       type(sapt_terms_t), intent(out) :: terms
       type(error_t), intent(inout) :: error

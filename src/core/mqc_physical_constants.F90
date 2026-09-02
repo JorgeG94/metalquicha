@@ -1,7 +1,6 @@
 !! Physical constants and unit conversion factors
 module mqc_physical_constants
-   !! Contains fundamental physical constants and unit conversion factors
-   !! used throughout the metalquicha codebase.
+   !! Fundamental physical constants and unit conversion factors.
    !!
    !! All values are in atomic units unless otherwise specified.
    !! Reference: CODATA 2018 recommended values, except where a constant is
@@ -14,13 +13,6 @@ module mqc_physical_constants
    ! Fundamental Constants
    !---------------------------------------------------------------------------
 
-   !! Which CODATA revision the length conversion follows.
-   !!
-   !! Set at configure time with `-DMQC_CODATA_YEAR=<year>`; the build defaults
-   !! to 2018. Only the Bohr radius is selected this way, because it is the only
-   !! constant here that has moved by more than this code's precision between
-   !! revisions. The energy conversions below are quoted at CODATA 2018 and are
-   !! unchanged from 2014 to every digit stored.
 #ifndef CODATA_YEAR
 #define CODATA_YEAR 2018
 #endif
@@ -30,6 +22,12 @@ module mqc_physical_constants
 #else
    real(dp), parameter, public :: BOHR_TO_ANGSTROM = 0.52917721092_dp
 #endif
+   !! Bohr to Angstrom, at the CODATA revision `CODATA_YEAR` names.
+   !!
+   !! Set at configure time with `-DMQC_CODATA_YEAR=<year>`; the build defaults
+   !! to 2018. Only the Bohr radius is selected this way, being the only
+   !! constant here that has moved by more than this code's precision between
+   !! revisions.
 
    real(dp), parameter, public :: ANGSTROM_TO_BOHR = 1.0_dp/BOHR_TO_ANGSTROM
    !! Angstrom to Bohr conversion
@@ -126,6 +124,9 @@ module mqc_physical_constants
    real(dp), parameter, public :: R_HARTREE = 3.1668115634556e-6_dp
    !! Gas constant R in Hartree/(mol*K)
    !! R = N_A * k_B
+   ! TODO(mqc): digit for digit the same value as `KB_HARTREE` above, under a
+   ! name that says per mole where the number is per particle. One constant
+   ! with two names, either of which a thermochemistry caller may reach for.
 
    real(dp), parameter, public :: ATM_TO_AU = 3.39893097e-9_dp
    !! Pressure: 1 atm in atomic units (Hartree/Bohr^3)

@@ -2,9 +2,7 @@
 module mqc_libcint_bridge
    !! Same name and same entry points as the real bridge, declining.
    !!
-   !! A stub rather than a preprocessor guard at the call site, matching
-   !! mqc_cuest_bridge_stub next door: the method layer reads the same either
-   !! way, and `libcint_backend_available` is how it asks in advance so the
+   !! `libcint_backend_available` is how a caller asks in advance, so the
    !! refusal can name the build option.
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t
@@ -97,9 +95,6 @@ contains
    subroutine run_libcint_charges(atomic_numbers, element_symbols, coordinates, &
                                   basis_name, scheme, total_charge, charges, error)
       !! No-op stand-in: atomic charges need the CPU integral backend
-      !!
-      !! The molecule builder, the SCF and both partition schemes all live behind
-      !! `MQC_ENABLE_LIBCINT`.
       use pic_types, only: dp
       use mqc_error, only: error_t
       integer, intent(in) :: atomic_numbers(:)
@@ -123,10 +118,6 @@ contains
    subroutine run_libcint_efp(potentials, fragment_sizes, fragment_atoms, &
                               coordinates, terms, error)
       !! No-op stand-in: an EFP interaction energy needs the CPU backend
-      !!
-      !! Every piece of it does -- the multipole and polarizability machinery, the
-      !! integrals two fragments' basis sets share, and the potential reader itself
-      !! all live behind `MQC_ENABLE_LIBCINT`.
       use pic_types, only: dp
       use mqc_program_limits, only: N_EFP_TERMS
       use mqc_error, only: error_t
@@ -151,12 +142,10 @@ contains
                               scf_energy_tol, scf_density_tol, scf_drive, &
                               bond_breaking, &
                               cap_scale, energy, error, comm)
-      !! Run FMO2 (or EE-MBE) over a partitioned system
+      !! No-op stand-in: FMO needs the CPU integral backend
       !!
-      !! Options arrive as plain scalars rather than the backend's own options
-      !! type, so the layer above never has to see a type it cannot compile
-      !! without the backend. Coordinates are Bohr; `owner(i)` is atom i's
-      !! fragment, numbered from one with no gaps.
+      !! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from
+      !! one with no gaps.
       use pic_types, only: dp
       use mqc_error, only: error_t
       use pic_mpi_lib, only: comm_t
@@ -257,9 +246,7 @@ contains
    subroutine run_libcint_mcscf(settings, fragment, result, want_gradient)
       !! No-op stand-in: CASSCF and CASCI need the CPU integral backend
       !!
-      !! All of it does -- the reference SCF, the active-space transform, the
-      !! determinant machinery and the orbital optimiser are all behind
-      !! `MQC_ENABLE_LIBCINT`, and there is no GPU path to fall through to.
+      !! There is no GPU path to fall through to.
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result

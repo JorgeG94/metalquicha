@@ -2,9 +2,9 @@
 module mqc_capi_system
    !! The molecule, its monomer partition and its bonds, reachable from C.
    !!
-   !! Wraps `system_geometry_t`, which already carries all three -- the atoms,
+   !! Wraps `system_geometry_t`, which already carries all three: the atoms,
    !! the partition fragments are built from, and the connectivity hydrogen
-   !! capping needs. Nothing new is modelled here; this is the way in.
+   !! capping needs.
    !!
    !! Three conventions that are invisible in the signatures and wrong by
    !! default if a caller assumes otherwise:
@@ -24,10 +24,9 @@ module mqc_capi_system
    !!     `n_bonds = 0` is the way to say a system has nothing to cut.
    !!
    !!     Where the connectivity is given, every bond crossing a monomer
-   !!     boundary must carry `is_broken`. That is checked here rather than
-   !!     trusted, because the alternative is a fragment with a dangling
-   !!     valence: an uncapped radical treated as a closed shell, which
-   !!     converges to a plausible number and warns about nothing.
+   !!     boundary must carry `is_broken`, and that is checked rather than
+   !!     trusted: the alternative is an uncapped radical run as a closed
+   !!     shell, which converges to a plausible number and warns about nothing.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double, c_char, c_null_char, &
                                                                              c_f_pointer, c_loc, c_associated
    use pic_types, only: dp
@@ -50,12 +49,10 @@ module mqc_capi_system
    public :: mqc_system_last_error
    public :: system_handle_t
    ! Shared with mqc_capi_bond_orders, which extends this API over the same
-   ! handle and has to answer in the same status codes and through the same
-   ! error buffer -- `mqc_system_last_error` is the only reader either has.
+   ! handle and answers through the same error buffer.
    public :: last_message
-      !! Exposed for the sibling C-API modules that must open a system handle,
-      !! not for general use. Nothing outside `src/interface` should hold one:
-      !! the rest of the code works in `system_geometry_t`.
+      !! For the sibling C-API modules that open a system handle, not for
+      !! general use: nothing outside `src/interface` should hold one.
    integer, parameter :: MESSAGE_LEN = 512
    character(len=MESSAGE_LEN), save :: last_message = ""
 
@@ -70,18 +67,15 @@ module mqc_capi_system
       logical :: bonds_declared = .false.
       real(dp), allocatable :: bond_orders(:, :)
          !! Wiberg-Mayer orders from `mqc_system_compute_bond_orders`, if it has
-         !! run. On the handle rather than returned directly because a caller
-         !! deciding where to cut reads the same matrix many times while trying
-         !! partitions, and recomputing it per question would be an xTB
-         !! calculation per question.
+         !! run. Cached on the handle because a caller deciding where to cut
+         !! reads the same matrix once per partition it tries.
       real(dp), allocatable :: charges(:)
          !! Atomic partial charges from `mqc_system_compute_charges`, if it has
-         !! run. Cached for the same reason as the bond orders, and more so:
-         !! these cost an SCF rather than an xTB single point.
+         !! run. Cached for the same reason, and more so: these cost an SCF
+         !! rather than an xTB single point.
       character(len=16) :: charge_scheme = ""
-         !! Which scheme produced `charges`. Kept because "the charge on atom 3"
-         !! is not a well-defined number without it, and a caller comparing two
-         !! systems has to be able to check they were partitioned the same way.
+         !! Which scheme produced `charges`. "The charge on atom 3" is not a
+         !! well-defined number without it.
    end type system_handle_t
 
 contains
@@ -118,6 +112,12 @@ contains
                                     charge, multiplicity) result(status) &
       bind(C, name="mqc_system_set_geometry")
       !! The atoms, in Angstrom
+      ! TODO(mqc): callable again after everything else on the handle, and
+      ! invalidates all of it. A second call with fewer atoms leaves
+      ! `fragment_atoms` indexing atoms that no longer exist, `bonds_declared`
+      ! true over a boundary check made against the old geometry, and the
+      ! cached `bond_orders` and `charges` describing the old molecule. None is
+      ! cleared and none is re-run.
       type(c_ptr), value :: handle
       integer(c_int), value :: n_atoms
       integer(c_int), intent(in) :: atomic_numbers(n_atoms)
@@ -257,18 +257,14 @@ contains
       !!
       !! One path per monomer, in monomer order, and every monomer needs one:
       !! EFP2 evaluates the interaction between potentials, so a fragment
-      !! without one is not a quantum fragment here, it is a fragment the sum
-      !! cannot include. A mixed quantum/EFP system is a deck-only feature and
-      !! is refused rather than half-supported.
+      !! without one is one the sum cannot include. A mixed quantum/EFP system
+      !! is a deck-only feature and is refused here.
       !!
       !! `paths` is one buffer of `stride`-character slots, blank-padded, the
-      !! same shape `set_monomers` uses for its atom columns -- a char** would
-      !! mean trusting a caller's pointer arithmetic for a list that is read
-      !! once.
+      !! same shape `set_monomers` uses for its atom columns.
       !!
-      !! The potentials themselves are read when the calculation runs, not
-      !! here: a missing file is the backend's error to report, with the
-      !! parse failure that comes with it, rather than a stat() in the setter.
+      !! The files themselves are read when the calculation runs, not here, so
+      !! a missing one is the backend's error to report.
       type(c_ptr), value :: handle
       integer(c_int), value :: n_potentials
       integer(c_int), value :: stride
@@ -395,10 +391,8 @@ contains
       end do
 
       ! Every bond whose ends fall in different monomers is cut by the
-      ! fragmentation, and must say so. Left unmarked, the fragment keeps a
-      ! dangling valence: an uncapped radical run as a closed shell, which
-      ! converges to a plausible number and warns about nothing. This is the
-      ! one thing here worth failing hard over.
+      ! fragmentation and must say so. Left unmarked, the fragment keeps a
+      ! dangling valence: an uncapped radical run as a closed shell.
       do ibond = 1, n_bonds
          if (is_broken(ibond) /= 0) cycle
          if (monomer_of(h%geom, int(atom_i(ibond))) /= monomer_of(h%geom, int(atom_j(ibond)))) then
@@ -430,8 +424,7 @@ contains
       !! Whether the caller has said anything about bonds at all
       !!
       !! A run refuses to start without this. Saying "no bonds" is a fine
-      !! answer; not having been asked is not, because the two are
-      !! indistinguishable afterwards and only one of them is safe.
+      !! answer; not having been asked is not.
       type(c_ptr), value :: handle
       integer(c_int) :: declared
 
@@ -447,14 +440,10 @@ contains
       bind(C, name="mqc_system_auto_monomers")
       !! Make each covalently connected molecule a monomer
       !!
-      !! The right default for a cluster and refused for anything else. A
-      !! single connected molecule has no automatic partition -- where to cut
-      !! it is a chemical choice, and a bond graph has no opinion between per
-      !! residue, per functional group, or something else. It fails rather than
-      !! returning one monomer and quietly making fragmentation a no-op.
-      !!
-      !! So for a covalent system the monomers are mandatory, which is the
-      !! contract this enforces rather than documents.
+      !! The right default for a cluster and refused for anything else: a
+      !! single connected molecule has no automatic partition, so this fails
+      !! rather than returning one monomer and making fragmentation a no-op.
+      !! For a covalent system the monomers are mandatory.
       type(c_ptr), value :: handle
       real(c_double), value :: tolerance
       integer(c_int) :: status
@@ -494,9 +483,7 @@ contains
       !!
       !! Convenience, not authority. It uses covalent radii, so it will invent
       !! a bond across a short contact and miss a long one, and it calls every
-      !! bond single. Good enough to save typing on an ordinary organic
-      !! molecule; not a substitute for saying, which is why declaring bonds by
-      !! hand remains the other way in.
+      !! bond single.
       !!
       !! `tolerance` <= 0 asks for the default.
       type(c_ptr), value :: handle
@@ -552,11 +539,9 @@ contains
       !! Counted rather than enforced: perception is a heuristic and a caller
       !! may have a reason. Non-zero means look, not stop.
       !!
-      !! A system with no declared bonds is answered rather than refused, and
-      !! is the case most worth answering -- it is the caller who has not
-      !! thought about bonds at all, so every cut the geometry implies is one
-      !! they do not know about. `-1` therefore means only that the question
-      !! could not be asked: a bad handle, no atoms, or no partition.
+      !! A system with no declared bonds is answered rather than refused. `-1`
+      !! means only that the question could not be asked: a bad handle, no
+      !! atoms, or no partition.
       type(c_ptr), value :: handle
       real(c_double), value :: tolerance
       integer(c_int) :: n_missing
@@ -646,6 +631,9 @@ contains
 
    subroutine release(sys)
       !! Free everything the system owns
+      ! TODO(mqc): a second copy of `system_geometry_t%destroy` that has already
+      ! drifted from it -- `fragment_potentials` is deallocated there and not
+      ! here.
       type(system_geometry_t), intent(inout) :: sys
 
       if (allocated(sys%element_numbers)) deallocate (sys%element_numbers)

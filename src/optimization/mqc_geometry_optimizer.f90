@@ -1,24 +1,14 @@
 !! Drive a geometry optimization over any method this program can gradient
 module mqc_geometry_optimizer
    !! An optimization is a loop *over* calculations, so it sits above
-   !! `run_calculation` rather than inside it. That is also why the dispatch is
-   !! in `main` and not in `mqc_driver`: the driver would otherwise have to use
-   !! this module while this module uses the driver, which Fortran will not
-   !! compile.
-   !!
-   !! **What makes this backend-agnostic.** The evaluator below asks
-   !! `run_calculation` for a gradient and takes back a full-system one. Which
-   !! engine produced it -- tblite, libcint on the CPU, cuEST on a GPU -- and
-   !! whether it came from one calculation or from an MBE over twenty thousand
-   !! fragments are both settled inside that call. Nothing here, and nothing in
-   !! the optimizer engine, has a branch on the method.
+   !! `run_calculation`, and the dispatch is in `main` rather than in
+   !! `mqc_driver` to keep the two out of a circular dependency.
    !!
    !! **MPI shape.** Rank 0 runs the optimizer and decides every step; the other
    !! ranks sit in `worker_loop` waiting to be told a geometry. Steps are never
    !! recomputed per rank -- two ranks that disagreed in the last bits of a
    !! coordinate would build different fragments and the job would hang rather
-   !! than fail. This mirrors `mqc_session`, which splits rank 0 from its
-   !! workers the same way and for the same reason.
+   !! than fail.
    use pic_types, only: dp, int32, int64
    use pic_mpi_lib, only: comm_t, bcast
    use pic_logger, only: logger => global_logger, warning_level, verbose_level
@@ -57,8 +47,7 @@ module mqc_geometry_optimizer
       !! rounding. Only negatives above this are worth mentioning as possibly
       !! being a very flat mode.
    integer, parameter :: MAX_REACTION_MODE_ATOMS = 6
-      !! How many atoms of the imaginary mode to name. A reaction coordinate is
-      !! carried by a few atoms; listing all of them buries the few.
+      !! How many atoms of the imaginary mode to name.
    real(dp), parameter :: REACTION_MODE_FLOOR = 0.02_dp
       !! Stop listing once an atom carries under 2% of the motion.
    integer, parameter :: LINE_LEN = 256
@@ -66,21 +55,16 @@ module mqc_geometry_optimizer
 
    public :: run_geometry_optimization
 
-   ! What rank 0 tells the workers to do next. One broadcast integer, for the
-   ! reason mqc_session gives: a worker blocked in bcast costs nothing.
+   ! What rank 0 tells the workers to do next, as one broadcast integer.
    integer(int32), parameter :: OPT_CMD_STOP = 0
    integer(int32), parameter :: OPT_CMD_EVALUATE = 1
    integer(int32), parameter :: OPT_CMD_FINAL = 2
    integer(int32), parameter :: OPT_CMD_HESSIAN = 3
 
-   ! The optimization in progress, reachable from the evaluator.
-   !
-   ! Module state, and not because it is convenient: the engine calls the
-   ! evaluator through a plain procedure interface with no argument to carry a
-   ! context, so there is nowhere else for the geometry and the settings to
-   ! live. One optimization at a time, which is what `active` guards -- a
-   ! second one entered while the first is running would silently take over the
-   ! first one's system.
+   ! The optimization in progress, reachable from the evaluator. Module state
+   ! because the engine calls the evaluator through a plain procedure interface
+   ! with no argument to carry a context. One optimization at a time, which is
+   ! what `active` guards.
    logical, save :: active = .false.
    type(resources_t), save :: ctx_resources
    type(driver_config_t), save :: ctx_config
@@ -92,10 +76,8 @@ module mqc_geometry_optimizer
    logical, save :: ctx_probing = .false.
       !! True during the capability probe, which is an evaluation the user did
       !! not ask for and should not see numbered among their steps.
-   ! The path taken, grown a step at a time. Held until the run ends so the
-   ! whole thing can be written as one document rather than a file appended to
-   ! a hundred times, which is also what makes `trajectory: false` worth having
-   ! for a large system.
+   ! The path taken, grown a step at a time and held until the run ends so the
+   ! whole thing can be written as one document.
    real(dp), allocatable, save :: ctx_trajectory(:, :, :)
    real(dp), allocatable, save :: ctx_trajectory_energies(:)
    integer, save :: ctx_n_steps = 0
@@ -107,18 +89,17 @@ module mqc_geometry_optimizer
       !! Wall clock over the whole engine run, so each step can report how its
       !! time split between the quantum-chemistry evaluation and the optimizer.
    real(dp), save :: ctx_qc_accum = 0.0_dp
-      !! Time in `run_step` since the last accepted step was printed. It
-      !! accumulates across line-search probe evaluations, which do not print but
-      !! are quantum chemistry all the same, so what the row shows as `qc_time` is
-      !! all of it and `opt_time` is the genuine remainder DL-FIND spent.
+      !! Time in `run_step` since the last accepted step was printed,
+      !! accumulated across the line-search evaluations that do not print, so
+      !! the row's `qc_time` covers all of them and `opt_time` is the
+      !! remainder.
    real(dp), save :: ctx_last_print_wall = 0.0_dp
       !! `ctx_wall` reading at the last printed step, the other end of the
       !! interval whose optimizer time is `wall_gap - qc_time`.
    real(dp), save :: ctx_last_gradient_max = huge(1.0_dp)
-      !! Largest gradient component of the last successful step, which is what
-      !! says whether this converged. DL-FIND reports geometries but not a
-      !! converged flag, and running out of steps looks from the outside
-      !! exactly like finishing -- see `report_result`.
+      !! Largest gradient component of the last successful step, Hartree/Bohr.
+      !! This is what says whether the run converged: DL-FIND reports
+      !! geometries but not a verdict.
 
 contains
 
@@ -155,10 +136,9 @@ contains
          return
       end if
 
-      ! The engine has to exist before anything is broadcast: a refusal
-      ! discovered after the workers were told to expect a geometry would
-      ! leave them waiting for one that never comes. Same ordering rule as
-      ! mqc_session%run.
+      ! Every refusal is decided before anything is broadcast: one discovered
+      ! after the workers were told to expect a geometry leaves them waiting
+      ! for one that never comes.
       if (rank == 0) then
          if (.not. dlfind_available()) then
             call error%set(ERROR_VALIDATION, &
@@ -166,9 +146,7 @@ contains
                            "Configure with -DMQC_ENABLE_DLFIND=ON.")
          else if (config%optimization%coordinates == OPT_COORDS_UNKNOWN) then
             ! A backstop for the callers that convert a config without passing
-            ! an error to `config_to_driver`. Reaching here means the spelling
-            ! was refused there and nobody was listening; optimizing in
-            ! whatever the default happened to be would be worse.
+            ! an error to `config_to_driver`.
             call error%set(ERROR_VALIDATION, &
                            "Unknown keywords.optimization.coordinates. Use cartesian, "// &
                            "hdlc, hdlc-tc, dlc or dlc-tc.")
@@ -180,10 +158,7 @@ contains
             call error%set(ERROR_VALIDATION, &
                            "Nothing to optimize: a single atom has no geometry.")
          else if (config%optimization%hess_end .and. .not. is_restricted_hf(config)) then
-            ! Refused here rather than after the optimization, which is the
-            ! only place the news is cheap. Discovering it at the end means the
-            ! steps have already been paid for and the one thing the run was
-            ! asked to establish is the thing it cannot do.
+            ! Refused before the steps are paid for rather than after.
             call error%set(ERROR_VALIDATION, &
                            "keywords.optimization.hess_end is restricted to restricted "// &
                            "Hartree-Fock for now. Drop the keyword, or run the "// &
@@ -193,10 +168,9 @@ contains
       end if
 
       ! Every rank has to learn the answer, not just the one that worked it
-      ! out. A rank 0 that refused and returned on its own would leave the
-      ! workers heading into `worker_loop` to block on a broadcast that is
-      ! never coming -- the job would hang instead of printing the message
-      ! that was already sitting in `error`.
+      ! out: a rank 0 that refused and returned on its own would leave the
+      ! workers blocked in `worker_loop` and the job would hang rather than
+      ! print the message already sitting in `error`.
       refused = 0_int32
       if (rank == 0 .and. error%has_error()) refused = 1_int32
       call bcast(resources%mpi_comms%world_comm, refused, 1_int32, 0_int32)
@@ -212,27 +186,18 @@ contains
          allocate (atomic_numbers(n_atoms), source=sys_geom%element_numbers)
          allocate (residues(n_atoms))
          call build_residues(sys_geom, residues)
-         ! Reported because HDLC's residues decide the coordinate system, and a
-         ! wrong partition does not fail -- it converges early somewhere slightly
-         ! above the minimum. One residue for a system that visibly comes apart
-         ! is the sign of that, and it is invisible unless the count is printed.
+         ! HDLC's residues decide the coordinate system, and a wrong partition
+         ! does not fail -- it converges early, slightly above the minimum. One
+         ! residue for a system that visibly comes apart is the sign of that.
          call logger%verbose("  optimizer residues: "//to_char(maxval(residues))// &
                              " for "//to_char(n_atoms)//" atoms")
 
          ! One gradient before handing over, to find out whether this method
-         ! can produce one at all.
-         !
-         ! Not every method here can: the CPU ab initio backend computes
-         ! energies and refuses gradients, and there is no way to ask in
-         ! advance -- the refusal is raised where the gradient would have been
-         ! built. Without this probe that refusal reaches DL-FIND as a failed
-         ! first step, and DL-FIND responds by calling dlf_error, which ends
-         ! the process with a Fortran backtrace. The message was correct and
-         ! the presentation was a crash.
-         !
-         ! It costs one evaluation on a run that works. That is a few percent
-         ! of a short optimization and nothing on a long one, against turning
-         ! an unsupported method from a backtrace into one line.
+         ! can produce one at all. There is no way to ask in advance -- the
+         ! refusal is raised where the gradient would have been built -- and
+         ! without the probe it reaches DL-FIND as a failed first step, which
+         ! DL-FIND answers with dlf_error and a Fortran backtrace. It costs one
+         ! evaluation on a run that works.
          call probe_gradient(n_atoms, coords, probe_status)
          if (probe_status /= 0) then
             call error%set(ERROR_VALIDATION, &
@@ -243,25 +208,23 @@ contains
             return
          end if
 
-         ! The step table's frame, shared with the SCF and CCSD tables. The rows
-         ! are written from the engine's callback as each step is accepted; the
-         ! verdict and the totals are `report_result` below, so the table closes
-         ! on a plain rule rather than a "converged in N" line that would say the
-         ! same thing twice.
+         ! The step table's frame, shared with the SCF and CCSD tables. Rows are
+         ! written from the engine's callback as each step is accepted; the
+         ! verdict and the totals come from `report_result` below.
          ctx_qc_accum = 0.0_dp
          ctx_last_print_wall = 0.0_dp
          call ctx_wall%start()
          call convergence_header(.true., "optimization steps", &
                                  "    step                 energy        |g|max     qc_time    opt_time", 69)
-         ! The analytic Hessian is offered only where there is one. For any
-         ! other method DL-FIND builds its own from `6N` gradients, which is
-         ! the same matrix and slower -- so the argument is omitted rather than
-         ! passed and refused per geometry, which would spend a failed
-         ! calculation to learn what is already known here.
-         ! `endpoint_geom` stays unallocated for an ordinary optimization, and an
-         ! unallocated allocatable is absent at an optional dummy -- so one pair
-         ! of call sites serves both the band and the single structure.
+         ! `endpoint_geom` stays unallocated for an ordinary optimization, and
+         ! an unallocated allocatable is absent at an optional dummy, so one
+         ! pair of call sites serves both the band and the single structure.
+         ! The analytic Hessian below is offered only where there is one; any
+         ! other method has DL-FIND build its own from `6N` gradients.
          call load_endpoint(config%optimization%endpoint, atomic_numbers, endpoint_geom, error)
+         ! TODO(mqc): this return skips `stop_workers` and `end_context`, so a
+         ! bad `endpoint` file hangs every other rank in `worker_loop` and
+         ! leaves `active` set for the rest of the process.
          if (error%has_error()) return
 
          if (algorithm_needs_hessian(config%optimization%algorithm) .and. &
@@ -277,9 +240,9 @@ contains
          end if
          call logger%info("  "//repeat("-", 69))
 
-         ! Stop the workers whether or not that succeeded. A rank 0 that
-         ! returned an error without sending this would leave N-1 ranks
-         ! blocked in bcast for the rest of the job.
+         ! Stop the workers whether or not that succeeded: a rank 0 that
+         ! returned an error without sending this would leave N-1 ranks blocked
+         ! in bcast for the rest of the job.
          call stop_workers(resources%mpi_comms%world_comm)
 
          if (.not. error%has_error()) then
@@ -287,18 +250,16 @@ contains
             converged = ctx_last_gradient_max <= config%optimization%gradient_tolerance
             call write_final_single_point(sys_geom)
             call report_result(final_energy, converged, config%optimization%gradient_tolerance)
-            ! Written either way. A run that ran out of steps left the geometry
-            ! closer to the minimum than it started, and that is exactly what
-            ! someone wants to restart from.
+            ! Written either way: a run that ran out of steps still left the
+            ! geometry closer to the minimum than it started.
             call write_optimized_xyz(sys_geom, final_energy, converged, error)
             if (.not. error%has_error()) then
                call write_optimization_record(sys_geom, config, final_energy, converged, error)
             end if
 
-            ! Only on a converged geometry. The curvature at a point the
-            ! optimizer was still moving away from describes that point and
-            ! not the minimum, and reporting it beside a "did not converge"
-            ! line invites it to be read as the minimum's.
+            ! Only on a converged geometry: the curvature at a point the
+            ! optimizer was still moving away from describes that point and not
+            ! the minimum.
             if (config%optimization%connect .and. converged .and. .not. error%has_error()) then
                call report_connected_minima(sys_geom)
             end if
@@ -328,8 +289,12 @@ contains
       !!
       !! Rank 0 only -- this is the engine's callback. It brings the workers to
       !! the same geometry and then every rank enters `run_calculation`
-      !! together, which is what the fragmented path requires and what the
-      !! unfragmented path tolerates (the workers no-op inside it).
+      !! together, which the fragmented path requires and the unfragmented one
+      !! tolerates.
+      ! TODO(mqc): `run_calculation` is not referenced here, nor in
+      ! `worker_loop` or `write_final_single_point`; all three reach it through
+      ! `run_step`. Three imports that only make the dependency look wider than
+      ! it is.
       use mqc_driver, only: run_calculation
       integer, intent(in) :: n_atoms
       real(dp), intent(in) :: coords(3, n_atoms)
@@ -351,23 +316,16 @@ contains
       ctx_sys_geom%coordinates = coords
       call send_geometry(ctx_resources%mpi_comms%world_comm, ctx_sys_geom)
 
-      ! The deck said "Optimize"; each step of one is a gradient. Copied and
-      ! overridden rather than mutated, so the caller's config still says what
-      ! the user asked for when this is over.
+      ! The deck said "Optimize"; each step of one is a gradient. Copied rather
+      ! than mutated, so the caller's config still says what the user asked for.
       gradient_config = ctx_config
       gradient_config%calc_type = CALC_TYPE_GRADIENT
 
-      ! No files per step. A hundred-step optimization would otherwise write a
-      ! hundred output documents over the top of each other, and the fragment
-      ! breakdown of an intermediate geometry is not something anyone wants.
-      !
-      ! And no single-point report per step either. `run_calculation` ends by
+      ! No files and no single-point report per step: `run_calculation` ends by
       ! logging its energy, dipole, HOMO-LUMO gap and gradient norm, which is
-      ! the right thing to say about a calculation somebody asked for and the
-      ! wrong thing to say a hundred times about the steps of an optimization.
-      ! Lowered to warnings so an unconverged fragment still speaks up, and
-      ! left alone entirely when the user asked for verbose -- at that point
-      ! they want the per-step detail.
+      ! the wrong thing to say a hundred times over. Lowered to warnings so an
+      ! unconverged fragment still speaks up, and left alone entirely when the
+      ! user asked for verbose.
       saved_level = logger%log_level
       if (saved_level < verbose_level) call logger%configure(level=warning_level)
       call step_clock%start()
@@ -375,19 +333,16 @@ contains
       step_time = step_clock%get_elapsed_time()
       call logger%configure(level=saved_level)
 
-      ! Every evaluation is quantum chemistry, printed or not, so accumulate its
-      ! cost here. A printed step then reports the whole of it -- its own plus any
-      ! line-search probes since the last -- and the optimizer's share is what is
-      ! left of the wall-clock interval.
+      ! Every evaluation is quantum chemistry, printed or not, so a printed step
+      ! reports its own cost plus that of the line-search probes since the last.
       ctx_qc_accum = ctx_qc_accum + step_time
 
       if (.not. ctx_probing) ctx_n_evaluations = ctx_n_evaluations + 1
 
       ! A fragment that failed leaves the driver going -- it reports every bad
       ! term at the end rather than the first -- so the result carries the
-      ! failure and the gradient array carries whatever had accumulated. Handing
-      ! that to an optimizer is the worst shape a failure can take: it is a
-      ! perfectly plausible small gradient and the step taken on it looks fine.
+      ! failure and the gradient array carries whatever had accumulated, which
+      ! reads as a perfectly plausible small gradient.
       if (result%has_error) then
          call logger%error(step_label()//" failed: "//result%error%get_message())
          ctx_failed = .true.
@@ -408,15 +363,12 @@ contains
       ctx_last_gradient_max = maxval(abs(gradient))
 
       ! One row of the step table, the same shape as the SCF and CCSD tables.
-      ! Probe evaluations do not print: they are not steps, and numbering them
-      ! would read as "step 0". The header is emitted once by the driver before
-      ! the engine starts (see optimize_geometry), the closing rule after it.
+      ! Probe evaluations do not print: they are not steps.
       if (.not. ctx_probing) then
          now_wall = ctx_wall%get_elapsed_time()
          qc_time = ctx_qc_accum
-         ! What the interval was not spent doing quantum chemistry, DL-FIND spent
-         ! on the step: the L-BFGS update, the coordinate transform, its own
-         ! bookkeeping. Floored at zero against timer granularity.
+         ! Whatever the interval was not spent doing quantum chemistry, DL-FIND
+         ! spent on the step. Floored at zero against timer granularity.
          opt_time = max(0.0_dp, (now_wall - ctx_last_print_wall) - qc_time)
          write (line, "(i8,f23.12,es14.3,f10.2,a,f10.2,a)") ctx_n_evaluations, energy, &
             maxval(abs(gradient)), qc_time, " s", opt_time, " s"
@@ -436,10 +388,8 @@ contains
       !! the same calculation type, which for a finite-difference Hessian is
       !! what distributes the displacements across them.
       !!
-      !! **A failure here is reported and not raised.** `status` non-zero sends
-      !! DL-FIND to its own two-point finite differences, which reaches the
-      !! same matrix by a slower route. Killing the optimization instead would
-      !! trade a correct answer for no answer.
+      !! A failure here is reported and not raised: `status` non-zero sends
+      !! DL-FIND to its own finite differences.
       integer, intent(in) :: n_atoms
       real(dp), intent(in) :: coords(3, n_atoms)
       real(dp), intent(out) :: hessian(3*n_atoms, 3*n_atoms)
@@ -478,10 +428,9 @@ contains
    subroutine worker_loop(comm)
       !! A worker's half of an optimization: compute what rank 0 asks for
       !!
-      !! Keep this in step with `evaluate_energy_gradient` above. The two are
-      !! mirror images written twice rather than shared, as `mqc_session` does
-      !! it -- a broadcast added to one and not the other hangs the job instead
-      !! of failing it.
+      !! **Keep this in step with `evaluate_energy_gradient` above.** The two
+      !! are mirror images written twice rather than shared: a broadcast added
+      !! to one and not the other hangs the job instead of failing it.
       use mqc_driver, only: run_calculation
       type(comm_t), intent(in) :: comm
 
@@ -521,9 +470,8 @@ contains
       !! Move a geometry to the workers, with the command already sent
       !!
       !! Separate from `send_geometry` only in that the caller has already
-      !! chosen and broadcast the command -- EVALUATE or FINAL. Splitting the
-      !! two keeps the "one broadcast integer then the coordinates" order in
-      !! one place, which is the order `worker_loop` reads them in.
+      !! chosen and broadcast the command. The order -- one integer, then the
+      !! coordinates -- is the order `worker_loop` reads them in.
       type(comm_t), intent(in) :: comm
       type(system_geometry_t), intent(in) :: sys_geom
 
@@ -531,8 +479,7 @@ contains
       integer(int32) :: n
 
       ! Flat, because pic-mpi broadcasts rank-1 arrays and the coordinates are
-      ! rank-2. reshape rather than a pointer remap: this is 3N doubles once
-      ! per step, against an SCF, and the copy is not measurable.
+      ! rank-2.
       n = int(3*sys_geom%total_atoms, int32)
       allocate (buffer(n))
       buffer = reshape(sys_geom%coordinates, [3*sys_geom%total_atoms])
@@ -626,12 +573,9 @@ contains
       !! One energy at the optimized geometry, written out properly
       !!
       !! Every step runs with `write_output=.false.`, so without this an
-      !! optimization produces no output document at all -- the energy exists
-      !! only in the log, and anything downstream that reads
-      !! `output_<name>.json` (a driving script, run_validation.py) finds
-      !! nothing. One more energy against a hundred gradients is not a cost
-      !! worth avoiding, and it also gets the dipole and the HOMO-LUMO gap
-      !! reported at the geometry they belong to rather than the input one.
+      !! optimization produces no `output_<name>.json` at all. It also puts the
+      !! dipole and the HOMO-LUMO gap at the optimized geometry rather than the
+      !! input one.
       use mqc_driver, only: run_calculation
       type(system_geometry_t), intent(in) :: sys_geom
 
@@ -655,10 +599,8 @@ contains
    pure function is_restricted_hf(config) result(restricted)
       !! Whether this deck is the one case `hess_end` is allowed for
       !!
-      !! Restricted Hartree-Fock and nothing else, for now. The restriction is
-      !! about what has been checked rather than what would run: the Hessian
-      !! path itself takes any method with a gradient, by central differences
-      !! where there is no analytic form.
+      !! Restricted Hartree-Fock and nothing else, for now -- a restriction on
+      !! what has been checked rather than on what would run.
       use mqc_method_types, only: METHOD_TYPE_HF
       type(driver_config_t), intent(in) :: config
       logical :: restricted
@@ -670,29 +612,20 @@ contains
    subroutine run_final_hessian(sys_geom, want)
       !! A Hessian at the converged geometry, and the verdict it settles
       !!
-      !! **What this is for.** A minimiser stops on the gradient, and a
-      !! vanishing gradient is a stationary point -- a saddle satisfies it just
-      !! as exactly as a minimum does. So "converged" names the condition that
-      !! was met and not the thing that was found, and the second derivatives
-      !! are the only way to tell which one it is.
+      !! "Converged" names the condition a minimiser met -- a vanishing
+      !! gradient -- and not the thing it found, which a saddle satisfies just
+      !! as exactly. The second derivatives are what tell the two apart.
       !!
-      !! The frequency table, thermochemistry and warnings are already printed
-      !! by the Hessian workflow itself. What is added here is the one line
-      !! that answers the question the keyword was set to ask, because in a
-      !! table of 3N modes a single negative entry is easy to walk past.
-      !!
-      !! `write_output` is false: the energy at this geometry has already
-      !! written `output_<name>.json` and rewriting it here would replace that
-      !! document with a different one after the fact.
+      !! The frequency table, thermochemistry and warnings are printed by the
+      !! Hessian workflow itself; what is added here is the one line saying
+      !! which stationary point this is. `write_output` is false, so the
+      !! `output_<name>.json` the final energy wrote is left alone.
       use mqc_vibrational_analysis, only: compute_vibrational_analysis
       use mqc_optimizer_types, only: OPT_TARGET_SADDLE
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: want
-         !! What was being looked for. The curvature test is the same either
-         !! way; which count is the pass is not. Named `want` rather than
-         !! `target` so that it does not shadow the Fortran attribute of that
-         !! name; the config component it comes from keeps the keyword's own
-         !! spelling.
+         !! `OPT_TARGET_MINIMUM` or `OPT_TARGET_SADDLE`. The curvature test is
+         !! the same either way; which count is the pass is not.
 
       type(calculation_result_t) :: result
       type(driver_config_t) :: hess_config
@@ -717,9 +650,8 @@ contains
       call run_step(hess_config, result, write_output=.false.)
 
       if (result%has_error .or. .not. result%has_hessian) then
-         ! Not fatal. The optimization converged and its geometry is written;
-         ! what failed is the check on it, and turning that into a failed run
-         ! would throw away the result that did succeed.
+         ! Not fatal: the optimization converged and its geometry is written.
+         ! What failed is the check on it.
          call logger%warning("  the final Hessian could not be computed; the optimized "// &
                              "geometry stands, unverified")
          return
@@ -747,15 +679,14 @@ contains
          else if (frequencies(k) < -NOISE_FREQ_CM) then
             ! Negative, but under the floor that separates a vibration from a
             ! projected translation. Kept because a very flat saddle looks
-            ! exactly like this, and reporting it as a minimum without saying
-            ! so is the one way this check can mislead.
+            ! exactly like this.
             softest = min(softest, frequencies(k))
          end if
       end do
 
-      ! The same three cases, read against what was asked for. A first-order
+      ! The same three cases, read against what was asked for: a first-order
       ! saddle is the failure when a minimum was wanted and the success when it
-      ! was not, so the branch that changes is which one is logged as a warning.
+      ! was not.
       if (want == OPT_TARGET_SADDLE) then
          if (n_imag == 1) then
             call logger%info("  one imaginary frequency, "//to_char(abs(worst))// &
@@ -795,16 +726,13 @@ contains
    subroutine report_connected_minima(sys_geom)
       !! The two minima the saddle falls to, and the barrier from each side
       !!
-      !! One imaginary frequency proves a first-order saddle. It does not prove
-      !! the saddle joins the two structures anybody had in mind, and a
-      !! transition state between the wrong pair of minima is a number that
-      !! looks entirely reasonable and describes a different reaction.
+      !! One imaginary frequency proves a first-order saddle, but not that the
+      !! saddle joins the two structures anybody had in mind. Displacing along
+      !! the imaginary mode and relaxing in each direction is what settles it.
       !!
-      !! Displacing along the imaginary mode and relaxing in each direction is
-      !! what settles it. It is not an intrinsic reaction coordinate -- the path
-      !! taken downhill is a minimisation path rather than the steepest-descent
-      !! one -- but the endpoints are the same, and the endpoints are the
-      !! question.
+      !! Not an intrinsic reaction coordinate: the path downhill is a
+      !! minimisation path rather than the steepest-descent one. The endpoints
+      !! are the same.
       type(system_geometry_t), intent(in) :: sys_geom
 
       real(dp), allocatable :: side_a(:, :), side_b(:, :)
@@ -860,12 +788,10 @@ contains
       !! Unallocated on return when no endpoint was asked for, which is how the
       !! caller passes "absent" to an optional dummy without branching.
       !!
-      !! The two checks here are the ones that make a path meaningful. Atom
-      !! *count* is obvious. Atom *order* is not, and it is the one that bites:
-      !! DL-FIND interpolates image `i` between coordinate `i` of each
-      !! structure, so a product written with two atoms swapped describes a
-      !! reaction in which those atoms trade places, and the band relaxes to
-      !! something with no chemical meaning while converging perfectly happily.
+      !! Atom count and atom *order* are both checked. DL-FIND interpolates
+      !! image `i` between coordinate `i` of each structure, so a product
+      !! written with two atoms swapped describes a reaction in which those
+      !! atoms trade places, and the band converges happily on it.
       use mqc_xyz_reader, only: read_xyz_file
       use mqc_geometry, only: geometry_type
       use mqc_elements, only: element_symbol_to_number
@@ -917,18 +843,13 @@ contains
    subroutine report_reaction_mode(frequencies, cart_disp, sys_geom)
       !! Name the atoms the imaginary mode actually moves
       !!
-      !! One imaginary frequency proves a first-order saddle. It does not prove
-      !! it is the saddle anybody wanted: the same molecule has more than one,
-      !! and P-RFO finds whichever is nearest the guess. What separates them is
-      !! which atoms move along the mode, and that is a chemist's judgement made
-      !! on a handful of numbers -- so the numbers are printed rather than left
-      !! in an eigenvector nothing displays.
+      !! The same molecule has more than one first-order saddle and P-RFO finds
+      !! whichever is nearest the guess; which atoms move along the mode is
+      !! what separates them.
       !!
-      !! Displacements are ranked by the norm of each atom's own three
-      !! components, and the list stops once the remaining atoms carry little
-      !! enough to be noise. A transition state whose largest displacements are
-      !! not on the bond being made or broken is the wrong one, and that is
-      !! visible in three lines.
+      !! Atoms are ranked by the norm of their own three displacement
+      !! components, at most `MAX_REACTION_MODE_ATOMS` of them, stopping below
+      !! `REACTION_MODE_FLOOR` of the total motion.
       real(dp), intent(in) :: frequencies(:)
       real(dp), intent(in) :: cart_disp(:, :)
          !! `(3N, mode)`, Cartesian, one column per mode
@@ -961,8 +882,7 @@ contains
       total = sum(amplitude)
       if (total <= 0.0_dp) return
 
-      ! A selection sort over the atom count, which is the right algorithm here:
-      ! this runs once per optimization and the list printed is a handful long.
+      ! A selection sort: this runs once per optimization.
       do i = 1, n_atoms - 1
          do j = i + 1, n_atoms
             if (amplitude(order(j)) > amplitude(order(i))) then
@@ -973,9 +893,8 @@ contains
          end do
       end do
 
-      ! Atoms are numbered from one, as everywhere else in this log. A deck
-      ! counts from zero, so the two differ by one and saying which this is
-      ! saves the reader checking against their own `frozen_atoms` list.
+      ! Atoms are numbered from one, as everywhere else in this log, and from
+      ! zero in a deck.
       call logger%info("  the imaginary mode moves, most to least (atoms numbered from 1):")
       do k = 1, min(n_atoms, MAX_REACTION_MODE_ATOMS)
          i = order(k)
@@ -990,9 +909,7 @@ contains
    subroutine record_step(n_atoms, coords, energy)
       !! Keep one accepted geometry, growing the trajectory to fit
       !!
-      !! Doubling rather than one reallocation per step: an optimization of a
-      !! few hundred steps would otherwise copy the whole path every time it
-      !! took another one.
+      !! The store doubles when it fills, rather than growing by one step.
       integer, intent(in) :: n_atoms
       real(dp), intent(in) :: coords(3, n_atoms)
       real(dp), intent(in) :: energy
@@ -1030,6 +947,9 @@ contains
       !!
       !! Both files, or neither: a trajectory without the record that says
       !! whether it converged is a path to an unknown place.
+      ! TODO(mqc): `get_output_json_filename` is not referenced here, nor in
+      ! `write_optimized_xyz`; both go through `optimization_path` and
+      ! `optimized_xyz_path`, which import it themselves.
       use mqc_io_helpers, only: get_output_json_filename
       type(system_geometry_t), intent(in) :: sys_geom
       type(driver_config_t), intent(in) :: config
@@ -1050,10 +970,8 @@ contains
       record%element_numbers = sys_geom%element_numbers
       record%final_coordinates = sys_geom%coordinates
 
-      ! Trimmed to the steps actually taken. The array is grown by doubling, so
-      ! its last frames are whatever the previous allocation held -- writing
-      ! those out would put geometries in the trajectory that the optimization
-      ! never visited.
+      ! Trimmed to the steps actually taken: the array is grown by doubling, so
+      ! its last frames are whatever the previous allocation held.
       if (allocated(ctx_trajectory) .and. ctx_n_steps > 0) then
          record%trajectory = ctx_trajectory(:, :, 1:ctx_n_steps)
          record%trajectory_energies = ctx_trajectory_energies(1:ctx_n_steps)
@@ -1087,8 +1005,7 @@ contains
    function step_label() result(text)
       !! How to name the evaluation that just failed
       !!
-      !! The probe is not a step and numbering it as one reads as "step 0",
-      !! which invites the question of what step zero is.
+      !! The probe is not a step, so it is named rather than numbered.
       character(len=:), allocatable :: text
 
       if (ctx_probing) then
@@ -1123,9 +1040,7 @@ contains
       !! One calculation at the current geometry, on the frozen term list
       !!
       !! Every rank calls this, and every rank must reach it with the same
-      !! configuration -- the four combinations of bonds and frozen terms are
-      !! written out here once rather than at each of the three call sites,
-      !! which is where they had already started to drift.
+      !! configuration.
       use mqc_driver, only: run_calculation
       type(driver_config_t), intent(in) :: step_config
       type(calculation_result_t), intent(out) :: result
@@ -1161,27 +1076,16 @@ contains
    subroutine build_residues(sys_geom, residues)
       !! Group the atoms the way an internal-coordinate scheme needs them
       !!
-      !! A residue is a group of atoms that an optimizer may describe with
-      !! bonds, angles and torsions among themselves. This program already
-      !! knows that grouping -- it is the monomers -- so HDLC gets the
-      !! chemically right answer for free rather than having to perceive it.
+      !! A residue is a group of atoms an optimizer may describe with bonds,
+      !! angles and torsions among themselves, numbered from 1 in `residues`.
       !!
-      !! **A residue is a connectivity question, not a fragmentation one.** When
-      !! the calculation is fragmented the monomers already answer it, so those
-      !! are used. When it is not, the answer used to be "one residue" -- and for
-      !! a single molecule that is right, but for a cluster it is wrong in a way
-      !! that only shows up in the optimizer: HDLC then tries to build bonds,
-      !! angles and torsions across a gap where there is no bond, and struggles
-      !! on exactly the disjoint systems it should handle well.
+      !! A fragmented calculation uses its monomers. An unfragmented one
+      !! perceives its own connectivity, so a cluster comes back as one residue
+      !! per molecule and HDLC does not try to build coordinates across the gap
+      !! between them; a single molecule comes back as one residue.
       !!
-      !! So an unfragmented system perceives its own connectivity. A water dimer
-      !! optimizes as two residues without the deck having to request a
-      !! fragmented energy it did not want, and a single molecule still comes
-      !! back as one residue because that is what its connectivity says.
-      !!
-      !! This changes no energy. It changes which internal coordinates the
-      !! optimizer works in, which moves the path taken and not the minimum
-      !! arrived at.
+      !! This changes no energy, only which internal coordinates the optimizer
+      !! works in.
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(out) :: residues(:)
 
@@ -1221,10 +1125,9 @@ contains
       call logger%info(" ")
       call logger%info("============================================")
       call logger%info("Geometry optimization")
-      ! The method and basis up front, at info: an optimization suppresses the
-      ! per-step single-point banner (it would print a hundred times), so without
-      ! this the only place the theory appears is the final single point at the
-      ! very end -- too late to notice a deck that asked for the wrong one.
+      ! The method and basis up front: an optimization suppresses the per-step
+      ! single-point banner, so otherwise the theory appears only in the final
+      ! single point, too late to notice a deck that asked for the wrong one.
       call logger%info("  Method: "//trim(method_type_to_string(config%method_config%method_type)))
       if (config%method_config%method_type /= METHOD_TYPE_GFN1 .and. &
           config%method_config%method_type /= METHOD_TYPE_GFN2) then
@@ -1246,35 +1149,21 @@ contains
    subroutine freeze_term_list(sys_geom, config)
       !! Choose the MBE term list once, here, and keep it for the whole run
       !!
-      !! **The problem.** A fragmented run generates its term list from the
-      !! geometry it was handed, screening out the n-mers whose monomers are
-      !! further apart than the cutoff. Regenerate that at every step of an
-      !! optimization and the list changes as the molecules move: a dimer
-      !! crossing the cutoff enters or leaves the sum, and the total energy
-      !! jumps by that dimer's whole interaction. The optimizer has no way to
-      !! know that the function changed shape rather than the geometry being
-      !! bad -- it reads the jump as real, rejects the step, shrinks the trust
-      !! radius, and either stalls or converges to a point that is not a
-      !! stationary point of anything. Nothing fails; the numbers all look
-      !! plausible.
+      !! Screening a fragmented run's term list at every geometry lets a dimer
+      !! cross the cutoff mid-optimization, and the energy then jumps by that
+      !! dimer's whole interaction. The optimizer reads the jump as real:
+      !! nothing fails, and it stalls or converges to a point that is not a
+      !! stationary point of anything.
       !!
-      !! **The fix.** Generate the list once at the starting geometry and hand
-      !! the same one to every step through `supplied_terms`, which
-      !! `run_calculation` takes as given and does not re-screen. The energy is
-      !! then a fixed sum of a fixed set of subsystems -- a smooth function of
-      !! the coordinates -- and its gradient is that function's actual
-      !! derivative, which is what makes the optimization well posed at all.
+      !! Generating the list once and passing it to every step through
+      !! `supplied_terms`, which `run_calculation` does not re-screen, makes
+      !! the energy a smooth function of the coordinates again. The cost is
+      !! that a term screened out at the start stays out even if the molecules
+      !! later approach.
       !!
-      !! **What is given up.** A term screened out at the start stays out even
-      !! if the molecules later approach. That is the right trade: it is a
-      !! definite approximation, fixed and reportable, rather than a surface
-      !! that changes underneath the optimizer. A run whose fragments move far
-      !! is better served by looser cutoffs, or by `freeze_terms: false` and
-      !! the knowledge that convergence is then not guaranteed.
-      !!
-      !! Only for plain MBE. GMBE derives its PIE terms from overlapping
-      !! primaries rather than taking a supplied list, so there is nothing to
-      !! freeze through this route and the honest thing is to say so.
+      !! Plain MBE only. GMBE derives its PIE terms from overlapping primaries
+      !! rather than from a supplied list, so there is nothing to freeze; a
+      !! warning is logged instead.
       type(system_geometry_t), intent(in) :: sys_geom
       type(driver_config_t), intent(in) :: config
 
@@ -1309,8 +1198,8 @@ contains
          return
       end if
 
-      ! The same call the driver makes, so the frozen list is the list this
-      ! run would have used anyway -- not a reimplementation that agrees today.
+      ! The same call the driver makes, so the frozen list is the list this run
+      ! would have used anyway.
       call generate_mbe_term_list(sys_geom, config, config%nlevel, polymers, n_generated)
 
       if (n_generated <= 0) return
@@ -1333,9 +1222,7 @@ contains
       !!
       !! The convergence test is this program's own, on the largest gradient
       !! component of the last step, because DL-FIND hands back geometries and
-      !! not a verdict. Without it a run that exhausted `max_steps` printed
-      !! "Optimization finished" and a final energy, which is indistinguishable
-      !! from a converged one to anything reading the log or the exit code.
+      !! not a verdict.
       real(dp), intent(in) :: final_energy
       logical, intent(in) :: converged
       real(dp), intent(in) :: tolerance
@@ -1361,10 +1248,8 @@ contains
    subroutine write_optimized_xyz(sys_geom, final_energy, converged, error)
       !! Write the optimized geometry beside the input, in Angstrom
       !!
-      !! Angstrom and .xyz rather than the JSON document this program usually
-      !! writes, because the thing a person does next with an optimized
-      !! structure is open it in a viewer or feed it to another program, and
-      !! neither reads Bohr out of a JSON field.
+      !! Angstrom and .xyz, whatever the run converged to; the comment line
+      !! says which of the two it was.
       use mqc_io_helpers, only: get_output_json_filename
       type(system_geometry_t), intent(in) :: sys_geom
       real(dp), intent(in) :: final_energy
@@ -1383,8 +1268,8 @@ contains
          return
       end if
 
-      ! The comment line says which it is, because an .xyz outlives the log it
-      ! came from and a geometry that never converged looks like one that did.
+      ! An .xyz outlives the log it came from, and a geometry that never
+      ! converged looks like one that did.
       if (converged) then
          status_text = "converged"
       else

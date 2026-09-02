@@ -1,38 +1,25 @@
 !! HDF5 store for coupled-cluster amplitudes, so a killed run can resume
 module mqc_hdf5_amplitudes
-   !! A small number of large fixed-shape arrays, overwritten in place --
-   !! which is the opposite of what `mqc_hdf5_checkpoint` next door does, and
-   !! the reason this is a separate module rather than four more procedures on
-   !! that type. That one appends a record per fragment and is keyed by a
-   !! monomer tuple; this one holds `t1`, `t2`, `l1` and `l2` for a single
-   !! calculation and rewrites them every macro-iteration. Sharing a type
-   !! would mean an append-only contract that neither honours.
+   !! A small number of large fixed-shape arrays, overwritten in place: `t1`,
+   !! `t2`, `l1` and `l2` for one calculation, rewritten every macro-iteration.
+   !! `mqc_hdf5_checkpoint` next door is append-only and keyed by a monomer
+   !! tuple, which is why the two are separate modules.
    !!
-   !! **Why the T amplitudes are stored and not only Lambda.** The Lambda
-   !! equations are built from `t1` and `t2` at every iteration -- every
-   !! intermediate in `lambda_intermediates` takes them as input. A file with
-   !! `l1` and `l2` alone cannot restart anything: the resumed run would have
-   !! to solve CCSD again to rebuild what it needs to use them, at which point
-   !! it may as well have solved Lambda too. The pair travels together or it
-   !! is not a restart.
+   !! **The T amplitudes are stored, not only Lambda.** The Lambda equations
+   !! are built from `t1` and `t2` at every iteration, so a file holding `l1`
+   !! and `l2` alone cannot restart anything.
    !!
-   !! **A kill must not be able to produce a plausible file.** The failure that
-   !! matters here is not a crash, it is a resumed run that converges smoothly
-   !! to the wrong number because `l2` was half-written when the job died. The
-   !! guard is the same trick `mqc_hdf5_checkpoint` uses for `n_valid` and it
-   !! is worth stating in full: `complete` is an attribute that starts at zero,
-   !! every array is written, the file is flushed, and only then does
-   !! `complete` become one. A reader that finds zero treats the file as if it
-   !! held nothing. So the window a kill can lose is one macro-iteration, and
-   !! what it loses is always the whole iteration rather than part of an array.
+   !! **A kill must not be able to produce a plausible file.** `complete` is an
+   !! attribute that starts at zero; every array is written, the file is
+   !! flushed, and only then does `complete` become one. A reader that finds
+   !! zero treats the file as holding nothing, so a kill loses a whole
+   !! macro-iteration rather than part of an array.
    !!
    !! **The fingerprint is a refusal, not a hint.** Amplitudes belong to a
-   !! geometry, a basis, a frozen-core choice and an orbital count. Loading a
-   !! set that belongs to a different calculation gives iterations that
-   !! converge -- to a stationary point of the wrong equations. A mismatch
-   !! therefore stops the run rather than starting fresh, because starting
-   !! fresh silently is how a restart flag turns into hours of wasted compute
-   !! nobody notices.
+   !! geometry, a basis, a frozen-core choice and an orbital count. A mismatch
+   !! stops the run rather than silently starting fresh, because a set from
+   !! another calculation converges to a stationary point of the wrong
+   !! equations.
    use, intrinsic :: iso_c_binding, only: c_loc, c_char, c_size_t
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_IO, ERROR_VALIDATION
@@ -178,11 +165,9 @@ contains
    subroutine put_block(this, name, rank, dims, buffer)
       !! The shared body: create on first write, reopen and overwrite after
       !!
-      !! `complete` drops to zero here rather than in `commit`, and that
-      !! ordering is the whole guarantee. From the first byte of the first
-      !! array until the flush in `commit` succeeds, the file advertises
-      !! itself as unusable; a kill anywhere in that window leaves a reader
-      !! that declines rather than one that believes half an array.
+      !! `complete` drops to zero here rather than in `commit`: from the first
+      !! byte of the first array until the flush in `commit` lands, the file
+      !! advertises itself as unusable.
       use, intrinsic :: iso_c_binding, only: c_ptr
       type(hdf5_amplitudes_t), intent(inout) :: this
       character(len=*), intent(in) :: name
@@ -198,15 +183,12 @@ contains
 
       ! The extents are reversed on the way in, and this is not cosmetic.
       ! HDF5 declares a dataset in C order -- first extent slowest-varying --
-      ! while Fortran's leftmost index is the fastest. Writing `shape(values)`
-      ! straight through stores the right bytes under the wrong declared
-      ! shape: `t1(3,5)` becomes a 3x5 dataset whose rows interleave the two
-      ! indices, so the round trip through this module is exact and every
-      ! other reader in existence gets nonsense. Reversed, the dataset is 5x3
-      ! and `t1_h5[a, i] == t1(i, a)` in h5py, h5dump and anything else --
-      ! which is the entire reason for storing this in HDF5 rather than in a
-      ! stream of unformatted records. HDF5's own Fortran API reverses here
-      ! too, for exactly this reason.
+      ! while Fortran's leftmost index is the fastest. Written straight
+      ! through, `t1(3,5)` becomes a 3x5 dataset whose rows interleave the two
+      ! indices: the round trip through this module is exact and every other
+      ! reader gets nonsense. Reversed, the dataset is 5x3 and
+      ! `t1_h5[a, i] == t1(i, a)` in h5py, h5dump and anything else. HDF5's
+      ! own Fortran API reverses here too.
       file_dims = dims(rank:1:-1)
 
       if (H5Lexists(this%file, c_string(name), H5P_DEFAULT) > 0) then
@@ -258,11 +240,9 @@ contains
    subroutine open_block(this, name, want_rank, dims, dset, error)
       !! Locate a block and report its shape, refusing one of the wrong rank
       !!
-      !! The rank check is not defensive clutter. `l1` and `l2` are written by
-      !! name, and a caller that asks for one and is handed the other would
-      !! otherwise get an allocation of the right total size and the wrong
-      !! meaning -- the same class of bug as a fragment reading its
-      !! neighbour's gradient, and just as quiet.
+      !! Blocks are written by name, so a caller that asks for `l1` and is
+      !! handed `l2` would otherwise get an allocation of the right total size
+      !! and the wrong meaning.
       class(hdf5_amplitudes_t), intent(in) :: this
       character(len=*), intent(in) :: name
       integer, intent(in) :: want_rank
@@ -327,10 +307,9 @@ contains
    subroutine amp_commit(this, iteration, energy)
       !! Declare everything written since the last commit to be a usable set
       !!
-      !! The flush has to land before `complete` is raised, and they cannot be
-      !! reordered by anything: a `complete` that reaches the disk ahead of
-      !! the arrays it describes is exactly the file this design exists to
-      !! prevent.
+      !! The flush has to land before `complete` is raised: a `complete` that
+      !! reaches the disk ahead of the arrays it describes is exactly the file
+      !! this design exists to prevent.
       class(hdf5_amplitudes_t), intent(inout) :: this
       integer, intent(in) :: iteration
       real(dp), intent(in) :: energy
@@ -445,6 +424,9 @@ contains
    end subroutine read_double_attr
 
    subroutine write_string_attr(file, name, text)
+      ! TODO(mqc): creates unconditionally, where `write_int_attr` and
+      ! `write_double_attr` reopen an existing attribute. Writing the same
+      ! string attribute twice fails rather than overwriting.
       integer(hid_t), intent(in) :: file
       character(len=*), intent(in) :: name, text
 

@@ -1,6 +1,5 @@
 !! Error handling module for metalquicha
 !! Provides a unified error type to replace stat/errmsg pairs
-!! Enhanced with stack trace support for better debugging
 module mqc_error
    implicit none
    private
@@ -8,44 +7,34 @@ module mqc_error
    public :: error_t
    public :: SUCCESS, ERROR_GENERIC, ERROR_IO, ERROR_PARSE, ERROR_VALIDATION
 
-   !! Error codes
+   ! Error codes
    integer, parameter :: SUCCESS = 0
    integer, parameter :: ERROR_GENERIC = 1
    integer, parameter :: ERROR_IO = 2
    integer, parameter :: ERROR_PARSE = 3
    integer, parameter :: ERROR_VALIDATION = 4
 
-   !! Stack trace configuration
+   ! Stack trace configuration
    integer, parameter :: MAX_STACK_DEPTH = 20
    integer, parameter :: MAX_LOCATION_LEN = 128
 
-   !! Unified error type with stack trace support
-   !!
-   !! **Inside an OpenMP region, clear it explicitly.** Every routine in this
-   !! project opens with `if (error%has_error()) return`, which is a fine
-   !! convention serially and a trap in a parallel one. A `private` copy of an
-   !! `error_t` is reused across the iterations one thread runs, so a single
-   !! failure disables every later iteration on that thread; and a copy whose
-   !! default initialisation the compiler has not applied disables all of them
-   !! from the start. Neither crashes. Both look like work that quietly did not
-   !! happen -- which, when it happened in `distributed_multipoles`, showed up
-   !! as a threaded run failing where the serial one passed, and nowhere else.
-   !!
-   !! So: `call err%clear()` at the top of the loop body, not once before the
-   !! region. There is exactly one such region in the tree today and it does
-   !! this; the note is here because the next one will be written by someone
-   !! who did not debug the first.
    type :: error_t
+      !! Unified error type with stack trace support
+      !!
+      !! **Inside an OpenMP region, clear it explicitly.** Every routine in this
+      !! project opens with `if (error%has_error()) return`, which is a fine
+      !! convention serially and a trap in a parallel one. A `private` copy of an
+      !! `error_t` is reused across the iterations one thread runs, so a single
+      !! failure disables every later iteration on that thread; and a copy whose
+      !! default initialisation the compiler has not applied disables all of them
+      !! from the start. Neither crashes. Both look like work that quietly did not
+      !! happen. Call `err%clear()` at the top of the loop body, not once before
+      !! the region.
       integer :: code = SUCCESS  !! Error code (0 = no error)
       character(len=:), allocatable :: message  !! Error message
-
-      !! Stack trace support
-      !!
-      !! Allocated on the first add_context rather than held inline. An error_t is
-      !! embedded by value in calculation_result_t, which the coordinator allocates
-      !! one of per fragment -- an inline MAX_STACK_DEPTH*MAX_LOCATION_LEN buffer made
-      !! every result 3104 bytes, of which 2560 was an empty call stack. On runs with
-      !! millions of fragments that was gigabytes of untouched buffer on rank 0.
+      ! `call_stack` is allocated on the first `add_context` rather than held
+      ! inline: an `error_t` is embedded by value in every
+      ! `calculation_result_t`, of which there is one per fragment.
       integer :: stack_depth = 0  !! Current stack depth
       character(len=MAX_LOCATION_LEN), allocatable :: call_stack(:)  !! Call locations
    contains
@@ -111,14 +100,9 @@ contains
 
    pure subroutine error_add_context(this, location)
       !! Add a call location to the stack trace
-      !! Typically called when propagating errors upward
       !!
-      !! Example:
-      !!   call some_routine(..., error)
-      !!   if (error%has_error()) then
-      !!      call error%add_context("mqc_mbe:compute_energy")
-      !!      return
-      !!   end if
+      !! Typically called when propagating errors upward. Locations past
+      !! `MAX_STACK_DEPTH` are dropped.
       class(error_t), intent(inout) :: this
       character(len=*), intent(in) :: location
 
@@ -131,12 +115,15 @@ contains
          this%stack_depth = this%stack_depth + 1
          this%call_stack(this%stack_depth) = location
       end if
-      ! If stack is full, silently ignore (could print warning in non-pure version)
    end subroutine error_add_context
 
    function error_get_full_trace(this) result(trace)
       !! Get complete error message with stack trace
-      !! Returns a multi-line string with error and call stack
+      !!
+      !! Multi-line: the error, then the call stack, most recent first.
+      ! TODO(mqc): `buffer` is 2048 characters where a full stack is
+      ! `MAX_STACK_DEPTH*MAX_LOCATION_LEN` = 2560 plus the message, so a deep
+      ! trace runs `pos` past the end of the buffer.
       class(error_t), intent(in) :: this
       character(len=:), allocatable :: trace
       character(len=2048) :: buffer

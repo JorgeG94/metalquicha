@@ -4,19 +4,15 @@ module mqc_capi_fraglist
    !!
    !! Three verbs: create a list, read it out, put a different one back. A
    !! screen -- by distance, by a previous run's energies, by whatever a caller
-   !! invents -- is read-then-put-back, and needs nothing here to know about
-   !! it. That is the whole point: the criterion lives with the caller and the
-   !! combinatorics stay in Fortran, where they already are.
+   !! invents -- is read-then-put-back, so the criterion lives with the caller
+   !! and the combinatorics stay in Fortran.
    !!
    !! **Handles are opaque and owned by the caller.** `mqc_fraglist_new`
    !! allocates, `mqc_fraglist_free` releases, and nothing here keeps a
-   !! registry -- a leaked handle leaks its term list, which for a
-   !! twenty-million-term run is not a small leak.
+   !! registry, so a leaked handle leaks its whole term list.
    !!
-   !! **Reading out is two calls, deliberately.** Ask for the count, allocate,
-   !! then fill. Returning an allocated buffer across the boundary would put
-   !! the free on the wrong side of it, and a term list is large enough that
-   !! getting that wrong matters.
+   !! **Reading out is two calls.** Ask for the count, allocate, then fill;
+   !! nothing allocates across the boundary.
    !!
    !! The array handed back is packed **one term per row**: term `i` occupies
    !! elements `i*max_level .. i*max_level + max_level - 1`, zero-padded. That
@@ -26,11 +22,9 @@ module mqc_capi_fraglist
    !! Fortran store is `(n_terms, max_level)`, so this is a transpose of its
    !! memory order, not a reinterpretation of it.
    !!
-   !! Every entry point returns 0 for success and non-zero for failure rather
-   !! than reporting through `error_t`: a C caller cannot read one, and a
-   !! Python wrapper turns a status into an exception anyway. The message is
-   !! retrievable through `mqc_fraglist_last_error` while it is still the most
-   !! recent thing that happened.
+   !! Every entry point returns 0 for success and non-zero for failure, with
+   !! the message retrievable through `mqc_fraglist_last_error` while it is
+   !! still the most recent thing that happened.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int64_t, c_double, &
                                                                      c_char, c_null_char, c_f_pointer, c_loc, c_associated
    use pic_types, only: dp, default_int, int64
@@ -46,10 +40,8 @@ module mqc_capi_fraglist
    public :: mqc_fraglist_last_error
    integer, parameter :: MESSAGE_LEN = 512
    character(len=MESSAGE_LEN), save :: last_message = ""
-      !! Most recent failure, for a caller that wants to say why. Process-wide
-      !! and overwritten by the next failure -- read it immediately or not at
-      !! all. Python only ever runs on one rank here, so there is no thread or
-      !! rank to race with.
+      !! Most recent failure. Process-wide and overwritten by the next one --
+      !! read it immediately or not at all.
 
 contains
 
@@ -112,7 +104,7 @@ contains
 
    function mqc_fraglist_max_level(handle) result(level) &
       bind(C, name="mqc_fraglist_max_level")
-      !! Row count of the term array, or -1 for a bad handle
+      !! Slots per term in the term array, or -1 for a bad handle
       type(c_ptr), value :: handle
       integer(c_int) :: level
 
@@ -136,9 +128,7 @@ contains
       ! Sizes are declared before the array they shape: a dimension expression
       ! can only name symbols already typed. Shaping from the caller's own
       ! arguments rather than leaving the array assumed-size makes a mismatch a
-      ! bounds error under a checking build instead of a silent overrun -- and
-      ! assumed-size arrays are on this project's forbidden list for that
-      ! reason.
+      ! bounds error under a checking build instead of a silent overrun.
       integer(c_int64_t), value :: n_terms
       integer(c_int), value :: max_level
       integer(c_int), intent(inout) :: terms(n_terms*int(max_level, c_int64_t))
@@ -225,13 +215,10 @@ contains
       bind(C, name="mqc_fraglist_close_subsets")
       !! Add every proper subset the list is missing
       !!
-      !! The other half of screening, and the half a caller does not think to
-      !! ask for. An n-body term's delta is its energy less the delta of each
-      !! proper subset, so a screen that keeps a trimer and drops one of its
-      !! dimers has not approximated the expansion -- it has made one that
-      !! cannot be assembled. Every route that supplies a list checks for this
-      !! and refuses; this is what makes the list acceptable rather than
-      !! merely diagnosing it.
+      !! An n-body term's delta is its energy less the delta of each proper
+      !! subset, so a screen that keeps a trimer and drops one of its dimers
+      !! has made an expansion that cannot be assembled. Every route that
+      !! supplies a list refuses one; this is what makes it acceptable.
       !!
       !! It only ever grows the list, so applying it twice does nothing the
       !! first did not, and applying it to a full list changes nothing at all.
@@ -255,6 +242,11 @@ contains
    subroutine mqc_fraglist_last_error(buffer, buffer_len) &
       bind(C, name="mqc_fraglist_last_error")
       !! Copy the most recent failure message out as a C string
+      ! TODO(mqc): the only `*_last_error` taking `(buffer, buffer_len)`, where
+      ! the session, system and run ones all take `(buffer_len, buffer)`. A C
+      ! caller who learned the other order passes a pointer where an int is
+      ! expected, and `python/mqc/_ffi.py` carries a `reversed_args` flag for
+      ! this one entry point alone.
       integer(c_int), value :: buffer_len
       character(kind=c_char), intent(inout) :: buffer(buffer_len)
 

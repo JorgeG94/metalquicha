@@ -2,18 +2,11 @@
 module mqc_libcint_quao
    !! The first step of the Ruedenberg construction that needs integrals.
    !!
-   !! The virtual space of a large-basis SCF is mostly polarization and diffuse
-   !! functions with no chemical content -- you cannot point at an antibonding
-   !! orbital in a cc-pVTZ virtual space, and even the *symmetry* of the lowest
-   !! virtual changes with the basis. The valence-virtual orbitals are the part
-   !! of it that does have chemical content: the antibonding counterparts of the
-   !! occupied valence orbitals, recovered by asking which combinations of
-   !! virtuals look most like free-atom minimal-basis orbitals.
-   !!
-   !! What makes them worth having is that the answer barely depends on the
-   !! basis. Paper I reports valence-virtual orbital energies that move less
-   !! between 6-31G and aug-cc-pVQZ than the occupied ones do, while the
-   !! ordinary virtual spectrum changes beyond recognition.
+   !! The valence-virtual orbitals are the chemically meaningful part of a
+   !! large-basis virtual space: the antibonding counterparts of the occupied
+   !! valence orbitals, recovered by asking which combinations of virtuals look
+   !! most like free-atom minimal-basis orbitals. Unlike the ordinary virtual
+   !! spectrum they barely depend on the basis.
    !!
    !! Reference: West, Schmidt, Gordon, Ruedenberg, J. Chem. Phys. 139, 234107
    !! (2013), section V.A.1 and Appendix A.1.
@@ -49,18 +42,16 @@ module mqc_libcint_quao
       !! Below this the functional does not depend on the angle; skip the pair.
    integer, parameter :: ORIENT_MAX_SWEEPS = 2000
    real(dp), parameter :: KBO_SCALE = 0.1_dp
-      !! Paper II eq (2). Empirical, and admitted to be: raw kinetic
-      !! interference energies in organic molecules run about an order of
-      !! magnitude above the bond energies chemistry quotes, so they are scaled
-      !! to be comparable with them. Paper II says the treatment of resonance
-      !! integrals will be revisited.
+      !! Paper II eq (2), and empirical: raw kinetic interference energies in
+      !! organic molecules run about an order of magnitude above the bond
+      !! energies chemistry quotes, so they are scaled to be comparable.
 
    real(dp), parameter :: JACOBI_CRIT = 1.0e-10_dp
       !! GAMESS's `CRIT` in `LOCAL_MODELORB_DRIV`. Both the rotation magnitude
       !! and the angle are tested against it.
    integer, parameter :: JACOBI_MAX_SWEEPS = 10000
-      !! GAMESS's `MXITER`. Neither paper states a criterion or a cap, so the
-      !! reference implementation's are used rather than invented.
+      !! Neither paper states a criterion or a cap; these are the reference
+      !! implementation's.
 
    type :: vvo_result_t
       !! What the valence-virtual extraction leaves behind
@@ -68,20 +59,19 @@ module mqc_libcint_quao
          !! (n_ao, n_vvo), in the AO basis, orthonormal and orthogonal to the
          !! occupied space because they are combinations of virtuals only
       real(dp), allocatable :: external_orbitals(:, :)
-         !! (n_ao, n_virt - n_vvo), the rest of the virtual space. Kept because
-         !! together with `orbitals` they are a complete, orthonormal virtual
-         !! block, which is what anything wanting to *run* in the valence space
-         !! rather than analyse it needs -- a CASSCF has to be handed every
-         !! orbital, not only the interesting ones.
+         !! (n_ao, n_virt - n_vvo), the rest of the virtual space. Together with
+         !! `orbitals` a complete, orthonormal virtual block, which is what a
+         !! calculation running in the valence space rather than analysing it
+         !! has to be handed.
       real(dp), allocatable :: singular_values(:)
          !! All of them, descending. The first `n_vvo` are retained; the rest
          !! span the valence-external space.
       integer :: n_vvo = 0
       real(dp) :: smallest_retained = 0.0_dp
       real(dp) :: largest_rejected = 0.0_dp
-         !! The gap between these two is the diagnostic. Paper I Table I reports
-         !! 0.99999 against 0.105-0.272 across eight molecules; anything else
-         !! means the projection is not finding a clean valence space.
+         !! The gap between these two is the diagnostic: a retained value near
+         !! one against a small rejected one. Anything else means the projection
+         !! is not finding a clean valence space.
    end type vvo_result_t
 
    type :: quao_result_t
@@ -91,11 +81,10 @@ module mqc_libcint_quao
       integer, allocatable :: atom_of(:)
          !! Which atom each quasi-atomic orbital sits on
       integer, allocatable :: subspace_of(:)
-         !! Which occupation-restricted subspace each one was drawn from. All
-         !! ones when the space is unrestricted, which is the case that says why
-         !! it exists: where there is more than one subspace, no rotation may
-         !! mix two of them, because a restricted wave function is not invariant
-         !! under one that does.
+         !! Which occupation-restricted subspace each one was drawn from, all
+         !! ones when the space is unrestricted. No rotation anywhere in this
+         !! module may mix two subspaces: a restricted wave function is not
+         !! invariant under one that does.
       real(dp), allocatable :: population_bond_order(:, :)
          !! (n_quao, n_quao). Diagonal elements are orbital populations;
          !! interatomic off-diagonal elements are bond orders. Paper I eq (5.2).
@@ -103,9 +92,8 @@ module mqc_libcint_quao
       integer :: sweeps = 0            !! Jacobi sweeps the refinement took
       real(dp), allocatable :: to_valence_internal(:, :)
          !! (n_val, n_quao). Column `i` expands quasi-atomic orbital `i` in the
-         !! valence-internal orbitals, so its rows are indexed by those. Kept
-         !! because the split-localization works in this space rather than in
-         !! the atomic-orbital one.
+         !! valence-internal orbitals, so its rows are indexed by those. The
+         !! space the split-localization works in.
       logical :: oriented = .false.
       real(dp) :: orientation_sum = 0.0_dp
          !! Paper I eq (5.5) after orientation
@@ -113,9 +101,7 @@ module mqc_libcint_quao
          !! (n_quao) how much of each orbital lies inside its own atom's
          !! free-atom space, as a norm rather than a square, so it is on the
          !! scale the papers quote overlaps on. `atomic_character` is the mean
-         !! of the squares of these. Kept per orbital because the mean cannot
-         !! distinguish every orbital being mediocre from a few being poor, and
-         !! those say different things about a molecule.
+         !! of the squares of these.
       real(dp) :: atomic_character = 0.0_dp
          !! The maximized functional, Paper II eq (A.5), divided by the number of
          !! orbitals. One means every orbital lies entirely within its own atom's
@@ -170,8 +156,8 @@ contains
       end if
 
       ! A minimal basis on well-separated atoms is far from linearly dependent,
-      ! so a small eigenvalue here is a statement about the geometry -- atoms on
-      ! top of one another -- rather than a threshold to be tuned.
+      ! so a small eigenvalue here is a statement about the geometry rather than
+      ! a threshold to be tuned.
       if (values(1) < small) then
          call error%set(ERROR_VALIDATION, "the free-atom minimal basis is linearly "// &
                         "dependent on this geometry (smallest overlap eigenvalue "// &
@@ -189,18 +175,12 @@ contains
    subroutine mo_aambs_overlap(orbitals, mixed, aambs_overlap, projection, error, orthogonalize)
       !! `< MO_p | A#a >`, the molecular orbitals against the orthogonalized AAMBS
       !!
-      !! **Both bases have to be orthonormal**, and that is not a detail of
-      !! taste. Paper I's Appendix A.1 proves the singular vectors maximize the
-      !! projection of one space into the other only under that condition; with
-      !! a non-orthogonal basis the largest singular value picks out the
-      !! direction with the largest *coefficient*, which is not the same
-      !! statement and not the one the method needs. The molecular orbitals are
-      !! orthonormal already; the free-atom orbitals are orthonormal within one
-      !! atom but not between atoms, so they are symmetrically orthogonalized
-      !! across the molecule first -- Paper I's `|A#a>`.
-      !!
-      !! Paper I notes an earlier formulation of this step "failed to account
-      !! for the necessary orthogonalities". This is that account.
+      !! **Both bases have to be orthonormal.** Paper I's Appendix A.1 proves
+      !! the singular vectors maximize the projection of one space into the
+      !! other only under that condition. The molecular orbitals are orthonormal
+      !! already; the free-atom orbitals are orthonormal within one atom but not
+      !! between atoms, so they are symmetrically orthogonalized across the
+      !! molecule first -- Paper I's `|A#a>`.
       real(dp), intent(in) :: orbitals(:, :)        !! C, (n_ao, n_mo)
       real(dp), intent(in) :: mixed(:, :)           !! < AO | AAMBS >, (n_ao, n_mbs)
       real(dp), intent(in) :: aambs_overlap(:, :)   !! < AAMBS | AAMBS >, (n_mbs, n_mbs)
@@ -208,10 +188,9 @@ contains
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: orthogonalize
          !! Default true, giving `|A#a>`. False gives the raw `|A*a>`, which is
-         !! what the *per-atom* decompositions want: within one atom the
-         !! free-atom orbitals are already orthonormal, so the metric there is
-         !! the identity and orthogonalizing across the molecule would mix in
-         !! the neighbours the projection is trying to distinguish from.
+         !! what the *per-atom* decompositions want: within one atom the metric
+         !! is already the identity, and orthogonalizing across the molecule
+         !! would mix in the neighbours the projection is distinguishing from.
 
       real(dp), allocatable :: half(:, :), work(:, :)
       integer :: n_mo, n_mbs
@@ -247,7 +226,6 @@ contains
       !! core/valence split rests on, and it is why the shell ordering in
       !! `aambs.json` is not simply by principal quantum number: scandium
       !! through zinc list 4s before 3d so that the argon core stays a prefix.
-      !! The extraction asserts it for every element; this consumes it.
       integer, intent(in) :: atomic_numbers(:)
       type(libcint_molecule_t), intent(in) :: aambs
       integer, allocatable, intent(out) :: core_offset(:), core_count(:)
@@ -289,28 +267,18 @@ contains
       !! how much of the subspace each one actually captures, and the strongest
       !! are kept until the subspace is full. **An atom's share is therefore an
       !! output.** It is not read off the free-atom minimal basis, and it can
-      !! differ from that atom's free-atom valence count.
+      !! differ from that atom's free-atom valence count. Only the molecule-wide
+      !! sum is checked against the free-atom counts.
       !!
-      !! That is GAMESS's rule and it is deliberate there -- `LOCAL_PPASVD`
-      !! offers every atom every subspace under the comment "NO KEEPER LINE HERE
-      !! BECAUSE WE WANT TO LOOK (NOT USE) ALL POSSIBLE SVD VALUES", pools into
-      !! one flat list and sorts by (subspace, singular value), and Aaron West's
-      !! changelog calls the result auto-assignment. Only the molecule-wide sum
-      !! is checked against the free-atom counts; no atom's individual share is.
-      !!
-      !! **With one subspace this is exactly the old prescribed rule**, and that
-      !! is worth knowing rather than hoping. Each atom offers as many claims as
-      !! it has minimal-basis valence orbitals, and those counts sum to the
-      !! valence dimension by construction -- the check above enforces it -- so
-      !! the pool exactly fills the space and the ranking selects everything.
-      !! What the ranking is *for* is a restricted space, where the subspaces
+      !! **With one subspace this reproduces the prescribed per-atom rule
+      !! exactly.** The claims then sum to the valence dimension by
+      !! construction, so the pool fills the space and the ranking selects
+      !! everything. The ranking is for a restricted space, where the subspaces
       !! are smaller than the whole and the atoms genuinely compete.
       !!
       !! Each claim's coefficients are confined to the rows of its own subspace,
-      !! which is what makes the eventual transformation block-diagonal by
-      !! construction rather than by assertion: two claims from different
-      !! subspaces have disjoint support and are orthogonal whatever else
-      !! happens to them.
+      !! so two claims from different subspaces have disjoint support and are
+      !! orthogonal whatever else happens to them.
       real(dp), intent(in) :: projection(:, :)   !! (n_val, n_mbs)
       integer, intent(in) :: offset(:), count(:)
       integer, intent(in) :: natm
@@ -320,12 +288,10 @@ contains
       type(error_t), intent(inout) :: error
       logical, intent(out), optional :: starved
          !! Set when the partition leaves some atom with no orbital, instead of
-         !! raising an error. That is a property of the partition rather than a
-         !! fault: quasi-atomic orbitals are atomic and occupation-restricted
-         !! subspaces are usually grouped by orbital energy, so the two need not
-         !! be compatible and one strong atom can win every slot. A caller with
-         !! somewhere else to go wants to go there; GAMESS, having nowhere,
-         !! aborts here instead (`ISVMOR HAS VALUES LESS THAN 1`).
+         !! raising an error. A property of the partition rather than a fault:
+         !! occupation-restricted subspaces are usually grouped by orbital
+         !! energy, so one strong atom can win every slot. Absent, the same
+         !! situation raises an error.
 
       real(dp), allocatable :: pool(:, :), weight(:), sigma(:, :), block(:, :)
       real(dp), allocatable :: piece(:)
@@ -372,9 +338,7 @@ contains
          end do
       end do
 
-      ! Keep the strongest claims on each subspace until it is full. Selection
-      ! rather than a full sort: the pool is a few dozen columns and the winners
-      ! are wanted in a particular order anyway.
+      ! Keep the strongest claims on each subspace until it is full.
       allocate (taken(n_cand), share(natm))
       taken = 0
       share = 0
@@ -401,13 +365,11 @@ contains
          end do
       end do
 
-      ! Every atom must end up with something. GAMESS asserts the same and says
-      ! what to do about it; an atom with no quasi-atomic orbital has no
-      ! population, no bond order and no place in the decomposition.
-      ! Only atoms that had something to claim. This set is built for the core
-      ! orbitals as well as the valence ones, and hydrogen has no core -- so
-      ! "every atom gets one" is false there by construction, and asserting it
-      ! would refuse every molecule containing a hydrogen.
+      ! Every atom that had something to claim must end up with something: an
+      ! atom with no quasi-atomic orbital has no population, no bond order and
+      ! no place in the decomposition. Atoms with nothing to claim are skipped,
+      ! since this set is built for the core orbitals as well as the valence
+      ! ones and hydrogen has no core.
       if (present(starved)) starved = .false.
       do iatom = 1, natm
          if (count(iatom) == 0) cycle
@@ -424,9 +386,8 @@ contains
          end if
       end do
 
-      ! Laid out subspace by subspace and, inside each, atom by atom -- so with
-      ! one subspace the ordering is atom-major exactly as before. GAMESS sorts
-      ! its survivors by atom label for the same reason.
+      ! Laid out subspace by subspace and, inside each, atom by atom, so with
+      ! one subspace the ordering is atom-major.
       allocate (claims(n_val, n_val), atom_of(n_val), subspace_of(n_val))
       j = 0
       do k = 1, n_sub
@@ -457,25 +418,18 @@ contains
       !! `sigma` is the overlap of an orthonormal set of molecular orbitals with
       !! one atom's free-atom orbitals, so its left singular vectors are the
       !! combinations of those orbitals lying closest to that atom -- Paper I
-      !! section V.B.1.
-      !!
-      !! Taken through the *small* Gram matrix `sigma^T sigma`, which is one
-      !! atom's minimal-basis dimension square: five for carbon, one for
-      !! hydrogen. The left vectors follow as `sigma V / s`. The alternative is
-      !! an SVD of a matrix whose row count is the whole valence space, for
-      !! exactly the same answer.
+      !! section V.B.1. Taken through the small Gram matrix `sigma^T sigma`,
+      !! whose order is that atom's minimal-basis dimension.
       real(dp), intent(in) :: sigma(:, :)     !! (n_rows, m_atom)
       real(dp), allocatable, intent(out) :: block(:, :)   !! (n_rows, n_wanted)
       type(error_t), intent(inout) :: error
       real(dp), allocatable, intent(out), optional :: weights(:)
-         !! The squared projections of the vectors returned, descending. These
-         !! are what an atom's claim on a subspace is *ranked* by when several
-         !! atoms compete for it, so they are an output rather than an internal.
+         !! The squared projections of the vectors returned, descending. What an
+         !! atom's claim on a subspace is ranked by when several atoms compete.
       integer, intent(in), optional :: n_wanted
-         !! How many vectors to return, default all of them. Fewer is asked for
-         !! when the subspace is smaller than the atom's minimal basis, where
-         !! the atom cannot be given a vector per free-atom orbital because
-         !! there are not that many dimensions to give.
+         !! How many vectors to return, default all of them. Fewer when the
+         !! subspace is smaller than the atom's minimal basis and there are not
+         !! that many dimensions to give.
 
       real(dp), allocatable :: gram(:, :), values(:), work(:, :)
       integer :: m, i, info, taken
@@ -503,10 +457,9 @@ contains
       end if
       values = -values
 
-      ! Only the vectors actually being taken have to be representable. When
+      ! Only the vectors actually being taken have to be representable: where
       ! the subspace is smaller than the atom's minimal basis the trailing
-      ! projections are legitimately zero -- there is no room for them -- and
-      ! refusing on that would refuse every restricted space.
+      ! projections are legitimately zero.
       if (values(taken) < 1.0e-10_dp) then
          call error%set(ERROR_VALIDATION, "one of this atom's free-atom orbitals has "// &
                         "no counterpart in the molecular orbital space (projection "// &
@@ -530,8 +483,7 @@ contains
       !! Rotate between atoms so each orbital sits as fully as possible on its own
       !!
       !! Paper II's Appendix, eqs (A.1)-(A.11), which replaces the plain
-      !! symmetric orthogonalization of Paper I and applies retroactively to the
-      !! Hartree-Fock case. It maximizes
+      !! symmetric orthogonalization of Paper I. It maximizes
       !!
       !!     P = sum_A sum_{a on A} sum_{alpha on A} <A*alpha | Aa>^2
       !!
@@ -545,20 +497,20 @@ contains
       !!     D = (Q^A_ii - Q^A_jj + Q^B_jj - Q^B_ii) / 2
       !!     F =  Q^A_ij - Q^B_ij
       !!
-      !! the optimum is theta = atan2(F, D) / 2. GAMESS computes exactly this in
-      !! `LOCAL_MODELORB_JACOBI`, down to the halved angle and the sign flip on
-      !! the second atom's contribution, and its thresholds are the ones used
-      !! here because neither paper states any.
+      !! the optimum is theta = atan2(F, D) / 2, with the sign flipped on the
+      !! second atom's contribution.
+      ! TODO(mqc): converging on sweep `JACOBI_MAX_SWEEPS` exactly is reported
+      ! as a failure to converge, since `sweeps` is set before the loop exits
+      ! and then tested with `>=`. `orient_quasi_atomic_orbitals` and
+      ! `fourth_power_localize` share the off-by-one.
       real(dp), intent(inout) :: coefficients(:, :)   !! (n_rows, n_quao)
       real(dp), intent(in) :: projection(:, :)        !! (n_rows, n_mbs), raw AAMBS
       integer, intent(in) :: atom_of(:)
       integer, intent(in) :: subspace_of(:)
-         !! Rotations across two subspaces are skipped. A restricted wave
-         !! function is not invariant under them -- mixing two active orbitals
-         !! stops being redundant the moment the space is incomplete -- and one
-         !! would also destroy the disjoint support that makes the
-         !! transformation block-diagonal to begin with. With a single subspace
-         !! the guard never fires.
+         !! Rotations across two subspaces are skipped: a restricted wave
+         !! function is not invariant under them, and one would destroy the
+         !! disjoint support that makes the transformation block-diagonal. With
+         !! a single subspace the guard never fires.
       integer, intent(in) :: offset(:), count(:)      !! AAMBS range per atom
       integer, intent(out) :: sweeps
       real(dp), intent(out) :: functional
@@ -583,9 +535,7 @@ contains
       settled = .false.
       do sweep = 1, JACOBI_MAX_SWEEPS
          moved = .false.
-         ! `< QUAO | A*alpha >` for the current orbitals. Rebuilt each sweep
-         ! rather than updated in place: two rows change per rotation, and the
-         ! bookkeeping to track that is more error-prone than the multiply.
+         ! `< QUAO | A*alpha >` for the current orbitals, rebuilt each sweep.
          call pic_gemm(coefficients, projection, amb, transa="T")
 
          do i = 1, n
@@ -612,11 +562,9 @@ contains
                f = f - qij
 
                radius = sqrt(d*d + f*f)
+               ! Below this P is independent of the angle, which is reachable
+               ! whenever two orbitals are symmetric partners.
                if (radius < JACOBI_CRIT) cycle
-               ! P is independent of the angle here; any rotation is as good as
-               ! any other, so leave the pair alone. Neither paper mentions this
-               ! case; it is reachable whenever two orbitals are symmetric
-               ! partners.
                theta = 0.5_dp*atan2(f, d)
                if (abs(theta) < JACOBI_CRIT) cycle
 
@@ -671,15 +619,12 @@ contains
       !! The number kept is fixed by counting, not by a threshold:
       !! `n_vvo = n_mbs - n_occ` exactly. The singular values are reported so a
       !! caller can check there is a gap where the cut falls, but they do not
-      !! decide where it falls -- a construction that selected on magnitude
-      !! would return a different number of orbitals for the same molecule in a
-      !! different basis, which is the property the method exists to avoid.
+      !! decide where it falls.
       !!
-      !! Solved as the eigenproblem of `Sigma Sigma^T` rather than by an SVD.
+      !! Solved as the eigenproblem of `Sigma Sigma^T` rather than by an SVD:
       !! Appendix A.1 shows these have the same left singular vectors, and the
       !! external block of the rectangular problem is full of degenerate zero
-      !! singular values whose vectors are arbitrary -- GAMESS takes the
-      !! eigenvalue route for exactly that reason, and this follows it.
+      !! singular values whose vectors are arbitrary.
       real(dp), intent(in) :: orbitals(:, :)     !! C, (n_ao, n_mo)
       real(dp), intent(in) :: projection(:, :)   !! < MO | A#a >, (n_mo, n_mbs)
       type(aambs_dimensions_t), intent(in) :: dims
@@ -711,10 +656,9 @@ contains
       allocate (b(n_virt, n_virt), values(n_virt))
       call pic_gemm(sigma, sigma, b, transb="T")
 
-      ! Negated so the eigenvalues come back ascending in magnitude-reversed
-      ! order, i.e. the largest projections first once the sign is undone. The
-      ! same device GAMESS uses, and it keeps the retained block at the front
-      ! where every downstream index expects it.
+      ! Negated so the largest projections come first once the sign is undone,
+      ! which keeps the retained block at the front where every downstream index
+      ! expects it.
       b = -b
       call pic_syev(b, values, jobz="V", uplo="U", info=info)
       if (info /= 0) then
@@ -743,9 +687,8 @@ contains
       call pic_gemm(c_virt, b(:, 1:dims%n_vvo), rotated)
       call move_alloc(rotated, result%orbitals)
 
-      ! The same rotation applied to the columns the count rejected. They are
-      ! the valence-external space and are wanted for nothing except being the
-      ! other half of a complete virtual block.
+      ! The same rotation applied to the columns the count rejected: the
+      ! valence-external space, the other half of a complete virtual block.
       if (dims%n_vvo < n_virt) then
          allocate (rotated(n_ao, n_virt - dims%n_vvo))
          call pic_gemm(c_virt, b(:, dims%n_vvo + 1:n_virt), rotated)
@@ -796,10 +739,8 @@ contains
       integer, intent(in), optional :: subspaces(:)
          !! The valence-internal orbital each occupation-restricted subspace
          !! starts at, ascending, as `ormas_space_t%first_orbital` gives them.
-         !! Absent means one subspace covering everything, which is the
-         !! unrestricted case and reproduces the prescribed per-atom assignment
-         !! exactly -- see `select_atomic_claims` for why that is a theorem
-         !! rather than a hope.
+         !! Absent means one subspace covering everything, which reproduces the
+         !! prescribed per-atom assignment exactly.
       real(dp), intent(in), optional :: valence_density(:, :)
          !! (n_val, n_val), the one-particle density matrix in the
          !! valence-internal orbital basis. Absent means the closed-shell
@@ -808,25 +749,18 @@ contains
          !! Kohn-Sham reference gives and is the only case Paper I treats.
          !!
          !! **This is the argument a correlated wave function needs.** An MCSCF
-         !! density is not idempotent: its active orbitals carry fractional
-         !! occupations, so it cannot be written as a projector onto some set of
-         !! filled orbitals and the closed-shell shortcut below does not apply
-         !! to it. Nothing else in the construction cares -- the quasi-atomic
-         !! orbitals themselves come from overlaps with free-atom orbitals and
-         !! never see an occupation -- so this one argument is the whole
-         !! difference between analysing a reference and analysing a correlated
-         !! wave function.
+         !! density is not idempotent -- its active orbitals carry fractional
+         !! occupations -- so the closed-shell shortcut does not apply to it.
+         !! Nothing else in the construction cares; the quasi-atomic orbitals
+         !! never see an occupation.
          !!
          !! **It has to be in the basis of the `valence_internal` passed with
          !! it, and that basis is not reproducible.** Where the molecule has
          !! degenerate valence orbitals a threaded SCF returns a different basis
-         !! of the degenerate space from one run to the next -- measured at 1.4
-         !! in the transformation matrix for water between two identical calls,
-         !! while the quasi-atomic orbitals and the populations that come out
-         !! agree to 4e-13. So a density built against orbitals from a *different*
-         !! run of the SCF describes a different set of orbitals in the same
-         !! numbers, and nothing here can detect that. Build both from one wave
-         !! function and pass them together.
+         !! of the degenerate space from one run to the next, and a density
+         !! built against another run's orbitals describes a different set of
+         !! orbitals in the same numbers with nothing here able to detect it.
+         !! Build both from one wave function and pass them together.
 
       real(dp), allocatable :: projection(:, :)
       real(dp), allocatable :: claims(:, :), gram(:, :), half(:, :), orthogonal(:, :)
@@ -849,7 +783,8 @@ contains
       end if
 
       ! Raw free-atom orbitals, not the orthogonalized ones: the decomposition
-      ! below is per atom, and within one atom the metric is already the identity.
+      ! below is per atom, and within one atom the metric is already the
+      ! identity.
       allocate (projection(n_val, size(mixed, 2)))
       call pic_gemm(valence_internal, mixed, projection, transa="T")
 
@@ -882,8 +817,8 @@ contains
       end if
 
       ! Orthonormal within an atom, not between atoms. Symmetric
-      ! orthogonalization is the choice that moves every orbital as little as
-      ! possible, which is what keeps them atomic.
+      ! orthogonalization moves every orbital as little as possible, which is
+      ! what keeps them atomic.
       allocate (gram(n_val, n_val), orthogonal(n_val, n_val))
       call pic_gemm(claims, claims, gram, transa="T")
       call inverse_sqrt(gram, half, error)
@@ -901,23 +836,14 @@ contains
       result%to_valence_internal = orthogonal
       result%n_quao = n_val
 
-      ! The density in the quasi-atomic basis, Paper I eq (5.2): a change of
-      ! basis of the one-particle density matrix by U, the transformation from
-      ! valence-internal orbitals to quasi-atomic ones.
+      ! The density in the quasi-atomic basis, Paper I eq (5.2), where U is the
+      ! transformation from valence-internal orbitals to quasi-atomic ones:
       !
       !     P = U^T D U
       !
-      ! For a closed shell D is 2 on the occupied diagonal and zero elsewhere,
-      ! and this collapses to 2 U_occ U_occ^T -- which is what the code used to
-      ! compute directly. It is written out in full instead because the general
-      ! form is the one a correlated density needs and two routes to the same
-      ! matrix is one route too many: the closed-shell shortcut would be exercised
-      ! by every test and the general path by almost none.
-      !
       ! U is orthogonal -- symmetric orthogonalization followed by Jacobi
-      ! rotations -- so the trace survives, and the quasi-atomic populations sum
-      ! to the electron count for any D whatsoever. That is the invariant worth
-      ! knowing here, because it is the one that does not depend on idempotency.
+      ! rotations -- so the trace survives and the quasi-atomic populations sum
+      ! to the electron count for any D whatsoever, idempotent or not.
       allocate (density(n_val, n_val))
       if (present(valence_density)) then
          if (size(valence_density, 1) /= n_val .or. size(valence_density, 2) /= n_val) then
@@ -952,17 +878,14 @@ contains
       !! bonding there is between two atoms. What it can change is how that
       !! total is distributed, and maximizing the sum of *fourth* powers
       !! concentrates it: a few large bond orders and many near-zero ones,
-      !! rather than the same total smeared across every pair.
-      !!
-      !! That is what turns a basis into a picture. Before this step an O-H bond
-      !! of 0.93 might sit as 0.66 and 0.63 across two oxygen orbitals; after it,
-      !! one oxygen orbital points at the hydrogen and the others do not.
-      !! Hybridization is an output here rather than an assumption -- nothing
-      !! told it to build sp3 orbitals.
+      !! rather than the same total smeared across every pair. Hybridization is
+      !! an output of that rather than an assumption.
       !!
       !! The rotation angle is closed form and quartered, because the functional
-      !! is quartic where the atomic-character one was quadratic. GAMESS's
-      !! `ORIEN` computes the same R2 and R3; its thresholds are used here.
+      !! is quartic where the atomic-character one was quadratic.
+      ! TODO(mqc): overwrites `quao%sweeps`, which `quasi_atomic_orbitals` set
+      ! from the refinement and `quao_result_t` documents as the refinement's
+      ! count. After orientation the field silently means something else.
       type(quao_result_t), intent(inout) :: quao
       type(error_t), intent(inout) :: error
 
@@ -987,13 +910,11 @@ contains
          moved = .false.
          do i = 1, n
             do j = i + 1, n
-               ! Only *within* an atom. A rotation between atoms would change
-               ! which atom an orbital belongs to, which is the one thing the
-               ! previous stage established.
+               ! Only *within* an atom, and not across two subspaces: a
+               ! rotation between atoms would change which atom an orbital
+               ! belongs to, and one across subspaces would break the
+               ! invariance of a restricted wave function.
                if (quao%atom_of(i) /= quao%atom_of(j)) cycle
-               ! And not across two subspaces, for the reason the refinement
-               ! above gives: a restricted wave function is not invariant under
-               ! a rotation that mixes them.
                if (quao%subspace_of(i) /= quao%subspace_of(j)) cycle
 
                r2 = 0.0_dp
@@ -1041,9 +962,8 @@ contains
       end if
 
       ! The functional is being maximized, so it cannot come out lower than it
-      ! started. It would if the rotation sense disagreed with the angle the
-      ! closed form solves for, which is the sort of sign error that otherwise
-      ! produces a plausible-looking picture of the wrong thing.
+      ! started; it would if the rotation sense disagreed with the angle the
+      ! closed form solves for.
       after = orientation_sum(p, quao%atom_of)
       if (after < before - 1.0e-10_dp) then
          call error%set(ERROR_VALIDATION, "the orientation reduced the functional it "// &
@@ -1124,37 +1044,28 @@ contains
       !!
       !!     k_{Aa,Bb} = 0.1 * < Aa | -1/2 nabla^2 | Bb > * p_{Aa,Bb}
       !!
-      !! Paper II eq (2). The reasoning is that the covalent binding in an ab
-      !! initio wave function comes from kinetic interference between atomic
-      !! orbitals, and for orthonormal quasi-atomic orbitals that energy is
-      !! simply the product of the bond order and the kinetic integral.
+      !! Paper II eq (2). For orthonormal quasi-atomic orbitals the kinetic
+      !! interference energy is the product of the bond order and the kinetic
+      !! integral; the factor of 0.1 is empirical, bringing the numbers onto the
+      !! scale of tabulated bond energies.
       !!
       !! **The sign is meaningful where the bond order's is not.** A phase flip
-      !! changes both factors, so it cancels in the product -- which is exactly
-      !! why Paper II introduced this quantity. Negative means bonding, in every
-      !! case the papers report where the interaction is manifestly so.
-      !!
-      !! The factor of 0.1 is empirical and the papers say so. It brings the
-      !! numbers onto the scale of tabulated bond energies; it is not derived.
+      !! changes both factors, so it cancels in the product. Negative means
+      !! bonding.
       !!
       !! **Two quantities, and they get confused.** Paper II eq (1) is the
       !! kinetic interference energy `t = p * T` in hartree; eq (2) is the
-      !! kinetic bond order `k = 0.1 t`, quoted in kcal/mol. GAMESS prints the
-      !! *former* under the heading KEI-BO, so a value of -0.578 there is
-      !! -36.3 kcal/mol here. Both are returned so neither has to be
-      !! reconstructed from the other.
+      !! kinetic bond order `k = 0.1 t`, in kcal/mol. Both are returned so
+      !! neither has to be reconstructed from the other.
       type(quao_result_t), intent(in) :: quao
       real(dp), intent(in) :: kinetic_ao(:, :)    !! (n_ao, n_ao)
       real(dp), allocatable, intent(out) :: kbo(:, :)   !! (n_quao, n_quao)
       type(error_t), intent(inout) :: error
       real(dp), allocatable, intent(out), optional :: interference(:, :)
          !! The unscaled kinetic interference energy `p * T`, in hartree --
-         !! Paper II eq (1) rather than eq (2). This is what GAMESS prints, as
-         !! its "novel oriented density matrix" and the KEI-BO column, so it is
-         !! the quantity to compare against directly. Its sum over all orbital
-         !! pairs, core included, is the total kinetic energy, which GAMESS
-         !! prints either side of the transformation as a check that the
-         !! rotation was orthogonal.
+         !! Paper II eq (1) rather than eq (2). Its sum over all orbital pairs,
+         !! core included, is the total kinetic energy, and it is what
+         !! `mqc_libcint_ieda` decomposes.
 
       real(dp), allocatable :: work(:, :), t(:, :)
       integer :: n
@@ -1187,15 +1098,9 @@ contains
       !! blocks independently -- which is what "split" means, and what makes the
       !! result different from ordinary localization.
       !!
-      !! Localizing the occupied space alone gives bonds and lone pairs.
-      !! Localizing the empty valence space alone gives the antibonding partner
-      !! of each. Together they pair up, and that pairing is the point: a
-      !! bonding orbital and its antibonding counterpart, on the same two atoms,
-      !! from a calculation that was never told which atoms are bonded.
-      !!
-      !! Paper I notes that conventional localization instead produces
-      !! "rabbit-ear" lone pairs on oxygen, where this yields one of sigma type
-      !! and one of p type.
+      !! The occupied space alone gives bonds and lone pairs; the empty valence
+      !! space alone gives the antibonding partner of each, on the same two
+      !! atoms, from a calculation never told which atoms are bonded.
       !!
       !! The criterion is a fourth power again, and for the same reason as the
       !! orientation: the sum of squares of each column is fixed at one by

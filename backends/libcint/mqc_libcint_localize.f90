@@ -15,10 +15,9 @@ module mqc_libcint_localize
    !! localized quantities -- multipoles distributed over bonds and lone pairs,
    !! one polarizability tensor per localized orbital, exchange repulsion from
    !! localized-orbital overlaps. GAMESS's MAKEFP defaults to Edmiston-Ruedenberg
-   !! rather than Boys, and that choice changes every distributed parameter, so a
-   !! comparison against it has to name the localization. `LOCAL=BOYS` is settable
-   !! there, which is why Boys is enough to match: both are legitimate, and only
-   !! agreement matters.
+   !! rather than Boys and that choice changes every distributed parameter, so a
+   !! comparison against it has to name the localization; `LOCAL=BOYS` is
+   !! settable there.
    !!
    !! **The rotation.** For a pair (i,j) rotated by gamma, and writing
    !! `u_k = (d_ii - d_jj)/2`, `v_k = d_ij`, `w_k = (d_ii + d_jj)/2` for each
@@ -34,10 +33,10 @@ module mqc_libcint_localize
    !!     P = (sum_k u_k^2 - sum_k v_k^2)/2,   Q = sum_k u_k v_k
    !!
    !! maximized at `gamma = atan2(Q, P)/4`, with the gain `sqrt(P^2+Q^2) - P`,
-   !! which is non-negative for every pair. That non-negativity is what makes the
-   !! sweep monotone, and the test asserts it rather than trusting the derivation
-   !! -- the sign conventions in the literature differ and a wrong one still
-   !! converges, to a stationary point that is not the maximum.
+   !! which is non-negative for every pair and is what makes the sweep monotone.
+   !! The test asserts that rather than trusting the derivation: the sign
+   !! conventions in the literature differ, and a wrong one still converges, to a
+   !! stationary point that is not the maximum.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -48,16 +47,13 @@ module mqc_libcint_localize
 
    public :: boys_localize
 
-   !! Sweeps before giving up. Boys on a fragment converges in a handful.
+   ! Sweeps before giving up. Boys on a fragment converges in a handful.
    integer, parameter :: DEFAULT_MAX_SWEEPS = 200
 
-   !! Convergence on the largest rotation angle in a sweep, radians.
-   !!
-   !! On the angle rather than on the functional: near the maximum the functional
-   !! is quadratic in the angle, so a threshold on it stops while the orbitals are
-   !! still moving at the square root of that threshold. The centroids are what
-   !! the next milestone places polarizabilities on, so they are what has to be
-   !! converged.
+   ! Convergence on the largest rotation angle in a sweep, radians. On the angle
+   ! rather than on the functional: near the maximum the functional is quadratic
+   ! in the angle, so a threshold on it stops while the orbitals are still moving
+   ! at the square root of that threshold.
    real(dp), parameter :: DEFAULT_ANGLE_TOL = 1.0e-10_dp
 
 contains
@@ -72,8 +68,7 @@ contains
          !! The localized occupied orbitals, (n_ao, n_occ).
       real(dp), allocatable, intent(out) :: centroids(:, :)
          !! `<i| r |i>` per localized orbital, (3, n_occ), Bohr. These are the
-         !! points a distributed polarizability is placed on, so they are the
-         !! output that matters as much as the orbitals.
+         !! points a distributed polarizability is placed on.
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_sweeps
       real(dp), intent(in), optional :: angle_tol
@@ -87,6 +82,8 @@ contains
       real(dp) :: di, dj
       integer :: k, i, j, m, sweep, limit
       character(len=16) :: text
+      ! TODO(mqc): `rot` is declared and never used; the rotation is applied in
+      ! place below.
 
       if (n_occ < 1 .or. n_occ > size(coefficients, 2)) then
          write (text, "(i0)") n_occ
@@ -100,10 +97,9 @@ contains
       tol = DEFAULT_ANGLE_TOL
       if (present(angle_tol)) tol = angle_tol
 
-      ! The centroids are origin-dependent in the sense that the *functional* is,
-      ! but the localization is not: shifting the origin adds a constant to every
-      ! centroid and rotates nothing, because `sum_i d_ii` is invariant. So the
-      ! origin here is a bookkeeping choice, and zero is the honest one.
+      ! The *functional* is origin-dependent but the localization is not:
+      ! shifting the origin adds a constant to every centroid and rotates
+      ! nothing, since `sum_i d_ii` is invariant.
       call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, error)
       if (error%has_error()) return
 
@@ -111,8 +107,8 @@ contains
       localized = coefficients(:, 1:n_occ)
 
       ! The dipole matrices in the occupied MO basis. Rotations act on these
-      ! directly from here on, which is what keeps a sweep O(n_occ^2) rather than
-      ! re-transforming from the AO basis every pair.
+      ! directly from here on, which keeps a sweep O(n_occ^2) rather than
+      ! re-transforming from the AO basis for every pair.
       allocate (d(n_occ, n_occ, 3), work(mol%nao, n_occ))
       do k = 1, 3
          call pic_gemm(dip(:, :, k), localized, work)

@@ -1,18 +1,8 @@
 !! The record an optimization leaves behind
 module mqc_optimization_output
    !! Writes `output_<name>_optimization.json` and
-   !! `output_<name>_trajectory.xyz`.
-   !!
-   !! Its own document rather than a section of `output_<name>.json`, for the
-   !! reason the per-fragment breakdown gets its own file: what belongs in the
-   !! main document is the answer, and this is the working. A hundred
-   !! geometries would also change the shape of a document that every existing
-   !! reader of it expects to be one calculation's result.
-   !!
-   !! **Why both formats.** The .xyz is what a viewer opens and what ASE or
-   !! MDAnalysis read without being told anything; the JSON is what a test
-   !! asserts on. Neither substitutes for the other, and the trajectory is
-   !! small next to the calculations that produced it.
+   !! `output_<name>_trajectory.xyz`, both separate from the calculation's own
+   !! `output_<name>.json`.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use json_module, only: json_core, json_value
@@ -40,10 +30,11 @@ module mqc_optimization_output
       integer, allocatable :: element_numbers(:)     !! (n_atoms)
       real(dp), allocatable :: final_coordinates(:, :)  !! (3, n_atoms), Bohr
 
-      !! (3, n_atoms, n_steps) in Bohr, and the energy at each. Empty when the
-      !! deck turned the trajectory off.
       real(dp), allocatable :: trajectory(:, :, :)
+         !! (3, n_atoms, n_steps) in Bohr. Unallocated when the deck turned the
+         !! trajectory off.
       real(dp), allocatable :: trajectory_energies(:)
+         !! (n_steps), Hartree, one per trajectory frame
    end type optimization_record_t
 
 contains
@@ -67,9 +58,8 @@ contains
       call json%create_object(main_obj, "optimization")
       call json%add(root, main_obj)
 
-      ! Whether it converged goes first and is a boolean, not a phrase to be
-      ! grepped for. A run that stopped on the step cap still writes a geometry
-      ! and an energy, so this is the only field that distinguishes the two.
+      ! A run that stopped on the step cap still writes a geometry and an
+      ! energy, so `converged` is the only field that distinguishes the two.
       call json%add(main_obj, "converged", record%converged)
       call json%add(main_obj, "steps", record%n_steps)
       call json%add(main_obj, "energy_evaluations", record%n_evaluations)
@@ -79,19 +69,16 @@ contains
       if (allocated(record%coordinates)) call json%add(main_obj, "coordinates", record%coordinates)
       if (allocated(record%algorithm)) call json%add(main_obj, "algorithm", record%algorithm)
 
-      ! Angstrom here, unlike everything internal, because every consumer of a
-      ! geometry outside this program works in Angstrom and a bare number in a
-      ! JSON field carries no units to correct by.
+      ! Angstrom here, unlike everything internal, and the units are stated in
+      ! the document.
       call json%create_object(geom_obj, "final_geometry")
       call json%add(main_obj, geom_obj)
       call json%add(geom_obj, "units", "angstrom")
       call json%add(geom_obj, "n_atoms", n_atoms)
       if (allocated(record%element_numbers)) then
-         ! One at a time rather than an array constructor of trim()med strings:
-         ! a character array constructor pads every element to the longest, so
-         ! "H" comes back as "H " and a reader comparing it to "H" finds no
-         ! match. Building the array element by element keeps each string the
-         ! length it actually is.
+         ! One at a time rather than an array constructor: a character array
+         ! constructor pads every element to the longest, so "H" comes back as
+         ! "H " and a reader comparing it to "H" finds no match.
          call json%create_array(symbols_arr, "symbols")
          call json%add(geom_obj, symbols_arr)
          do iatom = 1, n_atoms
@@ -140,9 +127,8 @@ contains
       !! Write the path the optimization took, as a multi-frame .xyz
       !!
       !! One frame per accepted geometry, in the order they were accepted, with
-      !! the energy on each comment line. That is the format every viewer and
-      !! trajectory reader already understands, so nothing here has to be
-      !! taught to anything.
+      !! the energy on each comment line. Nothing is written when the record
+      !! carries no trajectory.
       character(len=*), intent(in) :: path
       type(optimization_record_t), intent(in) :: record
       type(error_t), intent(inout) :: error

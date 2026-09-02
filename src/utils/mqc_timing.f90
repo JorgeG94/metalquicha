@@ -2,49 +2,20 @@
 module mqc_timing
    !! One accumulator per named stage, and one table at the end.
    !!
-   !! **Why this exists.** A direct-SCF cholesterol run spends 88% of its wall
-   !! clock in Fock builds and 0.4% in diagonalisation. Nothing in the program
-   !! said so until it was measured, and "which part is slow" is not a question
-   !! that should need a rebuild to answer. Every method that takes long enough
-   !! to notice should be able to answer it for itself.
-   !!
    !! **Wall, not CPU.** `pic_timer` reads `omp_get_wtime` when PIC is built
-   !! threaded and `system_clock` otherwise -- both are elapsed real time. CPU
-   !! seconds would report thread count multiplied by duration, which is the
-   !! wrong number for every threaded stage here.
+   !! threaded and `system_clock` otherwise; both are elapsed real time.
    !!
    !! **The shape is lap timing.** One clock runs from `start` to `finish`, and
-   !! each `lap` attributes everything since the previous lap to a named stage:
-   !!
-   !! ```fortran
-   !! type(timing_report_t) :: clk
-   !! call clk%start()
-   !! call clk%begin("integrals")     ! says so before it takes the time
-   !! call build_integrals(...)
-   !! call clk%lap()                  ! closes whatever `begin` opened
-   !! do iter = 1, n
-   !!    call amplitude_equations(...)
-   !!    call clk%lap("amplitudes")     ! accumulates, one entry not n
-   !! end do
-   !! call clk%finish()
-   !! call clk%report("CCSD", verbose)
-   !! ```
-   !!
-   !! **`begin` is the announcement, `lap` is the measurement.** A table printed
-   !! at the end says where the time went; it cannot say where the time is
-   !! *going*, which is the question being asked by anyone watching a terminal
-   !! that has been silent for four minutes. `begin` names the stage on the way
-   !! in, and the matching `lap` needs no argument because the name is already
-   !! known -- so the announcement and the row it becomes cannot drift apart.
+   !! each `lap` attributes everything since the previous lap to a named stage.
+   !! `begin` is the announcement and `lap` the measurement: `begin` names the
+   !! stage on the way in, and the matching `lap` needs no argument.
    !!
    !! Stages are created on first mention, so a caller adds one by naming it and
    !! nothing has to be declared up front. Laps accumulate, so a stage inside a
    !! loop reports its total and its call count rather than the last pass.
    !!
-   !! **Nothing is silently unaccounted.** `report` prints the residual between
-   !! the total and the sum of the stages as `other`. A missing `lap` shows up
-   !! there rather than vanishing, which is the property that makes the table
-   !! worth believing.
+   !! `report` prints the residual between the total and the sum of the stages
+   !! as `other`, so a missing `lap` shows up there rather than vanishing.
    use pic_types, only: dp
    use pic_timer, only: timer_type
    use pic_logger, only: logger => global_logger
@@ -55,14 +26,13 @@ module mqc_timing
    public :: timing_report_t
    public :: MAX_TIMED_STAGES, MAX_STAGE_NAME
 
-   !! Most stages one method may name. Exceeding it drops the extras into
-   !! `other` rather than failing: a timer must never be the reason a
-   !! calculation stops.
    integer, parameter :: MAX_TIMED_STAGES = 24
-   !! Longest stage label kept. Longer names are truncated for the table.
+      !! Most stages one method may name. Exceeding it drops the extras into
+      !! `other` rather than failing.
    integer, parameter :: MAX_STAGE_NAME = 28
-   !! Rule width, matching the row format: 4 indent + name + 12 + 10 + 14.
+      !! Longest stage label kept. Longer names are truncated for the table.
    integer, parameter :: TABLE_WIDTH = 4 + MAX_STAGE_NAME + 12 + 10 + 14
+      !! Rule width, matching the row format: 4 indent + name + 12 + 10 + 14.
 
    type :: stage_t
       !! One named accumulator
@@ -112,13 +82,14 @@ contains
    subroutine report_begin(self, name)
       !! Say that `name` is starting, and let the next `lap` close it
       !!
-      !! At `performance` level, the same level the table itself uses: a run
-      !! that wants to know where its wall clock goes wants both, and one
-      !! without the other is half an answer. That level is numerically below
-      !! `info`, so this shows by default.
+      !! Logged at `performance` level, the same level the table uses, which is
+      !! numerically below `info` and so shows by default.
       !!
       !! Announcing does not touch the lap clock. `begin` is free to be called
       !! anywhere; only `lap` divides the timeline.
+      ! TODO(mqc): the `verbose` argument to `report` suppresses the table but
+      ! nothing suppresses these, so a run that asked for no timing still logs
+      ! a line per stage.
       class(timing_report_t), intent(inout) :: self
       character(len=*), intent(in) :: name
 
@@ -137,15 +108,14 @@ contains
          !! Omitted closes whatever `begin` last opened. A lap with neither a
          !! name nor a pending stage does not divide the timeline at all -- the
          !! clock keeps running and the time lands in the next stage that is
-         !! named. Attributing it to an invented stage would be worse: the
-         !! table's value is that every row was asked for by someone.
+         !! named.
 
       real(dp) :: elapsed
       integer :: i, slot
       character(len=MAX_STAGE_NAME) :: label
 
       ! A lap before start would read an unstarted clock, which pic_timer stops
-      ! the program for. Silently doing nothing is the right failure here.
+      ! the program for.
       if (.not. self%running) return
 
       if (present(name)) then
@@ -205,9 +175,6 @@ contains
 
    pure function report_seconds_of(self, name) result(seconds)
       !! Wall seconds accumulated against one stage, or zero if never lapped
-      !!
-      !! For a caller that wants to assert on a stage rather than print it --
-      !! a regression test on where the time goes, say.
       class(timing_report_t), intent(in) :: self
       character(len=*), intent(in) :: name
       real(dp) :: seconds
@@ -226,14 +193,9 @@ contains
    subroutine report_emit(self, title, verbose)
       !! Print the table
       !!
-      !! At `performance` level rather than `info`: these are the numbers a
-      !! tuning run is for, and keeping them on their own level means they can
-      !! be turned up or down without moving everything else with them.
-      !!
-      !! `verbose` is separate from the log level on purpose. The atomic guess
-      !! runs a full SCF per element; those are runs nobody wants a table for.
-      !! The level decides how loud a reporting run is, `verbose` decides
-      !! whether this particular run reports at all.
+      !! At `performance` level rather than `info`. `verbose` is separate from
+      !! the log level: the level decides how loud a reporting run is,
+      !! `verbose` whether this particular run reports at all.
       class(timing_report_t), intent(in) :: self
       character(len=*), intent(in) :: title
       logical, intent(in), optional :: verbose
@@ -269,8 +231,8 @@ contains
             self%stage(i)%seconds/real(max(self%stage(i)%calls, 1), dp), " s"
          call logger%performance(trim(line))
       end do
-      ! Always shown, including when it is zero: the parts visibly summing to the
-      ! whole is what makes a missing lap detectable rather than invisible.
+      ! Always shown, including when it is zero, so the parts visibly sum to
+      ! the whole and a missing lap is detectable.
       write (line, "(a,a,f10.2,a)") "    ", pad_name("other"), other, " s"
       call logger%performance(trim(line))
       call logger%performance("  "//repeat("-", TABLE_WIDTH))
@@ -292,7 +254,7 @@ contains
    end function pad_name
 
    pure function int_str(value) result(text)
-      !! Small integer to text, so the warning above needs no io module
+      !! Small integer to text
       integer, intent(in) :: value
       character(len=12) :: text
 

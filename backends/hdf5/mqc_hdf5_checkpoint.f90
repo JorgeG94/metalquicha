@@ -3,25 +3,20 @@ module mqc_hdf5_checkpoint
    !! The same append-and-resume contract as the text checkpoint, in a format
    !! that can hold a gradient and a Hessian per fragment.
    !!
-   !! **Why not text.** For MBE(3) over a thousand monomers the energies alone
-   !! are 10 GB written as decimal and 1.3 GB as doubles. Gradients are 75 GB
-   !! against 24, and Hessians 1350 GB against 432. At that point text stops
-   !! being a slow format and starts being a refusal.
+   !! **Not text.** For MBE(3) over a thousand monomers the Hessians alone are
+   !! 1350 GB written as decimal against 432 as doubles.
    !!
    !! **A few big datasets, never one per fragment.** HDF5 keeps metadata per
-   !! object; a hundred million datasets would cost more than the numbers in
-   !! them and take hours to open. Everything here is a handful of extendible
-   !! one-dimensional datasets plus an offset index, so a fragment's gradient
-   !! is a slice rather than an object.
+   !! object, so everything here is a handful of extendible one-dimensional
+   !! datasets plus an offset index: a fragment's gradient is a slice rather
+   !! than an object.
    !!
-   !! **`n_valid` is what makes a kill survivable, and it is the whole trick.**
-   !! HDF5 is less forgiving than a text file: a process killed mid-write can
-   !! leave metadata the library then refuses to open *at all*, losing every
-   !! record rather than the last one. So records are appended, the file is
-   !! flushed, and only then is `n_valid` raised. A reader trusts `n_valid`
-   !! records and ignores whatever lies past it. The window that a kill can
-   !! lose is therefore bounded by the flush interval, and what it loses is
-   !! always a suffix -- never the file.
+   !! **`n_valid` is what makes a kill survivable.** A process killed mid-write
+   !! can leave HDF5 metadata the library then refuses to open *at all*,
+   !! losing every record rather than the last one. So records are appended,
+   !! the file is flushed, and only then is `n_valid` raised; a reader trusts
+   !! `n_valid` records and ignores whatever lies past it. What a kill loses is
+   !! bounded by the flush interval and is always a suffix.
    use, intrinsic :: iso_c_binding, only: c_loc, c_null_ptr, c_size_t, c_char, c_int
    use pic_types, only: dp, int64
    use mqc_error, only: error_t, ERROR_IO, ERROR_VALIDATION
@@ -49,17 +44,10 @@ module mqc_hdf5_checkpoint
 
    integer(int64), parameter :: COMMIT_EVERY = 1024_int64
    real(dp), parameter :: COMMIT_SECONDS = 30.0_dp
-      !! How much a kill may cost, which is a different question from how the
-      !! data is laid out and must not share its answer. Whichever comes
-      !! first: a thousand records, or half a minute.
-      !!
-      !! Count alone is wrong at both ends. Fragments that take milliseconds
-      !! make a commit-per-record cost more than the science -- at a hundred
-      !! million records a millisecond flush each is a day of flushing. And
-      !! fragments that take seconds, which is what DFT on a trimer costs,
-      !! make a thousand records several hours, so a count-only rule would
-      !! quietly reintroduce exactly the loss this file exists to prevent.
-      !! The clock covers the expensive case, the count covers the cheap one.
+      !! How much a kill may cost: a commit whenever a thousand records or half
+      !! a minute have passed, whichever comes first. The clock covers
+      !! fragments expensive enough that a thousand of them is hours; the count
+      !! covers ones cheap enough that a commit each would dominate the run.
 
    type :: hdf5_checkpoint_t
       !! One open HDF5 checkpoint
@@ -83,10 +71,9 @@ module mqc_hdf5_checkpoint
       integer, allocatable :: natoms(:)
       integer(int64), allocatable :: gstart(:), gcount(:)
       integer(int64), allocatable :: hstart(:), hcount(:)
-         !! Per record, not cumulative. On disk the offsets are cumulative,
-         !! which is compact; in memory the records get sorted by term, and a
-         !! cumulative array cannot be permuted -- record i's slice would end
-         !! up described by its neighbour's bounds. Converted once on load.
+         !! Per record, not cumulative. On disk the offsets are cumulative;
+         !! in memory the records are sorted by term, and a cumulative array
+         !! cannot be permuted. Converted once on load.
       real(dp), allocatable :: grad(:), hess(:)
    contains
       procedure :: open => h5ck_open
@@ -187,9 +174,8 @@ contains
          return
       end if
 
-      ! Anything past n_valid was being written when the last run stopped. It
-      ! may be complete, it may be half a chunk of zeros; it is not trusted
-      ! either way, which is what keeps a kill from costing more than a suffix.
+      ! Anything past n_valid was being written when the last run stopped, and
+      ! is not trusted whether or not it happens to be complete.
       call read_count(this%file, n)
 
       this%d_terms = H5Dopen2(this%file, c_string("terms"), H5P_DEFAULT)
@@ -250,8 +236,7 @@ contains
       !!
       !! The order is append, flush, then raise the count -- never the other
       !! way round. A count raised before the data is on disk would promise a
-      !! record that is not there, which is exactly the lie the whole scheme
-      !! exists to prevent.
+      !! record that is not there.
       class(hdf5_checkpoint_t), intent(inout) :: this
       integer, intent(in) :: term(:)
       real(dp), intent(in) :: energy
@@ -328,9 +313,9 @@ contains
    subroutine commit(this)
       !! Get the data down, then say how much of it is real
       !!
-      !! This order is the entire guarantee. A count raised before the flush
-      !! would promise records that are not on disk, and a reader that
-      !! believed it would splice uninitialised numbers into an expansion.
+      !! A count raised before the flush would promise records that are not on
+      !! disk, and a reader believing it would splice uninitialised numbers
+      !! into an expansion.
       class(hdf5_checkpoint_t), intent(inout) :: this
 
       integer(int64) :: rate
@@ -682,6 +667,9 @@ contains
    end subroutine read_count
 
    subroutine write_string_attr(file, name, text)
+      ! TODO(mqc): this, `read_string_attr` and `FP_LEN` are duplicated
+      ! verbatim in `mqc_hdf5_amplitudes`; a change to the fingerprint width
+      ! has to be made in both.
       integer(hid_t), intent(in) :: file
       character(len=*), intent(in) :: name, text
 
@@ -747,9 +735,11 @@ contains
    subroutine sort_loaded(this)
       !! Sort every loaded array together, by term
       !!
-      !! An index permutation rather than moving the payload: the gradients
-      !! and Hessians are addressed through the offsets, so those stay put and
-      !! only the small per-record arrays are reordered.
+      !! The gradients and Hessians are addressed through the offsets, so they
+      !! stay put and only the small per-record arrays are reordered.
+      ! TODO(mqc): insertion sort, so loading is quadratic in the record count
+      ! -- on the hundred-million-record runs this format exists for, the sort
+      ! costs more than the calculation it is saving.
       class(hdf5_checkpoint_t), intent(inout) :: this
 
       integer(int64) :: i, j

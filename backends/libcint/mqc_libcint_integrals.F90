@@ -4,14 +4,8 @@ module mqc_libcint_integrals
    !! matrices an SCF needs: overlap, core Hamiltonian, and the two-electron
    !! integrals.
    !!
-   !! **This exists to be checked against, not to be fast.** Everything ab
-   !! initio here runs on cuEST, which needs an A100, so the HF and DFT paths
-   !! are compile-checked and never executed where anyone is working. A CPU
-   !! path makes them runnable on a laptop and gives the GPU one a second
-   !! implementation to disagree with.
-   !!
-   !! Two things about libcint's conventions are worth knowing before reading
-   !! the packing, because both fail quietly:
+   !! Two of libcint's conventions are worth knowing before reading the packing,
+   !! because both fail quietly:
    !!
    !!   * **Contraction coefficients must arrive pre-multiplied by each
    !!     primitive's normalisation.** libcint does not apply it. Without it
@@ -22,10 +16,9 @@ module mqc_libcint_integrals
    !!     adding one again writes into the neighbouring slot and leaves the
    !!     real one uninitialised, which surfaces as a crash inside libcint.
    !!
-   !! The ERIs are held in core, all n^4 of them. That is the right choice for
-   !! what this is for -- a hundred basis functions is 800 MB and a reference
-   !! calculation is small by construction -- and the wrong one for anything
-   !! else. Direct or density-fitted assembly is a different backend.
+   !! `eris` holds all n^4 integrals in core, which suits a reference
+   !! calculation and nothing larger. Direct and density-fitted assembly live in
+   !! `mqc_libcint_direct` and in `build_df_tensor` below.
    use pic_types, only: dp
    use mqc_nuclear_repulsion, only: nuclear_repulsion
    use pic_blas_interfaces, only: pic_gemm, pic_trsm
@@ -64,16 +57,12 @@ module mqc_libcint_integrals
    integer, parameter :: KAPPA_SP_SHELL = 64
       !! What libfint reads in KAPPA_OF to mean "this shell holds s and p".
       !!
-      !! A wire-format constant, like the slot indices this file already
-      !! imports, and here for the same reason: it is part of the layout of
-      !! `bas`, not something the module that fills `bas` can ask for. Defined
-      !! at libfint's `src/cint_bas.f90:61`; if that number moves, this is the
-      !! other end of the agreement.
-      !!
-      !! KAPPA_OF is the relativistic kappa, which a non-relativistic shell
-      !! leaves at zero -- which is what frees the slot to carry this, and also
-      !! why it is written only under MQC_WITH_SP_SHELLS. libcint would read a
-      !! 64 there as a real kappa and act on it.
+      !! A wire-format constant, defined at libfint's `src/cint_bas.f90:61`; if
+      !! that number moves, this is the other end of the agreement. KAPPA_OF is
+      !! the relativistic kappa, which a non-relativistic shell leaves at zero,
+      !! and that is what frees the slot -- which is also why it is written only
+      !! under MQC_WITH_SP_SHELLS. libcint would read a 64 there as a real kappa
+      !! and act on it.
 
    public :: libcint_molecule_t
    public :: build_libcint_molecule
@@ -81,16 +70,13 @@ module mqc_libcint_integrals
    public :: build_df_mo_tensor
    public :: build_df_mo_block
    ! The one place that maps "is this basis Cartesian?" onto libcint's two sets
-   ! of entry points. Exported because the direct Fock build needs the same
-   ! mapping, and two copies of it is two chances to route half the calls.
+   ! of entry points; the direct Fock build needs the same mapping.
    public :: shell_dim
    public :: angular_form_name
    public :: pair_index
-   ! The shell set a four-centre integral loop should run over, and the
-   ! Schwarz bounds re-blocked to match it. Exported because the direct Fock
-   ! build runs the same loops over the same choice, and two copies of the
-   ! choice is two chances to hand a fused shell to a driver that cannot
-   ! read one.
+   ! The shell set a four-centre integral loop should run over, and the Schwarz
+   ! bounds re-blocked to match it. Two copies of that choice would be two
+   ! chances to hand a fused shell to a driver that cannot read one.
    public :: eri_shell_table_t
    public :: eri_shell_table
    public :: eri_schwarz_collapse
@@ -105,11 +91,9 @@ module mqc_libcint_integrals
    public :: build_df_shell_table
    public :: mixed_basis_overlap
    ! The undifferentiated three- and two-centre integrals, and the metric's
-   ! inverse square root. Public because the gradient needs the same three
-   ! quantities the fitted Fock build does -- and, for the metric, needs them
-   ! from the *same* eigenvalue threshold: a gradient built on a pseudo-inverse
-   ! that kept different modes than the SCF's would not differentiate the
-   ! energy the SCF actually converged.
+   ! inverse square root. The gradient needs all three, and needs the metric
+   ! from the *same* eigenvalue threshold: a pseudo-inverse that kept different
+   ! modes than the SCF's would not differentiate the energy the SCF converged.
    public :: three_centre
    public :: two_centre
    public :: metric_inverse_sqrt
@@ -122,13 +106,12 @@ module mqc_libcint_integrals
       integer :: nao = 0
       logical :: cartesian = .false.
          !! Whether every integral over this molecule must use libcint's
-         !! Cartesian entry points rather than its spherical ones. Set from the
-         !! basis file's `function_type`, and one value for the whole molecule:
-         !! libcint chooses the form per call, so a d shell cannot be Cartesian
-         !! while an f shell beside it is spherical. It also changes `nao` --
-         !! six functions per d shell instead of five -- so anything sized from
-         !! `nao` follows it automatically, and anything that calls `_sph`
-         !! directly does not.
+         !! Cartesian entry points rather than its spherical ones. One value for
+         !! the whole molecule, from the basis file's `function_type`: libcint
+         !! chooses the form per call, so a d shell cannot be Cartesian while an
+         !! f shell beside it is spherical. It changes `nao` -- six functions per
+         !! d shell instead of five -- so anything sized from `nao` follows it
+         !! and anything calling `_sph` directly does not.
       integer, allocatable :: atm(:, :)
       integer, allocatable :: bas(:, :)
       real(dp), allocatable :: env(:)
@@ -136,11 +119,10 @@ module mqc_libcint_integrals
       ! The fused-sp view of the same shells: every consecutive s/p pair on
       ! shared exponents -- an L shell, which is what every Pople basis is
       ! written in -- collapsed to one `bas` entry that libfint's `int2e`
-      ! evaluates in a single pass over the shared pair data. Built by
-      ! `build_sp_view`, and empty (`nbas_sp` zero) whenever the molecule has
-      ! no L shell or the build is against libcint, which cannot read the
-      ! marker. The AO order of the view is identical to the split order --
-      ! one s function then three p -- so anything indexed by AO needs no map.
+      ! evaluates in a single pass. Built by `build_sp_view`, and empty
+      ! (`nbas_sp` zero) whenever the molecule has no L shell or the build is
+      ! against libcint, which cannot read the marker. The AO order of the view
+      ! is the split order, so anything indexed by AO needs no map.
       integer :: nbas_sp = 0
       integer, allocatable :: bas_sp(:, :)
       real(dp), allocatable :: env_sp(:)
@@ -161,11 +143,10 @@ module mqc_libcint_integrals
       integer, allocatable :: bas_with_ecp(:, :)
          !! `bas` with the ECP rows appended, (BAS_SLOTS, nbas + necpbas).
          !!
-         !! A second table rather than growing `bas`, because `nbas` must stay
-         !! the orbital count -- every other integral loops over it, and an ECP
-         !! row handed to `int1e_ovlp` would be read as a basis shell with a
-         !! nonsense angular momentum. The two share `env`, so the pointers in
-         !! either remain valid against it.
+         !! A second table rather than a longer `bas`, because `nbas` must stay
+         !! the orbital count: an ECP row handed to `int1e_ovlp` would be read as
+         !! a basis shell with a nonsense angular momentum. The two share `env`,
+         !! so pointers in either remain valid against it.
       integer, allocatable :: core_electrons(:)
          !! Electrons each atom's ECP replaces, zero where there is none.
          !! `charges` and `atm(CHARGE_OF)` already have this subtracted; this
@@ -187,9 +168,9 @@ module mqc_libcint_integrals
       !! The shell table a four-centre integral loop runs over
       !!
       !! Either the molecule's own shells or its fused-sp view, chosen once in
-      !! `eri_shell_table` so a loop body cannot mix the two. Widths and
-      !! offsets are carried explicitly: inside the loops a shell's dimension
-      !! is a table lookup, not a `cgto` call per quartet.
+      !! `eri_shell_table` so a loop body cannot mix the two. Widths and offsets
+      !! are carried explicitly, so a shell's dimension is a table lookup rather
+      !! than a `cgto` call per quartet.
       integer :: nbas = 0
       integer :: block_max = 1                 !! Largest shell width, for buffers
       integer, allocatable :: bas(:, :)
@@ -198,26 +179,22 @@ module mqc_libcint_integrals
       integer, allocatable :: dims(:)          !! (nbas) functions per shell
    end type eri_shell_table_t
 
-   !! Where the ECP shells are, in `env`.
-   !!
-   !! PySCF's extension to libcint's env layout rather than libcint's own:
-   !! slots 18 and 19 sit inside the reserved region below PTR_ENV_START and
-   !! libcint itself never writes them. libfint follows the same convention,
-   !! which is what lets an env built here be read by either.
-   !!
-   !! 0-based like every other slot number here, so both are used as `+ 1`.
-   !! Highest r exponent an ECP row can carry.
-   !!
-   !! Not a limit of the integrals -- libfint handles any power through its
-   !! general branch -- but of this loop, which walks the powers rather than
-   !! sorting. No ECP set in common use goes above 2; the ceiling is set well
-   !! clear of that and a primitive above it is dropped rather than
-   !! mis-assigned, which `molecule_build` then catches as a row-count
-   !! mismatch.
    integer, parameter :: MAX_RADI_POWER = 6
+      !! Highest r exponent an ECP row can carry.
+      !!
+      !! A limit of the loops that walk the powers here rather than of the
+      !! integrals -- libfint handles any power through its general branch. No
+      !! ECP set in common use goes above 2, and a primitive above this is
+      !! dropped rather than mis-assigned, which `molecule_build` catches as a
+      !! row-count mismatch.
 
-   integer, parameter :: LIBCINT_AS_ECPBAS_OFFSET = 18
-   integer, parameter :: LIBCINT_AS_NECPBAS = 19
+   ! Slots 18 and 19 are PySCF's extension to libcint's env layout, inside the
+   ! reserved region below PTR_ENV_START that libcint itself never writes;
+   ! libfint follows the same convention, which is what lets an env built here
+   ! be read by either. 0-based like every other slot number here, so both are
+   ! used as `+ 1`.
+   integer, parameter :: LIBCINT_AS_ECPBAS_OFFSET = 18  !! Where the ECP rows start, in `env`
+   integer, parameter :: LIBCINT_AS_NECPBAS = 19        !! How many ECP rows there are
 
 contains
 
@@ -225,20 +202,18 @@ contains
    ! Convention routing
    !
    ! libcint spells the two angular conventions as two families of entry points
-   ! -- cint2e_sph and cint2e_cart, and so on -- with identical signatures. The
-   ! choice is per call, which is why it has to be one choice for a whole
-   ! molecule, and these four functions are the only places the choice is made.
-   ! Everything else asks for "this molecule's" integrals and gets the right
-   ! family.
+   ! -- cint2e_sph and cint2e_cart, and so on -- with identical signatures, and
+   ! the choice is per call. These four functions are the only places it is made;
+   ! everything else asks for "this molecule's" integrals.
    ! ---------------------------------------------------------------------------
 
    function shell_dim(cartesian, bas_id, bas) result(dim)
       !! How many functions one shell contributes, in the given convention
       !!
       !! Six for a Cartesian d shell against five for a spherical one, and the
-      !! gap widens with l. This is where the basis function count comes from,
-      !! so getting it wrong does not produce a slightly wrong energy -- it
-      !! produces a consistent SCF over the wrong basis.
+      !! gap widens with l. The basis function count comes from here, so getting
+      !! it wrong gives a consistent SCF over the wrong basis rather than a
+      !! slightly wrong energy.
       logical, intent(in) :: cartesian
       integer, intent(in) :: bas_id      !! 0-based, as libcint counts
       integer, intent(in) :: bas(:, :)
@@ -268,10 +243,9 @@ contains
    function two_electron_block(cartesian, buf, shls, atm, natm, bas, nbas, env, opt) result(ret)
       !! One (ij|kl) shell quartet, in the given convention
       !!
-      !! `buf` is assumed-shape rather than the assumed-size the libcint
-      !! interface declares. Callers pass a whole contiguous scratch array
-      !! sized for the largest quartet, so the two are interchangeable here,
-      !! and an explicit shape is what the style guide asks for.
+      !! `buf` is assumed-shape where the libcint interface declares
+      !! assumed-size. Callers pass a whole contiguous scratch array sized for
+      !! the largest quartet, so the two are interchangeable here.
       logical, intent(in) :: cartesian
       real(dp), intent(out) :: buf(:)
       integer, intent(in) :: shls(4)
@@ -323,30 +297,20 @@ contains
                                      force_cartesian, ghost, ecp_name)
       !! A molecule from a basis set *name*, through the ordinary reader
       !!
-      !! This is what makes the backend general rather than a demonstration:
-      !! any of the basis sets in `basis_sets/` rather than whatever was
-      !! typed into a test.
-      !!
       !! **Two normalisations, and they are not the same thing.** The BSE files
       !! give contraction coefficients against normalised *primitives*, and
       !! `molecule_build` folds in `libcint_gto_norm`, which is the primitive
       !! convention libcint asks for. That leaves the *contracted* function
       !! normalised only to the precision the coefficients were published at --
-      !! about 1e-6 for cc-pVDZ -- so `<chi|chi>` is 1.000001, not 1.
+      !! about 1e-6 for cc-pVDZ -- so `<chi|chi>` is 1.000001 until
+      !! `normalize_contractions` applies the second, separate sum over
+      !! primitive pairs.
       !!
-      !! This comment used to say applying a second normalisation "would count
-      !! it twice", which conflated the two. It does not: the contraction norm
-      !! is a separate sum over primitive pairs, and PySCF applies it.
-      !!
-      !! Why it went unnoticed for so long is worth stating, because it says
-      !! which tests can and cannot see it: an SCF energy is **invariant** to the
-      !! normalisation of a basis function. Scaling one does not change the space
-      !! the basis spans, so the orbital coefficients absorb it and the energy is
-      !! identical. Every energy validated against PySCF to 1e-9 was therefore
-      !! correct and stayed correct. It shows up only in per-AO quantities -- an
-      !! overlap diagonal, a multipole matrix element, anything an effective
-      !! fragment potential is made of -- and nothing looked at one until the
-      !! multipole integrals arrived.
+      !! An SCF energy is **invariant** to either, since scaling a basis function
+      !! does not change the space the basis spans and the orbital coefficients
+      !! absorb it. Only per-AO quantities -- an overlap diagonal, a multipole
+      !! matrix element, anything an effective fragment potential is made of --
+      !! can see the difference.
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in) :: coordinates(:, :)   !! (3, natm), Bohr
@@ -354,14 +318,11 @@ contains
       type(libcint_molecule_t), intent(out) :: mol
       type(error_t), intent(inout) :: error
       character(len=*), intent(in), optional :: ecp_name
-         !! Effective core potential set, by name. Absent or empty is an
-         !! all-electron molecule.
-         !!
-         !! Taken as a name rather than as parsed data so that callers stay
-         !! symmetric with the basis: one string each, both resolved through
-         !! `find_basis_file`. An element the file does not cover is not an
-         !! error -- def2-ECP carries nothing below krypton, and a deck naming
-         !! it for a light molecule should run all-electron rather than fail.
+         !! Effective core potential set, by name, resolved through
+         !! `find_basis_file` as the basis is. Absent or empty is an
+         !! all-electron molecule, and so is an element the file does not cover
+         !! -- def2-ECP carries nothing below krypton, and naming it for a light
+         !! molecule runs all-electron rather than failing.
       logical, intent(in), optional :: ghost(:)
          !! Atoms keeping their basis and losing their nuclear charge; see
          !! `molecule_build`.
@@ -371,10 +332,8 @@ contains
          !! Cartesian for them.
       logical, intent(in), optional :: normalize_contractions
          !! Scale each contracted shell so `<chi|chi>` is exactly one. Default
-         !! true, which is both physically right and what PySCF does. False
-         !! reproduces the behaviour from before this was fixed, which is worth
-         !! being able to ask for: it is how the effect on any given quantity can
-         !! be measured rather than argued about.
+         !! true, which is what PySCF does; false is kept so the effect on a
+         !! given quantity can be measured.
 
       type(molecular_basis_type) :: basis
       character(len=:), allocatable :: path, ecp_path
@@ -397,16 +356,14 @@ contains
       end if
 
       ! The potential, if one was named. An element the file does not carry
-      ! comes back with no channels rather than as an error, so a set that
-      ! covers only the heavy atoms is the ordinary case and not a special one.
+      ! comes back with no channels rather than as an error, so a set covering
+      ! only the heavy atoms is the ordinary case.
       have_ecp = .false.
       if (present(ecp_name)) then
          if (len_trim(ecp_name) > 0) then
-            ! Refused rather than left to the linker. The ECP integrals come
-            ! from libfint; libcint has no ECP code, so a build configured with
-            ! -DMQC_USE_LIBFINT=OFF cannot evaluate one. Before this check that
-            ! configuration did not fail here -- it failed at link time with two
-            ! undefined references and no indication that an ECP was the cause.
+            ! Refused rather than left to the linker: the ECP integrals come
+            ! from libfint, so -DMQC_USE_LIBFINT=OFF cannot evaluate one and
+            ! otherwise fails with two undefined references at link time.
             if (.not. ECP_AVAILABLE) then
                call error%set(ERROR_VALIDATION, "model.ecp is set, but this build "// &
                               "uses libcint for its integrals and libcint has no "// &
@@ -462,20 +419,16 @@ contains
    function contraction_group_size(atom_basis, first) result(nctr)
       !! How many consecutive shells from `first` are one general contraction
       !!
-      !! The reader emits one shell per coefficient column, because that is what
-      !! a Basis Set Exchange entry lists. For a general contraction -- cc-pVDZ
-      !! oxygen is nine s primitives carrying three columns -- those columns
-      !! share one set of exponents, and libcint can take them as a single shell
-      !! with `NCTR_OF` set to the column count. It then evaluates the primitives
-      !! once and contracts them into every column, instead of repeating the
-      !! primitive work per column.
+      !! The reader emits one shell per coefficient column, as a Basis Set
+      !! Exchange entry lists them. Where those columns share one set of
+      !! exponents libcint can take them as a single shell with `NCTR_OF` set to
+      !! the column count, evaluating the primitives once.
       !!
-      !! Only *consecutive* shells merge, and that is the whole safety argument.
-      !! libcint lays a shell's functions out with the contraction index
-      !! outermost, so merging columns that were already adjacent reproduces the
-      !! basis function order exactly -- the same functions, the same sequence,
-      !! the same matrix. Merging across a gap would silently permute the AO
-      !! basis, and every matrix built on it.
+      !! **Only *consecutive* shells merge**, and that is the whole safety
+      !! argument: libcint lays a shell's functions out with the contraction
+      !! index outermost, so merging already-adjacent columns reproduces the
+      !! basis function order exactly. Merging across a gap would silently
+      !! permute the AO basis and every matrix built on it.
       !!
       !! An SP shell never merges: its columns carry different angular momenta,
       !! which is the first thing tested here.
@@ -515,19 +468,14 @@ contains
          !! shells go into `bas_with_ecp`, two `env` slots say where they are,
          !! and every atom carrying one presents a *reduced* nuclear charge --
          !! Z minus the electrons its potential replaces -- to the nuclear
-         !! attraction and the nuclear repulsion alike. That last part is the
-         !! one to get right: leaving the full charge in place gives a
-         !! calculation that converges and is wrong by hundreds of Hartree.
+         !! attraction and the nuclear repulsion alike. Leaving the full charge
+         !! in place converges and is wrong by hundreds of Hartree.
       logical, intent(in), optional :: ghost(:)
-         !! Which atoms carry their basis functions but no nuclear charge.
-         !!
-         !! A counterpoise-corrected monomer is exactly this: every basis
-         !! function of the dimer, and only its own nuclei. The basis is taken
-         !! from `basis` and is untouched here, so ghosting changes the nuclear
-         !! attraction and the nuclear repulsion and nothing else -- in
-         !! particular the AO count and ordering are identical to the unghosted
-         !! molecule's, which is what lets matrices from two of them be
-         !! contracted against each other.
+         !! Which atoms carry their basis functions but no nuclear charge, as a
+         !! counterpoise-corrected monomer does. Ghosting changes the nuclear
+         !! attraction and the nuclear repulsion and nothing else: the AO count
+         !! and ordering are identical to the unghosted molecule's, which is what
+         !! lets matrices from two of them be contracted together.
 
       logical :: do_normalize
       integer :: ecp_env, ncore, ecp_row
@@ -544,14 +492,12 @@ contains
       ! What the basis file said, carried through the reader. Every integral
       ! call below routes on it, and so does nao.
       !
-      ! `force_cartesian` overrides it, and the reason it exists is that the Basis Set
-      ! Exchange is not consistent about Pople sets: 6-31G* declares its d Cartesian,
+      ! `force_cartesian` overrides it, and exists because the Basis Set Exchange
+      ! is not consistent about Pople sets: 6-31G* declares its d Cartesian,
       ! while 6-31G(2df,p) and 6-311++G** declare theirs spherical. The Pople
-      ! convention is Cartesian, and it is what GAMESS assumes -- its ISPHER default
-      ! is -1 -- so reading one of those as spherical is a different calculation from
-      ! the one anybody comparing against GAMESS means. Not automatic: it changes the
-      ! variational space, and for a Dunning set spherical is right and GAMESS uses it
-      ! too, so which one is correct depends on the basis and the caller has to say.
+      ! convention is Cartesian and is what GAMESS assumes. Not automatic: it
+      ! changes the variational space, and for a Dunning set spherical is right,
+      ! so which is correct depends on the basis and the caller has to say.
       this%cartesian = basis%is_cartesian()
       if (present(force_cartesian)) then
          if (force_cartesian) this%cartesian = .true.
@@ -562,22 +508,17 @@ contains
          return
       end if
 
-      ! Count the shells libcint will see, which is fewer than the reader
-      ! produced wherever a general contraction was split into one shell per
-      ! coefficient column. See `contraction_group_size` for why they merge.
-      ! The ECP shells, and the env each of them needs: one exponent block
-      ! and one coefficient per primitive. Counted before the orbital shells
-      ! only so `env_size` can be settled in one place.
-      ! One row per (channel, r exponent), not per channel.
+      ! The ECP shells, and the env each needs: one exponent and one coefficient
+      ! per primitive. Counted before the orbital shells only so `env_size` can
+      ! be settled in one place.
       !
-      ! The two data models disagree here and it is the only place they do.
-      ! `ecp_shell_type` tabulates a radial power per *primitive*, the way a
-      ! BSE file lists them; an ecpbas row carries one power for the whole
-      ! row. So a channel mixing r^0, r^1 and r^2 -- which is the usual shape
-      ! -- becomes three rows. The library groups them straight back together
-      ! by (atom, l) and sums them in one pass over the radial grid, so the
-      ! split costs nothing; getting it wrong would put every primitive under
-      ! the first primitive's power.
+      ! One row per (channel, r exponent), not per channel, which is the only
+      ! place the two data models disagree. `ecp_shell_type` tabulates a radial
+      ! power per *primitive*, the way a BSE file lists them, where an ecpbas row
+      ! carries one power for the whole row, so a channel mixing r^0, r^1 and r^2
+      ! becomes three rows. The library groups them back together by (atom, l),
+      ! so the split costs nothing; getting it wrong would put every primitive
+      ! under the first primitive's power.
       this%necpbas = 0
       ecp_env = 0
       if (present(ecp)) then
@@ -591,6 +532,9 @@ contains
          end do
       end if
 
+      ! Fewer shells than the reader produced, wherever a general contraction
+      ! was split into one shell per coefficient column. See
+      ! `contraction_group_size` for why they merge.
       this%nbas = 0
       env_size = LIBCINT_PTR_ENV_START + 3*this%natm + ecp_env
       do iatom = 1, this%natm
@@ -612,9 +556,9 @@ contains
       allocate (this%charges(this%natm))
       allocate (this%coords(3, this%natm))
 
-      ! Zeroed rather than merely filled: libcint reads slots nothing here
-      ! sets -- NUC_MOD_OF, PTR_ZETA, KAPPA_OF -- and stack garbage in a
-      ! pointer slot crashes inside the library with nothing to say why.
+      ! Zeroed rather than merely filled: libcint reads slots nothing here sets
+      ! -- NUC_MOD_OF, PTR_ZETA, KAPPA_OF -- and garbage in a pointer slot
+      ! crashes inside the library with nothing to say why.
       this%atm = 0
       this%bas = 0
       this%env = 0.0_dp
@@ -633,8 +577,8 @@ contains
       do iatom = 1, this%natm
          ! The charge every other integral sees. An ECP has already accounted
          ! for the core electrons, so leaving Z in place would attract them a
-         ! second time -- and a ghost has no charge at all, which takes
-         ! precedence because a ghost atom's ECP is not there either.
+         ! second time. A ghost has no charge at all and takes precedence: its
+         ! ECP is not there either.
          ncore = this%core_electrons(iatom)
          z_eff = atomic_numbers(iatom) - ncore
          if (present(ghost)) then
@@ -671,10 +615,8 @@ contains
 
             ! libcint reads the coefficients as an (nprim, nctr) matrix with
             ! stride nprim -- `coeff[nprim*ictr + iprim]` in g1e.c -- so the
-            ! columns go down one after another, in the order the reader
-            ! produced them. That order is what keeps the basis functions where
-            ! they were: a shell with nctr contractions emits its contractions
-            ! outermost, which is the same sequence the split shells gave.
+            ! columns go down one after another in the order the reader produced
+            ! them, which is what keeps the basis functions where they were.
             this%bas(LIBCINT_PTR_COEFF, shell_index) = off
             do ictr = 1, nctr
                do iprim = 1, nprim
@@ -686,15 +628,14 @@ contains
                      *libcint_gto_norm(ang, basis%elements(iatom)%shells(first)%exponents(iprim))
                end do
 
-               ! And now the *contraction* normalisation, which is a different
-               ! sum: <chi|chi> over primitive pairs, where two normalised
-               ! primitives of the same l on the same centre overlap as
+               ! And now the *contraction* normalisation, a different sum:
+               ! <chi|chi> over primitive pairs, where two normalised primitives
+               ! of the same l on the same centre overlap as
                !
                !     S_ij = (2 sqrt(a_i a_j) / (a_i + a_j))^(l + 3/2)
                !
-               ! A single primitive gives S = 1 and a norm of exactly one, which
-               ! is why uncontracted shells were already right and only the
-               ! contracted ones were off. Done per column, since each
+               ! A single primitive gives S = 1 and a norm of exactly one, so
+               ! only contracted shells move. Done per column, since each
                ! contraction has its own coefficients and its own norm.
                if (do_normalize) then
                   norm2 = 0.0_dp
@@ -739,9 +680,9 @@ contains
 
       ! ---- the ECP shells, after the orbital ones ------------------------
       !
-      ! `bas_with_ecp` always exists, even with no ECP, so a consumer can hand
-      ! it to the library without asking first; when necpbas is zero it is
-      ! simply a copy of `bas` and the entry point returns zero.
+      ! `bas_with_ecp` always exists, so a consumer can hand it to the library
+      ! without asking first; with necpbas zero it is a copy of `bas` and the
+      ! entry point returns zero.
       allocate (this%bas_with_ecp(LIBCINT_BAS_SLOTS, this%nbas + this%necpbas))
       this%bas_with_ecp = 0
       this%bas_with_ecp(:, 1:this%nbas) = this%bas
@@ -774,10 +715,9 @@ contains
    pure subroutine count_ecp_rows(shell, nrows, nenv)
       !! How many ecpbas rows and env slots one channel needs
       !!
-      !! Counted the same way `put_ecp_channel` emits, and deliberately by a
-      !! separate routine: the allocation and the fill have to agree, and the
-      !! way they stop agreeing is one of them learning about a case the other
-      !! does not.
+      !! Counted the same way `put_ecp_channel` emits. The allocation and the
+      !! fill have to agree, and the way they stop agreeing is one of them
+      !! learning about a case the other does not.
       type(ecp_shell_type), intent(in) :: shell
       integer, intent(inout) :: nrows, nenv
 
@@ -794,22 +734,21 @@ contains
       do p = 0, MAX_RADI_POWER
          if (seen(p) == 0) cycle
          nrows = nrows + 1
-         nenv = nenv + 2*seen(p)      !! exponents and coefficients, one each
+         nenv = nenv + 2*seen(p)      ! exponents and coefficients, one each
       end do
    end subroutine count_ecp_rows
 
    subroutine put_ecp_channel(this, row, atom0, ang, shell, off)
       !! One ECP channel into as many `bas_with_ecp` rows as it has r powers
       !!
-      !! An ECP row reuses the basis-shell slot layout with one slot given
-      !! another meaning: NCTR_OF's position carries the r exponent instead of
-      !! a contraction count. That collision is not cosmetic -- it is the
-      !! reason libfint's own `ecp_env_len` had a bug, because reading that
+      !! **An ECP row reuses the basis-shell slot layout with NCTR_OF's position
+      !! carrying the r exponent instead of a contraction count.** Reading that
       !! slot as a contraction count is the natural mistake and the arrays are
-      !! shaped so it very nearly works.
+      !! shaped so it very nearly works; it is what libfint's own `ecp_env_len`
+      !! got wrong.
       !!
       !! Coefficients are one per primitive: an ECP channel is never generally
-      !! contracted, so there is no `nprim*nctr` block here as there is for an
+      !! contracted, so there is no `nprim*nctr` block as there is for an
       !! orbital shell.
       type(libcint_molecule_t), intent(inout) :: this
       integer, intent(inout) :: row      !! Rows used so far, 0-based; advanced
@@ -830,7 +769,7 @@ contains
          this%bas_with_ecp(LIBCINT_ATOM_OF, row) = atom0
          this%bas_with_ecp(LIBCINT_ANG_OF, row) = ang
          this%bas_with_ecp(LIBCINT_NPRIM_OF, row) = n
-         this%bas_with_ecp(LIBCINT_NCTR_OF, row) = p      !! RADI_POWER
+         this%bas_with_ecp(LIBCINT_NCTR_OF, row) = p      ! RADI_POWER
          this%bas_with_ecp(LIBCINT_PTR_EXP, row) = off
          do k = 1, shell%nprim
             if (shell%radial_powers(k) /= p) cycle
@@ -850,34 +789,24 @@ contains
    subroutine build_sp_view(this)
       !! Fuse each s/p pair on shared exponents into one L shell, as a view
       !!
-      !! A 6-31G Fock build spends its time recomputing, for the p half of
-      !! every valence shell, the exponential prefactors, pair data and Rys
-      !! roots it just computed for the s half -- the halves share exponents,
-      !! and splitting them is purely an artefact of `bas` having one ANG_OF
-      !! slot. libfint reads a marker in KAPPA_OF (see `KAPPA_SP_SHELL`) and
-      !! evaluates both halves in one pass, measured at 2-3x on a Pople basis.
+      !! The two halves of a Pople valence shell share exponents, and splitting
+      !! them is an artefact of `bas` having one ANG_OF slot. libfint reads a
+      !! marker in KAPPA_OF (see `KAPPA_SP_SHELL`) and evaluates both halves in
+      !! one pass, worth 2-3x on a Pople basis.
       !!
-      !! A VIEW, not the representation: the split `bas` stays the molecule's
-      !! own, because libfint carries an L shell through the four-centre
-      !! drivers only -- `int2e_sph`/`int2e_cart` and, since it learned to
-      !! stride a derivative's tensor component, `int2e_ip1`. Every other
-      !! driver -- one-electron, three-centre, the higher derivatives --
-      !! deliberately behaves as if L shells did not exist, and would read
-      !! the fused entry as a plain p shell over the s coefficients: not an
-      !! error, a silently wrong overlap. So the fused table is a companion
-      !! that exactly one constructor (`eri_shell_table`) ever hands out, and
-      !! only the four-centre loops consume it.
-      !!
-      !! Fusing was first tried in the packer itself, making the fused form
-      !! primary and teaching every reader of `bas` about it. That founders on
-      !! the paragraph above -- the readers include libfint drivers that
-      !! cannot be taught -- and is why this is a post-pass here instead.
+      !! **A view, not the representation.** libfint carries an L shell through
+      !! the four-centre drivers only -- `int2e_sph`/`int2e_cart` and
+      !! `int2e_ip1`. Every other driver would read the fused entry as a plain p
+      !! shell over the s coefficients: not an error, a silently wrong overlap.
+      !! So the split `bas` stays the molecule's own, exactly one constructor
+      !! (`eri_shell_table`) hands the fused table out, and only the four-centre
+      !! loops consume it.
       type(libcint_molecule_t), intent(inout) :: this
 
       integer :: ish, iview, nview, nprim, extra, off, ptr_s, ptr_p
 
-      ! Count first. The two passes ask the same question in the same order,
-      ! so they cannot disagree about what a shell is.
+      ! Count first, asking the same question in the same order as the fill
+      ! below, so the two cannot disagree about what a shell is.
       nview = 0
       extra = 0
       ish = 1
@@ -892,7 +821,7 @@ contains
       end do
 
       ! No L shell anywhere -- cc-pVDZ, say -- keeps no view: `nbas_sp` stays
-      ! zero and every consumer falls back to the split table it always used.
+      ! zero and every consumer falls back to the split table.
       if (nview == this%nbas) return
 
       this%nbas_sp = nview
@@ -910,16 +839,15 @@ contains
       do while (ish <= this%nbas)
          iview = iview + 1
          this%sp_split_first(iview) = ish
-         ! One s then three p is exactly the split AO order, so the view
-         ! shell starts where its first split shell did.
+         ! One s then three p is the split AO order, so the view shell starts
+         ! where its first split shell did.
          this%shell_offset_sp(iview) = this%shell_offset(ish)
          if (fused_sp_pair(this, ish)) then
             nprim = this%bas(LIBCINT_NPRIM_OF, ish)
             this%bas_sp(LIBCINT_ATOM_OF, iview) = this%bas(LIBCINT_ATOM_OF, ish)
             ! The higher l present, so every ceiling, stride and Rys order
-            ! libfint derives is the one the p sub-block needs; the s
-            ! sub-block then runs with more roots than it needs, which is
-            ! exact -- Rys is exact to degree 2n-1.
+            ! libfint derives is the one the p sub-block needs. The s sub-block
+            ! then runs with more roots than it needs, which is still exact.
             this%bas_sp(LIBCINT_ANG_OF, iview) = 1
             this%bas_sp(LIBCINT_NPRIM_OF, iview) = nprim
             ! NOT doubled. libfint's convention (src/cint_bas.f90:40) is one
@@ -934,11 +862,9 @@ contains
             ! checked is bit-for-bit the p shell's too.
             this%bas_sp(LIBCINT_PTR_EXP, iview) = this%bas(LIBCINT_PTR_EXP, ish)
             ! Copied, not renormalised. Each split column already carries its
-            ! own l's normalisation -- primitive norm, overlap exponent, and
-            ! the norm divided back out all depend on l -- and that per-column
-            ! form is exactly what the fused convention wants. Recomputing it
-            ! here with the fused shell's ANG_OF would put the s column on a p
-            ! normalisation: a wrong basis that still converges.
+            ! own l's normalisation, which is what the fused convention wants;
+            ! recomputing it with the fused shell's ANG_OF would put the s column
+            ! on a p normalisation -- a wrong basis that still converges.
             ptr_s = this%bas(LIBCINT_PTR_COEFF, ish)
             ptr_p = this%bas(LIBCINT_PTR_COEFF, ish + 1)
             this%bas_sp(LIBCINT_PTR_COEFF, iview) = off
@@ -958,19 +884,14 @@ contains
    function fused_sp_pair(this, ish) result(is_sp)
       !! Whether split shells `ish` and `ish+1` are the s and p of one L shell
       !!
-      !! The reader emits one shell per angular momentum, so a basis entry
-      !! with `"angular_momentum": [0, 1]` -- every Pople set's valence shells
-      !! -- arrives as an s shell and a p shell, consecutive and sharing one
-      !! set of exponents. That adjacency is what is detected here, on the
-      !! packed table rather than the reader's, so a molecule assembled any
-      !! other way (an atom subset, a test fixture) gets the same answer from
-      !! the same bytes.
+      !! A basis entry with `"angular_momentum": [0, 1]` arrives from the reader
+      !! as consecutive s and p shells sharing one set of exponents. That
+      !! adjacency is detected on the packed table rather than the reader's, so a
+      !! molecule assembled any other way -- an atom subset, a test fixture --
+      !! gets the same answer from the same bytes.
       !!
-      !! Only the k=1 case, one s column and one p column, which is what every
-      !! Pople set is. A generally contracted sp block arrives as an s and a p
-      !! shell of several columns each -- `contraction_group_size` has already
-      !! merged same-l columns -- and is left to the split path rather than
-      !! guessed at.
+      !! Only the k=1 case, one s column and one p column. A generally contracted
+      !! sp block is left to the split path rather than guessed at.
       type(libcint_molecule_t), intent(in) :: this
       integer, intent(in) :: ish
       logical :: is_sp
@@ -1010,10 +931,8 @@ contains
       !! the view exists
       !!
       !! Everything else -- one-electron integrals, three-centre fitting
-      !! integrals, AO evaluation on a grid -- keeps reading `mol%bas`,
-      !! because the four-centre drivers are the only ones that understand an
-      !! L shell. Routing the choice through one constructor is what keeps
-      !! that boundary in one place.
+      !! integrals, AO evaluation on a grid -- keeps reading `mol%bas`, because
+      !! the four-centre drivers are the only ones that understand an L shell.
       type(libcint_molecule_t), intent(in) :: mol
       type(eri_shell_table_t), intent(out) :: tab
 
@@ -1044,15 +963,11 @@ contains
    subroutine eri_schwarz_collapse(mol, bounds, collapsed)
       !! Schwarz bounds re-blocked onto the eri view's shells
       !!
-      !! `schwarz_bounds` works per split shell and stays that way: loops
-      !! that take the view -- the direct Fock builds and the SCF gradient's
-      !! `int2e_ip1` loop -- collapse its result through here, and loops
-      !! still on split shells (the MP2 gradients) index it directly. A
-      !! fused shell's bound is the largest of its
-      !! sub-shells': the Schwarz inequality only needs the diagonal elements
-      !! (mn|mn), every one of which lives in some split sub-block, so the
-      !! maximum over sub-blocks bounds the fused quartet at least as tightly
-      !! as the split bounds bounded the split ones.
+      !! `schwarz_bounds` works per split shell and stays that way: loops on the
+      !! view collapse its result through here, loops still on split shells index
+      !! it directly. A fused shell's bound is the largest of its sub-shells',
+      !! which bounds the fused quartet at least as tightly as the split bounds
+      !! bounded the split ones.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: bounds(:, :)
       real(dp), allocatable, intent(out) :: collapsed(:, :)
@@ -1087,8 +1002,8 @@ contains
    subroutine molecule_kinetic(this, t)
       !! T on its own
       !!
-      !! Exchange repulsion between two fragments needs the kinetic energy separately;
-      !! the core Hamiltonian folds the nuclear attraction in with it and cannot serve.
+      !! Exchange repulsion between two fragments needs the kinetic energy
+      !! separately; the core Hamiltonian folds the nuclear attraction in with it.
       class(libcint_molecule_t), intent(in) :: this
       real(dp), allocatable, intent(out) :: t(:, :)
 
@@ -1098,11 +1013,10 @@ contains
    subroutine molecule_core_hamiltonian(this, h)
       !! H = T + V + U_ECP, the one-electron part of the Fock matrix
       !!
-      !! The ECP term is added here rather than by the caller, and
-      !! unconditionally: `ecp_matrix` returns zeros for a molecule with no
-      !! potential, so there is no flag to test and no caller that can forget.
-      !! A missing ECP term is not a crash but a converged wrong answer, which
-      !! is the kind of thing that must not depend on anyone remembering.
+      !! The ECP term is added here and unconditionally: `ecp_matrix` returns
+      !! zeros for a molecule with no potential, so there is no flag to test and
+      !! no caller that can forget. A missing ECP term is a converged wrong
+      !! answer rather than a crash.
       class(libcint_molecule_t), intent(in) :: this
       real(dp), allocatable, intent(out) :: h(:, :)
 
@@ -1120,19 +1034,13 @@ contains
    subroutine one_electron(this, matrix, which)
       !! Any of the three one-electron matrices, by the same loop
       !!
-      !! One routine rather than three copies: the only thing that differs is
-      !! which libcint entry point is called, and three copies of a shell-pair
-      !! loop is three places for an offset to be wrong in.
+      !! All three are symmetric, so only the lower triangle of shell pairs runs
+      !! and each block is written into both halves. Each shell pair owns its
+      !! block and its transpose and no two pairs share either, so the threads
+      !! need nothing but a private buffer.
       !!
-      !! **Half the pairs, and threaded.** All three of these matrices are
-      !! symmetric, so the loop ran every off-diagonal shell pair twice for the
-      !! same numbers, on one core, three times per calculation. Each shell
-      !! pair owns its block and its transpose, and no two pairs share either,
-      !! so the threads need nothing but a private buffer -- the same
-      !! arrangement `three_centre` uses.
-      !!
-      !! `schedule(dynamic)` because the inner loop runs to `ish`: the last
-      !! shell does nbas times the work of the first.
+      !! `schedule(dynamic)` because the inner loop runs to `ish`: the last shell
+      !! does nbas times the work of the first.
       type(libcint_molecule_t), intent(in) :: this
       real(dp), allocatable, intent(out) :: matrix(:, :)
       integer, intent(in) :: which   !! 1 overlap, 2 kinetic, 3 nuclear
@@ -1143,11 +1051,9 @@ contains
 
       allocate (matrix(this%nao, this%nao))
       matrix = 0.0_dp
-      ! A shell *pair* block is di*dj, so the bound is the square of the
-      ! largest shell -- not the largest shell. With s functions only,
-      ! di*dj is 1 and the wrong bound is indistinguishable from the right
-      ! one; the first p shell writes nine doubles into three and corrupts
-      ! the heap, which surfaces as a free() failure somewhere else later.
+      ! A shell *pair* block is di*dj, so the buffer is the **square** of the
+      ! largest shell. With s functions only the two are indistinguishable; the
+      ! first p shell then writes nine doubles into three and corrupts the heap.
       !$omp parallel default(none) shared(this, matrix, which) &
       !$omp    private(ish, jsh, di, dj, io, jo, i, j, ret, shls, buf)
       allocate (buf(max_block(this)**2))
@@ -1187,8 +1093,8 @@ contains
             end if
             if (ret == 0) cycle   ! screened away, leave the block zero
 
-            ! libcint fills the block in column-major order, which is what
-            ! Fortran wants -- element (i,j) of the block is buf(i + (j-1)*di).
+            ! Column-major, as Fortran wants: element (i,j) of the block is
+            ! buf(i + (j-1)*di).
             do j = 1, dj
                do i = 1, di
                   matrix(io + i, jo + j) = buf(i + (j - 1)*di)
@@ -1205,15 +1111,12 @@ contains
    subroutine build_df_tensor(orb, aux, b, error, omega)
       !! B(mu nu, P) = sum_Q (mu nu | Q) [(P|Q)^(-1/2)]_QP
       !!
-      !! The fitted J and K are contractions of this one tensor, which is why
-      !! it is formed once and kept rather than recomputed per iteration. It
-      !! is (nao^2, naux) -- large, but n^2 rather than the n^4 of the exact
-      !! integrals, and that is the whole point of fitting.
+      !! (nao^2, naux). The fitted J and K are contractions of this one tensor,
+      !! so it is formed once and kept rather than recomputed per iteration.
       !!
-      !! The metric is inverted through its eigendecomposition rather than a
-      !! Cholesky, and modes below a threshold are dropped. A JKFIT auxiliary
-      !! basis is close to linearly dependent by construction, and a Cholesky
-      !! of a near-singular metric fails outright where this degrades.
+      !! The metric is factored by `fit_metric_factor`, which tries a Cholesky
+      !! and falls back to the eigendecomposition where the auxiliary basis is
+      !! too nearly linearly dependent for one.
       type(libcint_molecule_t), intent(in) :: orb   !! Orbital basis
       type(libcint_molecule_t), intent(in) :: aux   !! Auxiliary basis, same atoms
       real(dp), allocatable, intent(out) :: b(:, :)
@@ -1232,6 +1135,11 @@ contains
          !! the same thing -- it fits nothing, and the error does not shrink as
          !! the auxiliary basis grows, which is how it would be noticed.
 
+      ! TODO(mqc): `NULL_THRESHOLD`, `vectors`, `values`, `nao`, `naux`, `i`,
+      ! `j`, `kept` and `info` are never read -- leftovers from before the
+      ! factorisation moved into `fit_metric_factor` and `metric_inverse_sqrt`.
+      ! The live `NULL_THRESHOLD` is the one in `metric_inverse_sqrt`, so this
+      ! copy is also a second spelling of one constant.
       real(dp), parameter :: NULL_THRESHOLD = 1.0e-10_dp
       real(dp), allocatable :: metric(:, :), vectors(:, :), values(:), half(:, :)
       real(dp), allocatable :: three(:, :)
@@ -1239,13 +1147,11 @@ contains
       real(dp), allocatable :: aux_bound(:)
       integer :: naux, nao, i, j, kept, info
 
-      ! (mu nu | P) has orbital shells on two centres and auxiliary shells on
-      ! the third, in one libcint call -- and that call is spherical or
-      ! Cartesian for all three at once. A Cartesian orbital basis fitted with
-      ! a spherical auxiliary one cannot be expressed, and guessing which side
-      ! to honour would silently fit in a basis neither deck asked for.
       type(timing_report_t) :: clk
 
+      ! One libcint call carries all three centres of (mu nu | P) and is
+      ! spherical or Cartesian for all of them at once, so a Cartesian orbital
+      ! basis fitted with a spherical auxiliary one cannot be expressed.
       if (orb%cartesian .neqv. aux%cartesian) then
          call error%set(ERROR_VALIDATION, "density fitting: the orbital basis is "// &
                         angular_form_name(orb%cartesian)//" and the auxiliary basis is "// &
@@ -1293,19 +1199,14 @@ contains
    subroutine fit_metric_factor(metric, factor, cholesky, error)
       !! Factor the fitting metric, the cheap way if it will take one
       !!
-      !! Two ways to spend J on a fit, and they cost very differently. The
-      !! inverse square root is an eigendecomposition, about 9 n^3, and leaves
-      !! a full matrix that the fit multiplies by at 2 m n^2. A Cholesky is
-      !! n^3/3 and leaves a triangle that the fit *solves against* at m n^2 --
-      !! an order less to form and half as much to apply.
+      !! The inverse square root is an eigendecomposition, about 9 n^3, leaving a
+      !! full matrix the fit multiplies by at 2 m n^2. A Cholesky is n^3/3 and
+      !! leaves a triangle the fit *solves against* at m n^2.
       !!
-      !! The catch is that a fitting basis is close to linearly dependent by
-      !! construction, and a Cholesky of a near-singular matrix stops rather
-      !! than degrading. So it is attempted and its `info` believed: the
-      !! eigendecomposition, which drops the offending modes, is still there
-      !! for the sets that need it. Which one ran is not a detail the caller
-      !! can ignore -- the two factors are applied differently -- so it is
-      !! returned rather than inferred.
+      !! A fitting basis is close to linearly dependent by construction and a
+      !! Cholesky of a near-singular matrix stops rather than degrading, so it is
+      !! attempted and its `info` believed. **Which one ran changes how `factor`
+      !! is applied**, so it is returned rather than inferred.
       real(dp), intent(in) :: metric(:, :)
       real(dp), allocatable, intent(out) :: factor(:, :)
       logical, intent(out) :: cholesky
@@ -1333,29 +1234,18 @@ contains
    subroutine apply_fit(three, factor, cholesky, b)
       !! B = (mn|Q) J^(-1/2), however the metric was factored
       !!
-      !! The single largest item in a fitted setup, and it used to be one
-      !! `pic_gemm` -- which is one core against the sequential BLAS this
-      !! project links on purpose.
-      !!
-      !! **Split over rows, not columns.** The obvious decomposition -- a block
-      !! of the auxiliary index per thread -- is a bandwidth disaster, because
-      !! `out(:, q0:q1)` needs *all* of the three-centre tensor for every
-      !! block. At 560 functions and n_aux near 2700 that is eighty-odd passes
-      !! over 6.7 GB, and a measured 280 GFLOP/s against a 4.5 TFLOP problem is
-      !! what streaming 290 GB looks like. Splitting the pair index instead
-      !! gives each thread its own slice, so the tensor is read once.
-      !!
-      !! A row panel is strided -- the pair index is the leading dimension --
-      !! so each is packed on the way into BLAS and unpacked on the way out.
-      !! Two more passes over the tensor, against the eighty it replaces.
+      !! **Split over rows, not columns.** A block of the auxiliary index per
+      !! thread needs *all* of the three-centre tensor for every block, which at
+      !! 560 functions is eighty-odd passes over 6.7 GB. Splitting the pair index
+      !! gives each thread its own slice, so the tensor is read once; a row panel
+      !! is strided, so each is packed into BLAS and unpacked out of it.
       !!
       !! Correct whether or not the BLAS is itself threaded: OpenMP nesting is
       !! off by default, so a threaded MKL called from inside this region runs
-      !! sequential and the parallelism is the loop's either way.
+      !! sequential.
       !!
-      !! The Cholesky path solves **in place** and hands the tensor on. Nothing
-      !! is allocated, where the other path needs a second array the size of
-      !! the first -- gigabytes, at the sizes fitting is chosen for.
+      !! The Cholesky path solves **in place** and hands the tensor on, where the
+      !! other needs a second array the size of the first.
       real(dp), allocatable, intent(inout) :: three(:, :)
          !! (npair, naux). Consumed either way: moved to `b` on the Cholesky
          !! path, deallocated on the other.
@@ -1397,13 +1287,11 @@ contains
    pure function metric_panel_rows(naux, npair) result(rows)
       !! How many pair functions to fit the metric for at once
       !!
-      !! Two pulls in opposite directions. A panel is packed and unpacked
-      !! around its GEMM, so a large one amortises that over more arithmetic;
-      !! but the packed copy is per-thread and live for the whole call, so a
-      !! large one times a hundred threads is gigabytes of scratch. The budget
-      !! is per panel and deliberately small: the packing is two passes over
-      !! the tensor whatever the panel size, and what is being bought here is
-      !! only the GEMM's shape.
+      !! A larger panel amortises its pack and unpack over more arithmetic, but
+      !! the packed copy is per-thread and live for the whole call. The budget is
+      !! per panel and deliberately small: the packing costs two passes over the
+      !! tensor whatever the panel size, so all a larger one buys is the GEMM's
+      !! shape.
       integer, intent(in) :: naux, npair
       integer :: rows
 
@@ -1415,14 +1303,11 @@ contains
       !! J^(-1/2) = U s^(-1/2) U^T over the modes that survive the threshold
       !!
       !! **The fallback, not the usual path.** `fit_metric_factor` tries a
-      !! Cholesky first, which is an order cheaper and turns the fit itself
-      !! from a GEMM into a triangular solve. This is what happens when that
-      !! fails: a JKFIT or RIFIT set is close to linearly dependent by
-      !! construction, and a Cholesky of a near-singular metric stops outright
-      !! where this degrades, dropping the offending modes and carrying on.
+      !! Cholesky first; this is what happens when a near-singular metric stops
+      !! it, and it degrades by dropping the offending modes instead.
       !!
-      !! Divide-and-conquer rather than the QR iteration. Same eigenvectors to
-      !! within the tolerance that matters here, several times faster at the
+      !! Divide-and-conquer rather than the QR iteration: the same eigenvectors
+      !! to the tolerance that matters here, several times faster at the
       !! two-to-three thousand auxiliary functions this is reached with.
       real(dp), intent(in) :: metric(:, :)
       real(dp), allocatable, intent(out) :: half(:, :)
@@ -1447,11 +1332,9 @@ contains
          return
       end if
 
-      ! U s^(-1/2) U^T as one gemm rather than an outer-product loop. The loop
-      ! this replaces was naux^2 strided vector updates -- the same arithmetic,
-      ! but memory-bound and invisible to BLAS, and it showed up as the largest
-      ! non-library cost in a profile of RI-MP2. Dropped modes are zeroed in the
-      ! scaled copy, which is how they stay out of the product.
+      ! U s^(-1/2) U^T as one gemm rather than naux^2 strided vector updates.
+      ! Dropped modes are zeroed in the scaled copy, which is how they stay out
+      ! of the product.
       allocate (scaled(naux, naux))
       do i = 1, naux
          if (values(i) > NULL_THRESHOLD) then
@@ -1469,21 +1352,15 @@ contains
    subroutine build_df_mo_tensor(orb, aux, c_occ, c_vir, bia, error, fast_factor, b_ao_in)
       !! B^P_ia directly, transforming to MO before fitting rather than after
       !!
-      !! `build_df_tensor` fits first and hands back B(mu nu, P), which is what
-      !! a Fock build wants because it contracts against a density in the AO
-      !! basis. A correlation treatment does not: it only ever reads the
-      !! occupied-virtual block, and fitting the whole AO pair space to get
-      !! there is most of the work thrown away.
+      !! `build_df_tensor` fits first and hands back B(mu nu, P), which is what a
+      !! Fock build wants. A correlation treatment reads only the
+      !! occupied-virtual block, so fitting the whole AO pair space to get there
+      !! throws most of the work away: the metric contraction is nao^2 by naux by
+      !! naux applied to the AO tensor and n_occ*n_vir by naux by naux applied
+      !! after the transform.
       !!
-      !! The metric contraction is where it shows. Applied to the AO tensor it
-      !! is nao^2 by naux by naux; applied after the transform it is
-      !! n_occ*n_vir by naux by naux. On a water hexamer in cc-pVDZ that is
-      !! 20736 pair functions against 2736, so the same gemm costs 7.6 times
-      !! less for the same answer.
-      !!
-      !! The result is laid out (n_vir, naux, n_occ) so that one occupied
-      !! orbital's block is contiguous, which is the shape the energy step
-      !! hands to BLAS.
+      !! Laid out (n_vir, naux, n_occ) so one occupied orbital's block is
+      !! contiguous, which is the shape the energy step hands to BLAS.
       type(libcint_molecule_t), intent(in) :: orb, aux
       real(dp), intent(in) :: c_occ(:, :)   !! (nao, n_occ), correlated occupied only
       real(dp), intent(in) :: c_vir(:, :)   !! (nao, n_vir)
@@ -1505,10 +1382,10 @@ contains
       if (error%has_error()) return
       naux = size(fitted, 2)
 
-      ! Threaded for the same reason the three-centre tensor's zeroing is: this
-      ! is the first touch of a multi-gigabyte array, so it is page faults
-      ! rather than arithmetic, and on a multi-socket node it also decides
-      ! which socket each page lives on.
+      ! Threaded for the same reason the three-centre tensor's zeroing is: the
+      ! first touch of a multi-gigabyte array is page faults rather than
+      ! arithmetic, and on a multi-socket node it decides which socket each page
+      ! lives on.
       allocate (bia(n_v, naux, n_o))
       !$omp parallel do default(none) shared(bia, fitted, naux, n_o) &
       !$omp    private(p_index, i) schedule(static)
@@ -1526,11 +1403,9 @@ contains
    subroutine build_df_mo_block(orb, aux, c_left, c_right, b, error, fast_factor, b_ao_in)
       !! B^P_pq for any two coefficient blocks, laid out (pq, P)
       !!
-      !! The general form of `build_df_mo_tensor`, which assumed
-      !! occupied-virtual because MP2 wants nothing else. Coupled cluster wants
-      !! every block, so the choice moves to the caller -- the same move
-      !! `transform_ovov` made when it became `transform_block`, and for the same
-      !! reason: one routine cannot transpose a half differently in six places.
+      !! The general form of `build_df_mo_tensor`, which assumes
+      !! occupied-virtual because MP2 wants nothing else; coupled cluster wants
+      !! every block, so the choice is the caller's.
       !!
       !! The compound index runs left-fastest, `pq = (q-1) n_left + p`, which is
       !! the layout that makes `B B^T` the fitted `(pq|rs)` with no repacking.
@@ -1542,31 +1417,26 @@ contains
          !! An AO-basis fitted tensor `B(mu nu, P)` already built for this
          !! orbital and auxiliary pair, from a fitted SCF.
          !!
-         !! **The transform and the metric commute**, because one acts on the
-         !! pair index and the other on the auxiliary one:
+         !! **The transform and the metric commute**, one acting on the pair
+         !! index and the other on the auxiliary one:
          !!
          !!    sum_mn C_mi C_na [sum_Q (mn|Q) M_QP] = sum_Q (ia|Q) M_QP
          !!
-         !! so transforming an already-fitted tensor gives exactly what
-         !! transforming and then fitting gives. Present means the integrals,
-         !! the metric and its factorisation are all already paid for and this
-         !! is reduced to the transform -- which is why a fitted MP2 over a
-         !! fitted reference no longer evaluates four hundred million
-         !! three-centre integrals a second time.
-         !!
-         !! Any factor `M` is fine, Cholesky included: what the caller
-         !! eventually contracts is `B B^T`, and `M M^T = J^-1` either way.
+         !! so transforming an already-fitted tensor gives what transforming and
+         !! then fitting gives, and this reduces to the transform. Any factor `M`
+         !! will do, Cholesky included: what the caller contracts is `B B^T`, and
+         !! `M M^T = J^-1` either way.
       logical, intent(in), optional :: fast_factor
          !! Allow the Cholesky factor, which is much cheaper to form and to
-         !! apply. **Off by default, and that is not timidity.** The two
-         !! factors agree in `B B^T` and in nothing else, so a caller that only
-         !! ever contracts B with another B may have it, and one that pairs B
-         !! with a separately built `J^(-1/2)` may not -- the RI-MP2 gradient
-         !! does exactly that, and taking the fast factor there produced
-         !! gradients wrong in the first figure while the energies stayed right
-         !! to 1e-11. Naming the safe callers means a new one is merely slower
-         !! until someone checks it, rather than silently wrong.
+         !! apply. **Off by default:** the two factors agree in `B B^T` and in
+         !! nothing else, so a caller that only ever contracts B with another B
+         !! may have it and one that pairs B with a separately built `J^(-1/2)`
+         !! may not. The RI-MP2 gradient does the latter, and the fast factor
+         !! there is wrong in the first figure while the energy stays right to
+         !! 1e-11.
 
+      ! TODO(mqc): `tmp`, `full` and `p_index` are never read here -- leftovers
+      ! from before the loop moved into `transform_pair_index`.
       real(dp), allocatable :: metric(:, :), half(:, :), three(:, :)
       logical :: cholesky, allow_fast
       real(dp), allocatable :: aux_bound(:)
@@ -1609,20 +1479,8 @@ contains
 
       call three_centre(orb, aux, three, aux_bound=aux_bound)
 
-      ! (mu nu|P) -> (pq|P), one auxiliary function at a time. Transforming
-      ! before fitting rather than after, which is the ordering PySCF uses and
-      ! the one that keeps the metric contraction off the AO pair space.
-      !
-      ! Threaded over P, which needs no reduction: an auxiliary function owns
-      ! its column of `ovl` outright. The scratch is what has to be private, so
-      ! it is allocated inside the region rather than around it.
-      !
-      ! The `reshape` of a column of `three` that used to open this loop is
-      ! gone. It copied nao^2 doubles -- 2.5 MB at 560 functions -- once per
-      ! auxiliary function, so a fitted MP2 moved five gigabytes through memory
-      ! to reinterpret an array it already had. `df_mo_slice` takes the column
-      ! through an explicit-shape dummy instead, which is sequence association
-      ! and costs nothing.
+      ! (mu nu|P) -> (pq|P). Transforming before fitting rather than after keeps
+      ! the metric contraction off the AO pair space.
       allocate (ovl(n_l*n_r, naux))
       call transform_pair_index(three, c_left, c_right, ovl, nao, n_l, n_r)
       deallocate (three)
@@ -1635,13 +1493,10 @@ contains
       !! (mu nu | P) -> (pq | P), for every auxiliary function
       !!
       !! Threaded over P, which needs no reduction: an auxiliary function owns
-      !! its column of the result outright. The scratch is what has to be
-      !! private, so it is allocated inside the region rather than around it.
+      !! its column of the result outright, and only the scratch is private.
       !!
-      !! Indifferent to whether the input has been fitted. The transform acts
-      !! on the pair index and a metric acts on the auxiliary one, so the two
-      !! commute -- which is what lets a fitted SCF hand its tensor straight to
-      !! a correlated step instead of the integrals being built twice.
+      !! Indifferent to whether the input has been fitted, since the transform
+      !! acts on the pair index and a metric on the auxiliary one.
       integer, intent(in) :: nao, n_l, n_r
       real(dp), intent(in) :: ao(:, :)        !! (nao*nao, naux)
       real(dp), intent(in) :: c_left(:, :), c_right(:, :)
@@ -1668,14 +1523,11 @@ contains
    subroutine df_mo_slice(three_p, c_left, c_right, tmp, full, nao, n_l, n_r)
       !! (mu nu|P) -> (pq|P) for one auxiliary function
       !!
-      !! Exists so that a column of the three-centre tensor can be seen as the
-      !! (nao, nao) matrix it already is. `three_p` is explicit-shape against a
-      !! contiguous rank-1 actual argument -- sequence association -- where the
-      !! `reshape` it replaces materialised the whole block on every pass.
-      !!
-      !! `full` is rank-1 for the same reason in the other direction: the
-      !! caller wants it as a column of `ovl`, so shaping it (n_l, n_r) here
-      !! and flat there saves a second temporary.
+      !! `three_p` is explicit-shape against a contiguous rank-1 actual argument
+      !! -- sequence association -- so a column of the three-centre tensor is
+      !! seen as the (nao, nao) matrix it already is, with no `reshape` copy.
+      !! `full` runs the same trick in the other direction, shaped (n_l, n_r)
+      !! here and flat in the caller's `ovl`.
       integer, intent(in) :: nao, n_l, n_r
       real(dp), intent(in) :: three_p(nao, nao)
       real(dp), intent(in) :: c_left(:, :), c_right(:, :)
@@ -1689,10 +1541,10 @@ contains
    function aux_shell_bounds(aux, metric) result(q)
       !! `sqrt(max_P (P|P))` within each auxiliary shell
       !!
-      !! The auxiliary half of the Schwarz bound on `(mn|P)`, taken per shell
-      !! so the screen can distinguish a tight fitting function from a diffuse
-      !! one. The metric's diagonal is all it needs, and every caller has the
-      !! metric already.
+      !! The auxiliary half of the Schwarz bound on `(mn|P)`, per shell so the
+      !! screen can distinguish a tight fitting function from a diffuse one. The
+      !! metric's diagonal is all it needs, and every caller has the metric
+      !! already.
       type(libcint_molecule_t), intent(in) :: aux
       real(dp), intent(in) :: metric(:, :)
       real(dp), allocatable :: q(:)
@@ -1715,14 +1567,12 @@ contains
    subroutine shell_pair_bounds(mol, q)
       !! `Q_MN = sqrt(max |(MN|MN)|)` for every shell pair
       !!
-      !! The Schwarz bound, in the form the three-centre screen wants it: one
-      !! number per shell pair, depending on the basis and the geometry and not
-      !! on the density, so a whole calculation reuses one set.
+      !! One number per shell pair, depending on the basis and the geometry and
+      !! not on the density, so a whole calculation reuses one set.
       !!
-      !! A near-duplicate of `schwarz_bounds` in `mqc_libcint_direct`, and
-      !! deliberately not a call to it: that module depends on this one, so
-      !! using it here would close the loop. Threaded, where that one is not,
-      !! because this is on the critical path of every fitted setup.
+      !! A near-duplicate of `schwarz_bounds` in `mqc_libcint_direct` rather than
+      !! a call to it, because that module depends on this one. Threaded, where
+      !! that one is not.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), allocatable, intent(out) :: q(:, :)
 
@@ -1757,16 +1607,15 @@ contains
    subroutine two_centre(aux, metric, omega)
       !! (P|Q) over the auxiliary basis
       !!
-      !! `omega` switches the kernel to `erf(omega r)/r`, which is what a
-      !! range-separated functional's long-range exchange is fitted against.
-      !! libcint takes it through `env` rather than through a different entry
-      !! point, so the attenuated metric is the same loop over a modified copy.
+      !! `omega` switches the kernel to `erf(omega r)/r`, for a range-separated
+      !! functional's long-range exchange. libcint takes it through `env` rather
+      !! than a different entry point, so the attenuated metric is the same loop
+      !! over a modified copy.
       !!
       !! **The slot is one-based here and zero-based in libcint's headers**, so
       !! it is `LIBCINT_PTR_RANGE_OMEGA + 1`. Getting it wrong is silent: the
       !! neighbouring slot is ignored by a two-centre integral, so the
-      !! "attenuated" metric would come back full-range and the long- and
-      !! short-range pieces would sum to unscaled exchange.
+      !! "attenuated" metric comes back full-range.
       type(libcint_molecule_t), intent(in) :: aux
       real(dp), allocatable, intent(out) :: metric(:, :)
       real(dp), intent(in), optional :: omega
@@ -1815,16 +1664,11 @@ contains
       !!
       !! with `chi` the orbital basis the SCF ran in and `phi` a second basis --
       !! for the quasi-atomic construction, the free-atom minimal basis the
-      !! molecular orbitals are projected onto. Nothing in the quasi-atomic
-      !! papers is computable without it: every space in the construction is
-      !! defined by an SVD of exactly this matrix.
+      !! molecular orbitals are projected onto, every space of which is defined
+      !! by an SVD of this matrix.
       !!
-      !! It reuses `build_df_shell_table` rather than concatenating the two
-      !! bases again. That routine exists because libcint addresses every centre
-      !! by index into one shell table, and a second construction of the same
-      !! table would agree with the first until one of them was edited.
-      !!
-      !! The dummy shell that table appends for three-centre calls is simply not
+      !! Built on `build_df_shell_table` rather than concatenating the two bases
+      !! again. The dummy shell that table appends for three-centre calls is not
       !! referenced here; a one-electron call names two centres and stops.
       type(libcint_molecule_t), intent(in) :: orb   !! Orbital basis
       type(libcint_molecule_t), intent(in) :: aux   !! Second basis, same atoms
@@ -1838,11 +1682,9 @@ contains
 
       if (error%has_error()) return
 
-      ! One angular convention runs the whole call, exactly as it does for the
-      ! three-centre fit. Mixing them is not a thing libcint can be asked for:
-      ! the entry point is chosen once, so a spherical orbital basis and a
-      ! Cartesian auxiliary would silently be integrated as though both were
-      ! whichever the branch below picked.
+      ! One angular convention runs the whole call, as it does for the
+      ! three-centre fit: the entry point is chosen once, so a mismatched pair
+      ! would silently be integrated as whichever the branch below picked.
       if (orb%cartesian .neqv. aux%cartesian) then
          call error%set(ERROR_VALIDATION, "mixed-basis overlap: the two bases must "// &
                         "use the same angular form. libcint takes one convention "// &
@@ -1896,16 +1738,16 @@ contains
    subroutine build_df_shell_table(orb, aux, bas, env, dummy)
       !! Orbital and auxiliary shells in one table, as libcint needs them
       !!
-      !! libcint addresses all four centres of a three-centre call by index
-      !! into a single shell table, so the two bases have to be concatenated
-      !! and the auxiliary env offsets shifted past the orbital env. The fourth
-      !! index names a dummy s shell of zero exponent, which is how libcint
-      !! spells "only three centres".
+      !! libcint addresses all four centres of a three-centre call by index into
+      !! a single shell table, so the two bases are concatenated and the
+      !! auxiliary env offsets shifted past the orbital env. The fourth index
+      !! names a dummy s shell of zero exponent, which is how libcint spells
+      !! "only three centres".
       !!
-      !! Extracted so that the energy's `three_centre` and the gradient's
-      !! derivative equivalents build the same table. Two constructions of this
-      !! would agree until one of them was edited, and the failure would be a
-      !! fitted quantity differentiated in a basis it was not built in.
+      !! Shared by the energy's `three_centre` and the gradient's derivative
+      !! equivalents: two constructions would agree until one was edited, and the
+      !! failure would be a fitted quantity differentiated in a basis it was not
+      !! built in.
       type(libcint_molecule_t), intent(in) :: orb, aux
       integer, allocatable, intent(out) :: bas(:, :)
       real(dp), allocatable, intent(out) :: env(:)
@@ -1944,14 +1786,9 @@ contains
    subroutine three_centre(orb, aux, three, omega, aux_bound)
       !! (mu nu | P), flattened to (nao*nao, naux)
       !!
-      !! The orbital and auxiliary shells are concatenated into one bas array,
-      !! because libcint addresses all four centres of a 3c2e call by index
-      !! into a single table. The fourth index names a dummy s shell with a
-      !! zero exponent, which is how libcint spells "only three centres".
-      !!
       !! One convention runs the whole call, `orb%cartesian`, auxiliary shells
-      !! included. `build_df_tensor` has already refused the case where the two
-      !! bases disagree, so that is not a choice being made here.
+      !! included. The callers have already refused the case where the two bases
+      !! disagree, so that is not a choice made here.
       type(libcint_molecule_t), intent(in) :: orb, aux
       real(dp), allocatable, intent(out) :: three(:, :)
       real(dp), intent(in), optional :: omega
@@ -1959,20 +1796,14 @@ contains
          !! exchange of a range-separated functional. See `two_centre` for why
          !! the slot index is what it is.
       real(dp), intent(in), optional :: aux_bound(:)
-         !! `sqrt(max_P (P|P))` over each auxiliary *shell*, which is the other
-         !! half of the Schwarz bound on `(mn|P)`.
+         !! `sqrt(max_P (P|P))` over each auxiliary *shell*, the other half of
+         !! the Schwarz bound on `(mn|P)`. Per shell rather than one global
+         !! maximum, which is where most of the screening is: the global maximum
+         !! is set by the tightest core-like fitting function, and asks only
+         !! whether a pair can reach *any* auxiliary function.
          !!
-         !! Per shell rather than one global maximum, and that is most of the
-         !! screening. The global maximum is set by the tightest core-like
-         !! fitting function, and using it asks only "can this pair reach *any*
-         !! auxiliary function", which almost every pair can. Asking it per
-         !! auxiliary shell instead skips the diffuse tail of the fitting set
-         !! for pairs that cannot reach it.
-         !!
-         !! Absent means no screening -- a caller that has not thought about it
-         !! gets every triplet rather than a silently truncated tensor. Both
-         !! fitting paths have the two-centre metric in hand already, so the
-         !! diagonal is free to them.
+         !! **Absent means no screening**, so a caller that has not thought about
+         !! it gets every triplet rather than a silently truncated tensor.
 
       integer, allocatable :: bas(:, :)
       real(dp), allocatable :: env(:), buf(:)
@@ -1994,13 +1825,11 @@ contains
       if (present(omega)) env(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
       allocate (three(orb%nao*orb%nao, aux%nao))
-      ! Zeroed in parallel, and not only to go faster. This is the first touch
-      ! of the largest array in the calculation -- tens of gigabytes at a
-      ! thousand basis functions -- and on a multi-socket node first touch is
-      ! what decides which socket's memory each page lives on. Zeroing it from
-      ! one thread puts every page on one socket, and then every thread on the
-      ! other socket writes its integrals across the interconnect for the rest
-      ! of the run. Spreading the touch by column spreads the pages.
+      ! Zeroed in parallel, and not only to go faster. This is the first touch of
+      ! the largest array in the calculation, and on a multi-socket node first
+      ! touch is what decides which socket's memory each page lives on. Zeroing
+      ! from one thread puts every page on one socket, and every thread on the
+      ! other then writes across the interconnect for the rest of the run.
       !$omp parallel do default(none) shared(three) private(kcol) schedule(static)
       do kcol = 1, size(three, 2)
          three(:, kcol) = 0.0_dp
@@ -2009,14 +1838,12 @@ contains
 
       ! (ij|K) is symmetric in i and j, so only the lower triangle of the
       ! orbital shell pairs is computed and each block is written into both
-      ! halves. The loop ran the full square before, which evaluated every
-      ! off-diagonal block twice for the same numbers.
+      ! halves.
       !
       ! Pairs that cannot contribute are dropped before the list is built.
-      ! `|(mn|P)| <= sqrt((mn|mn)) sqrt((P|P))`, so one bound per pair decides
-      ! it for every auxiliary function at once, and the shell triplet is never
-      ! entered. The bounds cost nbas^2 quartets against the nbas^2 * nbas_aux
-      ! triplets they screen.
+      ! `|(mn|P)| <= sqrt((mn|mn)) sqrt((P|P))`, so one bound per pair decides it
+      ! for every auxiliary function at once. The bounds cost nbas^2 quartets
+      ! against the nbas^2 * nbas_aux triplets they screen.
       allocate (pair_i(nbas_orb*(nbas_orb + 1)/2), pair_j(nbas_orb*(nbas_orb + 1)/2))
       screening = present(aux_bound)
       if (screening) then
@@ -2027,8 +1854,7 @@ contains
       do ish = 1, nbas_orb
          do jsh = 1, ish
             ! The pair level first, against the largest auxiliary shell: a pair
-            ! that cannot reach even that one is dropped outright and never
-            ! enters the loop below.
+            ! that cannot reach even that one never enters the loop below.
             if (screening) then
                if (q_pair(ish, jsh)*q_aux_max < DF_PAIR_SCREEN) cycle
             end if
@@ -2039,9 +1865,8 @@ contains
       end do
 
       ! Built once for the combined orbital+auxiliary shell set and read by
-      ! every thread. Without it libcint redoes the per-shell-pair setup on each
-      ! call -- `CINTinit_int3c2e_EnvVars` and `CINTset_pairdata` show up in a
-      ! profile of this loop, which is that work repeating.
+      ! every thread. Without it libcint redoes the per-shell-pair setup --
+      ! `CINTinit_int3c2e_EnvVars`, `CINTset_pairdata` -- on every call.
       opt = c_null_ptr
       if (orb%cartesian) then
          call libcint_3c2e_cart_optimizer(opt, orb%atm, orb%natm, bas, &
@@ -2052,9 +1877,9 @@ contains
       end if
 
       ! No accumulator to reduce, unlike the Fock build: a shell pair owns its
-      ! block of `three` outright, so no two iterations write the same element
-      ! and the threads need nothing shared but a private buffer each. `opt` is
-      ! shared and read-only, the same arrangement the Fock build uses.
+      ! block of `three`, so no two iterations write the same element and the
+      ! threads need nothing but a private buffer each. `opt` is shared and
+      ! read-only.
       !$omp parallel default(none) &
       !$omp    shared(orb, aux, bas, env, three, nbas_orb, nbas_aux, dummy, npair, pair_i, pair_j, opt, &
       !$omp           screening, q_pair, aux_bound) &
@@ -2095,9 +1920,8 @@ contains
                   do i = 1, di
                      idx = i + (j - 1)*di + (k - 1)*di*dj
                      three((jo + j - 1)*orb%nao + io + i, ko + k) = buf(idx)
-                     ! The mirrored element. On a diagonal shell pair this
-                     ! writes the partner entry of the same block, which the
-                     ! loop also visits with i and j exchanged and the same
+                     ! The mirrored element. On a diagonal shell pair the loop
+                     ! also visits this with i and j exchanged and the same
                      ! value, so it is a repeat rather than a conflict.
                      three((io + i - 1)*orb%nao + jo + j, ko + k) = buf(idx)
                   end do
@@ -2117,27 +1941,22 @@ contains
    subroutine molecule_eris(this, eri)
       !! Every two-electron integral, in core, as (ij|kl)
       !!
-      !! Stored as a full n^4 array. The eightfold symmetry decides which
-      !! integrals to *evaluate*, not how they are stored -- the array stays
-      !! dense, so every consumer indexes it directly and needs no index map.
-      !! That keeps what made this readable as a reference while removing the
-      !! eight times too many calls into libcint that filling it naively cost.
+      !! A full n^4 array. The eightfold symmetry decides which integrals to
+      !! *evaluate*, not how they are stored, so every consumer indexes it
+      !! directly and needs no index map.
       !!
-      !! Scattering all eight positions is safe here precisely because this
-      !! assigns rather than accumulates: when shells coincide some permutations
-      !! name the same element, and writing the same value twice is harmless. An
-      !! accumulating version would have to know which had collapsed, which is
-      !! the bookkeeping this routine was written to avoid.
+      !! Scattering all eight positions is safe because this **assigns** rather
+      !! than accumulates: when shells coincide some permutations name the same
+      !! element, and writing the same value twice is harmless. An accumulating
+      !! version would have to know which had collapsed.
       class(libcint_molecule_t), intent(in) :: this
       real(dp), allocatable, intent(out) :: eri(:, :, :, :)
 
       real(dp), allocatable :: buf(:)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl, lsh_max
-      ! `ksh_local` was a BLOCK-scoped declaration inside the parallel region.
       ! nvfortran cannot compile a BLOCK construct in the scope of a parallel
-      ! directive (NVFORTRAN-S-1219), and the construct existed only to
-      ! declare this one integer, so it is declared here and privatised with
-      ! the rest instead.
+      ! directive (NVFORTRAN-S-1219), so this is declared here and privatised
+      ! with the rest rather than inside the region.
       integer :: ksh_local
       integer :: shls(4)
       integer :: i, j, k, l, io, jo, ko, lo, ret, idx
@@ -2160,10 +1979,9 @@ contains
       call two_electron_optimizer(this%cartesian, opt, this%atm, this%natm, tab%bas, &
                                   tab%nbas, tab%env)
 
-      ! Threaded over bra pairs, exactly as the direct Fock build is, and for
-      ! once with nothing to reduce: a canonical quartet owns the eight
-      ! positions it scatters into and no other canonical quartet names any of
-      ! them, so the threads write disjoint elements of a shared array.
+      ! Threaded over bra pairs with nothing to reduce: a canonical quartet owns
+      ! the eight positions it scatters into and no other canonical quartet names
+      ! any of them, so the threads write disjoint elements of a shared array.
       npair = tab%nbas*(tab%nbas + 1)/2
       allocate (pair_i(npair), pair_j(npair))
       ipair = 0
@@ -2240,22 +2058,18 @@ contains
       !!
       !! The four-index transform behind an exact response Hessian starts by
       !! contracting the ket pair. Doing that from a stored `eri` costs `n_ao^4`
-      !! to hold -- 16.5 GB at 217 orbitals, which is what stops a tripeptide
-      !! using the transform at all -- and the tensor is read once and dropped.
-      !! Contracting as the quartets come out needs only what is being built.
+      !! to hold for a tensor read once and dropped; contracting as the quartets
+      !! come out needs only what is being built. Both blocks come out of one
+      !! pass, sharing every integral and differing only in what the ket is
+      !! contracted with.
       !!
       !! **Threaded over bra pairs so the accumulation needs no reduction.**
-      !! `molecule_eris` can scatter all eight permutations of a canonical quartet
-      !! because it *assigns*: no two canonical quartets name the same element.
-      !! A contraction accumulates, so that argument does not carry over. Giving
-      !! each thread a bra pair makes it the sole writer of those rows, and the
-      !! price is the bra-ket permutation: every `(mu nu | lambda sigma)` is
-      !! computed once here where the stored build computes it for eight
-      !! positions, so roughly twice the integral work of a symmetric pass. The
+      !! `molecule_eris` can scatter all eight permutations of a canonical
+      !! quartet because it *assigns*; a contraction accumulates, so that
+      !! argument does not carry over. Giving each thread a bra pair makes it the
+      !! sole writer of those rows, at the price of the bra-ket permutation:
+      !! roughly twice the integral work of a symmetric pass. The
       !! `(lambda sigma)` symmetry is still used.
-      !!
-      !! Both blocks come out of one pass because they share every integral and
-      !! differ only in what the ket is contracted with.
       class(libcint_molecule_t), intent(in) :: this
       real(dp), intent(in) :: c_vir(:, :), c_occ(:, :)
       real(dp), intent(out) :: pair_ov(:, :)   !! `(n_ao^2, n_vir*n_occ)`, `b` fastest
@@ -2369,19 +2183,14 @@ contains
    subroutine molecule_eris_packed(this, eri)
       !! Every unique two-electron integral, as (pq|rs) over packed AO pairs
       !!
-      !! The dense n^4 form that `eris` returns costs more to fill than to
-      !! compute: eight positions written per integral, across eight different
-      !! stride patterns. That is bandwidth rather than arithmetic, and it does
-      !! not improve with more cores -- the threaded dense build gets 4.3x on
-      !! forty of them.
+      !! The dense n^4 form `eris` returns costs more to fill than to compute:
+      !! eight stores per integral across eight stride patterns, which is
+      !! bandwidth rather than arithmetic and does not improve with more cores.
+      !! Packing the two AO pairs collapses (mu nu) with (nu mu), leaving only
+      !! the bra-ket swap to write out -- two stores per integral, into an array
+      !! a quarter the size.
       !!
-      !! Packing the two AO pairs collapses (mu nu) with (nu mu), so of the
-      !! eightfold symmetry only the bra-ket swap is left to write out: two
-      !! stores per integral instead of eight, into an array a quarter the size.
-      !! A water hexamer in cc-pVDZ goes from 3.4 GB to 872 MB.
-      !!
-      !! `eris` stays. The in-core SCF and `check_direct` read the dense form,
-      !! and a reference implementation is worth more readable than packed.
+      !! `eris` stays: the in-core SCF and `check_direct` read the dense form.
       class(libcint_molecule_t), intent(in) :: this
       real(dp), allocatable, intent(out) :: eri(:, :)
 
@@ -2500,21 +2309,17 @@ contains
       !! One atom of this molecule, on its own, in the same basis
       !!
       !! Built by copying the parent's shell data rather than re-reading the
-      !! basis file. That is the whole point: the free atom then carries
-      !! bit-identical exponents and contraction coefficients to the block it
-      !! will be dropped back into, so its AO count cannot disagree with that
-      !! block's and its orbitals are expressed in exactly those functions. A
-      !! re-read would usually agree and would occasionally not -- a general
-      !! contraction merged differently, a Cartesian/spherical flag taken from a
-      !! different file -- and the symptom would be a guess quietly built in the
-      !! wrong basis.
+      !! basis file, so the free atom carries bit-identical exponents and
+      !! contraction coefficients to the block it will be dropped back into. A
+      !! re-read would usually agree and occasionally not -- a general
+      !! contraction merged differently, a Cartesian/spherical flag from another
+      !! file -- and the symptom would be a guess built in the wrong basis.
       !!
-      !! The coefficients already carry `libcint_gto_norm` from `molecule_build`,
-      !! so they are copied untouched. Re-normalising here would apply it twice.
+      !! The coefficients already carry `libcint_gto_norm`, so they are copied
+      !! untouched; re-normalising here would apply it twice.
       !!
-      !! Placed at the origin. A free atom has no field to be oriented in, and
-      !! nothing downstream reads the coordinate except the nuclear repulsion,
-      !! which is zero for one atom.
+      !! Placed at the origin. Nothing downstream reads the coordinate except
+      !! the nuclear repulsion, which is zero for one atom.
       class(libcint_molecule_t), intent(in) :: this
       integer, intent(in) :: iatom                          !! 1-based
       type(libcint_molecule_t), intent(out) :: atom_mol
@@ -2603,10 +2408,9 @@ contains
       !! Where each atom's basis functions sit in the molecular matrices
       !!
       !! `molecule_build` walks atoms outermost when it packs shells, so every
-      !! atom's functions are one contiguous run and an atomic block can be
-      !! copied into a row range rather than scattered. This is the routine that
-      !! records that fact; if the packing order ever changed, this is what
-      !! would have to change with it.
+      !! atom's functions are one contiguous run and an atomic block goes into a
+      !! row range rather than being scattered. This is where that fact is
+      !! recorded, and what would have to change with the packing order.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(out) :: offsets(:)   !! First AO of each atom, 0-based
       integer, intent(out) :: counts(:)    !! Functions on each atom
@@ -2629,10 +2433,9 @@ contains
       !! One entry per contraction column: its angular momentum and AO range
       !!
       !! A libcint shell with `NCTR_OF` columns lays its functions out with the
-      !! contraction index outermost -- all components of column one, then all
-      !! of column two -- so each column is a contiguous run of `2l+1` (or
-      !! `(l+1)(l+2)/2`) functions. Those runs are the sets a spherical average
-      !! has to act within, which is the only reason this is worth extracting.
+      !! contraction index outermost, so each column is a contiguous run of
+      !! `2l+1` (or `(l+1)(l+2)/2`) functions. Those runs are the sets a
+      !! spherical average has to act within.
       type(libcint_molecule_t), intent(in) :: mol
       integer, allocatable, intent(out) :: ang(:)     !! Angular momentum per column
       integer, allocatable, intent(out) :: first(:)   !! First AO of the column, 0-based
@@ -2677,13 +2480,9 @@ contains
    pure function max_block(this) result(n)
       !! Largest number of functions any one shell contributes
       !!
-      !! Public because three places wanted it and three places wrote it: this
-      !! one, and a `largest_shell` in each of the two gradient modules -- one of
-      !! those a copy of this and the other deriving the same number from
-      !! `shell_dim` instead of from the offsets. They agree, but only because
-      !! `shell_offset` is sized `nbas + 1` and every buffer in this module
-      !! already depends on that; three chances to stop agreeing was two too
-      !! many.
+      !! From the offsets rather than from `shell_dim`. The two agree only
+      !! because `shell_offset` is sized `nbas + 1`, which is also what every
+      !! buffer in this module already depends on.
       type(libcint_molecule_t), intent(in) :: this
       integer :: n
 
@@ -2696,6 +2495,10 @@ contains
    end function max_block
 
    subroutine molecule_destroy(this)
+      !! Release the molecule's arrays
+      ! TODO(mqc): `bas_with_ecp` and `core_electrons` are never deallocated and
+      ! `necpbas` is never reset, so destroying a molecule with an ECP leaks both
+      ! arrays and leaves a stale shell count on a reused object.
       class(libcint_molecule_t), intent(inout) :: this
 
       if (allocated(this%atm)) deallocate (this%atm)

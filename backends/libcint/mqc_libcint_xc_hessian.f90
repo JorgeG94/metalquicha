@@ -10,14 +10,10 @@ module mqc_libcint_xc_hessian
    !! **The grid does not respond here, deliberately.** The quadrature is
    !! atom-centred, so a rigorous second derivative would carry the points
    !! moving with their owner and the partition weights being reweighted by
-   !! every nucleus. Both are omitted, which is what PySCF's `Hessian.grid_response`
-   !! defaults to as well -- so this is comparable against it term for term
-   !! rather than approximately. The omission is a real approximation and it is
-   !! not free: the same term left out of a *gradient* costs about 1e-4, which
-   !! is why `xc_gradient` next door includes it. It is left out here because
-   !! the second derivative of a Becke weight is a `(3, natm, 3, natm)` object
-   !! per grid point that cannot be stored and is expensive to contract, and
-   !! because the reference everyone checks against omits it too. See
+   !! every nucleus. Both are omitted, as PySCF's `Hessian.grid_response`
+   !! default omits them, so the two are comparable term for term. It is a real
+   !! approximation: the same term left out of a *gradient* costs about 1e-4,
+   !! which is why `xc_gradient` next door includes it. See
    !! `becke_cutoff_second_derivative`, which is the groundwork for adding it.
    !!
    !! **What the two terms are.** With `rho = sum_uv D_uv chi_u chi_v` and a
@@ -37,9 +33,10 @@ module mqc_libcint_xc_hessian
    !! For a GGA every one of those gains a `sigma` channel, which brings a third
    !! derivative of the basis functions: `sigma` already costs one position
    !! derivative to form, and two nuclear derivatives on top of it land on
-   !! `d_c d_d d_e chi`. That is why this refuses a GGA rather than quietly
-   !! omitting the terms -- `eval_ao_block` produces two derivatives and the
-   !! third is a separate piece of work.
+   !! `d_c d_d d_e chi`, which `eval_ao_block` supplies as `deriv3`. A meta-GGA
+   !! adds the `tau` channel on the same footing.
+   ! TODO(mqc): `ERROR_VALIDATION` is imported and never used -- nothing here
+   ! ever sets `error`, so every routine below only propagates one.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -101,8 +98,8 @@ contains
       nao = mol%nao
       npts = size(ctx%grid%weights)
 
-      ! rho, the potential and the kernel over the whole grid. The GGA channels
-      ! come back too and are unused here, which the refusal above makes safe.
+      ! rho, the potential and the kernel over the whole grid, with the tau
+      ! channels only where a meta-GGA needs them.
       if (mgga) then
          call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, vsigma, &
                                         frr, frs, fss, error, tau=tau, vtau=vtau, &
@@ -171,9 +168,8 @@ contains
             end do
          end do
 
-         ! d(grad rho)_d / dA_c, and from it d sigma / dA_c. Both are needed by
-         ! the kernel terms and by the potential term below, so they are formed
-         ! once here rather than twice.
+         ! d(grad rho)_d / dA_c, and from it d sigma / dA_c. Both the kernel
+         ! terms and the potential term below need them.
          if (gga) then
             if (allocated(dmu_d)) deallocate (dmu_d)
             allocate (dmu_d(nb, n_sig, 3))
@@ -869,18 +865,15 @@ contains
       !!                  + int int [ dA(rho,gamma) . f'' . dB(rho,gamma) ]
       !!
       !! The first term is the semilocal GGA contraction with `vrho` and
-      !! `vsigma` swapped for VV10's -- Phase 1 pinned that its `f_rho` and
-      !! `f_gamma` *are* our `vrho` and `vsigma` -- so it is `xc_hessian`'s
-      !! potential machinery verbatim, minus the semilocal kernel. The second
-      !! is where the non-locality lives: the kernel `f''` is a pair operator,
-      !! so it is applied to all `3*natm` first derivatives at once by
+      !! `vsigma` swapped for VV10's `f_rho` and `f_gamma`, so it is
+      !! `xc_hessian`'s potential machinery minus the semilocal kernel. The
+      !! second is where the non-locality lives: `f''` is a pair operator,
+      !! applied to all `3*natm` first derivatives at once by
       !! `vv10_hessian_kernel` and contracted here, following PySCF's
-      !! `_get_enlc_deriv2` and the Liang, Feng, Liu & Head-Gordon paper it
-      !! implements.
+      !! `_get_enlc_deriv2`.
       !!
-      !! The grid does not respond, deliberately, as in `xc_hessian` and as in
-      !! PySCF's `grid_response=False` default -- which is why the check is a
-      !! difference of the *fixed-grid* gradient and not the physical one.
+      !! The grid does not respond, as in `xc_hessian`, which is why the check
+      !! is a difference of the *fixed-grid* gradient and not the physical one.
       !! Restricted only, like the gradient upstream of it.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
@@ -949,8 +942,8 @@ contains
       end do
 
       ! One pair sweep for the potential and every kernel intermediate. The
-      ! potential this returns *is* PySCF's `f_rho`/`f_gamma` -- Phase 1's test
-      ! pins that identity -- so no rebuild happens here.
+      ! potential it returns *is* PySCF's `f_rho`/`f_gamma`, so nothing is
+      ! rebuilt here.
       allocate (exc(npts), vrho(npts), vsigma(npts))
       allocate (pu(npts), pw(npts), pa(npts), pb(npts), pc(npts))
       allocate (dodr(npts), dodg(npts), d2odr2(npts), d2odg2(npts), d2odrdg(npts))
@@ -1152,8 +1145,8 @@ contains
       ! Term two: the kernel applied to every perturbation's first derivatives,
       ! then contracted against every other's -- one pair sweep for all 3*natm
       ! columns, then a weighted outer product over the grid. The inner
-      ! quadrature weight lives inside the kernel; the outer one is applied
-      ! here, exactly as PySCF splits them.
+      ! quadrature weight lives inside the kernel, the outer one is applied
+      ! here.
       allocate (f_rho_t(3*natm, npts), f_gamma_t(3*natm, npts))
       call vv10_hessian_kernel(ctx%nlc_b, ctx%nlc_c, ctx%nlc_grid%coords, &
                                rho, sigma, ctx%nlc_grid%weights, &
@@ -1185,17 +1178,14 @@ contains
       !! the first from the basis functions moving and the second because the
       !! potential is itself a function of a density that moves with them.
       !!
-      !! Leaving this out does not fail visibly. The coupled-perturbed solve
+      !! **Leaving this out does not fail visibly**: the coupled-perturbed solve
       !! converges, the Hessian comes back symmetric and plausible, and it is
-      !! wrong by order one -- on water/STO-3G at LDA exchange the worst entry
-      !! is out by 0.87 against a finite difference of the gradient, where the
-      !! same comparison for Hartree-Fock agrees to 5e-6.
+      !! wrong by order one.
       !!
-      !! A GGA adds the `sigma` channel to all of it: the potential itself gains
+      !! A GGA adds the `sigma` channel to all of it -- the potential gains
       !! `2 v_sigma grad rho . grad(chi_u chi_v)`, and every factor in that
-      !! moves. Only second derivatives of the basis functions are needed here
-      !! -- the third ones belong to the *energy's* second derivative, not the
-      !! potential's first.
+      !! moves. Only second derivatives of the basis functions are needed here;
+      !! the third ones belong to the *energy's* second derivative.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
@@ -1883,19 +1873,16 @@ contains
       !! moves `f_rho` and `f_gamma` everywhere through the pair kernel, so the
       !! per-point weights `f_rr drho/dA + ...` become `vv10_hessian_kernel`'s
       !! `f_rho_t` and `f_gamma_t` -- one pair sweep for all `3*natm`
-      !! perturbations, the same operator the energy's second derivative used.
-      !! Which is also why those two deposits cannot skip atoms with no
-      !! significant functions on a block: a distant atom's perturbation still
-      !! changes the potential here, unlike every semilocal term.
+      !! perturbations. **Which is why those two deposits cannot skip atoms with
+      !! no significant functions on a block**: a distant atom's perturbation
+      !! still changes the potential here, unlike every semilocal term.
       !!
       !! **Accumulates into `h1`**, like `xc_potential_deriv` and unlike
       !! `h1_contract` -- the caller zeroes.
       !!
-      !! The grid does not respond, deliberately, matching `xc_potential_deriv`
-      !! and PySCF's `grid_response=False` Hessian default; the orbital-response
-      !! terms of PySCF's `_get_vnlc_deriv1` are what this transcribes, and the
-      !! check is a difference of the fixed-grid potential for the reasons the
-      !! Hessian tests set out. Restricted only, like everything upstream.
+      !! The grid does not respond, matching `xc_potential_deriv`; this
+      !! transcribes the orbital-response terms of PySCF's `_get_vnlc_deriv1`.
+      !! Restricted only, like everything upstream.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
@@ -1958,8 +1945,8 @@ contains
       end do
 
       ! One pair sweep for the potential -- which *is* PySCF's `f_rho` and
-      ! `f_gamma`, the identity Phase 1's test pins -- and every kernel
-      ! intermediate the perturbed potential needs.
+      ! `f_gamma` -- and every kernel intermediate the perturbed potential
+      ! needs.
       allocate (exc(npts), vrho(npts), vsigma(npts))
       allocate (pu(npts), pw(npts), pa(npts), pb(npts), pc(npts))
       allocate (dodr(npts), dodg(npts), d2odr2(npts), d2odg2(npts), d2odrdg(npts))
@@ -2149,7 +2136,7 @@ contains
       ! The kernel: every perturbation's first derivatives in, the perturbed
       ! potentials `d f_rho / dA` and `d f_gamma / dA` out, in one pair sweep.
       ! The inner quadrature weight lives inside; the outer one is applied at
-      ! the deposits below, exactly as PySCF weights `f_rho_t` only there.
+      ! the deposits below.
       allocate (f_rho_t(3*natm, npts), f_gamma_t(3*natm, npts))
       call vv10_hessian_kernel(ctx%nlc_b, ctx%nlc_c, ctx%nlc_grid%coords, &
                                rho, sigma, ctx%nlc_grid%weights, &
@@ -2272,13 +2259,11 @@ contains
       !! dE_xc/dR with the grid held fixed -- the first derivative `xc_hessian`
       !! is the second derivative of
       !!
-      !! Not the physical exchange-correlation gradient: `xc_gradient` is, and it
-      !! carries the grid-response terms this deliberately omits. This exists so
-      !! the Hessian above can be differenced against its own first derivative,
-      !! with the same approximation on both sides. Differencing the *physical*
-      !! gradient instead would disagree by exactly the omitted term -- around
-      !! 1e-4, small enough to look like a tolerance problem and large enough to
-      !! hide a real error.
+      !! Not the physical exchange-correlation gradient -- `xc_gradient` is, and
+      !! it carries the grid-response terms this omits. This exists so the
+      !! Hessian above can be differenced against its own first derivative with
+      !! the same approximation on both sides; differencing the *physical*
+      !! gradient would disagree by the omitted term, around 1e-4.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)

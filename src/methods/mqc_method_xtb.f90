@@ -1,7 +1,6 @@
 !! Extended Tight-Binding (xTB) quantum chemistry method implementation
 module mqc_method_xtb
-   !! Provides GFN1-xTB and GFN2-xTB methods via the tblite library,
-   !! implementing the abstract method interface for energy and gradient calculations.
+   !! GFN1-xTB and GFN2-xTB through the tblite library.
    use pic_types, only: dp
    use mqc_method_base, only: qc_method_t
    use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED, &
@@ -36,25 +35,20 @@ module mqc_method_xtb
 
    type, extends(qc_method_t) :: xtb_method_t
       !! Extended Tight-Binding (xTB) method implementation
-      !!
-      !! Concrete implementation of the abstract quantum chemistry method
-      !! interface for GFN1-xTB and GFN2-xTB calculations via tblite.
       character(len=:), allocatable :: variant  !! XTB variant: "gfn1" or "gfn2"
       logical :: verbose = .false.              !! Print calculation details
       real(wp) :: accuracy = 0.01_wp            !! Numerical accuracy parameter
       logical :: want_bond_orders = .false.
-         !! Ask tblite for Wiberg-Mayer bond orders alongside the energy.
-         !!
-         !! Off by default because it is not free -- the post-processor rebuilds
-         !! a density matrix and contracts it with the overlap -- and most
-         !! fragments in an expansion have no use for it. On when something
-         !! downstream is going to read the connectivity rather than guess it.
+         !! Ask tblite for Wiberg-Mayer bond orders alongside the energy. Off by
+         !! default: the post-processor rebuilds a density matrix and contracts
+         !! it with the overlap, and most fragments have no use for it.
       logical :: allow_crap_scf = .false.       !! Keep a non-converged SCF instead of stopping
       integer :: max_iter = 250                 !! SCF cycles before tblite gives up
-         !! There was no field for this, so `keywords.scf.maxiter` reached the
-         !! config and stopped there -- a deck asking for a different budget
-         !! silently got tblite's default. 250 is that default, so the value
-         !! here changes nothing until a deck says otherwise.
+         !! 250 is tblite's own default, so this changes nothing until a deck
+         !! says otherwise.
+      ! TODO(mqc): the literal below is the same stale Boltzmann constant
+      ! `configure_xtb` uses, 3.166808578545117e-6 against `KB_HARTREE` =
+      ! 3.1668115634556e-6 in `mqc_physical_constants`.
       real(wp) :: kt = 300.0_wp*3.166808578545117e-06_wp  !! Electronic temperature (300 K)
       ! Solvation settings (leave solvent unallocated for gas phase)
       character(len=:), allocatable :: solvent  !! Solvent name: "water", "ethanol", etc.
@@ -74,7 +68,7 @@ module mqc_method_xtb
 contains
 
    subroutine xtb_calc_energy(this, fragment, result)
-      !! Calculate electronic energy using Extended Tight-Binding (xTB) method
+      !! Electronic energy of a fragment
       class(xtb_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
@@ -139,9 +133,6 @@ contains
          return
       end if
 
-      ! keywords.scf.maxiter had a home on this type and never reached the
-      ! calculator, so it silently did nothing for xTB -- a deck asking for a
-      ! tighter or looser iteration budget got tblite's default either way.
       calc%max_iter = this%max_iter
 
       ! Add solvation if configured (either solvent name or direct dielectric)
@@ -177,9 +168,8 @@ contains
       end if
 
       ! tblite reports a failed SCF by setting an error on the context and
-      ! returning anyway -- "SCF not converged in N cycles" among them. Not
-      ! asking meant taking an energy tblite had just disowned and adding it
-      ! to the expansion as though it were fine.
+      ! returning anyway, so the energy has to be checked against the context
+      ! rather than taken at face value.
       if (ctx%failed()) then
          call record_context_failure(ctx, result, this%allow_crap_scf)
          if (result%has_error) return
@@ -223,7 +213,7 @@ contains
    end subroutine xtb_calc_energy
 
    subroutine xtb_calc_gradient(this, fragment, result)
-      !! Calculate energy gradient using Extended Tight-Binding (xTB) method
+      !! Energy and nuclear gradient of a fragment
       class(xtb_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
@@ -287,9 +277,6 @@ contains
          return
       end if
 
-      ! keywords.scf.maxiter had a home on this type and never reached the
-      ! calculator, so it silently did nothing for xTB -- a deck asking for a
-      ! tighter or looser iteration budget got tblite's default either way.
       calc%max_iter = this%max_iter
 
       ! Add solvation if configured (either solvent name or direct dielectric)
@@ -378,13 +365,18 @@ contains
    end subroutine xtb_calc_gradient
 
    subroutine xtb_calc_hessian(this, fragment, result)
-      !! Calculate Hessian using finite differences of gradients
+      !! Hessian by central differences of gradients: tblite has no analytic one
       !!
-      !! Since tblite does not natively support analytic Hessians, this routine
-      !! computes the Hessian numerically via central finite differences:
       !!   H[i,j] = (grad_j(x_i + h) - grad_j(x_i - h)) / (2h)
       !!
-      !! This requires 6N gradient calculations (forward and backward for each coordinate)
+      !! 6N gradient evaluations for N atoms, plus the undisplaced point.
+      ! TODO(mqc): a second copy of `finite_difference_hessian` in
+      ! `mqc_semi_numerical_hessian`, which `xtb_method_t` could be passed to as
+      ! a `qc_method_t`. This copy pins the step at `DEFAULT_DISPLACEMENT` --
+      ! `xtb_method_t` has no `hessian_displacement` field and `configure_xtb`
+      ! copies none -- so `hessian_displacement` in a deck is ignored for xTB,
+      ! and the translational sum-rule check on the dipole derivatives is
+      ! skipped as well.
       use mqc_finite_differences, only: generate_perturbed_geometries, displaced_geometry_t, &
                                         finite_diff_hessian_from_gradients, finite_diff_dipole_derivatives, &
                                         DEFAULT_DISPLACEMENT
@@ -528,10 +520,10 @@ contains
 
    subroutine add_solvation_to_calc(calc, mol, solvent, solvation_model, method, use_cds, use_shift, &
                                     dielectric, cpcm_nang, cpcm_rscale, error)
-      !! Add implicit solvation model to XTB calculator
+      !! Add ALPB, GBSA or CPCM solvation to an XTB calculator
       !!
-      !! Adds ALPB, GBSA, or CPCM solvation. For ALPB/GBSA, optionally adds CDS and shift corrections.
-      !! CPCM does not support CDS or shift corrections.
+      !! ALPB and GBSA optionally take the CDS and shift corrections; CPCM
+      !! supports neither and ignores both flags.
       type(xtb_calculator), intent(inout) :: calc
       type(structure_type), intent(in) :: mol
       character(len=*), intent(in) :: solvent           !! Solvent name (can be empty if dielectric > 0)
@@ -635,10 +627,7 @@ contains
    end subroutine add_solvation_to_calc
 
    pure function get_solvent_dielectric(solvent_name) result(eps)
-      !! Get dielectric constant for a named solvent
-      !!
-      !! Returns the static dielectric constant (relative permittivity) for common solvents.
-      !! Returns -1.0 if the solvent is not found.
+      !! Static dielectric constant of a named solvent, or -1 if unknown
       character(len=*), intent(in) :: solvent_name
       real(wp) :: eps
 
@@ -753,17 +742,12 @@ contains
    subroutine record_context_failure(ctx, result, allow_crap_scf)
       !! Turn a tblite context error into a failed -- or merely flagged -- result
       !!
-      !! **Every error is drained, not just the first.** tblite logs each one
-      !! and pops them in order, and a failed eigensolve has been seen to leave
-      !! both "(sygvd) failed to solve eigenvalue problem" and an
-      !! "SCF not converged" behind it. Reading one and stopping would let the
-      !! wrong message decide: a run allowed to tolerate non-convergence would
-      !! then also tolerate a corrupted eigensolve, whose energy is not a poor
-      !! answer but a meaningless one.
+      !! **Every error is drained, not just the first.** A failed eigensolve
+      !! leaves both "(sygvd) failed to solve eigenvalue problem" and an "SCF
+      !! not converged" behind it, so reading one and stopping would let the
+      !! wrong message decide.
       !!
-      !! So the concession applies only when *nothing else* went wrong. Not
-      !! converging is a number that has not settled; anything else is a number
-      !! that means nothing, and `allow_crap_scf` is not a licence for that.
+      !! `allow_crap_scf` therefore applies only when *nothing else* went wrong.
       type(context_type), intent(inout) :: ctx
       type(calculation_result_t), intent(inout) :: result
       logical, intent(in) :: allow_crap_scf
@@ -796,11 +780,9 @@ contains
    subroutine add_bond_order_post_processing(pproc, mol, result)
       !! Ask tblite to compute Wiberg-Mayer bond orders during the single point
       !!
-      !! Registered by name through tblite's own post-processing list rather than
-      !! calling `get_mayer_bond_orders` directly. The direct call needs the
-      !! overlap and the density matrix, which means holding tblite's integrals
-      !! open across the calculation; the post-processor already runs at the
-      !! point where both exist and hands back a matrix.
+      !! Registered by name through tblite's own post-processing list: calling
+      !! `get_mayer_bond_orders` directly would mean holding tblite's overlap
+      !! and density matrix open across the calculation.
       type(post_processing_list), intent(inout) :: pproc
       type(structure_type), intent(in) :: mol
       type(calculation_result_t), intent(inout) :: result
@@ -825,9 +807,8 @@ contains
       !! of the second are summed, because a bond order is a property of the pair
       !! and not of a spin.
       !!
-      !! A missing entry is reported rather than left as a silently absent
-      !! matrix. The caller asked for these, so not getting them is a fact worth
-      !! having, and `has_bond_orders` stays false either way.
+      !! A missing entry is logged rather than left silently absent;
+      !! `has_bond_orders` stays false either way.
       type(results_type), intent(in) :: xtb_results
       integer, intent(in) :: n_atoms
       type(calculation_result_t), intent(inout) :: result

@@ -4,32 +4,15 @@ module mqc_json_ecp_reader
    !! [Basis Set Exchange](https://www.basissetexchange.org) ships alongside
    !! orbital basis sets, producing the `mqc_ecp` types.
    !!
-   !! The BSE layout for one element is
-   !!
-   !!     "ecp_electrons": 28,
-   !!     "ecp_potentials": [
-   !!       { "angular_momentum": [3], "r_exponents": [2],
-   !!         "gaussian_exponents": ["3.8431140"],
-   !!         "coefficients": [["-12.3169000"]] },
-   !!       { "angular_momentum": [0], ... }
-   !!     ]
-   !!
    !! **The local channel is the one with the highest angular momentum**, not
-   !! the one listed first. For every def2 element those happen to coincide --
-   !! the order is 3, 0, 1, 2 -- but the physics is defined by the angular
-   !! momentum, so that is what this selects on. A tabulation that listed its
-   !! channels in ascending order would otherwise silently produce a potential
-   !! with the local and projected parts exchanged, which is a wrong answer
-   !! rather than an error.
+   !! the one listed first, which is what this selects on.
    !!
-   !! Exponents and coefficients are stored as strings to preserve every digit,
-   !! exactly as in the orbital basis files, and are read back with
-   !! list-directed input.
+   !! Exponents and coefficients are stored as strings in the file, to preserve
+   !! every digit, and are read back with list-directed input.
    !!
-   !! Not every element in a file has an ECP, and not every basis set has an
-   !! ECP file at all. Both are ordinary: a missing element yields an entry
-   !! with `has_ecp` false rather than an error, so a molecule of light atoms
-   !! and heavy ones needs no special casing.
+   !! An element the file does not cover yields an entry with `has_ecp` false
+   !! rather than an error, so a molecule of light and heavy atoms needs no
+   !! special casing.
    use pic_types, only: dp
    use mqc_ecp, only: ecp_shell_type, atomic_ecp_type, molecular_ecp_type
    use mqc_elements, only: element_symbol_to_number
@@ -238,8 +221,7 @@ contains
       !! Build a per-atom ECP set for a list of atoms
       !!
       !! Each distinct element is read once and copied to every atom of that
-      !! element, as the orbital basis reader does -- parsing the same file per
-      !! atom would dominate the setup for anything but a tiny molecule.
+      !! element, as the orbital basis reader does.
       character(len=*), intent(in) :: json_path
       character(len=*), intent(in) :: element_symbols(:)
       type(molecular_ecp_type), intent(out) :: mol_ecp
@@ -323,14 +305,8 @@ contains
       type(ecp_shell_type), intent(in) :: source
       type(ecp_shell_type), intent(out) :: dest
 
-      ! After allocate_arrays, not before. That call goes through `destroy`,
-      ! which resets `ang_mom` to -1 -- so setting it first sets it and then
-      ! wipes it, and every copied channel came out looking like the local
-      ! one. `read_channel` already orders these the same way round.
-      !
-      ! It survived because nothing consumed the reader: an ECP whose
-      ! projected channels all claim l = -1 is only wrong once something
-      ! integrates it.
+      ! `ang_mom` is set after `allocate_arrays` and never before: that call
+      ! goes through `destroy`, which resets it to -1.
       if (source%nprim <= 0) then
          dest%ang_mom = source%ang_mom
          return

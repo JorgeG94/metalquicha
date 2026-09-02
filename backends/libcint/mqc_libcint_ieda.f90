@@ -7,30 +7,19 @@ module mqc_libcint_ieda
    !! atom contributes on its own and what exists only because the atoms are
    !! bonded.
    !!
-   !! **This first piece is the kinetic term, and it is not an approximation.**
-   !! The total kinetic energy is
-   !!
-   !!     T = sum_pq gamma_pq T_pq
-   !!
-   !! over the quasi-atomic basis, and every term in that sum belongs to exactly
-   !! one atom (p and q on the same atom) or to exactly one pair of atoms (p and
-   !! q on different ones). So the split is a regrouping of a sum, with nothing
-   !! discarded and nothing modelled, and the pieces are obliged to add back up.
-   !! `kinetic_total` performs that addition and the tests assert it.
+   !! Every term of a sum such as `T = sum_pq gamma_pq T_pq` belongs to exactly
+   !! one atom or to exactly one pair of atoms, so each decomposition here is a
+   !! regrouping and the pieces are obliged to add back up. `kinetic_total`
+   !! performs that addition and every routine checks it before returning.
    !!
    !! **The factor of two is the trap.** A pair of atoms `{A,B}` collects both
-   !! `p in A, q in B` and `p in B, q in A`, which are equal, so the energy of
-   !! the pair is twice the one-way sum. `inter` therefore holds the *full*
-   !! physical pair energy in both `(A,B)` and `(B,A)`, and `kinetic_total`
-   !! halves the matrix rather than summing a triangle. Storing the one-way sum
-   !! instead would leave every interatomic number a factor of two small while
-   !! still looking entirely plausible, which is why it is stated here and
-   !! checked in the tests.
+   !! `p in A, q in B` and `p in B, q in A`, which are equal. `inter` therefore
+   !! holds the *full* physical pair energy in both `(A,B)` and `(B,A)`, and
+   !! `kinetic_total` halves the matrix rather than summing a triangle.
    !!
-   !! Related to the kinetic bond order of `kinetic_bond_orders`, but not the
-   !! same quantity: that one carries an empirical factor of a tenth to reach
-   !! the scale of tabulated bond energies, and the papers say so. Nothing here
-   !! is scaled. Where the bond order is a gauge, this is an energy.
+   !! Nothing here is scaled, unlike the kinetic bond order of
+   !! `kinetic_bond_orders`, which carries an empirical factor of a tenth to
+   !! reach the scale of tabulated bond energies.
    use, intrinsic :: iso_fortran_env, only: int64
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
@@ -70,13 +59,10 @@ module mqc_libcint_ieda
    real(dp), parameter :: TOL_SUM_RULE = 1.0e-8_dp
       !! Hartree. How far the regrouped pieces may drift from the total before
       !! the decomposition is refused. The regrouping is exact arithmetic, so
-      !! the only thing this tolerates is accumulated rounding; GAMESS applies
-      !! the same figure to the equivalent check and aborts on it.
+      !! the only thing this tolerates is accumulated rounding.
    real(dp), parameter :: TOL_SPLIT = 1.0e-8_dp
       !! Hartree, per matrix element. How far the per-nucleus attraction
-      !! integrals may drift from the one-shot ones before the split is
-      !! refused. The two are the same operator summed in a different order, so
-      !! this tolerates quadrature and nothing else.
+      !! integrals may drift from the one-shot ones before the split is refused.
    real(dp), parameter :: TOL_PRINT_PAIR = 1.0e-6_dp
       !! Hartree. Atom pairs contributing less than this are not printed. They
       !! are still counted in the totals, so the printed rows need not add up to
@@ -91,8 +77,7 @@ contains
       !! energy atom `A` would have on its own, plus the intra-atomic
       !! interference its hybridisation in the molecule creates. `inter(A,B)` is
       !! the interatomic kinetic interference of eq (4.26) -- the part of the
-      !! kinetic energy that exists only because the two atoms share density,
-      !! and in this analysis the dominant source of covalent binding.
+      !! kinetic energy that exists only because the two atoms share density.
       type(quao_result_t), intent(in) :: quao
       real(dp), intent(in) :: interference(:, :)
          !! (n_quao, n_quao). `gamma_pq * T_pq` in hartree, as produced by
@@ -130,11 +115,9 @@ contains
       intra = 0.0_dp
       inter = 0.0_dp
 
-      ! Each ordered orbital pair is deposited in **both** elements of its atom
-      ! pair, so `inter(A,B)` ends up holding the energy of the whole pair --
-      ! `i in A, j in B` and `i in B, j in A` together -- rather than half of
-      ! it. That is the number the paper tabulates and the one a reader wants
-      ! printed, and it is why `kinetic_total` halves the matrix.
+      ! Each ordered orbital pair is deposited in both elements of its atom
+      ! pair, so `inter(A,B)` holds the energy of the whole pair rather than
+      ! half of it.
       do i = 1, n
          a = quao%atom_of(i)
          do j = 1, n
@@ -148,12 +131,8 @@ contains
          end do
       end do
 
-      ! The pieces must add back up to what was handed in. That is the entire
-      ! claim this routine makes, it costs one pass over a matrix already in
-      ! memory, and it is checked here rather than left to the caller because a
-      ! decomposition that quietly loses a term still prints a table that looks
-      ! right. It catches a mis-assigned atom, a dropped orbital, and above all
-      ! a mishandled factor of two on the interatomic block.
+      ! Catches a mis-assigned atom, a dropped orbital, and a mishandled factor
+      ! of two on the interatomic block.
       residual = kinetic_total(intra, inter) - sum(interference)
       if (abs(residual) > TOL_SUM_RULE) then
          write (message, "(a,es12.4,a)") "the kinetic decomposition does not sum "// &
@@ -168,11 +147,11 @@ contains
    end subroutine kinetic_decomposition
 
    pure function kinetic_total(intra, inter) result(total)
-      !! Add the decomposition back up
+      !! Add a decomposition back up
       !!
-      !! Must reproduce `sum(interference)`, which is the kinetic energy of the
-      !! density in the quasi-atomic basis. The only place the halving of
-      !! `inter` is written down, so that no caller has to know about it.
+      !! `sum(intra) + 0.5 * sum(inter)`, the only place the halving of `inter`
+      !! is written down. Used by every decomposition in this module, not the
+      !! kinetic one alone.
       real(dp), intent(in) :: intra(:)
       real(dp), intent(in) :: inter(:, :)
       real(dp) :: total
@@ -185,29 +164,16 @@ contains
       !! Strike out every determinant in which an atom is not neutral
       !!
       !! The no-sharing wave function `Psi-0` of the intrinsic decomposition:
-      !! the part of `Psi` in which no charge has moved between atoms. It is
-      !! what the molecule would be if the atoms shared electrons without ever
-      !! lending them, and the energy difference from `Psi` is what charge
-      !! transfer is worth.
+      !! the part of `Psi` in which no charge has moved between atoms. The
+      !! energy difference from `Psi` is what charge transfer is worth.
       !!
       !! **`Psi-0` is a projection of `Psi`, not a wave function optimised in
-      !! the neutral space.** Solving a CI restricted to these determinants
-      !! gives a lower energy and a different state; it is a perfectly good
-      !! wave function and it is not this one. So the amplitudes here are the
-      !! parent's, with the rest set to zero and the remainder renormalised.
+      !! the neutral space.** The amplitudes here are the parent's, with the
+      !! rest set to zero and the remainder renormalised; a CI solved inside
+      !! the neutral space is a different, lower state.
       !!
-      !! **The determinants must be over quasi-atomic orbitals** for any of this
-      !! to mean anything -- "how many electrons are on this atom" is a question
-      !! only an atomic basis can answer. A full valence CI is invariant under
-      !! rotation of its active orbitals, so re-solving it in the quasi-atomic
-      !! basis costs an energy that must come back identical and buys a
-      !! determinant expansion that can be read this way.
-      !!
-      !! What comes back is `recovered`, the squared norm kept. That is the
-      !! honest measure of how much of the molecule is describable without
-      !! charge transfer, and the papers quote it as a percentage. Note it is a
-      !! squared norm and not an overlap, which is what the reference
-      !! implementation prints it as.
+      !! **The determinants must be over quasi-atomic orbitals**, since only an
+      !! atomic basis can answer how many electrons sit on an atom.
       integer, intent(in) :: atom_of(:)
          !! (n_orbitals) the atom each active orbital belongs to
       integer, intent(in) :: n_atoms
@@ -217,7 +183,8 @@ contains
       real(dp), intent(inout) :: ci(:, :)
          !! (n_alpha_strings, n_beta_strings), overwritten with the projection
       real(dp), intent(out) :: recovered
-         !! `|| P Psi ||^2` before renormalising
+         !! `|| P Psi ||^2` before renormalising -- a squared norm, not an
+         !! overlap
       integer, intent(out) :: n_kept
          !! How many determinants survived
       type(error_t), intent(inout) :: error
@@ -249,10 +216,8 @@ contains
          return
       end if
 
-      ! Per-atom occupation of every string, once, rather than per determinant:
-      ! the determinant count is the product of the two string counts, so doing
-      ! this inside the pair loop would repeat each string's tally thousands of
-      ! times.
+      ! Per string, not per determinant: the determinant count is the product
+      ! of the two string counts.
       allocate (count_alpha(n_atoms, na), count_beta(n_atoms, nb))
       call tally(alpha, atom_of, n_atoms, count_alpha)
       call tally(beta, atom_of, n_atoms, count_beta)
@@ -317,23 +282,14 @@ contains
    subroutine combine_quao_sets(core, valence, combined, error)
       !! Stack the core quasi-atomic orbitals in front of the valence ones
       !!
-      !! The bonding analysis works in the valence-internal space, because that
-      !! is where bonding happens and the core is inert. An energy decomposition
-      !! cannot: the core carries most of the kinetic energy and most of the
-      !! nuclear attraction, and leaving it out means the pieces sum to a number
-      !! nothing else knows.
+      !! An energy decomposition needs the core: it carries most of the kinetic
+      !! energy and most of the nuclear attraction, where the bonding analysis
+      !! can work in the valence-internal space alone.
       !!
-      !! The core set is built by the same construction as the valence one, just
-      !! handed the core molecular orbitals and the core minimal-basis ranges
-      !! instead. That matters -- it means core and valence orbitals are atomic
-      !! in the same sense rather than in two different senses.
-      !!
-      !! **The core density is exactly two on the diagonal and zero elsewhere.**
-      !! Not an approximation: the core orbitals span the core molecular-orbital
-      !! space, the density restricted to that space is twice its projector, and
-      !! a projector is the identity in any orthonormal basis of what it
-      !! projects onto. The core-valence blocks are zero for the same reason,
-      !! the two spaces being orthogonal.
+      !! **The combined density is exactly two on the core diagonal and zero
+      !! elsewhere in the core and core-valence blocks.** Exact, not an
+      !! approximation: the core density restricted to the core space is twice
+      !! its projector, and the two spaces are orthogonal.
       type(quao_result_t), intent(in) :: core
       type(quao_result_t), intent(in) :: valence
       type(quao_result_t), intent(out) :: combined
@@ -376,14 +332,9 @@ contains
       !! gives the expectation value of the operator, and summing it over
       !! subsets of pairs is what the decomposition is.
       !!
-      !! Unlike `kinetic_bond_orders` this does not require oriented orbitals,
-      !! and it should not. Orientation is a rotation *within* each atom, and
-      !! both `sum_{p,q in A}` and `sum_{p in A, q in B}` are invariant under
-      !! one: the density and the operator transform by the same rotation and it
-      !! cancels inside the trace. Individual orbital pairs move, atom and
-      !! atom-pair totals do not. So the decomposition is well defined for a
-      !! core set that was never oriented, and the tests assert the invariance
-      !! rather than relying on it quietly.
+      !! Unlike `kinetic_bond_orders` this does not require oriented orbitals.
+      !! Orientation is a rotation *within* an atom, so individual orbital pairs
+      !! move under one but atom and atom-pair totals do not.
       type(quao_result_t), intent(in) :: quao
       real(dp), intent(in) :: matrix_ao(:, :)
       real(dp), allocatable, intent(out) :: weighted(:, :)
@@ -414,19 +365,10 @@ contains
       !!
       !!     V_pq^A = -Z_A < p | 1/|r - R_A| | q >
       !!
-      !! GAMESS calls the equivalent array `VBYATM`. No new integral is needed:
-      !! `esp_matrices` already evaluates `1/|r - R|` at arbitrary points, so
-      !! putting those points on the nuclei and scaling by the nuclear charge
-      !! is the whole construction.
-      !!
-      !! **Summing the pieces must give back the ordinary nuclear attraction**,
-      !! since the operator is a sum over nuclei and nothing else. That is
-      !! checked here rather than left to a caller, because every plausible way
-      !! of getting this wrong -- a dropped minus sign, the charge left off, the
-      !! points in Angstrom -- produces an array that is smooth, symmetric and
-      !! entirely wrong. The check costs two one-electron integral builds
-      !! against an `esp_matrices` call that is already more expensive than
-      !! both, so it is close to free in context.
+      !! Built from `esp_matrices` with the evaluation points on the nuclei.
+      !! The pieces must sum back to the ordinary nuclear attraction, which is
+      !! checked here and refused on failure: a dropped sign, a missing charge
+      !! or coordinates in Angstrom all give an array that looks plausible.
       type(libcint_molecule_t), intent(in), target :: mol
       integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: coordinates(:, :)   !! (3, n_atoms), Bohr
@@ -457,8 +399,8 @@ contains
       end do
       deallocate (rinv)
 
-      ! The reference: the one-shot nuclear attraction, which is the core
-      ! Hamiltonian less the kinetic energy.
+      ! The one-shot nuclear attraction: the core Hamiltonian less the kinetic
+      ! energy.
       call mol%core_hamiltonian(h)
       call mol%kinetic(t)
       allocate (total(mol%nao, mol%nao))
@@ -485,9 +427,7 @@ contains
       !! Carry the per-nucleus attraction into the quasi-atomic basis
       !!
       !! One `C^T V^A C` per nucleus. The quasi-atomic orbitals are orthonormal,
-      !! so this is a similarity transformation and the trace against a density
-      !! is preserved exactly -- which is what lets the decomposition below be a
-      !! regrouping rather than a model.
+      !! so the trace against a density is preserved exactly.
       type(quao_result_t), intent(in) :: quao
       real(dp), intent(in) :: v_atom_ao(:, :, :)      !! (n_ao, n_ao, n_atoms)
       real(dp), allocatable, intent(out) :: v_atom_quao(:, :, :)
@@ -534,13 +474,14 @@ contains
       !!     because those two atoms share density, so it goes to `{A,B}`
       !!     **whichever nucleus** is attracting.
       !!
-      !! **The last one is a choice and it should be read as one.** A term with
-      !! `p` on `A`, `q` on `B` and the nucleus on a third atom `C` is genuinely
-      !! three-body, and charging it to `{A,B}` says the interference is the
-      !! feature and the field it sits in is context. That keeps the pair table
-      !! interpretable and it loses nothing, since the sum rule below still
-      !! holds; a finer grouping would redistribute these terms without changing
-      !! any total.
+      !! The last is a choice: a term with `p` on `A`, `q` on `B` and the
+      !! nucleus on a third atom is genuinely three-body, and charging it to
+      !! `{A,B}` treats the interference as the feature and the field as
+      !! context. A finer grouping would redistribute it without changing any
+      !! total.
+      ! TODO(mqc): the sum-rule failure path deallocates `intra` and `inter` but
+      ! not `coulomb`, so an optional argument comes back allocated from a call
+      ! that returned an error.
       type(quao_result_t), intent(in) :: quao
       real(dp), intent(in) :: density(:, :)           !! (n_quao, n_quao)
       real(dp), intent(in) :: v_atom_quao(:, :, :)    !! (n_quao, n_quao, n_atoms)
@@ -551,11 +492,9 @@ contains
       type(error_t), intent(inout) :: error
       real(dp), allocatable, intent(out), optional :: coulomb(:, :)
          !! The **classical** share of `inter`: one atom's own density sitting in
-         !! another's nuclear field. What is left over is interference -- density
-         !! shared between the two atoms, which has no classical description and
-         !! exists only because they are bonded. Splitting them is the whole
-         !! point of the analysis, since the papers' claim is that binding comes
-         !! from interference and not from electrostatics.
+         !! another's nuclear field. What is left over is interference --
+         !! density shared between the two atoms, which has no classical
+         !! description.
 
       real(dp) :: term, residual, reference
       character(len=400) :: message
@@ -597,15 +536,13 @@ contains
                term = density(i, j)*v_atom_quao(i, j, c)
                reference = reference + term
                if (a /= b) then
-                  ! Interference: charged to the pair that shares the density,
-                  ! deposited in both elements so each holds the whole pair.
+                  ! Interference: charged to the pair that shares the density.
                   inter(a, b) = inter(a, b) + term
                   inter(b, a) = inter(b, a) + term
                else if (a == c) then
                   intra(a) = intra(a) + term
                else
-                  ! One atom's density in another's nuclear field: an ordinary
-                  ! electrostatic attraction between the two.
+                  ! One atom's density in another's nuclear field.
                   inter(a, c) = inter(a, c) + term
                   inter(c, a) = inter(c, a) + term
                   if (present(coulomb)) then
@@ -642,17 +579,12 @@ contains
    subroutine quao_eris(quao, eri_ao, eri_quao, error)
       !! Two-electron integrals over the quasi-atomic orbitals
       !!
-      !! Four quarter-transformations, each contracting one atomic-orbital index
-      !! and cycling it to the back, so after four passes `(mu nu|lambda sigma)`
-      !! has become `(pq|rs)` with the indices in the order they started.
-      !!
-      !! **This takes the dense atomic-orbital array and is therefore bounded by
-      !! `n_ao^4`.** That is fine for the molecules this analysis is run on and
-      !! it is not a fundamental cost -- the transformation could be driven from
-      !! the packed integrals, or direct from shell quartets, and nothing above
-      !! here would change. It is written the simple way because the decomposition
-      !! is the part that needed care, and the ceiling is stated rather than
-      !! discovered.
+      !! **Takes the dense atomic-orbital array, so memory is bounded by
+      !! `n_ao^4`.** Not a fundamental cost -- the transformation could be
+      !! driven from the packed integrals or direct from shell quartets.
+      ! TODO(mqc): `cur`, `t`, `step`, `ncol` and `n` are all dead here; the
+      ! transformation moved into `four_index_transform` and the declarations
+      ! stayed behind.
       type(quao_result_t), intent(in) :: quao
       real(dp), intent(in) :: eri_ao(:, :, :, :)
       real(dp), allocatable, intent(out) :: eri_quao(:, :, :, :)
@@ -679,11 +611,10 @@ contains
       !!
       !!     result_pqrs = sum_abcd coeff_ap coeff_bq coeff_cr coeff_ds source_abcd
       !!
-      !! Four quarter-transformations, each contracting one index and cycling it
-      !! to the back, so after four passes the order is restored. `coeff` is
-      !! `(n_in, n_out)` and need not be square: the two-electron integrals come
-      !! from a large atomic-orbital basis into a small quasi-atomic one, and
-      !! the cumulant comes from a small active space into the same one.
+      !! `coeff` is `(n_in, n_out)` and need not be square: the two-electron
+      !! integrals come from a large atomic-orbital basis into a small
+      !! quasi-atomic one, and the cumulant from a small active space into the
+      !! same one.
       real(dp), intent(in) :: coeff(:, :)          !! (n_in, n_out)
       real(dp), intent(in) :: source(:, :, :, :)   !! (n_in, n_in, n_in, n_in)
       real(dp), allocatable, intent(out) :: result(:, :, :, :)
@@ -694,9 +625,8 @@ contains
       n_in = size(coeff, 1)
       n_out = size(coeff, 2)
 
-      ! A transposed `coeff` still type-checks and still has two dimensions, so
-      ! without this the first reshape reads past the end of `source` and the
-      ! whole thing crashes several frames away from the mistake.
+      ! A transposed `coeff` still type-checks, and without this the first
+      ! reshape reads past the end of `source`.
       if (any(shape(source) /= n_in)) then
          error stop "four_index_transform: the array does not have the "// &
             "dimension the coefficients contract over"
@@ -731,14 +661,9 @@ contains
       !!
       !! The bracket is the two-particle density a single determinant would
       !! have, so `Lambda` is exactly the part of `d` that a determinant cannot
-      !! produce. It is zero for a closed-shell reference, and for an MCSCF wave
-      !! function it is zero unless all four indices are active -- the inactive
+      !! produce. Zero for a closed-shell reference, and for an MCSCF wave
+      !! function zero unless all four indices are active -- the inactive
       !! orbitals are a closed shell and carry no correlation.
-      !!
-      !! That is what makes the correlated decomposition cheap. The determinant
-      !! expression is already evaluated over the whole quasi-atomic basis; the
-      !! correction lives in the active space alone and is transformed from
-      !! there.
       real(dp), intent(in) :: dm1(:, :)
       real(dp), intent(in) :: dm2(:, :, :, :)
       real(dp), allocatable, intent(out) :: cumulant(:, :, :, :)
@@ -766,18 +691,9 @@ contains
       !!     U = C_quao^T S C
       !!
       !! **`U` is an isometry only if the orbitals lie inside the space the
-      !! quasi-atomic orbitals span, and active orbitals do not quite.** The
-      !! valence-virtual orbitals are chosen to look like free-atom orbitals;
-      !! the active orbitals of a converged MCSCF are chosen to lower an energy,
-      !! and the two are not the same choice. N2 in cc-pVDZ with a CAS(6,6)
-      !! misses orthonormality by about 6e-2.
-      !!
-      !! So the deficit is measured and handed back rather than treated as an
-      !! error. It is the same statement the population sum already makes about
-      !! this analysis -- that it describes what lies inside the quasi-atomic
-      !! span and not what lies outside -- and the caller is better placed to
-      !! decide what to do about it. What must not happen is losing it
-      !! silently.
+      !! quasi-atomic orbitals span, and the active orbitals of a converged
+      !! MCSCF do not quite.** The deficit is measured and handed back in
+      !! `deficit` rather than treated as an error; the caller decides.
       type(quao_result_t), intent(in) :: quao
       real(dp), intent(in) :: overlap(:, :)     !! (n_ao, n_ao)
       real(dp), intent(in) :: orbitals(:, :)    !! (n_ao, n_orb)
@@ -817,10 +733,9 @@ contains
    subroutine transform_cumulant(u, cumulant, cumulant_quao, error)
       !! Carry the cumulant from the active orbitals into the quasi-atomic basis
       !!
-      !! `U` being an isometry is what makes this exact: the contraction of the
-      !! cumulant against the integrals is the same number computed either side
-      !! of the transformation, so the correlation energy is neither gained nor
-      !! lost by changing basis. `quao_projection` checks that before returning.
+      !! Exact only where `U` is an isometry, so that the contraction against
+      !! the integrals is the same number either side of the transformation.
+      !! `quao_projection` measures the departure from that in `deficit`.
       real(dp), intent(in) :: u(:, :)               !! (n_quao, n_active)
       real(dp), intent(in) :: cumulant(:, :, :, :)  !! over active orbitals
       real(dp), allocatable, intent(out) :: cumulant_quao(:, :, :, :)
@@ -843,12 +758,9 @@ contains
       !!
       !!     Gamma_pqrs = gamma_pq gamma_rs - (1/2) gamma_ps gamma_rq
       !!
-      !! and `E2 = (1/2) sum_pqrs Gamma_pqrs (pq|rs)`. Both terms are carried
-      !! together rather than decomposed separately, because splitting them
-      !! invites the question of which atoms an exchange term belongs to -- its
-      !! density factors pair `p` with `s` while the integral pairs `p` with `q`
-      !! -- and there is no need to answer it. The integral is what says which
-      !! charge distributions are interacting.
+      !! and `E2 = (1/2) sum_pqrs Gamma_pqrs (pq|rs)`. Coulomb and exchange are
+      !! carried together, the assignment following the integral rather than
+      !! the density factors.
       !!
       !! `(pq|rs)` is the interaction of the distribution `pq` with the
       !! distribution `rs`, so the assignment follows the one-electron case with
@@ -932,8 +844,7 @@ contains
                   else if (a == c) then
                      intra(a) = intra(a) + w
                   else
-                     ! Two atomic charge clouds repelling each other, which is
-                     ! as classical as this decomposition gets.
+                     ! Two atomic charge clouds repelling each other.
                      call deposit(inter, a, c, w)
                      if (present(coulomb)) call deposit(coulomb, a, c, w)
                   end if
@@ -958,9 +869,7 @@ contains
       !! Charge `value` to the pair `{a,b}`
       !!
       !! Written into both elements, because `inter` holds the whole pair energy
-      !! in each and `kinetic_total` halves the matrix. The one place any
-      !! decomposition in this module touches the pair matrix, so the convention
-      !! is stated once and cannot drift between terms.
+      !! in each and `kinetic_total` halves the matrix.
       real(dp), intent(inout) :: inter(:, :)
       integer, intent(in) :: a, b
       real(dp), intent(in) :: value
@@ -984,12 +893,9 @@ contains
       !!
       !!     inter(A,B) = Z_A Z_B / R_AB
       !!
-      !! The one term in the whole energy that needs no decomposing: it is
-      !! written as a sum over pairs before anyone asks. Carrying it in the same
-      !! convention as everything else -- the whole pair energy in both
-      !! elements, halved by `kinetic_total` -- is what lets the total be
-      !! accumulated by adding matrices, and it is why the energy ends up
-      !! resolved into atoms and pairs with no remainder sitting outside.
+      !! Symmetric with a zero diagonal, and in the same convention as every
+      !! other pair matrix here -- the whole pair energy in both elements,
+      !! halved by `kinetic_total` -- so totals accumulate by adding matrices.
       integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: coordinates(:, :)   !! (3, n_atoms), Bohr
       real(dp), allocatable, intent(out) :: inter(:, :)
@@ -1027,17 +933,14 @@ contains
    subroutine print_total_decomposition(intra, inter, element_symbols)
       !! The energy resolved into atoms and atom pairs
       !!
-      !! What the analysis is for. `intra(A)` is everything that happens inside
-      !! atom `A` -- its own kinetic energy, its electrons in its own nuclear
-      !! field, its own electron repulsion -- and `inter(A,B)` is everything
-      !! that exists only because `A` and `B` are both present, Coulombic and
-      !! interference and nuclear repulsion together.
+      !! `intra(A)` is everything that happens inside atom `A` -- its own
+      !! kinetic energy, its electrons in its own nuclear field, its own
+      !! electron repulsion -- and `inter(A,B)` is everything that exists only
+      !! because `A` and `B` are both present.
       !!
-      !! These sum to the total energy exactly, so an interatomic term is not a
-      !! model of a bond but a piece of the number the calculation produced.
-      !! They are not bond energies: `intra(A)` is an atom deformed by the
-      !! molecule, not a free atom, and the difference between the two is the
-      !! adaptation energy that this does not yet compute.
+      !! **These are not bond energies.** They sum to the total energy exactly,
+      !! but `intra(A)` is an atom deformed by the molecule, not a free atom,
+      !! and the adaptation energy between the two is not computed here.
       real(dp), intent(in) :: intra(:)
       real(dp), intent(in) :: inter(:, :)
       character(len=*), intent(in) :: element_symbols(:)
@@ -1048,17 +951,11 @@ contains
    subroutine print_interatomic_split(inter, classical, element_symbols)
       !! Each pair interaction split into what is classical and what is not
       !!
-      !! **This is the claim the analysis exists to make.** The classical part is
-      !! everything an electrostatic model could produce: one atom's density in
-      !! the other's nuclear field, the repulsion between two atomic charge
-      !! clouds, and the repulsion of the two nuclei. It is a sum of large terms
-      !! of both signs that very nearly cancel, because a neutral atom is a
-      !! nearly neutral thing to be near.
-      !!
-      !! What is left is interference -- density shared between the two atoms,
-      !! which no classical model has any account of, and which the papers argue
-      !! is where covalent binding actually comes from. If that is right, the
-      !! second column here is small and the third carries the bond.
+      !! The classical column is everything an electrostatic model could
+      !! produce: one atom's density in the other's nuclear field, the repulsion
+      !! between two atomic charge clouds, and the repulsion of the two nuclei.
+      !! The remainder is interference -- density shared between the two atoms.
+      !! Both in millihartree, with the totals in hartree.
       real(dp), intent(in) :: inter(:, :)
       real(dp), intent(in) :: classical(:, :)
       character(len=*), intent(in) :: element_symbols(:)
@@ -1106,15 +1003,16 @@ contains
       !!
       !! and the core density keeps the whole nuclear charge, so the split is
       !! deliberately asymmetric. `Z_core` is twice the chemical-core orbital
-      !! count -- 0, 2, 10, 18, ... -- taken from the same minimal-basis tables
-      !! the rest of this analysis uses rather than from a ladder written out
-      !! again here.
+      !! count -- 0, 2, 10, 18, ... -- from `aambs_element_counts`.
       !!
-      !! **This is relabelling and cannot move any energy.** The two shares sum
-      !! to the undivided term because the two charge fractions sum to one, and
-      !! that is asserted rather than trusted. It is a rescaling applied after
-      !! the contraction, so it is not orbital-resolved and does not pretend to
-      !! be: no screening model is being solved, a number is being attributed.
+      !! **Relabelling, not a screening model.** The two shares sum to the
+      !! undivided term because the two charge fractions sum to one, and the
+      !! rescaling is applied after the contraction, so it is not
+      !! orbital-resolved.
+      ! TODO(mqc): unlike every sibling here this validates neither
+      ! `size(atomic_numbers)`, `size(v_atom_quao, 3)` nor
+      ! `maxval(quao%atom_of)` against `n_atoms`, so an orbital assigned outside
+      ! the molecule writes past the end of `intra_core`.
       type(quao_result_t), intent(in) :: quao
       real(dp), intent(in) :: density(:, :)
       real(dp), intent(in) :: v_atom_quao(:, :, :)
@@ -1165,10 +1063,8 @@ contains
                intra_core(a) = intra_core(a) + share*term
                intra_valence(a) = intra_valence(a) + (1.0_dp - share)*term
             else
-               ! Core-valence: zero for any wave function with a frozen core,
-               ! since the two spaces are orthogonal and the density does not
-               ! connect them. Accumulated rather than assumed away, and checked
-               ! below -- a correlated core would break it silently otherwise.
+               ! Core-valence: zero for a frozen core, since the two spaces are
+               ! orthogonal. Accumulated and checked below rather than assumed.
                cross = cross + abs(term)
                intra_core(a) = intra_core(a) + term
             end if
@@ -1201,10 +1097,8 @@ contains
    subroutine print_decomposition(title, intra, inter, element_symbols)
       !! The atom and atom-pair table
       !!
-      !! Millihartree rather than kcal/mol as the leading column: these are the
-      !! quantities the paper tabulates, and its tables are in millihartree.
-      !! kcal/mol follows for comparison with the bond-order table above, which
-      !! is on that scale because of the empirical tenth.
+      !! Millihartree in the leading column, kcal/mol beside it, and the three
+      !! totals in hartree. Pairs are ordered by descending magnitude.
       character(len=*), intent(in) :: title
       real(dp), intent(in) :: intra(:)
       real(dp), intent(in) :: inter(:, :)
@@ -1282,6 +1176,9 @@ contains
 
    subroutine sort_descending(values, order)
       !! Indices that put `values` in descending order of magnitude
+      ! TODO(mqc): a hand-written selection sort, quadratic in the number of
+      ! atom pairs and so quartic in the atom count, where `pic_sorting`'s
+      ! `sort_index` is already used elsewhere in the project for exactly this.
       real(dp), intent(in) :: values(:)
       integer, allocatable, intent(out) :: order(:)
 

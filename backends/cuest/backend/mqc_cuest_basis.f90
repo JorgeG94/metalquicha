@@ -64,8 +64,7 @@ contains
       !
       ! An atom with no shells would be handed to cuEST as a bare charge with
       ! no AO functions on it -- a converged SCF for a different molecule than
-      ! the one asked for. `load_basis` rejects that already; this catches any
-      ! other route to here rather than trusting the caller.
+      ! the one asked for.
       shell_set%n_atoms = int(mol_basis%nelements, c_int64_t)
       allocate (shell_set%n_shells_per_atom(mol_basis%nelements))
       shell_set%n_shells_total = 0
@@ -132,8 +131,8 @@ contains
                            shell_params, shell, error)
       !! Create one cuEST AO shell from host exponent/coefficient arrays
       !!
-      !! Wrapped separately because C_LOC needs an actual argument with the
-      !! TARGET attribute; these are HOST arrays, not device buffers.
+      !! `exponents` and `coefficients` are host arrays, not device buffers, and
+      !! carry TARGET because `c_loc` needs an actual argument that has it.
       type(c_ptr), intent(in) :: handle, shell_params
       integer(c_int32_t), intent(in) :: is_pure
       integer(c_int64_t), intent(in) :: ang_mom, n_prim

@@ -1,4 +1,4 @@
-! TODO JORGE: DO WE NEED THIS?
+! TODO(mqc): do we need this?
 !! Command line argument parsing for metalquicha
 module mqc_cli_parser
    !! Handles parsing of command line options including geometry files,

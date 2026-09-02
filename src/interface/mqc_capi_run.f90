@@ -8,20 +8,15 @@ module mqc_capi_run
    !! and hands all three over; the job's other ranks -- which have seen none
    !! of it -- are brought up to date and take part.
    !!
-   !! **The settings travel as JSON text rather than as a struct.** That looks
-   !! like a round trip and is a deliberate one. The alternative is
-   !! broadcasting `method_config_t`, which is sixty-odd fields across seven
-   !! nested sub-configs, and every one of them would have to be transcribed
-   !! into a send and a receive that stay in step forever. A field missed there
-   !! does not fail; it leaves the workers running a slightly different method
-   !! than rank 0 asked for, and the run converges and reports a number. Text
-   !! has no field list to forget, and it puts the workers through the same
-   !! validator as any input deck rather than around it.
+   !! **The settings travel as JSON text rather than as a struct.** Text has no
+   !! field list to keep in step, where a broadcast `method_config_t` that
+   !! missed one would leave the workers running a slightly different method
+   !! than rank 0 asked for and still report a number. It also puts the workers
+   !! through the same validator as any input deck.
    !!
-   !! The system does *not* travel that way, because it is the opposite case:
-   !! it carries conventions -- the monomer padding, the 0-based atoms against
-   !! 1-based monomers -- that a document would have to re-derive on arrival,
-   !! which is where the silent wrongness would live for that one.
+   !! The system does *not* travel that way: it carries conventions -- the
+   !! monomer padding, 0-based atoms against 1-based monomers -- that a
+   !! document would have to re-derive on arrival.
    use, intrinsic :: iso_c_binding, only: c_int, c_double, c_char, c_ptr, &
                                                                              c_null_char, c_f_pointer, c_associated
    use pic_types, only: int64, default_int
@@ -52,10 +47,9 @@ contains
       !! that *is* supplied is taken as given, in the order given, and must be
       !! closed under subsets; `run_calculation` refuses one that is not.
       !!
-      !! `energy` is the total. The per-term breakdown is not returned, because
-      !! it is what a screening pass wants and it is already written to the
-      !! fragment breakdown file -- which is why `write_output` and a returned
-      !! result are independent rather than a single switch.
+      !! `energy` is the total. The per-term breakdown is not returned; it goes
+      !! to the fragment breakdown file, which is why `write_output` and the
+      !! returned energy are independent rather than one switch.
       integer(c_int), value :: settings_len, label_len
       type(c_ptr), value :: system
       type(c_ptr), value :: terms  !! May be null: generate the list instead
@@ -84,10 +78,8 @@ contains
       ! A caller who never mentioned bonds is not a caller with no bonds, and
       ! the difference is invisible further down: `validate_system` audits the
       ! declared list against the geometry, and an empty list has nothing to
-      ! audit. So a covalent molecule cut into monomers with no bonds declared
-      ! would fragment into radicals, cap nothing, and return a number.
-      ! `bonds_declared` is the only place that distinction survives, so this
-      ! is the only place the check can be made.
+      ! audit. `bonds_declared` is the only place the distinction survives, so
+      ! this is the only place the check can be made.
       if (.not. h%bonds_declared) then
          call refuse_undeclared_cuts(h, status)
          if (status /= MQC_OK) return
@@ -130,10 +122,8 @@ contains
 
       ! A failure inside a fragment lands on the result, not on the session
       ! error: the driver keeps going so it can report every bad term at the
-      ! end rather than the first. Checking only `error` therefore returned
-      ! MQC_OK with whatever total had accumulated -- for a gradient the CPU
-      ! backend refuses, that was a clean 0.0 handed back as a success, which
-      ! is the worst shape a failure can take.
+      ! end rather than the first. Checking `error` alone would hand back
+      ! whatever total had accumulated, as a success.
       if (result%has_error) then
          last_message = result%error%get_message()
          status = MQC_FAIL
@@ -163,10 +153,7 @@ contains
       !! Refuse a partition that cuts bonds nobody declared
       !!
       !! Perception against an empty declared list, so every cross-monomer bond
-      !! the geometry implies comes back as missing. For a molecular cluster
-      !! that is none and this costs one O(N^2) sweep; for a peptide chopped at
-      !! the backbone it is the difference between capped fragments and
-      !! radicals.
+      !! the geometry implies comes back as missing. Costs one `O(N^2)` sweep.
       type(system_handle_t), intent(in) :: h
       integer(c_int), intent(out) :: status
 
@@ -193,9 +180,8 @@ contains
    pure function chars_to_string(n, chars) result(text)
       !! A C character array as a Fortran string
       !!
-      !! Length-counted rather than null-terminated: the caller already knows
-      !! how long the settings document is, and a JSON payload has no business
-      !! being scanned for a terminator it might legitimately never reach.
+      !! Length-counted rather than null-terminated, so a JSON payload is never
+      !! scanned for a terminator it might legitimately not carry.
       integer(c_int), intent(in) :: n
       character(kind=c_char), intent(in) :: chars(n)
       character(len=:), allocatable :: text

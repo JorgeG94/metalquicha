@@ -1,6 +1,6 @@
 !! contains MPI tags used in the MQC parallel implementation
 module mqc_mpi_tags
-   !! Module defining MPI communication tags for clarity and maintainability
+   !! Tag numbers, grouped by the phase of the run that uses them.
    use pic_types, only: default_int
    implicit none
    private
@@ -37,11 +37,11 @@ module mqc_mpi_tags
    integer(default_int), parameter, public :: TAG_GROUP_RESULT = 402
       !! Group global forwards batched results to super-global
    integer(default_int), parameter, public :: TAG_GROUP_DONE = 403
-
-   !! Setup-time broadcasts from rank 0 -- system, bonds, term list, config.
-   !  A range of its own so it cannot collide with work distribution, which is
-   !  in flight at a different phase but on the same communicator.
-   integer(default_int), parameter, public :: TAG_BCAST_PAYLOAD = 500
       !! Group global signals completion to super-global
+
+   ! Setup-time broadcasts from rank 0 (system, bonds, term list, config)
+   integer(default_int), parameter, public :: TAG_BCAST_PAYLOAD = 500
+      !! Rank 0 broadcasting the system at setup. A range of its own, so it
+      !! cannot collide with work distribution on the same communicator.
 
 end module mqc_mpi_tags

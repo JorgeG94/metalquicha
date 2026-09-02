@@ -2,18 +2,10 @@
 module mqc_diis
    !! Holds the DIIS history and produces the extrapolated Fock matrix.
    !!
-   !! Split out of the cuEST SCF driver for two reasons. It is pure linear
-   !! algebra over flat vectors with no integrals backend behind it, so it builds
-   !! and is unit-tested without a GPU -- which the SCF driver is not, since that
-   !! needs libcuest and an sm_80 card. And it gives the device port a host
-   !! reference to diff against: the failure mode of a device DIIS is a silently
-   !! stale history producing plausible-but-wrong coefficients, which only shows
-   !! up against a known-good implementation.
-   !!
-   !! Vectors are stored flat, one column per subspace entry, which serves the
-   !! restricted case (one n_ao*n_ao Fock) and the unrestricted case (both spins
-   !! stacked into one vector) through the same code, and is the layout a device
-   !! reduction wants: contiguous and coalesced.
+   !! Pure linear algebra over flat vectors, with no integrals backend behind
+   !! it. Vectors are stored flat, one column per subspace entry, which serves
+   !! the restricted case (one n_ao*n_ao Fock) and the unrestricted case (both
+   !! spins stacked into one vector) through the same code.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_ediis, only: ediis_coefficients, adiis_coefficients
@@ -27,42 +19,26 @@ module mqc_diis
    public :: diis_slot_of_age   !! Ring slot holding the age-th oldest entry
    public :: diis_coefficients  !! Extrapolation weights from a cached overlap matrix
 
-   !! The two procedures above are the parts of DIIS that have nothing to do
-   !  with where the vectors live: which slot an entry occupies, and what
-   !  weights a given overlap matrix implies. A device implementation shares
-   !  them rather than reimplementing them, so a host-versus-device divergence
-   !  can only have come from the vectors themselves -- which is the whole
-   !  point of keeping a host reference.
+   ! The two procedures above are the parts of DIIS that have nothing to do
+   ! with where the vectors live, so a device implementation shares them rather
+   ! than reimplementing them.
 
    real(dp), parameter :: PIVOT_FLOOR = 1.0e-14_dp
       !! Below this a pivot is treated as singular and extrapolation is skipped
 
    real(dp), parameter, public :: ACCEL_SWITCH = 1.0e-2_dp
       !! Error-vector norm below which an energy-based scheme hands over to
-      !! DIIS.
+      !! DIIS. Applied by the SCF driver, not by this module.
       !!
-      !! **This is a deliberate deviation from PySCF**, which has no handover:
-      !! setting `mf.DIIS` to `ADIIS` or `EDIIS` there runs that class from the
-      !! first iteration to the last. The deviation is measured rather than
-      !! assumed. On water/def2-SVP/PBE from a core guess, all three landing on
-      !! -76.271664064937: DIIS 10 iterations, ADIIS 11, EDIIS 32 with the
-      !! handover, against ADIIS 43 and EDIIS 92 without it.
+      !! **A deliberate deviation from PySCF**, which has no handover: setting
+      !! `mf.DIIS` to `ADIIS` or `EDIIS` there runs that class from the first
+      !! iteration to the last. Neither energy scheme is usable alone, and the
+      !! reason is structural: the convex constraint that keeps them inside the
+      !! hull of the densities seen so far is what stops them reaching a
+      !! solution lying outside it.
       !!
-      !! Those counts drift by an iteration or two with anything that touches
-      !! the quadrature -- they read 10 / 10 / 25 before the ECP work changed
-      !! the exchange-correlation grid to be built from the element rather than
-      !! the effective charge. The energies do not move and the conclusion does
-      !! not either, so do not quote them more precisely than the gap they
-      !! show. Neither energy scheme is usable alone, and the reason is structural rather than incidental
-      !! -- the convex constraint that keeps them inside the hull of the
-      !! densities seen so far is exactly what stops them reaching a solution
-      !! that lies outside it.
-      !!
-      !! The handover is a *performance* choice and nothing rests on it for
-      !! correctness. It could not have been said before the SCF convergence
-      !! test learned to check the commutator: until then a handover would have
-      !! hidden EDIIS stalling at an energy 0.11 Hartree wrong by switching
-      !! away before anything noticed.
+      !! The handover is a *performance* choice; nothing rests on it for
+      !! correctness.
 
    integer, parameter :: ACCEL_DIIS = 1   !! Pulay, on the error vectors
    integer, parameter :: ACCEL_EDIIS = 2  !! Kudin/Scuseria/Cances, on the energy
@@ -88,9 +64,7 @@ module mqc_diis
       logical :: energy_based = .false.
          !! Whether the history below is carried. Off by default and allocated
          !! only on request: a density is the size of a Fock matrix, so this
-         !! doubles the history's footprint -- 14 MB at 472 basis functions
-         !! across eight slots -- and a run that only ever calls DIIS should not
-         !! pay for it.
+         !! doubles the history's footprint.
 
       real(dp), allocatable :: density_history(:, :)  !! (n_fock, max_vectors)
       real(dp), allocatable :: energy_history(:)      !! (max_vectors)
@@ -99,11 +73,10 @@ module mqc_diis
          !! (max_vectors, max_vectors) cached <D_i | F_j> in slot coordinates,
          !! which is everything EDIIS and ADIIS need from the history.
          !!
-         !! **Not symmetric.** `<D_i|F_j>` and `<D_j|F_i>` are different
-         !! numbers off the diagonal, and both energy models depend on the
-         !! difference, so a new entry updates a full row *and* a full column
-         !! rather than one triangle -- unlike `overlap` above, where the two
-         !! are equal and the assignment is mirrored.
+         !! **Not symmetric.** `<D_i|F_j>` and `<D_j|F_i>` differ off the
+         !! diagonal and both energy models depend on the difference, so a new
+         !! entry updates a full row *and* a full column rather than one
+         !! triangle -- unlike `overlap` above, which is mirrored.
    contains
       procedure :: init => diis_init
       procedure :: push => diis_push
@@ -160,9 +133,7 @@ contains
       !! Slot holding the age-th oldest entry, age = 1 .. n_stored
       !!
       !! The history is a ring: pushing past the end overwrites the oldest entry
-      !! in place, so nothing is ever shifted. The previous implementation moved
-      !! the whole history down by one every iteration once full, which is
-      !! O(max_vectors * n_fock) of pure copying per SCF step.
+      !! in place, so nothing is ever shifted.
       integer, intent(in) :: newest, n_stored, max_vectors
       integer, intent(in) :: age
       integer :: slot
@@ -228,10 +199,8 @@ contains
 
          ! A full row *and* a full column, because `df` is not symmetric: the
          ! new density against every stored Fock, and every stored density
-         ! against the new Fock. Mirroring one onto the other -- which is what
-         ! `overlap` above does, correctly, since it is symmetric -- would put
-         ! `<D_j|F_i>` where `<D_i|F_j>` belongs and quietly symmetrise both
-         ! energy models.
+         ! against the new Fock. Mirroring one onto the other, as `overlap`
+         ! above correctly does, would quietly symmetrise both energy models.
          do age = 1, this%n_stored
             other = slot_of_age(this, age)
             this%df(slot, other) = sum(this%density_history(:, slot)* &
@@ -250,12 +219,8 @@ contains
       !! That is the whole difference: the first is fast near the solution and
       !! unreliable far from it, the second pair the other way round.
       !!
-      !! **One scheme runs the whole SCF**, which is what PySCF does -- setting
-      !! `mf.DIIS` to `ADIIS` or `EDIIS` uses that class from the first
-      !! iteration to the last, with no handover. Switching to DIIS once the
-      !! error is small is a real technique and other codes do it, but the
-      !! threshold is a free parameter and there is no measurement here to set
-      !! it from, so it is deliberately not invented.
+      !! One call runs one scheme. Choosing which, and handing over to DIIS
+      !! below `ACCEL_SWITCH`, is the caller's job -- see `mqc_libcint_rhf`.
       class(diis_state_t), intent(in) :: this
       integer, intent(in) :: scheme          !! One of the ACCEL_* parameters
       real(dp), intent(inout) :: fock(this%n_fock)
@@ -310,10 +275,8 @@ contains
    subroutine parse_accelerator_name(name, scheme, ok)
       !! `keywords.scf.accelerator` to one of the ACCEL_* parameters
       !!
-      !! Unknown names are refused rather than defaulted. A deck naming a
-      !! scheme that does not exist has asked for something specific and would
-      !! otherwise get plain DIIS with nothing to say so -- which is the exact
-      !! failure this project has now found three times in the SCF keywords.
+      !! Unknown names are refused rather than defaulted: `scheme` still comes
+      !! back `ACCEL_DIIS`, but `ok` is false so the caller can say so.
       character(len=*), intent(in) :: name
       integer, intent(out) :: scheme
       logical, intent(out) :: ok
@@ -386,10 +349,9 @@ contains
       !! history through `diis_slot_of_age` in the same order.
       !!
       !! The B matrix is assembled oldest-first rather than in slot order. The
-      !! DIIS solution is invariant to permutation of the subspace, but the
-      !! elimination is not bit-invariant, and age order is what the pre-ring
-      !! implementation solved -- so results stay reproducible across that
-      !! change, and across the host/device split.
+      !! DIIS solution is invariant to permutation of the subspace but the
+      !! elimination is not bit-invariant, so fixing the order keeps results
+      !! reproducible across the host/device split.
       real(dp), intent(in) :: overlap(:, :)   !! (max_vectors, max_vectors), slot coordinates
       integer, intent(in) :: newest, n_stored, max_vectors
       real(dp), allocatable, intent(out) :: coefficients(:)
@@ -417,18 +379,11 @@ contains
       end do
 
       ! Scale the error block to O(1) against the -1 constraint border. Its
-      ! entries are inner products of error vectors, so near convergence they
-      ! are ~|e|^2 -- around 1e-16 by the time the SCF is where it should stop,
-      ! against a border that stays -1. Eliminating that unscaled makes the
-      ! weights of a saturated subspace noise, and the failure is not a visible
-      ! blow-up: the density bottoms out and then drifts *away* from the fixed
-      ! point by a few percent an iteration, with the energy flat to 1e-14 the
-      ! whole time. An SCF then exhausts its iterations and returns a density
-      ! wrong by 1e-6, which every variational quantity absorbs and every
-      ! response property inherits.
-      !
-      ! The weights are invariant under this: scaling the block rescales the
-      ! Lagrange multiplier alone, which nothing reads.
+      ! entries are ~|e|^2, around 1e-16 by the time the SCF should stop, and
+      ! eliminating that unscaled makes a saturated subspace's weights noise --
+      ! without a visible blow-up: the density drifts away from the fixed point
+      ! with the energy flat. The weights are invariant under the scaling, which
+      ! rescales the Lagrange multiplier alone.
       scale = maxval(abs(b_matrix(1:n, 1:n)))
       if (scale > 0.0_dp) b_matrix(1:n, 1:n) = b_matrix(1:n, 1:n)/scale
 
@@ -456,8 +411,7 @@ contains
    subroutine solve_diis(b_matrix, coefficients, ok)
       !! Solve the small DIIS linear system by Gaussian elimination
       !!
-      !! The system is at most (diis_size+1) square, so a dedicated LAPACK
-      !! solve would cost more in dependencies than it saves in time.
+      !! The system is at most (diis_size+1) square.
       real(dp), intent(in) :: b_matrix(:, :)
       real(dp), allocatable, intent(out) :: coefficients(:)
       logical, intent(out) :: ok
