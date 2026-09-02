@@ -847,7 +847,7 @@ contains
       logical :: want_tau
       logical :: want_kxc
       real(dp), allocatable :: grrr_i(:), grrs_i(:), grss_i(:), gsss_i(:)
-      integer :: g0, g1, nb, i, ig, id, npts
+      integer :: g0, g1, nb, i, ig, id, npts, n_kxc
 
       npts = ctx%grid%n_points
       allocate (rho(npts), rho_grad(npts, 3), vrho(npts), vsigma(npts), &
@@ -859,8 +859,26 @@ contains
       ! All four together or none: a caller with three of them has a bug, and
       ! silently handing back an unallocated fourth would surface as a segfault
       ! somewhere else entirely.
-      want_kxc = present(grrr) .and. present(grrs) .and. present(grss) &
-                 .and. present(gsss)
+      !
+      ! **Enforced, not merely stated.** Written as an `and` alone, three of
+      ! four made `want_kxc` false and every requested output came back
+      ! unallocated with no error -- so the failure detached from the call that
+      ! caused it and arrived later as a segfault in whatever touched the array.
+      ! That is precisely the shape this comment was warning about, left
+      ! undefended.
+      n_kxc = 0
+      if (present(grrr)) n_kxc = n_kxc + 1
+      if (present(grrs)) n_kxc = n_kxc + 1
+      if (present(grss)) n_kxc = n_kxc + 1
+      if (present(gsss)) n_kxc = n_kxc + 1
+      if (n_kxc /= 0 .and. n_kxc /= 4) then
+         call error%set(ERROR_VALIDATION, "the third functional derivatives are "// &
+                        "all four or none: grrr, grrs, grss and gsss are one "// &
+                        "quantity in four pieces, and a caller asking for a "// &
+                        "subset has a bug rather than a preference.")
+         return
+      end if
+      want_kxc = n_kxc == 4
       ! Refused here rather than left to the caller. The meta-GGA branch below
       ! calls no third-derivative routine, so asking for one and getting a
       ! silent array of zeros is the shape of the failure this file refuses

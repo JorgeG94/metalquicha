@@ -125,30 +125,36 @@ contains
       pairings = .false.
       if (present(compare_pairings)) pairings = compare_pairings
 
+      ! Every setup failure below is a *test* failure, not a reason to stop
+      ! quietly. Returning with `error` unallocated is what testdrive reads as a
+      ! pass, so a molecule that would not build or an SCF that would not
+      ! converge used to leave this suite green with no comparison made.
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      if (err%has_error()) return
+      call check(error,.not. err%has_error(), "the molecule did not build: "// &
+                 err%get_message())
+      if (allocated(error)) return
       if (len_trim(functional) > 0) then
          call xc_context_create(mol, functional, ctx, err, level=3)
-         if (err%has_error()) then
-            call mol%destroy()
-            return
-         end if
+         if (err%has_error()) call mol%destroy()
+         call check(error,.not. err%has_error(), "the functional did not "// &
+                    "resolve: "//err%get_message())
+         if (allocated(error)) return
          call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       else
          call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       end if
-      if (err%has_error()) then
-         call mol%destroy()
-         return
-      end if
+      if (err%has_error()) call mol%destroy()
+      call check(error,.not. err%has_error(), "the reference did not converge: "// &
+                 err%get_message())
+      if (allocated(error)) return
 
       c = scf%orbitals
       n = size(c, 2)
       call mp2_mo_eri_physicist(mol, c, eri_mo, err)
-      if (err%has_error()) then
-         call mol%destroy()
-         return
-      end if
+      if (err%has_error()) call mol%destroy()
+      call check(error,.not. err%has_error(), "the MO transform failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
 
       ! Deliberately asymmetric: the contraction has to annihilate this part.
       allocate (m(n, n), msym(n, n))

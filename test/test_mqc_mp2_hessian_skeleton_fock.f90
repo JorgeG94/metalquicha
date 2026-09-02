@@ -77,7 +77,11 @@ contains
       integer :: n, n_occ, ia, comp, ix, p, q
 
       call reference(mol, scf, err)
-      if (err%has_error()) return
+      ! A reference that would not build is a failure of this test, not a reason
+      ! to return quietly: testdrive counts an unallocated `error` as a pass.
+      call check(error,.not. err%has_error(), "the reference did not build: "// &
+                 err%get_message())
+      if (allocated(error)) return
       c = scf%orbitals
       dens = scf%density
       n = size(c, 1)
@@ -144,7 +148,11 @@ contains
       integer :: n, ia, comp, ix, p, q
 
       call reference(mol, scf, err)
-      if (err%has_error()) return
+      ! A reference that would not build is a failure of this test, not a reason
+      ! to return quietly: testdrive counts an unallocated `error` as a pass.
+      call check(error,.not. err%has_error(), "the reference did not build: "// &
+                 err%get_message())
+      if (allocated(error)) return
       c = scf%orbitals
       n = size(c, 1)
 
@@ -215,7 +223,9 @@ contains
       if (.not. xc_available()) return
 
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      if (err%has_error()) return
+      call check(error,.not. err%has_error(), "the molecule did not build: "// &
+                 err%get_message())
+      if (allocated(error)) return
       call xc_context_create(mol, "b3lyp", ctx, err, level=3)
       call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) then

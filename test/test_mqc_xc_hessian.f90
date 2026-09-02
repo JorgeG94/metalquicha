@@ -907,18 +907,24 @@ contains
       real(dp) :: drho, dsig, want, got, scale, worst
       integer :: n, i, j, ig, npts
 
+      ! Setup failures are failures of this test. Returning with `error`
+      ! unallocated is what testdrive counts as a pass, so a molecule that would
+      ! not build or an SCF that would not converge used to leave the case green
+      ! having compared nothing.
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      if (err%has_error()) return
+      call check(error,.not. err%has_error(), "the molecule did not build: "// &
+                 err%get_message())
+      if (allocated(error)) return
       call xc_context_create(mol, functional, ctx, err, level=3, allow_half=.true.)
-      if (err%has_error()) then
-         call mol%destroy()
-         return
-      end if
+      if (err%has_error()) call mol%destroy()
+      call check(error,.not. err%has_error(), "the functional did not resolve: "// &
+                 err%get_message())
+      if (allocated(error)) return
       call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
-      if (err%has_error()) then
-         call mol%destroy()
-         return
-      end if
+      if (err%has_error()) call mol%destroy()
+      call check(error,.not. err%has_error(), "the reference did not converge: "// &
+                 err%get_message())
+      if (allocated(error)) return
       dens = scf%density
       n = size(dens, 1)
 
@@ -934,22 +940,22 @@ contains
 
       call xc_grid_kernel_quantities(ctx, mol, dens, r0, g0, vr0, vs0, f0rr, f0rs, f0ss, &
                                      err, grrr=krrr, grrs=krrs, grss=krss, gsss=ksss)
-      if (err%has_error()) then
-         call mol%destroy()
-         return
-      end if
+      if (err%has_error()) call mol%destroy()
+      call check(error,.not. err%has_error(), "the kernel evaluation failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
       call xc_grid_kernel_quantities(ctx, mol, dens + H*trial, rp, gp, vrp, vsp, &
                                      fprr, fprs, fpss, err)
-      if (err%has_error()) then
-         call mol%destroy()
-         return
-      end if
+      if (err%has_error()) call mol%destroy()
+      call check(error,.not. err%has_error(), "the kernel evaluation failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
       call xc_grid_kernel_quantities(ctx, mol, dens - H*trial, rm, gm, vrm, vsm, &
                                      fmrr, fmrs, fmss, err)
-      if (err%has_error()) then
-         call mol%destroy()
-         return
-      end if
+      if (err%has_error()) call mol%destroy()
+      call check(error,.not. err%has_error(), "the kernel evaluation failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
 
       npts = size(r0)
       worst = 0.0_dp
@@ -1019,18 +1025,24 @@ contains
       real(dp) :: want, worst
       integer :: n, ia, c, u, v
 
+      ! Setup failures are failures of this test. Returning with `error`
+      ! unallocated is what testdrive counts as a pass, so a molecule that would
+      ! not build or an SCF that would not converge used to leave the case green
+      ! having compared nothing.
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      if (err%has_error()) return
+      call check(error,.not. err%has_error(), "the molecule did not build: "// &
+                 err%get_message())
+      if (allocated(error)) return
       call xc_context_create(mol, "gga_x_b88", ctx, err, level=3, allow_half=.true.)
-      if (err%has_error()) then
-         call mol%destroy()
-         return
-      end if
+      if (err%has_error()) call mol%destroy()
+      call check(error,.not. err%has_error(), "the functional did not resolve: "// &
+                 err%get_message())
+      if (allocated(error)) return
       call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
-      if (err%has_error()) then
-         call mol%destroy()
-         return
-      end if
+      if (err%has_error()) call mol%destroy()
+      call check(error,.not. err%has_error(), "the reference did not converge: "// &
+                 err%get_message())
+      if (allocated(error)) return
       dens = scf%density
       n = size(dens, 1)
 
@@ -1048,7 +1060,9 @@ contains
       grad = 0.0_dp
       h1 = 0.0_dp
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      if (err%has_error()) return
+      call check(error,.not. err%has_error(), "the molecule did not build: "// &
+                 err%get_message())
+      if (allocated(error)) return
       call xc_potential_gradient(ctx, mol, dens, pmat, grad, err, fixed_grid=.true.)
       if (.not. err%has_error()) call xc_potential_deriv(ctx, mol, dens, h1, err)
       call mol%destroy()
@@ -1228,15 +1242,19 @@ contains
       if (.not. xc_available()) return
 
       call build_libcint_molecule(DZ, DSYM, DIMER, "6-31g*", mol, err)
-      if (err%has_error()) return
+      call check(error,.not. err%has_error(), "the dimer did not build: "// &
+                 err%get_message())
+      if (allocated(error)) return
       call xc_context_create(mol, "gga_x_b88", ctx, err, level=3, allow_half=.true.)
-      if (err%has_error()) then
-         call mol%destroy()
-         return
-      end if
+      if (err%has_error()) call mol%destroy()
+      call check(error,.not. err%has_error(), "the functional did not resolve: "// &
+                 err%get_message())
+      if (allocated(error)) return
       call run_libcint_rhf(mol, 20, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       call mol%destroy()
-      if (err%has_error()) return
+      call check(error,.not. err%has_error(), "the dimer reference did not "// &
+                 "converge: "//err%get_message())
+      if (allocated(error)) return
       dens = scf%density
       n = size(dens, 1)
 
@@ -1251,7 +1269,9 @@ contains
       allocate (hess(3, 3, 6, 6))
       hess = 0.0_dp
       call build_libcint_molecule(DZ, DSYM, DIMER, "6-31g*", mol, err)
-      if (err%has_error()) return
+      call check(error,.not. err%has_error(), "the dimer did not rebuild: "// &
+                 err%get_message())
+      if (allocated(error)) return
       call xc_potential_hessian(ctx, mol, dens, pmat, hess, err)
       call mol%destroy()
       call check(error,.not. err%has_error(), err%get_message())
