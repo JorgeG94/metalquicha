@@ -9,7 +9,7 @@ mqc_fetch(
   NAME
   test-drive
   GIT_REPOSITORY
-  "https://github.com/JorgeG94/test-drive"
+  "https://github.com/fortran-lang/test-drive"
   GIT_TAG
-  "main"
+  "v0.6.1"
   NAMESPACED_TARGET)
