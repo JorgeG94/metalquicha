@@ -38,9 +38,10 @@ FC=${FC:-gfortran}
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
-INC="-I$BUILD/modules -I$BUILD/modules_shared -I$WORK"
-[[ -d $BUILD/_deps/jsonfortran-build/include ]] &&
-   INC="$INC -I$BUILD/_deps/jsonfortran-build/include"
+INC=(-I"$BUILD/modules" -I"$BUILD/modules_shared" -I"$WORK")
+if [[ -d $BUILD/_deps/jsonfortran-build/include ]]; then
+   INC+=(-I"$BUILD/_deps/jsonfortran-build/include")
+fi
 
 # The C-interface layer first: everything else uses it.
 BINDINGS=(cuda_runtime cublas cusolver cuest cuda_helpers cuest_helpers)
@@ -75,7 +76,7 @@ src_for() { # dir, name -> path
 compile() { # dir, name
    local src
    src=$(src_for "$1" "$2")
-   if ! $FC -c $INC -J"$WORK" "$src" -o "$WORK/$2.o" 2>"$WORK/$2.err"; then
+   if ! $FC -c "${INC[@]}" -J"$WORK" "$src" -o "$WORK/$2.o" 2>"$WORK/$2.err"; then
       return 1
    fi
    return 0

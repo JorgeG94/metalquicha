@@ -27,6 +27,14 @@ repos:
         # of what a reference is for -- and these hooks rewrite in place, so the
         # edit lands whether or not anyone looks.
         exclude: '\.efp$'
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        # The Fortran, CMake, JSON and YAML in here were all linted; the shell
+        # was not, and tools/run.sh is the point at which that stopped being
+        # theoretical. Pinned through shellcheck-py so it installs from pip
+        # rather than needing docker or a system package.
   - repo: local
     hooks:
       - id: mqc-lint

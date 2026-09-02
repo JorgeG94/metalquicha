@@ -15,7 +15,7 @@
 # with a respectable <S^2>, onto the A2Sigma+ excited state about 4.3 eV above
 # the ground state. Nothing about the convergence gives it away.
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 MQC=${1:-./build/mqc}
 
 # Decks live under inputs/<hardware>/<engine>/<method>/ now, so a deck name is
