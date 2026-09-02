@@ -21,7 +21,7 @@
     },
     "keywords": {
         "fragmentation": {
-            "method": "MBE",
+            "method": "mbe",
             "level": 2
         },
         "optimization": {

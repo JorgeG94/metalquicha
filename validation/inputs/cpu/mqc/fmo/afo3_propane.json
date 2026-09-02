@@ -21,9 +21,8 @@
     },
     "keywords": {
         "fragmentation": {
-            "method": "mbe",
+            "method": "fmo",
             "level": 3,
-            "expansion": "fmo",
             "embedding": "none",
             "bond_breaking": "afo"
         },

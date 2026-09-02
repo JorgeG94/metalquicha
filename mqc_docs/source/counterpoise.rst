@@ -130,9 +130,9 @@ Counterpoise is carried by the ghosted rows of the MBE term list. Three things
 do not read that list, and a deck combining them with ``"vmfc"`` is refused
 before any work starts:
 
-* **GMBE** (``"allow_overlapping_fragments": true``) builds its terms by
+* **GMBE** (``"method": "gmbe"``) builds its terms by
   inclusion--exclusion over overlapping primaries instead.
-* **FMO** and **EE-MBE** (``"expansion"``) build their own term lists.
+* **FMO** and **EE-MBE** (``"method"``) build their own term lists.
 * **GFN1**, **GFN2** and **EFP** have no ghost centre to construct -- see below.
 
 The first two would have returned a valid *uncorrected* energy, which is the

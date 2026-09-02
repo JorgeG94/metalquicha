@@ -10,13 +10,12 @@ anything where a fragment is a whole molecule.
 
    "keywords": {
      "fragmentation": {
-       "method": "mbe",
-       "level": 2,
-       "expansion": "fmo"
+       "method": "fmo",
+       "level": 2
      }
    }
 
-``"expansion"`` takes ``"fmo"``, ``"ee-mbe"``, or is left out for the ordinary
+``"method"`` takes ``"fmo"``, ``"ee-mbe"``, or ``"mbe"`` for the ordinary
 many-body expansion. ``"level"`` is how many fragments at a time, so ``2`` is
 FMO2, ``3`` is FMO3, and so on.
 
@@ -51,13 +50,13 @@ The two methods
 
 They share all their machinery and differ in two choices.
 
-**FMO** (``"expansion": "fmo"``) builds the field from the neighbours' actual
+**FMO** (``"method": "fmo"``) builds the field from the neighbours' actual
 electron densities: nuclear attraction integrals plus the Coulomb operator of
 their density matrices. It then sums *internal* energies -- each fragment's own
 energy with its polarized density, not counting its interaction with the field --
 and adds a term for how each n-mer's density responds to that field.
 
-**EE-MBE** (``"expansion": "ee-mbe"``), electrostatically embedded MBE,
+**EE-MBE** (``"method": "ee-mbe"``), electrostatically embedded MBE,
 represents each neighbour by atomic point charges instead, and sums the *total*
 embedded energies in an ordinary many-body expansion with no response term.
 

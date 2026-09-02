@@ -404,7 +404,7 @@ Parses JSON input decks into ``mqc_config_t``.
    type :: mqc_config_t
      character(len=:), allocatable :: method
      integer :: nlevel                    ! Max MBE level
-     logical :: allow_overlapping_fragments
+     character(len=:), allocatable :: frag_method  ! mbe, ee-mbe, gmbe, fmo
      type(geometry_t) :: geometry
      integer, allocatable :: fragment_indices(:,:)
      ! ... many more fields

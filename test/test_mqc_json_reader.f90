@@ -562,8 +562,7 @@ contains
       type(error_t) :: parse_error
 
       call write_deck('"method": "XTB-GFN2"', "Energy", &
-                      '"fragmentation": {"method": "MBE", "level": 3, '// &
-                      '"allow_overlapping_fragments": true, '// &
+                      '"fragmentation": {"method": "gmbe", "level": 3, '// &
                       '"max_intersection_level": 5, "embedding": "none", '// &
                       '"bond_breaking": "caps", "cap_scale": 0.71, '// &
                       '"cutoff_method": "distance", "distance_metric": "min"}', &
@@ -572,11 +571,11 @@ contains
 
       call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
-      call check(error, config%frag_method, "MBE")
+      ! `gmbe` rather than `MBE` + allow_overlapping_fragments: the flag is
+      ! gone and the method names the expansion on its own now.
+      call check(error, config%frag_method, "gmbe")
       if (allocated(error)) return
       call check(error, config%frag_level, 3)
-      if (allocated(error)) return
-      call check(error, config%allow_overlapping_fragments, .true.)
       if (allocated(error)) return
       call check(error, config%max_intersection_level, 5)
       if (allocated(error)) return
@@ -647,8 +646,8 @@ contains
       type(error_t) :: parse_error
 
       call write_deck('"method": "XTB-GFN2"', "Energy", &
-                      '"fragmentation": {"method": "MBE", "level": 2, '// &
-                      '"expansion": "fmo", "scf_max_iter": 250, '// &
+                      '"fragmentation": {"method": "fmo", "level": 2, '// &
+                      '"scf_max_iter": 250, '// &
                       '"scf_energy_tolerance": 1.0e-10, '// &
                       '"scf_density_tolerance": 1.0e-8}', "", two_atoms())
       call read_deck(config, parse_error)
@@ -664,8 +663,8 @@ contains
 
       ! Absent keys leave the defaults untouched.
       call write_deck('"method": "XTB-GFN2"', "Energy", &
-                      '"fragmentation": {"method": "MBE", "level": 2, '// &
-                      '"expansion": "fmo"}', "", two_atoms())
+                      '"fragmentation": {"method": "fmo", "level": 2}', &
+                      "", two_atoms())
       call read_deck(config, parse_error)
       call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return

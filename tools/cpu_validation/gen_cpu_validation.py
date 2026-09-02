@@ -3291,9 +3291,11 @@ def main():
             d["molecules"][0]["fragments"] = fragments
             d["molecules"][0]["fragment_charges"] = [0]*len(fragments)
             d["molecules"][0]["fragment_multiplicities"] = [1]*len(fragments)
+            # `method` selects the expansion. It used to be required, ignored,
+            # and written "MBE" on every deck including the FMO ones; the flag
+            # below is derived from it now and naming both would be refused.
             d["keywords"]["fragmentation"] = {
-                "method": "MBE", "level": len(fragments),
-                "allow_overlapping_fragments": False, "embedding": "none",
+                "method": "mbe", "level": len(fragments), "embedding": "none",
             }
             d["driver"] = "Gradient"
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
@@ -3491,9 +3493,11 @@ def main():
             d["molecules"][0]["fragments"] = fragments
             d["molecules"][0]["fragment_charges"] = [0]*len(fragments)
             d["molecules"][0]["fragment_multiplicities"] = [1]*len(fragments)
+            # `method` selects the expansion. It used to be required, ignored,
+            # and written "MBE" on every deck including the FMO ones; the flag
+            # below is derived from it now and naming both would be refused.
             d["keywords"]["fragmentation"] = {
-                "method": "MBE", "level": len(fragments),
-                "allow_overlapping_fragments": False, "embedding": "none",
+                "method": "mbe", "level": len(fragments), "embedding": "none",
             }
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
         tests.append({

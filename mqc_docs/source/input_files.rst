@@ -64,8 +64,7 @@ Here is a complete example with all available options:
          "tolerance": 1e-6
        },
        "fragmentation": {
-         "method": "MBE",
-         "allow_overlapping_fragments": true,
+         "method": "gmbe",
          "level": 2,
          "embedding": "none",
          "cutoff_method": "distance",
@@ -176,7 +175,7 @@ For fragmented calculations, specify which atoms belong to each fragment:
 - Atom indices are **0-based** (first atom is 0)
 - Fragment charges must sum to ``molecular_charge``
 - Fragment multiplicities must be consistent with ``molecular_multiplicity``
-- Fragments can overlap if ``allow_overlapping_fragments: true``
+- Fragments can overlap under ``method: "gmbe"``
 
 Connectivity (Optional)
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -1177,11 +1176,9 @@ Fragmentation Options
 .. code-block:: json
 
    "fragmentation": {
-     "method": "MBE",
-     "allow_overlapping_fragments": false,
+     "method": "mbe",
      "level": 2,
      "max_intersection_level": 3,
-     "expansion": "mbe",
      "counterpoise": "none",
      "embedding": "none",
      "cutoff_method": "distance",
@@ -1194,17 +1191,34 @@ Fragmentation Options
 
 **Parameters**:
 
-- ``method``: ``"MBE"`` (Many-Body Expansion) or ``"GMBE"`` (Generalized MBE for overlapping fragments)
-- ``allow_overlapping_fragments``: ``true`` for GMBE, ``false`` for standard MBE (default: ``false``)
+- ``method``: **which expansion to run.** One of ``"mbe"``, ``"ee-mbe"``,
+  ``"gmbe"`` or ``"fmo"``. Case and separator are not significant, so ``MBE``
+  and ``EE_MBE`` read the same as ``mbe`` and ``ee-mbe``. A name this program
+  does not know is refused, and ``"efmo"`` is refused separately as a method
+  whose name is reserved and whose implementation does not exist yet.
+
+  - ``mbe`` -- the many-body expansion over disjoint fragments
+  - ``ee-mbe`` -- electrostatically embedded MBE; see :doc:`fmo`
+  - ``gmbe`` -- the generalized MBE, over *overlapping* fragments, with the
+    intersection terms supplied by inclusion-exclusion
+  - ``fmo`` -- the fragment molecular orbital method; see :doc:`fmo`
+
 - ``level``: Maximum fragment size (1=monomers only, 2=up to dimers, 3=up to trimers, etc.)
 - ``max_intersection_level``: For GMBE only - maximum k-way intersection depth (default: level + 1)
-- ``expansion``: ``"mbe"`` (default), ``"fmo"`` or ``"ee-mbe"`` - see :doc:`fmo`
-- ``counterpoise``: ``"none"`` (default) or ``"vmfc"`` for the basis-set
-  superposition correction - see :doc:`counterpoise`
-- ``embedding``: Fragment embedding scheme (currently only ``"none"`` supported)
-- ``cutoff_method``: How to include fragments (``"distance"``, ``"all"``)
-- ``distance_metric``: For distance cutoffs: ``"min"``, ``"max"``, ``"com"`` (center of mass)
-- ``cutoffs``: Distance thresholds (in Angstroms) for including dimers, trimers, etc.
+.. note::
+
+   ``expansion`` and ``allow_overlapping_fragments`` were two further ways to
+   name the same choice and have been **removed**. Until recently ``expansion``
+   was what actually selected the expansion while ``method`` was required,
+   validated for presence and then never read -- so every fragmented deck in
+   this repository said ``"MBE"``, including the ones running FMO, and a
+   misspelled ``method`` was accepted in silence.
+
+   A deck still using either key is refused at parse time with the key named,
+   rather than quietly running a different expansion. Move the value into
+   ``method``: ``expansion: "fmo"`` becomes ``method: "fmo"``, and
+   ``allow_overlapping_fragments: true`` becomes ``method: "gmbe"``.
+
 
 Properties Section
 ------------------
@@ -1536,8 +1550,7 @@ JSON input (``overlapping_gly3.json``):
      "model": {"method": "XTB-GFN1"},
      "keywords": {
        "fragmentation": {
-         "method": "GMBE",
-         "allow_overlapping_fragments": true,
+         "method": "gmbe",
          "level": 1,
          "max_intersection_level": 2
        }

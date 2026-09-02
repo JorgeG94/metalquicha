@@ -21,9 +21,8 @@
     },
     "keywords": {
         "fragmentation": {
-            "method": "mbe",
-            "level": 2,
-            "expansion": "ee-mbe"
+            "method": "ee-mbe",
+            "level": 2
         },
         "scf": {
             "maxiter": 100,

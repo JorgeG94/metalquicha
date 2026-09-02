@@ -549,11 +549,8 @@ contains
       call require_string(json, "keywords.fragmentation.method", config%frag_method, error)
       if (error%has_error()) return
       call optional_int(json, "keywords.fragmentation.level", config%frag_level)
-      call optional_logical(json, "keywords.fragmentation.allow_overlapping_fragments", &
-                            config%allow_overlapping_fragments)
       call optional_int(json, "keywords.fragmentation.max_intersection_level", &
                         config%max_intersection_level)
-      call optional_string(json, "keywords.fragmentation.expansion", config%expansion_kind)
       call optional_string(json, "keywords.fragmentation.counterpoise", config%counterpoise)
       call optional_string(json, "keywords.fragmentation.far_field", config%fmo_far_field)
       call optional_real(json, "keywords.fragmentation.resppc", config%fmo_resppc)

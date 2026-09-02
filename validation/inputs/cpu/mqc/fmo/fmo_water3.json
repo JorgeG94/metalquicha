@@ -21,9 +21,8 @@
     },
     "keywords": {
         "fragmentation": {
-            "method": "mbe",
-            "level": 2,
-            "expansion": "fmo"
+            "method": "fmo",
+            "level": 2
         },
         "scf": {
             "maxiter": 100,

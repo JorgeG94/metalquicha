@@ -554,7 +554,7 @@ be reachable -- including whole features, like the generalized expansion:
    # any other, so `method` and its settings can be replaced outright.
    mqc.MBE(cluster, level=1, method="hf", basis="sto-3g",
            keywords={"fragmentation": {"method": "GMBE",
-                                       "allow_overlapping_fragments": True}}).run()
+                                       "method": "gmbe"}}).run()
 
 ``system_options`` does the same for the deck's ``system`` block -- it is not
 called ``system`` because that is the molecule, the first argument.

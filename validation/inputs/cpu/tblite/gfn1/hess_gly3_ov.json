@@ -94,8 +94,7 @@
             "tolerance": 1e-06
         },
         "fragmentation": {
-            "method": "MBE",
-            "allow_overlapping_fragments": true,
+            "method": "gmbe",
             "level": 1,
             "embedding": "none",
             "cutoff_method": "distance",
