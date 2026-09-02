@@ -772,7 +772,7 @@ contains
    end subroutine hess_2e_contract
 
    subroutine hess_2e_skeleton_contract(mol, gamma, dref, owner, hess_corr, &
-                                        hess_ref, error, screen_tol)
+                                        hess_ref, error, screen_tol, k_scale)
       !! The two-electron second derivatives against a **general** four-index
       !! density, contracted as they are computed
       !!
@@ -817,13 +817,20 @@ contains
       real(dp), intent(inout) :: hess_ref(:, :, :, :)
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: screen_tol
+      real(dp), intent(in), optional :: k_scale
+         !! Exact-exchange fraction of the reference deposit's separable
+         !! weight. Absent is one, Hartree-Fock; a Kohn-Sham reference passes
+         !! its functional's fraction so the exchange half of `gref` matches
+         !! the operator that produced `dref`. The general-density weights
+         !! `w4`/`w8` are untouched: the correlation's two-particle density
+         !! carries its own exchange structure, folded where it was built.
 
       real(dp), allocatable :: buf_ii(:), buf_ij(:), buf_ik(:)
       real(dp), allocatable :: hloc_c(:, :, :, :), hloc_r(:, :, :, :)
       integer, allocatable :: atm_flat(:), bas_flat(:)
       integer, allocatable :: sh_dim(:), sh_off(:)
       real(dp), allocatable :: bounds(:, :), dsh(:, :), gsh(:, :), sa(:)
-      real(dp) :: qq, wbound, est, tol, w4, w8, gref
+      real(dp) :: qq, wbound, est, tol, w4, w8, gref, kx
       integer :: dims(0:3), shls(0:3)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
       integer :: io, jo, ko, lo, i, j, k, l, comp, mx, idx
@@ -855,6 +862,8 @@ contains
       ! `w4` and twice that covers `w8`.
       tol = HESS_SCREEN_TOL
       if (present(screen_tol)) tol = screen_tol
+      kx = 1.0_dp
+      if (present(k_scale)) kx = k_scale
       call schwarz_bounds(mol, bounds, error)
       if (error%has_error()) return
 
@@ -873,7 +882,7 @@ contains
 
       !$omp parallel default(none) &
       !$omp shared(mol, gamma, dref, owner, hess_corr, hess_ref, sh_dim, sh_off, &
-      !$omp        atm_flat, bas_flat, mx, natm, n_pairs, bounds, dsh, gsh, sa, tol) &
+      !$omp        atm_flat, bas_flat, mx, natm, n_pairs, bounds, dsh, gsh, sa, tol, kx) &
       !$omp private(buf_ii, buf_ij, buf_ik, hloc_c, hloc_r, dims, shls, &
       !$omp         ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, i, j, k, l, &
       !$omp         comp, idx, ia, ja, ka, a, b, pair, ig, jg, kg, lg, &
@@ -936,8 +945,8 @@ contains
                            w8 = w4 + gamma(ig, jg, lg, kg) + gamma(jg, ig, lg, kg) &
                                 + gamma(lg, kg, ig, jg) + gamma(lg, kg, jg, ig)
                            gref = 0.5_dp*dref(ig, jg)*dref(kg, lg) &
-                                  - 0.125_dp*(dref(ig, lg)*dref(kg, jg) &
-                                              + dref(ig, kg)*dref(jg, lg))
+                                  - kx*0.125_dp*(dref(ig, lg)*dref(kg, jg) &
+                                                 + dref(ig, kg)*dref(jg, lg))
                            do comp = 1, N_COMPONENTS
                               a = (comp - 1)/3 + 1
                               b = comp - 3*(a - 1)

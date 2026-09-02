@@ -82,7 +82,7 @@ contains
                                    error, n_frozen, block_bytes, force_blocked, &
                                    xc, scf_density, pt2_scale, aux, &
                                    relaxed_density_mo, lagrangian_mo, two_particle_ao, &
-                                   energy_weighted_ao)
+                                   energy_weighted_ao, fixed_grid)
       !! dE(MP2)/dR for a closed-shell reference, in Hartree/Bohr
       !!
       !! **With `xc`, this returns something else**: the correlation part alone,
@@ -121,6 +121,21 @@ contains
          !! including the Lagrangian that feeds the Z-vector -- but *after* the
          !! solve, since scaling a linear system's right-hand side and scaling
          !! its solution are the same thing and doing both is the error to avoid.
+      logical, intent(in), optional :: fixed_grid
+         !! Leave the quadrature grid where it is, so the only motion this
+         !! differentiates is the density's. Defaults to `.false.` -- the
+         !! physical gradient, which is what a deck wants.
+         !!
+         !! `.true.` exists for one caller: the double hybrid's *Hessian* holds
+         !! the grid fixed, as `ks_hessian` and `xc_hessian` do, so the gradient
+         !! it can be differenced against is this one and not the physical one.
+         !! `xc_gradient_fixed_grid` and `vv10_gradient_fixed_grid` are public
+         !! for exactly the same reason. Comparing the fixed-grid Hessian
+         !! against the moving-grid gradient instead does not fail cleanly: it
+         !! leaves a residual that shrinks with grid level -- 5.5e-4 at level 3
+         !! against 6.5e-5 at level 5 was measured on the reference term -- and
+         !! so reads as a convergence problem rather than as the two quantities
+         !! being different derivatives.
       integer, intent(in), optional :: n_frozen
          !! Core orbitals excluded from the correlation. The amplitudes and the
          !! two-particle density span the active occupied space only; the
@@ -540,7 +555,8 @@ contains
       ! two-electron, so `vhf1` below is all of it, while a Kohn-Sham reference
       ! keeps part of its operator on a quadrature grid.
       if (dh) then
-         call xc_potential_gradient(xc, mol, scf_density, dm1, gradient, error)
+         call xc_potential_gradient(xc, mol, scf_density, dm1, gradient, error, &
+                                    fixed_grid=fixed_grid)
          if (error%has_error()) return
       end if
 
@@ -923,7 +939,7 @@ contains
    end subroutine build_gamma_block
 
    subroutine build_effective_2pdm_ao(t2, relaxed_density_mo, coeff, n_ao, n_mo, &
-                                      n_occ, n_frozen, gamma_eff_ao)
+                                      n_occ, n_frozen, gamma_eff_ao, k_scale)
       !! The effective two-particle density in the AO basis, bra-ket symmetric
       !!
       !! **Not the gradient's `gamma_ao`.** That one carries the energy's
@@ -947,17 +963,31 @@ contains
       !! -- the frozen orbitals carry the reference's density even though the
       !! amplitudes never see them. The one-electron remainder
       !! `D_rel h^{XY} + W S^{XY}` stays separate and is not folded here.
+      !!
+      !! Over a Kohn-Sham reference the folded operator is the functional's,
+      !! so the exchange half of `Gam_D` carries `k_scale`:
+      !!
+      !!     Gam_D[a,b,c,d] = 2 D[a,c] P[b,d] - k D[a,d] P[b,c]
+      !!
+      !! The exchange-correlation share of `D_rel f^{XY}` is a grid quantity
+      !! and cannot be folded into a density; `xc_potential_hessian` carries
+      !! it, at the skeleton sweep's caller.
       real(dp), intent(in) :: t2(:, :, :, :)      !! Active amplitudes, (o,o,v,v)
       real(dp), intent(in) :: relaxed_density_mo(:, :)
       real(dp), intent(in) :: coeff(:, :)         !! C, (n_ao, n_mo)
       integer, intent(in) :: n_ao, n_mo, n_occ, n_frozen
       real(dp), allocatable, intent(out) :: gamma_eff_ao(:, :, :, :)
+      real(dp), intent(in), optional :: k_scale
+         !! Exact-exchange fraction of the reference operator. Absent is one.
 
       real(dp), allocatable :: g(:, :, :, :), swap(:, :, :, :)
       real(dp), allocatable :: cur(:, :), nxt(:, :)
       integer :: i, j, a, b, p, q, r, s, n_oa, n_v, step
       integer :: dims(4)
-      real(dp) :: u
+      real(dp) :: u, kx
+
+      kx = 1.0_dp
+      if (present(k_scale)) kx = k_scale
 
       n_oa = size(t2, 1)
       n_v = size(t2, 3)
@@ -985,13 +1015,26 @@ contains
             end do
          end do
       end do
-      do q = 1, n_occ                     ! and the exchange term, b = c = q
-         do s = 1, n_mo
-            do p = 1, n_mo
-               g(p, q, q, s) = g(p, q, q, s) - relaxed_density_mo(p, s)
+      ! Two copies, split on the exchange fraction: a variable multiplier
+      ! shifts contraction and scheduling by an ulp even at exactly one, and
+      ! the Hartree-Fock path is held bit for bit.
+      if (kx == 1.0_dp) then
+         do q = 1, n_occ                  ! and the exchange term, b = c = q
+            do s = 1, n_mo
+               do p = 1, n_mo
+                  g(p, q, q, s) = g(p, q, q, s) - relaxed_density_mo(p, s)
+               end do
             end do
          end do
-      end do
+      else
+         do q = 1, n_occ                  ! the same exchange term, scaled
+            do s = 1, n_mo
+               do p = 1, n_mo
+                  g(p, q, q, s) = g(p, q, q, s) - kx*relaxed_density_mo(p, s)
+               end do
+            end do
+         end do
+      end if
 
       ! ---- physicist -> chemist, then bra-ket symmetrise --------------------
       allocate (swap(n_mo, n_mo, n_mo, n_mo))

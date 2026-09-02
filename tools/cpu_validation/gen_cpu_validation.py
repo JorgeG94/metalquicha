@@ -332,6 +332,26 @@ HAND_MAINTAINED = {
     "cpu/mqc/makefp/water_makefp.json",
     "cpu/mqc/makefp/water_makefp_df.json",
     "cpu/mqc/makefp/hydronium_makefp.json",
+    # The double hybrid's Hessian on a basis with d functions, whose reference is
+    # *ours*. Not because none could be generated but because none can be
+    # generated well: differencing a pinned-grid PySCF energy -- the construction
+    # the three STO-3G double-hybrid cases use -- loses accuracy once a heavy
+    # nucleus with a sharp density moves through a grid that stays put, and lands
+    # 7e-5 from both analytic Hessians, which sit 2.5e-5 from each other. See the
+    # note at HESSIAN_DH_CASES.
+    #
+    # **So this detects change and not correctness**, and is labelled a
+    # regression pin rather than a validation case for that reason. What makes
+    # our matrix the one worth pinning is measured elsewhere and not here: it
+    # differences our own gradient to 4.59e-10, it is symmetric to 2.6e-11 where
+    # PySCF's is asymmetric by 3.3e-6 on this basis, and Hartree-Fock at the same
+    # basis agrees with PySCF analytically to 3.0e-8, so the l=2 integral second
+    # derivatives underneath are sound. The bound is 1e-9 against 7.3e-12 of
+    # scatter between one thread and four.
+    #
+    # Its manifest entry is in validation_tests.json with the other
+    # hand-maintained ones.
+    "cpu/mqc/hessian/cpu_water_6-31g_st__b2plyp_hess.json",
     # The EFP2 interaction energy. Its reference is GAMESS rather than PySCF, so this
     # script cannot generate it either. It consumes the potential that
     # water_makefp.json writes beside itself, so that deck runs first.
@@ -881,9 +901,10 @@ def _hessian_tolerance(functional, basis):
 # Analytic Hessian cases, as (molecule, basis, functional).
 #
 # Only what the analytic path covers. What it does not -- unrestricted, density
-# fitted, PCM, a capped fragment, a correlated method, a double hybrid -- falls
-# back to differencing gradients, which is a different code path with a
-# different reference and is not what these are for.
+# fitted, PCM, a capped fragment, a coupled-cluster method -- falls back to
+# differencing gradients, which is a different code path with a different
+# reference and is not what these are for. Double hybrids have their own list
+# below, because their reference has to be built differently.
 #
 # Range-separated hybrids and the VV10 `-V` functionals are *not* on that list
 # any more: both have analytic Hessians now, and neither has a case here yet.
@@ -2002,6 +2023,171 @@ def pyscf_hessian(atoms, basis, functional="", level=HESSIAN_GRID_LEVEL):
     return float(energy), hess.tolist(), mol.nao
 
 
+# Analytic double-hybrid Hessian cases, as (molecule, basis, functional).
+#
+# Deliberately one molecule and one basis. Every entry costs 326 converged
+# SCF-plus-MP2 runs to reference -- see `pyscf_dh_hessian` -- so this list buys
+# coverage of the *assembly* rather than of basis sets, which the energy and
+# gradient cases already cover at far lower cost.
+#
+# All three functionals, though, and that is assembly coverage rather than
+# breadth for its own sake: they carry different exchange and PT2 fractions
+# (0.53/0.27, 0.65/0.36, 0.55/0.25), and a fraction applied on one side of the
+# kernel substitution and not the other reproduces the right answer at some
+# values and not others. `test_mqc_mp2_hessian_ks_operator` makes the same
+# argument for the same reason one rung down, and runs at three fractions.
+#
+# All-electron, because the analytic path is: a frozen-core double hybrid is
+# refused at the gradient and so never reaches a Hessian. GGA-based, because
+# the perturbative term's kernel is -- and all three double hybrids carried
+# here are GGA-based anyway.
+HESSIAN_DH_CASES = [
+    ("water", "sto-3g", "b2plyp"),
+    ("water", "sto-3g", "b2gp-plyp"),
+    ("water", "sto-3g", "mpw2plyp"),
+]
+# **No d-function case here, and the reason is this reference rather than our
+# assembly.** 6-31G* was tried, because STO-3G reaches no `l = 2` second
+# derivative and no d-shell AO second derivative on the grid, and it had to be
+# withdrawn: differencing a pinned-grid energy stops being accurate once a
+# *heavy* nucleus with a sharp density moves through a grid that stays put.
+#
+# Measured, B3LYP/6-31G*, three constructions of one fixed-grid Hessian:
+#
+#     ours            vs these energy differences   7.3e-5
+#     PySCF analytic  vs these energy differences   9.8e-5
+#     ours            vs PySCF analytic             2.5e-5
+#
+# The two analytic Hessians agree with each other better than either agrees
+# with the differenced one, which makes the differenced one the outlier. It is
+# worth 5.3e-8 at STO-3G and 7e-5 here, and the whole difference is the oxygen
+# diagonal -- the block where the nucleus moves furthest through its own dense
+# atomic grid. A case built on it would need a 5e-4 bound, which hides
+# everything it is meant to catch.
+#
+# The d coverage is taken where it is tight instead:
+# `test_mqc_dh_hessian_fd` runs the same comparison at 6-31G* against *our own*
+# gradient, on one grid, and reads 4.59e-10.
+
+#: Nine times the measured worst entry, 5.3e-8 for `b2plyp` and 4.0e-8 for
+#: `b2gp-plyp` on water/STO-3G against the Richardson-extrapolated reference.
+#: Looser than the ordinary DFT Hessian bound because the reference is
+#: differenced rather than analytic: what it absorbs is the residual `O(h^4)`
+#: the extrapolation leaves and the energy's own convergence floor amplified by
+#: `1/h^2`, neither of which the analytic references carry.
+HESSIAN_DH_TOLERANCE = 5.0e-7
+
+#: `mpw2plyp` is held ten times looser, and the reason is the functional rather
+#: than the assembly. mPW91 exchange is rougher on a level-3 grid than B88 is,
+#: so everything differenced across it carries more quadrature noise: measured
+#: 5.2e-7 against this reference, where the other two sit near 5e-8.
+#:
+#: That it is the grid and not our second derivative was established by
+#: refining it. `test_mqc_dh_hessian_fd`, which differences *our own* gradient
+#: and so never touches PySCF, reads 4.689e-08 for `mpw2plyp` at level 3 and
+#: 3.865e-09 at level 5 -- a factor of twelve for one refinement, against
+#: 4.891e-10 for `b2plyp` at level 3. An error in the assembly would not
+#: converge away with the quadrature; this does.
+#:
+#: Still four orders below what the check is for: suppressing the bridge's
+#: addition of the perturbative term moves these matrices by 1.8e-2.
+HESSIAN_DH_LOOSE = {"mpw2plyp": 5.0e-6}
+
+
+def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
+                     step=0.008):
+    """Reference double-hybrid Hessian, by second differences of the energy.
+
+    **Why a difference, and why twice.** No open-source code has an analytic
+    double-hybrid Hessian -- PySCF implements no MP2 Hessian at all, and Psi4's
+    is over a Hartree-Fock reference rather than a Kohn-Sham one. So there is
+    nothing to compare against term by term, exactly as there was nothing for
+    the gradient one order down. What there is, and what `pyscf_dh_gradient`
+    already leans on, is a third-party *energy*: PySCF's B2PLYP total built
+    from our basis file agrees with ours to ~1e-12. This differences that twice.
+    The result owes nothing to our assembly -- not our Z-vector, not our kernel,
+    not our potential derivative, and now not our orbital response either.
+
+    **The grid is pinned at the reference geometry.** Our analytic Hessian holds
+    it fixed, as `ks_hessian` and `xc_hessian` do, so a reference whose grid
+    moved with the nuclei would be a different derivative -- it disagrees by
+    2.2e-4 on water/STO-3G, which is far too small to read as an error and far
+    too large to be step noise. PySCF honours `mf.grids.coords/weights` assigned
+    directly, so every displaced energy here is integrated on the same points.
+    Pinning is what turns a ~1e-4 comparison into a ~1e-8 one.
+
+    **Richardson.** The second difference is `O(h^2)`, and measured it behaves
+    exactly so: 1.16e-4 at `h`, 2.90e-5 at `h/2`, a factor of four. Extrapolating
+    `(4 D(h/2) - D(h)) / 3` lands at 6.4e-8 against our analytic Hessian. Without
+    it the reference is worse than the quantity it is checking.
+
+    Costs `2 * (2n + 4 * n(n-1)/2 + 1)` converged SCF-plus-MP2 runs for `3N = n`
+    coordinates -- 326 for a triatomic, a few minutes at STO-3G. That is the
+    price of a reference nobody else can hand us.
+    """
+    import numpy as np
+    from pyscf import dft, gto, mp
+
+    xc, c_pt2 = DH_SEMILOCAL[functional]
+    symbols = {a[0] for a in atoms}
+    geom = np.array([[x, y, z] for _, x, y, z in atoms])
+
+    def build(coords):
+        mol = gto.Mole()
+        mol.atom = [(atoms[i][0], tuple(coords[i])) for i in range(len(atoms))]
+        mol.unit = "Angstrom"
+        mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+        mol.charge, mol.spin, mol.verbose = 0, 0, 0
+        mol.cart = molecule_form(basis, symbols) == CARTESIAN
+        mol.build()
+        return mol
+
+    ref_grid = dft.gen_grid.Grids(build(geom))
+    ref_grid.level = level
+    ref_grid.build()
+
+    def energy(coords):
+        mf = dft.RKS(build(coords))
+        mf.xc = xc
+        mf.conv_tol, mf.conv_tol_grad = 1e-13, 1e-9
+        mf.grids.coords = ref_grid.coords.copy()
+        mf.grids.weights = ref_grid.weights.copy()
+        e_ks = mf.kernel()
+        if not mf.converged:
+            raise RuntimeError("the reference SCF did not converge")
+        pt2 = mp.MP2(mf)
+        pt2.frozen = 0
+        return float(e_ks + c_pt2 * pt2.kernel()[0])
+
+    def second_differences(h):
+        n = 3 * len(atoms)
+        hess = np.zeros((n, n))
+        e0 = energy(geom)
+
+        def shifted(*moves):
+            c = geom.copy()
+            for i, a, d in moves:
+                c[i, a] += d
+            return energy(c)
+
+        for i in range(n):
+            ai, xi = divmod(i, 3)
+            hess[i, i] = shifted((ai, xi, h)) - 2.0 * e0 + shifted((ai, xi, -h))
+            for j in range(i + 1, n):
+                aj, xj = divmod(j, 3)
+                mixed = (shifted((ai, xi, h), (aj, xj, h))
+                         - shifted((ai, xi, h), (aj, xj, -h))
+                         - shifted((ai, xi, -h), (aj, xj, h))
+                         + shifted((ai, xi, -h), (aj, xj, -h)))
+                hess[i, j] = hess[j, i] = mixed / 4.0
+        return e0, hess / (h / ANGSTROM_PER_BOHR) ** 2
+
+    e0, coarse = second_differences(step)
+    _, fine = second_differences(step / 2.0)
+    richardson = (4.0 * fine - coarse) / 3.0
+    return e0, richardson.tolist(), build(geom).nao
+
+
 def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
                    level=GRADIENT_GRID_LEVEL):
     """Reference energy and analytic nuclear gradient, in Hartree/Bohr.
@@ -2865,6 +3051,38 @@ def main():
         norm = math.sqrt(sum(c*c for row in hessian for c in row))
         print(f"{mol.label:6s} {basis:12s} {theory:8s} hess |H|={norm:.10f} "
               f"nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, functional in HESSIAN_DH_CASES:
+        mol = MOLECULES[name]
+        energy, hessian, nao = pyscf_dh_hessian(mol.atoms, basis, functional)
+        tag = normalize_basis_name(basis) + "_" + functional.replace("-", "")
+        deck = deck_for(f"{CPU_MQC}/hessian", f"cpu_{name}_{tag}_hess")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, method="dft",
+                          correlation={"freeze_core": False})
+            d["model"]["functional"] = functional
+            d["keywords"]["dft"] = {"grid_level": HESSIAN_GRID_LEVEL}
+            d["driver"] = "Hessian"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        entry = {
+            "name": f"{functional.upper()} Hessian {mol.label} {basis} (CPU)",
+            "input": deck,
+            # Comparable despite the pinning: at the reference geometry the
+            # pinned grid *is* the ordinary one, so this is the plain
+            # double-hybrid energy and the same number the `dh` energy cases
+            # check. Only the displaced points differ.
+            "expected_energy": round(energy, 12),
+            "expected_hessian": [[round(c, 12) for c in row] for row in hessian],
+            "hessian_tolerance": HESSIAN_DH_LOOSE.get(
+                functional, HESSIAN_DH_TOLERANCE),
+            "requires": "libxc",
+            "type": "unfragmented",
+        }
+        tests.append(entry)
+        norm = math.sqrt(sum(c*c for row in hessian for c in row))
+        print(f"{mol.label:6s} {basis:12s} {functional.upper():8s} "
+              f"hess |H|={norm:.10f} nao={nao:4d} E={energy:.12f}", flush=True)
 
     for name, basis, frozen in GRADIENT_MP2_CASES:
         mol = MOLECULES[name]

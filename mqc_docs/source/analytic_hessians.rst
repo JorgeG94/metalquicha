@@ -47,6 +47,13 @@ What is covered
    * - MP2, frozen core
      - yes
      - the default -- ``freeze_core`` is on unless the deck turns it off
+   * - Double hybrid, all-electron
+     - yes
+     - ``b2plyp``, ``b2gp-plyp``, ``mpw2plyp`` with
+       ``keywords.correlation.freeze_core: false``
+   * - Double hybrid, frozen core
+     - **no**
+     - the default -- ``freeze_core`` is on unless the deck turns it off
    * - Spin-scaled or fitted MP2
      - **no**
      - ``scs-mp2``, ``sos-mp2``, ``ri-mp2``
@@ -69,6 +76,21 @@ its core by default and now takes the analytic path with it -- the frozen
 count flows into the correlation assembly, whose core rotations carry it.
 A run that took the analytic path logs
 ``computing the analytic MP2 Hessian``.
+
+The double-hybrid rows say the opposite of the MP2 ones about a frozen core,
+and the asymmetry is real rather than an oversight: the frozen blocks the MP2
+Hessian uses are built and correct, but they have been validated over a
+Hartree-Fock reference only, never against a Kohn-Sham operator carrying its
+kernel in the response. A frozen-core double-hybrid deck therefore falls back
+rather than reusing them on trust. Its *gradient* refuses outright for the same
+reason, which means such a deck does not reach the Hessian at all.
+
+A double hybrid that took the analytic path logs ``computing the analytic
+Hessian`` followed by ``computing the perturbative term's Hessian``. Seeing
+only the first line on a ``b2plyp`` deck would mean the Hessian excluded what
+the energy included -- which is what this used to do, returning the underlying
+hybrid's Hessian with a Frobenius norm of 2.146683 against a true 2.120638 on
+water at STO-3G.
 
 Every covered functional is checked against ``pyscf.hessian.rks`` with
 ``grid_response = False``, water at STO-3G, on every element of the Hessian:
@@ -258,6 +280,32 @@ the amplitudes enter the relaxed density and the response equations unscaled.
 
 **RI-MP2.** The fitted correlation Hessian does not exist yet, and the fitted
 reference is excluded for the same reason as everywhere else in this table.
+
+**Double hybrids that are not GGA-based, all-electron and unscreened.** Read
+this entry against the table above rather than instead of it: a meta-GGA, a
+range-separated hybrid and a VV10 functional all take the analytic path as
+*functionals*, and only their **double hybrids** fall back. The line between
+the two is the order of the functional derivative each needs, not the method.
+A Kohn-Sham Hessian needs the second, :math:`f_{xc}`, which
+``xc_kernel_apply`` provides at every rung and ``vv10_kernel_apply`` extends to
+the non-local term. A double hybrid's perturbative block needs the *third*,
+:math:`g_{xc}`, plus that kernel's own nuclear derivative -- and those two
+routines, ``xc_kernel2_apply`` and ``xc_kernel_deriv``, stop at the GGA rung.
+
+Four cases fall back, and they divide into two kinds. A meta-GGA or a
+range-separated double hybrid is missing something nameable: the kernel's third
+derivative in ``tau`` for the first, and an operator at a screened omega for the
+second, where the correlation block currently scales exchange by a single
+``exx_fraction``. Both of those *object* -- ``xc_kernel2_apply`` and
+``xc_kernel_deriv`` refuse a meta-GGA rather than returning a partial kernel.
+
+A VV10 double hybrid is the case worth naming separately, because it would not
+object. ``ks_hessian`` carries the non-local term, so the reference block is
+complete; it is the perturbative term's kernel derivatives that do not, and
+they would silently return the semilocal part alone. The guard in the bridge
+stands in for a refusal the kernel routines do not make.
+
+A frozen core is the fourth, and is covered above.
 
 How a deck reaches it
 =====================

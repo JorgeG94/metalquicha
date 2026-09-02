@@ -356,7 +356,24 @@ if(MQC_ENABLE_LIBCINT)
   # predicates are plain Fortran over a per-atom core-electron count and reach
   # no integral, so they mean the same thing in either configuration -- and a
   # build that cannot evaluate an ECP is exactly where the refusals most want
-  # testing.
+  # testing. The identity the double-hybrid Hessian's rewrite rests on: every
+  # kernel contraction in the MP2 Hessian is the reference operator applied to a
+  # symmetric generalized density. Inside this guard because it drives
+  # `mp2_mo_eri_physicist` and an exchange-correlation context.
+  addtest(mqc_mp2_hessian_ks_operator)
+
+  # The double hybrid's perturbative Hessian differenced against its own
+  # perturbative gradient, one column, on a grid held fixed across the stencil.
+  # The only check that runs the whole assembly rather than one contraction, so
+  # it is the gate on the analytic double-hybrid path. Skips itself without
+  # libxc; ~2.5 min, which is what six converged SCF+gradient points cost.
+  addtest(mqc_dh_hessian_fd)
+
+  # `f^(X)` against a difference of the Fock matrix it derives. Pins the
+  # Hartree-Fock behaviour of a site the double-hybrid work has to change, so
+  # that edit lands with a test either side of it.
+  addtest(mqc_mp2_hessian_skeleton_fock)
+
   addtest(mqc_ecp_refusals)
 
   # The ECP matrix for a lanthanide, whose local channel is l = 5 -- the path
