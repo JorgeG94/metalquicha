@@ -150,8 +150,17 @@ module mqc_cuest_iface
          !!
          !! Carried on the shared settings type because that is where every
          !! other SCF setting lives, but only the libcint backend acts on it --
-         !! the projection is built from `libcint_molecule_t` and the cuEST path
-         !! refuses the guess rather than silently running a different one.
+         !! the projection is built from `libcint_molecule_t`.
+         !!
+         !! **This said the cuEST path "refuses the guess rather than silently
+         !! running a different one", and it did not.** There was no such
+         !! refusal: the driver's `select case` handled `core` and `sac`, and
+         !! everything else -- `sad` and `basis_set_projection` included -- fell
+         !! to `case default` and became GWH without a word. The refusal now
+         !! exists, which is what makes this sentence true rather than
+         !! aspirational, and it is worth remembering that a comment describing
+         !! the safe behaviour is indistinguishable from the safe behaviour
+         !! until someone checks.
          !!
          !! 'auto' means the backend picks, because the best starting point
          !! is a property of the backend rather than of the request: the CPU
