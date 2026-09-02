@@ -207,11 +207,11 @@ Convergence settings for a second SCF beside the first</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
                   <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
               </ul>
             </li>
@@ -2271,7 +2271,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~3"></span>
+              <span class="anchor" id="variable-use_diis~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -2320,7 +2320,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis"></span>
+              <span class="anchor" id="variable-basis~4"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2354,7 +2354,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~5"></span>
+              <span class="anchor" id="variable-tolerance~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2404,7 +2404,7 @@ This is the parsed representation from the input file, not the computational fra
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~2"></span>
+              <span class="anchor" id="variable-charge~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2421,7 +2421,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~2"></span>
+              <span class="anchor" id="variable-indices~3"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2438,7 +2438,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~2"></span>
+              <span class="anchor" id="variable-multiplicity~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2484,7 +2484,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/input_fragment_t.html#boundprocedure-destroy~8'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/input_fragment_destroy.html'>input_fragment_destroy</a></td>
+  <strong><a href='../type/input_fragment_t.html#boundprocedure-destroy~17'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/input_fragment_destroy.html'>input_fragment_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -2517,7 +2517,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~3"></span>
+              <span class="anchor" id="variable-bonds~11"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
               <td>public,</td>
@@ -2534,7 +2534,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~3"></span>
+              <span class="anchor" id="variable-charge~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -2568,7 +2568,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geometry"></span>
+              <span class="anchor" id="variable-geometry~2"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
               <td>public</td>
@@ -2585,7 +2585,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~3"></span>
+              <span class="anchor" id="variable-multiplicity~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -2602,7 +2602,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~21"></span>
+              <span class="anchor" id="variable-name~23"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2701,7 +2701,7 @@ the wrong potential.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/molecule_t.html#boundprocedure-destroy~9'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecule_destroy.html'>molecule_destroy</a></td>
+  <strong><a href='../type/molecule_t.html#boundprocedure-destroy~18'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecule_destroy.html'>molecule_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -2870,7 +2870,7 @@ the wrong potential.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~2"></span>
+              <span class="anchor" id="variable-basis~5"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3028,7 +3028,7 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~4"></span>
+              <span class="anchor" id="variable-bonds~12"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
               <td>public,</td>
@@ -3045,7 +3045,7 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~6"></span>
+              <span class="anchor" id="variable-calc_type~3"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -3062,7 +3062,7 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cap_scale"></span>
+              <span class="anchor" id="variable-cap_scale~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3074,12 +3074,12 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
 <td> =</td>
                 <td>1.0_dp</td>
             <td>
-<p>Where the cap goes along the cut bond: <code>R_H = R_kept + s (R_gone - R_kept)</code>.</p><a href="../type/mqc_config_t.html#variable-cap_scale" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Where the cap goes along the cut bond: <code>R_H = R_kept + s (R_gone - R_kept)</code>.</p><a href="../type/mqc_config_t.html#variable-cap_scale~3" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~4"></span>
+              <span class="anchor" id="variable-cartesian~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -3091,7 +3091,7 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
 <td> =</td>
                 <td>.false.</td>
             <td>
-<p>Read the basis in Cartesian form whatever its file declares.</p><a href="../type/mqc_config_t.html#variable-cartesian~4" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Read the basis in Cartesian form whatever its file declares.</p><a href="../type/mqc_config_t.html#variable-cartesian~3" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -3219,7 +3219,7 @@ absent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~4"></span>
+              <span class="anchor" id="variable-charge~6"></span>
               integer,
             </td>
               <td>public</td>
@@ -3881,7 +3881,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag_level"></span>
+              <span class="anchor" id="variable-frag_level~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -3915,7 +3915,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_breakdown"></span>
+              <span class="anchor" id="variable-fragment_breakdown~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -4036,7 +4036,7 @@ difference is condensed onto atoms.</p><a href="../type/mqc_config_t.html#variab
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geometry~2"></span>
+              <span class="anchor" id="variable-geometry~3"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
               <td>public</td>
@@ -4224,7 +4224,7 @@ told apart: absent leaves <code>backend</code> alone, false pins it to the CPU.<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_intersection_level~2"></span>
+              <span class="anchor" id="variable-max_intersection_level~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -4454,7 +4454,7 @@ space, which is the one subspace covering everything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~7"></span>
+              <span class="anchor" id="variable-method~5"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -4488,7 +4488,7 @@ space, which is the one subspace covering everything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~4"></span>
+              <span class="anchor" id="variable-multiplicity~6"></span>
               integer,
             </td>
               <td>public</td>
@@ -4556,7 +4556,7 @@ space, which is the one subspace covering everything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nmol"></span>
+              <span class="anchor" id="variable-nmol~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -5731,7 +5731,7 @@ deck block the value came from.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mqc_config_t.html#boundprocedure-destroy~10'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a></td>
+  <strong><a href='../type/mqc_config_t.html#boundprocedure-destroy~19'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -5977,7 +5977,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~3"></span>
+              <span class="anchor" id="variable-use_diis~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -6027,7 +6027,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~19"></span>
+              <span class="anchor" id="variable-this~85"></span>
               class(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -6067,7 +6067,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~20"></span>
+              <span class="anchor" id="variable-this~86"></span>
               class(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -6107,7 +6107,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~18"></span>
+              <span class="anchor" id="variable-this~84"></span>
               class(<a href='../type/molecule_t.html'>molecule_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -6150,7 +6150,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-01 21:03 +0000             </p>
+ on 2026-09-02 00:37 +0000             </p>
           </div>
         </div>
         <br>
