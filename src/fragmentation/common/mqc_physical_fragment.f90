@@ -726,11 +726,6 @@ contains
       !!
       !! Shape (3, 3*n_atoms): one column per Cartesian coordinate, mapped like
       !! the column dimension of the Hessian.
-      ! TODO(mqc): this puts the whole cap contribution on `cap_replaces_atom`
-      ! with weight 1, ignoring `cap_scale` and `cap_bonded_to`, where the
-      ! gradient and Hessian both split it through `cap_targets`. Any
-      ! `cap_scale` other than 1 leaves IR intensities inconsistent with the
-      ! forces they belong to.
       type(physical_fragment_t), intent(in) :: fragment
       real(dp), intent(in) :: fragment_dipole_derivs(:, :)   !! (3, 3*n_atoms_fragment)
       real(dp), intent(inout) :: system_dipole_derivs(:, :)  !! (3, 3*n_atoms_system)

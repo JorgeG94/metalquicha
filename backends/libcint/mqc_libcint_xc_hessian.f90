@@ -35,8 +35,6 @@ module mqc_libcint_xc_hessian
    !! derivative to form, and two nuclear derivatives on top of it land on
    !! `d_c d_d d_e chi`, which `eval_ao_block` supplies as `deriv3`. A meta-GGA
    !! adds the `tau` channel on the same footing.
-   ! TODO(mqc): `ERROR_VALIDATION` is imported and never used -- nothing here
-   ! ever sets `error`, so every routine below only propagates one.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
