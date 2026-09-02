@@ -28,6 +28,9 @@ module mqc_cuest_driver
                                       mulliken_atomic_spin_populations
    use mqc_cuest_gradient, only: compute_scf_gradient
    use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_dft_grid, only: grid_level_radial, grid_level_angular
+   use mqc_scf_convergence, only: scf_convergence_t, parse_convergence_metric, &
+                                  CONV_METRIC_DENSITY
    implicit none
    private
 
@@ -59,6 +62,9 @@ contains
       real(dp), allocatable :: guess_alpha(:, :), guess_beta(:, :)
       type(molecular_basis_type), allocatable :: atom_bases(:), atom_aux_bases(:)
       integer :: guess_type, n_guess_columns
+      integer :: n_radial, n_angular
+      type(scf_convergence_t) :: conv
+      logical :: metric_ok
       character(len=8), allocatable :: element_symbols(:)
       integer :: iatom, functional_id, n_alpha, n_beta
       logical :: need_gradient, unrestricted, occupations_ok
@@ -150,14 +156,78 @@ contains
          return
       end if
 
+      ! A level shift is not implemented on this backend, and the gap is
+      ! documented in scf_convergence.rst rather than being a secret. Refused
+      ! rather than accepted and ignored: silently running an unshifted SCF for
+      ! a deck that asked for a shift is the failure being removed here, and
+      ! implementing GPU level shifting is a feature that wants its own change,
+      ! a validated number and that document updated in the same breath.
+      if (settings%level_shift /= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "keywords.scf.level_shift is set, and the GPU "// &
+                        "backend does not implement level shifting. Refused rather than "// &
+                        "run unshifted without saying so. Use the CPU backend, or drop "// &
+                        "the keyword.")
+         call record_failure(result, error)
+         return
+      end if
+
+      ! ---- what counts as converged? ----------------------------------------
+      !
+      ! `keywords.scf.convergence_metric` reached this backend and was never
+      ! read; the test was hardcoded in both loops. The rule is built here and
+      ! both loops consult it, so the metric names work on the GPU.
+      !
+      ! **This does not make a threshold portable between backends.** The CPU
+      ! measures the commutator as a max element and this one as a Frobenius
+      ! norm over the whole matrix, so the same number means different things on
+      ! the two; the asymmetry predates this and is documented in
+      ! scf_convergence.rst. Naming the metric now works. Carrying a tolerance
+      ! across still does not.
+      call parse_convergence_metric(settings%convergence_metric, conv%metric, metric_ok)
+      if (.not. metric_ok) then
+         call error%set(ERROR_VALIDATION, "keywords.scf.convergence_metric is '"// &
+                        trim(settings%convergence_metric)//"', which is not a metric.")
+         call record_failure(result, error)
+         return
+      end if
+      if (conv%metric == CONV_METRIC_DENSITY) then
+         call error%set(ERROR_VALIDATION, "keywords.scf.convergence_metric is 'density', "// &
+                        "and this backend never forms a density RMS -- its SCF converges "// &
+                        "on the energy and the commutator. Refused rather than answered "// &
+                        "with a quantity that is not computed. Use 'standard', 'energy' "// &
+                        "or 'commutator', or the CPU backend.")
+         call record_failure(result, error)
+         return
+      end if
+      conv%tolerance = settings%energy_tol
+      conv%gradient_tolerance = settings%grad_tol
+
       ! ---- which initial guess? ---------------------------------------------
-      select case (trim(settings%guess))
+      !
+      ! Same principle as the two refusals above. `case default` used to answer
+      ! every unhandled name with GWH, so a deck asking for `sad` got a GWH run
+      ! and nothing said so -- and a misspelling got one too, which meant an
+      ! invalid name could not be used to check that the keyword arrived. The
+      ! shared settings type even carried a comment claiming this path refused
+      ! what it could not run; it did not, and now it does.
+      !
+      ! `auto` and `gwh` are GWH deliberately, not by default: `auto` means
+      ! "the backend picks" and this backend picks GWH, having measured it.
+      select case (trim(adjustl(settings%guess)))
       case ("core")
          guess_type = SCF_GUESS_CORE
       case ("sac")
          guess_type = SCF_GUESS_SAC
-      case default
+      case ("", "auto", "gwh")
          guess_type = SCF_GUESS_GWH
+      case default
+         call error%set(ERROR_VALIDATION, "keywords.scf.guess is '"// &
+                        trim(settings%guess)//"', and the GPU backend implements only "// &
+                        "'core', 'sac' and 'gwh' ('auto' resolves to gwh here). "// &
+                        "Refused rather than run as GWH without saying so. Use the CPU "// &
+                        "backend for 'sad' or 'basis_set_projection'.")
+         call record_failure(result, error)
+         return
       end select
 
       ! ---- restricted or unrestricted? --------------------------------------
@@ -174,6 +244,45 @@ contains
       unrestricted = (fragment%multiplicity /= 1) .or. (mod(fragment%nelec, 2) /= 0) &
                      .or. settings%unrestricted
 
+      ! ---- how fine a quadrature? -------------------------------------------
+      !
+      ! `keywords.dft.grid_level` reached this backend and was never read: the
+      ! driver passed `settings%radial_points` and `angular_points` straight
+      ! through, and those stay at their 75/302 defaults unless a deck named
+      ! counts explicitly. A deck asking for level 6 therefore ran level 3 and
+      ! reported success -- a wrong number rather than a slow one, which is why
+      ! this one is worth more than the rest of the group put together.
+      !
+      ! **The GPU grid is uniform and the CPU's is per-period, so this cannot be
+      ! a translation.** `build_atom_grids` takes one radial count and one
+      ! angular order for every atom, with the element entering only through the
+      ! Ahlrichs radius. Resolving the level per period and taking the maximum
+      ! over the elements actually present is the honest reading: every atom
+      ! then gets a grid at least as fine as the CPU would give it, so the level
+      ! means what it says and cannot silently coarsen anything. It will not
+      ! reproduce a CPU number to the last digit, because a uniform grid is not
+      ! the same quadrature -- that is a property of the backend, not of this.
+      !
+      ! A non-positive level means the deck named counts instead, which the
+      ! adapter signals by setting the level to -1; those win untouched.
+      n_radial = settings%radial_points
+      n_angular = settings%angular_points
+      if (settings%grid_level > 0) then
+         n_radial = 0
+         n_angular = 0
+         do iatom = 1, size(fragment%element_numbers)
+            n_radial = max(n_radial, &
+                           grid_level_radial(fragment%element_numbers(iatom), settings%grid_level))
+            n_angular = max(n_angular, &
+                            grid_level_angular(fragment%element_numbers(iatom), settings%grid_level))
+         end do
+         if (settings%verbose) then
+            call logger%info("  XC grid: level "//trim(to_char(settings%grid_level))// &
+                             " resolves to "//trim(to_char(n_radial))//" radial x "// &
+                             trim(to_char(n_angular))//" angular, uniform over atoms")
+         end if
+      end if
+
       ! ---- superposed atomic guess, if asked for ----------------------------
       !
       ! Built before the molecular system so its width is known: the guess
@@ -186,7 +295,7 @@ contains
          if (.not. error%has_error()) then
             call build_sac_guess(context, fragment%element_numbers, orbital_basis, &
                                  auxiliary_basis, settings%spherical, functional_id, &
-                                 settings%radial_points, settings%angular_points, &
+                                 n_radial, n_angular, &
                                  atom_bases, atom_aux_bases, guess_alpha, guess_beta, error)
          end if
          if (error%has_error()) then
@@ -200,14 +309,14 @@ contains
       if (unrestricted) then
          call system%create(context, fragment%element_numbers, fragment%coordinates, &
                             orbital_basis, auxiliary_basis, settings%spherical, &
-                            n_alpha, functional_id, settings%radial_points, &
-                            settings%angular_points, error, n_occ_beta=n_beta, &
+                            n_alpha, functional_id, n_radial, &
+                            n_angular, error, n_occ_beta=n_beta, &
                             n_guess_columns=n_guess_columns, pcm=settings%pcm)
       else
          call system%create(context, fragment%element_numbers, fragment%coordinates, &
                             orbital_basis, auxiliary_basis, settings%spherical, &
-                            fragment%nelec/2, functional_id, settings%radial_points, &
-                            settings%angular_points, error, &
+                            fragment%nelec/2, functional_id, n_radial, &
+                            n_angular, error, &
                             n_guess_columns=n_guess_columns, pcm=settings%pcm)
       end if
 
@@ -219,13 +328,13 @@ contains
                                 settings%energy_tol, settings%density_tol, settings%use_diis, &
                                 settings%diis_size, settings%verbose, scf, error, &
                                 guess=guess_type, guess_alpha=guess_alpha, guess_beta=guess_beta, &
-                                grad_tol=settings%grad_tol)
+                                grad_tol=settings%grad_tol, convergence=conv)
             else
                call run_uks_scf(system, context, fragment%element_numbers, fragment%coordinates, &
                                 fragment%nelec, fragment%multiplicity, settings%max_iter, &
                                 settings%energy_tol, settings%density_tol, settings%use_diis, &
                                 settings%diis_size, settings%verbose, scf, error, guess=guess_type, &
-                                grad_tol=settings%grad_tol)
+                                grad_tol=settings%grad_tol, convergence=conv)
             end if
          else
             if (guess_type == SCF_GUESS_SAC) then
@@ -234,13 +343,13 @@ contains
                                 settings%density_tol, settings%use_diis, settings%diis_size, &
                                 settings%verbose, scf, error, guess=guess_type, &
                                 guess_alpha=guess_alpha, guess_beta=guess_beta, &
-                                grad_tol=settings%grad_tol)
+                                grad_tol=settings%grad_tol, convergence=conv)
             else
                call run_rhf_scf(system, context, fragment%element_numbers, fragment%coordinates, &
                                 fragment%nelec, settings%max_iter, settings%energy_tol, &
                                 settings%density_tol, settings%use_diis, settings%diis_size, &
                                 settings%verbose, scf, error, guess=guess_type, &
-                                grad_tol=settings%grad_tol)
+                                grad_tol=settings%grad_tol, convergence=conv)
             end if
          end if
       end if

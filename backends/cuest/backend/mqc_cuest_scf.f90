@@ -72,6 +72,7 @@ module mqc_cuest_scf
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_diis_device, only: diis_device_t
    use mqc_cuest_integrals, only: cuest_system_t
+   use mqc_scf_convergence, only: scf_convergence_t
    use mqc_cuest_context, only: cuest_context_t
    use mqc_cuest_runtime, only: device_sync, cublas_status_check, &
                                 cusolver_status_check, copy_int_to_host, copy_to_host, &
@@ -281,7 +282,7 @@ contains
    subroutine run_rhf_scf(system, context, atomic_numbers, coordinates, n_electrons, &
                           max_iterations, energy_tolerance, density_tolerance, &
                           use_diis, diis_size, verbose, result, error, guess, &
-                          guess_alpha, guess_beta, grad_tol)
+                          guess_alpha, guess_beta, grad_tol, convergence)
       !! Drive a closed-shell RHF calculation to convergence
       type(cuest_system_t), intent(inout) :: system   !! Live cuEST objects for this molecule
       type(cuest_context_t), intent(inout) :: context
@@ -294,6 +295,15 @@ contains
       integer, intent(in) :: max_iterations
       real(dp), intent(in) :: energy_tolerance        !! Convergence on |dE|
       real(dp), intent(in) :: density_tolerance       !! Convergence on the DIIS error norm
+      type(scf_convergence_t), intent(in), optional :: convergence
+         !! Which rule calls it converged. **Absent reproduces this backend's
+         !! own test exactly**, and that is not the same as handing the shared
+         !! type its defaults: `CONV_METRIC_STANDARD` derives its commutator
+         !! bound as `sqrt(tolerance)`, while this loop's bound is `gtol`, which
+         !! falls back to `density_tolerance` for the reason set out above. On a
+         !! deck converging to 1e-6 those differ by three orders, so the rule
+         !! built below is given `gtol` as its `gradient_tolerance` rather than
+         !! letting the derivation run.
       real(dp), intent(in), optional :: grad_tol
          !! Commutator threshold, when a caller states one.
          !!
@@ -330,6 +340,7 @@ contains
       type(diis_device_t) :: diis
       integer :: n_ao, n_mo, n_occ, iteration
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm, gtol
+      type(scf_convergence_t) :: rule
       real(dp) :: xc_energy, nlc_energy, pcm_energy, trace_h, trace_j, trace_k
       logical :: diis_ok
 
@@ -409,6 +420,17 @@ contains
       gtol = density_tolerance
       if (present(grad_tol)) then
          if (grad_tol > 0.0_dp) gtol = grad_tol
+      end if
+
+      ! `gtol` is handed over as the stated gradient tolerance rather than left
+      ! to be derived, so an absent `convergence` reproduces this loop's own
+      ! historical test bit for bit instead of adopting the CPU's
+      ! `sqrt(tolerance)`.
+      rule%tolerance = energy_tolerance
+      rule%gradient_tolerance = gtol
+      if (present(convergence)) then
+         rule = convergence
+         if (rule%gradient_tolerance <= 0.0_dp) rule%gradient_tolerance = gtol
       end if
 
       previous_energy = 0.0_dp
@@ -553,8 +575,10 @@ contains
             call logger%info(trim(line))
          end if
 
-         if (iteration > 1 .and. abs(energy_change) < energy_tolerance &
-             .and. error_norm < gtol) then
+         ! `drms` is passed as a negative sentinel because this backend does not
+         ! form one; `CONV_METRIC_DENSITY` is refused before the loop is entered
+         ! rather than being answered with a number that does not exist.
+         if (iteration > 1 .and. rule%is_converged(abs(energy_change), -1.0_dp, error_norm)) then
             result%converged = .true.
             result%iterations = iteration
             exit
@@ -672,7 +696,7 @@ contains
    subroutine run_uks_scf(system, context, atomic_numbers, coordinates, n_electrons, multiplicity, &
                           max_iterations, energy_tolerance, density_tolerance, &
                           use_diis, diis_size, verbose, result, error, guess, &
-                          guess_alpha, guess_beta, grad_tol)
+                          guess_alpha, guess_beta, grad_tol, convergence)
       !! Drive an unrestricted (open-shell) SCF to convergence
       !!
       !! Spin conventions, matching what cuEST's density-fitted routines expect:
@@ -696,6 +720,15 @@ contains
       integer, intent(in) :: multiplicity
       integer, intent(in) :: max_iterations
       real(dp), intent(in) :: energy_tolerance, density_tolerance
+      type(scf_convergence_t), intent(in), optional :: convergence
+         !! Which rule calls it converged. **Absent reproduces this backend's
+         !! own test exactly**, and that is not the same as handing the shared
+         !! type its defaults: `CONV_METRIC_STANDARD` derives its commutator
+         !! bound as `sqrt(tolerance)`, while this loop's bound is `gtol`, which
+         !! falls back to `density_tolerance` for the reason set out above. On a
+         !! deck converging to 1e-6 those differ by three orders, so the rule
+         !! built below is given `gtol` as its `gradient_tolerance` rather than
+         !! letting the derivation run.
       real(dp), intent(in), optional :: grad_tol
          !! As `cuest_rhf`; see the note there.
       logical, intent(in) :: use_diis
@@ -722,6 +755,7 @@ contains
       integer :: n_ao, n_mo, n_alpha, n_beta, iteration
       integer :: n_fock_spin, n_err_spin
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm, xc_energy, gtol
+      type(scf_convergence_t) :: rule
       real(dp) :: nlc_energy
       real(dp) :: pcm_energy
       real(dp) :: trace_h, trace_j, trace_ka, trace_kb
@@ -817,6 +851,17 @@ contains
       gtol = density_tolerance
       if (present(grad_tol)) then
          if (grad_tol > 0.0_dp) gtol = grad_tol
+      end if
+
+      ! `gtol` is handed over as the stated gradient tolerance rather than left
+      ! to be derived, so an absent `convergence` reproduces this loop's own
+      ! historical test bit for bit instead of adopting the CPU's
+      ! `sqrt(tolerance)`.
+      rule%tolerance = energy_tolerance
+      rule%gradient_tolerance = gtol
+      if (present(convergence)) then
+         rule = convergence
+         if (rule%gradient_tolerance <= 0.0_dp) rule%gradient_tolerance = gtol
       end if
 
       previous_energy = 0.0_dp
@@ -957,8 +1002,10 @@ contains
             call logger%info(trim(line))
          end if
 
-         if (iteration > 1 .and. abs(energy_change) < energy_tolerance &
-             .and. error_norm < gtol) then
+         ! `drms` is passed as a negative sentinel because this backend does not
+         ! form one; `CONV_METRIC_DENSITY` is refused before the loop is entered
+         ! rather than being answered with a number that does not exist.
+         if (iteration > 1 .and. rule%is_converged(abs(energy_change), -1.0_dp, error_norm)) then
             result%converged = .true.
             result%iterations = iteration
             exit
