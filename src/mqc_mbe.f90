@@ -313,7 +313,7 @@ contains
 
    end subroutine accumulate_uncapped
 
-   subroutine compute_mbe_dipole(fragment_idx, fragment, lookup, results, delta_dipoles, n, world_comm)
+   subroutine compute_mbe_dipole(fragment_idx, fragment, lookup, results, delta_dipoles, n, world_comm, vmfc)
       !! Bottom-up computation of n-body dipole correction
       !! Exactly mirrors the energy MBE logic: deltaDipole = Dipole - sum(all subset deltaDipoles)
       !! Dipoles are additive vectors in the system frame, no coordinate mapping needed
@@ -325,6 +325,9 @@ contains
       type(calculation_result_t), intent(in) :: results(:)
       real(dp), intent(inout) :: delta_dipoles(:, :)  !! (3, fragment_count)
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
+      logical, intent(in), optional :: vmfc
+         !! Whether the subsets were solved in the parent's basis. Absent means
+         !! the ordinary expansion, matching `compute_mbe_delta`.
 
       integer :: subset_size, i
       integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
@@ -332,6 +335,13 @@ contains
       integer :: key(MAX_MBE_LEVEL)
       integer :: key_len
       logical :: has_next, counterpoise
+
+      ! Declared and branched on but never assigned until now: this routine had
+      ! no `vmfc` argument at all, so under counterpoise it took whichever
+      ! branch an undefined flag selected and looked the subset up with the
+      ! wrong key. Its sibling `compute_mbe_delta` has always taken one.
+      counterpoise = .false.
+      if (present(vmfc)) counterpoise = vmfc
 
       ! Start with the full n-mer dipole
       delta_dipoles(:, fragment_idx) = results(fragment_idx)%dipole
@@ -842,8 +852,15 @@ contains
                end if
 
                if (compute_dipole) then
-                  call compute_mbe_dipole(i, polymers(i, 1:fragment_size), lookup, &
-                                          results, delta_dipoles, fragment_size, world_comm)
+                  ! `row_width`, matching the energy call above. Slicing to
+                  ! `fragment_size` counts only the real monomers, so an
+                  ! auxiliary row like [1,2,-3] lost its ghost and the subset
+                  ! was looked up in the AB basis rather than the parent ABC
+                  ! one -- the wrong number at VMFC(2), and the wrong basis
+                  ! recursed at VMFC(3) and above.
+                  call compute_mbe_dipole(i, polymers(i, 1:row_width), lookup, &
+                                          results, delta_dipoles, fragment_size, world_comm, &
+                                          vmfc=use_vmfc)
                end if
             end if
          end do
@@ -905,7 +922,13 @@ contains
 
       if (compute_dipole) then
          do i = 1_int64, fragment_count
-            fragment_size = fragment_size_of(polymers(i, :))
+            ! An auxiliary row is a ghosted copy of a smaller fragment, present
+            ! so the counterpoise recursion has a parent-basis value to
+            ! subtract. It is not a term of the expansion, and the energy sum
+            ! above excludes it for that reason -- adding its dipole here put
+            ! the ghosted monomers back into the total.
+            if (is_auxiliary_row(polymers(i, :))) cycle
+            fragment_size = int(real_count_of(polymers(i, :)))
             if (fragment_size <= max_level) then
                mbe_result%dipole = mbe_result%dipole + delta_dipoles(:, i)
             end if

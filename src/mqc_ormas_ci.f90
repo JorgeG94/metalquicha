@@ -19,7 +19,7 @@ module mqc_ormas_ci
    use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_determinants, only: link_table_t, string_address, build_link_table, &
-                               excitation_phase
+                               excitation_phase, n_strings
    use mqc_ci, only: sigma_vector, absorb_one_electron
    use mqc_davidson, only: sigma_operator_t, davidson_flat
    use pic_blas_interfaces, only: pic_gemm
@@ -237,16 +237,22 @@ contains
          in_beta(i) = string_address(space%n_active_orbitals, space%n_beta, beta(i))
       end do
 
-      ! Every string of the complete space is kept, so the map is onto and its
-      ! inverse is a permutation rather than a partial one.
+      ! The inverse is indexed by the *complete-space* address, which runs to
+      ! `n_strings` whatever this space keeps -- so it is sized by that and not
+      ! by the kept count. They coincide only when nothing was pruned; where
+      ! `drop_unreachable_classes` removed a class, sizing by the kept count
+      ! wrote past the end of the array. A dropped string keeps its zero, which
+      ! is not a valid position and so reads as "not in this space".
       if (present(from_alpha)) then
-         allocate (from_alpha(size(alpha)))
+         allocate (from_alpha(n_strings(space%n_active_orbitals, space%n_alpha)))
+         from_alpha = 0
          do i = 1, size(alpha)
             from_alpha(in_alpha(i)) = i
          end do
       end if
       if (present(from_beta)) then
-         allocate (from_beta(size(beta)))
+         allocate (from_beta(n_strings(space%n_active_orbitals, space%n_beta)))
+         from_beta = 0
          do i = 1, size(beta)
             from_beta(in_beta(i)) = i
          end do
