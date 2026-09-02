@@ -894,6 +894,16 @@ contains
       if (error%has_error()) return
       cycles = 50
       if (present(max_iterations)) cycles = max_iterations
+      ! `keywords.mcscf.max_macro_iter` reaches here unchecked -- the schema
+      ! allow-lists the key without a range -- and a zero skips the macro loop
+      ! entirely, leaving `largest` undefined and `dm1`/`dm2` unallocated for
+      ! the assembly below to read. Refusing beats reporting a gradient norm
+      ! that was never computed.
+      if (cycles < 1) then
+         call error%set(ERROR_VALIDATION, "mcscf: max_macro_iter must be at least 1; "// &
+                        "a run with no macro-iterations has no orbitals to report")
+         return
+      end if
       tol = 1.0e-6_dp
       if (present(gradient_tol)) tol = gradient_tol
       loud = .false.

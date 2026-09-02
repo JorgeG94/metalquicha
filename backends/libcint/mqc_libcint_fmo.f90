@@ -541,6 +541,7 @@ contains
       !! thing as a function RESULT segfaults -- found the hard way, on
       !! check_fmo_mpi.
       use mqc_libcint_atomic_guess, only: parse_guess_name
+      use mqc_libcint_rhf, only: SCF_GUESS_SAD, SCF_GUESS_SAC, SCF_GUESS_PROJ
       type(fmo_options_t), intent(in) :: opts
       integer, allocatable, intent(out) :: kind
 
@@ -551,6 +552,20 @@ contains
       call parse_guess_name(opts%scf%guess, parsed, guess_error)
       if (guess_error%has_error()) then
          call guess_error%clear()
+         return
+      end if
+
+      ! `sad`, `sac` and `projection` need a `guess_density` alongside the kind,
+      ! and a fragment SCF has nobody to build one for it -- `run_libcint_rhf`
+      ! refuses outright when the kind arrives without the density. Forwarding
+      ! them would turn the most natural thing a user writes into a fatal error
+      ! on every fragment, which is the opposite of what this routine is for, so
+      ! they fall back to the backend's own choice and say so once.
+      if (parsed == SCF_GUESS_SAD .or. parsed == SCF_GUESS_SAC .or. &
+          parsed == SCF_GUESS_PROJ) then
+         call logger%warning("  the '"//trim(opts%scf%guess)//"' initial guess needs a "// &
+                             "guess density, which a fragment SCF cannot be given yet; "// &
+                             "fragments use the backend's default guess instead")
          return
       end if
       allocate (kind, source=parsed)
@@ -1314,8 +1329,16 @@ contains
       call group_projector(group, mol, afo, proj, held, error)
       if (error%has_error()) return
 
+      ! Resolved before the branch, not inside it. `deck_guess` is passed on all
+      ! four, but only one used to fill it -- and an unallocated allocatable
+      ! arrives at an optional dummy as *absent*, so `keywords.scf.guess` was
+      ! silently dropped on every path but the embedded-and-constrained one.
+      ! `fmo_guess_kind` leaves it unallocated when the deck said nothing or
+      ! said `auto`, which is the intended "absent", so hoisting changes only
+      ! the decks that asked for a specific guess.
+      call fmo_guess_kind(opts, deck_guess)
+
       if (allocated(u) .and. held) then
-         call fmo_guess_kind(opts, deck_guess)
          call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
                               opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, &
                               h_extra=u, projector=proj)
@@ -2040,8 +2063,16 @@ contains
       constrained = .false.
       if (present(held)) constrained = held
 
+      ! Resolved before the branch, not inside it. `deck_guess` is passed on all
+      ! four, but only one used to fill it -- and an unallocated allocatable
+      ! arrives at an optional dummy as *absent*, so `keywords.scf.guess` was
+      ! silently dropped on every path but the embedded-and-constrained one.
+      ! `fmo_guess_kind` leaves it unallocated when the deck said nothing or
+      ! said `auto`, which is the intended "absent", so hoisting changes only
+      ! the decks that asked for a specific guess.
+      call fmo_guess_kind(opts, deck_guess)
+
       if (embedded .and. constrained) then
-         call fmo_guess_kind(opts, deck_guess)
          call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
                               opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, &
                               h_extra=u, projector=proj)

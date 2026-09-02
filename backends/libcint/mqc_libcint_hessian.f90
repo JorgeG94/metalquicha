@@ -1228,6 +1228,7 @@ contains
       integer :: i, nao
 
       if (error%has_error()) return
+      if (ecp_refuses_derivatives(mol%core_electrons, "nuclear Hessian", error)) return
 
       ! **VV10 contributes in the same three places as the semilocal term**,
       ! each validated on its own by differencing the object one derivative

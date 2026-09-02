@@ -1134,7 +1134,7 @@ contains
    end subroutine xc_potential_gradient
 
    subroutine fitted_reference_gradient(mol, aux, three, jm12, dm_a, dm_b, &
-                                        gradient, k_scale)
+                                        gradient, error, k_scale)
       !! `d/dR Tr(G[A] B)` when `G` is built from fitted integrals
       !!
       !! **What this replaces.** With exact integrals the reference part of a
@@ -1184,6 +1184,7 @@ contains
       real(dp), intent(in) :: dm_a(:, :)    !! The density inside the operator
       real(dp), intent(in) :: dm_b(:, :)    !! The density it is contracted against
       real(dp), intent(inout) :: gradient(:, :)   !! (3, natm), accumulated into
+      type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: k_scale
 
       real(dp), allocatable :: jinv(:, :), y(:, :), s(:, :), gamma(:, :, :)
@@ -1194,6 +1195,22 @@ contains
       integer, allocatable :: aux_offsets(:), aux_counts(:)
       integer :: n, naux, p, iatom, comp, p0, p1, q0, q1
       real(dp) :: kf
+
+      if (error%has_error()) return
+
+      ! The auxiliary loops below deposit into `gradient(:, iatom)` using the
+      ! auxiliary basis's own atom numbering, so the two bases must sit on the
+      ! same atoms in the same order. `df_two_electron_gradient` refuses the
+      ! same mismatch for the same reason: a derivative lands on the wrong
+      ! nucleus, which translational invariance catches only after the fact --
+      ! and if the auxiliary basis has the *more* atoms, the deposit runs off
+      ! the end of `gradient` entirely.
+      if (aux%natm /= mol%natm) then
+         call error%set(ERROR_VALIDATION, &
+                        "density-fitted reference gradient: the auxiliary basis is "// &
+                        "on a different set of atoms than the orbital basis")
+         return
+      end if
 
       kf = 1.0_dp
       if (present(k_scale)) kf = k_scale

@@ -85,9 +85,45 @@ contains
                   new_unittest("water_casscf_against_pyscf", test_water), &
                   new_unittest("casscf_improves_on_casci", test_variational), &
                   new_unittest("a_deck_asking_for_casscf_gets_one", test_deck_casscf), &
-                  new_unittest("a_deck_asking_for_casci_gets_one", test_deck_casci) &
+                  new_unittest("a_deck_asking_for_casci_gets_one", test_deck_casci), &
+                  new_unittest("zero_macro_iterations_is_refused", test_zero_macro_iterations) &
                   ]
    end subroutine collect_mqc_mcscf_tests
+
+   subroutine test_zero_macro_iterations(error)
+      !! A CASSCF asked for no macro-iterations refuses instead of reporting
+      !!
+      !! `keywords.mcscf.max_macro_iter` reaches `run_libcint_casscf` unchecked
+      !! -- the schema allow-lists the key without a range -- and a zero used to
+      !! skip the macro loop entirely. The assembly afterwards then read the
+      !! gradient norm, which the loop assigns, and the density matrices, which
+      !! it allocates: an undefined value and two unallocated arrays reported as
+      !! a result. Refusing is the only honest answer, since a run with no
+      !! macro-iterations has no optimised orbitals to describe.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(casscf_result_t) :: cas
+      type(error_t) :: err
+
+      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call check(error,.not. err%has_error(), "the molecule should build")
+      if (allocated(error)) return
+
+      call run_libcint_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call check(error, scf%converged, "the reference SCF should converge")
+      if (allocated(error)) return
+
+      call run_libcint_casscf(mol, scf%orbitals, 3, 4, 2, 2, cas, err, &
+                              max_iterations=0, verbose=.false.)
+      call check(error, err%has_error(), &
+                 "max_macro_iter = 0 should be refused, not reported on")
+      if (allocated(error)) return
+      call err%clear()
+
+      call mol%destroy()
+   end subroutine test_zero_macro_iterations
 
    subroutine test_rotation(error)
       !! `exp(kappa)` is orthogonal, for small and for large steps
