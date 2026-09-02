@@ -53,11 +53,15 @@ contains
                   new_unittest("makefp_honours_maxiter", test_maxiter), &
                   new_unittest("makefp_honours_diis_off", test_diis_off), &
                   new_unittest("makefp_refuses_a_bad_accelerator", test_bad_accelerator), &
+                  new_unittest("makefp_honours_level_shift", test_level_shift), &
+                  new_unittest("makefp_honours_diis_size", test_diis_size), &
+                  new_unittest("makefp_honours_linear_dependence", test_lindep), &
+                  new_unittest("makefp_honours_gradient_tolerance", test_grad_tol), &
                   new_unittest("makefp_route_does_not_move_the_multipoles", test_invariance) &
                   ]
    end subroutine collect_makefp_scf
 
-   subroutine water(pot, err, scf, max_iter)
+   subroutine water(pot, err, scf, max_iter, grad_tol, energy_tol)
       !! One water potential in a small basis, optionally given SCF settings
       !!
       !! STO-3G rather than the 6-31G* the other EFP tests use: nothing here
@@ -68,6 +72,7 @@ contains
       type(error_t), intent(inout) :: err
       type(scf_numerics_t), intent(in), optional :: scf
       integer, intent(in), optional :: max_iter
+      real(dp), intent(in), optional :: grad_tol, energy_tol
 
       real(dp) :: c(3, 3)
       integer :: z(3)
@@ -81,7 +86,8 @@ contains
       ! Both optionals pass straight through. An absent actual argument arrives
       ! absent at the optional dummy, so one call serves every case here.
       call make_efp_potential(z, symbols, c, "sto-3g", "WATER", pot, err, &
-                              scf_in=scf, max_iter_in=max_iter)
+                              scf_in=scf, max_iter_in=max_iter, grad_tol_in=grad_tol, &
+                              energy_tol=energy_tol)
    end subroutine water
 
    subroutine test_baseline(error)
@@ -168,6 +174,124 @@ contains
       if (allocated(error)) return
       call err%clear()
    end subroutine test_bad_accelerator
+
+   subroutine test_level_shift(error)
+      !! `level_shift` arrives
+      !!
+      !! The invariance case below cannot guard this one: a shift changes the
+      !! route and not the answer, so a shift that never arrived produces the
+      !! same multipoles. What does distinguish them is cost -- a shift of two
+      !! hartree slows this SCF well past a budget it clears comfortably
+      !! unshifted, so the run must fail if the shift arrived.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_potential_t) :: pot
+      type(error_t) :: err
+      type(scf_numerics_t) :: scf
+
+      call water(pot, err, max_iter=10)
+      call check(error,.not. err%has_error(), &
+                 "ten iterations unshifted should converge: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      scf%level_shift = 2.0_dp
+      call water(pot, err, scf=scf, max_iter=10)
+      call check(error, err%has_error(), &
+                 "a two-hartree shift must not converge in ten iterations; if it "// &
+                 "did, level_shift never arrived")
+      if (allocated(error)) return
+      call err%clear()
+   end subroutine test_level_shift
+
+   subroutine test_diis_size(error)
+      !! `diis_size` arrives
+      !!
+      !! A subspace of one is DIIS with nothing to extrapolate from, which
+      !! converges like no acceleration at all. Same argument as the case
+      !! above: the converged answer is identical either way, so only the cost
+      !! separates arrival from silence.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_potential_t) :: pot
+      type(error_t) :: err
+      type(scf_numerics_t) :: scf
+
+      scf%diis_size = 1
+      call water(pot, err, scf=scf, max_iter=12)
+      call check(error, err%has_error(), &
+                 "a DIIS subspace of one must not converge in twelve iterations; "// &
+                 "if it did, diis_size never arrived")
+      if (allocated(error)) return
+      call err%clear()
+   end subroutine test_diis_size
+
+   subroutine test_lindep(error)
+      !! `linear_dependence` arrives
+      !!
+      !! This one IS visible in the answer, which makes it the strongest of the
+      !! set. A threshold above the overlap's smallest eigenvalue drops basis
+      !! functions, and a potential fitted in a smaller space has different
+      !! multipoles. Measured rather than assumed: STO-3G on this geometry has
+      !! its smallest overlap eigenvalue at 3.44e-1, so 4e-1 removes something
+      !! and the default 0 removes nothing. An earlier version of this case
+      !! guessed 7e-2 and passed for the wrong reason -- it dropped nothing.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_potential_t) :: base, dropped
+      type(error_t) :: err
+      type(scf_numerics_t) :: scf
+
+      call water(base, err)
+      call check(error,.not. err%has_error(), &
+                 "the reference run must build: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      scf%linear_dependence = 4.0e-1_dp
+      call water(dropped, err, scf=scf)
+      ! Either it dropped functions and moved the multipoles, or it refused --
+      ! both are evidence the threshold arrived. Silence would be identical
+      ! dipoles and no error.
+      if (err%has_error()) then
+         call err%clear()
+         return
+      end if
+      call check(error, maxval(abs(dropped%dipole - base%dipole)) > DIPOLE_TOL, &
+                 "a threshold above the smallest overlap eigenvalue must change "// &
+                 "the fitted multipoles; if it did not, linear_dependence never arrived")
+   end subroutine test_lindep
+
+   subroutine test_grad_tol(error)
+      !! The commutator threshold, and which of the three rules picked it
+      !!
+      !! `make_efp_potential` chooses between three: a stated
+      !! `gradient_tolerance` wins outright, a stated `density_tolerance` sets
+      !! it, and a lone `tolerance` derives it.
+      !!
+      !! **The energy tolerance has to be loosened for this to be visible.**
+      !! Both gates must be met, so with MAKEFP's own 1e-10 energy default that
+      !! one binds and the commutator never decides anything -- a first version
+      !! of this case loosened only the commutator and saw seven iterations
+      !! either way. Loosening the energy to 1e-4 hands the decision to the
+      !! commutator, and then 1e-2 against 1e-8 stops in different places and
+      !! fits different multipoles.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_potential_t) :: tight, loose
+      type(error_t) :: err
+
+      call water(tight, err, energy_tol=1.0e-4_dp, grad_tol=1.0e-8_dp)
+      call check(error,.not. err%has_error(), &
+                 "the tight-commutator run must build: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call water(loose, err, energy_tol=1.0e-4_dp, grad_tol=1.0e-2_dp)
+      call check(error,.not. err%has_error(), &
+                 "the loose run must build: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, maxval(abs(loose%dipole - tight%dipole)) > DIPOLE_TOL, &
+                 "a commutator gate of 1e-2 must not fit the same multipoles as "// &
+                 "1e-8; if it did, gradient_tolerance never arrived")
+   end subroutine test_grad_tol
 
    subroutine test_invariance(error)
       !! The settings that only change the route must not move the multipoles

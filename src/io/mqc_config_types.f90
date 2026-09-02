@@ -797,21 +797,31 @@ contains
          "    maxiter ", scf%max_iter, "   energy_tol ", scf%energy_tol, &
          "   density_tol ", scf%density_tol
       call logger%info(trim(line))
-      ! Zero means "derived", and saying so beats printing 0.00E+00 as though a
-      ! threshold of zero were being asked for.
+      ! **The RESOLVED threshold, not the field it came from.** Zero means the
+      ! SCF derives it as `sqrt(energy_tol)`, so that is what has to be
+      ! printed: reporting the 1e-8 that a 1e-4 gate was derived from tells the
+      ! reader the opposite of what the run did, and this block exists to be
+      ! read against a run that stopped somewhere surprising.
       if (scf%grad_tol > 0.0_dp) then
          write (line, "(a,es9.2,a)") "    commutator_tol ", scf%grad_tol, "  (stated)"
       else
-         write (line, "(a,es9.2,a)") "    commutator_tol ", scf%energy_tol, &
-            "  (follows energy_tol)"
+         write (line, "(a,es9.2,a)") "    commutator_tol ", sqrt(scf%energy_tol), &
+            "  (derived, sqrt of energy_tol)"
       end if
       call logger%info(trim(line))
       write (line, "(a,a,a,i0,a,l1)") &
          "    accelerator ", trim(scf%accelerator), "   diis_size ", scf%diis_size, &
          "   diis ", scf%use_diis
       call logger%info(trim(line))
-      write (line, "(a,es9.2,a,es9.2)") &
-         "    level_shift ", scf%level_shift, "   linear_dependence ", scf%linear_dependence
+      ! Same again: zero is a sentinel the orthogonaliser turns into its own
+      ! cutoff, so printing 0.00E+00 would report a threshold nobody uses.
+      if (scf%linear_dependence > 0.0_dp) then
+         write (line, "(a,es9.2,a,es9.2)") &
+            "    level_shift ", scf%level_shift, "   linear_dependence ", scf%linear_dependence
+      else
+         write (line, "(a,es9.2,a)") &
+            "    level_shift ", scf%level_shift, "   linear_dependence  backend default"
+      end if
       call logger%info(trim(line))
       write (line, "(a,a,a,l1,a,l1)") &
          "    guess ", trim(scf%guess), "   incremental_fock ", scf%incremental_fock, &

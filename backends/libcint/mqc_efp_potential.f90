@@ -370,6 +370,20 @@ contains
       ! This is also what lets an f basis work at all. The ordering map handles
       ! Cartesian s, p, d and f and refuses g; declared spherically, a set with
       ! f shells was refused by `check_angular_form` before it got that far.
+      ! **Before the molecule, the basis and the guess.** A misspelled
+      ! accelerator is a deck error, and a deck error should cost nothing: with
+      ! the default "auto" guess this routine builds a SAD density from
+      ! free-atom SCFs first, so validating afterwards meant paying for every
+      ! one of them before saying the word was wrong.
+      if (present(scf_in)) then
+         call parse_accelerator_name(scf_in%accelerator, accel_kind, accel_ok)
+         if (.not. accel_ok) then
+            call error%set(ERROR_VALIDATION, "keywords.scf.accelerator '"// &
+                           trim(scf_in%accelerator)//"' is not one of diis, adiis, ediis")
+            return
+         end if
+      end if
+
       call build_libcint_molecule(atomic_numbers, element_symbols, coordinates, &
                                   basis_name, mol, error, force_cartesian=.true.)
       if (error%has_error()) return
@@ -531,12 +545,11 @@ contains
          shift = scf_in%level_shift
          lindep = scf_in%linear_dependence
          incr = scf_in%incremental_fock
+         ! Parsed again rather than re-derived: the spelling was already
+         ! validated at the top of this routine, so `accel_ok` cannot be false
+         ! here. Kept as one call so there is a single place that knows how a
+         ! name becomes a kind.
          call parse_accelerator_name(scf_in%accelerator, accel_kind, accel_ok)
-         if (.not. accel_ok) then
-            call error%set(ERROR_VALIDATION, "keywords.scf.accelerator '"// &
-                           trim(scf_in%accelerator)//"' is not one of diis, adiis, ediis")
-            return
-         end if
       end if
       ! Echoed before the SCF runs, so a deck that set something and saw no
       ! effect can be checked against what arrived rather than against the
@@ -553,6 +566,10 @@ contains
          echo%level_shift = shift
          echo%linear_dependence = lindep
          echo%incremental_fock = incr
+         ! The resolved guess, not the deck spelling. `build_restricted_guess`
+         ! has already turned "auto" into a real choice by this point, and
+         ! echoing "auto" would name the request rather than the run.
+         echo%guess = guess_display_name(guess_kind)
          call print_scf_config(echo, "MAKEFP SCF")
       end if
       if (present(aux_basis)) then
