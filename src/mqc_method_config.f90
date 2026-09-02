@@ -5,7 +5,7 @@ module mqc_method_config
    !! for each method family. The factory reads from the appropriate nested type.
    use pic_types, only: int32, dp
    use mqc_program_limits, only: MAX_ORBITAL_LABEL_LEN
-   use mqc_config_types, only: guess_step_t, scf_numerics_t, deltascf_options_t
+   use mqc_scf_types, only: guess_step_t, scf_numerics_t, deltascf_options_t
    use mqc_method_types, only: METHOD_TYPE_UNKNOWN
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_VDW_SCALE, DEFAULT_DYNAMIC_TOL, &
                                        DEFAULT_DYNAMIC_MAXITER, EFP_RESPONSE_AUTO, &
@@ -96,6 +96,7 @@ module mqc_method_config
          !! is also the honest setting for timing a Fock build, since an
          !! incremental one gets cheaper with every iteration.
       character(len=32) :: accelerator = "diis"
+      character(len=32) :: convergence_metric = "standard"
          !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
          !! 'ediis'. The energy-based pair runs only while the error is large
          !! and hands over to DIIS, so naming one asks for a different opening,
@@ -369,7 +370,11 @@ module mqc_method_config
          !! Force UHF/UKS even for a closed shell
       logical :: density_fitting = .false.
          !! Fit J and K rather than computing exact integrals
-      logical :: freeze_core = .false.
+      logical :: freeze_core = .true.
+         !! Matches `correlation_config_t`, which is where this is always
+         !! filled from. It read `.false.` while that read `.true.` -- harmless
+         !! while the copy happens, and a trap the moment anyone constructs
+         !! this type directly, in a test or a new call path.
          !! Exclude core orbitals from a post-SCF correlation treatment
       integer :: n_frozen_core = -1
          !! Core orbitals to freeze; -1 counts them from the elements
@@ -498,7 +503,7 @@ module mqc_method_config
       !! Coupled-cluster specific settings (CCSD, CCSD(T), CC2, CC3, etc.)
       integer :: max_iter = 100
          !! Maximum CC iterations
-      real(dp) :: amplitude_convergence = 1.0e-7_dp
+      real(dp) :: amplitude_convergence = 1.0e-8_dp
          !! T-amplitude convergence threshold
 
       ! Excitation level
@@ -758,7 +763,7 @@ contains
 
       ! Coupled-cluster defaults
       this%cc%max_iter = 100
-      this%cc%amplitude_convergence = 1.0e-7_dp
+      this%cc%amplitude_convergence = 1.0e-8_dp
       this%cc%include_triples = .false.
       this%cc%perturbative_triples = .true.
       this%cc%use_diis = .true.

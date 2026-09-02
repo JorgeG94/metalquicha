@@ -471,31 +471,31 @@ clamped everything instead of asking.</p>
 <g id="proc~~needs_serial_execution~~CalledByGraph_node16" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~needs_serial_execution~~CalledByGraph_node16"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="637,-24 559,-24 559,0 637,0 637,-24"/>
-<text text-anchor="middle" x="598" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
-<g id="proc~~needs_serial_execution~~CalledByGraph_edge18" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
-<path fill="none" stroke="#7f00ff" d="M637.37,-16.98C649.97,-20.05 663.43,-25 674,-33 698.49,-51.54 684.74,-74.52 710,-92 728.77,-104.99 753.43,-110.49 774.69,-112.64"/>
-<polygon fill="#7f00ff" stroke="#7f00ff" points="774.57,-116.14 784.82,-113.45 775.13,-109.17 774.57,-116.14"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~needs_serial_execution~~CalledByGraph_node17" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~needs_serial_execution~~CalledByGraph_node17"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="438.5,-230 360.5,-230 360.5,-206 438.5,-206 438.5,-230"/>
 <text text-anchor="middle" x="399.5" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
 <g id="proc~~needs_serial_execution~~CalledByGraph_edge15" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
 <path fill="none" stroke="#00ffff" d="M438.51,-216.1C518.23,-212.11 702.11,-202.92 782.13,-198.92"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="782.45,-202.41 792.27,-198.41 782.1,-195.42 782.45,-202.41"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~needs_serial_execution~~CalledByGraph_node17" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~needs_serial_execution~~CalledByGraph_node17"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="637,-24 559,-24 559,0 637,0 637,-24"/>
+<text text-anchor="middle" x="598" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~needs_serial_execution~~CalledByGraph_edge18" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#7f00ff" d="M637.37,-16.98C649.97,-20.05 663.43,-25 674,-33 698.49,-51.54 684.74,-74.52 710,-92 728.77,-104.99 753.43,-110.49 774.69,-112.64"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="774.57,-116.14 784.82,-113.45 775.13,-109.17 774.57,-116.14"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~needs_serial_execution~~CalledByGraph_node18" class="node">
@@ -533,11 +533,11 @@ clamped everything instead of asking.</p>
 <path fill="none" stroke="#00ff91" d="M250.02,-230.03C270.17,-233.38 292.44,-236.71 313,-239 389.3,-247.5 477.63,-251.94 535.26,-254.12"/>
 <polygon fill="#00ff91" stroke="#00ff91" points="535.18,-257.62 545.3,-254.49 535.44,-250.63 535.18,-257.62"/>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~needs_serial_execution~~CalledByGraph_edge22" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#4800ff" d="M263.27,-218C292.39,-218 324.52,-218 350.14,-218"/>
-<polygon fill="#4800ff" stroke="#4800ff" points="350.34,-221.5 360.34,-218 350.34,-214.5 350.34,-221.5"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
+<g id="proc~~needs_serial_execution~~CalledByGraph_edge21" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#0091ff" d="M263.27,-218C292.39,-218 324.52,-218 350.14,-218"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="350.34,-221.5 360.34,-218 350.34,-214.5 350.34,-221.5"/>
 </g>
 <!-- proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point -->
 <g id="proc~~needs_serial_execution~~CalledByGraph_edge23" class="edge">
@@ -560,11 +560,11 @@ clamped everything instead of asking.</p>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
-<g id="proc~~needs_serial_execution~~CalledByGraph_edge21" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#0091ff" d="M486.12,-12C507.58,-12 529.87,-12 548.78,-12"/>
-<polygon fill="#0091ff" stroke="#0091ff" points="548.91,-15.5 558.91,-12 548.91,-8.5 548.91,-15.5"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~needs_serial_execution~~CalledByGraph_edge22" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#4800ff" d="M486.12,-12C507.58,-12 529.87,-12 548.78,-12"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="548.91,-15.5 558.91,-12 548.91,-8.5 548.91,-15.5"/>
 </g>
 <!-- proc~mqc_session_begin -->
 <g id="proc~~needs_serial_execution~~CalledByGraph_node22" class="node">
@@ -725,7 +725,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 04:13 +0000             </p>
+ on 2026-09-02 05:32 +0000             </p>
           </div>
         </div>
         <br>
