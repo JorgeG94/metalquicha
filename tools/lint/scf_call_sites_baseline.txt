@@ -21,9 +21,6 @@
 # the caller before there is anything to forward.
 backends/libcint/mqc_sapt.f90 3
 
-# The MakeFP fragment potential SCF. Fixed on feat/makefp-scf-config; this
-# entry goes when that merges.
-backends/libcint/mqc_efp_potential.f90 2
 
 # The Fukui deltaSCF ions and the basis-projection ladder rungs. Both already
 # forward everything their callee accepts; what is missing is the convergence

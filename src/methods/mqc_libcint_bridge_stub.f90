@@ -203,7 +203,7 @@ contains
       !! No-op stand-in: an effective fragment potential needs the CPU backend
       use pic_types, only: dp
       use mqc_error, only: error_t
-      use mqc_config_types, only: scf_numerics_t
+      use mqc_scf_types, only: scf_numerics_t
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in) :: coordinates(:, :)

@@ -28,7 +28,8 @@ module mqc_driver
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, &
                              CALC_TYPE_OPTIMIZE, CALC_TYPE_CONFORMERS, &
                              CALC_TYPE_HESSIAN, CALC_TYPE_MAKEFP
-   use mqc_config_types, only: bond_t, mqc_config_t, scf_numerics_t
+   use mqc_config_types, only: bond_t, mqc_config_t
+   use mqc_scf_types, only: scf_numerics_t
    use mqc_mbe, only: compute_gmbe
    use mqc_result_types, only: calculation_result_t
    use mqc_scf_common, only: lindep_tally_t, lindep_collect_begin, lindep_collect_end, &
