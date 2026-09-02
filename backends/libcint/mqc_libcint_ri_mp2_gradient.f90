@@ -182,6 +182,28 @@ contains
          return
       end if
 
+      ! `aux` is declared "same atoms" above, and both auxiliary contractions
+      ! below take that on trust: `fitted_reference_gradient` and
+      ! `fitted_two_particle_gradient` each deposit into `gradient(:, iatom)`
+      ! over `iatom = 1, aux%natm`. Checked once here rather than in each,
+      ! because the second runs unconditionally while the first is behind
+      ! `fitted_reference` -- so guarding only the first leaves the default path
+      ! putting a derivative on the wrong nucleus, or off the end of `gradient`
+      ! when the auxiliary basis carries the more atoms.
+      if (aux%natm /= mol%natm) then
+         call error%set(ERROR_VALIDATION, "the RI-MP2 gradient's auxiliary basis is "// &
+                        "on a different number of atoms than the orbital basis")
+         return
+      end if
+      ! Equal counts are not enough: two same-sized molecules with their atoms in
+      ! a different order pass that and still put every auxiliary derivative on
+      ! the wrong nucleus. Same comparison `merge_basis_sets` makes.
+      if (maxval(abs(aux%coords - mol%coords)) > 1.0e-10_dp) then
+         call error%set(ERROR_VALIDATION, "the RI-MP2 gradient's auxiliary basis is "// &
+                        "on a different geometry than the orbital basis")
+         return
+      end if
+
       ! Stored or recomputed, for the *reference* integrals only -- the ones the
       ! Z-vector's operator and the reference potential are built from. Those
       ! stay exact whatever the correlation is fitted with, because an `ri-mp2`
@@ -532,7 +554,8 @@ contains
          allocate (ref_grad(3, mol%natm))
          ref_grad = 0.0_dp
          call fitted_reference_gradient(mol, aux, three_ao, jm12, hf_density, &
-                                        dm1p, ref_grad, k_scale=kf)
+                                        dm1p, ref_grad, error, k_scale=kf)
+         if (error%has_error()) return
          gradient = gradient + 0.5_dp*ref_grad
       else
          ! Only the reference-density matrices: the fitted two-particle density

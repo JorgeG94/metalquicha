@@ -17,6 +17,7 @@ contains
 
       testsuite = [ &
                   new_unittest("mbe_monomers_only", test_mbe_monomers_only), &
+                  new_unittest("vmfc_dipole_excludes_ghosted_rows", test_vmfc_dipole), &
                   new_unittest("mbe_simple_dimer", test_mbe_simple_dimer), &
                   new_unittest("mbe_sorted_order", test_mbe_sorted_order), &
                   new_unittest("mbe_reverse_order", test_mbe_reverse_order), &
@@ -27,6 +28,84 @@ contains
                   new_unittest("failures_name_their_culprit", test_failures_name_their_culprit) &
                   ]
    end subroutine collect_mqc_mbe_tests
+
+   subroutine test_vmfc_dipole(error)
+      !! The counterpoise dipole uses the ghosted rows without summing them
+      !!
+      !! An auxiliary row -- one carrying a negative entry, such as `[1,-2]` --
+      !! is a monomer solved in its parent's basis. It exists so the parent has
+      !! something to subtract, and the energy path says so directly: "never to
+      !! be summed". The dipole path did sum it, so every ghosted monomer went
+      !! back into the total.
+      !!
+      !! It also sliced its row to the count of *real* monomers, which drops the
+      !! ghost entirely, so the subset was looked up in the AB basis rather than
+      !! the parent ABC one -- the wrong number at VMFC(2), and the wrong basis
+      !! recursed at VMFC(3) and above.
+      !!
+      !! With per-fragment dipoles set by hand, the expansion has one right
+      !! answer and both faults move it:
+      !!
+      !!     d = d_1 + d_2 + (d_AB - d_A(b) - d_B(a))
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t), allocatable :: results(:)
+      type(mbe_result_t) :: mbe_result
+      integer, allocatable :: polymers(:, :)
+      integer(int64) :: fragment_count
+      integer :: max_level, i
+      real(dp) :: expected(3)
+
+      fragment_count = 5
+      max_level = 2
+      allocate (polymers(fragment_count, max_level))
+      allocate (results(fragment_count))
+
+      ! Two monomers in their own basis, the same two in the pair's basis, and
+      ! the pair. The negative entries are what mark the ghosted rows.
+      polymers(1, :) = [1, 0]
+      polymers(2, :) = [2, 0]
+      polymers(3, :) = [1, -2]
+      polymers(4, :) = [-1, 2]
+      polymers(5, :) = [1, 2]
+
+      do i = 1, int(fragment_count)
+         allocate (results(i)%dipole(3))
+         results(i)%has_dipole = .true.
+         results(i)%has_energy = .true.
+      end do
+
+      results(1)%energy%scf = -10.0_dp; results(1)%dipole = [1.0_dp, 0.0_dp, 0.0_dp]
+      results(2)%energy%scf = -15.0_dp; results(2)%dipole = [0.0_dp, 1.0_dp, 0.0_dp]
+      results(3)%energy%scf = -10.1_dp; results(3)%dipole = [1.1_dp, 0.0_dp, 0.0_dp]
+      results(4)%energy%scf = -15.2_dp; results(4)%dipole = [0.0_dp, 1.2_dp, 0.0_dp]
+      results(5)%energy%scf = -25.5_dp; results(5)%dipole = [2.0_dp, 2.0_dp, 0.0_dp]
+
+      allocate (mbe_result%dipole(3))
+      mbe_result%dipole = 0.0_dp
+
+      call compute_mbe(polymers, fragment_count, max_level, results, mbe_result)
+
+      call check(error, mbe_result%has_dipole, "the MBE dipole was not computed")
+      if (allocated(error)) return
+
+      expected = results(1)%dipole + results(2)%dipole &
+                 + (results(5)%dipole - results(3)%dipole - results(4)%dipole)
+
+      do i = 1, 3
+         call check(error, mbe_result%dipole(i), expected(i), thr=1.0e-12_dp, &
+                    message="the counterpoise dipole does not match the expansion; "// &
+                    "a ghosted row was summed, or a subset was looked up in the wrong basis")
+         if (allocated(error)) return
+      end do
+
+      ! The energy is assembled by the path this mirrors, so it pins the same
+      ! two rules independently.
+      call check(error, mbe_result%total_energy, &
+                 -10.0_dp - 15.0_dp + (-25.5_dp + 10.1_dp + 15.2_dp), thr=1.0e-12_dp, &
+                 message="the counterpoise energy changed, so the fixture is wrong "// &
+                 "rather than the dipole")
+   end subroutine test_vmfc_dipole
 
    subroutine test_mbe_monomers_only(error)
       !! Test MBE energy with monomers only (nlevel=1)

@@ -429,6 +429,10 @@ contains
       max_level = config%nlevel
       allow_overlapping_fragments = config%allow_overlapping_fragments
       max_intersection_level = config%max_intersection_level
+      ! Enumerated on the coordinator alone, far below, but copied into the
+      ! expansion on every rank -- so the ranks that never enumerate need a
+      ! value to copy rather than whatever the stack happened to hold.
+      n_pie_terms = 0_int64
 
       ! Every input path arrives here, so this is where the system is checked:
       ! the JSON reader, the C interface and a supplied term list alike.

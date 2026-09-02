@@ -1336,6 +1336,7 @@ contains
                if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then
                   call result%error%set(ERROR_VALIDATION, error%get_message())
                   result%has_error = .true.
+                  call mol%destroy()
                   return
                end if
                fukui_frozen = core_orbital_count(fragment%element_numbers)
@@ -1737,6 +1738,7 @@ contains
                if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then
                   call result%error%set(ERROR_VALIDATION, error%get_message())
                   result%has_error = .true.
+                  call mol%destroy()
                   return
                end if
                frozen = core_orbital_count(fragment%element_numbers)
@@ -1780,6 +1782,12 @@ contains
             result%energy%mp2%os = mp2%opposite_spin
             result%energy%mp2%ss_scale = settings%scs_ss
             result%energy%mp2%os_scale = settings%scs_os
+            ! The denominators are divided by unguarded, on the argument that a
+            ! non-negative one means the reference was not a minimum and the
+            ! *sum* is the useful thing to report -- see the comment in
+            ! `mqc_libcint_mp2`. That check existed and had unit tests but no
+            ! production caller, so the sum was never actually looked at.
+            call result%energy%mp2%check_stability()
 
             ! The gradient of what was just computed, and only where that is
             ! literally true: a scaled MP2 is a different energy, and its
@@ -1956,6 +1964,7 @@ contains
                if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then
                   call result%error%set(ERROR_VALIDATION, error%get_message())
                   result%has_error = .true.
+                  call mol%destroy()
                   return
                end if
                frozen = core_orbital_count(fragment%element_numbers)
@@ -2103,6 +2112,8 @@ contains
                if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then
                   call result%error%set(ERROR_VALIDATION, error%get_message())
                   result%has_error = .true.
+                  call xc%destroy()
+                  call mol%destroy()
                   return
                end if
                dh_frozen = core_orbital_count(fragment%element_numbers)

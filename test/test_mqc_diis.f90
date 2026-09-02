@@ -3,6 +3,7 @@ module test_mqc_diis
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp, int64
    use mqc_diis, only: diis_state_t, ACCEL_DIIS, ACCEL_EDIIS, ACCEL_ADIIS
+   use mqc_error, only: error_t
    use mqc_ediis, only: simplex_quadratic_min, ediis_coefficients, adiis_coefficients
    implicit none
 
@@ -28,7 +29,9 @@ contains
                   new_unittest("simplex_min_stays_on_the_simplex", test_simplex), &
                   new_unittest("adiis_keeps_the_newest_at_its_own_minimum", test_adiis_zero), &
                   new_unittest("energy_schemes_interpolate_where_diis_does_not", test_hull), &
-                  new_unittest("ediis_adiis_match_pyscf_coefficients", test_vs_pyscf) &
+                  new_unittest("ediis_adiis_match_pyscf_coefficients", test_vs_pyscf), &
+                  new_unittest("energy_based_push_without_a_density_is_rejected", &
+                               test_push_needs_density) &
                   ]
    end subroutine collect_mqc_diis
 
@@ -88,6 +91,47 @@ contains
       end do
       deallocate (c)
    end subroutine test_vs_pyscf
+
+   subroutine test_push_needs_density(error)
+      !! An energy-based push with no density is refused, and changes nothing
+      !!
+      !! The history is a ring that overwrites in place, so a push that simply
+      !! skipped the density would leave the *evicted* entry's density in the
+      !! slot -- and the `df` update contracts that slot against every stored
+      !! Fock immediately, feeding a stale density to both EDIIS and ADIIS.
+      !!
+      !! The rejection is therefore transactional: it happens before any state
+      !! is written, so the subspace must be exactly as it was. Both halves are
+      !! asserted here, because an error that still half-applied the push would
+      !! be the worse failure of the two.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(diis_state_t) :: acc
+      type(error_t) :: err
+      real(dp) :: f(2), d(2)
+      integer :: before
+
+      call acc%init(6, 2, 2, energy_based=.true.)
+      f = [1.0_dp, 0.0_dp]; d = [0.8_dp, 0.1_dp]
+      call acc%push(f, [0.9_dp, 0.1_dp], density=d, energy=-1.0_dp)
+      before = acc%count()
+
+      call acc%push([0.6_dp, 0.1_dp], [0.4_dp, 0.2_dp], energy=-1.2_dp, error=err)
+      call check(error, err%has_error(), &
+                 "an energy-based push with no density should set an error")
+      if (allocated(error)) return
+      call check(error, acc%count() == before, &
+                 "the rejected push still changed the subspace, so it was half-applied")
+      if (allocated(error)) return
+      call err%clear()
+
+      ! And the same state still accepts a well-formed push afterwards.
+      call acc%push([0.2_dp, 0.3_dp], [0.1_dp, 0.3_dp], density=[0.5_dp, 0.4_dp], &
+                    energy=-1.25_dp, error=err)
+      call check(error,.not. err%has_error(), "a complete push should still be accepted")
+      if (allocated(error)) return
+      call check(error, acc%count() == before + 1, "the accepted push was not stored")
+   end subroutine test_push_needs_density
 
    subroutine test_simplex(error)
       !! The parameterised minimisation returns a point on the simplex

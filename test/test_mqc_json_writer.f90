@@ -37,6 +37,7 @@ contains
                   new_unittest("dipole_is_written_with_its_magnitude", test_dipole), &
                   new_unittest("mbe_document_carries_its_levels", test_mbe), &
                   new_unittest("pie_document_counts_nonzero_terms", test_pie), &
+                  new_unittest("pie_atom_set_with_no_sentinel_stays_in_bounds", test_pie_full_set), &
                   new_unittest("a_fingerprint_is_written_when_there_is_one", test_fingerprint) &
                   ]
    end subroutine collect_mqc_json_writer_tests
@@ -265,6 +266,48 @@ contains
       call json%destroy()
       call data%destroy()
    end subroutine test_pie
+
+   subroutine test_pie_full_set(error)
+      !! An atom set that fills its column has no negative sentinel to stop on
+      !!
+      !! The walk that measures each term's atom list is bounded by `max_atoms`
+      !! *and* by a negative sentinel. Written as one `.and.` condition, the
+      !! bound does not protect the subscript: Fortran may evaluate both
+      !! operands, so a column with no sentinel reads `pie_atom_sets(max_atoms
+      !! + 1, i)` on the last pass. `-fcheck=bounds` traps it; a release build
+      !! reads out of the next column and says nothing.
+      !!
+      !! Every atom index here is non-negative, so the sentinel never fires and
+      !! only the bound can end the walk.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(json_output_data_t) :: data
+      type(json_file) :: json
+      integer :: count
+      logical :: found
+
+      data%output_mode = OUTPUT_MODE_GMBE_PIE
+      data%total_energy = -152.0_dp
+      data%has_energy = .true.
+      data%n_pie_terms = 1_int64
+      allocate (data%pie_atom_sets(2, 1))
+      data%pie_atom_sets(:, 1) = [0, 1]
+      allocate (data%pie_coefficients(1))
+      data%pie_coefficients = [1]
+      allocate (data%pie_energies(1))
+      data%pie_energies = [-76.0_dp]
+
+      call written_document(data, json, "jw_pie_full.json")
+
+      call json%get("jw_pie_full.pie_terms.count", count, found)
+      call check(error, found, "the pie_terms object is missing")
+      if (allocated(error)) return
+      call check(error, count == 1, "the only term was not written")
+      if (allocated(error)) return
+
+      call json%destroy()
+      call data%destroy()
+   end subroutine test_pie_full_set
 
    subroutine test_fingerprint(error)
       type(error_type), allocatable, intent(out) :: error

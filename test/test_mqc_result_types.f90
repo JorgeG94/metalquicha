@@ -211,11 +211,24 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t) :: result
 
-      ! Allocate and populate
+      ! Allocate and populate. Every allocatable the container owns, not just
+      ! the gradient: `result_recv` calls destroy precisely so a container can
+      ! be reused, so anything left behind comes back on the next fragment at
+      ! the previous fragment's size. Bond orders and the three Fukui arrays
+      ! were the ones that used to survive.
       allocate (result%gradient(3, 5))
       result%gradient = 1.0_dp
       result%has_gradient = .true.
       result%energy%scf = -50.0_dp
+
+      allocate (result%bond_orders(5, 5))
+      result%bond_orders = 0.5_dp
+      allocate (result%fukui_plus(5))
+      result%fukui_plus = 0.1_dp
+      allocate (result%fukui_minus(5))
+      result%fukui_minus = 0.2_dp
+      allocate (result%fukui_dual(5))
+      result%fukui_dual = -0.1_dp
 
       ! Destroy
       call result%destroy()
@@ -223,6 +236,18 @@ contains
       ! Check deallocation
       call check(error,.not. allocated(result%gradient), &
                  "gradient should be deallocated after destroy")
+      if (allocated(error)) return
+      call check(error,.not. allocated(result%bond_orders), &
+                 "bond_orders should be deallocated after destroy")
+      if (allocated(error)) return
+      call check(error,.not. allocated(result%fukui_plus), &
+                 "fukui_plus should be deallocated after destroy")
+      if (allocated(error)) return
+      call check(error,.not. allocated(result%fukui_minus), &
+                 "fukui_minus should be deallocated after destroy")
+      if (allocated(error)) return
+      call check(error,.not. allocated(result%fukui_dual), &
+                 "fukui_dual should be deallocated after destroy")
       if (allocated(error)) return
 
       ! Check reset was called

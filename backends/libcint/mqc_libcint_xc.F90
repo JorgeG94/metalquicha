@@ -485,8 +485,16 @@ contains
       end if
 
 #ifdef MQC_WITH_LIBXC
-      do g0 = 1, npts, AO_POINT_BLOCK
-         g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
+      ! `ctx%point_block`, not the module constant: `keywords.dft.block_size`
+      ! sets the former and every other loop in this module reads it, so
+      ! blocking on the constant here made the keyword a no-op on this path.
+      ! These three routines still apply no AO screen, so
+      ! `keywords.dft.screening_tolerance` remains inert for them -- adding it
+      ! means resizing every downstream array to the significant-AO subset, the
+      ! way the potential loops do, which is a change to numerics and belongs on
+      ! its own.
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
 
          call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error)
@@ -645,8 +653,16 @@ contains
       end if
 
 #ifdef MQC_WITH_LIBXC
-      do g0 = 1, npts, AO_POINT_BLOCK
-         g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
+      ! `ctx%point_block`, not the module constant: `keywords.dft.block_size`
+      ! sets the former and every other loop in this module reads it, so
+      ! blocking on the constant here made the keyword a no-op on this path.
+      ! These three routines still apply no AO screen, so
+      ! `keywords.dft.screening_tolerance` remains inert for them -- adding it
+      ! means resizing every downstream array to the significant-AO subset, the
+      ! way the potential loops do, which is a change to numerics and belongs on
+      ! its own.
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
 
          call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
@@ -946,8 +962,16 @@ contains
       end if
 
 #ifdef MQC_WITH_LIBXC
-      do g0 = 1, npts, AO_POINT_BLOCK
-         g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
+      ! `ctx%point_block`, not the module constant: `keywords.dft.block_size`
+      ! sets the former and every other loop in this module reads it, so
+      ! blocking on the constant here made the keyword a no-op on this path.
+      ! These three routines still apply no AO screen, so
+      ! `keywords.dft.screening_tolerance` remains inert for them -- adding it
+      ! means resizing every downstream array to the significant-AO subset, the
+      ! way the potential loops do, which is a change to numerics and belongs on
+      ! its own.
+      do g0 = 1, npts, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
 
          ! The AO gradients are needed whenever anything here is a GGA, and

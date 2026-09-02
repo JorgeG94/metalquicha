@@ -2708,8 +2708,11 @@ contains
       if (allocated(this%sp_split_first)) deallocate (this%sp_split_first)
       if (allocated(this%charges)) deallocate (this%charges)
       if (allocated(this%coords)) deallocate (this%coords)
+      if (allocated(this%bas_with_ecp)) deallocate (this%bas_with_ecp)
+      if (allocated(this%core_electrons)) deallocate (this%core_electrons)
       this%natm = 0
       this%nbas = 0
+      this%necpbas = 0
       this%nbas_sp = 0
       this%nao = 0
       this%cartesian = .false.

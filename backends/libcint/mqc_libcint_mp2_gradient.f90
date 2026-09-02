@@ -570,7 +570,8 @@ contains
          allocate (ref_grad(3, mol%natm))
          ref_grad = 0.0_dp
          call fitted_reference_gradient(mol, aux, three_ao, jm12, hf_density, dm1p, &
-                                        ref_grad, k_scale=kf)
+                                        ref_grad, error, k_scale=kf)
+         if (error%has_error()) return
          gradient = gradient + 0.5_dp*ref_grad
       end if
 

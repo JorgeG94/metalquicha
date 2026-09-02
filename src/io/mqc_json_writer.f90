@@ -558,9 +558,15 @@ contains
             call json%create_object(term_obj, "")
             call json%add(terms_arr, term_obj)
 
-            ! Extract atom list size (atoms until negative sentinel)
+            ! Atoms until the negative sentinel. The bound and the sentinel are
+            ! tested in separate statements on purpose: Fortran does not promise
+            ! to short-circuit `.and.`, so writing both in one condition lets the
+            ! compiler read `pie_atom_sets(max_atoms + 1, i)` on the last pass of
+            ! a full set -- one element past the column, which `-fcheck=bounds`
+            ! traps and a release build reads out of the next column in silence.
             n_atoms = 0
-            do while (n_atoms < max_atoms .and. data%pie_atom_sets(n_atoms + 1, i) >= 0)
+            do while (n_atoms < max_atoms)
+               if (data%pie_atom_sets(n_atoms + 1, i) < 0) exit
                n_atoms = n_atoms + 1
             end do
 

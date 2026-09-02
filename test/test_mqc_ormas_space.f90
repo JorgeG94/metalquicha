@@ -541,7 +541,11 @@ contains
       integer(int64) :: i
 
       call ormas_strings(space, alpha, beta, err)
-      if (err%has_error()) return
+      ! Returning here without touching `error` is what let a broken string
+      ! generator pass this test: every check below is skipped, and test-drive
+      ! reads an unset error as success.
+      call check(error,.not. err%has_error(), "the strings should generate")
+      if (allocated(error)) return
 
       do i = 1, size(alpha, kind=int64)
          call check(error, ormas_string_address(space, alpha(i), .true.) == i, &

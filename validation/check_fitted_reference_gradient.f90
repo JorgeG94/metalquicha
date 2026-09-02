@@ -127,7 +127,7 @@ contains
       allocate (analytic(3, natm))
       analytic = 0.0_dp
       call fitted_reference_gradient(mol, aux, three, jm12, dm_a, dm_b, analytic, &
-                                     k_scale=k_scale)
+                                     error, k_scale=k_scale)
       call aux%destroy()
       call mol%destroy()
 

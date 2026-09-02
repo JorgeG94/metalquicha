@@ -116,9 +116,14 @@ contains
       allocate (radii(n_centre))
       do i = 1, n_centre
          if (dma%labels(i) (1:2) == "BO") then
-            ! A midpoint takes the mean of the two atoms its label names.
-            read (dma%labels(i) (3:3), *) j
-            read (dma%labels(i) (4:4), *) k
+            ! A midpoint takes the mean of the two atoms its label names. Three
+            ! digits each, fixed width: at minimal width "BO123" is atoms 12 and
+            ! 3 or atoms 1 and 23 with no way to tell, and reading one character
+            ! per index gave the wrong pair for every bond past the ninth atom
+            ! -- or index zero, an out-of-bounds read, when the higher atom was
+            ! a multiple of ten.
+            read (dma%labels(i) (3:5), *) j
+            read (dma%labels(i) (6:8), *) k
             radii(i) = 0.5_dp*(vdw_radius_geodesic(atomic_numbers(j)) &
                                + vdw_radius_geodesic(atomic_numbers(k)))
          else

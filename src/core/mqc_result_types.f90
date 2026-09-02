@@ -358,6 +358,13 @@ contains
       if (allocated(this%ieda_free_atom)) deallocate (this%ieda_free_atom)
       if (allocated(this%ieda_pair)) deallocate (this%ieda_pair)
       if (allocated(this%ieda_classical)) deallocate (this%ieda_classical)
+      ! `result_recv` destroys precisely so a container can be reused, so an
+      ! array left behind here comes back on the next fragment at the previous
+      ! fragment's size.
+      if (allocated(this%bond_orders)) deallocate (this%bond_orders)
+      if (allocated(this%fukui_plus)) deallocate (this%fukui_plus)
+      if (allocated(this%fukui_minus)) deallocate (this%fukui_minus)
+      if (allocated(this%fukui_dual)) deallocate (this%fukui_dual)
       call this%reset()
    end subroutine result_destroy
 

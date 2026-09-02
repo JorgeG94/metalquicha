@@ -279,7 +279,7 @@ contains
       v = 2.0_dp*ovov(k, c, l, d) - ovov(k, d, l, c)
    end function lvec
 
-   subroutine cc_foo(eris, t1, tau, no, nv, fki)
+   subroutine cc_foo(eris, tau, no, nv, fki)
       !! Fki = sum_lcd [2(kc|ld) - (kd|lc)] tau(i,l,c,d)
       !!
       !! rintermediates.cc_Foo, with its four terms folded into tau: the two t2
@@ -290,7 +290,7 @@ contains
       !! orbitals it is diagonal and `update_amps` subtracts that same diagonal
       !! back out immediately afterwards.
       type(rcc_eris_t), intent(in) :: eris
-      real(dp), intent(in) :: t1(:, :), tau(:, :, :, :)
+      real(dp), intent(in) :: tau(:, :, :, :)
       integer, intent(in) :: no, nv
       real(dp), intent(out) :: fki(:, :)
 
@@ -310,10 +310,10 @@ contains
       end do
    end subroutine cc_foo
 
-   subroutine cc_fvv(eris, t1, tau, no, nv, fac)
+   subroutine cc_fvv(eris, tau, no, nv, fac)
       !! Fac = -sum_kld [2(kc|ld) - (kd|lc)] tau(k,l,a,d)
       type(rcc_eris_t), intent(in) :: eris
-      real(dp), intent(in) :: t1(:, :), tau(:, :, :, :)
+      real(dp), intent(in) :: tau(:, :, :, :)
       integer, intent(in) :: no, nv
       real(dp), intent(out) :: fac(:, :)
 
@@ -795,8 +795,8 @@ contains
       call build_tau(t1, t2, no, nv, tau)
 
       allocate (fki(no, no), fac(nv, nv), fkc(no, nv), lki(no, no), lac(nv, nv))
-      call cc_foo(eris, t1, tau, no, nv, fki)
-      call cc_fvv(eris, t1, tau, no, nv, fac)
+      call cc_foo(eris, tau, no, nv, fki)
+      call cc_fvv(eris, tau, no, nv, fac)
       call cc_fov(eris, t1, no, nv, fkc)
       call cc_loo(eris, fki, t1, no, nv, lki)
       call cc_lvv(eris, fac, t1, no, nv, lac)

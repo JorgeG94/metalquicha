@@ -106,8 +106,8 @@ module mqc_physical_fragment
       real(dp), allocatable :: coordinates(:, :)  !! All coordinates (3, total_atoms) in Bohr
 
       ! Electronic structure properties
-      integer :: charge         !! Net molecular charge (electrons)
-      integer :: multiplicity   !! Spin multiplicity (2S+1)
+      integer :: charge = 0        !! Net molecular charge (electrons)
+      integer :: multiplicity = 1  !! Spin multiplicity (2S+1)
 
       ! For variable-sized fragments (explicit fragment definitions)
       integer, allocatable :: fragment_sizes(:)      !! Number of atoms in each fragment (n_monomers)
@@ -651,8 +651,8 @@ contains
       real(dp), intent(inout) :: system_gradient(:, :)  !! (3, n_atoms_system)
       real(dp), intent(in), optional :: scale  !! Weight applied to this fragment (default 1)
 
-      integer :: i, local_idx, global_idx
-      integer :: i_cap, local_cap_idx, global_original_idx
+      integer :: i, global_idx
+      integer :: i_cap, local_cap_idx
       integer :: n_real_atoms
       real(dp) :: w
       integer :: tgt(2)
@@ -708,11 +708,11 @@ contains
       real(dp), intent(inout) :: system_hessian(:, :)  !! (3*n_atoms_system, 3*n_atoms_system)
       real(dp), intent(in), optional :: scale  !! Weight applied to this fragment (default 1)
 
-      integer :: i, j, local_i, local_j, global_i, global_j
+      integer :: i, j, global_i, global_j
       integer :: icart, jcart
       integer :: i_cap, local_cap_idx, global_original_idx
       integer :: n_real_atoms
-      integer :: i_cap_2, local_cap_idx_2, global_original_idx_2
+      integer :: i_cap_2, local_cap_idx_2
       real(dp) :: w
       integer :: tgt(2)
       integer :: tgt2(2)

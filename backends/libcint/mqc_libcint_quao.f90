@@ -571,7 +571,7 @@ contains
       real(dp), allocatable :: ri(:), rj(:)
       real(dp) :: d, f, radius, theta, a, b, qii, qjj, qij
       integer :: n, i, j, k, lo, hi, sweep
-      logical :: moved
+      logical :: moved, settled
 
       if (error%has_error()) return
       n = size(coefficients, 2)
@@ -580,6 +580,7 @@ contains
       allocate (ri(size(projection, 2)), rj(size(projection, 2)))
 
       sweeps = 0
+      settled = .false.
       do sweep = 1, JACOBI_MAX_SWEEPS
          moved = .false.
          ! `< QUAO | A*alpha >` for the current orbitals. Rebuilt each sweep
@@ -636,10 +637,14 @@ contains
          end do
 
          sweeps = sweep
-         if (.not. moved) exit
+         settled = .not. moved
+         if (settled) exit
       end do
 
-      if (sweeps >= JACOBI_MAX_SWEEPS) then
+      ! `settled`, not the sweep count: the counter reaches the maximum both
+      ! when the loop runs out and when convergence happens on the last
+      ! permitted sweep, so testing it reported a good refinement as a failure.
+      if (.not. settled) then
          call error%set(ERROR_VALIDATION, "the quasi-atomic refinement did not settle "// &
                         "in "//to_char(JACOBI_MAX_SWEEPS)//" sweeps.")
          return
@@ -964,7 +969,7 @@ contains
       real(dp), allocatable :: p(:, :), rotation(:, :), pi(:), pj(:)
       real(dp) :: r2, r3, q, theta, c, s, before, after
       integer :: n, i, j, k, sweep
-      logical :: moved
+      logical :: moved, settled
 
       if (error%has_error()) return
       n = quao%n_quao
@@ -977,6 +982,7 @@ contains
 
       before = orientation_sum(p, quao%atom_of)
       quao%sweeps = 0
+      settled = .false.
       do sweep = 1, ORIENT_MAX_SWEEPS
          moved = .false.
          do i = 1, n
@@ -1022,10 +1028,13 @@ contains
             end do
          end do
          quao%sweeps = sweep
-         if (.not. moved) exit
+         settled = .not. moved
+         if (settled) exit
       end do
 
-      if (quao%sweeps >= ORIENT_MAX_SWEEPS) then
+      ! See the refinement loop above: the count cannot tell convergence on the
+      ! final sweep from exhaustion.
+      if (.not. settled) then
          call error%set(ERROR_VALIDATION, "the orientation did not settle in "// &
                         to_char(ORIENT_MAX_SWEEPS)//" sweeps.")
          return

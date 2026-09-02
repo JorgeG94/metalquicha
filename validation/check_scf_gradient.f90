@@ -315,6 +315,20 @@ contains
       write (*, "(a)") ""
       write (*, "(a,a)") "== ", label
 
+      ! `run_libcint_uhf` has no `aux` argument -- unrestricted SCF is not
+      ! density-fitted here -- so an open-shell case given an auxiliary basis
+      ! used to drop it on both sides and agree with finite differences
+      ! perfectly, because both halves were then exact. That is the same
+      ! silently-passing shape the fitted Kohn-Sham branch below records having
+      ! had once already. Refuse it rather than report a pass for a path that
+      ! was never exercised.
+      if (present(aux_basis) .and. multiplicity /= 1) then
+         write (*, "(a)") "FAIL: an open-shell case was given an auxiliary basis, but the "// &
+            "unrestricted SCF is not density-fitted. This case tests nothing."
+         n_bad = n_bad + 1
+         return
+      end if
+
       call gradient_at(numbers, symbols, coords, basis, nelec, multiplicity, &
                        analytic, error, aux_basis, functional)
       if (error%has_error()) then
