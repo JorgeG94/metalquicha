@@ -968,6 +968,13 @@ contains
                                 " -- falling back to sad")
             guess_kind = SCF_GUESS_SAD
             if (allocated(guess_total)) deallocate (guess_total)
+            ! Cleared, because `build_atomic_guess` takes its error `inout` and
+            ! does not reset it. Left set, the check after that call sees this
+            ! failure rather than the atomic guess's own, and the SAD fallback
+            ! this line just chose is discarded for GWH -- a second fallback the
+            ! deck did not ask for, reported with this message rather than one
+            ! of its own.
+            call guess_error%clear()
          end if
       end if
 
