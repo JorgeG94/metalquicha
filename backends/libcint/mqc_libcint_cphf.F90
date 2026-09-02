@@ -196,8 +196,13 @@ contains
       !! Release a built Hessian
       class(response_hessian_t), intent(inout) :: self
       if (allocated(self%aminus)) deallocate (self%aminus)
+      if (allocated(self%aplus)) deallocate (self%aplus)
       if (allocated(self%product)) deallocate (self%product)
       self%ready = .false.
+      ! `fitted` describes the matrices just released, so it has to go with
+      ! them -- left set, it would claim the next Hessian built into this
+      ! object came from fitted integrals whatever it was built from.
+      self%fitted = .false.
    end subroutine hessian_destroy
 
    subroutine cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations, &
@@ -993,7 +998,14 @@ contains
          end if
       end if
 
-      if (present(aux)) then
+      ! Skipped entirely on reuse. The `if (reuse)` block above only checks the
+      ! supplied Hessian's size; these builds then ran anyway and their results
+      ! were discarded below in favour of `hessian%aplus`/`%aminus`, so passing
+      ! a built Hessian across a potential's three blocks saved one GEMM and
+      ! none of the `n_ov` Fock builds it exists to save.
+      if (reuse) then
+         continue
+      else if (present(aux)) then
          call build_hessian_df(mol, aux, c_occ, c_vir, gaps, aplus, aminus, error, &
                                progress=talk)
          if (present(hessian)) hessian%fitted = .true.

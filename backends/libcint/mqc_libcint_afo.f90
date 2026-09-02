@@ -452,6 +452,7 @@ contains
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
+      type(scf_numerics_t) :: scf_numerics
       real(dp), allocatable :: localized(:, :), centroids(:, :), s(:, :), distance(:)
       integer, allocatable :: offsets(:), counts(:)
       real(dp) :: midpoint(3)
@@ -469,8 +470,19 @@ contains
                                   mol, error)
       if (error%has_error()) return
 
+      ! `afo_options_t` carries the iteration count and the two tolerances twice
+      ! -- once bare and once inside its `scf_numerics_t` -- and
+      ! `run_libcint_rhf` reads only the positional ones, so setting
+      ! `opts%scf%energy_tol` did nothing and said nothing. The bare fields are
+      ! the ones callers and tests actually set, so they win; copying them over
+      ! the numerics before the call means the two halves cannot disagree about
+      ! what this SCF was asked for.
+      scf_numerics = opts%scf
+      scf_numerics%max_iter = opts%scf_max_iter
+      scf_numerics%energy_tol = opts%scf_energy_tol
+      scf_numerics%density_tol = opts%scf_density_tol
       call run_libcint_rhf(mol, model%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                           opts%scf_density_tol, .false., scf, error, scf=opts%scf)
+                           opts%scf_density_tol, .false., scf, error, scf=scf_numerics)
       if (error%has_error()) return
       if (.not. scf%converged) then
          call error%set(ERROR_VALIDATION, "afo: the model system's SCF did not converge, "// &

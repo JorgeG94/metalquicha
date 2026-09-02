@@ -15,6 +15,7 @@ module mqc_diis
    !! stacked into one vector) through the same code, and is the layout a device
    !! reduction wants: contiguous and coalesced.
    use pic_types, only: dp
+   use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_ediis, only: ediis_coefficients, adiis_coefficients
    implicit none
    private
@@ -176,7 +177,7 @@ contains
       slot = diis_slot_of_age(this%newest, this%n_stored, this%max_vectors, age)
    end function slot_of_age
 
-   subroutine diis_push(this, fock, error_vector, density, energy)
+   subroutine diis_push(this, fock, error_vector, density, energy, error)
       !! Add one entry, evicting the oldest when full
       class(diis_state_t), intent(inout) :: this
       real(dp), intent(in) :: fock(this%n_fock)
@@ -188,8 +189,23 @@ contains
          !! the trace both energy models want.
       real(dp), intent(in), optional :: energy
          !! The total energy of this entry, for EDIIS. ADIIS does not use it.
+      type(error_t), intent(inout), optional :: error
+         !! Set when an `energy_based` state is pushed without a `density`.
 
       integer :: slot, age, other
+
+      ! Rejected before anything is written, not half-applied. The history is a
+      ! ring that overwrites in place, so a push that skipped the density would
+      ! leave the *evicted* entry's density in the slot -- and the `df` update
+      ! below immediately contracts that slot against every stored Fock, so the
+      ! stale density reaches both EDIIS and ADIIS as if it belonged there.
+      if (this%energy_based .and. .not. present(density)) then
+         if (present(error)) then
+            call error%set(ERROR_VALIDATION, "DIIS: an energy-based subspace needs a "// &
+                           "density with every entry, and this push has none")
+         end if
+         return
+      end if
 
       this%newest = modulo(this%newest, this%max_vectors) + 1
       if (this%n_stored < this%max_vectors) this%n_stored = this%n_stored + 1
@@ -207,7 +223,7 @@ contains
       end do
 
       if (this%energy_based) then
-         if (present(density)) this%density_history(:, slot) = density
+         this%density_history(:, slot) = density
          if (present(energy)) this%energy_history(slot) = energy
 
          ! A full row *and* a full column, because `df` is not symmetric: the

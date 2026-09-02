@@ -79,7 +79,7 @@ module mqc_libcint_dma
    type :: dma_result_t
       !! One expansion point per column, laid out the way a `.efp` wants it
       real(dp), allocatable :: points(:, :)        !! (3, n_points), Bohr
-      character(len=8), allocatable :: labels(:)   !! `A01O`, `BO21`, ...
+      character(len=8), allocatable :: labels(:)   !! `A01O`, `BO002001`, ...
       real(dp), allocatable :: electronic(:)       !! (n_points), negative
       real(dp), allocatable :: nuclear(:)          !! (n_points), Z on atoms else 0
       real(dp), allocatable :: dipole(:, :)        !! (3, n_points)
@@ -148,7 +148,7 @@ contains
          ! 1e-9 -- not a weighted or electronegativity-shifted midpoint.
          points(:, natm + k) = 0.5_dp*(coords(:, i) + coords(:, j))
          nuclear(natm + k) = 0.0_dp
-         write (labels(natm + k), "(a,i0,i0)") "BO", i, j
+         write (labels(natm + k), "(a,i3.3,i3.3)") "BO", i, j
       end do
 
       deallocate (bond_i, bond_j)

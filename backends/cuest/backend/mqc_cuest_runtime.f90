@@ -169,7 +169,17 @@ contains
       if (descriptor%deviceBufferSizeInBytes > 0) then
          call cuda_status_check(cudaMalloc(device_ptr, descriptor%deviceBufferSizeInBytes), &
                                 "cudaMalloc(cuEST device workspace)", error)
-         if (error%has_error()) return
+         if (error%has_error()) then
+            ! The host half already succeeded, and `workspace` is `intent(out)`,
+            ! so returning here would hand back a descriptor whose `hostBuffer`
+            ! nobody owns and nothing will free.
+            if (workspace%hostBuffer /= 0_c_intptr_t) then
+               call c_free(transfer(workspace%hostBuffer, host_ptr))
+               workspace%hostBuffer = 0_c_intptr_t
+               workspace%hostBufferSizeInBytes = 0
+            end if
+            return
+         end if
          workspace%deviceBuffer = transfer(device_ptr, workspace%deviceBuffer)
       end if
    end subroutine workspace_alloc

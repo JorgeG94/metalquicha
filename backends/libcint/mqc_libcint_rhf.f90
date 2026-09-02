@@ -726,6 +726,13 @@ contains
       ! The error vector lives in the orthogonal basis, where it is n_mo
       ! square rather than n_ao -- that is the same shape the cuEST path uses
       ! and the reason both converge alike.
+      ! Resolved before the subspace is built, not after it. `energy_based`
+      ! decides whether the history can hold densities and energies at all, and
+      ! reading `accel` here while it was still assigned some fifty lines below
+      ! took that decision on an undefined value.
+      accel = ACCEL_DIIS
+      if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
+      if (present(accelerator)) accel = accelerator
       call diis%init(diis_size, n_ao*n_ao, n_mo*n_mo, &
                      energy_based=(accel /= ACCEL_DIIS))
 
@@ -774,10 +781,6 @@ contains
       kohn_sham_run = .false.
       if (present(xc)) kohn_sham_run = xc%active
       call scf_table_header(verbose, kohn_sham_run)
-
-      accel = ACCEL_DIIS
-      if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
-      if (present(accelerator)) accel = accelerator
 
       ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
       ! caller states it. See the argument's own note for why a density
@@ -1309,6 +1312,13 @@ contains
       ! One subspace over both spins, so an extrapolation step moves them
       ! together. The vectors are the two Fock matrices laid end to end and the
       ! two commutators likewise.
+      ! Resolved before the subspace is built, not after it. `energy_based`
+      ! decides whether the history can hold densities and energies at all, and
+      ! reading `accel` here while it was still assigned some fifty lines below
+      ! took that decision on an undefined value.
+      accel = ACCEL_DIIS
+      if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
+      if (present(accelerator)) accel = accelerator
       call diis%init(diis_size, 2*nsq, 2*msq, &
                      energy_based=(accel /= ACCEL_DIIS))
 
@@ -1364,10 +1374,6 @@ contains
       kohn_sham_run = .false.
       if (present(xc)) kohn_sham_run = xc%active
       call scf_table_header(verbose, kohn_sham_run)
-
-      accel = ACCEL_DIIS
-      if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
-      if (present(accelerator)) accel = accelerator
 
       ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
       ! caller states it. See the argument's own note for why a density

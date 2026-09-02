@@ -515,13 +515,19 @@ contains
          ! pair. Unscaled, so unlike the kinetic bond orders above these are
          ! energies and they add up to one -- the valence kinetic energy, since
          ! the core is not in this basis.
-         want_energy = .false.
-         if (present(energy_decomposition)) want_energy = energy_decomposition
-         if (present(no_sharing)) then
-            ! Asking for the no-sharing analysis is asking for the decomposition
-            ! it is part of; refusing on a technicality would be unhelpful.
-            if (no_sharing) want_energy = .true.
-         end if
+      end if
+
+      ! Outside the `loud` block that used to hold it. It is read below as
+      ! `loud .and. want_energy`, and Fortran does not promise to stop at a
+      ! false first operand -- so a caller passing `verbose = .false.` read it
+      ! undefined. No caller passes `verbose` today, which is the only reason
+      ! this has never been seen.
+      want_energy = .false.
+      if (present(energy_decomposition)) want_energy = energy_decomposition
+      if (present(no_sharing)) then
+         ! Asking for the no-sharing analysis is asking for the decomposition
+         ! it is part of; refusing on a technicality would be unhelpful.
+         if (no_sharing) want_energy = .true.
       end if
 
       ci_route = NO_SHARING_CI_TRANSFORM

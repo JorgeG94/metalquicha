@@ -18,9 +18,16 @@
 !!
 !! The same energy is printed alongside the timing, at every size and thread count.
 !! A parallel reduction over floating point is not bit-reproducible -- the summation
-!! order changes with the schedule -- so what is asserted is agreement to a
-!! tolerance, not equality, and the tolerance is what tells you whether a
-!! disagreement is rounding or a race.
+!! order changes with the schedule -- so agreement is wanted to a tolerance rather
+!! than as equality, and the tolerance is what tells you whether a disagreement is
+!! rounding or a race.
+!!
+!! **Nothing here asserts that.** This program prints; it does not compare. One run
+!! covers one thread count, so a reduction race shows up only if a person runs it
+!! twice under different `OMP_NUM_THREADS` and reads the two tables side by side.
+!! Catching it automatically means evaluating each size at one thread and at the
+!! maximum and comparing inside the program -- worth doing, and deliberately not
+!! done here rather than left implied by a docstring that overstated it.
 program bench_efp
    use pic_types, only: dp, int64
    use mqc_error, only: error_t
