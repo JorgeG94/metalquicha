@@ -727,6 +727,14 @@ contains
       end do
 
       afo_opts%basis = opts%basis
+      ! The rest of it, which was never copied. `afo_options_t` has carried
+      ! these three fields all along and this line set only the basis, so the
+      ! model system a cut bond's frozen orbital is localized from converged on
+      ! that type's defaults no matter what the run was told.
+      afo_opts%scf_max_iter = opts%scf_max_iter
+      afo_opts%scf_energy_tol = opts%scf_energy_tol
+      afo_opts%scf_density_tol = opts%scf_density_tol
+      afo_opts%scf = opts%scf
       allocate (afo%hybrid(afo%n_cuts))
       allocate (afo%sym(size(symbols)), source=symbols)
       allocate (lengths(afo%n_cuts), source=0)

@@ -758,7 +758,6 @@ contains
 
       accel = ACCEL_DIIS
       if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
-      if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
       if (present(accelerator)) accel = accelerator
 
       ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
@@ -1328,7 +1327,6 @@ contains
       call scf_table_header(verbose, kohn_sham_run)
 
       accel = ACCEL_DIIS
-      if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
       if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
       if (present(accelerator)) accel = accelerator
 

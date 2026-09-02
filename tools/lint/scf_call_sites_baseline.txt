@@ -30,7 +30,3 @@ backends/libcint/mqc_efp_potential.f90 2
 # rule itself, which needs `fukui_indices` and `climb_basis_ladder` to take it.
 backends/libcint/mqc_libcint_fukui.f90 2
 backends/libcint/mqc_libcint_projection.f90 2
-
-# The model-system SCF an adjusted frozen orbital is localized from. Same shape
-# as SAPT: nothing to forward until a configuration reaches the routine.
-backends/libcint/mqc_libcint_afo.f90 1
