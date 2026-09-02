@@ -598,6 +598,19 @@ contains
       ! as everywhere else here.
       if (settings%algorithm == OPT_ALGO_DAMPED) then
          if (settings%timestep > 0.0_dp) timestep = real(settings%timestep, c_double)
+         ! **Zero cannot be asked for, and saying so is the only honest option.**
+         ! This gate is `>=` deliberately -- zero friction is a meaningful
+         ! request and the rest of this module treats only a NEGATIVE value as
+         ! "engine default". But DL-FIND's own `dlf_default_set` tests
+         ! `if (glob%fric0 <= 0.D0) glob%fric0 = 0.3D0`, so a zero that crosses
+         ! the boundary intact is overwritten with 0.3 on the far side before
+         ! the optimisation starts. `timestep` and `friction_factor` above use
+         ! `>` and are not affected, because that matches DL-FIND's convention.
+         if (settings%friction == 0.0_dp .or. settings%friction_rising == 0.0_dp) then
+            call logger%warning("  keywords.optimization: DL-FIND treats a friction "// &
+                                "of zero as 'unset' and will use 0.3 instead. Ask for "// &
+                                "a small positive value if you want light damping.")
+         end if
          if (settings%friction >= 0.0_dp) fric0 = real(settings%friction, c_double)
          if (settings%friction_factor > 0.0_dp) fricfac = real(settings%friction_factor, c_double)
          if (settings%friction_rising >= 0.0_dp) fricp = real(settings%friction_rising, c_double)

@@ -342,6 +342,14 @@ module mqc_libcint_fmo
          !! budget and tolerances -- but the accelerator, DIIS subspace, level
          !! shift and linear-dependence threshold are properties of the
          !! calculation, and none of them reached a fragment before.
+         !! **Only the drive settings here are read** -- the accelerator, DIIS
+         !! subspace, level shift, linear-dependence threshold and incremental
+         !! Fock switch. Its `max_iter`, `energy_tol` and `density_tol` are
+         !! NOT: the three bare fields below are, and they are passed
+         !! positionally so they win. Two declarations of one concept in one
+         !! type is a trap, and this comment is the guard rail until the bare
+         !! three are folded in -- which cannot happen until their deliberately
+         !! tighter values have somewhere else to live.
       integer :: scf_max_iter = 100
       real(dp) :: scf_energy_tol = 1.0e-9_dp
       real(dp) :: scf_density_tol = 1.0e-7_dp
