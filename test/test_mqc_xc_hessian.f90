@@ -911,6 +911,13 @@ contains
       ! unallocated is what testdrive counts as a pass, so a molecule that would
       ! not build or an SCF that would not converge used to leave the case green
       ! having compared nothing.
+
+      ! Without libxc there is no functional to differentiate, so this is a
+      ! skip rather than a failure -- and it has to be explicit now. The setup
+      ! errors below are `check` failures, and `xc_context_create` returns one
+      ! of those in a build without libxc, so an implicit skip would turn a
+      ! configuration that simply cannot run this into a red test.
+      if (.not. xc_available()) return
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "the molecule did not build: "// &
                  err%get_message())
@@ -1029,6 +1036,13 @@ contains
       ! unallocated is what testdrive counts as a pass, so a molecule that would
       ! not build or an SCF that would not converge used to leave the case green
       ! having compared nothing.
+
+      ! Without libxc there is no functional to differentiate, so this is a
+      ! skip rather than a failure -- and it has to be explicit now. The setup
+      ! errors below are `check` failures, and `xc_context_create` returns one
+      ! of those in a build without libxc, so an implicit skip would turn a
+      ! configuration that simply cannot run this into a red test.
+      if (.not. xc_available()) return
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "the molecule did not build: "// &
                  err%get_message())
