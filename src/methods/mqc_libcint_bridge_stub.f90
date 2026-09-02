@@ -193,12 +193,14 @@ contains
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, path, error, charge, verbose, &
-                                 aux_basis, guess, energy_tol, density_tol, &
+                                 aux_basis, guess, energy_tol, density_tol, grad_tol, &
+                                 scf_in, max_iter_in, &
                                  vdwscl, dynamic_tol, dynamic_maxiter, response, &
                                  allow_crap_response, response_batch)
       !! No-op stand-in: an effective fragment potential needs the CPU backend
       use pic_types, only: dp
       use mqc_error, only: error_t
+      use mqc_config_types, only: scf_numerics_t
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in) :: coordinates(:, :)
@@ -208,7 +210,9 @@ contains
       logical, intent(in), optional :: verbose
       character(len=*), intent(in), optional :: aux_basis
       character(len=*), intent(in), optional :: guess
-      real(dp), intent(in), optional :: energy_tol, density_tol
+      real(dp), intent(in), optional :: energy_tol, density_tol, grad_tol
+      type(scf_numerics_t), intent(in), optional :: scf_in
+      integer, intent(in), optional :: max_iter_in
       real(dp), intent(in), optional :: vdwscl, dynamic_tol
       integer, intent(in), optional :: dynamic_maxiter, response
       logical, intent(in), optional :: allow_crap_response

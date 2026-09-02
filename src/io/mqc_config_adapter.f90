@@ -253,6 +253,7 @@ contains
       ! more iterations or a tighter threshold got the hardcoded defaults and
       ! no complaint. Two structures named scf, one of them wired up.
       driver_config%method_config%scf%max_iter = mqc_config%scf_maxiter
+      driver_config%method_config%scf%max_iter_set = mqc_config%scf_maxiter_set
       driver_config%method_config%scf%energy_convergence = mqc_config%scf_tolerance
       driver_config%method_config%scf%density_convergence = mqc_config%scf_density_tolerance
       driver_config%method_config%scf%gradient_convergence = mqc_config%scf_gradient_tolerance

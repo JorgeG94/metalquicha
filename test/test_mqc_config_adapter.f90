@@ -30,7 +30,8 @@ contains
                   new_unittest("saddle_needs_a_saddle_algorithm", test_saddle_algorithm), &
                   new_unittest("unknown_target_refused", test_unknown_target), &
                   new_unittest("driver_cartesian", test_driver_cartesian), &
-                  new_unittest("driver_cartesian_default", test_driver_cartesian_default) &
+                  new_unittest("driver_cartesian_default", test_driver_cartesian_default), &
+                  new_unittest("driver_carries_maxiter_named_flag", test_driver_maxiter_named) &
                   ]
    end subroutine collect_mqc_config_adapter_tests
 
@@ -150,6 +151,45 @@ contains
 
       call check(error, driver_config%nodes_per_group, 0, "nodes_per_group should default to 0")
    end subroutine test_driver_global_groups
+
+   subroutine test_driver_maxiter_named(error)
+      !! `keywords.scf.maxiter` and the flag saying the deck named it
+      !!
+      !! The adapter is the layer the MakeFP tests cannot reach: they call
+      !! `make_efp_potential` directly, so removing this copy would leave every
+      !! one of them passing while a deck's `maxiter` stopped arriving. That is
+      !! the exact silent-drop path the work is meant to close, so the layer
+      !! gets its own assertion.
+      !!
+      !! Both states matter. MAKEFP runs 200 iterations by default, larger than
+      !! the shared 100 on purpose, so it needs to tell a deck that asked for
+      !! 100 from one that said nothing -- and that distinction is the flag,
+      !! not the value.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver_config
+
+      config%method = METHOD_TYPE_GFN2
+      config%calc_type = CALC_TYPE_ENERGY
+      config%nfrag = 0
+
+      ! Named.
+      config%scf_maxiter = 137
+      config%scf_maxiter_set = .true.
+      call config_to_driver(config, driver_config)
+      call check(error, driver_config%method_config%scf%max_iter == 137, &
+                 "the value must reach the method config")
+      if (allocated(error)) return
+      call check(error, driver_config%method_config%scf%max_iter_set, &
+                 "the named flag must reach the method config")
+      if (allocated(error)) return
+
+      ! Silent: the value still travels, but nothing may claim the deck asked.
+      config%scf_maxiter_set = .false.
+      call config_to_driver(config, driver_config)
+      call check(error,.not. driver_config%method_config%scf%max_iter_set, &
+                 "an unnamed maxiter must not arrive marked as named")
+   end subroutine test_driver_maxiter_named
 
    subroutine test_driver_cartesian(error)
       !! `model.cartesian` reaches the SCF settings the backend reads

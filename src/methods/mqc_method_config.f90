@@ -59,6 +59,14 @@ module mqc_method_config
          !! arrangement that let the two backends drift apart the last time
          !! -- see the note on `LINEAR_DEPENDENCE_TOL` itself. Zero is not a
          !! meaningful cutoff on its own, so nothing is lost by spending it.
+      logical :: max_iter_set = .false.
+         !! Whether the deck named `keywords.scf.maxiter`.
+         !!
+         !! For the same reason the two convergence flags below exist: a path
+         !! whose own default differs from the shared one needs to tell "the
+         !! deck asked for 100" from "the deck said nothing". MakeFP is that
+         !! path -- it runs 200 iterations by default, and cutting a silent
+         !! deck back to 100 would be a regression dressed as a fix.
       logical :: energy_convergence_set = .false.
       logical :: density_convergence_set = .false.
          !! Whether the deck named these, as opposed to inheriting them. A

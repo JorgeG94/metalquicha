@@ -92,6 +92,7 @@ contains
                   new_unittest("fukui_scf_inherit_false_drops_the_seed", test_fukui_scf_no_inherit), &
                   new_unittest("fukui_scf_inherits_the_current_guess_spelling", &
                                test_fukui_scf_guess_spelling), &
+                  new_unittest("scf_maxiter_named_flag", test_maxiter_named), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -2071,6 +2072,34 @@ contains
       call check(error, config%fukui_scf%level_shift == 0.5_dp, &
                  "a named key wins whatever inherit_scf says")
    end subroutine test_fukui_scf_no_inherit
+
+   subroutine test_maxiter_named(error)
+      !! Whether the deck named `keywords.scf.maxiter`, not just its value
+      !!
+      !! MAKEFP defaults to 200 iterations where the shared default is 100, so
+      !! it has to tell "the deck asked for 100" from "the deck said nothing".
+      !! Only the flag carries that, and the value alone cannot.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"maxiter": 100}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%scf_maxiter_set, &
+                 "a deck naming maxiter must set the flag, even at the default value")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"tolerance": 1e-8}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%scf_maxiter_set, &
+                 "a deck that never mentions maxiter must not set the flag")
+   end subroutine test_maxiter_named
 
    subroutine test_malformed(error)
       !! Broken JSON is a parse error, not a crash or a half-filled config

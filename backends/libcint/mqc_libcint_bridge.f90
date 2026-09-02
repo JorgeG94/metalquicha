@@ -33,6 +33,7 @@ module mqc_libcint_bridge
                               SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ
    use mqc_libcint_projection, only: climb_basis_ladder
    use mqc_diis, only: parse_accelerator_name, accelerator_name, ACCEL_DIIS
+   use mqc_config_types, only: scf_numerics_t
    use mqc_libcint_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                        guess_display_name
    use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
@@ -481,7 +482,8 @@ contains
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, path, error, charge, verbose, &
-                                 aux_basis, guess, energy_tol, density_tol, &
+                                 aux_basis, guess, energy_tol, density_tol, grad_tol, &
+                                 scf_in, max_iter_in, &
                                  vdwscl, dynamic_tol, dynamic_maxiter, response, &
                                  allow_crap_response, response_batch)
       !! Build an effective fragment potential and write it
@@ -510,6 +512,16 @@ contains
       real(dp), intent(in), optional :: energy_tol, density_tol
          !! SCF thresholds, present only when the deck named them. Absent leaves
          !! `make_efp_potential` on the tighter pair a fragment potential needs.
+      type(scf_numerics_t), intent(in), optional :: scf_in
+         !! The deck's `keywords.scf`, for the settings this path used to drop:
+         !! the level shift, accelerator, DIIS subspace, linear-dependence
+         !! threshold and incremental Fock building.
+      integer, intent(in), optional :: max_iter_in
+         !! `keywords.scf.maxiter`, present only when the deck named it.
+      real(dp), intent(in), optional :: grad_tol
+         !! `keywords.scf.gradient_tolerance`, present only when the deck named
+         !! it. It was not forwarded here at all before, so a deck that stated
+         !! the commutator threshold on a MakeFP run was ignored outright.
       real(dp), intent(in), optional :: vdwscl
       real(dp), intent(in), optional :: dynamic_tol
       integer, intent(in), optional :: dynamic_maxiter
@@ -536,6 +548,8 @@ contains
                               basis_name, name, pot, error, charge=charge, &
                               verbose=verbose, aux_basis=aux_basis, guess=guess, &
                               energy_tol=energy_tol, density_tol=density_tol, &
+                              grad_tol_in=grad_tol, scf_in=scf_in, &
+                              max_iter_in=max_iter_in, &
                               vdwscl=vdwscl, dynamic_tol=dynamic_tol, &
                             dynamic_maxiter=dynamic_maxiter, response=response, allow_crap_response=allow_crap_response, &
                               response_batch=response_batch)

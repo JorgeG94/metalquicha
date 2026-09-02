@@ -53,6 +53,8 @@ module mqc_efp_potential
    use pic_timer, only: timer_type
    use libcint_fortran, only: LIBCINT_ANG_OF
    use pic_logger, only: logger => global_logger
+   use mqc_config_types, only: scf_numerics_t, print_scf_config
+   use mqc_diis, only: parse_accelerator_name, ACCEL_DIIS
    use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
@@ -71,6 +73,12 @@ module mqc_efp_potential
 
    !> Longest line any section emits, with room to spare.
    integer, parameter :: MAX_LINE = 160
+
+   real(dp), parameter :: MAKEFP_DENSITY_TOL = 1.0e-8_dp
+   !! What a fragment potential is fitted at, and this routine's default for
+   !! both the density threshold and the commutator gate derived from it.
+   !! Named because the warning below has to compare against the same number
+   !! -- written twice, they drift, and the drift is silent.
 
    !> Flattened extents of the Cartesian tensors the polarizability blocks carry:
    !> a pair of directions, a triple, and a quadruple. Nine is also the number of
@@ -214,7 +222,8 @@ contains
    subroutine make_efp_potential(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, pot, error, charge, n_core, &
                                  vdwscl, verbose, aux_basis, guess, &
-                                 energy_tol, density_tol, dynamic_tol, &
+                                 energy_tol, density_tol, grad_tol_in, &
+                                 scf_in, max_iter_in, dynamic_tol, &
                                  dynamic_maxiter, response, allow_crap_response, &
                                  response_batch)
       !! The whole pipeline: SCF, localization, and every parameter block
@@ -265,6 +274,27 @@ contains
          !! integral in one form. In practice that means a Cartesian Pople orbital
          !! basis has no usable fitting set here, since the ones on hand are spherical.
       real(dp), intent(in), optional :: energy_tol, density_tol
+      type(scf_numerics_t), intent(in), optional :: scf_in
+         !! The deck's `keywords.scf`, for every setting this routine has no
+         !! opinion about: the level shift, the accelerator, the DIIS subspace,
+         !! the linear-dependence threshold and incremental Fock building.
+         !!
+         !! **These were not reaching the SCF at all.** The call below passed
+         !! seven arguments and named none of them, so a MakeFP deck that set
+         !! `incremental_fock: false` to chase a stalling run, or a
+         !! `linear_dependence_threshold` to drop a near-singular function, was
+         !! read, validated and then dropped on the floor. Absent leaves the
+         !! SCF's own defaults, which is what the test callers want.
+      integer, intent(in), optional :: max_iter_in
+         !! `keywords.scf.maxiter`, present only when the deck named it. The 200
+         !! below is this routine's own, and deliberately larger than the shared
+         !! default of 100 -- a fragment potential is converged tightly and gets
+         !! a budget to match -- so a silent deck must not be cut back to 100.
+      real(dp), intent(in), optional :: grad_tol_in
+         !! `keywords.scf.gradient_tolerance`, present only when the deck named
+         !! it. Wins outright over everything below -- a deck that states the
+         !! commutator threshold is stating the one this routine otherwise
+         !! decides for itself.
          !! SCF convergence thresholds. Present only when a deck named
          !! `keywords.scf.tolerance` / `keywords.scf.density_tolerance`; absent,
          !! the defaults just below stand. See the comment at the SCF call for why
@@ -299,6 +329,11 @@ contains
       integer :: natm, core, i, j, k, n_valence, n_electrons
       integer :: guess_kind
       real(dp) :: e_tol, d_tol, g_tol
+      character(len=16) :: tol_text, ref_text
+      integer :: n_iter, scf_diis, accel_kind
+      real(dp) :: shift, lindep
+      logical :: incr, accel_ok
+      type(scf_numerics_t) :: echo
       real(dp), allocatable :: guess_total(:, :)
       character(len=:), allocatable :: guess_name
       type(timer_type) :: stage
@@ -335,6 +370,20 @@ contains
       ! This is also what lets an f basis work at all. The ordering map handles
       ! Cartesian s, p, d and f and refuses g; declared spherically, a set with
       ! f shells was refused by `check_angular_form` before it got that far.
+      ! **Before the molecule, the basis and the guess.** A misspelled
+      ! accelerator is a deck error, and a deck error should cost nothing: with
+      ! the default "auto" guess this routine builds a SAD density from
+      ! free-atom SCFs first, so validating afterwards meant paying for every
+      ! one of them before saying the word was wrong.
+      if (present(scf_in)) then
+         call parse_accelerator_name(scf_in%accelerator, accel_kind, accel_ok)
+         if (.not. accel_ok) then
+            call error%set(ERROR_VALIDATION, "keywords.scf.accelerator '"// &
+                           trim(scf_in%accelerator)//"' is not one of diis, adiis, ediis")
+            return
+         end if
+      end if
+
       call build_libcint_molecule(atomic_numbers, element_symbols, coordinates, &
                                   basis_name, mol, error, force_cartesian=.true.)
       if (error%has_error()) return
@@ -423,7 +472,7 @@ contains
       ! basis, the same as the key does on the Energy path. Absent, the SCF is
       ! exact.
       e_tol = 1.0e-10_dp
-      d_tol = 1.0e-8_dp
+      d_tol = MAKEFP_DENSITY_TOL
       if (present(energy_tol)) e_tol = energy_tol
       if (present(density_tol)) d_tol = density_tol
       ! **The commutator threshold is stated, not derived, and this routine is
@@ -439,15 +488,102 @@ contains
       !
       ! `d_tol` is what used to gate convergence here, so asking the commutator
       ! for the same number keeps the potentials exactly as tight as they were.
+      !
+      ! **But only while the deck is silent.** Holding the commutator at 1e-8
+      ! whatever the deck said made a named `tolerance` almost inert: the energy
+      ! gate was met at iteration 13 of a run that stopped at 26, because the
+      ! threshold actually holding it open was one the deck never mentioned and
+      ! the table never printed. A convergence measure the user names is the
+      ! measure that decides, so:
+      !
+      !   * `gradient_tolerance` named -- it is the commutator threshold, and
+      !     nothing here has an opinion to add.
+      !   * `density_tolerance` named -- the commutator follows it, which is
+      !     the same rule as before and now their number rather than ours.
+      !   * only `tolerance` named -- derive it the way every other SCF in this
+      !     code does, `sqrt(e_tol)`, so that loosening the energy actually
+      !     loosens the run.
+      !   * nothing named -- the tight pair stands, unchanged.
+      !
+      ! The third case is the one that costs something, and it is warned about
+      ! rather than overridden. `sqrt(1e-6)` is 1e-3, where the multipoles drift
+      ! off their GAMESS references; a potential built that way is a draft. That
+      ! is the user's call to make, but not one to make unknowingly.
       g_tol = d_tol
+      if (present(grad_tol_in)) then
+         g_tol = grad_tol_in
+      else if (.not. present(density_tol) .and. present(energy_tol)) then
+         g_tol = sqrt(e_tol)
+      end if
+      if (g_tol > MAKEFP_DENSITY_TOL) then
+         write (tol_text, "(es9.2)") g_tol
+         write (ref_text, "(es9.2)") MAKEFP_DENSITY_TOL
+         call logger%warning("  MAKEFP: the SCF will stop at a commutator of "// &
+                             trim(adjustl(tol_text))//", looser than the "// &
+                             trim(adjustl(ref_text))//" a "// &
+                             "fragment potential is fitted at. The multipoles and "// &
+                             "polarizabilities come off this density, so they will "// &
+                             "drift from their references. Name "// &
+                             "keywords.scf.density_tolerance or "// &
+                             "gradient_tolerance to set it directly.")
+      end if
+      ! Everything the deck said about how an SCF runs, forwarded. This call
+      ! used to pass seven arguments and hardcode the iteration cap, so
+      ! `incremental_fock`, `level_shift`, `linear_dependence`, `accelerator`,
+      ! `diis_size` and `maxiter` were read from the deck, validated, and then
+      ! never reached the only SCF a MakeFP run performs.
+      n_iter = 200
+      if (present(max_iter_in)) n_iter = max_iter_in
+      scf_diis = 8
+      accel_kind = ACCEL_DIIS
+      shift = 0.0_dp
+      lindep = 0.0_dp
+      incr = .true.
+      if (present(scf_in)) then
+         scf_diis = scf_in%diis_size
+         if (.not. scf_in%use_diis) scf_diis = 0
+         shift = scf_in%level_shift
+         lindep = scf_in%linear_dependence
+         incr = scf_in%incremental_fock
+         ! Parsed again rather than re-derived: the spelling was already
+         ! validated at the top of this routine, so `accel_ok` cannot be false
+         ! here. Kept as one call so there is a single place that knows how a
+         ! name becomes a kind.
+         call parse_accelerator_name(scf_in%accelerator, accel_kind, accel_ok)
+      end if
+      ! Echoed before the SCF runs, so a deck that set something and saw no
+      ! effect can be checked against what arrived rather than against the
+      ! source. This path dropped six settings silently; the block is the
+      ! cheapest guard against a seventh.
+      if (talk) then
+         echo = scf_numerics_t()
+         if (present(scf_in)) echo = scf_in
+         echo%max_iter = n_iter
+         echo%energy_tol = e_tol
+         echo%density_tol = d_tol
+         echo%grad_tol = g_tol
+         echo%diis_size = scf_diis
+         echo%level_shift = shift
+         echo%linear_dependence = lindep
+         echo%incremental_fock = incr
+         ! The resolved guess, not the deck spelling. `build_restricted_guess`
+         ! has already turned "auto" into a real choice by this point, and
+         ! echoing "auto" would name the request rather than the run.
+         echo%guess = guess_display_name(guess_kind)
+         call print_scf_config(echo, "MAKEFP SCF")
+      end if
       if (present(aux_basis)) then
-         call run_libcint_rhf(mol, n_electrons, 200, e_tol, d_tol, &
+         call run_libcint_rhf(mol, n_electrons, n_iter, e_tol, d_tol, &
                               talk, scf, error, guess=guess_kind, guess_density=guess_total, &
-                              aux=aux, grad_tol=g_tol)
+                              aux=aux, grad_tol=g_tol, diis_vectors=scf_diis, &
+                              level_shift=shift, linear_dependence=lindep, &
+                              accelerator=accel_kind, incremental_fock=incr)
       else
-         call run_libcint_rhf(mol, n_electrons, 200, e_tol, d_tol, &
+         call run_libcint_rhf(mol, n_electrons, n_iter, e_tol, d_tol, &
                               talk, scf, error, guess=guess_kind, guess_density=guess_total, &
-                              grad_tol=g_tol)
+                              grad_tol=g_tol, diis_vectors=scf_diis, &
+                              level_shift=shift, linear_dependence=lindep, &
+                              accelerator=accel_kind, incremental_fock=incr)
       end if
       if (error%has_error()) then
          call mol%destroy()
