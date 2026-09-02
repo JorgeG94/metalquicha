@@ -193,12 +193,12 @@ Uses LAPACK eigenvalue decomposition via pic-blas interfaces.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_lapack_interfaces</li>
-                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
                   <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
-                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_lapack_interfaces</li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1155,7 +1155,7 @@ the vanishing singular value that says so.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-eigenvalues~5"></span>
+              <span class="anchor" id="variable-eigenvalues~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1170,7 +1170,7 @@ the vanishing singular value that says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reduced_masses~6"></span>
+              <span class="anchor" id="variable-reduced_masses~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1185,7 +1185,7 @@ the vanishing singular value that says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-force_constants~5"></span>
+              <span class="anchor" id="variable-force_constants~4"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1240,7 +1240,7 @@ the vanishing singular value that says so.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~3"></span>
+              <span class="anchor" id="variable-dipole_derivatives~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1285,7 +1285,7 @@ the vanishing singular value that says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ir_intensities~6"></span>
+              <span class="anchor" id="variable-ir_intensities~5"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1356,7 +1356,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reduced_masses~5"></span>
+              <span class="anchor" id="variable-reduced_masses~4"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1396,7 +1396,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~10"></span>
+              <span class="anchor" id="variable-hessian~14"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1426,7 +1426,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~7"></span>
+              <span class="anchor" id="variable-frequencies~9"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1441,7 +1441,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reduced_masses~4"></span>
+              <span class="anchor" id="variable-reduced_masses~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1456,7 +1456,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-force_constants~4"></span>
+              <span class="anchor" id="variable-force_constants~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1561,7 +1561,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~2"></span>
+              <span class="anchor" id="variable-dipole_derivatives~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1576,7 +1576,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ir_intensities~5"></span>
+              <span class="anchor" id="variable-ir_intensities~4"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1616,7 +1616,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~9"></span>
+              <span class="anchor" id="variable-hessian~13"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1646,7 +1646,7 @@ Columns are normal modes, assumed normalized (Σ_i L²_{i,k} = 1)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~6"></span>
+              <span class="anchor" id="variable-frequencies~8"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1764,7 +1764,7 @@ array keeps its length either way.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~11"></span>
+              <span class="anchor" id="variable-hessian~15"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1834,7 +1834,7 @@ array keeps its length either way.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~8"></span>
+              <span class="anchor" id="variable-frequencies~10"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1849,7 +1849,7 @@ array keeps its length either way.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reduced_masses~7"></span>
+              <span class="anchor" id="variable-reduced_masses~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1864,7 +1864,7 @@ array keeps its length either way.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-force_constants~6"></span>
+              <span class="anchor" id="variable-force_constants~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1939,7 +1939,7 @@ array keeps its length either way.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~36"></span>
+              <span class="anchor" id="variable-n_atoms~44"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1954,7 +1954,7 @@ array keeps its length either way.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ir_intensities~7"></span>
+              <span class="anchor" id="variable-ir_intensities~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1984,7 +1984,7 @@ array keeps its length either way.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-electronic_energy"></span>
+              <span class="anchor" id="variable-electronic_energy~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1999,7 +1999,7 @@ array keeps its length either way.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-temperature"></span>
+              <span class="anchor" id="variable-temperature~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -2014,7 +2014,7 @@ array keeps its length either way.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pressure"></span>
+              <span class="anchor" id="variable-pressure~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -2127,7 +2127,7 @@ array keeps its length either way.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 13:40 +0000             </p>
+ on 2026-09-02 14:35 +0000             </p>
           </div>
         </div>
         <br>
