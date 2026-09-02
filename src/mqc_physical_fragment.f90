@@ -824,9 +824,11 @@ contains
       real(dp), intent(inout) :: system_dipole_derivs(:, :)  !! (3, 3*n_atoms_system)
       real(dp), intent(in), optional :: scale  !! Weight applied to this fragment (default 1)
 
+      integer :: tgt(2)
       integer :: i, local_i, global_i, icart
-      integer :: i_cap, local_cap_idx, global_original_idx
+      integer :: i_cap, local_cap_idx, t
       integer :: n_real_atoms
+      real(dp) :: tw(2)
       real(dp) :: w
 
       w = 1.0_dp
@@ -848,16 +850,29 @@ contains
       end do
 
       ! Redistribute cap contributions to their original atoms
+      ! Split the cap between the two atoms that move it, through the same
+      ! `cap_targets` the gradient and the Hessian use.
+      !
+      ! This used to put the whole contribution on `cap_replaces_atom` with
+      ! weight one, which is right only at `cap_scale = 1` -- the default, and
+      ! why it went unnoticed. At any other scale the intensities were
+      ! redistributed by different weights than the forces they belong to:
+      ! silent, and wrong in exactly the quantity a capped fragment's infrared
+      ! spectrum is read from. The chain rule is `dR_H/dR_gone = s` and
+      ! `dR_H/dR_kept = 1 - s`, and a dipole derivative obeys it for the same
+      ! reason a gradient does.
       if (fragment%n_caps > 0 .and. allocated(fragment%cap_replaces_atom)) then
          do i_cap = 1, fragment%n_caps
             local_cap_idx = n_real_atoms + i_cap
-            ! cap_replaces_atom is 0-indexed, add 1 for Fortran arrays
-            global_original_idx = fragment%cap_replaces_atom(i_cap) + 1
+            call cap_targets(fragment, i_cap, tgt, tw)
 
-            do icart = 1, 3
-               system_dipole_derivs(:, (global_original_idx - 1)*3 + icart) = &
-                  system_dipole_derivs(:, (global_original_idx - 1)*3 + icart) + &
-                  w*fragment_dipole_derivs(:, (local_cap_idx - 1)*3 + icart)
+            do t = 1, 2
+               if (tw(t) == 0.0_dp) cycle
+               do icart = 1, 3
+                  system_dipole_derivs(:, (tgt(t) - 1)*3 + icart) = &
+                     system_dipole_derivs(:, (tgt(t) - 1)*3 + icart) + &
+                     w*tw(t)*fragment_dipole_derivs(:, (local_cap_idx - 1)*3 + icart)
+               end do
             end do
          end do
       end if
