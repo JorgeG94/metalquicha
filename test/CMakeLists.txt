@@ -142,6 +142,11 @@ if(MQC_ENABLE_LIBCINT)
 
   addtest(mqc_mcscf)
   addtest(mqc_scf_level_shift)
+
+  # `incremental_fock` changes no number the SCF reports, so it is tested by the
+  # count of full Fock builds rather than by timing -- see the module's own note
+  # for the measurements that ruled timing out.
+  addtest(mqc_incremental_fock)
   addtest(mqc_mcscf_gradient)
   target_link_libraries(test_mqc_mcscf PRIVATE cint_fortran cint)
 

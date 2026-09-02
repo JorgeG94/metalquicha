@@ -132,6 +132,24 @@ module mqc_libcint_rhf
       real(dp), allocatable :: g_ref_lr_b(:, :)
          !! Accumulated beta long-range K, unrestricted and range-separated only
       integer :: since_reset = 0             !! Iterations since the last full build
+      integer :: full_builds = 0
+         !! Full Fock builds performed, as opposed to updates from the density
+         !! change.
+         !!
+         !! Counted so that `incremental_fock` can be TESTED. It is the one SCF
+         !! setting with no observable effect on any answer -- an incremental
+         !! build is exact to the convergence threshold, so the energy, the
+         !! iteration count and every property are identical either way, and
+         !! the only difference is how much work each build skips. That left
+         !! timing as the only probe, and timing is a poor thing to assert:
+         !! measured on this machine, an SCF small enough for a unit test shows
+         !! 0.000 s per build either way, and one large enough to separate them
+         !! costs ~9 seconds and varies with load.
+         !!
+         !! A count does not. With incremental building on, this is one plus a
+         !! rebuild every `INCREMENTAL_RESET` iterations; with it off it is one
+         !! per iteration.
+      integer :: updates = 0                 !! Builds from the density change
       logical :: active = .false.            !! Off until the first full build seeds it
    end type incremental_state_t
 
@@ -141,6 +159,14 @@ module mqc_libcint_rhf
       real(dp) :: electronic = 0.0_dp          !! Without it
       real(dp) :: nuclear_repulsion = 0.0_dp
       integer :: iterations = 0
+      integer :: full_fock_builds = 0
+         !! Fock matrices built in full, as opposed to updated from the density
+         !! change. Equals `iterations` when `incremental_fock` is off, and one
+         !! plus a rebuild every sixteen iterations when it is on -- which is
+         !! how that setting is tested at all. See `incremental_state_t`.
+      integer :: incremental_updates = 0
+         !! Fock matrices built from the density change. Zero when
+         !! `incremental_fock` is off.
       logical :: converged = .false.
       real(dp), allocatable :: orbital_energies(:)
       real(dp), allocatable :: orbitals(:, :)
@@ -774,6 +800,10 @@ contains
                                fock, e_elec, error, clk=clk, screening=screening, incr=incr, &
                                bmat_lr=bmat_lr)
          else
+            ! Counted here rather than in the assembler: without `incr` it has
+            ! no state to record into, and every build on this branch is a full
+            ! one by construction.
+            incr%full_builds = incr%full_builds + 1
             call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
                                fock, e_elec, error, clk=clk, screening=screening, &
                                bmat_lr=bmat_lr)
@@ -855,6 +885,8 @@ contains
 
          e_old = e_elec
          result%iterations = iter
+         result%full_fock_builds = incr%full_builds
+         result%incremental_updates = incr%updates
          ! `shift_now` is part of the test rather than checked afterwards. The
          ! orbitals and eigenvalues that leave here are the ones the last
          ! diagonalisation produced, so convergence has to be declared on an
@@ -1279,6 +1311,9 @@ contains
             call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
                                    e_elec, error, clk=clk, incr=incr)
          else
+            ! Same reasoning as the restricted branch: no `incr` to record into,
+            ! and every build here is a full one.
+            incr%full_builds = incr%full_builds + 1
             call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
                                    e_elec, error, clk=clk)
          end if
@@ -1351,6 +1386,8 @@ contains
 
          e_old = e_elec
          result%iterations = iter
+         result%full_fock_builds = incr%full_builds
+         result%incremental_updates = incr%updates
          drms_prev = drms
          ! **The energy and the commutator, and not the density.** This is
          ! pyscf's test -- `abs(e_tot - last_hf_e) < conv_tol .and. norm_gorb <
@@ -1586,6 +1623,7 @@ contains
          if (use_incremental) then
             full_build = .not. incr%active .or. incr%since_reset >= INCREMENTAL_RESET
             if (full_build) then
+               incr%full_builds = incr%full_builds + 1
                call build_fock_direct(mol, h, density, bounds, fock, stats, error, &
                                       k_scale=k_scale)
                if (error%has_error()) return
@@ -1618,6 +1656,7 @@ contains
                incr%since_reset = 0
                incr%active = .true.
             else
+               incr%updates = incr%updates + 1
                allocate (g_delta(size(h, 1), size(h, 2)), d_delta(size(h, 1), size(h, 2)))
                allocate (h_zero(size(h, 1), size(h, 2)))
                d_delta = density - incr%d_ref
