@@ -370,7 +370,11 @@ module mqc_method_config
          !! Force UHF/UKS even for a closed shell
       logical :: density_fitting = .false.
          !! Fit J and K rather than computing exact integrals
-      logical :: freeze_core = .false.
+      logical :: freeze_core = .true.
+         !! Matches `correlation_config_t`, which is where this is always
+         !! filled from. It read `.false.` while that read `.true.` -- harmless
+         !! while the copy happens, and a trap the moment anyone constructs
+         !! this type directly, in a test or a new call path.
          !! Exclude core orbitals from a post-SCF correlation treatment
       integer :: n_frozen_core = -1
          !! Core orbitals to freeze; -1 counts them from the elements
@@ -499,7 +503,7 @@ module mqc_method_config
       !! Coupled-cluster specific settings (CCSD, CCSD(T), CC2, CC3, etc.)
       integer :: max_iter = 100
          !! Maximum CC iterations
-      real(dp) :: amplitude_convergence = 1.0e-7_dp
+      real(dp) :: amplitude_convergence = 1.0e-8_dp
          !! T-amplitude convergence threshold
 
       ! Excitation level
@@ -759,7 +763,7 @@ contains
 
       ! Coupled-cluster defaults
       this%cc%max_iter = 100
-      this%cc%amplitude_convergence = 1.0e-7_dp
+      this%cc%amplitude_convergence = 1.0e-8_dp
       this%cc%include_triples = .false.
       this%cc%perturbative_triples = .true.
       this%cc%use_diis = .true.

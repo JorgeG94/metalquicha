@@ -683,6 +683,9 @@ contains
             expansion%scf_drive%incremental_fock = config%method_config%scf%incremental_fock
             expansion%scf_drive%accelerator = config%method_config%scf%accelerator
             expansion%scf_drive%convergence_metric = config%method_config%scf%convergence_metric
+            expansion%scf_drive%guess = config%method_config%scf%guess
+            expansion%scf_drive%allow_crap_scf = config%method_config%scf%allow_crap_scf
+            expansion%scf_drive%grad_tol = config%method_config%scf%gradient_convergence
             expansion%resources => resources
             expansion%node_leader_ranks = node_leader_ranks
             expansion%num_nodes = num_nodes

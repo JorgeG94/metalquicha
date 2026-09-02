@@ -59,7 +59,8 @@ module mqc_cuest_iface
       logical :: aux_basis_named = .false.
          !! Whether `aux_basis_set` was asked for or merely defaulted. The
          !! default exists because cuEST needs one, so its presence says nothing.
-      logical :: freeze_core = .false.
+      logical :: freeze_core = .true.
+         !! Matches `correlation_config_t`; see `scf_options_t`.
       integer :: n_frozen_core = -1     !! -1 means count it from the elements
       logical :: corr_density_fitting = .false.  !! RI for the correlation step
       real(dp) :: scs_ss = 1.0_dp       !! Spin-component scaling, one for plain MP2

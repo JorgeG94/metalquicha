@@ -505,11 +505,56 @@ contains
 
       res%converged = res%converged .and. all_converged
       if (.not. all_converged) then
-         call error%set(ERROR_VALIDATION, "fmo: at least one fragment SCF did not "// &
-                        "converge, so the total is not trustworthy")
-         return
+         ! Refused unless the deck said otherwise. `allow_crap_scf` means the
+         ! same here as everywhere else -- keep a total built partly from
+         ! unconverged pieces, as a result to follow up rather than to trust --
+         ! and it was not reaching this path at all, so a fragmented job that a
+         ! deck had explicitly allowed to finish was refused anyway.
+         if (.not. opts%scf%allow_crap_scf) then
+            call error%set(ERROR_VALIDATION, "fmo: at least one fragment SCF did not "// &
+                           "converge, so the total is not trustworthy. Set "// &
+                           "keywords.scf.allow_crap_scf to finish anyway.")
+            return
+         end if
+         call logger%warning("  fmo: at least one fragment SCF did not converge, and "// &
+                             "allow_crap_scf kept the run. The total is built partly "// &
+                             "from unconverged fragments.")
       end if
    end subroutine run_fmo2
+
+   subroutine fmo_guess_kind(opts, kind)
+      !! The deck's initial guess for a fragment SCF, as an `SCF_GUESS_*` kind
+      !!
+      !! Fragment SCFs never received one: `keywords.scf.guess` reached the
+      !! expansion and stopped there, so every fragment used whatever the SCF
+      !! resolves for itself no matter what the deck asked for.
+      !!
+      !! Absent rather than a value when the deck said nothing. `auto` means
+      !! "the backend picks", and forwarding a resolved kind for it would pin
+      !! the choice here instead -- a behaviour change for every deck that
+      !! never mentioned a guess. An unparseable spelling falls back the same
+      !! way: a guess is a starting point, and refusing a whole fragmented
+      !! calculation over one is out of proportion.
+      !!
+      !! A subroutine filling a local, not a function: an unallocated
+      !! allocatable VARIABLE arrives absent at an optional dummy, but the same
+      !! thing as a function RESULT segfaults -- found the hard way, on
+      !! check_fmo_mpi.
+      use mqc_libcint_atomic_guess, only: parse_guess_name
+      type(fmo_options_t), intent(in) :: opts
+      integer, allocatable, intent(out) :: kind
+
+      integer :: parsed
+      type(error_t) :: guess_error
+
+      if (trim(opts%scf%guess) == "auto" .or. len_trim(opts%scf%guess) == 0) return
+      call parse_guess_name(opts%scf%guess, parsed, guess_error)
+      if (guess_error%has_error()) then
+         call guess_error%clear()
+         return
+      end if
+      allocate (kind, source=parsed)
+   end subroutine fmo_guess_kind
 
    subroutine open_fragment(frag_z, frag_sym, frag_xyz, opts, mol, bounds, error, ghost)
       !! A fragment's molecule and Schwarz bounds, built from its geometry
@@ -1203,6 +1248,7 @@ contains
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
+      integer, allocatable :: deck_guess
       type(group_t) :: group
       type(fock_projector_t) :: proj
       real(dp), allocatable :: bounds(:, :), d_split(:, :), u(:, :)
@@ -1269,19 +1315,20 @@ contains
       if (error%has_error()) return
 
       if (allocated(u) .and. held) then
+         call fmo_guess_kind(opts, deck_guess)
          call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, &
+                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, &
                               h_extra=u, projector=proj)
       else if (allocated(u)) then
          call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, h_extra=u)
+                            opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, h_extra=u)
       else if (held) then
          call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, &
+                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, &
                               projector=proj)
       else
          call run_libcint_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf)
+                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess)
       end if
       if (error%has_error()) return
       if (.not. scf%converged) all_converged = .false.
@@ -1985,6 +2032,7 @@ contains
          !! a fragment with no boundary still has a projector object.
 
       type(rhf_result_t) :: scf
+      integer, allocatable :: deck_guess
       logical :: embedded, constrained
 
       embedded = .false.
@@ -1993,19 +2041,20 @@ contains
       if (present(held)) constrained = held
 
       if (embedded .and. constrained) then
+         call fmo_guess_kind(opts, deck_guess)
          call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, &
+                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, &
                               h_extra=u, projector=proj)
       else if (embedded) then
          call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, h_extra=u)
+                            opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, h_extra=u)
       else if (constrained) then
          call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, &
+                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, &
                               projector=proj)
       else
          call run_libcint_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf)
+                              opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess)
       end if
       if (error%has_error()) return
       if (present(all_converged)) then

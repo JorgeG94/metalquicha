@@ -564,8 +564,11 @@ Automatic treatment of broken covalent bonds:
 the other route FMO offers. Rather than terminating the fragment with a hydrogen,
 a small model system around the cut bond is built, closed off with hydrogens,
 solved and localized, and the orbital sitting on the bond is lifted out of it and
-frozen -- so the bond is represented to both sides by the same orbital. The
-default remains ``"caps"``.
+frozen -- so the bond is represented to both sides by the same orbital.
+
+The default is ``"none"``, which refuses a partition that severs a bond
+rather than closing it silently. An FMO run takes ``"none"`` or ``"afo"``;
+``"caps"`` is refused there as not implemented for that expansion.
 
 Input/Output
 ============

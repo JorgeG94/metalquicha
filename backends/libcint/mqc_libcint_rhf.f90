@@ -432,6 +432,25 @@ contains
       type(scf_numerics_t), intent(in), optional :: scf
          !! The whole configuration, as one argument.
          !!
+         !! **Seven of its thirteen fields are honoured here, and the contract
+         !! matters because passing this looks like passing everything.** Read:
+         !! `level_shift`, `linear_dependence`, `accelerator`, `diis_size`,
+         !! `use_diis`, `incremental_fock`, `convergence_metric`, and
+         !! `grad_tol`. NOT read, for reasons rather than by oversight:
+         !!
+         !! * `max_iter`, `energy_tol`, `density_tol` are positional arguments
+         !!   to this routine and the caller has already supplied them. The
+         !!   group's copies exist for callers that carry a configuration
+         !!   around; whichever the caller passes positionally is what runs.
+         !! * `guess` is a deck spelling and turning it into an `SCF_GUESS_*`
+         !!   kind needs `mqc_libcint_atomic_guess`, which calls this routine --
+         !!   importing it here would be a cycle. The caller parses it and
+         !!   passes `guess=`.
+         !! * `allow_crap_scf` is not this routine's decision. It reports
+         !!   `result%converged` and the caller decides whether an unconverged
+         !!   SCF is acceptable; a fragment run and a single-point run answer
+         !!   that differently.
+         !!
          !! **This is what a caller holding a config should pass.** The
          !! individual optionals above predate it and still work -- and still
          !! win, so a caller can pass the group and override one field -- but a
@@ -770,6 +789,7 @@ contains
          conv = convergence
       else
          conv%tolerance = energy_tol
+         if (present(scf)) conv%gradient_tolerance = scf%grad_tol
          if (present(grad_tol)) conv%gradient_tolerance = grad_tol
          ! The metric named by the group, when one was passed. A spelling the
          ! caller has already validated; an unparseable one leaves the default
@@ -1070,6 +1090,25 @@ contains
       type(scf_numerics_t), intent(in), optional :: scf
          !! The whole configuration, as one argument.
          !!
+         !! **Seven of its thirteen fields are honoured here, and the contract
+         !! matters because passing this looks like passing everything.** Read:
+         !! `level_shift`, `linear_dependence`, `accelerator`, `diis_size`,
+         !! `use_diis`, `incremental_fock`, `convergence_metric`, and
+         !! `grad_tol`. NOT read, for reasons rather than by oversight:
+         !!
+         !! * `max_iter`, `energy_tol`, `density_tol` are positional arguments
+         !!   to this routine and the caller has already supplied them. The
+         !!   group's copies exist for callers that carry a configuration
+         !!   around; whichever the caller passes positionally is what runs.
+         !! * `guess` is a deck spelling and turning it into an `SCF_GUESS_*`
+         !!   kind needs `mqc_libcint_atomic_guess`, which calls this routine --
+         !!   importing it here would be a cycle. The caller parses it and
+         !!   passes `guess=`.
+         !! * `allow_crap_scf` is not this routine's decision. It reports
+         !!   `result%converged` and the caller decides whether an unconverged
+         !!   SCF is acceptable; a fragment run and a single-point run answer
+         !!   that differently.
+         !!
          !! **This is what a caller holding a config should pass.** The
          !! individual optionals above predate it and still work -- and still
          !! win, so a caller can pass the group and override one field -- but a
@@ -1340,6 +1379,7 @@ contains
          conv = convergence
       else
          conv%tolerance = energy_tol
+         if (present(scf)) conv%gradient_tolerance = scf%grad_tol
          if (present(grad_tol)) conv%gradient_tolerance = grad_tol
          ! The metric named by the group, when one was passed. A spelling the
          ! caller has already validated; an unparseable one leaves the default

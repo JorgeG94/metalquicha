@@ -541,8 +541,10 @@ module mqc_config_types
          !!
          !! `"none"` refuses a partition that cuts one, which is the only honest
          !! answer for a method with no way to represent the dangling valence.
-         !! `"caps"` closes it with a hydrogen. `"afo"` is the adaptive frozen
-         !! orbital, and is not built yet.
+         !! `"caps"` closes it with a hydrogen. `"afo"` is the adjusted frozen
+         !! orbital, and IS built -- see `mqc_libcint_afo.f90` and
+         !! `mqc_docs/source/fmo.rst`. An FMO expansion accepts `"none"` and
+         !! `"afo"`; it refuses `"caps"` as not implemented for that expansion.
          !!
          !! Separate from `embedding` on purpose: what closes a cut bond and what
          !! field a fragment sits in are independent choices, and only some of
