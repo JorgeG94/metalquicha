@@ -144,7 +144,57 @@ respect to Cartesian displacements:
 
 where :math:`\alpha \in \{x, y, z\}` and *i* runs over all 3N Cartesian coordinates.
 
-This is computed via finite differences of the dipole moment during the Hessian calculation.
+There are two routes to it and the backend picks, the same way it picks between
+the two Hessians.
+
+**Analytically**, for a restricted Hartree-Fock or Kohn-Sham reference and for
+the double hybrids -- not, despite the Hessian being analytic there too, for a
+plain MP2 reference. What a dipole derivative needs beyond one-electron
+integrals is the response of the density, and the coupled-perturbed solve has
+just produced that for the Hessian -- so the extra cost is two one-electron
+integrals rather than a second solve:
+
+.. math::
+
+   \frac{\partial \mu_\alpha}{\partial R_{X\beta}}
+     = Z_X \delta_{\alpha\beta}
+     - \mathrm{Tr}\!\left(D \frac{\partial r_\alpha}{\partial R_{X\beta}}\right)
+     - \mathrm{Tr}\!\left(\frac{\partial D}{\partial R_{X\beta}} r_\alpha\right)
+
+the three terms being the nucleus moving, the basis functions riding it, and the
+electrons relaxing. The last is the one that is easy to omit and hard to notice:
+without it the derivative is smooth, correctly signed, obeys the translational
+sum rule, and is wrong by tens of percent.
+
+A **double hybrid** adds a fourth: its dipole is the *relaxed* one, so the
+perturbative term contributes through the MP2 relaxed density, and the
+intensity needs that derivative on top of the reference's -- the same split as
+its Hessian. On water/6-31G that term is 1.26e-02 against a dipole of order one.
+
+**Plain MP2 has no infrared intensities**, by either route, and the reason is
+the same relaxed density said from the other side. Analytically, the
+perturbative term's dipole derivative is built only for a double hybrid --
+`mp2_correlation_hessian` refuses the request without a functional rather than
+returning the reference's. By finite difference, the backend leaves
+`has_dipole` false for a correlated method, because what it could publish is
+the *reference's* dipole and differencing that would report intensities from a
+density the energy and gradient do not use. Both are refusals rather than
+approximations: a missing intensity is noticed and a plausible wrong one is
+not.
+
+**By finite differences of the dipole** otherwise, collected at the same
+displaced geometries the semi-numerical Hessian already visits.
+
+The two agree: on water/STO-3G with B3LYP the analytic route gives 7.98, 56.46
+and 29.96 km/mol and the finite-difference one gives 7.98, 56.47 and 29.98,
+which is two entirely different assemblies landing within 0.02 km/mol of each
+other.
+
+Validated against PySCF, which has no infrared module but does have the pieces
+one is built from -- ``int1e_irp`` and a coupled-perturbed solve. The dipole
+derivative agrees to 5.8e-08 for Hartree-Fock, 1.9e-07 on a basis with d
+functions, and 3.8e-08 for B3LYP on a converged grid. See
+:doc:`analytic_hessians` for which calculations reach the analytic path.
 
 Transformation to Normal Coordinates
 ------------------------------------

@@ -42,6 +42,7 @@ module mqc_libcint_bridge
    use mqc_libcint_ecp, only: ECP_AVAILABLE
    use mqc_libcint_pcm, only: pcm_context_t
    use mqc_libcint_gradient, only: libcint_scf_gradient
+   use mqc_libcint_multipole, only: multipole_matrices
    use mqc_libcint_hessian, only: rhf_hessian, ks_hessian, hessian_to_matrix, &
                                   nuclear_repulsion_hessian, response_hessian
    use mqc_libcint_mp2_hessian, only: mp2_correlation_hessian
@@ -1655,6 +1656,7 @@ contains
          block
             real(dp), allocatable :: hess4(:, :, :, :)
             real(dp), allocatable :: hess_pt2(:, :, :, :), hess_discard(:, :, :, :)
+            real(dp), allocatable :: ddip(:, :), ddip_pt2(:, :)
             type(timer_type) :: hess_clock
 
             call logger%info("  computing the analytic Hessian")
@@ -1662,10 +1664,11 @@ contains
             if (kohn_sham) then
                call ks_hessian(mol, fragment%element_numbers, scf%density, scf%orbitals, &
                                scf%orbital_energies, scf%n_occupied, xc, xc%exx_fraction, &
-                               hess4, error)
+                               hess4, error, dipole_derivatives=ddip)
             else
                call rhf_hessian(mol, fragment%element_numbers, scf%density, scf%orbitals, &
-                                scf%orbital_energies, scf%n_occupied, hess4, error)
+                                scf%orbital_energies, scf%n_occupied, hess4, error, &
+                                dipole_derivatives=ddip)
             end if
             ! The perturbative term, on top of the Kohn-Sham one, and the same
             ! split the gradient uses: `ks_hessian` is the whole reference --
@@ -1684,7 +1687,8 @@ contains
                call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &
                                             scf%density, scf%n_occupied, 0, &
                                             hess_pt2, hess_discard, error, &
-                                            xc=xc, pt2_scale=xc%pt2_fraction)
+                                            xc=xc, pt2_scale=xc%pt2_fraction, &
+                                            dipole_derivatives=ddip_pt2)
                if (.not. error%has_error()) hess4 = hess4 + hess_pt2
             end if
             if (error%has_error()) then
@@ -1697,6 +1701,24 @@ contains
 
             call hessian_to_matrix(hess4, result%hessian)
             result%has_hessian = .true.
+            ! Infrared intensities, which the vibrational analysis works out
+            ! from these and the normal modes. Free here in the sense that
+            ! matters: the response they need was solved for the Hessian, so
+            ! what this added was two one-electron integrals.
+            !
+            ! A double hybrid's dipole is the *relaxed* one, so its intensity
+            ! needs the perturbative term's derivative added to the reference's
+            ! -- the same split as the Hessian just above, where `hess_pt2` is
+            ! added to `ks_hessian`. On water/6-31G that term is 1.26e-02
+            ! against a dipole of order one: small, and far too large to leave
+            ! out of an intensity.
+            if (allocated(ddip)) then
+               if (dh_analytic) then
+                  if (allocated(ddip_pt2)) ddip = ddip + ddip_pt2
+               end if
+               result%dipole_derivatives = ddip
+               result%has_dipole_derivatives = .true.
+            end if
             deallocate (hess4)
             write (line, "(a,f10.2,a)") "  Hessian done in ", hess_clock%get_elapsed_time(), " s"
             call logger%info(trim(line))
@@ -2240,6 +2262,76 @@ contains
             end block
          end if
       end if
+
+      ! The dipole moment, in atomic units, about the input frame's origin.
+      !
+      ! **Fixed at the origin rather than the molecule's centroid**, and that is
+      ! about the derivative rather than about the dipole. The semi-numerical
+      ! Hessian differences this across displaced geometries, so an origin that
+      ! travelled with the nuclei would make the difference the derivative of
+      ! the wrong function. For a neutral molecule the two agree anyway; for a
+      ! charged one only this choice is differentiable.
+      !
+      ! `mol%charges` is the ECP-reduced charge, which is what pairs with the
+      ! electrons actually in the density -- the same reasoning
+      ! `assemble_dipole_derivatives` sets out, and the opposite of what the
+      ! exchange-correlation grid needs.
+      !
+      ! Setting this is also what gives the *fallback* Hessian its infrared
+      ! intensities. `mqc_semi_numerical_hessian` already collects a dipole at
+      ! every displacement and calls `finite_diff_dipole_derivatives` when it
+      ! has one at each; until now `has_dipole` was never true on this path, so
+      ! it never did. Only tblite set it, which is why an xTB run printed
+      ! intensities and a Hartree-Fock one did not.
+      !
+      ! **Not after a correlated method**, and that omission is the point rather
+      ! than a gap. `scf%density` is the reference's, so what this builds is the
+      ! reference's dipole -- and the semi-numerical Hessian differences
+      ! `result%dipole` into infrared intensities. Publishing it from an MP2 or
+      ! a double-hybrid run would report intensities from a density the energy
+      ! and the gradient do not use: right in shape, wrong by the correlation,
+      ! and silent about it. The analytic double-hybrid path adds the relaxed
+      ! density's contribution explicitly for exactly this reason; the
+      ! fallback has no way to.
+      !
+      ! Leaving `has_dipole` false costs a correlated run its dipole and its
+      ! intensities. That is the better failure: a missing number is noticed and
+      ! a plausible wrong one is not. Restoring it means computing the relaxed
+      ! density here, which is the perturbative term's own machinery and belongs
+      ! with it.
+      block
+         real(dp), allocatable :: dip_ao(:, :, :)
+         real(dp) :: mu(3)
+         integer :: comp, iat
+         logical :: correlated
+
+         correlated = settings%run_mp2 .or. settings%run_cc
+         if (kohn_sham) correlated = correlated .or. xc%pt2_fraction /= 0.0_dp
+
+         call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip_ao, error)
+         if (correlated .and. .not. error%has_error()) then
+            deallocate (dip_ao)
+         else if (.not. error%has_error()) then
+            do comp = 1, 3
+               mu(comp) = -sum(scf%density*dip_ao(:, :, comp))
+            end do
+            if (unrestricted .and. allocated(scf%density_beta)) then
+               do comp = 1, 3
+                  mu(comp) = mu(comp) - sum(scf%density_beta*dip_ao(:, :, comp))
+               end do
+            end if
+            do iat = 1, mol%natm
+               mu = mu + mol%charges(iat)*mol%coords(:, iat)
+            end do
+            result%dipole = mu
+            result%has_dipole = .true.
+            deallocate (dip_ao)
+         else
+            ! A dipole is a convenience here, not the calculation. Losing it
+            ! must not fail a run that otherwise converged.
+            call error%clear()
+         end if
+      end block
 
       ! The frontier pair, from the orbital energies the SCF already produced.
       if (allocated(scf%orbital_energies)) then

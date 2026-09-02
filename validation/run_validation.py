@@ -259,6 +259,22 @@ def extract_frequencies(json_data: Dict) -> Optional[List[float]]:
     return None
 
 
+def extract_ir_intensities(json_data: Dict) -> Optional[List[float]]:
+    """Extract infrared intensities (km/mol) from JSON output"""
+    if not json_data:
+        return None
+
+    top_key = list(json_data.keys())[0]
+    data = json_data[top_key]
+
+    if "vibrational_analysis" in data:
+        vib_data = data["vibrational_analysis"]
+        if "ir_intensities_km_mol" in vib_data:
+            return [float(f) for f in vib_data["ir_intensities_km_mol"]]
+
+    return None
+
+
 def extract_zpe(json_data: Dict) -> Optional[float]:
     """Extract zero-point energy in Hartree from JSON output"""
     if not json_data:
@@ -744,6 +760,46 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                     elif verbose:
                         print(f"    Hessian: {len(expected_matrix)} rows "
                               f"(worst element {max_diff:.2e})")
+
+            # Validate infrared intensities if present
+            #
+            # Only the modes the case names, not all 3N. The six near-zero ones
+            # are translations and rotations in an arbitrary mixture, and their
+            # intensities are a property of that mixture rather than of the
+            # molecule -- pinning them would be pinning the diagonaliser.
+            if "expected_ir_intensities" in test:
+                expected_ir = test["expected_ir_intensities"]
+                calculated_ir = extract_ir_intensities(output_data)
+                ir_tol = test.get("ir_tolerance", 1.0e-3)
+
+                if calculated_ir is None:
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Could not extract IR intensities from JSON")
+                    test_passed = False
+                    failure_reasons.append("Missing IR intensities")
+                elif len(calculated_ir) < len(expected_ir):
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - IR intensity count mismatch")
+                    print(f"    Expected at least: {len(expected_ir)}")
+                    print(f"    Calculated:        {len(calculated_ir)}")
+                    test_passed = False
+                    failure_reasons.append("IR intensity count mismatch")
+                else:
+                    # Compared against the trailing modes, which are the real
+                    # vibrations: the six that are not are at the front.
+                    tail = calculated_ir[len(calculated_ir) - len(expected_ir):]
+                    ir_errors = [(i, c, e) for i, (c, e) in enumerate(zip(tail, expected_ir))
+                                 if abs(c - e) > ir_tol]
+                    if ir_errors:
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - IR intensity mismatch "
+                              f"({len(ir_errors)} modes)")
+                        for i, c, e in ir_errors[:3]:
+                            print(f"    mode {i}: expected {e:.6f}, got {c:.6f} "
+                                  f"(diff: {abs(c - e):.2e})")
+                        test_passed = False
+                        failure_reasons.append(f"IR intensity mismatch ({len(ir_errors)} modes)")
+                    elif verbose:
+                        worst = max(abs(c - e) for c, e in zip(tail, expected_ir))
+                        print(f"    IR intensities: {len(expected_ir)} modes "
+                              f"(worst {worst:.2e} km/mol)")
 
             # Validate frequencies if present
             if "expected_frequencies" in test:

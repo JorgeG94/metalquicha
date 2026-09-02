@@ -70,6 +70,7 @@ module mqc_libcint_mp2_hessian
    use mqc_libcint_mp2, only: transform_ovov
    use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient, build_amplitudes, &
                                        build_effective_2pdm_ao
+   use mqc_libcint_multipole, only: multipole_matrices, dipole_integral_derivatives
    use mqc_libcint_xc, only: xc_context_t, xc_kernel_apply, xc_kernel2_apply
    use mqc_libcint_xc_hessian, only: xc_potential_deriv, xc_kernel_deriv, &
                                      xc_potential_hessian
@@ -1804,7 +1805,7 @@ contains
 
    subroutine mp2_correlation_hessian(mol, coeff, orbital_energies, density, &
                                       n_occ, n_frozen, hess_corr, hess_ref, &
-                                      error, tol, xc, pt2_scale)
+                                      error, tol, xc, pt2_scale, dipole_derivatives)
       !! Unit 1.9: the analytic MP2 correlation Hessian, `(3, 3, natm, natm)`
       !!
       !! The three groups of pycc's `_hessian_blocks` (`route == 'aod'`)
@@ -1865,6 +1866,25 @@ contains
          !! correlation block, for the gradient's reason: the perturbed
          !! Z-vector solves are linear, so scaling their inputs and scaling
          !! their outputs are the same operation and doing both is the error.
+      real(dp), allocatable, intent(out), optional :: dipole_derivatives(:, :)
+         !! The perturbative term's share of `d mu_a / dR_(X,b)`, `(3, 3*natm)`,
+         !! scaled by `pt2_scale` like the correlation block itself.
+         !!
+         !! A double hybrid's dipole is the *relaxed* one -- the perturbative
+         !! term contributes to it -- so a double hybrid's infrared intensity
+         !! needs this on top of the reference's derivative, exactly as its
+         !! Hessian needs `hess_corr` on top of `ks_hessian`. Handing over the
+         !! reference's number alone would be the same failure the Hessian gate
+         !! in the bridge exists to prevent, one property along.
+         !!
+         !! Free in the same sense the reference's is: what it needs is the
+         !! derivative of the relaxed density, and the perturbed Z-vector that
+         !! produces it has just been solved for the Hessian.
+         !!
+         !! Requires `xc` -- it is the double hybrid's term or nothing. Over a
+         !! Hartree-Fock reference an MP2 dipole derivative is a different
+         !! quantity with a different assembly, and this refuses rather than
+         !! returning something shaped like it.
 
       real(dp), allocatable :: gradient(:, :), dm1mo(:, :), w_ao(:, :)
       real(dp), allocatable :: eri_packed(:, :), ovov(:, :, :, :), t2(:, :, :, :)
@@ -2094,6 +2114,25 @@ contains
                                   dm1mo, dt2, ddrel, di, error, tol=use_tol, &
                                   xc=xc, scf_density=density)
       if (error%has_error()) return
+
+      ! The perturbative term's dipole derivative, here because this is the last
+      ! point at which `mo1`, `sx`, `fx` and `l_mo` are all still alive -- the
+      ! orbital rotations need them, and the line below frees three of the four.
+      if (present(dipole_derivatives)) then
+         if (.not. dh) then
+            call error%set(ERROR_VALIDATION, "the perturbative term's dipole "// &
+                           "derivative was asked for without a functional. Over a "// &
+                           "Hartree-Fock reference an MP2 dipole derivative is a "// &
+                           "different quantity, and this returns the double "// &
+                           "hybrid's or nothing.")
+            return
+         end if
+         call correlation_dipole_derivatives(mol, coeff, orbital_energies, n_occ, &
+                                             n_frozen, dm1mo, ddrel, mo1, sx, fx, &
+                                             l_mo, cscale, dipole_derivatives, error)
+         if (error%has_error()) return
+      end if
+
       deallocate (mo1, eri_mo, l_mo, gam, imat)
 
       ! ---- fold pass 2 into the correlation block ---------------------------
@@ -2379,5 +2418,95 @@ contains
       w = w + 4.0_dp*matmul(transpose(coeff), matmul(vao, coeff))
       deallocate (msym, rot, tmp, m_ao, vao)
    end subroutine ks_dl_pair_kernel
+
+   subroutine correlation_dipole_derivatives(mol, coeff, orbital_energies, n_occ, &
+                                             n_frozen, dm1mo, ddrel, mo1, sx, fx, &
+                                             l_mo, scale, ddip_dr, error)
+      !! `c d mu_corr / dR`, from the relaxed density and its response
+      !!
+      !! The correlation term reaches the dipole through one object, the relaxed
+      !! density, so its derivative has two terms and no others:
+      !!
+      !!     d mu_a / dR_(X,b) = - Tr(dD_rel/dR_(X,b)  r_a)
+      !!                         - Tr(D_rel  d r_a / dR_(X,b))
+      !!
+      !! There is no nuclear term: the nuclei belong to the reference's dipole,
+      !! the same split the perturbative gradient makes when it leaves nuclear
+      !! repulsion to `libcint_scf_gradient`.
+      !!
+      !! **`ddrel` is not the AO derivative**, and assuming it was is the
+      !! mistake this routine exists to not make. It is the derivative of the
+      !! relaxed density's *matrix elements*, while the dipole contracts the AO
+      !! density `C D C^T`, whose derivative also moves the orbitals:
+      !!
+      !!     dD_AO/dR = C [ dD_MO/dR + U D_MO + D_MO U^T ] C^T
+      !!
+      !! The first reading of this omitted the two rotation terms and was wrong
+      !! by 1.11e-02 -- the same order as the correlation dipole itself, 1.26e-02
+      !! -- while remaining smooth and obeying the translational sum rule.
+      !! `test_mqc_dh_dipole_deriv` differences the dipole and is what caught it.
+      !!
+      !! `U` is the full `nmo x nmo` rotation rather than the occupied columns
+      !! the response solves for, because the relaxed density has virtual-virtual
+      !! and occupied-occupied blocks that those columns never touch --
+      !! `mp2_full_u` assembles it, with the frozen-core branch it documents.
+      type(libcint_molecule_t), intent(in), target :: mol
+      real(dp), intent(in) :: coeff(:, :)
+      real(dp), intent(in) :: orbital_energies(:)
+      integer, intent(in) :: n_occ, n_frozen
+      real(dp), intent(in) :: dm1mo(:, :)        !! Relaxed correlation density, MO
+      real(dp), intent(in) :: ddrel(:, :, :)     !! Its matrix elements' derivative
+      real(dp), intent(in) :: mo1(:, :, :, :)    !! (n_mo, n_occ, 3, natm)
+      real(dp), intent(in) :: sx(:, :, :), fx(:, :, :)   !! S^(X), f^(X), MO
+      real(dp), intent(in) :: l_mo(:, :, :, :)
+      real(dp), intent(in) :: scale              !! The functional's PT2 coefficient
+      real(dp), allocatable, intent(out) :: ddip_dr(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: dip(:, :, :), ddip(:, :, :, :, :), drel_ao(:, :)
+      real(dp), allocatable :: dd_ao(:, :), dd_mo(:, :), u(:, :)
+      real(dp) :: origin(3)
+      integer :: natm, ia, a, b, y, n_ao
+
+      natm = mol%natm
+      n_ao = size(coeff, 1)
+
+      ! The nuclear centroid, matching `assemble_dipole_derivatives`: the caller
+      ! adds the two halves, so they have to be expanded about the same point
+      ! even though the total does not depend on it.
+      origin = 0.0_dp
+      do ia = 1, natm
+         origin = origin + mol%coords(:, ia)
+      end do
+      if (natm > 0) origin = origin/real(natm, dp)
+
+      call multipole_matrices(mol, origin, 1, dip, error)
+      if (error%has_error()) return
+      call dipole_integral_derivatives(mol, origin, ddip, error)
+      if (error%has_error()) return
+
+      drel_ao = matmul(coeff, matmul(dm1mo, transpose(coeff)))
+      allocate (ddip_dr(3, 3*natm), dd_ao(n_ao, n_ao))
+      allocate (dd_mo(size(dm1mo, 1), size(dm1mo, 2)))
+      ddip_dr = 0.0_dp
+
+      do ia = 1, natm
+         do b = 1, 3
+            y = 3*(ia - 1) + b
+            call mp2_full_u(mo1(:, :, b, ia), sx(:, :, y), n_occ, u, &
+                            n_frozen=n_frozen, fx1=fx(:, :, y), l_mo=l_mo, &
+                            orbital_energies=orbital_energies)
+            dd_mo = ddrel(:, :, y) + matmul(u, dm1mo) + matmul(dm1mo, transpose(u))
+            dd_ao = matmul(coeff, matmul(dd_mo, transpose(coeff)))
+            do a = 1, 3
+               ddip_dr(a, y) = -scale*(sum(dd_ao*dip(:, :, a)) &
+                                       + sum(drel_ao*ddip(:, :, a, b, ia)))
+            end do
+            deallocate (u)
+         end do
+      end do
+
+      deallocate (dip, ddip, drel_ao, dd_ao, dd_mo)
+   end subroutine correlation_dipole_derivatives
 
 end module mqc_libcint_mp2_hessian
