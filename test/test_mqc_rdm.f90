@@ -192,7 +192,7 @@ contains
       logical :: ok
       integer :: p, q
 
-      !> `fci.direct_spin1.make_rdm12` on the same model, row major.
+      !! `fci.direct_spin1.make_rdm12` on the same model, row major.
       real(dp), parameter :: REF(16) = [ &
                              1.741672114860_dp, -0.175272798435_dp, -0.121591739916_dp, &
                              0.122535536906_dp, -0.175272798435_dp, 1.469591539197_dp, &

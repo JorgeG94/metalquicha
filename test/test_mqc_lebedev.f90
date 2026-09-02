@@ -12,12 +12,12 @@ module test_mqc_lebedev
 
    public :: collect_mqc_lebedev
 
-   !> Weights are exact rational-ish constants summed in a fixed order, so the
-   !> sum-to-one check can be held to a few ulp over 5810 terms.
+   !! Weights are exact rational-ish constants summed in a fixed order, so the
+   !! sum-to-one check can be held to a few ulp over 5810 terms.
    real(dp), parameter :: SUM_TOL = 1.0e-13_dp
 
-   !> A grid of degree n integrates spherical harmonics up to degree n exactly.
-   !> This is the property that makes it a quadrature rather than a point set.
+   !! A grid of degree n integrates spherical harmonics up to degree n exactly.
+   !! This is the property that makes it a quadrature rather than a point set.
    real(dp), parameter :: EXACT_TOL = 1.0e-12_dp
 
 contains

@@ -66,7 +66,7 @@ module mqc_fock_projector
    public :: fock_projector_t
    public :: build_frozen_basis
 
-   !> A frozen-orbital partition, and the constraint it implies
+   !! A frozen-orbital partition, and the constraint it implies
    type :: fock_projector_t
       real(dp), allocatable :: basis(:, :)
          !! `C`, `n_ao` by `n_mo`, orthonormal in the metric `S`, with the

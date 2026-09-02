@@ -48,7 +48,7 @@ module mqc_atomic_radii
 
    integer, parameter :: MAX_Z_GEODESIC = 17
 
-   !> What an element absent from the geodesic table takes, as GAMESS does.
+   !! What an element absent from the geodesic table takes, as GAMESS does.
    real(dp), parameter :: GEODESIC_RADIUS_DEFAULT = 1.8_dp
 
    real(dp), parameter :: CORDERO_RADII(MAX_Z_CORDERO) = [ &

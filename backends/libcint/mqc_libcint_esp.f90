@@ -41,8 +41,8 @@ module mqc_libcint_esp
    public :: drinv_matrices
    public :: ddrinv_matrices
 
-   !> `PTR_GRIDS` from libcint's `cint.h`. Not exported by the Fortran interface,
-   !> and 0-based like every other `PTR_*`, so it is used as `+ 1`.
+   !! `PTR_GRIDS` from libcint's `cint.h`. Not exported by the Fortran interface,
+   !! and 0-based like every other `PTR_*`, so it is used as `+ 1`.
    integer, parameter :: LIBCINT_PTR_GRIDS = 12
 
    interface

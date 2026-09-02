@@ -22,8 +22,8 @@ program check_fmo_mpi
    implicit none
 
    real(dp), parameter :: A2B = 1.8897261254578281_dp
-   !> Tight: the two paths do identical arithmetic in a different order, so the
-   !> only difference allowed is the reduction's own rounding.
+   !! Tight: the two paths do identical arithmetic in a different order, so the
+   !! only difference allowed is the reduction's own rounding.
    real(dp), parameter :: TOL = 1.0e-10_dp
    integer, parameter :: N_WATERS = 4
 

@@ -48,15 +48,15 @@ module mqc_config_types
       integer :: charge = 0
       integer :: multiplicity = 1
       integer, allocatable :: indices(:)  !! Atom indices in this fragment
-      !> The effective fragment potential describing this fragment, if it has one.
-      !> A fragment carrying one is an EFP fragment and a fragment without one stays
-      !> quantum, which is how a mixed calculation is spelled -- there is no second way
-      !> to declare a fragment. The path is resolved relative to the deck, like `xyz`.
-      !>
-      !> **A path, not a format.** GAMESS's `.efp` text is what exists today, but the
-      !> potential is moving to JSON, so nothing here may require an extension or infer
-      !> a format from one. Whoever loads it dispatches on what the file actually is;
-      !> the deck only ever names it.
+      !! The effective fragment potential describing this fragment, if it has one.
+      !! A fragment carrying one is an EFP fragment and a fragment without one stays
+      !! quantum, which is how a mixed calculation is spelled -- there is no second way
+      !! to declare a fragment. The path is resolved relative to the deck, like `xyz`.
+      !!
+      !! **A path, not a format.** GAMESS's `.efp` text is what exists today, but the
+      !! potential is moving to JSON, so nothing here may require an extension or infer
+      !! a format from one. Whoever loads it dispatches on what the file actually is;
+      !! the deck only ever names it.
       character(len=:), allocatable :: potential
    contains
       procedure :: destroy => input_fragment_destroy
@@ -76,12 +76,12 @@ module mqc_config_types
       ! Fragments
       integer :: nfrag = 0
       type(input_fragment_t), allocatable :: fragments(:)
-      !> Every fragment is the same species, so one potential describes all of them.
-      !> Set by `uniform_system` in the deck, which is what lets `fragment_potentials`
-      !> be a single name rather than ten thousand copies of it. It is an assertion the
-      !> reader checks rather than takes on trust: the fragments must agree in size, so
-      !> a deck claiming uniformity without it is refused rather than quietly handed
-      !> the wrong potential.
+      !! Every fragment is the same species, so one potential describes all of them.
+      !! Set by `uniform_system` in the deck, which is what lets `fragment_potentials`
+      !! be a single name rather than ten thousand copies of it. It is an assertion the
+      !! reader checks rather than takes on trust: the fragments must agree in size, so
+      !! a deck claiming uniformity without it is refused rather than quietly handed
+      !! the wrong potential.
       logical :: uniform_system = .false.
 
       ! Connectivity
@@ -372,8 +372,8 @@ module mqc_config_types
       ! Fragments
       integer :: nfrag = 0
       type(input_fragment_t), allocatable :: fragments(:)
-      !> As on `molecule_t`: every fragment the same species, which is what lets
-      !> `fragment_potentials` be one name rather than one per fragment.
+      !! As on `molecule_t`: every fragment the same species, which is what lets
+      !! `fragment_potentials` be one name rather than one per fragment.
       logical :: uniform_system = .false.
 
       ! Connectivity

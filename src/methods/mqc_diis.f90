@@ -27,7 +27,7 @@ module mqc_diis
    public :: diis_slot_of_age   !! Ring slot holding the age-th oldest entry
    public :: diis_coefficients  !! Extrapolation weights from a cached overlap matrix
 
-   !> The two procedures above are the parts of DIIS that have nothing to do
+   !! The two procedures above are the parts of DIIS that have nothing to do
    !  with where the vectors live: which slot an entry occupies, and what
    !  weights a given overlap matrix implies. A device implementation shares
    !  them rather than reimplementing them, so a host-versus-device divergence

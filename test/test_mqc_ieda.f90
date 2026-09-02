@@ -33,14 +33,14 @@ module test_mqc_ieda
 
    public :: collect_mqc_ieda_tests
 
-   !> Two atoms, two orbitals each, symmetric as a real interference matrix must
-   !> be. Chosen so every block sums to a round number:
-   !>
-   !>     intra(1) = 1.0 + 0.2 + 0.2 + 2.0            =  3.4
-   !>     intra(2) = 3.0 + 0.6 + 0.6 + 4.0            =  8.2
-   !>     one-way  = -0.5 - 0.1 - 0.3 - 0.4           = -1.3
-   !>     inter    = 2 * one-way                      = -2.6
-   !>     total    = 3.4 + 8.2 - 1.3 - 1.3            =  9.0
+   !! Two atoms, two orbitals each, symmetric as a real interference matrix must
+   !! be. Chosen so every block sums to a round number:
+   !!
+   !!     intra(1) = 1.0 + 0.2 + 0.2 + 2.0            =  3.4
+   !!     intra(2) = 3.0 + 0.6 + 0.6 + 4.0            =  8.2
+   !!     one-way  = -0.5 - 0.1 - 0.3 - 0.4           = -1.3
+   !!     inter    = 2 * one-way                      = -2.6
+   !!     total    = 3.4 + 8.2 - 1.3 - 1.3            =  9.0
    integer, parameter :: N_ORB = 4
    integer, parameter :: ATOM_OF(N_ORB) = [1, 1, 2, 2]
    real(dp), parameter :: T_INTF(N_ORB, N_ORB) = reshape([ &
@@ -50,28 +50,28 @@ module test_mqc_ieda
                                                          -0.1_dp, -0.4_dp, 0.6_dp, 4.0_dp], [N_ORB, N_ORB])
    real(dp), parameter :: TOL = 1.0e-12_dp
 
-   !> Hydrogen, 1.4 Bohr apart. Two identical nuclei, so which nucleus a
-   !> per-nucleus integral belongs to can be read straight off the numbers
-   !> without dividing out a charge.
+   !! Hydrogen, 1.4 Bohr apart. Two identical nuclei, so which nucleus a
+   !! per-nucleus integral belongs to can be read straight off the numbers
+   !! without dividing out a charge.
    integer, parameter :: H2_Z(2) = [1, 1]
    character(len=2), parameter :: H2_SYM(2) = ["H ", "H "]
    real(dp), parameter :: H2(3, 2) = reshape([ &
                                              0.0_dp, 0.0_dp, 0.0_dp, &
                                              0.0_dp, 0.0_dp, 1.4_dp], [3, 2])
 
-   !> A flat density over the same two atoms, so every block sums to four and
-   !> the grouping can be worked out in the margin:
-   !>
-   !>     intra(1) = 4 * 1                                =  4   (nucleus 1)
-   !>     intra(2) = 4 * 2                                =  8   (nucleus 2)
-   !>     inter    = 4*2 + 4*1  (own density, foreign nucleus)
-   !>              + 2 * (4*1 + 4*2)  (interference, both orders, both nuclei)
-   !>              = 12 + 24                              = 36
-   !>     total    = 4 + 8 + 36                           = 48 = 3 * sum(D)
+   !! A flat density over the same two atoms, so every block sums to four and
+   !! the grouping can be worked out in the margin:
+   !!
+   !!     intra(1) = 4 * 1                                =  4   (nucleus 1)
+   !!     intra(2) = 4 * 2                                =  8   (nucleus 2)
+   !!     inter    = 4*2 + 4*1  (own density, foreign nucleus)
+   !!              + 2 * (4*1 + 4*2)  (interference, both orders, both nuclei)
+   !!              = 12 + 24                              = 36
+   !!     total    = 4 + 8 + 36                           = 48 = 3 * sum(D)
    real(dp), parameter :: FLAT(N_ORB, N_ORB) = 1.0_dp
 
-   !> A second symmetric matrix, so a density and an operator can be rotated
-   !> independently of each other rather than being the same array twice.
+   !! A second symmetric matrix, so a density and an operator can be rotated
+   !! independently of each other rather than being the same array twice.
    real(dp), parameter :: DENS(N_ORB, N_ORB) = reshape([ &
                                                        2.0_dp, 0.3_dp, 0.7_dp, 0.2_dp, &
                                                        0.3_dp, 1.5_dp, 0.1_dp, 0.9_dp, &

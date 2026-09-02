@@ -27,7 +27,7 @@ program check_session_run
    use mqc_error, only: error_t
    implicit none
 
-   !> prism.json with the molecules removed. Kept on one logical line per
+   !! prism.json with the molecules removed. Kept on one logical line per
    !  section so a mismatch against the deck is easy to see by eye.
    character(len=*), parameter :: SETTINGS = &
                                   '{"schema":{"name":"mqc-frag","version":"1.0"},'// &

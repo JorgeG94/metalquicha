@@ -55,13 +55,13 @@ module mqc_timing
    public :: timing_report_t
    public :: MAX_TIMED_STAGES, MAX_STAGE_NAME
 
-   !> Most stages one method may name. Exceeding it drops the extras into
-   !> `other` rather than failing: a timer must never be the reason a
-   !> calculation stops.
+   !! Most stages one method may name. Exceeding it drops the extras into
+   !! `other` rather than failing: a timer must never be the reason a
+   !! calculation stops.
    integer, parameter :: MAX_TIMED_STAGES = 24
-   !> Longest stage label kept. Longer names are truncated for the table.
+   !! Longest stage label kept. Longer names are truncated for the table.
    integer, parameter :: MAX_STAGE_NAME = 28
-   !> Rule width, matching the row format: 4 indent + name + 12 + 10 + 14.
+   !! Rule width, matching the row format: 4 indent + name + 12 + 10 + 14.
    integer, parameter :: TABLE_WIDTH = 4 + MAX_STAGE_NAME + 12 + 10 + 14
 
    type :: stage_t

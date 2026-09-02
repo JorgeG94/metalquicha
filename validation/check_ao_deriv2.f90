@@ -31,8 +31,8 @@ program check_ao_deriv2
    character(len=4), parameter :: LABEL(AO_HESS_COMP) = ["xx  ", "xy  ", "xz  ", "yy  ", "yz  ", "zz  "]
    integer :: ih
 
-   !> Which (j, k) each packed second-derivative component stands for. Must
-   !> match the packing `eval_ao_block` documents: xx, xy, xz, yy, yz, zz.
+   !! Which (j, k) each packed second-derivative component stands for. Must
+   !! match the packing `eval_ao_block` documents: xx, xy, xz, yy, yz, zz.
    integer, parameter :: HESS_J(AO_HESS_COMP) = [1, 1, 1, 2, 2, 3]
    integer, parameter :: HESS_K(AO_HESS_COMP) = [1, 2, 3, 2, 3, 3]
 

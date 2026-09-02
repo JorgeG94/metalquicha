@@ -5,21 +5,6 @@ module mqc_aambs
    !! comes with it: how many minimal-basis orbitals a molecule has, how many of
    !! them are chemical core, and therefore how many valence-virtual orbitals have
    !! to be recovered from the virtual space.
-   !!
-   !! The counting is not a detail. Every space in the construction is defined by
-   !! its dimension rather than by a threshold -- `N_VVO = N_mbs - N_occ` exactly,
-   !! not "however many singular values look large" -- so a wrong count is not a
-   !! small error in the answer, it is a different calculation. That is also what
-   !! makes it testable before any integral exists: Paper I tabulates these
-   !! numbers for eight molecules and they can be checked against nothing but the
-   !! basis file.
-   !!
-   !! `basis_sets/aambs/aambs.json` is Basis Set Exchange schema plus two fields
-   !! per element that BSE has no slot for and this module needs:
-   !! `n_core_orbitals` and `n_valence_orbitals`. The core is the *chemical* core,
-   !! which counts semicore as core -- so gallium has 14, not 10, because its 3d
-   !! shell is chemically inert even though a frozen-core count would leave it
-   !! out. See `basis_sets/aambs/PROVENANCE.md`.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_IO, ERROR_VALIDATION
    use mqc_basis_utils, only: basis_search_path

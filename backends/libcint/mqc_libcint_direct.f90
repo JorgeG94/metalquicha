@@ -53,11 +53,11 @@ module mqc_libcint_direct
    public :: direct_stats_t
    public :: DEFAULT_SCREEN_TOL
 
-   !> Quartets whose Schwarz bound falls below this are skipped.
-   !>
-   !> The GTFock paper uses 1e-11 on shell quartets. That is tighter than the
-   !> 1e-10 often seen and costs little, since the count of surviving quartets
-   !> is insensitive to the threshold over a decade or so.
+   !! Quartets whose Schwarz bound falls below this are skipped.
+   !!
+   !! The GTFock paper uses 1e-11 on shell quartets. That is tighter than the
+   !! 1e-10 often seen and costs little, since the count of surviving quartets
+   !! is insensitive to the threshold over a decade or so.
    real(dp), parameter :: DEFAULT_SCREEN_TOL = 1.0e-11_dp
 
    type :: direct_stats_t

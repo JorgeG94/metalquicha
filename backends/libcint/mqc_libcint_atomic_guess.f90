@@ -72,26 +72,26 @@ module mqc_libcint_atomic_guess
    public :: free_atom_energies     !! Converged energy of each atom on its own
    public :: clear_atomic_cache     !! Drop cached atomic solutions
 
-   !> How many distinct (element, basis) atomic solutions are kept at once.
-   !> One per element in the calculation, so this is generous; a deck spanning
-   !> more than 64 elements would be doing something no part of this code has
-   !> been near.
+   !! How many distinct (element, basis) atomic solutions are kept at once.
+   !! One per element in the calculation, so this is generous; a deck spanning
+   !! more than 64 elements would be doing something no part of this code has
+   !! been near.
    integer, parameter :: MAX_CACHED = 64
 
-   !> The free-atom SCF's own convergence settings.
-   !>
-   !> Looser than a production SCF on purpose -- this is a guess, and the fourth
-   !> digit of an atomic density is not what makes a molecular SCF converge --
-   !> but with a high iteration cap, because a first-row transition metal at
-   !> Hund multiplicity is genuinely slow and a guess that gives up is worse than
-   !> a guess that takes a moment.
+   !! The free-atom SCF's own convergence settings.
+   !!
+   !! Looser than a production SCF on purpose -- this is a guess, and the fourth
+   !! digit of an atomic density is not what makes a molecular SCF converge --
+   !! but with a high iteration cap, because a first-row transition metal at
+   !! Hund multiplicity is genuinely slow and a guess that gives up is worse than
+   !! a guess that takes a moment.
    integer, parameter :: ATOMIC_MAX_ITER = 200
    real(dp), parameter :: ATOMIC_ENERGY_TOL = 1.0e-8_dp
    real(dp), parameter :: ATOMIC_DENSITY_TOL = 1.0e-6_dp
 
-   !> Above this many functions the free atom is solved directly rather than in
-   !> core. One atom's n^4 tensor at 50 functions is 50 MB, which is worth
-   !> spending to keep a guess quick; at 100 it would be 800 MB, which is not.
+   !! Above this many functions the free atom is solved directly rather than in
+   !! core. One atom's n^4 tensor at 50 functions is 50 MB, which is worth
+   !! spending to keep a guess quick; at 100 it would be 800 MB, which is not.
    integer, parameter :: ATOMIC_INCORE_MAX = 50
 
    type :: atomic_solution_t

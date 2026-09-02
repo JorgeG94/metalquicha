@@ -37,14 +37,14 @@ module test_mqc_libcint_cphf
 
    real(dp), parameter :: ANG = 1.8897261254578281_dp
 
-   !> Field strength for the numerical derivative, atomic units.
-   !>
-   !> Small enough that the cubic term (the hyperpolarizability) contributes
-   !> below the tolerance, large enough that the SCF threshold does not. Water
-   !> has a first hyperpolarizability of order 10 a.u., so at 1e-3 the cubic
-   !> contamination of a central difference is around 1e-5 relative -- and it
-   !> cancels to leading order anyway, being an even-order effect in a central
-   !> difference of the dipole.
+   !! Field strength for the numerical derivative, atomic units.
+   !!
+   !! Small enough that the cubic term (the hyperpolarizability) contributes
+   !! below the tolerance, large enough that the SCF threshold does not. Water
+   !! has a first hyperpolarizability of order 10 a.u., so at 1e-3 the cubic
+   !! contamination of a central difference is around 1e-5 relative -- and it
+   !! cancels to leading order anyway, being an even-order effect in a central
+   !! difference of the dipole.
    real(dp), parameter :: FIELD_STRENGTH = 1.0e-3_dp
    ! **`water` converges to 1e-14, not the 1e-12 it used to.** What is
    ! differenced here is a *dipole*, which comes from the density, and the

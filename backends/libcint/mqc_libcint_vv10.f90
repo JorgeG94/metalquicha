@@ -35,14 +35,14 @@ module mqc_libcint_vv10
 
    real(dp), parameter :: VV10_RHO_THRESHOLD = 1.0e-8_dp
 
-   !> Beyond this separation, in Bohr, an inner point is not summed. Negative
-   !> disables the cutoff and restores the full double sum.
-   !>
-   !> The kernel falls off as r^-6: at large separation `g -> r^2 w0`,
-   !> `gp -> r^2 w0p` and `gt -> r^2 (w0 + w0p)`, so `t = rpw/(g gp gt)` goes as
-   !> `rpw / r^6`. The number of points at a separation grows as r^2, so the
-   !> tail this drops integrates as r^-3 -- fast, but not so fast that the
-   !> radius can be picked by eye. It is measured, not assumed.
+   !! Beyond this separation, in Bohr, an inner point is not summed. Negative
+   !! disables the cutoff and restores the full double sum.
+   !!
+   !! The kernel falls off as r^-6: at large separation `g -> r^2 w0`,
+   !! `gp -> r^2 w0p` and `gt -> r^2 (w0 + w0p)`, so `t = rpw/(g gp gt)` goes as
+   !! `rpw / r^6`. The number of points at a separation grows as r^2, so the
+   !! tail this drops integrates as r^-3 -- fast, but not so fast that the
+   !! radius can be picked by eye. It is measured, not assumed.
    real(dp), parameter, public :: VV10_CUTOFF = -1.0_dp
       !! Points below this density are dropped from both grids.
       !!

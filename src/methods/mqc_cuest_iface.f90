@@ -23,13 +23,13 @@ module mqc_cuest_iface
    public :: parse_backend_name
    public :: method_runs_on_cuest
 
-   !> Which integral backend a deck asked for.
-   !>
-   !> `auto` is the historical behaviour and the default: cuEST when the build
-   !> has it, the CPU path otherwise. The other two are requests, and a request
-   !> that cannot be honoured is refused rather than quietly substituted -- which
-   !> is the whole reason for naming one. A deck that says `cuest` and silently
-   !> got the CPU path would report timings and a provenance that were not true.
+   !! Which integral backend a deck asked for.
+   !!
+   !! `auto` is the historical behaviour and the default: cuEST when the build
+   !! has it, the CPU path otherwise. The other two are requests, and a request
+   !! that cannot be honoured is refused rather than quietly substituted -- which
+   !! is the whole reason for naming one. A deck that says `cuest` and silently
+   !! got the CPU path would report timings and a provenance that were not true.
    integer, parameter :: BACKEND_AUTO = 0
    integer, parameter :: BACKEND_CUEST = 1
    integer, parameter :: BACKEND_LIBCINT = 2

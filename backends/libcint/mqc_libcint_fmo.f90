@@ -368,7 +368,7 @@ module mqc_libcint_fmo
       real(dp), allocatable :: charges(:)            !! Mulliken, for reporting only
    end type fmo_result_t
 
-   !> One fragment, and its place in the whole
+   !! One fragment, and its place in the whole
    type :: fragment_t
       !! What persists between passes, and nothing that does not
       !!
@@ -398,7 +398,7 @@ module mqc_libcint_fmo
       integer, allocatable :: near(:)            !! fragments close enough for the exact term
    end type fragment_t
 
-   !> Everything the system's cut bonds imply, worked out once
+   !! Everything the system's cut bonds imply, worked out once
    type :: afo_context_t
       !! Built before any fragment is solved, because a hybrid is a property of
       !! the bond and its surroundings and not of whoever is being solved. One
@@ -413,7 +413,7 @@ module mqc_libcint_fmo
          !! not own, so its symbol cannot come from any fragment.
    end type afo_context_t
 
-   !> One n-mer as it will be handed to an SCF, boundaries included
+   !! One n-mer as it will be handed to an SCF, boundaries included
    type :: group_t
       integer :: n_real = 0    !! Atoms the group owns; ghosts follow them
       integer :: nelec = 0     !! With the boundary shift already applied
@@ -427,12 +427,12 @@ module mqc_libcint_fmo
       integer, allocatable :: cut_of(:)    !! Which system cut each boundary is
    end type group_t
 
-   !> Where a frozen virtual is held, in Hartree.
-   !>
-   !> Modest on purpose. The blocks are decoupled rather than penalised, so this
-   !> has only to lift the frozen virtuals clear of the occupied manifold, and a
-   !> larger one costs precision -- the back transform spreads it over every
-   !> element, leaving the unfrozen block clean only to about `shift * epsilon`.
+   !! Where a frozen virtual is held, in Hartree.
+   !!
+   !! Modest on purpose. The blocks are decoupled rather than penalised, so this
+   !! has only to lift the frozen virtuals clear of the occupied manifold, and a
+   !! larger one costs precision -- the back transform spreads it over every
+   !! element, leaving the unfrozen block clean only to about `shift * epsilon`.
    real(dp), parameter :: AFO_SHIFT = 1.0e3_dp
 
 contains

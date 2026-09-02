@@ -59,7 +59,7 @@ module mqc_json_config_reader
    public :: read_json_config_file  !! Parse a JSON input file into mqc_config_t
    public :: read_json_config_text  !! Parse settings from a JSON string, no molecules
 
-   !> Element symbol width comes from `mqc_program_limits`, the same source
+   !! Element symbol width comes from `mqc_program_limits`, the same source
    !  `mqc_xyz_reader` uses, so a geometry given inline and one read from an
    !  .xyz file produce identical `elements` arrays rather than merely
    !  equivalent ones.

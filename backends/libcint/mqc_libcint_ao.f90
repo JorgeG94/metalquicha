@@ -45,12 +45,12 @@ module mqc_libcint_ao
    public :: eval_rho
    public :: max_ao_l
 
-   !> Points per pass when a caller asks for a whole grid at once.
+   !! Points per pass when a caller asks for a whole grid at once.
    integer, parameter, public :: AO_POINT_BLOCK = 512
 
-   !> Unique components of a symmetric second-derivative tensor: xx, xy, xz,
-   !> yy, yz, zz. Public because a caller indexing `hess` has to agree with the
-   !> packing, and a bare 6 at both ends is how they stop agreeing.
+   !! Unique components of a symmetric second-derivative tensor: xx, xy, xz,
+   !! yy, yz, zz. Public because a caller indexing `hess` has to agree with the
+   !! packing, and a bare 6 at both ends is how they stop agreeing.
    integer, parameter, public :: AO_HESS_COMP = 6
    integer, parameter, public :: AO_DERIV3_COMP = 10
       !! xxx, xxy, xxz, xyy, xyz, xzz, yyy, yyz, yzz, zzz -- the ten unique

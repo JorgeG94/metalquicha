@@ -37,7 +37,7 @@ module mqc_bond_perception
    public :: severed_bond_t
    public :: DEFAULT_BOND_TOLERANCE
 
-   !> One bond that a partition cuts, and enough about it to decide what to do
+   !! One bond that a partition cuts, and enough about it to decide what to do
    type :: severed_bond_t
       !! Atom indices are 1-based here, unlike `bond_t`, because the callers
       !! that want this -- fragment assembly and the frozen-orbital schemes --

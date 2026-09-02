@@ -33,13 +33,13 @@ module cuda_helpers
    public :: cuda_memcpy_to_device, cuda_memcpy_to_host
    public :: cuda_device_name, cuda_capability, cuda_report_devices
 
-   !> Copy a Fortran host array to a device buffer.
+   !! Copy a Fortran host array to a device buffer.
    interface cuda_memcpy_to_device
       module procedure memcpy_h2d_r64_1, memcpy_h2d_r64_2
       module procedure memcpy_h2d_r32_1, memcpy_h2d_i32_1
    end interface
 
-   !> Copy a device buffer back into a Fortran host array.
+   !! Copy a device buffer back into a Fortran host array.
    interface cuda_memcpy_to_host
       module procedure memcpy_d2h_r64_1, memcpy_d2h_r64_2
       module procedure memcpy_d2h_r32_1, memcpy_d2h_i32_1
@@ -49,7 +49,7 @@ contains
 
    ! ---- error reporting --------------------------------------------------
 
-   !> Copy a NUL-terminated C string into a Fortran allocatable string.
+   !! Copy a NUL-terminated C string into a Fortran allocatable string.
    function c_string(p) result(s)
       type(c_ptr), intent(in) :: p
       character(len=:), allocatable :: s
@@ -86,7 +86,7 @@ contains
       s = c_string(cudaGetErrorName(code))
    end function cuda_error_name
 
-   !> Abort with a decoded message if a CUDA call did not return cudaSuccess.
+   !! Abort with a decoded message if a CUDA call did not return cudaSuccess.
    subroutine cuda_check(code, what)
       integer(c_int), intent(in) :: code
       character(*), intent(in) :: what
@@ -102,7 +102,7 @@ contains
 
    ! ---- allocation -------------------------------------------------------
 
-   !> Allocate `nbytes` of device memory.
+   !! Allocate `nbytes` of device memory.
    integer(c_int) function cuda_malloc(dptr, nbytes) result(ist)
       type(c_ptr), intent(out) :: dptr
       integer(c_int64_t), intent(in)  :: nbytes
@@ -186,7 +186,7 @@ contains
 
    ! ---- device properties ------------------------------------------------
 
-   !> The device name as a Fortran string (cudaDeviceProp%name is char(256)).
+   !! The device name as a Fortran string (cudaDeviceProp%name is char(256)).
    function cuda_device_name(prop) result(s)
       type(cudaDeviceProp), intent(in) :: prop
       character(len=:), allocatable :: s
@@ -202,14 +202,14 @@ contains
       end do
    end function cuda_device_name
 
-   !> Compute capability as the familiar integer, e.g. 70 for Volta, 90 for
+   !! Compute capability as the familiar integer, e.g. 70 for Volta, 90 for
    !  Hopper -- the form CMAKE_CUDA_ARCHITECTURES and cuEST both use.
    integer function cuda_capability(prop) result(sm)
       type(cudaDeviceProp), intent(in) :: prop
       sm = 10*prop%major + prop%minor
    end function cuda_capability
 
-   !> Print a one-line summary of every visible device.
+   !! Print a one-line summary of every visible device.
    subroutine cuda_report_devices()
       integer(c_int) :: ist, ndev, i
       type(cudaDeviceProp) :: prop

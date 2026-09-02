@@ -36,38 +36,38 @@ module mqc_libcint_rhf
    implicit none
    private
 
-   !> First iteration the unrestricted SCF is allowed to extrapolate on.
-   !>
-   !> Extrapolating from the start converges an open-shell system to the wrong
-   !> state. The core guess gives alpha and beta the same spatial orbitals and
-   !> leaves degenerate shells degenerate, and DIIS combines Fock matrices
-   !> linearly -- so a history that begins symmetric stays symmetric, and the
-   !> iteration never reaches a solution that has to break it. OH in def2-SVP
-   !> converges tidily to -75.167538 that way, a sigma hole with its pi pair
-   !> intact to six digits, where the pi-hole ground state is -75.325108.
-   !>
-   !> Measured rather than chosen: on that case start=1 and 2 both give the
-   !> wrong state and every value from 3 to 14 gives the right one, in 14 to 16
-   !> iterations against the 14 the wrong answer took. Four is three there and
-   !> one spare, and the spare is free -- the whole range costs the same.
-   !>
-   !> This is why the restricted path has no such delay. It has no symmetry to
-   !> break, so the undamped iterations would buy it nothing.
+   !! First iteration the unrestricted SCF is allowed to extrapolate on.
+   !!
+   !! Extrapolating from the start converges an open-shell system to the wrong
+   !! state. The core guess gives alpha and beta the same spatial orbitals and
+   !! leaves degenerate shells degenerate, and DIIS combines Fock matrices
+   !! linearly -- so a history that begins symmetric stays symmetric, and the
+   !! iteration never reaches a solution that has to break it. OH in def2-SVP
+   !! converges tidily to -75.167538 that way, a sigma hole with its pi pair
+   !! intact to six digits, where the pi-hole ground state is -75.325108.
+   !!
+   !! Measured rather than chosen: on that case start=1 and 2 both give the
+   !! wrong state and every value from 3 to 14 gives the right one, in 14 to 16
+   !! iterations against the 14 the wrong answer took. Four is three there and
+   !! one spare, and the spare is free -- the whole range costs the same.
+   !!
+   !! This is why the restricted path has no such delay. It has no symmetry to
+   !! break, so the undamped iterations would buy it nothing.
    integer, parameter :: DEFAULT_UHF_DIIS_START = 4
 
-   !> Which starting point the SCF is handed.
-   !>
-   !> Named here rather than in the atomic-guess module because that module
-   !> calls this one -- the free-atom solutions an atomic guess is built from
-   !> are themselves unrestricted SCFs -- and Fortran has no circular `use`.
-   !> cuEST splits them the same way and for the same reason.
+   !! Which starting point the SCF is handed.
+   !!
+   !! Named here rather than in the atomic-guess module because that module
+   !! calls this one -- the free-atom solutions an atomic guess is built from
+   !! are themselves unrestricted SCFs -- and Fortran has no circular `use`.
+   !! cuEST splits them the same way and for the same reason.
    integer, parameter, public :: SCF_GUESS_CORE = 0   !! F = H
    integer, parameter, public :: SCF_GUESS_GWH = 1    !! Generalized Wolfsberg-Helmholz
    integer, parameter, public :: SCF_GUESS_SAC = 2    !! Superposed atomic coefficients
    integer, parameter, public :: SCF_GUESS_SAD = 3    !! Superposed atomic densities
    integer, parameter, public :: SCF_GUESS_PROJ = 4   !! Projected from a smaller basis
 
-   !> Buffer length for a formatted table line handed to the logger.
+   !! Buffer length for a formatted table line handed to the logger.
    integer, parameter :: LINE_LEN = 160
 
    public :: rhf_result_t
@@ -190,24 +190,24 @@ module mqc_libcint_rhf
       real(dp) :: pcm_charge = 0.0_dp          !! Total apparent surface charge
    end type rhf_result_t
 
-   !> Iterations between full rebuilds of the accumulated G.
-   !>
-   !> Incremental building adds a correction per iteration, so its rounding
-   !> accumulates where a full build's does not. Rebuilding periodically bounds
-   !> that. Sixteen is the usual choice and costs one full build in sixteen --
-   !> about 6% of the saving handed back for a drift that stays at the level of
-   !> the convergence threshold rather than growing past it.
+   !! Iterations between full rebuilds of the accumulated G.
+   !!
+   !! Incremental building adds a correction per iteration, so its rounding
+   !! accumulates where a full build's does not. Rebuilding periodically bounds
+   !! that. Sixteen is the usual choice and costs one full build in sixteen --
+   !! about 6% of the saving handed back for a drift that stays at the level of
+   !! the convergence threshold rather than growing past it.
    integer, parameter :: INCREMENTAL_RESET = 16
 
-   !> Stage labels, named once so the per-iteration column and the summary table
-   !> cannot drift apart, and so a caller can ask `clk%seconds_of(STAGE_FOCK)`.
-   !>
-   !> The split is by what a change would move. The Fock build is the integral
-   !> work and the only stage anything in `INTEGRALS_MQC.md` touches; the
-   !> diagonalisation is LAPACK and n^3 regardless; setup is the one-time 1e
-   !> integrals, screening bounds and guess. Reporting them apart is what makes
-   !> "the integrals got 20% faster" a statement about the integrals rather than
-   !> about the whole run.
+   !! Stage labels, named once so the per-iteration column and the summary table
+   !! cannot drift apart, and so a caller can ask `clk%seconds_of(STAGE_FOCK)`.
+   !!
+   !! The split is by what a change would move. The Fock build is the integral
+   !! work and the only stage anything in `INTEGRALS_MQC.md` touches; the
+   !! diagonalisation is LAPACK and n^3 regardless; setup is the one-time 1e
+   !! integrals, screening bounds and guess. Reporting them apart is what makes
+   !! "the integrals got 20% faster" a statement about the integrals rather than
+   !! about the whole run.
    character(len=*), parameter :: STAGE_SETUP = "setup (1e, bounds, guess)"
    character(len=*), parameter :: STAGE_FOCK = "Fock builds"
    character(len=*), parameter :: STAGE_DIAG = "diagonalisation"
@@ -2217,11 +2217,11 @@ contains
       integer, intent(out) :: n_modes
       type(error_t), intent(inout) :: error
 
-      !> Occupations below this are dropped. A density built from converged
-      !> atomic solutions is positive semi-definite in exact arithmetic, so
-      !> anything at or below zero here is rounding on an empty mode -- an
-      !> unoccupied polarisation shell, most often -- and contributes nothing to
-      !> K. Keeping them would mean taking the square root of a negative number.
+      !! Occupations below this are dropped. A density built from converged
+      !! atomic solutions is positive semi-definite in exact arithmetic, so
+      !! anything at or below zero here is rounding on an empty mode -- an
+      !! unoccupied polarisation shell, most often -- and contributes nothing to
+      !! K. Keeping them would mean taking the square root of a negative number.
       real(dp), parameter :: OCCUPATION_FLOOR = 1.0e-12_dp
       real(dp), allocatable :: vectors(:, :), values(:)
       integer :: n, i, info

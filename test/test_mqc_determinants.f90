@@ -87,10 +87,10 @@ contains
       integer(int64), allocatable :: strings(:)
       integer :: i
 
-      !> `cistring.make_strings(range(4), 2)`
+      !! `cistring.make_strings(range(4), 2)`
       integer(int64), parameter :: FOUR_TWO(6) = &
                                    [3_int64, 5_int64, 6_int64, 9_int64, 10_int64, 12_int64]
-      !> `cistring.make_strings(range(6), 3)`
+      !! `cistring.make_strings(range(6), 3)`
       integer(int64), parameter :: SIX_THREE(20) = &
                                    [7_int64, 11_int64, 13_int64, 14_int64, 19_int64, &
                                     21_int64, 22_int64, 25_int64, 26_int64, 28_int64, &
@@ -218,7 +218,7 @@ contains
       type(link_table_t) :: table
       integer :: istr, row
 
-      !> (cre, des, dest, phase) for each of 6 rows of each of 6 strings.
+      !! (cre, des, dest, phase) for each of 6 rows of each of 6 strings.
       integer, parameter :: REF(4, 6, 6) = reshape([ &
                                                    ! str 1, 0b0011
                                                1, 1, 1, 1, 2, 2, 1, 1, 3, 1, 3, -1, 4, 1, 5, -1, 3, 2, 2, 1, 4, 2, 4, 1, &

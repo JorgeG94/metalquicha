@@ -198,22 +198,22 @@ module mqc_libcint_integrals
       integer, allocatable :: dims(:)          !! (nbas) functions per shell
    end type eri_shell_table_t
 
-   !> Where the ECP shells are, in `env`.
-   !>
-   !> PySCF's extension to libcint's env layout rather than libcint's own:
-   !> slots 18 and 19 sit inside the reserved region below PTR_ENV_START and
-   !> libcint itself never writes them. libfint follows the same convention,
-   !> which is what lets an env built here be read by either.
-   !>
-   !> 0-based like every other slot number here, so both are used as `+ 1`.
-   !> Highest r exponent an ECP row can carry.
-   !>
-   !> Not a limit of the integrals -- libfint handles any power through its
-   !> general branch -- but of this loop, which walks the powers rather than
-   !> sorting. No ECP set in common use goes above 2; the ceiling is set well
-   !> clear of that and a primitive above it is dropped rather than
-   !> mis-assigned, which `molecule_build` then catches as a row-count
-   !> mismatch.
+   !! Where the ECP shells are, in `env`.
+   !!
+   !! PySCF's extension to libcint's env layout rather than libcint's own:
+   !! slots 18 and 19 sit inside the reserved region below PTR_ENV_START and
+   !! libcint itself never writes them. libfint follows the same convention,
+   !! which is what lets an env built here be read by either.
+   !!
+   !! 0-based like every other slot number here, so both are used as `+ 1`.
+   !! Highest r exponent an ECP row can carry.
+   !!
+   !! Not a limit of the integrals -- libfint handles any power through its
+   !! general branch -- but of this loop, which walks the powers rather than
+   !! sorting. No ECP set in common use goes above 2; the ceiling is set well
+   !! clear of that and a primitive above it is dropped rather than
+   !! mis-assigned, which `molecule_build` then catches as a row-count
+   !! mismatch.
    integer, parameter :: MAX_RADI_POWER = 6
 
    integer, parameter :: LIBCINT_AS_ECPBAS_OFFSET = 18

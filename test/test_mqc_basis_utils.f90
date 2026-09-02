@@ -8,9 +8,9 @@ module test_mqc_basis_utils
 
 contains
 
-   !> Collect all exported unit tests
+   !! Collect all exported unit tests
    subroutine collect_mqc_basis_utils_tests(testsuite)
-      !> Collection of tests
+      !! Collection of tests
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &

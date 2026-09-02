@@ -65,22 +65,22 @@ module mqc_libcint_bonding
    integer, parameter :: BONDING_NONE = 0
    integer, parameter :: BONDING_GMS_QUAO = 1
 
-   !> The population analysis must account for every electron. Loose next to the
-   !> others because it is a sum over the whole molecule, so it carries the
-   !> rounding of every term in it.
+   !! The population analysis must account for every electron. Loose next to the
+   !! others because it is a sum over the whole molecule, so it carries the
+   !! rounding of every term in it.
    real(dp), parameter :: SUM_RULE_TOL = 1.0e-6_dp
 
-   !> How far the valence virtual space may fall short of spanning what the
-   !> minimal basis asks for before the analysis is refused.
+   !! How far the valence virtual space may fall short of spanning what the
+   !! minimal basis asks for before the analysis is refused.
    real(dp), parameter :: SPAN_TOL = 1.0e-6_dp
 
-   !> A decomposition has to add back up to the thing it decomposed. Tighter
-   !> than the sum rule above: these compare a handful of terms rather than a
-   !> sum over the molecule, so there is less rounding to allow for.
+   !! A decomposition has to add back up to the thing it decomposed. Tighter
+   !! than the sum rule above: these compare a handful of terms rather than a
+   !! sum over the molecule, so there is less rounding to allow for.
    real(dp), parameter :: BALANCE_TOL = 1.0e-8_dp
 
-   !> Occupations below this contribute nothing and are skipped, which also
-   !> keeps them out of divisions.
+   !! Occupations below this contribute nothing and are skipped, which also
+   !! keeps them out of divisions.
    real(dp), parameter :: OCCUPATION_FLOOR = 1.0e-14_dp
       !! The Ruedenberg quasi-atomic analysis as GAMESS implements it. Named for
       !! the reference implementation rather than the papers because the labels

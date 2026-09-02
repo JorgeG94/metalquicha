@@ -27,16 +27,16 @@ module mqc_libcint_ao_data
 
    public :: C2S_LMAX, c2s_block, common_fac_sp
 
-   !> Highest angular momentum this table covers. Beyond it the caller must be
-   !> refused rather than silently given wrong functions.
+   !! Highest angular momentum this table covers. Beyond it the caller must be
+   !! refused rather than silently given wrong functions.
    integer, parameter :: C2S_LMAX = 4
 
-   !> Row offsets into `C2S`, one per l. Each block is (2l+1) by (l+1)(l+2)/2,
-   !> spherical row-major over Cartesian columns.
+   !! Row offsets into `C2S`, one per l. Each block is (2l+1) by (l+1)(l+2)/2,
+   !! spherical row-major over Cartesian columns.
    integer, parameter :: N_OFFSETS = C2S_LMAX + 2
    integer, parameter :: C2S_OFFSET(0:N_OFFSETS - 1) = [0, 1, 10, 40, 110, 245]
 
-   !> Total coefficients over l = 0..C2S_LMAX, i.e. sum of (2l+1)(l+1)(l+2)/2.
+   !! Total coefficients over l = 0..C2S_LMAX, i.e. sum of (2l+1)(l+1)(l+2)/2.
    integer, parameter :: N_C2S = 245
 
    real(dp), parameter :: C2S(N_C2S) = [ &

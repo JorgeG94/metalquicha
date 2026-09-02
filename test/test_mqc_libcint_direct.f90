@@ -31,26 +31,26 @@ module test_mqc_libcint_direct
 
    real(dp), parameter :: ANG = 1.8897261254578281_dp
 
-   !> Screening off, so a disagreement is about permutations and not thresholds.
-   !>
-   !> The whole point of these tests is the accumulation algebra. Leaving the
-   !> Schwarz screening on would mix a second, unrelated approximation into every
-   !> comparison and put a floor under the tolerances for no reason.
+   !! Screening off, so a disagreement is about permutations and not thresholds.
+   !!
+   !! The whole point of these tests is the accumulation algebra. Leaving the
+   !! Schwarz screening on would mix a second, unrelated approximation into every
+   !! comparison and put a floor under the tolerances for no reason.
    real(dp), parameter :: NO_SCREENING = 0.0_dp
 
-   !> Both limits of `erf(omega r)/r`, which is what an omega pass is.
-   !>
-   !> `omega` reaches libcint through a slot in `env`, not through a separate
-   !> entry point, so handing the routine the shared environment instead of the
-   !> local copy the omega was written into is completely silent: full-range
-   !> integrals come back scaled by the long-range coefficient, nothing raises,
-   !> and the Fock matrix is the right shape and the wrong operator. This build
-   !> was one of the three places in the tree that did exactly that.
-   !>
-   !> Neither limit is sufficient alone. At `OMEGA_OFF` the kernel vanishes, so
-   !> an ignored omega returns the full-range answer and fails; at `OMEGA_FULL`
-   !> the kernel is `1/r`, which an ignored omega also satisfies -- but a
-   !> short-range kernel, the sign convention inverted, fails it.
+   !! Both limits of `erf(omega r)/r`, which is what an omega pass is.
+   !!
+   !! `omega` reaches libcint through a slot in `env`, not through a separate
+   !! entry point, so handing the routine the shared environment instead of the
+   !! local copy the omega was written into is completely silent: full-range
+   !! integrals come back scaled by the long-range coefficient, nothing raises,
+   !! and the Fock matrix is the right shape and the wrong operator. This build
+   !! was one of the three places in the tree that did exactly that.
+   !!
+   !! Neither limit is sufficient alone. At `OMEGA_OFF` the kernel vanishes, so
+   !! an ignored omega returns the full-range answer and fails; at `OMEGA_FULL`
+   !! the kernel is `1/r`, which an ignored omega also satisfies -- but a
+   !! short-range kernel, the sign convention inverted, fails it.
    real(dp), parameter :: OMEGA_OFF = 1.0e-6_dp
    real(dp), parameter :: OMEGA_FULL = 5.0e2_dp
 

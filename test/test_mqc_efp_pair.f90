@@ -36,7 +36,7 @@ module test_mqc_efp_pair
 
    real(dp), parameter :: ANG = 1.0_dp/0.52917724924_dp
 
-   !> Built on first use by `water_fragment`, then copied. See its comment.
+   !! Built on first use by `water_fragment`, then copied. See its comment.
    type(efp_fragment_t), save :: cached_water
    logical, save :: cached_ready = .false.
 

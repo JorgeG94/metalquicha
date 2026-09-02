@@ -37,7 +37,7 @@ module test_mqc_libcint_contraction
    character(len=*), parameter :: POPLE = "../basis_sets/6-31g.json"
    character(len=*), parameter :: STO_3G = "../basis_sets/sto-3g.json"
 
-   !> Water in Bohr, the same geometry the other libcint suites use.
+   !! Water in Bohr, the same geometry the other libcint suites use.
    integer, parameter :: WATER_Z(3) = [8, 1, 1]
    real(dp), parameter :: WATER_COORDS(3, 3) = reshape([ &
                                                        0.0_dp, 0.0_dp, 0.225374_dp, &

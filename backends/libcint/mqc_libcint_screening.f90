@@ -51,13 +51,13 @@ module mqc_libcint_screening
    public :: screening_target_t
    public :: SCREEN_EXPONENTIAL, SCREEN_GAUSSIAN
 
-   !> The part of a screening fit that does not depend on the damping function
-   !>
-   !> Both blocks are fitted to the *same* quantum potential on the *same* grid;
-   !> only the objective's damping term differs. Computing them once and handing
-   !> them to both fits halves the stage, and the expensive half is the one being
-   !> shared -- the grid runs to tens of thousands of points and every one of them
-   !> costs an integral over every shell pair.
+   !! The part of a screening fit that does not depend on the damping function
+   !!
+   !! Both blocks are fitted to the *same* quantum potential on the *same* grid;
+   !! only the objective's damping term differs. Computing them once and handing
+   !! them to both fits halves the stage, and the expensive half is the one being
+   !! shared -- the grid runs to tens of thousands of points and every one of them
+   !! costs an integral over every shell pair.
    type :: screening_target_t
       logical :: ready = .false.
       real(dp), allocatable :: grid(:, :)     !! (3, n_points), Bohr
@@ -66,25 +66,25 @@ module mqc_libcint_screening
       procedure :: destroy => screening_target_destroy
    end type screening_target_t
 
-   !> Which damping function to fit.
+   !! Which damping function to fit.
    integer, parameter :: SCREEN_EXPONENTIAL = 1   !! `1 - exp(-alpha r)`, the SCREEN2 block
    integer, parameter :: SCREEN_GAUSSIAN = 2      !! `1 - exp(-alpha r^2)`, the SCREEN block
 
-   !> Layer schedule: `VDWSCL`, `VDWINC` and the layer count.
+   !! Layer schedule: `VDWSCL`, `VDWINC` and the layer count.
    real(dp), parameter :: VDW_STEP = 0.1_dp
    integer, parameter :: N_LAYER = 25
 
-   !> Points on the innermost sphere; outer layers scale by area from this.
+   !! Points on the innermost sphere; outer layers scale by area from this.
    integer, parameter :: N_ANGULAR = 110
 
-   !> Bounds on an exponent, and the starting values: two on an atom, four on a
-   !> bond midpoint, which is how GAMESS initialises the search.
+   !! Bounds on an exponent, and the starting values: two on an atom, four on a
+   !! bond midpoint, which is how GAMESS initialises the search.
    real(dp), parameter :: ALPHA_MIN = 0.5_dp
    real(dp), parameter :: ALPHA_MAX = 10.0_dp
    real(dp), parameter :: ALPHA_ATOM = 2.0_dp
    real(dp), parameter :: ALPHA_MIDPOINT = 4.0_dp
 
-   !> Sweeps of the minimizer, and the bracket it stops refining at.
+   !! Sweeps of the minimizer, and the bracket it stops refining at.
    integer, parameter :: MAX_SWEEPS = 12
    real(dp), parameter :: ALPHA_TOL = 1.0e-7_dp
 

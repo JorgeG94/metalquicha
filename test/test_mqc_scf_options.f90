@@ -44,8 +44,8 @@ contains
                   ]
    end subroutine collect_mqc_scf_options_tests
 
-   !> An options object with nothing left at its default, so a field that fails
-   !> to arrive shows up as the default it should no longer hold.
+   !! An options object with nothing left at its default, so a field that fails
+   !! to arrive shows up as the default it should no longer hold.
    subroutine populate(options)
       type(scf_options_t), intent(out) :: options
 
@@ -162,9 +162,9 @@ contains
                  "guess_steps(2)%maxiter")
    end subroutine every_field_arrives
 
-   !> The ladder is optional, and copying an unallocated one would be a crash
-   !> rather than a wrong answer -- worth pinning separately because it is the
-   !> one field in the block guarded by a condition.
+   !! The ladder is optional, and copying an unallocated one would be a crash
+   !! rather than a wrong answer -- worth pinning separately because it is the
+   !! one field in the block guarded by a condition.
    subroutine ladder_optional(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -179,9 +179,9 @@ contains
                  "a ladder appeared from nowhere")
    end subroutine ladder_optional
 
-   !> The properties block had diverged three ways before it was shared: HF
-   !> unpacked all eight, Kohn-Sham four and MCSCF six. Same populate-and-assert
-   !> as the SCF fields, for the same reason.
+   !! The properties block had diverged three ways before it was shared: HF
+   !! unpacked all eight, Kohn-Sham four and MCSCF six. Same populate-and-assert
+   !! as the SCF fields, for the same reason.
    subroutine every_property_arrives(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -258,8 +258,8 @@ contains
       call check(error,.not. settings%fukui_scf%inherit_scf, "fukui_scf%inherit_scf")
    end subroutine every_property_arrives
 
-   !> Two of the eight are allocatable, and an unset one must not overwrite
-   !> whatever the backend already holds.
+   !! Two of the eight are allocatable, and an unset one must not overwrite
+   !! whatever the backend already holds.
    subroutine properties_optional(error)
       type(error_type), allocatable, intent(out) :: error
 

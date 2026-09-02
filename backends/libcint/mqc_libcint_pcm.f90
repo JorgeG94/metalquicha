@@ -60,15 +60,15 @@ module mqc_libcint_pcm
    integer, parameter :: PCM_MODEL_IEFPCM = 2
       !! Integral equation formalism: the D-matrix terms, scaled by (eps-1)/(eps+1)
 
-   !> `PTR_GRIDS` from libcint's `cint.h`. Not exported by the Fortran
-   !> interface, and 0-based like every other `PTR_*`, so it is used as `+ 1`.
+   !! `PTR_GRIDS` from libcint's `cint.h`. Not exported by the Fortran
+   !! interface, and 0-based like every other `PTR_*`, so it is used as `+ 1`.
    integer, parameter :: LIBCINT_PTR_GRIDS = 12
 
-   !> The Lebedev orders the SWIG exponents are fitted for, and the fitted
-   !> values. Table II of [J. Chem. Phys. 122, 194110 (2005)], copied from
-   !> PySCF's `pcm.XI` so the two discretizations are the same numbers.
-   !> `mqc_lebedev` also carries orders 74, 230 and 266, which the paper does
-   !> not tabulate; those are refused rather than interpolated.
+   !! The Lebedev orders the SWIG exponents are fitted for, and the fitted
+   !! values. Table II of [J. Chem. Phys. 122, 194110 (2005)], copied from
+   !! PySCF's `pcm.XI` so the two discretizations are the same numbers.
+   !! `mqc_lebedev` also carries orders 74, 230 and 266, which the paper does
+   !! not tabulate; those are refused rather than interpolated.
    integer, parameter :: N_XI_ORDERS = 29
    integer, parameter :: XI_ORDERS(N_XI_ORDERS) = [ &
                          6, 14, 26, 38, 50, 86, 110, 146, 170, 194, 302, 350, 434, 590, &
@@ -84,8 +84,8 @@ module mqc_libcint_pcm
                           4.90777965981_dp, 4.90782469526_dp, 4.90749125553_dp, 4.90762073452_dp, &
                           4.90792902522_dp]
 
-   !> A point whose quadrature weight times switching value falls below this is
-   !> buried inside a neighbouring sphere and dropped, as PySCF drops it.
+   !! A point whose quadrature weight times switching value falls below this is
+   !! buried inside a neighbouring sphere and dropped, as PySCF drops it.
    real(dp), parameter :: BURIED_CUTOFF = 1.0e-16_dp
 
    type :: pcm_surface_t

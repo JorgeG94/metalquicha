@@ -45,33 +45,33 @@ module mqc_libcint_afo
    public :: DEFAULT_MODEL_RADIUS
    public :: BOND_ORBITAL_REACH
 
-   !> How far from either end of the cut bond the model reaches, in Angstrom.
-   !>
-   !> Wide enough to carry the bond's immediate chemical environment -- the
-   !> substituents that decide what the hybrid looks like -- and no wider, since
-   !> every atom past that is an SCF cost paid once per cut bond for an orbital
-   !> that has stopped moving. GAMESS calls this RAFO and defaults it to a
-   !> similar distance.
+   !! How far from either end of the cut bond the model reaches, in Angstrom.
+   !!
+   !! Wide enough to carry the bond's immediate chemical environment -- the
+   !! substituents that decide what the hybrid looks like -- and no wider, since
+   !! every atom past that is an SCF cost paid once per cut bond for an orbital
+   !! that has stopped moving. GAMESS calls this RAFO and defaults it to a
+   !! similar distance.
    real(dp), parameter :: DEFAULT_MODEL_RADIUS = 2.5_dp
 
-   !> How close to the bond midpoint a localized orbital's centroid must sit to
-   !> count as being *on* that bond, as a fraction of the bond length.
-   !>
-   !> **It must be well under a half, and that is structural rather than
-   !> empirical.** Anything atom-centred -- a core orbital, a lone pair -- has
-   !> its centroid on a nucleus, which is at exactly half the bond length from
-   !> the midpoint. So a half admits every core on both atoms: measured on
-   !> ethane the two carbon 1s orbitals come in at 1.4513013 Bohr against a
-   !> half-bond of 1.4513096, inside it by eight decimal places, and a single
-   !> sigma bond reports three orbitals on it and looks like a triple one.
-   !>
-   !> The measured spectrum for ethane, in Bohr: the C-C orbital at 8e-11, the
-   !> two cores at 1.4513, the six C-H orbitals at 2.3546. A third of the bond
-   !> length sits in the wide gap between the first two, with room for a polar
-   !> bond whose orbital leans towards the electronegative end.
+   !! How close to the bond midpoint a localized orbital's centroid must sit to
+   !! count as being *on* that bond, as a fraction of the bond length.
+   !!
+   !! **It must be well under a half, and that is structural rather than
+   !! empirical.** Anything atom-centred -- a core orbital, a lone pair -- has
+   !! its centroid on a nucleus, which is at exactly half the bond length from
+   !! the midpoint. So a half admits every core on both atoms: measured on
+   !! ethane the two carbon 1s orbitals come in at 1.4513013 Bohr against a
+   !! half-bond of 1.4513096, inside it by eight decimal places, and a single
+   !! sigma bond reports three orbitals on it and looks like a triple one.
+   !!
+   !! The measured spectrum for ethane, in Bohr: the C-C orbital at 8e-11, the
+   !! two cores at 1.4513, the six C-H orbitals at 2.3546. A third of the bond
+   !! length sits in the wide gap between the first two, with room for a polar
+   !! bond whose orbital leans towards the electronegative end.
    real(dp), parameter :: BOND_ORBITAL_REACH = 0.35_dp
 
-   !> What to solve the model system with
+   !! What to solve the model system with
    type :: afo_options_t
       character(len=64) :: basis = "6-31g"
       type(scf_numerics_t) :: scf
@@ -92,7 +92,7 @@ module mqc_libcint_afo
       real(dp) :: scf_density_tol = 1.0e-8_dp
    end type afo_options_t
 
-   !> One cut bond's frozen orbital, over its bond-detached atom's functions
+   !! One cut bond's frozen orbital, over its bond-detached atom's functions
    type :: afo_hybrid_t
       !! Held one per cut bond rather than in a rectangular array, because two
       !! bonds can be detached at atoms of different elements and their hybrids
@@ -100,7 +100,7 @@ module mqc_libcint_afo
       real(dp), allocatable :: coeff(:)
    end type afo_hybrid_t
 
-   !> The small molecule a frozen orbital is derived from
+   !! The small molecule a frozen orbital is derived from
    type :: afo_model_t
       !! Caps are the last `n_caps` entries of `z`, `sym` and `xyz`, and have no
       !! entry in `from_system`. That is the same layout `fragment_t` uses and

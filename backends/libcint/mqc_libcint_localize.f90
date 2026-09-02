@@ -48,16 +48,16 @@ module mqc_libcint_localize
 
    public :: boys_localize
 
-   !> Sweeps before giving up. Boys on a fragment converges in a handful.
+   !! Sweeps before giving up. Boys on a fragment converges in a handful.
    integer, parameter :: DEFAULT_MAX_SWEEPS = 200
 
-   !> Convergence on the largest rotation angle in a sweep, radians.
-   !>
-   !> On the angle rather than on the functional: near the maximum the functional
-   !> is quadratic in the angle, so a threshold on it stops while the orbitals are
-   !> still moving at the square root of that threshold. The centroids are what
-   !> the next milestone places polarizabilities on, so they are what has to be
-   !> converged.
+   !! Convergence on the largest rotation angle in a sweep, radians.
+   !!
+   !! On the angle rather than on the functional: near the maximum the functional
+   !! is quadratic in the angle, so a threshold on it stops while the orbitals are
+   !! still moving at the square root of that threshold. The centroids are what
+   !! the next milestone places polarizabilities on, so they are what has to be
+   !! converged.
    real(dp), parameter :: DEFAULT_ANGLE_TOL = 1.0e-10_dp
 
 contains

@@ -41,9 +41,9 @@ module test_mqc_mp2_hessian_fd
 
    public :: collect_mqc_mp2_hessian_fd_tests
 
-   !> pycc's pinned case: bohr, frame pinned. A displacement must not move the
-   !> centre of mass or re-orient, or it stops matching analytic (bohr)
-   !> integral derivatives.
+   !! pycc's pinned case: bohr, frame pinned. A displacement must not move the
+   !! centre of mass or re-orient, or it stops matching analytic (bohr)
+   !! integral derivatives.
    integer, parameter :: WATER_Z(3) = [8, 1, 1]
    character(len=2), parameter :: WATER_SYM(3) = ["O ", "H ", "H "]
    real(dp), parameter :: WATER(3, 3) = reshape( &
@@ -52,25 +52,25 @@ module test_mqc_mp2_hessian_fd
                            0.0_dp, 1.756000_dp, -0.454300_dp], [3, 3])
    integer, parameter :: WATER_NELEC = 10
 
-   !> The perturbed coordinate: atom 1 (O), z. Column index 3 in the flattened
-   !> `(3*natom)` ordering this file uses, which is Fortran's -- pycc's column 2.
+   !! The perturbed coordinate: atom 1 (O), z. Column index 3 in the flattened
+   !! `(3*natom)` ordering this file uses, which is Fortran's -- pycc's column 2.
    integer, parameter :: PERT_ATOM = 1
    integer, parameter :: PERT_CART = 3
 
-   !> Bohr. The 7-point O(h^6) stencil's step; pycc use the same.
+   !! Bohr. The 7-point O(h^6) stencil's step; pycc use the same.
    real(dp), parameter :: STEP = 2.0e-3_dp
 
-   !> pycc's analytic correlation Hessian column `H[:, (0,2)]` for this case,
-   !> 6-31G all-electron, on the BSE basis. Hartree/bohr^2, flattened
-   !> `(x,y,z)` per atom.
+   !! pycc's analytic correlation Hessian column `H[:, (0,2)]` for this case,
+   !! 6-31G all-electron, on the BSE basis. Hartree/bohr^2, flattened
+   !! `(x,y,z)` per atom.
    real(dp), parameter :: PYCC_COL(9) = [ &
                           -5.858801618662E-18_dp, -1.863531593298E-02_dp, -1.236323597338E-02_dp, &
                           5.244853948085E-18_dp, 4.451383450513E-03_dp, -3.435962860391E-03_dp, &
                           6.139476705757E-19_dp, 1.418393248247E-02_dp, 1.579919883377E-02_dp]
 
-   !> The gate. Loose against the stencil's own reach, not against the
-   !> derivative's: the step error here is far below this, and what the number
-   !> has to absorb is the two codes' SCF convergence and integral rounding.
+   !! The gate. Loose against the stencil's own reach, not against the
+   !! derivative's: the step error here is far below this, and what the number
+   !! has to absorb is the two codes' SCF convergence and integral rounding.
    real(dp), parameter :: TOL = 1.0e-8_dp
 
 contains
@@ -86,8 +86,8 @@ contains
                   ]
    end subroutine collect_mqc_mp2_hessian_fd_tests
 
-   !> The correlation gradient at one geometry: the MP2 total less the
-   !> reference's own, over the same converged orbitals.
+   !! The correlation gradient at one geometry: the MP2 total less the
+   !! reference's own, over the same converged orbitals.
    subroutine correlation_gradient_at(coords, gradient, err, n_frozen)
       real(dp), intent(in) :: coords(:, :)
       real(dp), allocatable, intent(out) :: gradient(:, :)
@@ -133,11 +133,11 @@ contains
       call mol%destroy()
    end subroutine correlation_gradient_at
 
-   !> `H[:, X] = d(correlation gradient)/dX` by the 7-point O(h^6) stencil
-   !>
-   !>   (-g(-3h) + 9g(-2h) - 45g(-h) + 45g(h) - 9g(2h) + g(3h)) / (60h)
-   !>
-   !> No `g(0)` term, which is the formula and not an omission.
+   !! `H[:, X] = d(correlation gradient)/dX` by the 7-point O(h^6) stencil
+   !!
+   !!   (-g(-3h) + 9g(-2h) - 45g(-h) + 45g(h) - 9g(2h) + g(3h)) / (60h)
+   !!
+   !! No `g(0)` term, which is the formula and not an omission.
    subroutine fd_column(column, err, ok, n_frozen)
       real(dp), intent(out) :: column(9)
       type(error_t), intent(inout) :: err
@@ -197,11 +197,11 @@ contains
                  "correlation Hessian column disagrees with pycc")
    end subroutine column_against_pycc
 
-   !> Translational invariance of the correlation energy, read off the column:
-   !> summing the rows that share a Cartesian direction must vanish. Free, and
-   !> weak -- a gradient in this tree was once wrong by 14 Hartree/bohr while
-   !> leaving the net force at 8e-14 -- so it stands beside the comparison
-   !> above and never in place of it.
+   !! Translational invariance of the correlation energy, read off the column:
+   !! summing the rows that share a Cartesian direction must vanish. Free, and
+   !! weak -- a gradient in this tree was once wrong by 14 Hartree/bohr while
+   !! leaving the net force at 8e-14 -- so it stands beside the comparison
+   !! above and never in place of it.
    subroutine column_translates(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -223,13 +223,13 @@ contains
       end do
    end subroutine column_translates
 
-   !> Gate 1.9b, closed transitively through the literals both sides of it
-   !> are measured against: the finite-difference column above sits 2.778e-10
-   !> from `PYCC_COL` (bit-reproducible at one thread), so the analytic
-   !> column agreeing with the same literals ties analytic to FD without
-   !> re-running the stencil -- which is the difference between a seconds
-   !> test and a minutes one. Measured 1.096e-12 when the assembly landed;
-   !> the shared `TOL` is the stencil comparison's and leaves three orders.
+   !! Gate 1.9b, closed transitively through the literals both sides of it
+   !! are measured against: the finite-difference column above sits 2.778e-10
+   !! from `PYCC_COL` (bit-reproducible at one thread), so the analytic
+   !! column agreeing with the same literals ties analytic to FD without
+   !! re-running the stencil -- which is the difference between a seconds
+   !! test and a minutes one. Measured 1.096e-12 when the assembly landed;
+   !! the shared `TOL` is the stencil comparison's and leaves three orders.
    subroutine analytic_column(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -273,14 +273,14 @@ contains
       call mol%destroy()
    end subroutine analytic_column
 
-   !> The frozen-core tie-out, direct rather than through literals: the
-   !> same 7-point stencil over our own frozen-core correlation gradient
-   !> (n_frozen = 1) against the same column of the analytic frozen-core
-   !> assembly. Entirely in our own conventions -- the cross-code element-wise
-   !> gates ran when Phase 2 landed and live in the commit messages; what
-   !> this pins is that the analytic core rotations keep differentiating the
-   !> gradient actually shipped, and it is exactly the check that catches a
-   !> quotient-rule Sylvester block (a ~7e-7 signature against a 1e-8 gate).
+   !! The frozen-core tie-out, direct rather than through literals: the
+   !! same 7-point stencil over our own frozen-core correlation gradient
+   !! (n_frozen = 1) against the same column of the analytic frozen-core
+   !! assembly. Entirely in our own conventions -- the cross-code element-wise
+   !! gates ran when Phase 2 landed and live in the commit messages; what
+   !! this pins is that the analytic core rotations keep differentiating the
+   !! gradient actually shipped, and it is exactly the check that catches a
+   !! quotient-rule Sylvester block (a ~7e-7 signature against a 1e-8 gate).
    subroutine frozen_column(error)
       type(error_type), allocatable, intent(out) :: error
 

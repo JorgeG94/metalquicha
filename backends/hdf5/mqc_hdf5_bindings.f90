@@ -38,7 +38,7 @@ module mqc_hdf5_bindings
              H5Sget_simple_extent_dims, H5Sget_simple_extent_ndims, &
              H5Tclose, H5Tcopy, H5Tset_size, H5open
 
-   !> Assumed-size dummies below are allowed deliberately and individually.
+   !! Assumed-size dummies below are allowed deliberately and individually.
    !  `dimension(*)` is the correct interop declaration for a C parameter that
    !  is a plain pointer: the assumed-shape alternative the rule recommends is
    !  passed as a descriptor under `bind(C)`, which is not what HDF5 expects
@@ -49,7 +49,7 @@ module mqc_hdf5_bindings
    integer, parameter :: herr_t = c_int        !! H5public.h:  typedef int herr_t
    integer, parameter :: hsize_t = c_int64_t   !! H5public.h:  unsigned long long
 
-   !> Flags, from H5Fpublic.h. Unsigned in C; these values all fit in a
+   !! Flags, from H5Fpublic.h. Unsigned in C; these values all fit in a
    !  positive default integer, so the kind mismatch cannot bite.
    integer(c_int), parameter :: H5F_ACC_RDONLY = 0
    integer(c_int), parameter :: H5F_ACC_RDWR = 1
@@ -66,7 +66,7 @@ module mqc_hdf5_bindings
    integer(c_int), parameter :: H5S_SELECT_SET = 0     !! H5S_seloper_t
    integer(c_int), parameter :: H5F_SCOPE_LOCAL = 0    !! H5F_scope_t
 
-   !> Datatype ids, filled in by the library at start-up. See the note above:
+   !! Datatype ids, filled in by the library at start-up. See the note above:
    !  these are zero until `h5_start` has run.
    integer(hid_t), bind(C, name="H5T_NATIVE_DOUBLE_g") :: H5T_NATIVE_DOUBLE
    integer(hid_t), bind(C, name="H5T_NATIVE_INT_g") :: H5T_NATIVE_INT
@@ -75,7 +75,7 @@ module mqc_hdf5_bindings
    integer(hid_t), bind(C, name="H5T_STD_I64LE_g") :: H5T_STD_I64LE
    integer(hid_t), bind(C, name="H5T_C_S1_g") :: H5T_C_S1
 
-   !> Property-list classes are globals too, for the same reason and with the
+   !! Property-list classes are globals too, for the same reason and with the
    !  same trap. `H5P_DATASET_CREATE` is a macro over this in C.
    integer(hid_t), bind(C, name="H5P_CLS_DATASET_CREATE_ID_g") :: H5P_CLS_DATASET_CREATE_ID
 
@@ -163,7 +163,7 @@ module mqc_hdf5_bindings
          integer(herr_t) :: status
       end function H5Sclose
 
-      !> Shape of a stored dataset, so a reader can allocate before it reads.
+      !! Shape of a stored dataset, so a reader can allocate before it reads.
       !  `maxdims` is a real array rather than an optional C null: nothing here
       !  needs the unlimited bounds, and a dummy array costs one stack slot
       !  against a c_ptr dance at every call site.

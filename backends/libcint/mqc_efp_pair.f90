@@ -44,14 +44,14 @@ module mqc_efp_pair
    ! coincidence is how a packing convention drifts apart.
    public :: N_DQ_SLOTS, N_QQ_SLOTS
 
-   !> Overlap below which a pair's damping series is not evaluated at all,
-   !> `efdrvr.src:4464`.
+   !! Overlap below which a pair's damping series is not evaluated at all,
+   !! `efdrvr.src:4464`.
    real(dp), parameter :: S_FLOOR = 1.0e-5_dp
 
-   !> Slots in a `DIPOLE-QUADRUPOLE` record: a 3x3x3 tensor, last index fastest.
+   !! Slots in a `DIPOLE-QUADRUPOLE` record: a 3x3x3 tensor, last index fastest.
    integer, parameter :: N_DQ_SLOTS = 27
 
-   !> Slots in the `LMOQQPOL` record: a 3x3x3x3 tensor, last index fastest.
+   !! Slots in the `LMOQQPOL` record: a 3x3x3x3 tensor, last index fastest.
    integer, parameter :: N_QQ_SLOTS = 81
 
 contains
@@ -819,10 +819,10 @@ contains
       real(dp) :: energy
 
       real(dp), parameter :: RT2PI = 0.7978845608028654_dp   !! sqrt(2/pi)
-      !> Named apart from the module's `S_FLOOR_LOCAL` deliberately: that one is the
-      !> 1e-5 damping cutoff from `efdrvr.src:4464`, this is a different and
-      !> tighter threshold, and one name for both made the module constant
-      !> silently mean something else inside this procedure.
+      !! Named apart from the module's `S_FLOOR_LOCAL` deliberately: that one is the
+      !! 1e-5 damping cutoff from `efdrvr.src:4464`, this is a different and
+      !! tighter threshold, and one name for both made the module constant
+      !! silently mean something else inside this procedure.
       real(dp), parameter :: S_FLOOR_LOCAL = 1.0e-7_dp
       type(libcint_molecule_t) :: pair
       real(dp), allocatable :: s_ao(:, :), t_ao(:, :), lmo_a(:, :), lmo_b(:, :)

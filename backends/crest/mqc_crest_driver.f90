@@ -43,9 +43,9 @@ module mqc_crest_driver
          implicit none
          type(systemdata), intent(inout) :: env
          integer, intent(in) :: nra
-         !> No intent, matching the definition in confparse.f90; intent is part
-         !> of a procedure's characteristics, so declaring one here would make
-         !> this interface disagree with the procedure it describes.
+         !! No intent, matching the definition in confparse.f90; intent is part
+         !! of a procedure's characteristics, so declaring one here would make
+         !! this interface disagree with the procedure it describes.
          ! allow(missing-intent)
          character(len=*) :: arg(nra)
       end subroutine parseflags
@@ -58,12 +58,12 @@ module mqc_crest_driver
       end subroutine crest_search_imtdgc
    end interface
 
-   !> What the refinement level needs, waiting for a callback that is handed a
-   !> geometry and nothing else.
-   !>
-   !> Module state for the same reason `mqc_geometry_optimizer` keeps its
-   !> `ctx_config` and `ctx_resources` that way. It also means only one search
-   !> can be in flight, which is true anyway: CREST runs on a single rank.
+   !! What the refinement level needs, waiting for a callback that is handed a
+   !! geometry and nothing else.
+   !!
+   !! Module state for the same reason `mqc_geometry_optimizer` keeps its
+   !! `ctx_config` and `ctx_resources` that way. It also means only one search
+   !! can be in flight, which is true anyway: CREST runs on a single rank.
    type(system_geometry_t), save :: ctx_geom
    type(driver_config_t), save :: ctx_config
    type(resources_t), save :: ctx_resources

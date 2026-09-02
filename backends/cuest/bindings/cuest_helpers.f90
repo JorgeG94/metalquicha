@@ -37,7 +37,7 @@ module cuest_helpers
 
 contains
 
-   !> Human-readable name for a cuestStatus_t code (mirrors the C sample's
+   !! Human-readable name for a cuestStatus_t code (mirrors the C sample's
    !  cuestGetErrorEnum helper; handy in error messages).
    function cuest_status_name(st) result(name)
       integer(c_int), intent(in) :: st
@@ -76,7 +76,7 @@ contains
       end select
    end function cuest_status_name
 
-   !> Set a string-valued attribute (e.g. CUEST_HANDLE_PARAMETERS_JIT_CACHE_DIR).
+   !! Set a string-valued attribute (e.g. CUEST_HANDLE_PARAMETERS_JIT_CACHE_DIR).
    !  cuEST expects a char** whose target is a NUL-terminated string, of size
    !  sizeof(char*); cuEST copies the string during this call.
    integer(c_int) function cuest_param_set_str(ptype, params, attr, str) result(st)

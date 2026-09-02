@@ -40,28 +40,28 @@ module mqc_libcint_multipole
    public :: dipole_integral_derivatives
    public :: DIPOLE_COMPONENTS, QUADRUPOLE_COMPONENTS, OCTOPOLE_COMPONENTS
 
-   !> Components libcint returns, as full Cartesian tensors.
-   !>
-   !> Full, not packed: 9 quadrupole components rather than the 6 unique ones and
-   !> 27 octopole rather than 10. Anything writing a GAMESS-style potential has to
-   !> pack them, and that packing is a place a tensor transposes without
-   !> complaint -- so it belongs to whoever writes the file, with a test, and not
-   !> here where it would be invisible.
-   !> Whether `int1e_irp`'s nine components run with the dipole direction
-   !> fastest (`r` fastest) or the gradient direction fastest.
-   !>
-   !> Measured, not assumed, and it is the *gradient* that runs fastest:
-   !> `test_mqc_dipole_deriv` differences `multipole_matrices` and compares
-   !> against both readings, giving 1.5e-09 for this one and 6.1e-01 for the
-   !> other. The name reads false because the answer is false; it is kept as a
-   !> statement about `r` so the two readings are named the same way round in
-   !> the code and in the test.
-   !>
-   !> Worth measuring rather than reading off a convention: both orders give a
-   !> matrix of the right shape and magnitude, and the wrong one is a dipole
-   !> derivative transposed in its two Cartesian indices. That error survives
-   !> the translational sum rule, which runs over atoms and not over the
-   !> component pair, so nothing cheap would catch it.
+   !! Components libcint returns, as full Cartesian tensors.
+   !!
+   !! Full, not packed: 9 quadrupole components rather than the 6 unique ones and
+   !! 27 octopole rather than 10. Anything writing a GAMESS-style potential has to
+   !! pack them, and that packing is a place a tensor transposes without
+   !! complaint -- so it belongs to whoever writes the file, with a test, and not
+   !! here where it would be invisible.
+   !! Whether `int1e_irp`'s nine components run with the dipole direction
+   !! fastest (`r` fastest) or the gradient direction fastest.
+   !!
+   !! Measured, not assumed, and it is the *gradient* that runs fastest:
+   !! `test_mqc_dipole_deriv` differences `multipole_matrices` and compares
+   !! against both readings, giving 1.5e-09 for this one and 6.1e-01 for the
+   !! other. The name reads false because the answer is false; it is kept as a
+   !! statement about `r` so the two readings are named the same way round in
+   !! the code and in the test.
+   !!
+   !! Worth measuring rather than reading off a convention: both orders give a
+   !! matrix of the right shape and magnitude, and the wrong one is a dipole
+   !! derivative transposed in its two Cartesian indices. That error survives
+   !! the translational sum rule, which runs over atoms and not over the
+   !! component pair, so nothing cheap would catch it.
    logical, parameter :: IRP_R_FASTEST = .false.
 
    integer, parameter :: DIPOLE_COMPONENTS = 3

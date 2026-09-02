@@ -41,9 +41,9 @@ module mqc_efp_rotate
    public :: rotate_fragment
    public :: cartesian_rotation
 
-   !> Highest angular momentum a projection basis is handled at. `mqc_efp_potential`
-   !> refuses to write anything higher, so a shell beyond this is a corrupt file
-   !> rather than a case to support.
+   !! Highest angular momentum a projection basis is handled at. `mqc_efp_potential`
+   !! refuses to write anything higher, so a shell beyond this is a corrupt file
+   !! rather than a case to support.
    integer, parameter :: MAX_L = 4
 
 contains

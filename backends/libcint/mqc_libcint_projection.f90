@@ -52,12 +52,12 @@ module mqc_libcint_projection
    public :: project_occupied
    public :: climb_basis_ladder
 
-   !> Overlap eigenvalues below this are dropped when inverting.
-   !>
-   !> The same cutoff `build_orthogonalizer` uses, and for the same reason: a
-   !> near-dependent target basis has directions the small basis cannot inform,
-   !> and amplifying them by dividing through a tiny eigenvalue produces a guess
-   !> worse than the one it replaces.
+   !! Overlap eigenvalues below this are dropped when inverting.
+   !!
+   !! The same cutoff `build_orthogonalizer` uses, and for the same reason: a
+   !! near-dependent target basis has directions the small basis cannot inform,
+   !! and amplifying them by dividing through a tiny eigenvalue produces a guess
+   !! worse than the one it replaces.
    real(dp), parameter :: OVERLAP_FLOOR = 1.0e-7_dp
 
 contains

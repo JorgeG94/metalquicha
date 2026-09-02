@@ -72,9 +72,9 @@ module mqc_config_adapter
       type(optimizer_settings_t) :: optimization  !! Geometry optimization keywords
       type(scf_keywords_t) :: scf          !! SCF calculation keywords
 
-      !> The effective fragment potential describing each fragment, in fragment
-      !> order and empty where a fragment carries none. Fixed-length because this is
-      !> a flat array of paths and a deferred-length one cannot be.
+      !! The effective fragment potential describing each fragment, in fragment
+      !! order and empty where a fragment carries none. Fixed-length because this is
+      !! a flat array of paths and a deferred-length one cannot be.
       character(len=256), allocatable :: fragment_potentials(:)
 
       ! Output control

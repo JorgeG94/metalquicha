@@ -40,15 +40,15 @@ module mqc_dft_grid
    integer, parameter :: MAX_GRID_LEVEL = 9
    integer, parameter :: DEFAULT_GRID_LEVEL = 3
 
-   !> Pruning is on by default, as it is in every production DFT code. An
-   !> unpruned level-3 water grid is 52850 points against 20240 pruned, for the
-   !> same accuracy to well past where the functional itself is reliable.
+   !! Pruning is on by default, as it is in every production DFT code. An
+   !! unpruned level-3 water grid is 52850 points against 20240 pruned, for the
+   !! same accuracy to well past where the functional itself is reliable.
    integer, parameter :: DEFAULT_PRUNE = PRUNE_NWCHEM
 
-   !> Highest Z in each period, used to place an element in the level tables
+   !! Highest Z in each period, used to place an element in the level tables
    integer, parameter :: PERIOD_LAST_Z(N_PERIODS) = [2, 10, 18, 36, 54, 86, 118]
 
-   !> Radial shells per (level, period)
+   !! Radial shells per (level, period)
    integer, parameter :: RAD_GRIDS(MIN_GRID_LEVEL:MAX_GRID_LEVEL, N_PERIODS) = &
                          transpose(reshape([ &
                                            10, 15, 20, 30, 35, 40, 50, &
@@ -62,10 +62,10 @@ module mqc_dft_grid
                                            100, 150, 155, 165, 170, 175, 180, &
                                            200, 200, 200, 200, 200, 200, 200], [N_PERIODS, MAX_GRID_LEVEL + 1]))
 
-   !> Lebedev points per (level, period)
-   !>
-   !> PySCF's table stores Lebedev degrees and maps them to point counts; these
-   !> are the point counts directly, since that is what `lebedev_grid` takes.
+   !! Lebedev points per (level, period)
+   !!
+   !! PySCF's table stores Lebedev degrees and maps them to point counts; these
+   !! are the point counts directly, since that is what `lebedev_grid` takes.
    integer, parameter :: ANG_POINTS(MIN_GRID_LEVEL:MAX_GRID_LEVEL, N_PERIODS) = &
                          transpose(reshape([ &
                                            50, 86, 110, 110, 110, 110, 110, &

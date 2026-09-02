@@ -35,13 +35,13 @@ program check_libcint
       !! Coordinates, exponents and coefficients for this molecule, past
       !! libcint's reserved header. Ample for two hydrogens.
 
-   !> The slot constants from `libcint_fortran` are already 1-based; the C
+   !! The slot constants from `libcint_fortran` are already 1-based; the C
    !  header's are 0-based and the Fortran interface converts them. Adding one
    !  here as well writes into the neighbouring slot and leaves the real one
    !  uninitialised, which shows up as a crash inside libcint rather than as a
    !  wrong number.
 
-   !> STO-3G hydrogen, as tabulated
+   !! STO-3G hydrogen, as tabulated
    real(dp), parameter :: EXPONENTS(NPRIM) = &
                           [3.42525091_dp, 0.62391373_dp, 0.16885540_dp]
    real(dp), parameter :: COEFFS(NPRIM) = &

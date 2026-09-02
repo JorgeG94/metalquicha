@@ -308,7 +308,7 @@ contains
    end subroutine test_pcm_reaches_every_reference
 
    subroutine test_hf_roundtrip(error)
-      !> Error handling
+      !! Error handling
       type(error_type), allocatable, intent(out) :: error
       type(mqc_config_t) :: config
       type(driver_config_t) :: driver
@@ -352,7 +352,7 @@ contains
    end subroutine test_hf_roundtrip
 
    subroutine test_dft_roundtrip(error)
-      !> Error handling
+      !! Error handling
       type(error_type), allocatable, intent(out) :: error
       type(mqc_config_t) :: config
       type(driver_config_t) :: driver

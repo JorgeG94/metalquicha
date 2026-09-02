@@ -42,27 +42,27 @@ module mqc_efp_interaction
    public :: polarization_energy
    public :: CP_WEIGHT
 
-   !> Components of each stored multipole, in the file's own order.
+   !! Components of each stored multipole, in the file's own order.
    integer, parameter :: N_DIPOLE = 3
    integer, parameter :: N_QUADRUPOLE = 6
    integer, parameter :: N_OCTUPOLE = 10
 
-   !> Row and column of each stored quadrupole component. The file carries six
-   !> numbers for a symmetric 3x3, ordered xx, yy, zz, xy, xz, yz.
+   !! Row and column of each stored quadrupole component. The file carries six
+   !! numbers for a symmetric 3x3, ordered xx, yy, zz, xy, xz, yz.
    integer, parameter :: QUAD_I(N_QUADRUPOLE) = [1, 2, 3, 1, 1, 2]
    integer, parameter :: QUAD_J(N_QUADRUPOLE) = [1, 2, 3, 2, 3, 3]
 
-   !> Indices of each stored octupole component. Ten numbers for a fully symmetric
-   !> 3x3x3, ordered xxx, yyy, zzz, xxy, xxz, xyy, yyz, xzz, yzz, xyz -- which is
-   !> GAMESS's order, read off how `efelec.src` unpacks `EFOCT` rather than guessed.
+   !! Indices of each stored octupole component. Ten numbers for a fully symmetric
+   !! 3x3x3, ordered xxx, yyy, zzz, xxy, xxz, xyy, yyz, xzz, yzz, xyz -- which is
+   !! GAMESS's order, read off how `efelec.src` unpacks `EFOCT` rather than guessed.
    integer, parameter :: OCT_I(N_OCTUPOLE) = [1, 2, 3, 1, 1, 1, 2, 1, 2, 1]
    integer, parameter :: OCT_J(N_OCTUPOLE) = [1, 2, 3, 1, 1, 2, 2, 3, 3, 2]
    integer, parameter :: OCT_K(N_OCTUPOLE) = [1, 2, 3, 2, 3, 2, 3, 3, 3, 3]
 
-   !> The twelve Casimir-Polder quadrature weights, as GAMESS carries them in
-   !> `efdrvr.src`. They are 12-point Gauss-Legendre weights times the Jacobian of
-   !> `nu = w0 (1 + t)/(1 - t)` at `w0 = 0.3` -- checked against that construction
-   !> rather than only copied, and the two agree to every digit.
+   !! The twelve Casimir-Polder quadrature weights, as GAMESS carries them in
+   !! `efdrvr.src`. They are 12-point Gauss-Legendre weights times the Jacobian of
+   !! `nu = w0 (1 + t)/(1 - t)` at `w0 = 0.3` -- checked against that construction
+   !! rather than only copied, and the two agree to every digit.
    integer, parameter :: N_FREQUENCIES = 12
    real(dp), parameter :: CP_WEIGHT(N_FREQUENCIES) = [ &
                           0.72086099022968040154e-02_dp, 0.17697067815034886394e-01_dp, &

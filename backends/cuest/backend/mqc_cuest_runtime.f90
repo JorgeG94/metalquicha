@@ -39,7 +39,7 @@ module mqc_cuest_runtime
 
    integer(c_size_t), parameter :: BYTES_PER_DOUBLE = 8_c_size_t
 
-   !> Plain C malloc/free for the host half of a cuEST workspace. The buffer
+   !! Plain C malloc/free for the host half of a cuEST workspace. The buffer
    !  must outlive the scoping unit that created it and is freed through a raw
    !  address, so a Fortran allocatable is not a substitute.
    interface

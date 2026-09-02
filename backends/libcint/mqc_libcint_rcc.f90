@@ -71,27 +71,27 @@ module mqc_libcint_rcc
    public :: rccsd_correlation_energy  !! Exported for the MP2 identity test
    public :: ri_ladder_prefers_direct  !! Exported so a test can assert which ladder ran
 
-   !> Columns of the compound (cd) index assembled per pass of the ladder.
-   !> Same role and same reasoning as LADDER_BATCH in the spin-orbital module:
-   !> the array held is n_vir^2 by this, so the memory stays O(n_vir^2).
+   !! Columns of the compound (cd) index assembled per pass of the ladder.
+   !! Same role and same reasoning as LADDER_BATCH in the spin-orbital module:
+   !! the array held is n_vir^2 by this, so the memory stays O(n_vir^2).
    integer, parameter :: LADDER_BATCH = 256
 
    character(len=*), parameter :: STAGE_ITER = "RCCSD iterations"
 
-   !> Orderings of a triple of labels. Three distinct virtual orbitals name the
-   !> same physical triple six ways, and the (T) energy expression sums over
-   !> every pairing of one such ordering with one ordering of the occupied
-   !> labels -- so this six is 3! and nothing else, and appears wherever either
-   !> set is enumerated.
+   !! Orderings of a triple of labels. Three distinct virtual orbitals name the
+   !! same physical triple six ways, and the (T) energy expression sums over
+   !! every pairing of one such ordering with one ordering of the occupied
+   !! labels -- so this six is 3! and nothing else, and appears wherever either
+   !! set is enumerated.
    integer, parameter :: N_TRIPLE_PERMS = 6
 
-   !> How many of a triple's innermost virtuals one pass of the triples holds.
-   !>
-   !> The batching that made the particle half of W into a decent matrix product
-   !> wants this large; the fact that each thread keeps its own copy of the
-   !> result -- n_occ^3 by six by this -- wants it small. At 32 the products are
-   !> still several hundred thousand flops apiece, and a forty-electron case
-   !> costs 98 MB a thread instead of the 614 MB an unbounded batch would.
+   !! How many of a triple's innermost virtuals one pass of the triples holds.
+   !!
+   !! The batching that made the particle half of W into a decent matrix product
+   !! wants this large; the fact that each thread keeps its own copy of the
+   !! result -- n_occ^3 by six by this -- wants it small. At 32 the products are
+   !! still several hundred thousand flops apiece, and a forty-electron case
+   !! costs 98 MB a thread instead of the 614 MB an unbounded batch would.
    integer, parameter :: TRIPLES_C_BATCH = 32
 
    type :: rcc_eris_t
@@ -1873,8 +1873,8 @@ contains
       integer, intent(in) :: p, i, j, k
       integer, intent(out) :: pi, pj, pk
 
-      !> Which of (i,j,k) lands in each slot, for the six orderings in the
-      !> order they are named in the reference: ijk, ikj, jik, jki, kij, kji.
+      !! Which of (i,j,k) lands in each slot, for the six orderings in the
+      !! order they are named in the reference: ijk, ikj, jik, jki, kij, kji.
       integer, parameter :: SLOT(3, N_TRIPLE_PERMS) = reshape([ &
                                                               1, 2, 3, &
                                                               1, 3, 2, &
@@ -2043,12 +2043,12 @@ contains
       integer, intent(in) :: no, nv
       real(dp), intent(out) :: e_triples
 
-      !> Which W pairs with which occupied permutation, for each Z. Row is the
-      !> Z's virtual permutation, column the occupied one, entry the W's. This
-      !> is the S3 multiplication table and is written out rather than derived:
-      !> deriving it needs a convention for whether a permutation acts on
-      !> positions or on labels, and getting that backwards transposes half the
-      !> table into a still-symmetric, still-plausible, wrong answer.
+      !! Which W pairs with which occupied permutation, for each Z. Row is the
+      !! Z's virtual permutation, column the occupied one, entry the W's. This
+      !! is the S3 multiplication table and is written out rather than derived:
+      !! deriving it needs a convention for whether a permutation acts on
+      !! positions or on labels, and getting that backwards transposes half the
+      !! table into a still-symmetric, still-plausible, wrong answer.
       integer, parameter :: WMAP(N_TRIPLE_PERMS, N_TRIPLE_PERMS) = reshape([ &
                                                                            1, 2, 3, 4, 5, 6, &
                                                                            2, 1, 5, 6, 3, 4, &

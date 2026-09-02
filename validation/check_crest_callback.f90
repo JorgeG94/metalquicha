@@ -30,13 +30,13 @@ module crest_callback_probe
 
    real(wp), parameter :: K_FORCE = 0.25_wp
 
-   !> Context for the mqc-backed callback below.
-   !>
-   !> Held as module state for the same reason mqc_geometry_optimizer holds
-   !> ctx_config and ctx_resources that way: CREST's hook takes a geometry and
-   !> nothing else, so everything a calculation needs besides the geometry has
-   !> to be waiting for it. A driver installs this once and CREST then calls
-   !> the hook as many times as its sampling wants.
+   !! Context for the mqc-backed callback below.
+   !!
+   !! Held as module state for the same reason mqc_geometry_optimizer holds
+   !! ctx_config and ctx_resources that way: CREST's hook takes a geometry and
+   !! nothing else, so everything a calculation needs besides the geometry has
+   !! to be waiting for it. A driver installs this once and CREST then calls
+   !! the hook as many times as its sampling wants.
    type(system_geometry_t), save :: ctx_geom
    type(driver_config_t), save :: ctx_config
    type(resources_t), save :: ctx_resources

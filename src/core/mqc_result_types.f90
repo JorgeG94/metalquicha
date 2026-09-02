@@ -70,18 +70,6 @@ module mqc_result_types
       real(dp) :: scf = 0.0_dp           !! SCF/HF/KS reference energy (Hartree)
       real(dp) :: dh_pt2 = 0.0_dp
          !! The perturbative part of a double hybrid's *functional*.
-         !!
-         !! Separate from `mp2` on purpose, and the distinction is not cosmetic. A
-         !! double hybrid's second-order term is a component of its exchange-
-         !! correlation functional, not a correction applied on top of a reference
-         !! -- B2PLYP's energy is not "B2PLYP plus MP2". Putting it in `mp2` would
-         !! give the right total today, for the wrong reason, and the wrong total
-         !! the moment anyone asked for MP2 alongside a double hybrid: `total`
-         !! would add it twice.
-         !!
-         !! Belongs with `scf` conceptually -- it is part of what the functional
-         !! defines -- and is kept as its own field only so a run can report it.
-         !! Already scaled by the functional's coefficient when it is stored.
       type(mp2_energy_t) :: mp2          !! MP2 correlation components
       type(cc_energy_t) :: cc            !! Coupled cluster correlation components
       ! add more as needed, also need to modify the total energy function
@@ -104,24 +92,11 @@ module mqc_result_types
       real(dp), allocatable :: bond_orders(:, :)
          !! Wiberg-Mayer bond orders, (natoms, natoms), symmetric with a zero
          !! diagonal.
-         !!
-         !! What a distance rule cannot tell you: whether two atoms close enough
-         !! to look bonded actually share electrons. A hydrogen bond and a long
-         !! covalent one are the same distance argument and different numbers
-         !! here, which is why this is worth carrying rather than re-deriving
-         !! from the geometry.
-         !!
-         !! Atom indices are the fragment's own, so a fragment's matrix is
-         !! fragment-local and includes its caps.
 
       ! Atomic partial charges, when `properties.charges` asked for them.
       real(dp), allocatable :: atomic_charges(:)
          !! (natoms) nuclear charge minus the electrons assigned to the atom, so
-         !! positive is electron-poor. **Fragment-local, and caps are in it** --
-         !! the same convention `bond_orders` uses, and here it is what makes
-         !! the numbers checkable: the array sums to the charge of the molecule
-         !! the SCF actually saw. Dropping the caps would leave a column that
-         !! sums to nothing in particular.
+         !! positive is electron-poor.
       real(dp), allocatable :: spin_populations(:)
          !! (natoms) the same partition applied to `P_alpha - P_beta`, so it
          !! sums to `n_alpha - n_beta`. Allocated only for an unrestricted
@@ -137,6 +112,7 @@ module mqc_result_types
       ! Intrinsic energy decomposition, when `properties.bonding_analysis`
       ! asked for one. Hartree throughout, as everything here is; the printed
       ! tables convert.
+
       real(dp), allocatable :: ieda_atom(:)
          !! (natoms) everything that happens inside one atom -- its own kinetic
          !! energy, its electrons in its own nuclear field, its own repulsion.
@@ -188,12 +164,6 @@ module mqc_result_types
       ! HOMO and LUMO rather than the whole spectrum: the gap is what anyone
       ! asks for, and a per-fragment orbital array would be the largest thing
       ! in the result by a wide margin.
-      !
-      ! **These do not add up.** Energies and dipoles are additive and the
-      ! expansion sums them; a gap is not, and there is no combination of
-      ! fragment gaps that is the system's. So these stay per fragment and no
-      ! total is formed anywhere -- a summed gap would look like a number and
-      ! be nothing at all. For the gap of a molecule, run it unfragmented.
       real(dp) :: homo = 0.0_dp          !! Highest occupied orbital energy (Hartree)
       real(dp) :: lumo = 0.0_dp          !! Lowest unoccupied orbital energy (Hartree)
       logical :: has_orbitals = .false.  !! Whether homo/lumo were reported

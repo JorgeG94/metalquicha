@@ -1,32 +1,7 @@
 !! Reader for Basis Set Exchange JSON basis sets
 module mqc_json_basis_reader
    !! Parses the JSON format served by the
-   !! [Basis Set Exchange](https://www.basissetexchange.org), producing the
-   !! same `mqc_cgto` types as the Gaussian94 and GAMESS readers.
-   !!
-   !! This is the format worth preferring. Unlike Gaussian94, it keeps a
-   !! combined shell's coefficient sets separate:
-   !!
-   !!     "angular_momentum": [0, 1],
-   !!     "exponents":    ["...", "...", "..."],
-   !!     "coefficients": [[s...], [p...]]
-   !!
-   !! so an SP shell splits into an S and a P sharing exponents, with no need
-   !! for the `uncontract_spdf=1` download flag the `.gbs` reader requires.
-   !! It also carries ECP data in the same file, for when that gets wired up.
-   !!
-   !! Elements are keyed by atomic number as a string, so a symbol is
-   !! converted before lookup. Exponents and coefficients are stored as
-   !! strings to preserve every digit; they are read with list-directed input,
-   !! which accepts the `0.1307093214E+03` form BSE emits.
-   !!
-   !! Every shell also carries a `function_type` -- `gto`, `gto_spherical` or
-   !! `gto_cartesian` -- and it is not decoration. 6-31G* specifies Cartesian d
-   !! functions and BSE marks them so; a Cartesian d shell carries six
-   !! functions where a spherical one carries five. Reading one as the other
-   !! computes a different basis under the same name, worth 1.4 mHartree on
-   !! water, with nothing to say it happened. The reader records the convention
-   !! on the basis and the integral layer routes on it.
+   !! [Basis Set Exchange](https://www.basissetexchange.org)
    use pic_types, only: dp
    use mqc_cgto, only: cgto_type, atomic_basis_type, molecular_basis_type, &
                        ANGULAR_FORM_UNSET, ANGULAR_FORM_SPHERICAL, ANGULAR_FORM_CARTESIAN
@@ -40,35 +15,21 @@ module mqc_json_basis_reader
    public :: read_json_basis_element    !! Parse one element from a BSE JSON file
    public :: build_molecular_basis_json  !! Build a molecular basis from a BSE JSON file
 
-   !> A basis file, parsed once and kept
+   !! A basis file, parsed once and kept
    type :: cached_basis_t
       character(len=:), allocatable :: path
       type(json_file), pointer :: json => null()
-         !! Heap-allocated, and a pointer on purpose. `json_file` has a
-         !! finaliser, so holding one by value would mean that growing the cache
-         !! array -- copy into a bigger array, `move_alloc`, old array finalised
-         !! -- destroys the parsed tree that the surviving copy still points at.
-         !! Every basis loaded before the second one would go stale the moment
-         !! the second arrived. Storing pointers means growth copies addresses
-         !! and nothing is finalised.
+      ! Heap-allocated, and a pointer on purpose. `json_file` has a
+      ! finaliser, so holding one by value would mean that growing the cache
+      ! array -- copy into a bigger array, `move_alloc`, old array finalised
+      ! -- destroys the parsed tree that the surviving copy still points at.
+      ! Every basis loaded before the second one would go stale the moment
+      ! the second arrived. Storing pointers means growth copies addresses
+      ! and nothing is finalised.
    end type cached_basis_t
 
-   !> Every basis file read so far, for the life of the process
-   !>
-   !> Parsing was happening once per *element*, not once per file, so a water
-   !> molecule re-read and re-parsed the whole basis set twice and a five-element
-   !> system five times. Anything that builds molecules in a loop -- a fragment
-   !> method especially, which builds one per fragment per iteration -- paid that
-   !> over and over, and on a shared filesystem with many ranks it is the same
-   !> file being opened by everyone repeatedly.
-   !>
-   !> A run touches one or two basis sets, so this never holds much. Entries are
-   !> never evicted: the whole point is that the second request is free, and a
-   !> parsed basis set is small next to anything it is used to compute.
-   !>
-   !> Not thread safe, and does not need to be -- basis sets are read while
-   !> setting a molecule up, not from inside a parallel region.
    type(cached_basis_t), allocatable, target :: basis_cache(:)
+      !! The cache of basis files already loaded. Each entry is a parsed JSON tree.
 
 contains
 

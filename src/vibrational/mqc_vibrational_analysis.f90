@@ -22,16 +22,16 @@ module mqc_vibrational_analysis
    public :: compute_ir_intensities
    public :: print_vibrational_analysis
 
-   !> A direction in the translation-rotation basis counts as real above this,
-   !> and is discarded below it. Applied to a column norm before normalising and
-   !> to the singular values that follow, which are the same question asked twice:
-   !> a linear molecule has five of these directions rather than six, and it is
-   !> the vanishing singular value that says so.
+   !! A direction in the translation-rotation basis counts as real above this,
+   !! and is discarded below it. Applied to a column norm before normalising and
+   !! to the singular values that follow, which are the same question asked twice:
+   !! a linear molecule has five of these directions rather than six, and it is
+   !! the vanishing singular value that says so.
    real(dp), parameter :: TR_NULL_TOL = 1.0e-10_dp
 
-   !> Denominators below this are left alone rather than divided by. Every use
-   !> is a normalisation whose scale is a sum of squares, so the guard is against
-   !> a mode that is identically zero, not against ordinary smallness.
+   !! Denominators below this are left alone rather than divided by. Every use
+   !! is a normalisation whose scale is a sum of squares, so the guard is against
+   !! a mode that is identically zero, not against ordinary smallness.
    real(dp), parameter :: NORMALISE_FLOOR = 1.0e-14_dp
 
 contains

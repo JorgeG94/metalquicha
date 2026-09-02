@@ -1,25 +1,6 @@
 !! Bond orders over the C boundary, for callers building their own connectivity
 module mqc_capi_bond_orders
    !! Wiberg-Mayer bond orders from xTB, on a system handle.
-   !!
-   !! Deliberately not driven from a deck. A bond order is not something a
-   !! calculation is *for* -- it is an input to deciding what calculation to run,
-   !! and that deciding is exploratory: which bonds to cut, how large a cap has
-   !! to be before the order stops moving, whether a fragmentation reproduces
-   !! the parent's connectivity. That is a Python loop over many trial
-   !! partitions, not a JSON key.
-   !!
-   !! So the shape here is compute-then-read, like the rest of the system API:
-   !! `compute` runs one xTB single point over the whole system and stores the
-   !! matrix on the handle, and `get` copies it out. A caller that wants twenty
-   !! trial fragmentations computes once and reads twenty times.
-   !!
-   !! **What the numbers are good for.** Measured on cases with known answers,
-   !! GFN2 gives 1.03 / 2.03 / 3.00 for the C-C bonds of ethane, ethene and
-   !! ethyne, and 0.019 for a water dimer's hydrogen bond. A real single bond
-   !! and a hydrogen bond are separated by a factor of fifty, which is the
-   !! discrimination a covalent-radius rule cannot make at all -- it sees only
-   !! the distance, and calls both of them bonds or neither.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double, c_char, c_associated, c_f_pointer
    use pic_types, only: dp
    use mqc_capi_system, only: system_handle_t, last_message
@@ -42,14 +23,6 @@ contains
    function mqc_system_compute_bond_orders(handle, variant_len, variant, accuracy) &
       result(status) bind(C, name="mqc_system_compute_bond_orders")
       !! Run one xTB single point over the whole system and keep its bond orders
-      !!
-      !! The whole system, not the monomers: the point of these is to decide
-      !! where the monomers should be, so a partition cannot be an input. A
-      !! caller wanting fragment-local orders builds a handle per fragment.
-      !!
-      !! `variant` is "gfn2" or "gfn1"; an empty string takes gfn2, which is the
-      !! one whose bond orders were checked. `accuracy` <= 0 takes tblite's
-      !! default.
       type(c_ptr), value :: handle
       integer(c_int), value :: variant_len
       character(kind=c_char), intent(in) :: variant(variant_len)

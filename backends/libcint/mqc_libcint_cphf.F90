@@ -83,7 +83,7 @@ module mqc_libcint_cphf
    public :: static_response_dense
    public :: fitted_potential_general
 
-   !> CG iterations before giving up.
+   !! CG iterations before giving up.
    type :: response_hessian_t
       !! A built response Hessian, so several blocks can share one build
       !!
@@ -111,83 +111,83 @@ module mqc_libcint_cphf
 
    integer, parameter :: DEFAULT_MAX_ITER = 200
 
-   !> Columns of the Hessian built per pass over the integrals. Large enough that
-   !> integral generation is amortised, small enough that the batch of densities
-   !> stays a sensible size -- at 115 orbitals, 64 of them is 60 MB.
+   !! Columns of the Hessian built per pass over the integrals. Large enough that
+   !! integral generation is amortised, small enough that the batch of densities
+   !! stays a sensible size -- at 115 orbitals, 64 of them is 60 MB.
    integer, parameter :: HESSIAN_CHUNK = 64
 
-   !> What the concurrent frequency solves may take, in bytes.
+   !! What the concurrent frequency solves may take, in bytes.
    integer(int64), parameter :: SOLVE_BATCH_BYTES = 8_int64*1024_int64**3
 
-   !> What the exact MO transform may take at its peak, in bytes.
-   !>
-   !> Larger than `IN_CORE_LIMIT` on purpose, and not for the same reason. That one
-   !> bounds a tensor kept for a whole solve; this one bounds a few arrays held
-   !> across one transform, and what it is traded against is not a slower path but
-   !> an unusable one -- the column build on a 24-atom fragment is `n_quartets`
-   !> times `n_ov`, which is hours. A fragment big enough to exceed this has no
-   !> good exact route at all.
+   !! What the exact MO transform may take at its peak, in bytes.
+   !!
+   !! Larger than `IN_CORE_LIMIT` on purpose, and not for the same reason. That one
+   !! bounds a tensor kept for a whole solve; this one bounds a few arrays held
+   !! across one transform, and what it is traded against is not a slower path but
+   !! an unusable one -- the column build on a 24-atom fragment is `n_quartets`
+   !! times `n_ov`, which is hours. A fragment big enough to exceed this has no
+   !! good exact route at all.
    real(dp), parameter :: MO_TRANSFORM_LIMIT = 16.0e9_dp
 
-   !> Above this the operator is never formed at all, whatever route would fill
-   !> it. `(A+B)`, `(A-B)` and their product are three `n_ov^2` matrices, and
-   !> `n_ov` is the *product* of the occupied and virtual counts -- 2275 pairs
-   !> for adenine in 6-31G, where the three come to 124 MB and the dense route
-   !> is plainly right, but 175698 for a silica nanoparticle slice in the same
-   !> basis, where they are 740 GB and each frequency wants an `n_ov^3`
-   !> factorisation on top. Past this, `dynamic_response_iterative` never builds
-   !> them.
+   !! Above this the operator is never formed at all, whatever route would fill
+   !! it. `(A+B)`, `(A-B)` and their product are three `n_ov^2` matrices, and
+   !! `n_ov` is the *product* of the occupied and virtual counts -- 2275 pairs
+   !! for adenine in 6-31G, where the three come to 124 MB and the dense route
+   !! is plainly right, but 175698 for a silica nanoparticle slice in the same
+   !! basis, where they are 740 GB and each frequency wants an `n_ov^3`
+   !! factorisation on top. Past this, `dynamic_response_iterative` never builds
+   !! them.
    real(dp), parameter :: DENSE_OPERATOR_LIMIT = 8.0e9_dp
 
-   !> Above this many orbitals, recompute the integrals rather than store them.
-   !>
-   !> Set from measurement, not from memory. `validation/bench_fock` times both paths
-   !> per density, batched the way the Hessian build batches them, on water:
-   !>
-   !>      orbitals   batched direct   stored contraction
-   !>            19        1.10e-04             2.07e-05
-   !>            24        1.76e-04             7.89e-05
-   !>            58        2.84e-03             8.09e-03
-   !>           115        3.24e-02             2.46e-01
-   !>
-   !> so storing wins below about forty orbitals and loses badly above it -- by
-   !> nearly eight times at 115. The direct build is screened, threaded and exploits
-   !> permutational symmetry; the stored contraction is a quadruple loop running at a
-   !> few GFlop/s. An earlier version of this threshold was a two gigabyte memory
-   !> budget, about 126 orbitals, which sent everything between forty and that down
-   !> the slower path.
+   !! Above this many orbitals, recompute the integrals rather than store them.
+   !!
+   !! Set from measurement, not from memory. `validation/bench_fock` times both paths
+   !! per density, batched the way the Hessian build batches them, on water:
+   !!
+   !!      orbitals   batched direct   stored contraction
+   !!            19        1.10e-04             2.07e-05
+   !!            24        1.76e-04             7.89e-05
+   !!            58        2.84e-03             8.09e-03
+   !!           115        3.24e-02             2.46e-01
+   !!
+   !! so storing wins below about forty orbitals and loses badly above it -- by
+   !! nearly eight times at 115. The direct build is screened, threaded and exploits
+   !! permutational symmetry; the stored contraction is a quadruple loop running at a
+   !! few GFlop/s. An earlier version of this threshold was a two gigabyte memory
+   !! budget, about 126 orbitals, which sent everything between forty and that down
+   !! the slower path.
    integer, parameter :: IN_CORE_MAX_ORBITALS = 40
 
-   !> Even below that, refuse to store what will not fit.
+   !! Even below that, refuse to store what will not fit.
    real(dp), parameter, public :: IN_CORE_LIMIT = 4.0e9_dp
 
-   !> Convergence on the residual norm, relative to the right-hand side.
+   !! Convergence on the residual norm, relative to the right-hand side.
    real(dp), parameter :: DEFAULT_TOL = 1.0e-11_dp
 
-   !> The same for the matrix-free frequency-dependent solve, and the iteration
-   !> cap on it, are `DEFAULT_DYNAMIC_TOL` and `DEFAULT_DYNAMIC_MAXITER` in
-   !> `mqc_calculation_defaults`. They sit there rather than here because
-   !> `keywords.efp.dynamic_tolerance` and `keywords.efp.dynamic_maxiter` name
-   !> them from a deck, and a deck's default and a solver's default that are the
-   !> same number written in two files stay equal only until one of them moves.
+   !! The same for the matrix-free frequency-dependent solve, and the iteration
+   !! cap on it, are `DEFAULT_DYNAMIC_TOL` and `DEFAULT_DYNAMIC_MAXITER` in
+   !! `mqc_calculation_defaults`. They sit there rather than here because
+   !! `keywords.efp.dynamic_tolerance` and `keywords.efp.dynamic_maxiter` name
+   !! them from a deck, and a deck's default and a solver's default that are the
+   !! same number written in two files stay equal only until one of them moves.
 
-   !> Where a matrix-free pass actually spends itself, accumulated across a
-   !> whole solve and reported once at the end.
-   !>
-   !> A pass is three things and only one of them is integrals: the trial
-   !> vectors become atomic-orbital densities, those densities are contracted,
-   !> and the result comes back to the molecular basis. The middle one is
-   !> assumed to dominate and had never been measured, which matters because
-   !> the batch width is tuned against that assumption -- if the transforms
-   !> were significant, widening the batch would be trading the wrong thing.
-   !>
-   !> Not threadsafe and does not need to be: `response_batch` is called from
-   !> serial code and does its own threading inside the build.
+   !! Where a matrix-free pass actually spends itself, accumulated across a
+   !! whole solve and reported once at the end.
+   !!
+   !! A pass is three things and only one of them is integrals: the trial
+   !! vectors become atomic-orbital densities, those densities are contracted,
+   !! and the result comes back to the molecular basis. The middle one is
+   !! assumed to dominate and had never been measured, which matters because
+   !! the batch width is tuned against that assumption -- if the transforms
+   !! were significant, widening the batch would be trading the wrong thing.
+   !!
+   !! Not threadsafe and does not need to be: `response_batch` is called from
+   !! serial code and does its own threading inside the build.
    real(dp) :: prof_dens = 0.0_dp, prof_fock = 0.0_dp, prof_back = 0.0_dp
    integer :: prof_calls = 0
 
-   !> Casimir-Polder quadrature points, which is how many imaginary frequencies a
-   !> potential is tabulated at.
+   !! Casimir-Polder quadrature points, which is how many imaginary frequencies a
+   !! potential is tabulated at.
    integer, parameter, public :: N_CASIMIR_POLDER = 12
 
 contains
@@ -728,7 +728,7 @@ contains
       !! 0.002792 to 32.239080.
       real(dp) :: nu(N_CASIMIR_POLDER)
       real(dp), parameter :: W0 = 0.3_dp
-      !> 12-point Gauss-Legendre abscissae on (-1,1), positive half mirrored.
+      !! 12-point Gauss-Legendre abscissae on (-1,1), positive half mirrored.
       real(dp), parameter :: T(N_CASIMIR_POLDER) = [ &
                              -0.9815606342467192_dp, -0.9041172563704749_dp, &
                              -0.7699026741943047_dp, -0.5873179542866175_dp, &

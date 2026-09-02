@@ -36,24 +36,24 @@ module mqc_dft_prune
    integer, parameter :: N_ZONES = 5
    integer, parameter :: N_THRESHOLDS = 4
 
-   !> Lebedev orders the scheme may select, from 38 upwards
-   !>
-   !> This is the Lebedev sequence starting at 38 rather than 6: the scheme
-   !> indexes into it, and the three smallest grids are never chosen.
+   !! Lebedev orders the scheme may select, from 38 upwards
+   !!
+   !! This is the Lebedev sequence starting at 38 rather than 6: the scheme
+   !! indexes into it, and the three smallest grids are never chosen.
    integer, parameter :: N_PRUNE_ORDERS = 29
    integer, parameter :: PRUNE_ORDERS(N_PRUNE_ORDERS) = &
                          [38, 50, 74, 86, 110, 146, 170, 194, 230, 266, 302, 350, 434, 590, 770, &
                           974, 1202, 1454, 1730, 2030, 2354, 2702, 3074, 3470, 3890, 4334, 4802, &
                           5294, 5810]
 
-   !> Zone boundaries in r/R_bragg, one row per element class
+   !! Zone boundaries in r/R_bragg, one row per element class
    real(dp), parameter :: ALPHAS(N_THRESHOLDS, 3) = reshape([ &
                                                             0.25_dp, 0.5_dp, 1.0_dp, 4.5_dp, &
                                                             0.1667_dp, 0.5_dp, 0.9_dp, 3.5_dp, &
                                                             0.1_dp, 0.4_dp, 0.8_dp, 2.5_dp], &
                                                             [N_THRESHOLDS, 3])
 
-   !> Below this order there is nothing to gain, so pruning is skipped
+   !! Below this order there is nothing to gain, so pruning is skipped
    integer, parameter :: MIN_PRUNABLE = 50
 
 contains

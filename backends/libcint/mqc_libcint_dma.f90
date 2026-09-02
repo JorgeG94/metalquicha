@@ -60,20 +60,20 @@ module mqc_libcint_dma
    public :: expansion_points
    public :: N_QUAD, N_OCT
 
-   !> Two expansion points count as tied when their squared distances to a
-   !> product centre agree to this, in Bohr^2. GAMESS's own tolerance.
+   !! Two expansion points count as tied when their squared distances to a
+   !! product centre agree to this, in Bohr^2. GAMESS's own tolerance.
    real(dp), parameter :: TIE_TOLERANCE = 1.0e-6_dp
 
-   !> Unique components of a Cartesian quadrupole and octopole.
+   !! Unique components of a Cartesian quadrupole and octopole.
    integer, parameter :: N_QUAD = 6
    integer, parameter :: N_OCT = 10
 
-   !> Component order for the packed quadrupole, as offsets into libcint's full
-   !> 3x3: `XX YY ZZ XY XZ YZ`, which is what a `.efp` carries.
+   !! Component order for the packed quadrupole, as offsets into libcint's full
+   !! 3x3: `XX YY ZZ XY XZ YZ`, which is what a `.efp` carries.
    integer, parameter :: QUAD_PACK(N_QUAD) = [1, 5, 9, 2, 3, 6]
 
-   !> And the octopole, `XXX YYY ZZZ XXY XXZ XYY YYZ XZZ YZZ XYZ`, as offsets into
-   !> the full 27 with z running fastest.
+   !! And the octopole, `XXX YYY ZZZ XXY XXZ XYY YYZ XZZ YZZ XYZ`, as offsets into
+   !! the full 27 with z running fastest.
    integer, parameter :: OCT_PACK(N_OCT) = [1, 14, 27, 2, 3, 5, 15, 9, 18, 6]
 
    type :: dma_result_t

@@ -35,16 +35,16 @@ module mqc_thermochemistry
    public :: compute_thermochemistry
    public :: print_thermochemistry
 
-   !> Default symmetry number
+   !! Default symmetry number
    integer, parameter, public :: DEFAULT_SYMMETRY_NUMBER = 1
 
-   !> Default spin multiplicity (singlet)
+   !! Default spin multiplicity (singlet)
    integer, parameter, public :: DEFAULT_SPIN_MULTIPLICITY = 1
 
-   !> Threshold for considering a moment of inertia as zero (linear molecule detection)
+   !! Threshold for considering a moment of inertia as zero (linear molecule detection)
    real(dp), parameter :: LINEAR_THRESHOLD = 1.0e-6_dp
 
-   !> Threshold for considering a frequency as imaginary
+   !! Threshold for considering a frequency as imaginary
    real(dp), parameter :: IMAG_FREQ_THRESHOLD = 0.0_dp
 
    type :: thermochemistry_result_t

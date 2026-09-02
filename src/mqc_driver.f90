@@ -79,12 +79,18 @@ contains
       !! anything. `fraglist_t%close_subsets` exists for this.
       use mqc_method_types, only: METHOD_TYPE_EFP2, METHOD_TYPE_SAPT0, &
                                   METHOD_TYPE_SAPT2
-      type(resources_t), intent(in) :: resources  !! Resources container (MPI comms, etc.)
-      type(driver_config_t), intent(in) :: config  !! Driver configuration
-      type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
-      type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
-      type(calculation_result_t), intent(out), optional :: result_out  !! Optional result output
-      logical, intent(in), optional :: all_ranks_write_json  !! If true, all ranks write JSON (for multi-molecule)
+      type(resources_t), intent(in) :: resources
+      !! Resources container (MPI comms, etc.)
+      type(driver_config_t), intent(in) :: config
+      !! Driver configuration
+      type(system_geometry_t), intent(in) :: sys_geom
+      !! System geometry and fragment info
+      type(bond_t), intent(in), optional :: bonds(:)
+      !! Bond connectivity information
+      type(calculation_result_t), intent(out), optional :: result_out
+      !! Optional result output
+      logical, intent(in), optional :: all_ranks_write_json
+      !! If true, all ranks write JSON (for multi-molecule)
       logical, intent(in), optional :: write_output
          !! Write the JSON summary and fragment breakdown. Default true.
          !! `skip_json_output` in the config still overrides it.
@@ -100,6 +106,8 @@ contains
       logical :: wants_output       !! Whether the caller asked for files at all
       type(error_t) :: geometry_error  !! Two atoms in the same place, if any
       type(lindep_tally_t) :: lindep   !! One report for every fragment SCF
+
+      !! TODO JORGE: REFACTOR
 
       ! Set max_level from config
       max_level = config%nlevel
@@ -379,6 +387,7 @@ contains
       !! Generates fragments, distributes work across MPI processes organized in nodes,
       !! and coordinates many-body expansion calculation using hierarchical parallelism.
       !! If allow_overlapping_fragments=true, uses GMBE with intersection correction.
+
       type(resources_t), intent(in), target :: resources  !! Resources container (MPI comms, etc.)
       type(driver_config_t), intent(in) :: config  !! Driver configuration (includes method_config, calc_type, etc.)
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
@@ -668,6 +677,8 @@ contains
             if (trim(config%embedding) == "none") then
                expansion%esp = "none"
             end if
+
+            ! TODO JORGE: refactor this ugly ass code, in general the expansion assignemtn
             expansion%far_field = config%fmo_far_field
             ! The deck's fragmentation level means the same thing here as it
             ! does for MBE: how many fragments at a time.
@@ -1355,27 +1366,7 @@ contains
       integer :: i
       real(dp), allocatable :: named_energy_tol, named_density_tol, named_grad_tol
       integer, allocatable :: named_max_iter
-      type(scf_numerics_t) :: makefp_scf
-         !! What the deck asked for, if it asked at all
-         !!
-         !! Unallocated means it did not, and that is the signal rather than an
-         !! oversight: an unallocated allocatable actual argument corresponding
-         !! to an optional dummy that is neither allocatable nor a pointer *is*
-         !! an absent argument (F2018 15.5.2.13). MAKEFP therefore sees nothing
-         !! and keeps its own tighter pair.
-         !!
-         !! Initialising these to those defaults instead would look safer and
-         !! would be worse twice over: a second copy of 1e-10/1e-8 to keep in
-         !! agreement with the one that owns them, and arguments that are always
-         !! present, which loses the difference between "the deck asked for 1e-6"
-         !! and "the deck said nothing" -- the difference `energy_convergence_set`
-         !! exists to carry. Assigning only when the flag is set is what allocates
-         !! them, so the branch above is the whole mechanism.
-         !!
-         !! Named for what they hold rather than for the dummy they feed, because
-         !! `make_efp_potential` has locals of its own called `e_tol` and `d_tol`
-         !! -- plain reals, set to the defaults and then overridden -- and the two
-         !! pairs have now been read as one by more than one reviewer.
+      type(scf_numerics_t) :: makefp_scf !! the scf configuration for makeefp
 
       if (rank /= 0) return
 
@@ -1390,38 +1381,18 @@ contains
       path = trim(name)//".efp"
 
       call logger%info("Building an effective fragment potential")
-      ! `keywords.scf.density_fitting` and `keywords.scf.aux_basis_set` already
-      ! existed for the SCF, and mean here what they mean there: fit the two-electron
-      ! integrals against that auxiliary basis. What they reach in a MAKEFP run is the
-      ! response Hessian, which is where the time goes.
-      !
-      ! `keywords.scf.tolerance` and `keywords.scf.density_tolerance` reach the SCF
-      ! here only if the deck named them. MAKEFP's own 1e-10/1e-8 is deliberate --
-      ! the multipoles and the response come off that density -- so it is not the
-      ! shared 1e-6 default's to loosen. A deck that asks outright still wins: a
-      ! user who set 1e-6 and watched this iterate past 37 steps was being ignored.
-      !
-      ! `keywords.efp` goes down by value instead, with no flags. Those four have a
-      ! single default each -- `mqc_calculation_defaults` holds it and the solver
-      ! reads the same constant -- so passing what a silent deck carries is passing
-      ! the solver its own number, and there is nothing for a flag to distinguish.
+
       if (config%method_config%scf%energy_convergence_set) then
          named_energy_tol = config%method_config%scf%energy_convergence
       end if
       if (config%method_config%scf%density_convergence_set) then
          named_density_tol = config%method_config%scf%density_convergence
       end if
-      ! Zero is this field's "not named" -- it is what the SCF reads as "derive
-      ! it from the energy tolerance" everywhere else, so there is no separate
-      ! flag to carry. Nothing forwarded it here before, so a MakeFP deck that
-      ! stated the commutator threshold outright had it dropped.
+
       if (config%method_config%scf%gradient_convergence > 0.0_dp) then
          named_grad_tol = config%method_config%scf%gradient_convergence
       end if
-      ! The iteration cap is this path's own 200 unless the deck named one, for
-      ! the reason the tolerances are: a fragment potential is converged tightly
-      ! and wants a budget larger than the shared default of 100. `max_iter_set`
-      ! is what tells a deck that asked for 100 from one that said nothing.
+
       if (config%method_config%scf%max_iter_set) then
          named_max_iter = config%method_config%scf%max_iter
       end if
@@ -1434,6 +1405,7 @@ contains
       makefp_scf%incremental_fock = config%method_config%scf%incremental_fock
       makefp_scf%accelerator = config%method_config%scf%accelerator
       if (config%method_config%scf%density_fitting) then
+         ! TODO JORGE: make good
          call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
                                  config%method_config%basis_set, name, path, err, &
                                  charge=sys_geom%charge, verbose=.true., &

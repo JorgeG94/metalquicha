@@ -43,14 +43,14 @@ module mqc_libcint_charges
    public :: chelpg_charges
    public :: chelpg_grid
 
-   !> Grid spacing, Angstrom. Breneman and Wiberg's value.
+   !! Grid spacing, Angstrom. Breneman and Wiberg's value.
    real(dp), parameter :: CHELPG_SPACING = 0.3_dp
-   !> How far past the van der Waals surface points are kept, Angstrom.
-   !>
-   !> Both a box margin and a cutoff: the lattice extends this far beyond the
-   !> molecule, and a point further than this from every atom is dropped. The
-   !> shell that survives is where a neighbouring molecule's electrons would
-   !> actually sit, which is the region the charges have to get right.
+   !! How far past the van der Waals surface points are kept, Angstrom.
+   !!
+   !! Both a box margin and a cutoff: the lattice extends this far beyond the
+   !! molecule, and a point further than this from every atom is dropped. The
+   !! shell that survives is where a neighbouring molecule's electrons would
+   !! actually sit, which is the region the charges have to get right.
    real(dp), parameter :: CHELPG_HEAD_SPACE = 2.8_dp
 
 contains

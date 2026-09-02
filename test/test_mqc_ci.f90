@@ -173,7 +173,7 @@ contains
       real(dp) :: trace
       integer :: i
 
-      !> `fci.direct_spin1.pspace` on the same model, diagonalised.
+      !! `fci.direct_spin1.pspace` on the same model, diagonalised.
       real(dp), parameter :: LOWEST(4) = [-1.058973188934_dp, -1.057251313930_dp, &
                                           -1.057247805143_dp, -1.054982153731_dp]
       real(dp), parameter :: HIGHEST(2) = [-0.064054916404_dp, -0.003683707490_dp]

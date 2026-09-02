@@ -52,8 +52,8 @@ module mqc_elements
                           262.0_dp, 267.0_dp, 268.0_dp, 271.0_dp, 272.0_dp, 270.0_dp, 276.0_dp, 281.0_dp, &  ! Lr-Ds
                           280.0_dp, 285.0_dp, 284.0_dp, 289.0_dp, 288.0_dp, 293.0_dp, 294.0_dp, 294.0_dp]   ! Rg-Og
 
-   !> Van der Waals radii in Angstrom, Bondi (1964) with Rowland and Taylor's
-   !> hydrogen. Zero where Bondi tabulates none -- see `element_vdw_radius`.
+   !! Van der Waals radii in Angstrom, Bondi (1964) with Rowland and Taylor's
+   !! hydrogen. Zero where Bondi tabulates none -- see `element_vdw_radius`.
    integer, parameter :: n_vdw = 96
    real(dp), parameter :: vdw_radii(n_vdw) = [ &
                           1.10_dp, 1.40_dp, 1.81_dp, 1.53_dp, 1.92_dp, 1.70_dp, 1.55_dp, 1.52_dp, &

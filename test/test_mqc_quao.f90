@@ -40,8 +40,8 @@ module test_mqc_quao
    integer, parameter :: WATER_Z(3) = [8, 1, 1]
    character(len=2), parameter :: WATER_SYM(3) = ["O ", "H ", "H "]
 
-   !> Formyl chloride, from the GAMESS test deck that ships reference QUAO
-   !> populations. Angstrom in the deck, Bohr here.
+   !! Formyl chloride, from the GAMESS test deck that ships reference QUAO
+   !! populations. Angstrom in the deck, Bohr here.
    integer, parameter :: FC_Z(4) = [6, 8, 17, 1]
    character(len=2), parameter :: FC_SYM(4) = ["C ", "O ", "Cl", "H "]
    real(dp), parameter :: FC(3, 4) = reshape([ &
@@ -1081,15 +1081,15 @@ contains
       logical :: ok
       integer :: row, i, j
 
-      !> One row of the GAMESS 6-31G KEI-BO table: the occupation identifying the
-      !> orbital on each side, then the published bond order and KEI-BO.
-      !>
-      !>   0.9658297  -1.0806348  O(C) sigma with C(O) sigma
-      !>   0.9215974  -0.6899050  Cl(C) sigma with C(Cl) sigma
-      !>   0.9495433  -0.5699355  H(C) with C(H) sigma
-      !>   0.9280916  -0.4480652  O(C) pi with C(O) pi
-      !>  -0.3779555  -0.1468117  O lone pair with the C-Cl sigma
-      !>  -0.3065313  -0.0856982  Cl lone pair with the C-O pi
+      !! One row of the GAMESS 6-31G KEI-BO table: the occupation identifying the
+      !! orbital on each side, then the published bond order and KEI-BO.
+      !!
+      !!   0.9658297  -1.0806348  O(C) sigma with C(O) sigma
+      !!   0.9215974  -0.6899050  Cl(C) sigma with C(Cl) sigma
+      !!   0.9495433  -0.5699355  H(C) with C(H) sigma
+      !!   0.9280916  -0.4480652  O(C) pi with C(O) pi
+      !!  -0.3779555  -0.1468117  O lone pair with the C-Cl sigma
+      !!  -0.3065313  -0.0856982  Cl lone pair with the C-O pi
       integer, parameter :: ATOM_I(6) = [2, 3, 4, 2, 2, 3]
       integer, parameter :: ATOM_J(6) = [1, 1, 1, 1, 1, 1]
       real(dp), parameter :: OCC_I(6) = [1.2306118_dp, 1.2010201_dp, 0.8349982_dp, &
@@ -1162,9 +1162,9 @@ contains
       logical :: ok
       integer :: row, i
 
-      !> The ORBTYP and partner-atom columns of the GAMESS 6-31G table, indexed
-      !> by the occupation that identifies each orbital. Partner zero is GAMESS's
-      !> `NWB   0` -- an orbital bonded to nothing.
+      !! The ORBTYP and partner-atom columns of the GAMESS 6-31G table, indexed
+      !! by the occupation that identifies each orbital. Partner zero is GAMESS's
+      !! `NWB   0` -- an orbital bonded to nothing.
       integer, parameter :: ATOM(13) = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4]
       real(dp), parameter :: OCC(13) = &
                              [1.2204192_dp, 0.9274214_dp, 0.7886128_dp, 0.7845094_dp, &
@@ -1292,7 +1292,7 @@ contains
       integer :: i, core, valence
       real(dp), parameter :: REFERENCE(4) = &
                              [5.7209628_dp, 8.3435350_dp, 17.1005039_dp, 0.8349982_dp]
-      !> C-O sigma, C-Cl sigma, C-H, C-O pi, from the same GAMESS run
+      !! C-O sigma, C-Cl sigma, C-H, C-O pi, from the same GAMESS run
       real(dp), parameter :: BONDS(4) = &
                              [0.9658297_dp, 0.9215974_dp, 0.9495433_dp, 0.9280916_dp]
 

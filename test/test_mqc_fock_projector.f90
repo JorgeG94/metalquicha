@@ -8,21 +8,21 @@ module test_mqc_fock_projector
    use mqc_fock_projector, only: fock_projector_t, build_frozen_basis
    implicit none
 
-   !> The constraint is four GEMMs and an exact inverse, so what is left is
-   !> rounding. But it is rounding on a matrix whose largest element is the
-   !> level shift, and the back transform spreads that over every block -- so a
-   !> comparison against zero has to be scaled by the magnitude in play, not
-   !> stated in absolute Hartree. `ATOL` is that scaled tolerance.
+   !! The constraint is four GEMMs and an exact inverse, so what is left is
+   !! rounding. But it is rounding on a matrix whose largest element is the
+   !! level shift, and the back transform spreads that over every block -- so a
+   !! comparison against zero has to be scaled by the magnitude in play, not
+   !! stated in absolute Hartree. `ATOL` is that scaled tolerance.
    real(dp), parameter :: TOL = 1.0e-12_dp
 
    integer, parameter :: N = 6
 
-   !> A modest level shift, and deliberately not the 1e6 the reference codes
-   !> use. GAFO decouples the blocks rather than penalising them, so the shift
-   !> only has to lift the frozen virtuals clear of the occupied manifold --
-   !> it does not have to overwhelm a coupling, because there is no coupling
-   !> left. See `projector_shift_sets_the_precision_floor` for what asking for
-   !> more costs.
+   !! A modest level shift, and deliberately not the 1e6 the reference codes
+   !! use. GAFO decouples the blocks rather than penalising them, so the shift
+   !! only has to lift the frozen virtuals clear of the occupied manifold --
+   !! it does not have to overwhelm a coupling, because there is no coupling
+   !! left. See `projector_shift_sets_the_precision_floor` for what asking for
+   !! more costs.
    real(dp), parameter :: SHIFT = 1.0e3_dp
    real(dp), parameter :: ATOL = TOL*SHIFT
 

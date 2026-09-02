@@ -33,10 +33,10 @@ module test_mqc_efp_read
 
    public :: collect_mqc_efp_read_tests
 
-   !> GAMESS's Bohr, matching the emitter.
+   !! GAMESS's Bohr, matching the emitter.
    real(dp), parameter :: ANG = 1.0_dp/0.52917724924_dp
 
-   !> The file carries ten decimals, so this is what a round trip can preserve.
+   !! The file carries ten decimals, so this is what a round trip can preserve.
    real(dp), parameter :: FORMAT_TOL = 1.0e-9_dp
 
 contains

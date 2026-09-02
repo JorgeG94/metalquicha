@@ -43,9 +43,9 @@ module mqc_xc_spec
    public :: xc_spec_from_name
    public :: MAX_XC_COMPONENTS
 
-   !> Components in the largest composition here. Double hybrids need four --
-   !> exchange, correlation, and the two fractions that are not libxc's -- and
-   !> nothing in view needs more.
+   !! Components in the largest composition here. Double hybrids need four --
+   !! exchange, correlation, and the two fractions that are not libxc's -- and
+   !! nothing in view needs more.
    integer, parameter :: MAX_XC_COMPONENTS = 6
 
    type :: xc_component_t

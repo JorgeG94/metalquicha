@@ -40,15 +40,15 @@ module mqc_libcint_ecp
    public :: ecp_refuses_derivatives
    public :: ecp_refuses_auto_frozen_core
 
-   !> Whether this build can evaluate an ECP at all.
-   !>
-   !> The integrals come from libfint. libcint has no ECP code, so a build
-   !> configured with `-DMQC_USE_LIBFINT=OFF` has no `ECPscalar_sph` to link
-   !> against -- and before this was guarded, that configuration failed at the
-   !> linker with two undefined references and nothing to say why.
-   !>
-   !> Read by `build_libcint_molecule`, which refuses a deck naming a potential
-   !> rather than letting one reach an evaluator that is not there.
+   !! Whether this build can evaluate an ECP at all.
+   !!
+   !! The integrals come from libfint. libcint has no ECP code, so a build
+   !! configured with `-DMQC_USE_LIBFINT=OFF` has no `ECPscalar_sph` to link
+   !! against -- and before this was guarded, that configuration failed at the
+   !! linker with two undefined references and nothing to say why.
+   !!
+   !! Read by `build_libcint_molecule`, which refuses a deck naming a potential
+   !! rather than letting one reach an evaluator that is not there.
 #ifdef MQC_WITH_LIBFINT
    logical, parameter :: ECP_AVAILABLE = .true.
 #else

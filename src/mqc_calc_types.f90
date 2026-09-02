@@ -22,16 +22,16 @@ module mqc_calc_types
    integer(int32), parameter :: CALC_TYPE_ENERGY = 1
    integer(int32), parameter :: CALC_TYPE_GRADIENT = 2
    integer(int32), parameter :: CALC_TYPE_HESSIAN = 3
-   !> Build an effective fragment potential and write it, computing no energy.
    integer(int32), parameter :: CALC_TYPE_MAKEFP = 4
-   !> Minimize the geometry, which is a loop over gradient calculations rather
-   !> than a calculation. Handled above `run_calculation`, not inside it.
+   !! Build an effective fragment potential and write it, computing no energy.
    integer(int32), parameter :: CALC_TYPE_OPTIMIZE = 5
-   !> Search for conformers, which is a sampling run wrapped around tens of
-   !> thousands of gradients rather than a calculation. Like OPTIMIZE it is
-   !> driven above `run_calculation` and therefore cannot be dispatched from
-   !> inside it.
+   !! Minimize the geometry, which is a loop over gradient calculations rather
+   !! than a calculation. Handled above `run_calculation`, not inside it.
    integer(int32), parameter :: CALC_TYPE_CONFORMERS = 6
+   !! Search for conformers, which is a sampling run wrapped around tens of
+   !! thousands of gradients rather than a calculation. Like OPTIMIZE it is
+   !! driven above `run_calculation` and therefore cannot be dispatched from
+   !! inside it.
 
 contains
 
@@ -62,17 +62,17 @@ contains
          calc_type = CALC_TYPE_GRADIENT
       case ("hessian")
          calc_type = CALC_TYPE_HESSIAN
+      case ("makefp", "makeefp")
          ! Both spellings: GAMESS calls the run type MAKEFP, and "makeefp" is what
          ! people type when they are thinking of the file it produces.
-      case ("makefp", "makeefp")
          calc_type = CALC_TYPE_MAKEFP
+      case ("optimize", "optimization", "opt")
          ! "optimize" is what the QCSchema-shaped decks here already use for a
          ! driver; the other two are what people type.
-      case ("optimize", "optimization", "opt")
          calc_type = CALC_TYPE_OPTIMIZE
+      case ("conformers", "conformer", "crest")
          ! "crest" because that is what the sampling is, and people will reach
          ! for the program's name before the word for what it produces.
-      case ("conformers", "conformer", "crest")
          calc_type = CALC_TYPE_CONFORMERS
       case default
          calc_type = CALC_TYPE_UNKNOWN

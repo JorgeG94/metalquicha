@@ -10,9 +10,9 @@ module test_mqc_xyz_reader
 
 contains
 
-   !> Collect all exported unit tests
+   !! Collect all exported unit tests
    subroutine collect_mqc_xyz_reader_tests(testsuite)
-      !> Collection of tests
+      !! Collection of tests
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &

@@ -73,21 +73,21 @@ module mqc_libcint_cc
    public :: so_source_t              !! ... and the tensors it reads
    public :: build_so_map
 
-   !> Columns of the compound (ef) index assembled per pass of the
-   !> particle-particle ladder. The array held is n_vir^2 by this, so the memory
-   !> is O(n_vir^2) rather than the O(n_vir^4) of holding <ab||ef> whole -- which
-   !> is the entire point, and only true if this stays a fixed count rather than a
-   !> fraction of n_vir^2.
-   !>
-   !> A larger value opens fewer parallel regions and at small n_vir that is
-   !> visible, because each pass then has too little arithmetic to amortise the
-   !> barrier. It stays small anyway: the sizes where the memory matters are also
-   !> the sizes where a pass has plenty of work.
+   !! Columns of the compound (ef) index assembled per pass of the
+   !! particle-particle ladder. The array held is n_vir^2 by this, so the memory
+   !! is O(n_vir^2) rather than the O(n_vir^4) of holding <ab||ef> whole -- which
+   !! is the entire point, and only true if this stays a fixed count rather than a
+   !! fraction of n_vir^2.
+   !!
+   !! A larger value opens fewer parallel regions and at small n_vir that is
+   !! visible, because each pass then has too little arithmetic to amortise the
+   !! barrier. It stays small anyway: the sizes where the memory matters are also
+   !! the sizes where a pass has plenty of work.
    integer, parameter :: LADDER_BATCH = 256
 
-   !> The stage name the amplitude update accumulates under. Named because the
-   !> per-iteration row reads it back with `seconds_of` to print one iteration's
-   !> time, and a typo between the two would silently print zero.
+   !! The stage name the amplitude update accumulates under. Named because the
+   !! per-iteration row reads it back with `seconds_of` to print one iteration's
+   !! time, and a typo between the two would silently print zero.
    character(len=*), parameter :: STAGE_ITER = "CCSD iterations"
 
    type :: so_map_t
@@ -1658,12 +1658,12 @@ contains
       integer, intent(in) :: no, nv
       real(dp), intent(inout) :: lad(:, :)
 
-      !> Columns of (ef) per pass. n_vir^2 by this, so 12 MB at thirty-eight
-      !> virtuals against the 17 MB the whole array would take -- and the ratio
-      !> improves as n_vir grows, which is the point. Chosen large because the
-      !> assembly is cheap and it is the *number of passes* that costs: each one
-      !> opens a parallel region, and at 256 the barrier time was larger than all
-      !> the arithmetic in the routine.
+      !! Columns of (ef) per pass. n_vir^2 by this, so 12 MB at thirty-eight
+      !! virtuals against the 17 MB the whole array would take -- and the ratio
+      !! improves as n_vir grows, which is the point. Chosen large because the
+      !! assembly is cheap and it is the *number of passes* that costs: each one
+      !! opens a parallel region, and at 256 the barrier time was larger than all
+      !! the arithmetic in the routine.
       real(dp), allocatable :: wblk(:, :), tau2t(:, :), tblk(:, :)
       real(dp), allocatable :: gvv(:, :), gvt(:, :)
       integer :: nv2, no2, ef0, ef1, nb, col, ef, a, b, e, f

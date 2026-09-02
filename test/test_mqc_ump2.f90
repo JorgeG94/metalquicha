@@ -31,7 +31,7 @@ module test_mqc_ump2
 
    integer, parameter :: WATER_Z(3) = [8, 1, 1]
    character(len=2), parameter :: WATER_SYM(3) = ["O ", "H ", "H "]
-   !> Bohr, C2v, the same geometry the other backend tests use
+   !! Bohr, C2v, the same geometry the other backend tests use
    real(dp), parameter :: WATER(3, 3) = reshape( &
                           [0.0_dp, 0.0_dp, 0.0_dp, &
                            0.0_dp, 1.4308_dp, 1.1078_dp, &

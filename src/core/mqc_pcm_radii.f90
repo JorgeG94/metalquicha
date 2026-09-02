@@ -33,22 +33,11 @@ module mqc_pcm_radii
    public :: DEFAULT_RADII_SCALE
    public :: MAX_PCM_ELEMENT
 
-   !> Highest atomic number with a radius here.
-   !>
-   !> Argon, matching the range the CPU validation suite covers. A heavier atom
-   !> is refused rather than given a guessed radius: an invented cavity radius is
-   !> exactly the failure this module is arranged to prevent.
    integer, parameter :: MAX_PCM_ELEMENT = MAX_Z_BONDI
+   !! Highest atomic number with a radius here.
 
-   !> Scaling from a van der Waals radius to a cavity radius.
-   !>
-   !> 1.2 is the long-standing convention, from the observation that the solute
-   !> cavity that reproduces experimental solvation energies is somewhat larger
-   !> than the bare van der Waals surface. It is a fitted number, not a derived
-   !> one, and codes differ: Gaussian's UFF cavity and ORCA's default differ from
-   !> this and from each other. So it is a default rather than a constant, and a
-   !> deck can override it.
    real(dp), parameter :: DEFAULT_RADII_SCALE = 1.2_dp
+   !! Scaling from a van der Waals radius to a cavity radius.
 
 contains
 

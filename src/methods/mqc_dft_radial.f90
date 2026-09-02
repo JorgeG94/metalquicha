@@ -33,11 +33,11 @@ module mqc_dft_radial
    public :: treutler_ahlrichs_radial  !! M4 radial nodes and mapping weights
    public :: radial_volume_weights    !! 4*pi*r^2*dr, for a full spherical quadrature
 
-   !> Exponent of the M4 mapping
+   !! Exponent of the M4 mapping
    real(dp), parameter, public :: M4_ALPHA = 0.6_dp
 
-   !> Used where an element has no tabulated value. Every element up to Z=103
-   !> has one, so this is only reached by superheavy placeholders.
+   !! Used where an element has no tabulated value. Every element up to Z=103
+   !! has one, so this is only reached by superheavy placeholders.
    real(dp), parameter :: DEFAULT_XI = 1.0_dp
    real(dp), parameter :: DEFAULT_BRAGG = 1.0_dp
 

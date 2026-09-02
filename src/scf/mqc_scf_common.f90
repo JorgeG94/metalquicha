@@ -30,32 +30,32 @@ module mqc_scf_common
    public :: LINEAR_DEPENDENCE_TOL
    public :: GWH_K
 
-   !> Overlap eigenvalues at or below this are dropped as linearly dependent.
-   !>
-   !> One number for both backends. It used to be `NULL_THRESHOLD` on the
-   !> libcint side and `LINEAR_DEPENDENCE_TOL` on the cuEST side, both 1.0e-7,
-   !> which meant the two paths agreed only by coincidence.
+   !! Overlap eigenvalues at or below this are dropped as linearly dependent.
+   !!
+   !! One number for both backends. It used to be `NULL_THRESHOLD` on the
+   !! libcint side and `LINEAR_DEPENDENCE_TOL` on the cuEST side, both 1.0e-7,
+   !! which meant the two paths agreed only by coincidence.
    real(dp), parameter :: LINEAR_DEPENDENCE_TOL = 1.0e-7_dp
 
-   !> Overlap eigenvalues above the drop threshold but below this one are kept
-   !> and said out loud.
-   !>
-   !> The zone between the two is the one that hurts. A mode below
-   !> `LINEAR_DEPENDENCE_TOL` is discarded and the basis is smaller, which is
-   !> a decision with a number attached; a mode just above it is *retained*,
-   !> and X carries a 1/sqrt(s) of ten thousand or more into every iteration.
-   !> Nothing fails. DIIS extrapolates along a direction that is mostly noise,
-   !> convergence slows or stalls, and two runs of the same molecule in
-   !> slightly different orientations can settle on different solutions.
-   !> Diffuse functions on a large or compact system are how a basis gets
-   !> here, which is precisely when nobody is watching for it.
+   !! Overlap eigenvalues above the drop threshold but below this one are kept
+   !! and said out loud.
+   !!
+   !! The zone between the two is the one that hurts. A mode below
+   !! `LINEAR_DEPENDENCE_TOL` is discarded and the basis is smaller, which is
+   !! a decision with a number attached; a mode just above it is *retained*,
+   !! and X carries a 1/sqrt(s) of ten thousand or more into every iteration.
+   !! Nothing fails. DIIS extrapolates along a direction that is mostly noise,
+   !! convergence slows or stalls, and two runs of the same molecule in
+   !! slightly different orientations can settle on different solutions.
+   !! Diffuse functions on a large or compact system are how a basis gets
+   !! here, which is precisely when nobody is watching for it.
    real(dp), parameter :: LINEAR_DEPENDENCE_WARN_TOL = 1.0e-5_dp
    public :: LINEAR_DEPENDENCE_WARN_TOL
 
-   !> The empirical scale on the GWH off-diagonal. 1.75 is the value in
-   !> universal use, and both backends have to start from the same matrix or
-   !> comparing their iteration counts means nothing -- which is exactly why it
-   !> is one constant here rather than one in each of them.
+   !! The empirical scale on the GWH off-diagonal. 1.75 is the value in
+   !! universal use, and both backends have to start from the same matrix or
+   !! comparing their iteration counts means nothing -- which is exactly why it
+   !! is one constant here rather than one in each of them.
    real(dp), parameter :: GWH_K = 1.75_dp
 
    type :: lindep_tally_t

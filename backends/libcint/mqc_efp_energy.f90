@@ -41,14 +41,14 @@ module mqc_efp_energy
    public :: efp_interaction_energy
    public :: place_fragment
 
-   !> How far a deck atom may sit from where the potential's own geometry puts it,
-   !> after the rigid shift, before the placement is refused. A fragment is rigid, so
-   !> this is not a fitting tolerance -- it is the width of the round trip through
-   !> the file, which carries ten decimals.
+   !! How far a deck atom may sit from where the potential's own geometry puts it,
+   !! after the rigid shift, before the placement is refused. A fragment is rigid, so
+   !! this is not a fitting tolerance -- it is the width of the round trip through
+   !! the file, which carries ten decimals.
    real(dp), parameter :: PLACEMENT_TOL = 1.0e-6_dp
 
-   !> Every multipole rank the electrostatics carries: charges, dipoles,
-   !> quadrupoles and octupoles.
+   !! Every multipole rank the electrostatics carries: charges, dipoles,
+   !! quadrupoles and octupoles.
    integer, parameter :: MAX_RANK = 3
 
    type :: efp_energy_t

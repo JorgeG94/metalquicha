@@ -32,7 +32,7 @@ repos:
       - id: mqc-lint
         name: mqc house rules
         # Comment markers and duplicated physical constants. `--allow-predoc`
-        # tolerates `!>` where it documents a declaration, because swapping
+        # tolerates `!!` where it documents a declaration, because swapping
         # those to `!!` in place would reattach the docstring to whatever sits
         # above it; see tools/lint/README.md.
         entry: tools/lint/mqc_lint.py --allow-predoc

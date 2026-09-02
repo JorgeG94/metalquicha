@@ -7,26 +7,6 @@
 #endif
 module mqc_basis_utils
    !! Normalizes basis set names and locates the JSON file that defines them.
-   !!
-   !! A normalized name is exactly the name the Basis Set Exchange uses:
-   !! lowercase, with `*` written `_st_` and everything else -- `+`,
-   !! parentheses, commas -- left alone. So def2-SV(P) becomes def2-sv(p) and
-   !! 6-31G** becomes 6-31g_st__st_.
-   !!
-   !! Deferring to BSE rather than inventing a scheme is what makes the whole
-   !! catalogue addressable. An earlier version flattened harder -- parentheses
-   !! and commas dropped, `*` to `s`, `+` to `p` -- which collapsed def2-SV(P)
-   !! onto def2-SVP and def2-SV(P)-RIFIT onto def2-SVP-RIFIT: four real basis
-   !! sets, two filenames. It also meant the extracted files had to be renamed
-   !! out of their bundle names, so the mapping had to be kept in step in two
-   !! languages. Now the file on disk carries its BSE name and there is nothing
-   !! to keep in step.
-   !!
-   !! Basis sets are Basis Set Exchange JSON only. The Gaussian94 (`.gbs`) and
-   !! GAMESS ($DATA `.txt`) readers were removed: BSE JSON keeps a combined
-   !! shell's coefficient sets separate, so SP shells split cleanly with no
-   !! `uncontract_spdf=1` download flag, it carries ECP data in the same file,
-   !! and one format means one parser to trust.
    use mqc_error, only: error_t, ERROR_IO
    implicit none
    private

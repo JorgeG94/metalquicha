@@ -44,22 +44,22 @@ module mqc_dft_partition
    public :: becke_cutoff_second_derivative, stratmann_cutoff_second_derivative
    public :: partition_scheme_name
 
-   !> Cutoff profile
+   !! Cutoff profile
    integer, parameter :: PARTITION_BECKE = 1     !! Three iterations of p(x), smooth everywhere
    integer, parameter :: PARTITION_STRATMANN = 2  !! Degree-5 with a hard cutoff, screenable
 
-   !> Atomic size adjustment
+   !! Atomic size adjustment
    integer, parameter :: ADJUST_NONE = 0      !! All atoms the same size
    integer, parameter :: ADJUST_BECKE = 1     !! Bragg radii
    integer, parameter :: ADJUST_TREUTLER = 2  !! Square roots of the Bragg radii
 
-   !> Stratmann's cutoff parameter, eq. 14
+   !! Stratmann's cutoff parameter, eq. 14
    real(dp), parameter :: STRATMANN_A = 0.64_dp
 
-   !> Becke's clamp on the size-adjustment shift
+   !! Becke's clamp on the size-adjustment shift
    real(dp), parameter :: MAX_ADJUST = 0.5_dp
 
-   !> Guards the ratio when a radius is zero (a ghost atom)
+   !! Guards the ratio when a radius is zero (a ghost atom)
    real(dp), parameter, public :: TINY_RADIUS = 1.0e-200_dp
 
    integer, parameter :: N_DIM = 3

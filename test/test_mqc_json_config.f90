@@ -27,11 +27,11 @@ module test_mqc_json_config
    private
    public :: collect_mqc_json_config_tests
 
-   !> Decks are grouped under inputs/ by hardware, engine and method, so a stem
-   !> below carries the directory with it. Spelling the path out rather than
-   !> searching for the file keeps the test honest about which deck it is reading:
-   !> two backends may ship a deck of the same name, and a search would silently
-   !> pick one.
+   !! Decks are grouped under inputs/ by hardware, engine and method, so a stem
+   !! below carries the directory with it. Spelling the path out rather than
+   !! searching for the file keeps the test honest about which deck it is reading:
+   !! two backends may ship a deck of the same name, and a search would silently
+   !! pick one.
    character(len=*), parameter :: INPUT_DIR = "../validation/inputs/"
       !! Tests run with their source directory as the working directory
 

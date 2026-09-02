@@ -13,13 +13,13 @@ module test_mqc_afo_orbital
    use mqc_fock_projector, only: fock_projector_t, build_frozen_basis
    implicit none
 
-   !> The model SCF converges to 1e-10 and the localization to its own sweep
-   !> tolerance, so an orbital coefficient is good to somewhere around here.
+   !! The model SCF converges to 1e-10 and the localization to its own sweep
+   !! tolerance, so an orbital coefficient is good to somewhere around here.
    real(dp), parameter :: TOL = 1.0e-6_dp
 
-   !> STO-3G on carbon is 1s, 2s, then three 2p. The tests naming these indices
-   !> name the basis too, so the layout is a statement about that basis rather
-   !> than an assumption about all of them.
+   !! STO-3G on carbon is 1s, 2s, then three 2p. The tests naming these indices
+   !! name the basis too, so the layout is a statement about that basis rather
+   !! than an assumption about all of them.
    integer, parameter :: P_FIRST = 3, P_LAST = 5
 
    private

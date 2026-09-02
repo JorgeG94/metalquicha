@@ -888,13 +888,13 @@ contains
       logical :: ok
       integer :: c
       real(dp), parameter :: TOL = 1.0e-5_dp
-      !> `int1e_ipipovlp`, sum of absolute values per component
+      !! `int1e_ipipovlp`, sum of absolute values per component
       real(dp), parameter :: OVLP_NORM(9) = [ &
                              28.464886_dp, 2.724628_dp, 2.566234_dp, &
                              2.724628_dp, 27.896234_dp, 3.212813_dp, &
                              2.566234_dp, 3.212813_dp, 27.811801_dp]
-      !> `int1e_ipnucip`, which is a different shape entirely and pins the
-      !> dispatch as well as the layout
+      !! `int1e_ipnucip`, which is a different shape entirely and pins the
+      !! dispatch as well as the layout
       real(dp), parameter :: NUC_NORM(9) = [ &
                              1209.762119_dp, 57.194237_dp, 55.848487_dp, &
                              57.194237_dp, 1217.340172_dp, 67.229615_dp, &

@@ -9,9 +9,9 @@ module test_mqc_gmbe_energy
 
 contains
 
-   !> Collect all exported unit tests
+   !! Collect all exported unit tests
    subroutine collect_mqc_gmbe_energy_tests(testsuite)
-      !> Collection of tests
+      !! Collection of tests
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &

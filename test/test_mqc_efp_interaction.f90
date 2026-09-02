@@ -41,38 +41,38 @@ module test_mqc_efp_interaction
 
    public :: collect_mqc_efp_interaction_tests
 
-   !> GAMESS's Bohr, as everywhere else that compares against it.
+   !! GAMESS's Bohr, as everywhere else that compares against it.
    real(dp), parameter :: ANG = 1.0_dp/0.52917724924_dp
 
-   !> The water potential every `dimer` call needs, built once. Only the
-   !> translation differs between calls; the potential is an SCF plus the
-   !> response solves behind the polarizabilities, identical each time.
+   !! The water potential every `dimer` call needs, built once. Only the
+   !! translation differs between calls; the potential is an SCF plus the
+   !! response solves behind the polarizabilities, identical each time.
    type(efp_fragment_t), save :: cached_water
    logical, save :: cached_ready = .false.
 
-   !> GAMESS's electrostatic energy for the dimer, per truncation rank.
+   !! GAMESS's electrostatic energy for the dimer, per truncation rank.
    real(dp), parameter :: E_RANK0 = 0.005641619_dp
    real(dp), parameter :: E_RANK1 = 0.003913482_dp
    real(dp), parameter :: E_RANK2 = 0.005680360_dp
    real(dp), parameter :: E_RANK3 = 0.005736532_dp
 
-   !> The same, with the charge-penetration correction: GAMESS's electrostatic
-   !> energy for the unmodified potential, screening sections and all.
+   !! The same, with the charge-penetration correction: GAMESS's electrostatic
+   !! energy for the unmodified potential, screening sections and all.
    real(dp), parameter :: E_SCREENED = 0.004959639_dp
 
-   !> GAMESS's E6, which is overlap-damped, and the undamped value this computes.
-   !> The gap between them is the damping -- two parts in a thousand at this
-   !> separation -- and is expected until inter-fragment overlaps exist.
+   !! GAMESS's E6, which is overlap-damped, and the undamped value this computes.
+   !! The gap between them is the damping -- two parts in a thousand at this
+   !! separation -- and is expected until inter-fragment overlaps exist.
    real(dp), parameter :: E6_GAMESS_DAMPED = -0.0005163981_dp
    real(dp), parameter :: E6_UNDAMPED = -5.173790776e-4_dp
 
-   !> GAMESS's polarization energy for this dimer, which needs no damping.
+   !! GAMESS's polarization energy for this dimer, which needs no damping.
    real(dp), parameter :: E_POL = -0.000218123_dp
 
-   !> The references carry nine decimals.
+   !! The references carry nine decimals.
    real(dp), parameter :: REF_TOL = 1.0e-9_dp
 
-   !> The separation `dimer_energy.py` used, along x.
+   !! The separation `dimer_energy.py` used, along x.
    real(dp), parameter :: SEPARATION = 3.0_dp
 
 contains

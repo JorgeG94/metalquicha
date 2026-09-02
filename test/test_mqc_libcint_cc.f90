@@ -408,10 +408,10 @@ contains
       real(dp) :: c(3, 2)
       integer, parameter :: Z(2) = [8, 1]
       character(len=2), parameter :: SYM(2) = ["O ", "H "]
-      !> PySCF 2.14 GCCSD from a UHF reference, this repository's own STO-3G.
+      !! PySCF 2.14 GCCSD from a UHF reference, this repository's own STO-3G.
       real(dp), parameter :: PYSCF_UHF = -74.362637545612_dp
       real(dp), parameter :: PYSCF_CORR = -0.024496069957_dp
-      !> And its (T), which is spin-orbital and so should need no new equations.
+      !! And its (T), which is spin-orbital and so should need no new equations.
       real(dp), parameter :: PYSCF_T = -0.000000231291_dp
 
       c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &

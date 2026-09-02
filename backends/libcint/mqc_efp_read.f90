@@ -38,39 +38,39 @@ module mqc_efp_read
    ! is how a packing convention drifts.
    public :: N_DIPOLE, N_QUADRUPOLE, N_OCTUPOLE
 
-   !> Multipole components at one expansion point, in the file's own order.
+   !! Multipole components at one expansion point, in the file's own order.
    integer, parameter :: N_DIPOLE = 3
    integer, parameter :: N_QUADRUPOLE = 6
    integer, parameter :: N_OCTUPOLE = 10
 
-   !> A dynamic polarizability record: a centroid then a 3x3 tensor.
+   !! A dynamic polarizability record: a centroid then a 3x3 tensor.
    integer, parameter :: N_DYNAMIC_RECORD = 12
 
-   !> Row and column of each of GAMESS's nine polarizability slots. The diagonal
-   !> comes first and the off-diagonal triples are the transpose of what its labels
-   !> suggest -- the same map `mqc_efp_potential` writes with, established there
-   !> against GAMESS's own output. Reading these nine as a row-major 3x3 gives a
-   !> tensor whose trace is negative, which is how the mistake announces itself.
-   !>
-   !> **`efinp.src` appears to contradict this, and does not.** Its reader
-   !> (`efinp.src:8456-8464`) and its writer (`efinp.src:7552-7561`) agree with each
-   !> other that slot 4 is `DYNDD_LMO(1,2)`, which is the transpose of the map below.
-   !> Both statements are true because the two arrays are indexed oppositely: GAMESS's
-   !> is `alpha(field, dipole)` and ours is `alpha(dipole, field)`. The maps compose to
-   !> the identity, so the *files* agree and a potential written here is read correctly
-   !> by GAMESS. Measured, not argued: per-orbital against a real `MAKEFP` potential,
-   !> this map lands 1.96e-05 away while the source-derived one lands 1.72e-01 away --
-   !> and that 1.72e-01 is each tensor's own asymmetry, orbital for orbital.
-   !>
-   !> So do not "fix" this to match `efinp.src`. What *does* follow from the transpose
-   !> is that anything mirroring a GAMESS expression over `DYNDD_LMO` must swap the two
-   !> indices when it reads `dyn_pol` -- E7 is the first such consumer. `dipquad` and
-   !> `quadquad` are stored flat in file order and need no swap.
+   !! Row and column of each of GAMESS's nine polarizability slots. The diagonal
+   !! comes first and the off-diagonal triples are the transpose of what its labels
+   !! suggest -- the same map `mqc_efp_potential` writes with, established there
+   !! against GAMESS's own output. Reading these nine as a row-major 3x3 gives a
+   !! tensor whose trace is negative, which is how the mistake announces itself.
+   !!
+   !! **`efinp.src` appears to contradict this, and does not.** Its reader
+   !! (`efinp.src:8456-8464`) and its writer (`efinp.src:7552-7561`) agree with each
+   !! other that slot 4 is `DYNDD_LMO(1,2)`, which is the transpose of the map below.
+   !! Both statements are true because the two arrays are indexed oppositely: GAMESS's
+   !! is `alpha(field, dipole)` and ours is `alpha(dipole, field)`. The maps compose to
+   !! the identity, so the *files* agree and a potential written here is read correctly
+   !! by GAMESS. Measured, not argued: per-orbital against a real `MAKEFP` potential,
+   !! this map lands 1.96e-05 away while the source-derived one lands 1.72e-01 away --
+   !! and that 1.72e-01 is each tensor's own asymmetry, orbital for orbital.
+   !!
+   !! So do not "fix" this to match `efinp.src`. What *does* follow from the transpose
+   !! is that anything mirroring a GAMESS expression over `DYNDD_LMO` must swap the two
+   !! indices when it reads `dyn_pol` -- E7 is the first such consumer. `dipquad` and
+   !! `quadquad` are stored flat in file order and need no swap.
    integer, parameter :: N_POL_SLOTS = 9
    integer, parameter :: POL_ROW(N_POL_SLOTS) = [1, 2, 3, 2, 3, 3, 1, 1, 2]
    integer, parameter :: POL_COL(N_POL_SLOTS) = [1, 2, 3, 1, 1, 2, 2, 3, 3]
 
-   !> Longest line a potential is expected to carry, matching the writer's own.
+   !! Longest line a potential is expected to carry, matching the writer's own.
    integer, parameter :: MAX_LINE = 160
 
    type :: efp_fragment_t
@@ -92,51 +92,51 @@ module mqc_efp_read
       real(dp), allocatable :: screen2(:)          !! Exponential damping exponent per point
       logical :: has_screen = .false.
       logical :: has_screen2 = .false.
-      !> Dynamic polarizabilities, for dispersion. `(3, 3, n_lmo, n_freq)`.
+      !! Dynamic polarizabilities, for dispersion. `(3, 3, n_lmo, n_freq)`.
       integer :: n_lmo = 0
       integer :: n_freq = 0
       real(dp), allocatable :: dyn_pol(:, :, :, :)
       real(dp), allocatable :: centroids(:, :)     !! (3, n_lmo), Bohr
       real(dp), allocatable :: frequencies(:)      !! Imaginary, a.u.
       logical :: has_dynamic = .false.
-      !> Static polarizabilities at the same centroids, for polarization.
+      !! Static polarizabilities at the same centroids, for polarization.
       integer :: n_pol = 0
       real(dp), allocatable :: static_pol(:, :, :)  !! (3, 3, n_pol)
       real(dp), allocatable :: pol_points(:, :)     !! (3, n_pol), Bohr
       logical :: has_static_pol = .false.
-      !> The two higher dispersion tensor sets, stored flat: their component order
-      !> is *not* established, and the E7/E8 formulas in GAMESS's `efdrvr.src` are
-      !> what will settle it. Reading them into a shaped array now would mean
-      !> guessing an index convention, which is how the polarizability slot order
-      !> went wrong once already.
+      !! The two higher dispersion tensor sets, stored flat: their component order
+      !! is *not* established, and the E7/E8 formulas in GAMESS's `efdrvr.src` are
+      !! what will settle it. Reading them into a shaped array now would mean
+      !! guessing an index convention, which is how the polarizability slot order
+      !! went wrong once already.
       integer :: n_dipquad = 0                    !! Values per record, expected 27
       integer :: n_quadquad = 0                   !! Values per record, expected 81
       real(dp), allocatable :: dipquad(:, :, :)   !! (n_dipquad, n_lmo, n_freq)
       real(dp), allocatable :: quadquad(:, :, :)  !! (n_quadquad, n_lmo, n_freq)
       logical :: has_dipquad = .false.
       logical :: has_quadquad = .false.
-      !> The projection basis, with GAMESS's primitive normalization divided back
-      !> out, so these are the raw contraction coefficients a basis object wants.
-      !> An `L` shell arrives as two shells over shared exponents.
+      !! The projection basis, with GAMESS's primitive normalization divided back
+      !! out, so these are the raw contraction coefficients a basis object wants.
+      !! An `L` shell arrives as two shells over shared exponents.
       integer :: n_shells = 0
       integer, allocatable :: shell_atom(:), shell_l(:), shell_first(:), shell_nprim(:)
       real(dp), allocatable :: prim_expo(:), prim_coef(:)
       logical :: has_basis = .false.
-      !> The localized orbitals, in **GAMESS's** AO order -- the order the file uses,
-      !> not libcint's. Converting them needs the shell layout of a built molecule, so
-      !> it is left to whoever builds one; see `mqc_efp_pair`.
+      !! The localized orbitals, in **GAMESS's** AO order -- the order the file uses,
+      !! not libcint's. Converting them needs the shell layout of a built molecule, so
+      !! it is left to whoever builds one; see `mqc_efp_pair`.
       integer :: n_lmo_proj = 0
       integer :: nao_proj = 0
       real(dp), allocatable :: lmo_gamess(:, :)   !! (nao_proj, n_lmo_proj)
       logical :: has_lmo = .false.
-      !> The Fock matrix over the localized orbitals, unpacked to a full symmetric
-      !> matrix. The file stores its lower triangle row by row and carries no labels.
+      !! The Fock matrix over the localized orbitals, unpacked to a full symmetric
+      !! matrix. The file stores its lower triangle row by row and carries no labels.
       real(dp), allocatable :: fock_lmo(:, :)     !! (n_lmo_proj, n_lmo_proj)
       logical :: has_fock = .false.
-      !> `CTVEC` and `CTFOK`, which charge transfer needs. The orbital set here is
-      !> wider than the projection wavefunction's: `CTVEC` carries occupied *and*
-      !> virtual orbitals, since charge transfer moves density into the latter.
-      !> Also in GAMESS's AO order, so it needs the same inversion.
+      !! `CTVEC` and `CTFOK`, which charge transfer needs. The orbital set here is
+      !! wider than the projection wavefunction's: `CTVEC` carries occupied *and*
+      !! virtual orbitals, since charge transfer moves density into the latter.
+      !! Also in GAMESS's AO order, so it needs the same inversion.
       integer :: n_occ_ct = 0
       integer :: n_mo_ct = 0
       real(dp), allocatable :: ctvec_gamess(:, :)  !! (nao_proj, n_mo_ct)

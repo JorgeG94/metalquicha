@@ -24,9 +24,9 @@ module test_mqc_efp_energy
 
    real(dp), parameter :: ANG = 1.0_dp/0.52917724924_dp
 
-   !> Built once by `water_fragment` and copied thereafter: it is an SCF plus
-   !> the response solves behind the polarizabilities, identical every time,
-   !> and every test here wants one.
+   !! Built once by `water_fragment` and copied thereafter: it is an SCF plus
+   !! the response solves behind the polarizabilities, identical every time,
+   !! and every test here wants one.
    type(efp_fragment_t), save :: cached_water
    logical, save :: cached_ready = .false.
 

@@ -71,7 +71,7 @@ module mqc_efp_potential
    public :: to_gamess_ao_order
    public :: frozen_core
 
-   !> Longest line any section emits, with room to spare.
+   !! Longest line any section emits, with room to spare.
    integer, parameter :: MAX_LINE = 160
 
    real(dp), parameter :: MAKEFP_DENSITY_TOL = 1.0e-8_dp
@@ -80,56 +80,56 @@ module mqc_efp_potential
    !! Named because the warning below has to compare against the same number
    !! -- written twice, they drift, and the drift is silent.
 
-   !> Flattened extents of the Cartesian tensors the polarizability blocks carry:
-   !> a pair of directions, a triple, and a quadruple. Nine is also the number of
-   !> slots GAMESS writes a polarizability in, those being the same thing.
+   !! Flattened extents of the Cartesian tensors the polarizability blocks carry:
+   !! a pair of directions, a triple, and a quadruple. Nine is also the number of
+   !! slots GAMESS writes a polarizability in, those being the same thing.
    integer, parameter :: N_CART_PAIR = 9
    integer, parameter :: N_CART_TRIPLE = 27
    integer, parameter :: N_CART_QUAD = 81
 
-   !> Components in a Cartesian d and f shell.
+   !! Components in a Cartesian d and f shell.
    integer, parameter :: N_CART_D = 6
    integer, parameter :: N_CART_F = 10
 
-   !> Row and column of each of GAMESS's nine polarizability slots. The
-   !> off-diagonal triples are the transpose of what its labels suggest; that was
-   !> measured in `validation/check_distributed_polarizability.py` rather than
-   !> assumed, and it is the one convention here that a symmetric test tensor
-   !> would not have caught.
-   !>
-   !> It is also the transpose of what `efinp.src:7552-7561` writes, and that is not a
-   !> conflict: GAMESS indexes the tensor `(field, dipole)` where this code indexes it
-   !> `(dipole, field)`, so both put the same number in slot 4 and the files agree. See
-   !> the longer note on `POL_ROW` in `mqc_efp_read`, which carries the measurement.
+   !! Row and column of each of GAMESS's nine polarizability slots. The
+   !! off-diagonal triples are the transpose of what its labels suggest; that was
+   !! measured in `validation/check_distributed_polarizability.py` rather than
+   !! assumed, and it is the one convention here that a symmetric test tensor
+   !! would not have caught.
+   !!
+   !! It is also the transpose of what `efinp.src:7552-7561` writes, and that is not a
+   !! conflict: GAMESS indexes the tensor `(field, dipole)` where this code indexes it
+   !! `(dipole, field)`, so both put the same number in slot 4 and the files agree. See
+   !! the longer note on `POL_ROW` in `mqc_efp_read`, which carries the measurement.
    integer, parameter :: POL_ROW(N_CART_PAIR) = [1, 2, 3, 2, 3, 3, 1, 1, 2]
    integer, parameter :: POL_COL(N_CART_PAIR) = [1, 2, 3, 1, 1, 2, 2, 3, 3]
 
-   !> libcint's index for each of GAMESS's six Cartesian d slots, and the
-   !> normalization between the two codes' d functions. Both established in
-   !> `validation/check_projection.py` against GAMESS's own coefficients.
-   !> libcint's full-Cartesian quadrupole slots, which run xx,xy,xz,yx,...,zz.
+   !! libcint's index for each of GAMESS's six Cartesian d slots, and the
+   !! normalization between the two codes' d functions. Both established in
+   !! `validation/check_projection.py` against GAMESS's own coefficients.
+   !! libcint's full-Cartesian quadrupole slots, which run xx,xy,xz,yx,...,zz.
    integer, parameter :: QXX = 1, QXY = 2, QXZ = 3, QYX = 4, QYY = 5
    integer, parameter :: QYZ = 6, QZX = 7, QZY = 8, QZZ = 9
 
    integer, parameter :: D_FROM_LIBCINT(N_CART_D) = [1, 4, 6, 2, 3, 5]
    real(dp), parameter :: D_NORMALIZATION = 1.585330892_dp
 
-   !> The same for the ten Cartesian f slots, read off GAMESS's own coefficients in
-   !> `validation/check_projection` and solved for in its Python half. Derived rather
-   !> than reasoned about, exactly as the d map was.
-   !>
-   !> The molecule has to be in a frame with no zero coordinate for this to be
-   !> solvable at all: planar water puts an exact zero in every function with an odd
-   !> power of y, and a slot that is zero on both sides admits any scale factor. A
-   !> first attempt in the planar frame returned a map that looked plausible, sent
-   !> four different GAMESS slots to the same one of ours, and was wrong.
+   !! The same for the ten Cartesian f slots, read off GAMESS's own coefficients in
+   !! `validation/check_projection` and solved for in its Python half. Derived rather
+   !! than reasoned about, exactly as the d map was.
+   !!
+   !! The molecule has to be in a frame with no zero coordinate for this to be
+   !! solvable at all: planar water puts an exact zero in every function with an odd
+   !! power of y, and a slot that is zero on both sides admits any scale factor. A
+   !! first attempt in the planar frame returned a map that looked plausible, sent
+   !! four different GAMESS slots to the same one of ours, and was wrong.
    integer, parameter :: F_FROM_LIBCINT(N_CART_F) = [1, 7, 10, 2, 3, 4, 8, 6, 9, 5]
    real(dp), parameter :: F_NORMALIZATION = 1.339849174_dp
 
-   !> Which of the three normalization classes each GAMESS f slot belongs to. The
-   !> measured scales come out as `F_NORMALIZATION` divided by one of 1, sqrt(5) and
-   !> sqrt(15) -- the ratios are exact to eight figures, so they are written as the
-   !> square roots rather than as the fitted decimals.
+   !! Which of the three normalization classes each GAMESS f slot belongs to. The
+   !! measured scales come out as `F_NORMALIZATION` divided by one of 1, sqrt(5) and
+   !! sqrt(15) -- the ratios are exact to eight figures, so they are written as the
+   !! square roots rather than as the fitted decimals.
    integer, parameter :: F_CLASS(N_CART_F) = [1, 1, 1, 2, 2, 2, 2, 2, 2, 3]
 
    type :: efp_potential_t

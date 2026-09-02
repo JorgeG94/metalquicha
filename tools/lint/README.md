@@ -26,7 +26,7 @@ Only two markers are used:
 | `!!` | documenting a Fortran entity |
 | `!`  | an inline comment inside a routine body |
 
-`!>`, `!|` and `!!!` are flagged. Bangs inside string literals are not
+`!!`, `!|` and `!!!` are flagged. Bangs inside string literals are not
 comments and are ignored, and `!$omp` / `!$acc` / `!dir$` are directives rather
 than comments, so they are skipped too.
 
@@ -70,7 +70,7 @@ real(dp), parameter :: OLD_BOHR = 0.52917721092_dp
 
 ## The `--allow-predoc` ramp
 
-The hook currently runs with `--allow-predoc`, which exempts `!>` where it
+The hook currently runs with `--allow-predoc`, which exempts `!!` where it
 documents a declaration. That is not the end state, it is what makes the rule
 enforceable today:
 
@@ -79,7 +79,7 @@ enforceable today:
 | `--allow-predoc` | 0 |
 | strict | 302 blocks |
 
-Those 302 are all `!>` above a declaration, which is *correct* FORD predoc
+Those 302 are all `!!` above a declaration, which is *correct* FORD predoc
 markup. 108 of them are in `src/`, and `ford.md` lists `src` and `app` as its
 source directories, so those are the ones FORD actually renders — converting
 them by swapping characters would silently reattach 108 docstrings to the wrong
