@@ -832,6 +832,33 @@ contains
       if (.not. any_potential) deallocate (driver_config%fragment_potentials)
    end subroutine copy_fragment_potentials
 
+   pure function fragmentation_allows_overlap(mqc_config) result(yes)
+      !! Whether primaries may overlap, derived the same way everywhere
+      !!
+      !! **This exists because `driver_config` is not the only consumer.**
+      !! `config_to_system_geometry` builds the geometry on a different path
+      !! and refuses overlapping fragments on its own, reading the raw deck
+      !! flag. When `method: gmbe` started deriving that flag, the derived
+      !! value reached the driver and not the geometry, so a GMBE deck that had
+      !! dropped the now-deprecated key was refused at the door -- caught by
+      !! the tblite suite, on `hess_gly3_ov`.
+      use mqc_fragmentation_method, only: parse_fragmentation_method, &
+                                          fragmentation_method_overlapping
+      type(mqc_config_t), intent(in) :: mqc_config
+      logical :: yes
+
+      integer :: method
+      logical :: ok
+
+      ! The deprecated flag still stands on its own for a deck that names it
+      ! and no method, which is what an unfragmented or hand-written deck may
+      ! still look like.
+      yes = mqc_config%allow_overlapping_fragments
+      if (.not. allocated(mqc_config%frag_method)) return
+      call parse_fragmentation_method(mqc_config%frag_method, method, ok)
+      if (ok) yes = yes .or. fragmentation_method_overlapping(method)
+   end function fragmentation_allows_overlap
+
    subroutine resolve_fragmentation_method(mqc_config, driver_config, error)
       !! Turn `keywords.fragmentation.method` into the two internal switches
       !!
@@ -937,7 +964,8 @@ contains
             return
          end if
          call molecule_to_system_geometry(mqc_config%molecules(molecule_index), &
-                                          sys_geom, use_angstrom, mqc_config%allow_overlapping_fragments, error)
+                                          sys_geom, use_angstrom, &
+                                          fragmentation_allows_overlap(mqc_config), error)
       else
          ! Single molecule mode (backward compatible)
          ! Check if geometry is loaded
@@ -1102,7 +1130,7 @@ contains
 
       call initialize_fragmented_system(mqc_config%nfrag, mqc_config%geometry, mqc_config%fragments, &
                                         mqc_config%charge, mqc_config%multiplicity, &
-                                        mqc_config%allow_overlapping_fragments, use_angstrom, &
+                                        fragmentation_allows_overlap(mqc_config), use_angstrom, &
                                         sys_geom, error)
 
    end subroutine geometry_to_system_fragmented
