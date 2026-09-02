@@ -195,7 +195,7 @@ def check_comment_markers(path, lines, allow_predoc):
 
 
 def fix_comment_markers(lines):
-    """Rewrite inline ``!!`` to ``!``; return (new_lines, count).
+    """Rewrite inline ``!>`` to ``!``; return (new_lines, count).
 
     Only the inline case is rewritten. A marker that documents a declaration
     cannot be repaired by swapping characters -- ``!!`` above a declaration
@@ -424,13 +424,13 @@ def main(argv=None):
     ap.add_argument(
         "--allow-predoc",
         action="store_true",
-        help="under MQC001, permit '!!' where it documents a declaration and "
+        help="under MQC001, permit '!>' where it documents a declaration and "
         "flag it only where it precedes executable code",
     )
     ap.add_argument(
         "--fix",
         action="store_true",
-        help="rewrite inline '!!' to '!' in place; markers that document a "
+        help="rewrite inline '!>' to '!' in place; markers that document a "
         "declaration are reported, not touched",
     )
     ap.add_argument("--format", choices=("text", "github"), default="text")

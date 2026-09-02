@@ -26,7 +26,7 @@ Only two markers are used:
 | `!!` | documenting a Fortran entity |
 | `!`  | an inline comment inside a routine body |
 
-`!!`, `!|` and `!!!` are flagged. Bangs inside string literals are not
+`!>`, `!|` and `!!!` are flagged. Bangs inside string literals are not
 comments and are ignored, and `!$omp` / `!$acc` / `!dir$` are directives rather
 than comments, so they are skipped too.
 
@@ -68,28 +68,31 @@ Put the rule id in a comment on the line, or the line above, with a reason:
 real(dp), parameter :: OLD_BOHR = 0.52917721092_dp
 ```
 
-## The `--allow-predoc` ramp
+## The `--allow-predoc` ramp, retired
 
-The hook currently runs with `--allow-predoc`, which exempts `!!` where it
-documents a declaration. That is not the end state, it is what makes the rule
-enforceable today:
+The hook ran with `--allow-predoc` while the tree still held predoc markup. It
+no longer does: the hook is strict, and strict is clean.
 
-| mode | findings when introduced |
-|---|---|
-| `--allow-predoc` | 0 |
-| strict | 302 blocks |
+| mode | when the flag was introduced | now |
+|---|---|---|
+| `--allow-predoc` | 0 | 0 |
+| strict | 302 blocks | 0 |
 
-Those 302 are all `!!` above a declaration, which is *correct* FORD predoc
-markup. 108 of them are in `src/`, and `ford.md` lists `src` and `app` as its
-source directories, so those are the ones FORD actually renders — converting
-them by swapping characters would silently reattach 108 docstrings to the wrong
-entity in the published docs.
+Those 302 were `!>` above a declaration, which is *correct* FORD predoc markup.
+108 were in `src/`, and `ford.md` lists `src` and `app` as its source
+directories, so those were the ones FORD actually rendered — converting them by
+swapping characters would have reattached 108 docstrings to the wrong entity in
+the published docs.
 
-Going strict therefore means moving each docstring below its declaration, not a
-search and replace. Worth doing; not worth doing blind. Until then
-`--allow-predoc` stops new ones appearing, which is the part that was actually
-going wrong.
+Going strict therefore meant moving each docstring below its declaration rather
+than a search and replace, which is why it took a sweep. The move also repaired
+docstrings that had already drifted onto the wrong entity: several module
+parameter blocks, and four argument docstrings attached to the wrong dummy in
+both `run_libcint_rhf` and `run_libcint_uhf`.
+
+`--allow-predoc` remains as a flag, for linting a tree that predates the
+migration. Nothing here needs it.
 
 Note that `backends/`, `test/` and `validation/` are outside FORD's source
-directories, so in those the distinction is purely visual and the sweep is
-free.
+directories, so in those the placement is a convention for readers of the
+source rather than something the published docs depend on.
