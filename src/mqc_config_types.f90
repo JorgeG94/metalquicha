@@ -499,11 +499,14 @@ module mqc_config_types
       ! Fragmentation settings
       character(len=:), allocatable :: frag_method  !! MBE, etc.
       integer :: frag_level = DEFAULT_FRAG_LEVEL
-      logical :: allow_overlapping_fragments = .false.
-      character(len=:), allocatable :: expansion_kind
-         !! Which expansion runs: "mbe" (default), "fmo" or "ee-mbe".
-         !! GMBE is selected by `allow_overlapping_fragments` instead, which
-         !! predates this and stays as it was.
+         !! Which expansion runs. `keywords.fragmentation.method` is the only
+         !! input: `allow_overlapping_fragments` and `expansion` were two more
+         !! ways to say the same thing, and having three meant the resolver had
+         !! to reconcile them -- which it got wrong for an explicit
+         !! `{"method": "gmbe", "allow_overlapping_fragments": false}`,
+         !! silently flipping the flag back. Deleting them removes the class
+         !! rather than fixing the instance. The schema refuses unknown keys,
+         !! so a deck still naming them fails at parse time and says which.
       character(len=:), allocatable :: counterpoise
          !! How basis-set superposition error is handled: "none" (default) or
          !! "vmfc".

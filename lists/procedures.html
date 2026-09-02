@@ -895,6 +895,12 @@ This catches bugs in geometry construction or fragment building</p></td>
 This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment sizes</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/check_fragmentation_method.html'>check_fragmentation_method</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>keywords.fragmentation.method</code> names an expansion this code has</p><a href="../proc/check_fragmentation_method.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/check_fukui_guess.html'>check_fukui_guess</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Subroutine</td>
@@ -2065,10 +2071,46 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p></td>
                  <td><p>Sidecar name derived from the JSON output name: output_w1.json -&gt; output_w1_fragments.csv</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/fragmentation_allows_overlap.html'>fragmentation_allows_overlap</a></td>
+                 <td><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></td>
+                 <td>Function</td>
+                 <td><p>Whether primaries may overlap, derived from <code>method</code> alone</p><a href="../proc/fragmentation_allows_overlap.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/fragmentation_keys.html'>fragmentation_keys</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fragmentation_method_expansion.html'>fragmentation_method_expansion</a></td>
+                 <td><a href='../module/mqc_fragmentation_method.html'>mqc_fragmentation_method</a></td>
+                 <td>Function</td>
+                 <td><p>The <code>expansion_kind</code> the driver branches on</p><a href="../proc/fragmentation_method_expansion.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fragmentation_method_implemented.html'>fragmentation_method_implemented</a></td>
+                 <td><a href='../module/mqc_fragmentation_method.html'>mqc_fragmentation_method</a></td>
+                 <td>Function</td>
+                 <td><p>Whether an expansion exists behind the name</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fragmentation_method_list.html'>fragmentation_method_list</a></td>
+                 <td><a href='../module/mqc_fragmentation_method.html'>mqc_fragmentation_method</a></td>
+                 <td>Function</td>
+                 <td><p>The accepted spellings, for a refusal message</p><a href="../proc/fragmentation_method_list.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fragmentation_method_name.html'>fragmentation_method_name</a></td>
+                 <td><a href='../module/mqc_fragmentation_method.html'>mqc_fragmentation_method</a></td>
+                 <td>Function</td>
+                 <td><p>The canonical spelling, for a message or an echo</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fragmentation_method_overlapping.html'>fragmentation_method_overlapping</a></td>
+                 <td><a href='../module/mqc_fragmentation_method.html'>mqc_fragmentation_method</a></td>
+                 <td>Function</td>
+                 <td><p>Whether primaries may overlap, which is what makes it GMBE</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/freeze_term_list.html'>freeze_term_list</a></td>
@@ -3652,6 +3694,12 @@ orthonormalise what is left among itself in the metric <code>overlap</code></p><
                  <td><p><code>keywords.scf.convergence_metric</code> to a <code>CONV_METRIC_*</code> kind</p><a href="../proc/parse_convergence_metric.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/parse_fragmentation_method.html'>parse_fragmentation_method</a></td>
+                 <td><a href='../module/mqc_fragmentation_method.html'>mqc_fragmentation_method</a></td>
+                 <td>Subroutine</td>
+                 <td><p>A deck spelling to a <code>FRAG_METHOD_*</code> kind</p><a href="../proc/parse_fragmentation_method.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/parse_method_string.html'>parse_method_string</a></td>
                  <td><a href='../module/mqc_method_types.html'>mqc_method_types</a></td>
                  <td>Function</td>
@@ -4194,6 +4242,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Subroutine</td>
                  <td><p>Fetch a string, or record a missing-key error</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/resolve_fragmentation_method.html'>resolve_fragmentation_method</a></td>
+                 <td><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Turn <code>keywords.fragmentation.method</code> into the two internal switches</p><a href="../proc/resolve_fragmentation_method.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/resolve_gpu_request.html'>resolve_gpu_request</a></td>
@@ -5097,7 +5151,7 @@ whatever libxc itself was configured to do.</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 11:56 +0000             </p>
+ on 2026-09-02 13:40 +0000             </p>
           </div>
         </div>
         <br>

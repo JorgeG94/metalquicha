@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.4% of total for procedures.">299 statements</a>
+                 title=" 1.3% of total for procedures.">299 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -139,20 +139,20 @@
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-assembly_timer">assembly_timer</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-coeffs~2">coeffs</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-compute_dipole">compute_dipole</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-compute_dipole_derivs~2">compute_dipole_derivs</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-compute_dipole_derivs~3">compute_dipole_derivs</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-compute_grad">compute_grad</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-compute_hess">compute_hess</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-current_log_level~4">current_log_level</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-current_log_level~6">current_log_level</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_e~2">delta_E</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_dipoles~2">delta_dipoles</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_energies~5">delta_energies</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_energies~4">delta_energies</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-do_detailed_print">do_detailed_print</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-energies~5">energies</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-fragment_size~5">fragment_size</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-fragment_size~14">fragment_size</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-hess_dim~4">hess_dim</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-i~103">i</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-i~143">i</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-ir_intensities~8">ir_intensities</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-lookup~7">lookup</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-lookup~6">lookup</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-nlevel~3">nlevel</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-row_width">row_width</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-sum_by_level~3">sum_by_level</a>
@@ -200,8 +200,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -385,7 +385,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~9"></span>
+              <span class="anchor" id="variable-polymers~18"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -415,7 +415,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~15"></span>
+              <span class="anchor" id="variable-max_level~19"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -430,7 +430,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~7"></span>
+              <span class="anchor" id="variable-results~10"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -445,7 +445,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result~3"></span>
+              <span class="anchor" id="variable-mbe_result~4"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -460,7 +460,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~46"></span>
+              <span class="anchor" id="variable-sys_geom~63"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -490,7 +490,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~21"></span>
+              <span class="anchor" id="variable-json_data~24"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2536,7 +2536,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-compute_dipole_derivs~2"></span>
+              <span class="anchor" id="variable-compute_dipole_derivs~3"></span>
               logical,
             </td>
               <td>private</td>
@@ -2587,7 +2587,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~4"></span>
+              <span class="anchor" id="variable-current_log_level~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -2638,7 +2638,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~5"></span>
+              <span class="anchor" id="variable-delta_energies~4"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2689,7 +2689,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~5"></span>
+              <span class="anchor" id="variable-fragment_size~14"></span>
               integer,
             </td>
               <td>private</td>
@@ -2723,7 +2723,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~103"></span>
+              <span class="anchor" id="variable-i~143"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -2757,7 +2757,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~7"></span>
+              <span class="anchor" id="variable-lookup~6"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
               <td>private</td>
@@ -3366,7 +3366,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 11:56 +0000             </p>
+ on 2026-09-02 13:40 +0000             </p>
           </div>
         </div>
         <br>

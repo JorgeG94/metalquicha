@@ -176,8 +176,23 @@ contains
          driver_config%nlevel = mqc_config%frag_level
       end if
 
-      ! Set GMBE overlapping fragments flag
-      driver_config%allow_overlapping_fragments = mqc_config%allow_overlapping_fragments
+      ! **`keywords.fragmentation.method` decides the expansion.** It used to be
+      ! required, validated for presence and then never read -- the choice came
+      ! from `expansion` and `allow_overlapping_fragments` instead, so every
+      ! deck in the tree said "MBE" including the ones running FMO, and
+      ! `method: "wibble"` was accepted just as happily.
+      !
+      ! The two older keys still work and now have to AGREE. Refusing a
+      ! contradiction rather than picking a winner: a deck that says both is a
+      ! deck someone half-migrated, and whichever lost would lose silently.
+      ! `error` is optional here, so the resolver takes it optionally too and
+      ! the refusal is only raised for a caller that asked to hear about it.
+      ! Passing it unconditionally referenced an absent dummy and segfaulted a
+      ! test that had nothing to do with fragmentation.
+      call resolve_fragmentation_method(mqc_config, driver_config, error)
+      if (present(error)) then
+         if (error%has_error()) return
+      end if
       if (allocated(mqc_config%counterpoise)) then
          driver_config%counterpoise = mqc_config%counterpoise
       end if
@@ -188,9 +203,10 @@ contains
          driver_config%bond_breaking = mqc_config%bond_breaking
       end if
       driver_config%cap_scale = mqc_config%cap_scale
-      if (allocated(mqc_config%expansion_kind)) then
-         driver_config%expansion_kind = mqc_config%expansion_kind
-      end if
+      ! `expansion_kind` is NOT copied from the deck here any more --
+      ! `resolve_fragmentation_method` above derives it from `method` and has
+      ! already refused a deck whose `expansion` disagrees. Copying it again
+      ! would put the deprecated key back in charge.
       if (allocated(mqc_config%fmo_far_field)) then
          driver_config%fmo_far_field = mqc_config%fmo_far_field
       end if
@@ -816,6 +832,80 @@ contains
       if (.not. any_potential) deallocate (driver_config%fragment_potentials)
    end subroutine copy_fragment_potentials
 
+   pure function fragmentation_allows_overlap(mqc_config) result(yes)
+      !! Whether primaries may overlap, derived from `method` alone
+      !!
+      !! **Two consumers, one derivation.** `config_to_system_geometry` refuses
+      !! overlapping fragments on its own path, reading this rather than a deck
+      !! flag -- when `method: gmbe` first started deriving the switch, only
+      !! the driver got it and a GMBE deck was refused at the door by the
+      !! geometry, telling it to set the key the migration had just removed.
+      use mqc_fragmentation_method, only: parse_fragmentation_method, &
+                                          fragmentation_method_overlapping
+      type(mqc_config_t), intent(in) :: mqc_config
+      logical :: yes
+
+      integer :: method
+      logical :: ok
+
+      yes = .false.
+      if (.not. allocated(mqc_config%frag_method)) return
+      call parse_fragmentation_method(mqc_config%frag_method, method, ok)
+      if (ok) yes = fragmentation_method_overlapping(method)
+   end function fragmentation_allows_overlap
+
+   subroutine resolve_fragmentation_method(mqc_config, driver_config, error)
+      !! Turn `keywords.fragmentation.method` into the two internal switches
+      !!
+      !! `expansion_kind` and `allow_overlapping_fragments` are what the driver
+      !! and the term builders read; this is the only place either is decided.
+      use mqc_fragmentation_method, only: parse_fragmentation_method, &
+                                          fragmentation_method_name, &
+                                          fragmentation_method_expansion, &
+                                          fragmentation_method_overlapping, &
+                                          fragmentation_method_implemented, &
+                                          fragmentation_method_list
+      type(mqc_config_t), intent(in) :: mqc_config
+      type(driver_config_t), intent(inout) :: driver_config
+      type(error_t), intent(inout), optional :: error
+         !! Optional, matching `config_to_driver`. A caller that does not want
+         !! to hear about a bad method still gets the derived switches for a
+         !! good one, and silently keeps the defaults for a bad one -- which is
+         !! what every other refusal in this file does.
+
+      integer :: method
+      logical :: ok
+      character(len=16) :: derived_kind
+      logical :: derived_overlap
+
+      ! Unfragmented runs never name it, and the schema only requires it inside
+      ! a `fragmentation` block, so an absent method is not an error here.
+      if (.not. allocated(mqc_config%frag_method)) return
+
+      call parse_fragmentation_method(mqc_config%frag_method, method, ok)
+      if (.not. ok) then
+         if (present(error)) call error%set(ERROR_VALIDATION, &
+                                            "Unknown keywords.fragmentation.method: '"// &
+                                            trim(mqc_config%frag_method)//"'. Use one of "// &
+                                            fragmentation_method_list()//".")
+         return
+      end if
+      if (.not. fragmentation_method_implemented(method)) then
+         if (present(error)) call error%set(ERROR_VALIDATION, &
+                                            "keywords.fragmentation.method '"// &
+                                            fragmentation_method_name(method)//"' is a method this "// &
+                                            "program knows the name of and does not implement yet. "// &
+                                            "Use one of "//fragmentation_method_list()//".")
+         return
+      end if
+
+      derived_kind = fragmentation_method_expansion(method)
+      derived_overlap = fragmentation_method_overlapping(method)
+
+      driver_config%expansion_kind = derived_kind
+      driver_config%allow_overlapping_fragments = derived_overlap
+   end subroutine resolve_fragmentation_method
+
    subroutine config_to_system_geometry(mqc_config, sys_geom, error, molecule_index)
       !! Convert mqc_config_t geometry to system_geometry_t
       !! For unfragmented calculations (nfrag=0), treats entire system as single unit
@@ -845,7 +935,8 @@ contains
             return
          end if
          call molecule_to_system_geometry(mqc_config%molecules(molecule_index), &
-                                          sys_geom, use_angstrom, mqc_config%allow_overlapping_fragments, error)
+                                          sys_geom, use_angstrom, &
+                                          fragmentation_allows_overlap(mqc_config), error)
       else
          ! Single molecule mode (backward compatible)
          ! Check if geometry is loaded
@@ -1010,7 +1101,7 @@ contains
 
       call initialize_fragmented_system(mqc_config%nfrag, mqc_config%geometry, mqc_config%fragments, &
                                         mqc_config%charge, mqc_config%multiplicity, &
-                                        mqc_config%allow_overlapping_fragments, use_angstrom, &
+                                        fragmentation_allows_overlap(mqc_config), use_angstrom, &
                                         sys_geom, error)
 
    end subroutine geometry_to_system_fragmented

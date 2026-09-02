@@ -110,6 +110,8 @@ contains
       call check_grandchild_object(core, root, "properties", "bonding_analysis", &
                                    bonding_analysis_keys(), error)
       call check_bonding_analysis(core, root, error)
+      call check_fragmentation_method(core, root, error)
+      if (error%has_error()) return
       call check_fukui_guess(core, root, error)
       call check_ecp_supported(core, root, error)
       if (error%has_error()) return
@@ -626,9 +628,7 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "method")
       call allow(keys, "level")
-      call allow(keys, "allow_overlapping_fragments")
       call allow(keys, "max_intersection_level")
-      call allow(keys, "expansion")
       call allow(keys, "counterpoise")
       call allow(keys, "far_field")
       call allow(keys, "resppc")
@@ -928,6 +928,62 @@ contains
       if (.not. found .or. .not. associated(scf)) return
       call check_object(core, scf, "properties.fukui.scf", fukui_scf_keys(), error)
    end subroutine check_fukui_scf_object
+
+   subroutine check_fragmentation_method(core, root, error)
+      !! `keywords.fragmentation.method` names an expansion this code has
+      !!
+      !! **Here rather than in the adapter, and that is the point.** The
+      !! adapter's resolver takes `error` optionally, because
+      !! `config_to_driver` does -- and three production paths call it without
+      !! one: the multi-molecule driver twice and the session once. On those,
+      !! the resolver returned before assigning anything and the run continued
+      !! as a plain MBE, which is precisely the silently-wrong-method behaviour
+      !! this was meant to remove. Measured: a multi-molecule deck asking for
+      !! `method: "wibble"` produced no refusal at all.
+      !!
+      !! The validator runs before any of them and takes a mandatory `error`,
+      !! so checking the spelling here covers every entry path that exists and
+      !! every one added later. The adapter still derives the switches; it no
+      !! longer has to be the thing that refuses.
+      use mqc_fragmentation_method, only: parse_fragmentation_method, &
+                                          fragmentation_method_implemented, &
+                                          fragmentation_method_name, &
+                                          fragmentation_method_list
+      type(json_core), intent(inout) :: core
+      type(json_value), pointer, intent(in) :: root
+      type(error_t), intent(inout) :: error
+
+      type(json_value), pointer :: keywords, frag, entry
+      character(len=:), allocatable :: name
+      logical :: found, ok
+      integer :: method
+
+      if (error%has_error()) return
+      call core%get(root, "keywords", keywords, found)
+      if (.not. found .or. .not. associated(keywords)) return
+      call core%get(keywords, "fragmentation", frag, found)
+      if (.not. found .or. .not. associated(frag)) return
+      call core%get(frag, "method", entry, found)
+      if (.not. found .or. .not. associated(entry)) return
+      call core%get(frag, "method", name)
+      if (.not. allocated(name)) return
+
+      call parse_fragmentation_method(name, method, ok)
+      if (.not. ok) then
+         call error%set(ERROR_VALIDATION, &
+                        "Unknown keywords.fragmentation.method: '"//trim(name)// &
+                        "'. Use one of "//fragmentation_method_list()//".")
+         return
+      end if
+      if (.not. fragmentation_method_implemented(method)) then
+         call error%set(ERROR_VALIDATION, &
+                        "keywords.fragmentation.method '"// &
+                        fragmentation_method_name(method)//"' is a method this "// &
+                        "program knows the name of and does not implement yet. "// &
+                        "Use one of "//fragmentation_method_list()//".")
+         return
+      end if
+   end subroutine check_fragmentation_method
 
    subroutine check_fukui_guess(core, root, error)
       !! `properties.fukui.guess` names a mode this code has
