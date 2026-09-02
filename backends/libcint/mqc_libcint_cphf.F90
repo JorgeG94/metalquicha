@@ -140,9 +140,6 @@ contains
 
    subroutine hessian_destroy(self)
       !! Release a built Hessian
-      ! TODO(mqc): `aplus` is never deallocated and `fitted` is never reset, so
-      ! destroying a fitted Hessian leaks an `n_ov^2` matrix and leaves the flag
-      ! set for whatever is built into the same object next.
       class(response_hessian_t), intent(inout) :: self
       if (allocated(self%aminus)) deallocate (self%aminus)
       if (allocated(self%aplus)) deallocate (self%aplus)

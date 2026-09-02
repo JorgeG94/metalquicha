@@ -1816,10 +1816,6 @@ contains
             ! The same frozen-core rule the MP2 block applies, deliberately
             ! duplicated rather than hoisted: the two blocks are independent.
             !
-            ! TODO(mqc): the `ecp_refuses_auto_frozen_core` return below leaks
-            ! `mol` -- and `xc` where one was built -- as do the matching
-            ! returns in the MP2 and double hybrid blocks. Every other error
-            ! path in this routine destroys them first.
             frozen = settings%n_frozen_core
             if (frozen < 0) then
                if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then

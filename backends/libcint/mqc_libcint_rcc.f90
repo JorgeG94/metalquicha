@@ -262,9 +262,6 @@ contains
       !! The bare `foo` the reference adds here is absent: for canonical
       !! orbitals it is diagonal and `update_amps` subtracts that same diagonal
       !! back out immediately afterwards.
-      ! TODO(mqc): `t1` is never read -- it is folded into `tau` by the caller.
-      ! Same in `cc_fvv`. A dead argument on two of the five intermediates
-      ! invites passing the wrong amplitudes and never being told.
       type(rcc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: tau(:, :, :, :)
       integer, intent(in) :: no, nv

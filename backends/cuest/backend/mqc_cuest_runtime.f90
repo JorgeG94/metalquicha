@@ -149,9 +149,6 @@ contains
       type(cuestWorkspaceDescriptor_t), intent(in) :: descriptor
       type(error_t), intent(inout) :: error
 
-      ! TODO(mqc): a device allocation that fails after the host one succeeded
-      ! returns with `hostBuffer` set and no free, so the host block leaks
-      ! unless the caller calls `workspace_free` on the failed workspace.
       type(c_ptr) :: host_ptr, device_ptr
 
       workspace%hostBufferSizeInBytes = descriptor%hostBufferSizeInBytes

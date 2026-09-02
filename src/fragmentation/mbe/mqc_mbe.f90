@@ -889,9 +889,6 @@ contains
          if (compute_dipole_derivs) mbe_result%has_dipole_derivatives = .true.
       end if
 
-      ! TODO(mqc): every row is summed here, auxiliary ones included, where the
-      ! energy sum skips `is_auxiliary_row`. A counterpoise table therefore
-      ! double counts its ghosted rows into the total dipole.
       if (compute_dipole) then
          do i = 1_int64, fragment_count
             ! An auxiliary row is a ghosted copy of a smaller fragment, present
