@@ -26,7 +26,9 @@ module test_mqc_libcint_dma
    use mqc_libcint_rhf, only: run_libcint_rhf, rhf_result_t
    use mqc_libcint_multipole, only: multipole_matrices
    use mqc_libcint_dma, only: dma_result_t, distributed_multipoles, expansion_points
+   use mqc_libcint_screening, only: screening_grid
    use mqc_error, only: error_t
+   use mqc_calculation_defaults, only: DEFAULT_VDW_SCALE
 !$ use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    implicit none
    private
@@ -59,6 +61,7 @@ contains
 
       testsuite = [ &
                   new_unittest("expansion_points_are_atoms_and_midpoints", test_points), &
+                  new_unittest("bond_labels_past_nine_atoms_read_back", test_wide_labels), &
                   new_unittest("site_charges_sum_to_the_molecular_charge", test_charge_sum), &
                   new_unittest("sites_reproduce_the_molecular_dipole", test_dipole_sum), &
                   new_unittest("thread_count_does_not_change_the_multipoles", &
@@ -88,6 +91,75 @@ contains
       if (err%has_error()) return
       call run_libcint_rhf(mol, 10, 60, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err)
    end subroutine converged_water
+
+   subroutine test_wide_labels(error)
+      !! A bond whose atoms need two digits still names the right pair
+      !!
+      !! Midpoint labels were written `"BO"//i//j` at minimal width and read one
+      !! character per index, so "BO123" was atoms 12 and 3 or atoms 1 and 23
+      !! with nothing to tell them apart -- and the reader took 1 and 2. Where
+      !! the higher atom was a multiple of ten the second index came back as 0
+      !! and indexed `atomic_numbers(0)`.
+      !!
+      !! Three atoms cannot see any of that, which is why the fixture here is a
+      !! ten-carbon chain: it puts a bond on atoms 10 and 9, the case the old
+      !! encoding could not express, and runs it through the reader that broke.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: NC = 10
+      real(dp), parameter :: SPACING = 2.8_dp
+         !! Bohr, so 1.48 Angstrom -- inside a C-C bond, while the next-nearest
+         !! pair at 2.96 is well outside one. The chain bonds only adjacently.
+      type(error_t) :: err
+      type(dma_result_t) :: dma
+      integer :: znum(NC)
+      real(dp) :: c(3, NC)
+      real(dp), allocatable :: points(:, :), nuclear(:), grid(:, :)
+      character(len=8), allocatable :: labels(:)
+      integer :: i, hi, lo, found
+
+      znum = 6
+      c = 0.0_dp
+      do i = 1, NC
+         c(3, i) = real(i - 1, dp)*SPACING
+      end do
+
+      call expansion_points(znum, c, points, labels, nuclear, err)
+      call check(error,.not. err%has_error(), "building the expansion points")
+      if (allocated(error)) return
+
+      call check(error, size(labels) == NC + (NC - 1), &
+                 "a ten-atom chain should give ten atoms and nine bond midpoints")
+      if (allocated(error)) return
+
+      found = 0
+      do i = NC + 1, size(labels)
+         if (labels(i) == "BO010009") found = i
+      end do
+      call check(error, found > 0, &
+                 "no BO010009 label: the bond between atoms 10 and 9 is missing or "// &
+                 "written at minimal width, where it collides with other pairs")
+      if (allocated(error)) return
+
+      ! The same substrings `screening_grid` reads.
+      read (labels(found) (3:5), *) hi
+      read (labels(found) (6:8), *) lo
+      call check(error, hi == 10, "label characters 3:5 did not read back as atom 10")
+      if (allocated(error)) return
+      call check(error, lo == 9, "label characters 6:8 did not read back as atom 9")
+      if (allocated(error)) return
+
+      ! And through the reader itself, which is where the wrong pair -- or index
+      ! zero -- used to be picked up.
+      allocate (dma%points(3, size(points, 2)))
+      dma%points = points
+      allocate (dma%labels(size(labels)))
+      dma%labels = labels
+      call screening_grid(dma, znum, grid, err, vdw_scale=DEFAULT_VDW_SCALE)
+      call check(error,.not. err%has_error(), "the screening grid could not be built")
+      if (allocated(error)) return
+      call check(error, size(grid, 2) > 0, "the screening grid came out empty")
+   end subroutine test_wide_labels
 
    subroutine test_points(error)
       type(error_type), allocatable, intent(out) :: error

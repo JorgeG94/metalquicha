@@ -852,7 +852,13 @@ contains
                end if
 
                if (compute_dipole) then
-                  call compute_mbe_dipole(i, polymers(i, 1:fragment_size), lookup, &
+                  ! `row_width`, matching the energy call above. Slicing to
+                  ! `fragment_size` counts only the real monomers, so an
+                  ! auxiliary row like [1,2,-3] lost its ghost and the subset
+                  ! was looked up in the AB basis rather than the parent ABC
+                  ! one -- the wrong number at VMFC(2), and the wrong basis
+                  ! recursed at VMFC(3) and above.
+                  call compute_mbe_dipole(i, polymers(i, 1:row_width), lookup, &
                                           results, delta_dipoles, fragment_size, world_comm, &
                                           vmfc=use_vmfc)
                end if
@@ -916,7 +922,13 @@ contains
 
       if (compute_dipole) then
          do i = 1_int64, fragment_count
-            fragment_size = fragment_size_of(polymers(i, :))
+            ! An auxiliary row is a ghosted copy of a smaller fragment, present
+            ! so the counterpoise recursion has a parent-basis value to
+            ! subtract. It is not a term of the expansion, and the energy sum
+            ! above excludes it for that reason -- adding its dipole here put
+            ! the ghosted monomers back into the total.
+            if (is_auxiliary_row(polymers(i, :))) cycle
+            fragment_size = int(real_count_of(polymers(i, :)))
             if (fragment_size <= max_level) then
                mbe_result%dipole = mbe_result%dipole + delta_dipoles(:, i)
             end if

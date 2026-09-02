@@ -1208,7 +1208,16 @@ contains
       if (aux%natm /= mol%natm) then
          call error%set(ERROR_VALIDATION, &
                         "density-fitted reference gradient: the auxiliary basis is "// &
-                        "on a different set of atoms than the orbital basis")
+                        "on a different number of atoms than the orbital basis")
+         return
+      end if
+      ! Equal counts are not enough: two same-sized molecules with their atoms in
+      ! a different order pass that and still put every auxiliary derivative on
+      ! the wrong nucleus. Same comparison `merge_basis_sets` makes.
+      if (maxval(abs(aux%coords - mol%coords)) > 1.0e-10_dp) then
+         call error%set(ERROR_VALIDATION, &
+                        "density-fitted reference gradient: the auxiliary basis is "// &
+                        "on a different geometry than the orbital basis")
          return
       end if
 
