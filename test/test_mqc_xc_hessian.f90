@@ -909,7 +909,7 @@ contains
 
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       if (err%has_error()) return
-      call xc_context_create(mol, functional, ctx, err, level=3)
+      call xc_context_create(mol, functional, ctx, err, level=3, allow_half=.true.)
       if (err%has_error()) then
          call mol%destroy()
          return
@@ -1021,7 +1021,7 @@ contains
 
       call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       if (err%has_error()) return
-      call xc_context_create(mol, "gga_x_b88", ctx, err, level=3)
+      call xc_context_create(mol, "gga_x_b88", ctx, err, level=3, allow_half=.true.)
       if (err%has_error()) then
          call mol%destroy()
          return
@@ -1229,7 +1229,7 @@ contains
 
       call build_libcint_molecule(DZ, DSYM, DIMER, "6-31g*", mol, err)
       if (err%has_error()) return
-      call xc_context_create(mol, "gga_x_b88", ctx, err, level=3)
+      call xc_context_create(mol, "gga_x_b88", ctx, err, level=3, allow_half=.true.)
       if (err%has_error()) then
          call mol%destroy()
          return
@@ -1848,7 +1848,7 @@ contains
       ok = .false.
       call build_libcint_molecule(z, sym, coords, basis, mol, err)
       if (err%has_error()) return
-      call xc_context_create(mol, functional, ctx, err, level=3)
+      call xc_context_create(mol, functional, ctx, err, level=3, allow_half=.true.)
       if (err%has_error()) then
          call mol%destroy()
          return
