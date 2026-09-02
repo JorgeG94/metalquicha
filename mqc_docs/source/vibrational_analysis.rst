@@ -147,10 +147,12 @@ where :math:`\alpha \in \{x, y, z\}` and *i* runs over all 3N Cartesian coordina
 There are two routes to it and the backend picks, the same way it picks between
 the two Hessians.
 
-**Analytically**, wherever the analytic Hessian applies. What a dipole
-derivative needs beyond one-electron integrals is the response of the density,
-and the coupled-perturbed solve has just produced that for the Hessian --
-so the extra cost is two one-electron integrals rather than a second solve:
+**Analytically**, for a restricted Hartree-Fock or Kohn-Sham reference and for
+the double hybrids -- not, despite the Hessian being analytic there too, for a
+plain MP2 reference. What a dipole derivative needs beyond one-electron
+integrals is the response of the density, and the coupled-perturbed solve has
+just produced that for the Hessian -- so the extra cost is two one-electron
+integrals rather than a second solve:
 
 .. math::
 
@@ -168,6 +170,17 @@ A **double hybrid** adds a fourth: its dipole is the *relaxed* one, so the
 perturbative term contributes through the MP2 relaxed density, and the
 intensity needs that derivative on top of the reference's -- the same split as
 its Hessian. On water/6-31G that term is 1.26e-02 against a dipole of order one.
+
+**Plain MP2 has no infrared intensities**, by either route, and the reason is
+the same relaxed density said from the other side. Analytically, the
+perturbative term's dipole derivative is built only for a double hybrid --
+`mp2_correlation_hessian` refuses the request without a functional rather than
+returning the reference's. By finite difference, the backend leaves
+`has_dipole` false for a correlated method, because what it could publish is
+the *reference's* dipole and differencing that would report intensities from a
+density the energy and gradient do not use. Both are refusals rather than
+approximations: a missing intensity is noticed and a plausible wrong one is
+not.
 
 **By finite differences of the dipole** otherwise, collected at the same
 displaced geometries the semi-numerical Hessian already visits.

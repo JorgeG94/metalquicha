@@ -2283,13 +2283,35 @@ contains
       ! has one at each; until now `has_dipole` was never true on this path, so
       ! it never did. Only tblite set it, which is why an xTB run printed
       ! intensities and a Hartree-Fock one did not.
+      !
+      ! **Not after a correlated method**, and that omission is the point rather
+      ! than a gap. `scf%density` is the reference's, so what this builds is the
+      ! reference's dipole -- and the semi-numerical Hessian differences
+      ! `result%dipole` into infrared intensities. Publishing it from an MP2 or
+      ! a double-hybrid run would report intensities from a density the energy
+      ! and the gradient do not use: right in shape, wrong by the correlation,
+      ! and silent about it. The analytic double-hybrid path adds the relaxed
+      ! density's contribution explicitly for exactly this reason; the
+      ! fallback has no way to.
+      !
+      ! Leaving `has_dipole` false costs a correlated run its dipole and its
+      ! intensities. That is the better failure: a missing number is noticed and
+      ! a plausible wrong one is not. Restoring it means computing the relaxed
+      ! density here, which is the perturbative term's own machinery and belongs
+      ! with it.
       block
          real(dp), allocatable :: dip_ao(:, :, :)
          real(dp) :: mu(3)
          integer :: comp, iat
+         logical :: correlated
+
+         correlated = settings%run_mp2 .or. settings%run_cc
+         if (kohn_sham) correlated = correlated .or. xc%pt2_fraction /= 0.0_dp
 
          call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip_ao, error)
-         if (.not. error%has_error()) then
+         if (correlated .and. .not. error%has_error()) then
+            deallocate (dip_ao)
+         else if (.not. error%has_error()) then
             do comp = 1, 3
                mu(comp) = -sum(scf%density*dip_ao(:, :, comp))
             end do
