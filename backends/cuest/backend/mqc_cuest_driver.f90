@@ -29,6 +29,8 @@ module mqc_cuest_driver
    use mqc_cuest_gradient, only: compute_scf_gradient
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_dft_grid, only: grid_level_radial, grid_level_angular
+   use mqc_scf_convergence, only: scf_convergence_t, parse_convergence_metric, &
+                                  CONV_METRIC_DENSITY
    implicit none
    private
 
@@ -61,6 +63,8 @@ contains
       type(molecular_basis_type), allocatable :: atom_bases(:), atom_aux_bases(:)
       integer :: guess_type, n_guess_columns
       integer :: n_radial, n_angular
+      type(scf_convergence_t) :: conv
+      logical :: metric_ok
       character(len=8), allocatable :: element_symbols(:)
       integer :: iatom, functional_id, n_alpha, n_beta
       logical :: need_gradient, unrestricted, occupations_ok
@@ -151,6 +155,52 @@ contains
          call record_failure(result, error)
          return
       end if
+
+      ! A level shift is not implemented on this backend, and the gap is
+      ! documented in scf_convergence.rst rather than being a secret. Refused
+      ! rather than accepted and ignored: silently running an unshifted SCF for
+      ! a deck that asked for a shift is the failure being removed here, and
+      ! implementing GPU level shifting is a feature that wants its own change,
+      ! a validated number and that document updated in the same breath.
+      if (settings%level_shift /= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "keywords.scf.level_shift is set, and the GPU "// &
+                        "backend does not implement level shifting. Refused rather than "// &
+                        "run unshifted without saying so. Use the CPU backend, or drop "// &
+                        "the keyword.")
+         call record_failure(result, error)
+         return
+      end if
+
+      ! ---- what counts as converged? ----------------------------------------
+      !
+      ! `keywords.scf.convergence_metric` reached this backend and was never
+      ! read; the test was hardcoded in both loops. The rule is built here and
+      ! both loops consult it, so the metric names work on the GPU.
+      !
+      ! **This does not make a threshold portable between backends.** The CPU
+      ! measures the commutator as a max element and this one as a Frobenius
+      ! norm over the whole matrix, so the same number means different things on
+      ! the two; the asymmetry predates this and is documented in
+      ! scf_convergence.rst. Naming the metric now works. Carrying a tolerance
+      ! across still does not.
+      call parse_convergence_metric(settings%convergence_metric, conv%metric, metric_ok)
+      if (.not. metric_ok) then
+         call error%set(ERROR_VALIDATION, "keywords.scf.convergence_metric is '"// &
+                        trim(settings%convergence_metric)//"', which is not a metric.")
+         call record_failure(result, error)
+         return
+      end if
+      if (conv%metric == CONV_METRIC_DENSITY) then
+         call error%set(ERROR_VALIDATION, "keywords.scf.convergence_metric is 'density', "// &
+                        "and this backend never forms a density RMS -- its SCF converges "// &
+                        "on the energy and the commutator. Refused rather than answered "// &
+                        "with a quantity that is not computed. Use 'standard', 'energy' "// &
+                        "or 'commutator', or the CPU backend.")
+         call record_failure(result, error)
+         return
+      end if
+      conv%tolerance = settings%energy_tol
+      conv%gradient_tolerance = settings%grad_tol
 
       ! ---- which initial guess? ---------------------------------------------
       !
@@ -278,13 +328,13 @@ contains
                                 settings%energy_tol, settings%density_tol, settings%use_diis, &
                                 settings%diis_size, settings%verbose, scf, error, &
                                 guess=guess_type, guess_alpha=guess_alpha, guess_beta=guess_beta, &
-                                grad_tol=settings%grad_tol)
+                                grad_tol=settings%grad_tol, convergence=conv)
             else
                call run_uks_scf(system, context, fragment%element_numbers, fragment%coordinates, &
                                 fragment%nelec, fragment%multiplicity, settings%max_iter, &
                                 settings%energy_tol, settings%density_tol, settings%use_diis, &
                                 settings%diis_size, settings%verbose, scf, error, guess=guess_type, &
-                                grad_tol=settings%grad_tol)
+                                grad_tol=settings%grad_tol, convergence=conv)
             end if
          else
             if (guess_type == SCF_GUESS_SAC) then
@@ -293,13 +343,13 @@ contains
                                 settings%density_tol, settings%use_diis, settings%diis_size, &
                                 settings%verbose, scf, error, guess=guess_type, &
                                 guess_alpha=guess_alpha, guess_beta=guess_beta, &
-                                grad_tol=settings%grad_tol)
+                                grad_tol=settings%grad_tol, convergence=conv)
             else
                call run_rhf_scf(system, context, fragment%element_numbers, fragment%coordinates, &
                                 fragment%nelec, settings%max_iter, settings%energy_tol, &
                                 settings%density_tol, settings%use_diis, settings%diis_size, &
                                 settings%verbose, scf, error, guess=guess_type, &
-                                grad_tol=settings%grad_tol)
+                                grad_tol=settings%grad_tol, convergence=conv)
             end if
          end if
       end if
