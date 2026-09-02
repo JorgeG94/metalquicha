@@ -5,6 +5,7 @@ target_sources(
           common/mqc_bond_perception.f90
           common/mqc_fragment_lookup.f90
           common/mqc_combinatorics.f90
+          common/mqc_fragmentation_method.f90
           common/mqc_frag_utils.f90
           common/mqc_many_body_expansion.f90
           common/mqc_work_queue.f90

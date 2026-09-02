@@ -31,7 +31,10 @@ contains
                   new_unittest("unknown_target_refused", test_unknown_target), &
                   new_unittest("driver_cartesian", test_driver_cartesian), &
                   new_unittest("driver_cartesian_default", test_driver_cartesian_default), &
-                  new_unittest("driver_carries_maxiter_named_flag", test_driver_maxiter_named) &
+                  new_unittest("driver_carries_maxiter_named_flag", test_driver_maxiter_named), &
+                  new_unittest("fragmentation_method_selects_the_expansion", test_frag_method), &
+                  new_unittest("fragmentation_method_refuses_nonsense", test_frag_method_bad), &
+                  new_unittest("fragmentation_method_refuses_contradiction", test_frag_method_clash) &
                   ]
    end subroutine collect_mqc_config_adapter_tests
 
@@ -151,6 +154,127 @@ contains
 
       call check(error, driver_config%nodes_per_group, 0, "nodes_per_group should default to 0")
    end subroutine test_driver_global_groups
+
+   subroutine frag_driver(method, driver_config, err, expansion, overlapping)
+      !! A fragmented deck naming `method`, through the adapter
+      character(len=*), intent(in) :: method
+      type(driver_config_t), intent(out) :: driver_config
+      type(error_t), intent(inout) :: err
+      character(len=*), intent(in), optional :: expansion
+      logical, intent(in), optional :: overlapping
+
+      type(mqc_config_t) :: config
+
+      config%method = METHOD_TYPE_GFN2
+      config%calc_type = CALC_TYPE_ENERGY
+      config%nfrag = 0
+      config%frag_method = method
+      if (present(expansion)) config%expansion_kind = expansion
+      if (present(overlapping)) config%allow_overlapping_fragments = overlapping
+      call config_to_driver(config, driver_config, error=err)
+   end subroutine frag_driver
+
+   subroutine test_frag_method(error)
+      !! Each method reaches the two switches the driver actually branches on
+      !!
+      !! `method` was required, validated for presence and then never read --
+      !! the expansion came from `expansion` and `allow_overlapping_fragments`
+      !! instead. Every fragmented deck in the tree said "MBE", including the
+      !! ones running FMO, and `method: "wibble"` ran whatever the other keys
+      !! said. These assert the key now decides.
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: dc
+      type(error_t) :: err
+
+      call frag_driver("mbe", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      call check(error, trim(dc%expansion_kind) == "mbe" .and. &
+                 .not. dc%allow_overlapping_fragments, "mbe")
+      if (allocated(error)) return
+
+      call frag_driver("fmo", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      call check(error, trim(dc%expansion_kind) == "fmo", "fmo")
+      if (allocated(error)) return
+
+      call frag_driver("ee-mbe", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      call check(error, trim(dc%expansion_kind) == "ee-mbe", "ee-mbe")
+      if (allocated(error)) return
+
+      ! GMBE is the overlapping flag with the plain term builder, which is how
+      ! the driver has always told the two apart.
+      call frag_driver("gmbe", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      call check(error, dc%allow_overlapping_fragments .and. &
+                 trim(dc%expansion_kind) == "mbe", "gmbe")
+      if (allocated(error)) return
+
+      ! Case and separator are not significant: decks in this tree write both
+      ! "MBE" and "mbe", and the hyphen is the kind of thing typed either way.
+      call frag_driver("EE_MBE", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      call check(error, trim(dc%expansion_kind) == "ee-mbe", "EE_MBE should read as ee-mbe")
+   end subroutine test_frag_method
+
+   subroutine test_frag_method_bad(error)
+      !! A name with no expansion behind it is refused, and told apart from one
+      !! this program simply does not know
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: dc
+      type(error_t) :: err
+
+      call frag_driver("wibble", dc, err)
+      call check(error, err%has_error(), "an unknown method must be refused")
+      if (allocated(error)) return
+      call check(error, index(err%get_message(), "wibble") > 0, &
+                 "the refusal must name the spelling used")
+      if (allocated(error)) return
+      call err%clear()
+
+      ! Reserved, and refused differently: "not implemented yet" and "no such
+      ! method" are different facts and a user acts on them differently.
+      call frag_driver("efmo", dc, err)
+      call check(error, err%has_error(), "efmo must be refused until it exists")
+      if (allocated(error)) return
+      call check(error, index(err%get_message(), "implement") > 0, &
+                 "and refused as unimplemented rather than unknown: "//err%get_message())
+      if (allocated(error)) return
+      call err%clear()
+   end subroutine test_frag_method_bad
+
+   subroutine test_frag_method_clash(error)
+      !! A deck naming both, and disagreeing, is refused rather than ranked
+      !!
+      !! Every FMO deck in this tree used to say `method: mbe` beside
+      !! `expansion: fmo`. Picking a winner would make the loser lose silently,
+      !! which is the failure this whole change is about.
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: dc
+      type(error_t) :: err
+
+      call frag_driver("gmbe", dc, err, expansion="fmo")
+      call check(error, err%has_error(), "method and expansion disagreeing must be refused")
+      if (allocated(error)) return
+      call err%clear()
+
+      call frag_driver("mbe", dc, err, overlapping=.true.)
+      call check(error, err%has_error(), &
+                 "allow_overlapping_fragments beside a non-GMBE method must be refused")
+      if (allocated(error)) return
+      call err%clear()
+
+      ! Agreeing is fine -- a deck mid-migration is not punished for saying the
+      ! same thing twice.
+      call frag_driver("fmo", dc, err, expansion="fmo")
+      call check(error,.not. err%has_error(), &
+                 "agreeing keys must be accepted: "//err%get_message())
+   end subroutine test_frag_method_clash
 
    subroutine test_driver_maxiter_named(error)
       !! `keywords.scf.maxiter` and the flag saying the deck named it

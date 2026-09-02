@@ -40,9 +40,8 @@
             "tolerance": 1e-12
         },
         "fragmentation": {
-            "method": "MBE",
+            "method": "mbe",
             "level": 2,
-            "allow_overlapping_fragments": false,
             "embedding": "none"
         }
     },

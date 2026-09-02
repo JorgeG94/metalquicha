@@ -1194,11 +1194,33 @@ Fragmentation Options
 
 **Parameters**:
 
-- ``method``: ``"MBE"`` (Many-Body Expansion) or ``"GMBE"`` (Generalized MBE for overlapping fragments)
-- ``allow_overlapping_fragments``: ``true`` for GMBE, ``false`` for standard MBE (default: ``false``)
+- ``method``: **which expansion to run.** One of ``"mbe"``, ``"ee-mbe"``,
+  ``"gmbe"`` or ``"fmo"``. Case and separator are not significant, so ``MBE``
+  and ``EE_MBE`` read the same as ``mbe`` and ``ee-mbe``. A name this program
+  does not know is refused, and ``"efmo"`` is refused separately as a method
+  whose name is reserved and whose implementation does not exist yet.
+
+  - ``mbe`` -- the many-body expansion over disjoint fragments
+  - ``ee-mbe`` -- electrostatically embedded MBE; see :doc:`fmo`
+  - ``gmbe`` -- the generalized MBE, over *overlapping* fragments, with the
+    intersection terms supplied by inclusion-exclusion
+  - ``fmo`` -- the fragment molecular orbital method; see :doc:`fmo`
+
+- ``allow_overlapping_fragments``: **deprecated.** It is derived from
+  ``method`` -- ``gmbe`` sets it and nothing else does. Still accepted, and a
+  deck that sets it to something ``method`` disagrees with is refused rather
+  than having one of the two silently win.
 - ``level``: Maximum fragment size (1=monomers only, 2=up to dimers, 3=up to trimers, etc.)
 - ``max_intersection_level``: For GMBE only - maximum k-way intersection depth (default: level + 1)
-- ``expansion``: ``"mbe"`` (default), ``"fmo"`` or ``"ee-mbe"`` - see :doc:`fmo`
+- ``expansion``: **deprecated.** It named the same choice as ``method`` and is
+  now derived from it. Accepted while decks are migrated; a value that
+  disagrees with ``method`` is refused.
+
+  Until recently this key was what actually selected the expansion and
+  ``method`` was required, validated for presence and then never read -- so
+  every fragmented deck in this repository said ``"MBE"``, including the ones
+  running FMO, and a misspelled ``method`` was accepted in silence. If you have
+  decks written that way, move the value into ``method`` and delete this key.
 - ``counterpoise``: ``"none"`` (default) or ``"vmfc"`` for the basis-set
   superposition correction - see :doc:`counterpoise`
 - ``embedding``: Fragment embedding scheme (currently only ``"none"`` supported)
