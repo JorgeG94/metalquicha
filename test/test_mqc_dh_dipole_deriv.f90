@@ -52,13 +52,22 @@ module test_mqc_dh_dipole_deriv
    integer, parameter :: PERT_CART = 3
    real(dp), parameter :: STEP = 2.0e-3_dp
 
-   !> Fifteen times the measured worst, 6.687e-10 -- the stencil's own floor.
+   !> The stencil's floor, bounded across toolchains rather than on one box.
    !>
-   !> Worth stating what this number was before the orbital rotations went in:
-   !> **1.110e-02**, against a correlation dipole of 1.26e-02. Seven orders,
-   !> from two terms whose absence left a derivative that was smooth, correctly
-   !> signed, and summed to the molecular charge.
-   real(dp), parameter :: TOL = 1.0e-8_dp
+   !> Measured 6.687e-10 here and **1.313e-08 in CI** -- a factor of twenty
+   !> between two machines running the same source. Both are the finite
+   !> difference's own noise, amplified by the stencil's `1/60h`: the
+   !> displaced points each re-converge an SCF and a Z-vector solve, and where
+   !> those land in their last digits depends on the BLAS and the compiler.
+   !> A bound set at fifteen times one machine's number failed the other, which
+   !> is what this value is corrected from.
+   !>
+   !> Loose only in appearance. What it exists to catch is the orbital-rotation
+   !> terms: without them this reads **1.110e-02**, against a correlation dipole
+   !> of 1.26e-02 -- five orders above this bound, and a derivative that was
+   !> smooth, correctly signed and summed to the molecular charge while being
+   !> completely wrong.
+   real(dp), parameter :: TOL = 2.0e-7_dp
 
    !> `-c Tr(C dm1mo C^T r)` at the reference geometry, about the nuclear
    !> centroid, from a field difference of PySCF's own B2PLYP energy:

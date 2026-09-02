@@ -135,9 +135,12 @@ contains
       if (allocated(error)) return
 
       write (*, "(a, es10.3)") "        max |analytic - fd| = ", direct
-      ! Twelve times the measured worst, 6.9e-10, which at this step is the
-      ! central difference's own truncation and not the integrals'.
-      call check(error, direct < 8.0e-9_dp, &
+      ! The difference's own floor, bounded for a toolchain rather than a box:
+      ! measured 6.9e-10 here, and the same comparison one rung up varies by a
+      ! factor of twenty between this machine and CI. A bound at ten times one
+      ! measurement does not survive that; this one does, and still sits eight
+      ! orders below the transposed-layout error the next case pins.
+      call check(error, direct < 5.0e-8_dp, &
                  "the dipole integral derivatives do not difference the dipole "// &
                  "integrals")
    end subroutine test_against_difference
@@ -161,12 +164,12 @@ contains
       if (allocated(error)) return
 
       write (*, "(a, es10.3)") "        6-31g*  max |analytic - fd| = ", direct
-      ! Nine times the measured worst, 5.476e-09, which is larger than the
-      ! s-and-p case's 1.543e-09 for the stencil's reason rather than the
-      ! integrals': d functions are sharper, so the same step resolves them
-      ! less well. Held on its own bound instead of borrowing the one above,
-      ! which it would clear by only a factor of one and a half.
-      call check(error, direct < 5.0e-8_dp, &
+      ! Measured 5.476e-09, larger than the s-and-p case's 1.543e-09 for the
+      ! stencil's reason rather than the integrals': d functions are sharper, so
+      ! the same step resolves them less well. Its own bound rather than the one
+      ! above, and both now carry room for the twenty-fold spread between
+      ! machines that this ladder's tighter cases turned out to have.
+      call check(error, direct < 2.0e-7_dp, &
                  "the dipole integral derivatives do not difference the dipole "// &
                  "integrals on a basis with d functions")
    end subroutine test_against_difference_d
