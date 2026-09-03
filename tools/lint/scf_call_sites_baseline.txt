@@ -19,11 +19,11 @@
 # The monomer SCFs behind a SAPT interaction energy. Like the ladder before it,
 # the routine holds no configuration at all -- one has to be threaded in from
 # the caller before there is anything to forward.
-backends/cenzontle/mqc_czt_sapt.f90 3
+backends/cenzontle/sapt/mqc_czt_sapt.f90 3
 
 
 # The Fukui deltaSCF ions and the basis-projection ladder rungs. Both already
 # forward everything their callee accepts; what is missing is the convergence
 # rule itself, which needs `fukui_indices` and `climb_basis_ladder` to take it.
-backends/cenzontle/mqc_czt_fukui.f90 2
-backends/cenzontle/mqc_czt_projection.f90 2
+backends/cenzontle/analysis/mqc_czt_fukui.f90 2
+backends/cenzontle/scf/mqc_czt_projection.f90 2
