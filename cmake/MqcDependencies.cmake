@@ -379,6 +379,52 @@ if(MQC_ENABLE_DLFIND)
   message(STATUS "DL-FIND enabled: geometry optimization via libdlfind")
 endif()
 
+# Cray: put the threaded libsci ahead of the serial one the MPI wrapper drags in.
+#
+# `find_package(MPI)` learns what to link by asking the `ftn` wrapper for its
+# link line, and it asks *without* `-fopenmp`. What comes back therefore names
+# the serial libsci -- `libsci_gnu`, `libsci_gnu_mpi` -- while
+# `find_package(OpenMP)` asks with the flag and gets the threaded pair,
+# `libsci_gnu_mp` and `libsci_gnu_mpi_mp`. Both end up on the link line, and the
+# one listed first is the one every BLAS and LAPACK call in the binary resolves
+# to. Reordering `libraries_to_link` does not settle it: CMake sorts the link
+# line by dependency, and every static library that uses OpenMP has to precede
+# it, so MPI's copy comes first whatever order is written here. Rewriting MPI's
+# imported target does not reach it either -- `MPI::MPI_Fortran` is created in
+# pic-mpi's directory and is not visible from this one.
+#
+# Link options are emitted before any library, so naming the threaded pair here
+# is what puts it first, and the dynamic linker then binds every `dsygvd` and
+# `dgemm` to it.
+#
+# This is a correctness fix, not a performance one. Cray's serial libsci is not
+# re-entrant and it fails quietly: two threads inside `dsygvd` at once corrupt
+# each other's workspace, and on Perlmutter 190 of 200 concurrent calls on one
+# matrix came back with different eigenvalues, the rest with `info` in the
+# forties. Downstream that reads as an SCF that will not converge, or an
+# eigensolver failing on a perfectly ordinary structure -- never as a threading
+# problem, and never in a traceback naming the BLAS. It is what made a
+# conformer search sampling on eight threads lose every metadynamics run it
+# started, while the same tblite in a binary without the serial libsci was
+# fine.
+#
+# Taken from what `find_package(OpenMP)` already resolved, so no path is
+# guessed. Nowhere but a Cray has an entry that matches, and the loop then adds
+# nothing.
+set(mqc_libsci_mp)
+foreach(mqc_omp_lib IN LISTS OpenMP_Fortran_LIBRARIES)
+  if(mqc_omp_lib MATCHES "/libsci_[A-Za-z0-9_]*_mp\\.so")
+    list(APPEND mqc_libsci_mp "${mqc_omp_lib}")
+  endif()
+endforeach()
+if(mqc_libsci_mp)
+  target_link_options(${main_lib} PUBLIC ${mqc_libsci_mp})
+  message(STATUS "Cray libsci: threaded copy linked first (${mqc_libsci_mp}); "
+                 "the serial libsci the MPI wrapper names is not thread-safe")
+endif()
+unset(mqc_omp_lib)
+unset(mqc_libsci_mp)
+
 target_link_libraries(${main_lib} PUBLIC ${libraries_to_link})
 
 # Add json-fortran module directory for Fortran USE statements and ensure

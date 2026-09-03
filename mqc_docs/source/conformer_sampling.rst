@@ -74,6 +74,70 @@ On water, with an HF/STO-3G refinement, that split measured **1,432 mqc calls
 against roughly 56,000 gradients in total**. The ratio is what makes ab initio
 refinement affordable at all.
 
+Threads
+=======
+
+The sampling runs on as many OpenMP threads as ``OMP_NUM_THREADS`` asks for,
+one conformer per thread. Nothing needs saying in the deck:
+
+.. code-block:: bash
+
+   OMP_NUM_THREADS=8 ./mqc conformers.json
+
+The run reports what it got, and how the threads were divided:
+
+.. code-block:: text
+
+     conformer sampling: CREST samples, this program refines
+     sampling threads: 8, 1 per calculation
+
+CREST's own default is a single thread -- it reads ``OMP_NUM_THREADS`` only
+when nothing has set the count, and this driver always sets it -- so the count
+comes from ``omp_get_max_threads()`` at the moment the search starts, which is
+what the launcher asked for.
+
+Measured on butane, iMTD-GC with GFN2 sampling and GFN2 refinement:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 16 18 30 36
+
+   * - Threads
+     - Wall time
+     - Lowest conformer
+     - Relative energies (kcal/mol)
+   * - 1
+     - 134.7 s
+     - -13.66512776
+     - 0.000, 0.596
+   * - 4
+     - 44.8 s
+     - -13.66512776
+     - 0.000, 0.596
+   * - 8
+     - 26.2 s
+     - -13.66512776
+     - 0.000, 0.596
+
+The parallelism is over structures and every calculation underneath stays
+single-threaded, which is why the answer does not move.
+
+.. note::
+
+   **Refinement is serialised, deliberately.** The callback reaches
+   ``run_calculation`` -- the whole program's driver, with the global logger and
+   module state of its own -- which is not re-entrant, so one refinement runs at
+   a time however many threads the search has. The threads are not idle for it:
+   the tens of thousands of gradients a search spends its time on are CREST's
+   own sampling level, which never reaches the callback.
+
+.. warning::
+
+   On a Cray, a threaded search is only trustworthy in a binary that links the
+   *threaded* libsci. With the serial one, every metadynamics trajectory dies on
+   its first gradient and the diagnosis reads as an SCF failure rather than as a
+   threading problem. The build handles it; see :ref:`perlmutter`.
+
 How often refinement runs
 =========================
 
