@@ -7,13 +7,22 @@
 # redden the whole matrix on a metalquicha change that touched nothing, and the
 # signal would be indistinguishable from a real break.
 #
-# v0.1.4 is 9bb326ee84d2e1710b9bdfa93a5fe9e81617d9aa today. It is the first
-# release whose C ABI exposes `int1e_irp`, `<i| r nabla |j>` -- the nuclear
-# derivative of the dipole integrals, and so what an analytic infrared intensity
-# needs. The integral was in the library before this; what it lacked was a C
-# entry point, and reaching the Fortran module directly for it would have made
-# the caller unlinkable against libcint, which is the one property this
-# indirection exists to keep.
+# v0.2.1 is d02d7dd00bd14d2230e0ece7a42faa9738aa8128 today. It is the first
+# release whose `libcint_fortran` carries the scalar ECP -- `libcint_ecp_sph`
+# and `libcint_ecp_cart` -- so `mqc_libcint_ecp` reaches it the way every other
+# integral here is reached, instead of declaring a `bind(C)` interface to
+# libcint's own names and marshalling `atm`, `bas` and `env` into C-typed copies
+# to call it. libcint has no ECP code at all, so this is the one integral the
+# two backends cannot both answer and the `#ifdef` around it stays: what it
+# marks now is a gap in what the libcint cross-check can cover, not a
+# portability constraint.
+#
+# It succeeds v0.1.4, the first release whose C ABI exposes `int1e_irp`, `<i| r
+# nabla |j>` -- the nuclear derivative of the dipole integrals, and so what an
+# analytic infrared intensity needs. The integral was in the library before
+# this; what it lacked was a C entry point, and reaching the Fortran module
+# directly for it would have made the caller unlinkable against libcint, which
+# is the one property this indirection exists to keep.
 #
 # It succeeds v0.1.3, the first release carrying the scalar ECP integrals, which
 # nothing else provides: libcint has no ECP code at all, so `mqc_czt_ecp`
