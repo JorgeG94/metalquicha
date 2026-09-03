@@ -1,12 +1,12 @@
 !! A molecule spanning two fragments, and the overlaps between them
-module mqc_efp_pair
+module mqc_czt_efp_pair
    !! Exchange repulsion, charge transfer and the damping on dispersion all come from
    !! the same thing: overlaps between *one fragment's* localized orbitals and
    !! *another's*. Those are integrals over both fragments' basis functions at once,
    !! so they need a molecule that spans the pair -- which is what this builds.
    !!
    !! The basis comes from the potential's own `PROJECTION BASIS SET`, recovered by
-   !! `mqc_efp_read` with GAMESS's primitive normalization divided back out. The
+   !! `mqc_czt_efp_read` with GAMESS's primitive normalization divided back out. The
    !! *file's* basis, not a lookup of the name it was computed with: a potential is
    !! a self-contained object, and the shipped GAMESS library potentials do not all
    !! name a basis this program has.
@@ -17,10 +17,10 @@ module mqc_efp_pair
    use mqc_cgto, only: molecular_basis_type, ANGULAR_FORM_CARTESIAN
    use mqc_elements, only: element_number_to_symbol
    use mqc_czt_integrals, only: czt_molecule_t
-   use mqc_efp_read, only: efp_fragment_t, N_QUADRUPOLE
-   use mqc_efp_interaction, only: CP_WEIGHT
+   use mqc_czt_efp_read, only: efp_fragment_t, N_QUADRUPOLE
+   use mqc_czt_efp_interaction, only: CP_WEIGHT
    use mqc_czt_esp, only: esp_matrices, drinv_matrices, ddrinv_matrices
-   use mqc_efp_potential, only: from_gamess_ao_order, frozen_core
+   use mqc_czt_efp_potential, only: from_gamess_ao_order, frozen_core
    implicit none
    private
 
@@ -53,7 +53,7 @@ contains
    subroutine fragment_basis(frag, basis, error)
       !! A basis object for one fragment, from the projection basis it carries
       !!
-      !! Cartesian: the ordering maps in `mqc_efp_potential` cover Cartesian s, p,
+      !! Cartesian: the ordering maps in `mqc_czt_efp_potential` cover Cartesian s, p,
       !! d and f, and a spherical potential is refused at write time. **A GAMESS
       !! library potential read here would need that assumption revisited.**
       type(efp_fragment_t), intent(in) :: frag
@@ -584,11 +584,11 @@ contains
       !! the form GAMESS's routine actually hands over.
       !!
       !! *The dipole-dipole tensor arrives transposed.* GAMESS indexes it
-      !! `(field, dipole)` and `mqc_efp_read` indexes it `(dipole, field)`, so
+      !! `(field, dipole)` and `mqc_czt_efp_read` indexes it `(dipole, field)`, so
       !! GAMESS's `DYNDD_LMO_ROT(a,c)` is our `dyn_pol(c,a)`. The swap below is
       !! load-bearing: the tensor's antisymmetric part is 12% of it here.
       !!
-      !! The dipole-quadrupole tensor needs no such care -- `mqc_efp_read` keeps it
+      !! The dipole-quadrupole tensor needs no such care -- `mqc_czt_efp_read` keeps it
       !! flat in file order, so GAMESS's own slot formula recovers GAMESS's tensor.
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: offset_a(3), offset_b(3)
@@ -1060,4 +1060,4 @@ contains
       deallocate (coords, z)
    end subroutine two_fragment_molecule
 
-end module mqc_efp_pair
+end module mqc_czt_efp_pair

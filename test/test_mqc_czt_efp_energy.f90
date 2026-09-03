@@ -1,5 +1,5 @@
 !! The assembled EFP2 interaction energy
-module test_mqc_efp_energy
+module test_mqc_czt_efp_energy
    !! Every term of this was validated on its own against GAMESS, on this exact
    !! dimer. What is left for the assembly to get wrong is not the physics but the
    !! bookkeeping: a term dropped, a term counted twice, a pair loop that visits
@@ -11,16 +11,16 @@ module test_mqc_efp_energy
    !! two compensating mistakes in a sum of five numbers is not a remote possibility.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_efp_potential, only: efp_potential_t, make_efp_potential, &
-                                write_efp_potential
-   use mqc_efp_read, only: efp_fragment_t, read_efp_potential
-   use mqc_efp_energy, only: efp_energy_t, efp_interaction_energy
-   use mqc_efp_rotate, only: rotate_fragment
+   use mqc_czt_efp_potential, only: efp_potential_t, make_efp_potential, &
+                                    write_efp_potential
+   use mqc_czt_efp_read, only: efp_fragment_t, read_efp_potential
+   use mqc_czt_efp_energy, only: efp_energy_t, efp_interaction_energy
+   use mqc_czt_efp_rotate, only: rotate_fragment
    use mqc_error, only: error_t
    implicit none
    private
 
-   public :: collect_mqc_efp_energy_tests
+   public :: collect_mqc_czt_efp_energy_tests
 
    real(dp), parameter :: ANG = 1.0_dp/0.52917724924_dp
 
@@ -32,7 +32,7 @@ module test_mqc_efp_energy
 
 contains
 
-   subroutine collect_mqc_efp_energy_tests(testsuite)
+   subroutine collect_mqc_czt_efp_energy_tests(testsuite)
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &
@@ -40,7 +40,7 @@ contains
                   new_unittest("efp_energy_single_fragment", test_single), &
                   new_unittest("efp_energy_rotation_invariant", test_rotation) &
                   ]
-   end subroutine collect_mqc_efp_energy_tests
+   end subroutine collect_mqc_czt_efp_energy_tests
 
    subroutine water_fragment(frag, err)
       type(efp_fragment_t), intent(out) :: frag
@@ -265,19 +265,19 @@ contains
       rot = matmul(rz, matmul(ry, rx))
    end function general_rotation
 
-end module test_mqc_efp_energy
+end module test_mqc_czt_efp_energy
 
 program tester
    use, intrinsic :: iso_fortran_env, only: error_unit
    use testdrive, only: run_testsuite, new_testsuite, testsuite_type
-   use test_mqc_efp_energy, only: collect_mqc_efp_energy_tests
+   use test_mqc_czt_efp_energy, only: collect_mqc_czt_efp_energy_tests
    implicit none
    integer :: stat, is
    type(testsuite_type), allocatable :: testsuites(:)
    character(len=*), parameter :: fmt = '("#", *(1x, a))'
 
    stat = 0
-   testsuites = [new_testsuite("mqc_efp_energy", collect_mqc_efp_energy_tests)]
+   testsuites = [new_testsuite("mqc_czt_efp_energy", collect_mqc_czt_efp_energy_tests)]
 
    do is = 1, size(testsuites)
       write (error_unit, fmt) "Testing:", testsuites(is)%name

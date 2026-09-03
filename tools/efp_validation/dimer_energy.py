@@ -17,7 +17,7 @@ So this builds the same water dimer twice, once from the potential
 it reports. Agreement means our file *is* a fragment: read, oriented, and used.
 
 **Every term but charge transfer is ours.** Only ``CTVEC`` is unwritten (see
-``backends/cenzontle/mqc_efp_potential.f90``), so GAMESS gets no charge transfer from
+``backends/cenzontle/mqc_czt_efp_potential.f90``), so GAMESS gets no charge transfer from
 our file and reports ``CHARGE TRANSFER=F`` for it. Electrostatics with screening,
 polarization, exchange repulsion and all three dispersion orders are computed from
 parameters we wrote.

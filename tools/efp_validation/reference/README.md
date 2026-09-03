@@ -179,7 +179,7 @@ whichever code you are checking.
 
 **The one term this does not explain is `E8`, at 2.0e-07.** That is three orders
 above this floor. It is the per-orbital pair-antisymmetric difference in `LMOQQPOL`
-described in `backends/cenzontle/mqc_efp_potential.f90`, which is structural rather
+described in `backends/cenzontle/mqc_czt_efp_potential.f90`, which is structural rather
 than numerical -- worth keeping distinct, because "it is just the basis" is a
 comfortable and wrong explanation for it.
 
@@ -217,6 +217,6 @@ they are different fits, and only one of them reproduces GAMESS.
 **Basis.** This runs in 6-31G*, not the 6-311++G(3df,2p) usually recommended for
 EFP2, for two reasons. That set is not in the Basis Set Exchange bundle at all -- it
 carries `6-311++g`, `(2d,2p)`, `(3df,3pd)` and `**` -- and any basis with f functions
-cannot be emitted yet, because the AO-ordering map in `mqc_efp_potential` handles
+cannot be emitted yet, because the AO-ordering map in `mqc_czt_efp_potential` handles
 Cartesian d and stops there. `6-311++G**` is d-only and would work once added to
 `MQC_BASIS_SETS`.

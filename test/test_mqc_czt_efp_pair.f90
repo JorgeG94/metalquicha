@@ -1,5 +1,5 @@
 !! A molecule spanning two fragments, checked by its own block structure
-module test_mqc_efp_pair
+module test_mqc_czt_efp_pair
    !! The inter-fragment overlaps that exchange repulsion, charge transfer and the
    !! dispersion damping need come from a molecule covering both fragments, built out
    !! of the basis the potential itself carries. What makes that checkable without a
@@ -18,21 +18,21 @@ module test_mqc_efp_pair
    !! pass every diagonal check above.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_efp_potential, only: efp_potential_t, make_efp_potential, &
-                                write_efp_potential
-   use mqc_efp_read, only: efp_fragment_t, read_efp_potential
-   use mqc_efp_potential, only: from_gamess_ao_order
-   use mqc_efp_pair, only: two_fragment_molecule, fragment_molecule, fragment_lmo, &
-                           exchange_repulsion, dispersion_e6_damped, &
-                           dispersion_e7_damped, dispersion_e8_damped, &
-                           charge_transfer
+   use mqc_czt_efp_potential, only: efp_potential_t, make_efp_potential, &
+                                    write_efp_potential
+   use mqc_czt_efp_read, only: efp_fragment_t, read_efp_potential
+   use mqc_czt_efp_potential, only: from_gamess_ao_order
+   use mqc_czt_efp_pair, only: two_fragment_molecule, fragment_molecule, fragment_lmo, &
+                               exchange_repulsion, dispersion_e6_damped, &
+                               dispersion_e7_damped, dispersion_e8_damped, &
+                               charge_transfer
    use pic_blas_interfaces, only: pic_gemm
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_error, only: error_t
    implicit none
    private
 
-   public :: collect_mqc_efp_pair_tests
+   public :: collect_mqc_czt_efp_pair_tests
 
    real(dp), parameter :: ANG = 1.0_dp/0.52917724924_dp
 
@@ -42,7 +42,7 @@ module test_mqc_efp_pair
 
 contains
 
-   subroutine collect_mqc_efp_pair_tests(testsuite)
+   subroutine collect_mqc_czt_efp_pair_tests(testsuite)
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &
@@ -58,7 +58,7 @@ contains
                   new_unittest("efp_charge_transfer_dipole", test_ct_dipole), &
                   new_unittest("efp_charge_transfer_full", test_ct_full) &
                   ]
-   end subroutine collect_mqc_efp_pair_tests
+   end subroutine collect_mqc_czt_efp_pair_tests
 
    subroutine water_fragment(frag, err)
       !! One water's potential, built once and copied thereafter
@@ -602,19 +602,19 @@ contains
       call pair%destroy()
    end function coupling
 
-end module test_mqc_efp_pair
+end module test_mqc_czt_efp_pair
 
 program tester
    use, intrinsic :: iso_fortran_env, only: error_unit
    use testdrive, only: run_testsuite, new_testsuite, testsuite_type
-   use test_mqc_efp_pair, only: collect_mqc_efp_pair_tests
+   use test_mqc_czt_efp_pair, only: collect_mqc_czt_efp_pair_tests
    implicit none
    integer :: stat, is
    type(testsuite_type), allocatable :: testsuites(:)
    character(len=*), parameter :: fmt = '("#", *(1x, a))'
 
    stat = 0
-   testsuites = [new_testsuite("mqc_efp_pair", collect_mqc_efp_pair_tests)]
+   testsuites = [new_testsuite("mqc_czt_efp_pair", collect_mqc_czt_efp_pair_tests)]
 
    do is = 1, size(testsuites)
       write (error_unit, fmt) "Testing:", testsuites(is)%name

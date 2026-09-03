@@ -1,8 +1,8 @@
 !! Placing a fragment in an arbitrary orientation
-module test_mqc_efp_rotate
+module test_mqc_czt_efp_rotate
    !! The rotation machinery, checked on its own rather than only through an energy.
    !!
-   !! `test_mqc_efp_energy` asserts that the whole interaction is invariant under a
+   !! `test_mqc_czt_efp_energy` asserts that the whole interaction is invariant under a
    !! rigid rotation, which is the statement that matters -- but it is one number at
    !! the end of a long chain, so when it breaks it does not say where. These are the
    !! pieces, each against a property that pins it without a reference value:
@@ -15,18 +15,18 @@ module test_mqc_efp_rotate
    !!     carries, and must leave the orbitals orthonormal in the rotated basis.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_efp_potential, only: efp_potential_t, make_efp_potential, &
-                                write_efp_potential, from_gamess_ao_order
-   use mqc_efp_read, only: efp_fragment_t, read_efp_potential
-   use mqc_efp_rotate, only: superpose, rotate_fragment, cartesian_rotation
-   use mqc_efp_pair, only: fragment_molecule
+   use mqc_czt_efp_potential, only: efp_potential_t, make_efp_potential, &
+                                    write_efp_potential, from_gamess_ao_order
+   use mqc_czt_efp_read, only: efp_fragment_t, read_efp_potential
+   use mqc_czt_efp_rotate, only: superpose, rotate_fragment, cartesian_rotation
+   use mqc_czt_efp_pair, only: fragment_molecule
    use mqc_czt_integrals, only: czt_molecule_t
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
    implicit none
    private
 
-   public :: collect_mqc_efp_rotate_tests
+   public :: collect_mqc_czt_efp_rotate_tests
 
    real(dp), parameter :: ANG = 1.0_dp/0.52917724924_dp
 
@@ -38,7 +38,7 @@ module test_mqc_efp_rotate
 
 contains
 
-   subroutine collect_mqc_efp_rotate_tests(testsuite)
+   subroutine collect_mqc_czt_efp_rotate_tests(testsuite)
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &
@@ -49,7 +49,7 @@ contains
                   new_unittest("rotate_fragment_keeps_invariants", test_invariants), &
                   new_unittest("rotate_fragment_keeps_orbitals_orthonormal", test_orbitals) &
                   ]
-   end subroutine collect_mqc_efp_rotate_tests
+   end subroutine collect_mqc_czt_efp_rotate_tests
 
    pure function sample_rotation(a, b, c) result(rot)
       !! Three successive axis rotations, so nothing is aligned with a coordinate axis
@@ -382,19 +382,19 @@ contains
       deallocate (s, c, sc, gram)
    end subroutine test_orbitals
 
-end module test_mqc_efp_rotate
+end module test_mqc_czt_efp_rotate
 
 program tester
    use, intrinsic :: iso_fortran_env, only: error_unit
    use testdrive, only: run_testsuite, new_testsuite, testsuite_type
-   use test_mqc_efp_rotate, only: collect_mqc_efp_rotate_tests
+   use test_mqc_czt_efp_rotate, only: collect_mqc_czt_efp_rotate_tests
    implicit none
    integer :: stat, is
    type(testsuite_type), allocatable :: testsuites(:)
    character(len=*), parameter :: fmt = '("#", *(1x, a))'
 
    stat = 0
-   testsuites = [new_testsuite("mqc_efp_rotate", collect_mqc_efp_rotate_tests)]
+   testsuites = [new_testsuite("mqc_czt_efp_rotate", collect_mqc_czt_efp_rotate_tests)]
 
    do is = 1, size(testsuites)
       write (error_unit, fmt) "Testing:", testsuites(is)%name

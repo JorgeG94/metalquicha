@@ -1,5 +1,5 @@
 !! That a written fragment potential reads back as the parameters that went in
-module test_mqc_efp_read
+module test_mqc_czt_efp_read
    !! The writer and the reader are two halves of one format, and the format is
    !! GAMESS's rather than one chosen here -- labels, fixed columns, records
    !! continued with a trailing `>`. That makes a round trip the test worth having:
@@ -21,9 +21,9 @@ module test_mqc_efp_read
    !! as far as the format allows.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_efp_potential, only: efp_potential_t, make_efp_potential, &
-                                write_efp_potential
-   use mqc_efp_read, only: efp_fragment_t, read_efp_potential
+   use mqc_czt_efp_potential, only: efp_potential_t, make_efp_potential, &
+                                    write_efp_potential
+   use mqc_czt_efp_read, only: efp_fragment_t, read_efp_potential
    use mqc_error, only: error_t
    use mqc_cgto, only: molecular_basis_type
    use mqc_basis_utils, only: find_basis_file
@@ -31,7 +31,7 @@ module test_mqc_efp_read
    implicit none
    private
 
-   public :: collect_mqc_efp_read_tests
+   public :: collect_mqc_czt_efp_read_tests
 
    !! GAMESS's Bohr, matching the emitter.
    real(dp), parameter :: ANG = 1.0_dp/0.52917724924_dp
@@ -41,7 +41,7 @@ module test_mqc_efp_read
 
 contains
 
-   subroutine collect_mqc_efp_read_tests(testsuite)
+   subroutine collect_mqc_czt_efp_read_tests(testsuite)
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &
@@ -51,7 +51,7 @@ contains
                   new_unittest("efp_projection_basis", test_projection_basis), &
                   new_unittest("efp_missing_file", test_missing_file) &
                   ]
-   end subroutine collect_mqc_efp_read_tests
+   end subroutine collect_mqc_czt_efp_read_tests
 
    subroutine water(pot, err)
       !! One water potential, in the basis the emitter can write
@@ -349,7 +349,7 @@ contains
       ! The localized orbitals, still in GAMESS's AO order. Only what can be checked
       ! without converting them: the declared shape, the first coefficient against the
       ! file, and that every orbital carries something. The conversion needs a molecule
-      ! and belongs with `mqc_efp_pair`.
+      ! and belongs with `mqc_czt_efp_pair`.
       call check(error, frag%has_lmo, "the projection wavefunction was not read")
       if (allocated(error)) return
       call check(error, frag%n_lmo_proj == 4, "expected four localized orbitals")
@@ -401,19 +401,19 @@ contains
       if (stat == 0) close (unit, status="delete")
    end subroutine delete
 
-end module test_mqc_efp_read
+end module test_mqc_czt_efp_read
 
 program tester
    use, intrinsic :: iso_fortran_env, only: error_unit
    use testdrive, only: run_testsuite, new_testsuite, testsuite_type
-   use test_mqc_efp_read, only: collect_mqc_efp_read_tests
+   use test_mqc_czt_efp_read, only: collect_mqc_czt_efp_read_tests
    implicit none
    integer :: stat, is
    type(testsuite_type), allocatable :: testsuites(:)
    character(len=*), parameter :: fmt = '("#", *(1x, a))'
 
    stat = 0
-   testsuites = [new_testsuite("mqc_efp_read", collect_mqc_efp_read_tests)]
+   testsuites = [new_testsuite("mqc_czt_efp_read", collect_mqc_czt_efp_read_tests)]
 
    do is = 1, size(testsuites)
       write (error_unit, fmt) "Testing:", testsuites(is)%name

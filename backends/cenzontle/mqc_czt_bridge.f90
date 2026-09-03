@@ -289,9 +289,9 @@ contains
       !! the CPU backend; the stub beside this declines with the same signature.
       use pic_types, only: dp
       use mqc_program_limits, only: N_EFP_TERMS
-      use mqc_efp_read, only: efp_fragment_t, read_efp_potential
-      use mqc_efp_energy, only: efp_energy_t, efp_interaction_energy, place_fragment
-      use mqc_efp_rotate, only: rotate_fragment
+      use mqc_czt_efp_read, only: efp_fragment_t, read_efp_potential
+      use mqc_czt_efp_energy, only: efp_energy_t, efp_interaction_energy, place_fragment
+      use mqc_czt_efp_rotate, only: rotate_fragment
       character(len=*), intent(in) :: potentials(:)    !! One path per fragment
       integer, intent(in) :: fragment_sizes(:)
       integer, intent(in) :: fragment_atoms(:, :)      !! (max_size, n_frag), 0-based
@@ -358,8 +358,8 @@ contains
       !! the CPU backend; the stub beside this declines with the same signature.
       use pic_types, only: dp
       use mqc_program_limits, only: N_SAPT_TERMS
-      use mqc_sapt, only: sapt_molecules_t, build_sapt_molecules, sapt_terms_t, &
-                          run_sapt0
+      use mqc_czt_sapt, only: sapt_molecules_t, build_sapt_molecules, sapt_terms_t, &
+                              run_sapt0
       integer, intent(in) :: z_a(:), z_b(:)
       character(len=*), intent(in) :: sym_a(:), sym_b(:)
       real(dp), intent(in) :: xyz_a(:, :), xyz_b(:, :)   !! (3, n), Bohr
@@ -403,8 +403,8 @@ contains
       !! exchange-induction, and its own total
       use pic_types, only: dp
       use mqc_program_limits, only: N_SAPT2_TERMS
-      use mqc_sapt, only: sapt_molecules_t, build_sapt_molecules, sapt_terms_t, &
-                          run_sapt2
+      use mqc_czt_sapt, only: sapt_molecules_t, build_sapt_molecules, sapt_terms_t, &
+                              run_sapt2
       integer, intent(in) :: z_a(:), z_b(:)
       character(len=*), intent(in) :: sym_a(:), sym_b(:)
       real(dp), intent(in) :: xyz_a(:, :), xyz_b(:, :)   !! (3, n), Bohr
@@ -453,8 +453,8 @@ contains
       !! whether this build has an integral backend; the stub next to it
       !! declines with the same signature.
       use pic_types, only: dp
-      use mqc_efp_potential, only: efp_potential_t, make_efp_potential, &
-                                   write_efp_potential
+      use mqc_czt_efp_potential, only: efp_potential_t, make_efp_potential, &
+                                       write_efp_potential
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in) :: coordinates(:, :)     !! (3, natm), Bohr

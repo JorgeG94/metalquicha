@@ -1,5 +1,5 @@
 !! Interaction energies between effective fragments
-module mqc_efp_interaction
+module mqc_czt_efp_interaction
    !! What a fragment potential is *for*: given several of them placed in space,
    !! the energy of their interaction.
    !!
@@ -20,7 +20,7 @@ module mqc_efp_interaction
    use pic_logger, only: logger => global_logger, verbose_level
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_efp_read, only: efp_fragment_t
+   use mqc_czt_efp_read, only: efp_fragment_t
    implicit none
    private
 
@@ -520,7 +520,7 @@ contains
       !! on the localized orbital centroids, a different set of points from the
       !! multipole expansion.
       ! TODO(mqc): the quadrature index runs to the smaller of the two
-      ! fragments' `n_freq`, which `mqc_efp_read` takes from the file without
+      ! fragments' `n_freq`, which `mqc_czt_efp_read` takes from the file without
       ! checking it against `N_FREQUENCIES`. A potential written with more than
       ! twelve frequency blocks reads past the end of `CP_WEIGHT`.
       type(efp_system_t), intent(in) :: system
@@ -668,4 +668,4 @@ contains
       end do
    end function octupole_trace
 
-end module mqc_efp_interaction
+end module mqc_czt_efp_interaction

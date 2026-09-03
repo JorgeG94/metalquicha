@@ -54,13 +54,13 @@ target_sources(
           mqc_czt_ao.f90
           mqc_czt_xc.F90
           mqc_czt_vv10.f90
-          mqc_efp_potential.f90
-          mqc_efp_read.f90
-          mqc_efp_interaction.f90
-          mqc_efp_pair.f90
-          mqc_efp_rotate.f90
-          mqc_efp_energy.f90
-          mqc_sapt.f90)
+          mqc_czt_efp_potential.f90
+          mqc_czt_efp_read.f90
+          mqc_czt_efp_interaction.f90
+          mqc_czt_efp_pair.f90
+          mqc_czt_efp_rotate.f90
+          mqc_czt_efp_energy.f90
+          mqc_czt_sapt.f90)
 
 # The validation and benchmark programs that exercise this backend. Registered
 # from here rather than from the top-level file so that a build without CPU

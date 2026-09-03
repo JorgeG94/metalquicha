@@ -31,12 +31,12 @@
 program bench_efp
    use pic_types, only: dp, int64
    use mqc_error, only: error_t
-   use mqc_efp_potential, only: efp_potential_t, make_efp_potential, &
-                                write_efp_potential
-   use mqc_efp_read, only: efp_fragment_t, read_efp_potential
-   use mqc_efp_interaction, only: efp_system_t, build_efp_system, &
-                                  electrostatic_energy, polarization_energy, &
-                                  dispersion_energy_e6
+   use mqc_czt_efp_potential, only: efp_potential_t, make_efp_potential, &
+                                    write_efp_potential
+   use mqc_czt_efp_read, only: efp_fragment_t, read_efp_potential
+   use mqc_czt_efp_interaction, only: efp_system_t, build_efp_system, &
+                                      electrostatic_energy, polarization_energy, &
+                                      dispersion_energy_e6
    use omp_lib, only: omp_get_max_threads
    implicit none
 

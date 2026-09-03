@@ -14,12 +14,12 @@ module test_mqc_sapt
    !!     by comparing against the monomer alone
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_sapt, only: sapt_molecules_t, build_sapt_molecules, &
-                       sapt_cache_t, build_sapt_cache, sapt_elst10, sapt_exch10_s2, sapt_exch10, &
-                       sapt_induction, sapt_terms_t, sapt_disp20, sapt_exch_disp20, run_sapt0, &
-                       sapt2_cache_t, build_sapt2_cache, sapt2_amps_t, build_sapt2_amps, &
-                       sapt2_zero_amps, sapt2_amps_mp2_energy, sapt2_k2f, sapt_elst12, &
-                       sapt_exch11, sapt_exch12, sapt_ind22, run_sapt2
+   use mqc_czt_sapt, only: sapt_molecules_t, build_sapt_molecules, &
+                           sapt_cache_t, build_sapt_cache, sapt_elst10, sapt_exch10_s2, sapt_exch10, &
+                           sapt_induction, sapt_terms_t, sapt_disp20, sapt_exch_disp20, run_sapt0, &
+                           sapt2_cache_t, build_sapt2_cache, sapt2_amps_t, build_sapt2_amps, &
+                           sapt2_zero_amps, sapt2_amps_mp2_energy, sapt2_k2f, sapt_elst12, &
+                           sapt_exch11, sapt_exch12, sapt_ind22, run_sapt2
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_mp2, only: run_czt_mp2, mp2_result_t
@@ -774,7 +774,7 @@ program tester
    character(len=*), parameter :: fmt = '("#", *(1x, a))'
 
    stat = 0
-   testsuites = [new_testsuite("mqc_sapt", collect_mqc_sapt_tests)]
+   testsuites = [new_testsuite("mqc_czt_sapt", collect_mqc_sapt_tests)]
 
    do is = 1, size(testsuites)
       write (error_unit, fmt) "Testing:", testsuites(is)%name

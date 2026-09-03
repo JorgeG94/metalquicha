@@ -1,5 +1,5 @@
 !! Placing a fragment in an arbitrary orientation
-module mqc_efp_rotate
+module mqc_czt_efp_rotate
    !! A potential carries the geometry it was made at, and everything it stores
    !! is expressed in its own frame: the multipoles, the polarizability tensors
    !! at every rank, and the localized orbitals. Placing the fragment where a
@@ -26,11 +26,11 @@ module mqc_efp_rotate
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_efp_read, only: efp_fragment_t, N_QUADRUPOLE, N_OCTUPOLE
+   use mqc_czt_efp_read, only: efp_fragment_t, N_QUADRUPOLE, N_OCTUPOLE
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
    use libcint_fortran, only: LIBCINT_ANG_OF
-   use mqc_efp_potential, only: from_gamess_ao_order, to_gamess_ao_order
-   use mqc_efp_pair, only: fragment_molecule, N_DQ_SLOTS, N_QQ_SLOTS
+   use mqc_czt_efp_potential, only: from_gamess_ao_order, to_gamess_ao_order
+   use mqc_czt_efp_pair, only: fragment_molecule, N_DQ_SLOTS, N_QQ_SLOTS
    implicit none
    private
 
@@ -39,7 +39,7 @@ module mqc_efp_rotate
    public :: cartesian_rotation
 
    ! Highest angular momentum a projection basis is handled at.
-   ! `mqc_efp_potential` refuses to write anything higher, so a shell beyond this
+   ! `mqc_czt_efp_potential` refuses to write anything higher, so a shell beyond this
    ! is a corrupt file rather than a case to support.
    integer, parameter :: MAX_L = 4
 
@@ -223,7 +223,7 @@ contains
 
       ! The two higher dispersion blocks are stored flat in the file's own slot
       ! order, so they are unpacked, rotated and repacked rather than rotated in
-      ! place. Their index conventions are documented in `mqc_efp_pair`.
+      ! place. Their index conventions are documented in `mqc_czt_efp_pair`.
       if (allocated(frag%dipquad)) then
          do f = 1, size(frag%dipquad, 3)
             do k = 1, size(frag%dipquad, 2)
@@ -363,7 +363,7 @@ contains
       !! Ten stored components, `xxx yyy zzz xxy xxz xyy yyz xzz yzz xyz`
       !!
       !! GAMESS's order, read off how `efelec.src` unpacks `EFOCT`; the same order
-      !! `mqc_efp_interaction` spreads into a full tensor.
+      !! `mqc_czt_efp_interaction` spreads into a full tensor.
       real(dp), intent(in) :: packed(N_OCTUPOLE), rot(3, 3)
       real(dp) :: out(N_OCTUPOLE)
 
@@ -644,4 +644,4 @@ contains
       end do
    end function factorial
 
-end module mqc_efp_rotate
+end module mqc_czt_efp_rotate

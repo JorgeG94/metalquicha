@@ -1,11 +1,11 @@
 !! The EFP2 interaction energy, all five terms
-module mqc_efp_energy
+module mqc_czt_efp_energy
    !! What the rest of the EFP code is for: given placed fragments, one number.
    !!
    !! The five terms live in two modules because they need different things.
-   !! `mqc_efp_interaction` works on a flattened point set and covers the terms that
+   !! `mqc_czt_efp_interaction` works on a flattened point set and covers the terms that
    !! are geometry and stored tensors -- electrostatics, polarization, and the
-   !! undamped `E6`. `mqc_efp_pair` works on fragment *pairs* and covers everything
+   !! undamped `E6`. `mqc_czt_efp_pair` works on fragment *pairs* and covers everything
    !! needing integrals over two fragments' basis sets at once: exchange repulsion,
    !! charge transfer, and the damped dispersion, whose damping is an overlap between
    !! localized orbitals on different fragments. This module is where the two meet,
@@ -17,21 +17,21 @@ module mqc_efp_energy
    !!
    !! **Dispersion is the damped sum `E6 + E7 + E8`**, which is what GAMESS
    !! totals when the potential carries the tensors for all three. The undamped
-   !! `dispersion_energy_e6` in `mqc_efp_interaction` is not used here.
+   !! `dispersion_energy_e6` in `mqc_czt_efp_interaction` is not used here.
    !!
    !! **Fragments arrive already turned.** `place_fragment` gives the rotation a deck
-   !! implies and `mqc_efp_rotate` applies it, so by the time a fragment reaches this
+   !! implies and `mqc_czt_efp_rotate` applies it, so by the time a fragment reaches this
    !! module its own stored frame *is* the working frame and all that is left is the
    !! translation each term takes as an offset.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_efp_read, only: efp_fragment_t
-   use mqc_efp_interaction, only: efp_system_t, build_efp_system, &
-                                  electrostatic_energy, polarization_energy
-   use mqc_efp_pair, only: exchange_repulsion, charge_transfer, &
-                           dispersion_e6_damped, dispersion_e7_damped, &
-                           dispersion_e8_damped
-   use mqc_efp_rotate, only: superpose
+   use mqc_czt_efp_read, only: efp_fragment_t
+   use mqc_czt_efp_interaction, only: efp_system_t, build_efp_system, &
+                                      electrostatic_energy, polarization_energy
+   use mqc_czt_efp_pair, only: exchange_repulsion, charge_transfer, &
+                               dispersion_e6_damped, dispersion_e7_damped, &
+                               dispersion_e8_damped
+   use mqc_czt_efp_rotate, only: superpose
    implicit none
    private
 
@@ -232,4 +232,4 @@ contains
       text = trim(buffer)
    end function count_text
 
-end module mqc_efp_energy
+end module mqc_czt_efp_energy

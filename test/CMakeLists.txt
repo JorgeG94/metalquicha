@@ -186,8 +186,8 @@ if(MQC_ENABLE_CZT)
   # A fragment potential written and read back. The format is GAMESS's, so
   # writer and reader are two halves of one thing and a round trip is what pins
   # them.
-  addtest(mqc_efp_read)
-  target_link_libraries(test_mqc_efp_read PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_efp_read)
+  target_link_libraries(test_mqc_czt_efp_read PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # That the deck's SCF settings reach the one SCF a MakeFP run performs. Six of
   # them used to be dropped between the config and the call, which no deck test
@@ -198,26 +198,27 @@ if(MQC_ENABLE_CZT)
   # The electrostatic interaction between two fragments, against the energy
   # GAMESS reports for the same dimer. Chiefly a guard on the charge-dipole
   # sign, which both ways round gives a plausible-looking answer.
-  addtest(mqc_efp_interaction)
-  target_link_libraries(test_mqc_efp_interaction PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_efp_interaction)
+  target_link_libraries(test_mqc_czt_efp_interaction
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # A molecule spanning two fragments, checked by the block structure of its own
   # overlap: the diagonal blocks must be each fragment's overlap exactly.
-  addtest(mqc_efp_pair)
-  target_link_libraries(test_mqc_efp_pair PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_efp_pair)
+  target_link_libraries(test_mqc_czt_efp_pair PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # All five EFP2 terms assembled into one energy. Each was pinned against
   # GAMESS on its own, so what this checks is the bookkeeping: no term dropped,
   # none counted twice, dispersion totalled damped rather than undamped.
-  addtest(mqc_efp_energy)
-  target_link_libraries(test_mqc_efp_energy PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_efp_energy)
+  target_link_libraries(test_mqc_czt_efp_energy PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Placing a fragment in an arbitrary orientation, piece by piece: the frame
   # construction, the Cartesian shell rotation as a group representation, and
   # the invariants a rotated fragment must keep. The energy test asserts the
   # same thing end to end but cannot say which piece broke.
-  addtest(mqc_efp_rotate)
-  target_link_libraries(test_mqc_efp_rotate PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_efp_rotate)
+  target_link_libraries(test_mqc_czt_efp_rotate PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # The free-atom initial guesses. Chiefly that every guess reaches the same
   # energy, and that SAD is spherically symmetric where SAC is not -- without
@@ -257,8 +258,8 @@ if(MQC_ENABLE_CZT)
   # SAPT0's molecules: ghosts in the dimer basis. Everything checkable before a
   # term is computed -- that ghosts keep their basis and lose their charge, and
   # that a monomer's AO ordering is the dimer's, which Tr(D S) catches.
-  addtest(mqc_sapt)
-  target_link_libraries(test_mqc_sapt PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_sapt)
+  target_link_libraries(test_mqc_czt_sapt PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Coupled cluster, against the identities a reference energy cannot see:
   # <pq||rs> antisymmetry, spin-forbidden integrals vanishing exactly, and the

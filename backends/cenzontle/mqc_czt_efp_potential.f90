@@ -1,5 +1,5 @@
 !! A complete effective fragment potential, computed and written here
-module mqc_efp_potential
+module mqc_czt_efp_potential
    !! `RUNTYP=MAKEFP`: a geometry and a basis name in, a `.efp` file out.
    !!
    !! The assembly: the SCF, the localization, the multipoles, the static and
@@ -94,7 +94,7 @@ module mqc_efp_potential
       !! Also the transpose of what `efinp.src:7552-7561` writes, which is not a
       !! conflict: GAMESS indexes the tensor `(field, dipole)` where this code
       !! indexes it `(dipole, field)`, so both put the same number in slot 4. See
-      !! the note on `POL_ROW` in `mqc_efp_read`, which carries the measurement.
+      !! the note on `POL_ROW` in `mqc_czt_efp_read`, which carries the measurement.
    integer, parameter :: POL_COL(N_CART_PAIR) = [1, 2, 3, 1, 1, 2, 2, 3, 3]
 
    integer, parameter :: QXX = 1, QXY = 2, QXZ = 3, QYX = 4, QYY = 5
@@ -1583,4 +1583,4 @@ contains
       end do
    end subroutine write_wavefunction
 
-end module mqc_efp_potential
+end module mqc_czt_efp_potential

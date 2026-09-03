@@ -1901,7 +1901,7 @@ contains
       !! **The quadrupole to pass is the traceless Buckingham form**, not the raw
       !! second moment, and the quadrupole-quadrupole case carries an extra factor
       !! of one third that the mixed case does not. Both are applied by the
-      !! caller; see `mqc_efp_potential`.
+      !! caller; see `mqc_czt_efp_potential`.
       !!
       !! **Per orbital, which operator measures is not a free choice.** One order
       !! gives `h P M^-1 h` and the other `h M^-1 P h`, and the projector onto the

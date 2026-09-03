@@ -1,5 +1,5 @@
 !! Symmetry-adapted perturbation theory, SAPT0 and SAPT2
-module mqc_sapt
+module mqc_czt_sapt
    !! The interaction energy as a sum of named physical terms -- electrostatics,
    !! exchange, induction, dispersion -- rather than as a difference of two totals.
    !!
@@ -3853,4 +3853,4 @@ contains
       self%n_atoms_b = 0
    end subroutine sapt_molecules_destroy
 
-end module mqc_sapt
+end module mqc_czt_sapt

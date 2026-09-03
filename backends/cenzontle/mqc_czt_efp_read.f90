@@ -1,6 +1,6 @@
 !! Read a `.efp` fragment potential back in
-module mqc_efp_read
-   !! The other half of `mqc_efp_potential`: that module computes a potential and
+module mqc_czt_efp_read
+   !! The other half of `mqc_czt_efp_potential`: that module computes a potential and
    !! writes it, this one reads one and hands back the parameters an interaction
    !! energy needs.
    !!
@@ -22,7 +22,7 @@ module mqc_efp_read
    !! multipoles. Nothing is converted on the way in.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_IO
-   use mqc_efp_potential, only: gamess_primitive_norm
+   use mqc_czt_efp_potential, only: gamess_primitive_norm
    implicit none
    private
 
@@ -43,7 +43,7 @@ module mqc_efp_read
 
    ! Row and column of each of GAMESS's nine polarizability slots. The diagonal
    ! comes first and the off-diagonal triples are the transpose of what the
-   ! labels suggest -- the same map `mqc_efp_potential` writes with. Reading the
+   ! labels suggest -- the same map `mqc_czt_efp_potential` writes with. Reading the
    ! nine as a row-major 3x3 gives a tensor whose trace is negative, which is
    ! how the mistake announces itself.
    !
@@ -124,7 +124,7 @@ module mqc_efp_read
       real(dp), allocatable :: lmo_gamess(:, :)   !! (nao_proj, n_lmo_proj)
          !! The localized orbitals, in **GAMESS's** AO order, not libcint's.
          !! Converting them needs the shell layout of a built molecule, so it is
-         !! left to whoever builds one; see `mqc_efp_pair`.
+         !! left to whoever builds one; see `mqc_czt_efp_pair`.
       logical :: has_lmo = .false.
 
       real(dp), allocatable :: fock_lmo(:, :)     !! (n_lmo_proj, n_lmo_proj)
@@ -537,7 +537,7 @@ contains
       !!
       !! **Left in GAMESS's AO order.** Converting to libcint's needs the shell
       !! layout of a molecule, which this module does not build, and the d and f
-      !! ordering maps in `mqc_efp_potential` have to be applied in *reverse*.
+      !! ordering maps in `mqc_czt_efp_potential` have to be applied in *reverse*.
       character(len=*), intent(in) :: lines(:)
       integer, intent(in) :: n_lines
       type(efp_fragment_t), intent(inout) :: frag
@@ -1364,4 +1364,4 @@ contains
       close (unit)
    end subroutine slurp
 
-end module mqc_efp_read
+end module mqc_czt_efp_read
