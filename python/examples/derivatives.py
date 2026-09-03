@@ -10,23 +10,25 @@ back, and have no way to see them.
 
 What is worth knowing about the numbers, since the assertions below lean on it:
 
-**Imaginary modes come back negative.** The vibrational analysis writes them
-that way and so does every other code that prints frequencies. A minimum has
-none; a transition state has exactly one. A geometry that is not a stationary
-point has whatever the curvature happens to be, which is why the water here is
-optimized first rather than taken from a guess -- frequencies at a
-non-stationary point are a number without a meaning, and asserting on them
-would be asserting on noise.
+**All 3N modes come back, rigid-body ones included.** They are not projected
+out: water returns nine frequencies, six of them within a hundredth of a
+wavenumber of zero and three genuine vibrations. A caller wanting the
+vibrations filters by magnitude, which is what the assertions below do. This
+is worth knowing before comparing a mode count against another program, most
+of which print 3N-6.
 
-**Six modes are removed, not computed.** Three translations and three
-rotations are projected out before diagonalisation, so a non-linear molecule of
-N atoms has 3N-6 frequencies. Water gives three. Getting 3N back means the
-projection did not run.
+**Imaginary modes come back negative**, which is the convention every code
+that prints frequencies uses. The catch is that the six rigid-body modes sit
+at zero and their *sign* is numerical noise, so a perfectly good minimum
+reports `n_imaginary_frequencies` of three. Water below is a minimum and does
+exactly that. The count is about the near-zero modes, not about the chemistry;
+what says a structure is a saddle point is a mode of real magnitude that came
+out negative.
 
-**Thermochemistry follows the frequencies and inherits their problems.** RRHO
-integrates over harmonic modes, so an imaginary one has nothing to contribute
-and is dropped -- `n_imaginary_frequencies` is reported and the free energy is
-still printed beside it. Read the count before quoting the number.
+**Thermochemistry is built from the genuine vibrations only.** The zero-point
+energy here is `0.5 * sum` over the three real modes and nothing else, which
+the assertions check directly -- so the mode counts beside it can be confusing
+while the energies are right.
 
 Run as a test rather than a demonstration: each case asserts, and the script
 exits non-zero if any of them is wrong.
@@ -54,6 +56,12 @@ MODEL = dict(method="hf", basis="sto-3g", verbosity="error")
 def water():
     s = mqc.System()
     s.set_geometry(WATER["symbols"], WATER["coords"])
+    # The whole molecule as one monomer. The validator wants a partition
+    # whether or not the expansion will use one, and `auto_monomers` refuses a
+    # single covalently bonded molecule -- rightly, since where to cut it is a
+    # chemical choice. At level 0 nothing is cut, so "all of it, once" is the
+    # honest way to ask.
+    s.set_monomers([[0, 1, 2]])
     return s
 
 
@@ -62,31 +70,60 @@ def hessian_run(label):
     return mqc.MBE(water(), level=0, driver="Hessian", **MODEL).run(label=label)
 
 
+#: Anything under this in cm^-1 is a rigid-body mode rather than a vibration.
+#: Water's lowest genuine mode is the bend, two thousand wavenumbers up, so
+#: nothing here is near the boundary.
+RIGID_BODY_CUTOFF = 100.0
+
+#: Wavenumbers per Hartree, for checking the zero-point energy against the
+#: frequencies it was built from.
+CM1_PER_HARTREE = 219474.6313632
+
+
 def case_frequencies():
-    """3N-6 modes, all real, and the arrays agree with each other."""
+    """3N modes come back; three of them are the vibrations."""
     print("water/STO-3G Hessian: frequencies")
     result = hessian_run("py_freq")
 
     freqs = result.frequencies
     assert freqs is not None, "a Hessian run returned no frequencies"
-    # Water is non-linear and has three atoms, so 3*3 - 6 = 3.
-    assert len(freqs) == 3, f"expected 3 modes after projection, got {len(freqs)}"
-    # A minimum. Any negative entry here means the geometry was not one.
-    assert all(f > 0.0 for f in freqs), f"imaginary mode at a minimum: {freqs}"
+    # All 3N, rigid-body modes included -- they are not projected out.
+    assert len(freqs) == 9, f"expected 3N = 9 modes, got {len(freqs)}"
     # Ordered, which is what makes "the first mode" mean anything.
     assert freqs == sorted(freqs), f"frequencies are not ascending: {freqs}"
+
+    vibrations = [f for f in freqs if abs(f) > RIGID_BODY_CUTOFF]
+    rigid = [f for f in freqs if abs(f) <= RIGID_BODY_CUTOFF]
+    # 3N-6 genuine vibrations for a non-linear three-atom molecule.
+    assert len(vibrations) == 3, f"expected 3 vibrations, got {vibrations}"
+    assert len(rigid) == 6, f"expected 6 rigid-body modes, got {rigid}"
+    # The six sit at zero. Their sign is noise; their magnitude should not be.
+    assert all(abs(f) < 1.0 for f in rigid), f"a rigid-body mode is not at zero: {rigid}"
+    # A minimum: every genuine mode is positive.
+    assert all(f > 0.0 for f in vibrations), f"imaginary vibration: {vibrations}"
     # The bend sits well below the two stretches in every basis.
-    assert freqs[0] < freqs[1], "the bend is not the lowest mode"
-    print(f"  {len(freqs)} modes: " + "  ".join(f"{f:.1f}" for f in freqs) + " cm^-1")
+    assert vibrations[0] < vibrations[1], "the bend is not the lowest vibration"
+    print("  vibrations: " + "  ".join(f"{f:.1f}" for f in vibrations) + " cm^-1")
 
     # The raw block carries the companion arrays, one entry per mode.
     analysis = result.vibrational_analysis
     assert analysis is not None, "vibrational_analysis is missing"
     assert analysis["n_modes"] == len(freqs), "n_modes disagrees with the array"
-    for key in ("reduced_masses_amu", "force_constants_mdyne_ang"):
+    for key in ("reduced_masses_amu", "force_constants_mdyne_ang",
+                "ir_intensities_km_mol"):
         assert key in analysis, f"{key} is missing from the analysis"
         assert len(analysis[key]) == len(freqs), f"{key} has the wrong length"
-        assert all(v > 0.0 for v in analysis[key]), f"{key} has a non-positive entry"
+    # A reduced mass is a mass and is positive for every mode, rigid-body
+    # included. A force constant is zero for those and positive for the rest,
+    # which is the same statement as the frequencies in different units.
+    assert all(m > 0.0 for m in analysis["reduced_masses_amu"]), "a non-positive mass"
+    constants = [k for f, k in zip(freqs, analysis["force_constants_mdyne_ang"])
+                 if abs(f) > RIGID_BODY_CUTOFF]
+    assert all(k > 0.0 for k in constants), f"a vibration with no restoring force: {constants}"
+
+    # And the list accessor is the same numbers as the block it comes from.
+    assert result.ir_intensities == analysis["ir_intensities_km_mol"], \
+        "ir_intensities disagrees with the block it reads"
 
 
 def case_thermochemistry():
@@ -101,9 +138,15 @@ def case_thermochemistry():
     # energies: a wrong linearity or symmetry number moves the entropy without
     # moving anything that looks wrong.
     assert thermo["is_linear"] is False, "water was treated as linear"
-    assert thermo["n_real_frequencies"] == 3, "the mode count does not match"
-    assert thermo["n_imaginary_frequencies"] == 0, "an imaginary mode at a minimum"
     assert thermo["temperature_K"] > 0.0, "no temperature"
+    # The counts are over all 3N modes, so the six rigid-body ones land in one
+    # bucket or the other according to the sign of their numerical noise. Water
+    # here is a minimum and still reports three imaginary. What the count can
+    # say is that no *genuine* mode went negative, which bounds it at six.
+    counted = thermo["n_real_frequencies"] + thermo["n_imaginary_frequencies"]
+    assert counted == 9, f"the counts cover {counted} modes, not 3N"
+    assert thermo["n_imaginary_frequencies"] <= 6, \
+        "a genuine vibration came out imaginary at a minimum"
 
     # Zero-point energy is positive and the two units agree. 1 Hartree is
     # 627.5095 kcal/mol; a loose tolerance because the JSON is rounded.
@@ -111,6 +154,15 @@ def case_thermochemistry():
     zpe_k = thermo["zero_point_energy_kcal_mol"]
     assert zpe_h > 0.0, f"zero-point energy is not positive: {zpe_h}"
     assert abs(zpe_h * 627.5095 - zpe_k) < 1e-3, "the two ZPE units disagree"
+
+    # And it is built from the genuine vibrations alone, which is the check
+    # that matters given the mode counts above: half the sum of the three real
+    # frequencies, converted from cm^-1. Getting the rigid-body modes into this
+    # sum would not move it much, which is exactly why it needs asserting.
+    vibrations = [f for f in result.frequencies if abs(f) > RIGID_BODY_CUTOFF]
+    expected = 0.5 * sum(vibrations) / CM1_PER_HARTREE
+    assert abs(zpe_h - expected) < 1e-6, \
+        f"ZPE {zpe_h} is not half the sum of {vibrations}"
     print(f"  ZPE {zpe_h:.6f} Hartree = {zpe_k:.3f} kcal/mol")
 
     # The nested blocks the deck path writes.
@@ -226,12 +278,15 @@ def cleanup():
 def main(argv):
     wanted = argv[1] if len(argv) > 1 else ""
     ran = 0
+    # The session wraps everything, so a traceback closes it rather than
+    # leaving the library holding a communicator.
     try:
-        for name, fn in CASES.items():
-            if wanted and wanted not in name:
-                continue
-            fn()
-            ran += 1
+        with mqc.session():
+            for name, fn in CASES.items():
+                if wanted and wanted not in name:
+                    continue
+                fn()
+                ran += 1
     finally:
         cleanup()
     if ran == 0:
