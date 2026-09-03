@@ -110,6 +110,7 @@ set_property(CACHE MQC_CODATA_YEAR PROPERTY STRINGS 2018 2010)
 
 option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
 option(MQC_ENABLE_CREST "Link to CREST for conformer and ensemble sampling" OFF)
+option(MQC_ENABLE_TERCO "Link to terco for a device-resident SCF (HF/DFT)" OFF)
 set(MQC_LIBFINT_REPOSITORY
     "https://github.com/JorgeG94/libfint.git"
     CACHE STRING "Where to fetch libfint from")

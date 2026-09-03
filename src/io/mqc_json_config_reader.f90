@@ -39,7 +39,9 @@ module mqc_json_config_reader
                                method_is_casci, METHOD_TYPE_UNKNOWN, &
                                METHOD_TYPE_MP2_F12, METHOD_TYPE_CCSD_F12, &
                                METHOD_TYPE_CCSD_T_F12
-   use mqc_cuest_iface, only: parse_backend_name, method_runs_on_cuest, BACKEND_CUEST
+   use mqc_cuest_iface, only: parse_backend_name, method_runs_on_cuest, BACKEND_CUEST, &
+                              BACKEND_TERCO
+   use mqc_terco_bridge, only: terco_backend_available
    use mqc_cuest_bridge, only: cuest_backend_available
    use mqc_config_types, only: mqc_config_t, input_fragment_t, bond_t
    use mqc_xyz_reader, only: read_xyz_file
@@ -1401,7 +1403,8 @@ contains
          if (backend_named) then
             call parse_backend_name(config%backend, backend_kind, error)
             if (error%has_error()) return
-            if ((backend_kind == BACKEND_CUEST) .neqv. config%gpu) then
+            if ((backend_kind == BACKEND_CUEST .or. &
+                 backend_kind == BACKEND_TERCO) .neqv. config%gpu) then
                call error%set(ERROR_VALIDATION, "system.gpu and backend disagree: "// &
                               "system.gpu is "//trim(merge("true ", "false", config%gpu))// &
                               " but backend is '"//trim(config%backend)// &
@@ -1409,15 +1412,31 @@ contains
                return
             end if
          end if
-         if (config%gpu) then
-            config%backend = "cuest"
-         else
-            config%backend = "libcint"
+         ! Only when the deck did NOT name a backend. Overwriting a named one
+         ! here would take `"gpu": true` beside `"backend": "terco"` and run
+         ! cuEST, reporting a backend the deck never asked for.
+         if (.not. backend_named) then
+            if (config%gpu) then
+               config%backend = "cuest"
+            else
+               config%backend = "libcint"
+            end if
          end if
       end if
 
       call parse_backend_name(config%backend, backend_kind, error)
       if (error%has_error()) return
+
+      if (backend_kind == BACKEND_TERCO) then
+         if (.not. terco_backend_available()) then
+            call error%set(ERROR_VALIDATION, "backend 'terco' was asked for, but this "// &
+                           "build has no terco backend. Rebuild with CMake and "// &
+                           "-DMQC_ENABLE_TERCO=ON -DTERCO_ROOT=<terco checkout>, or "// &
+                           "drop the request to run on the CPU.")
+         end if
+         return
+      end if
+
       if (backend_kind /= BACKEND_CUEST) return
 
       if (.not. cuest_backend_available()) then

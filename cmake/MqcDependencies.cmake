@@ -155,6 +155,40 @@ if(MQC_ENABLE_CUEST)
   add_subdirectory(backends/cuest)
 endif()
 
+# terco is built by nvfortran and reached through its C ABI, so mqc needs the
+# shared library and terco's own interface declaration -- never a copy of it.
+# Configure terco with TERCO_BUILD_SHARED=ON; a static libterco cannot be linked
+# into this build because its device code was compiled by a different compiler
+# than the one building mqc.
+if(MQC_ENABLE_TERCO)
+  if(NOT TERCO_ROOT)
+    message(
+      FATAL_ERROR
+        "MQC_ENABLE_TERCO=ON requires -DTERCO_ROOT=<terco checkout or install>")
+  endif()
+  find_library(
+    TERCO_LIBRARY
+    NAMES terco
+    PATHS "${TERCO_ROOT}/lib" "${TERCO_ROOT}/build-shared-gpu"
+          "${TERCO_ROOT}/build-xc-gpu" "${TERCO_ROOT}"
+    NO_DEFAULT_PATH REQUIRED)
+  # A terco built in place rather than installed is the common case, so its
+  # build directories are searched too. Naming the file outright with
+  # -DTERCO_LIBRARY=<path> wins over all of them: find_library leaves a cache
+  # entry that is already set alone. The authoritative declaration, compiled
+  # from terco's tree. See backends/terco/CMakeLists.txt for why this is not
+  # vendored.
+  find_file(
+    TERCO_INTERFACES
+    NAMES trc_c_interfaces.f90
+    PATHS "${TERCO_ROOT}/include"
+    NO_DEFAULT_PATH REQUIRED)
+  list(APPEND libraries_to_link ${TERCO_LIBRARY})
+  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_TERCO)
+  message(STATUS "terco enabled: ${TERCO_LIBRARY}")
+  add_subdirectory(backends/terco)
+endif()
+
 if(MQC_ENABLE_TESTING)
   add_subdirectory(test)
 endif()

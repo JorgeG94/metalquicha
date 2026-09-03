@@ -15,13 +15,14 @@ module mqc_cuest_iface
    public :: cuest_scf_settings_t
    public :: apply_scf_settings
    public :: apply_properties_settings
-   public :: BACKEND_AUTO, BACKEND_CUEST, BACKEND_CZT
+   public :: BACKEND_AUTO, BACKEND_CUEST, BACKEND_CZT, BACKEND_TERCO
    public :: parse_backend_name
    public :: method_runs_on_cuest
 
    integer, parameter :: BACKEND_AUTO = 0
    integer, parameter :: BACKEND_CUEST = 1
    integer, parameter :: BACKEND_CZT = 2
+   integer, parameter :: BACKEND_TERCO = 3
       !! Which integral backend a deck asked for. `auto` is the default: cuEST
       !! when the build has it, the CPU path otherwise. The other two are
       !! requests, and a request that cannot be honoured is refused rather than
@@ -250,9 +251,11 @@ contains
          kind = BACKEND_CUEST
       case ("libcint", "cpu")
          kind = BACKEND_CZT
+      case ("terco")
+         kind = BACKEND_TERCO
       case default
          call error%set(ERROR_VALIDATION, "unknown backend '"//lower//"'; expected "// &
-                        "'auto', 'cuest' (or 'gpu'), or 'libcint' (or 'cpu')")
+                        "'auto', 'cuest' (or 'gpu'), 'libcint' (or 'cpu'), or 'terco'")
       end select
    end subroutine parse_backend_name
 

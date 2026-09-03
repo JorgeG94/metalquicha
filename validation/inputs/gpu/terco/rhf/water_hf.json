@@ -1,0 +1,32 @@
+{
+    "schema": {
+        "name": "mqc-terco-hf",
+        "version": "1.0"
+    },
+    "molecules": [
+        {
+            "xyz": "../../../sample_inputs/w1.xyz",
+            "molecular_charge": 0,
+            "molecular_multiplicity": 1
+        }
+    ],
+    "model": {
+        "method": "hf",
+        "basis": "6-31g",
+        "cartesian": true
+    },
+    "backend": "terco",
+    "keywords": {
+        "scf": {
+            "maxiter": 100,
+            "tolerance": 1e-10,
+            "guess": "sad"
+        }
+    },
+    "system": {
+        "logger": {
+            "level": "Verbose"
+        }
+    },
+    "driver": "Energy"
+}

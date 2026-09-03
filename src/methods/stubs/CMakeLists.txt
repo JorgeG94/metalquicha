@@ -11,6 +11,10 @@ if(NOT MQC_ENABLE_CZT)
   target_sources(${main_lib} PRIVATE mqc_czt_bridge_stub.f90)
 endif()
 
+if(NOT MQC_ENABLE_TERCO)
+  target_sources(${main_lib} PRIVATE mqc_terco_bridge_stub.f90)
+endif()
+
 if(NOT MQC_ENABLE_CREST)
   target_sources(${main_lib} PRIVATE mqc_crest_driver_stub.f90)
 endif()

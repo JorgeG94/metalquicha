@@ -21,8 +21,9 @@ module mqc_method_dft
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_semi_numerical_hessian, only: finite_difference_hessian
    use mqc_cuest_iface, only: apply_properties_settings, apply_scf_settings, cuest_scf_settings_t, parse_backend_name, &
-                              BACKEND_CUEST, BACKEND_CZT
+                              BACKEND_CUEST, BACKEND_CZT, BACKEND_TERCO
    use mqc_cuest_bridge, only: run_cuest_scf
+   use mqc_terco_bridge, only: run_terco_scf
    use mqc_czt_bridge, only: run_czt_hf
    implicit none
    private
@@ -156,6 +157,12 @@ contains
             return
          end if
          call run_cuest_scf(settings, fragment, result, want_gradient)
+      case (BACKEND_TERCO)
+         ! Every refusal terco needs -- gradients, correlated methods,
+         ! spherical d, angular momentum above d, an ECP -- is made inside
+         ! the driver, against the basis it actually built. Repeating them
+         ! here would be a second copy to keep in step.
+         call run_terco_scf(settings, fragment, result, want_gradient)
       case (BACKEND_CZT)
          call run_czt_hf(settings, fragment, result, want_gradient, want_hessian)
       case default
