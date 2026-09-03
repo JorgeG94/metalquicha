@@ -43,12 +43,24 @@ metalquicha/
 │   ├── core/                    # Data types, constants, elements
 │   ├── io/                      # Config parsing, XYZ reading, JSON output
 │   ├── fragmentation/           # MBE/GMBE engines, fragment generation
-│   ├── methods/                 # QC methods (xTB, HF placeholder)
+│   ├── methods/                 # Everything a method is:
+│   │   ├── dispatch/            #   what `model.method` resolves to
+│   │   ├── scf/                 #   convergence, settings, accelerators
+│   │   ├── dft/                 #   XC grid and functional specification
+│   │   ├── ci/                  #   determinants, Davidson, RDMs, ORMAS
+│   │   └── stubs/               #   compiled-out twin of each backend
 │   ├── vibrational/             # Frequency analysis, thermochemistry
 │   ├── parallel/                # MPI utilities
 │   ├── basis/                   # Basis set handling
 │   ├── utils/                   # Error handling, finite differences
 │   └── mqc_driver.f90           # Main calculation dispatcher
+├── backends/
+│   ├── cenzontle/               # CPU ab initio: 57k lines, `mqc_czt_*`
+│   │   ├── integrals/ scf/ dft/ correlation/ mcscf/ derivatives/
+│   │   ├── analysis/ fragments/ efp/ sapt/
+│   │   └── mqc_czt_bridge.f90   #   the ONLY way in; nothing reaches past it
+│   ├── cuest/                   # GPU, via NVIDIA cuEST
+│   └── crest/ dlfind/ hdf5/     # thin adapters to foreign libraries
 ├── test/                        # Unit tests (test-drive framework)
 ├── validation/                  # Physics validation test cases
 ├── cmake/                       # CMake configuration
@@ -65,10 +77,11 @@ metalquicha/
 | `src/io/mqc_json_config_reader.f90` | Parses JSON input decks |
 | `src/io/mqc_json_schema.f90` | Validates a deck before it is read |
 | `src/io/mqc_config_types.f90` | `mqc_config_t` and the types it is built from |
+| `backends/cenzontle/mqc_czt_bridge.f90` | The whole CPU ab initio backend's entry point |
 | `src/fragmentation/mqc_mbe.f90` | Core MBE implementation (62KB) |
 | `src/fragmentation/mqc_physical_fragment.f90` | Fragment representation, H-capping |
 | `src/fragmentation/mqc_gmbe_utils.f90` | GMBE with PIE (overlapping fragments) |
-| `src/methods/mqc_method_xtb.f90` | xTB via tblite library |
+| `src/methods/dispatch/mqc_method_xtb.f90` | xTB via tblite library |
 | `src/core/mqc_result_types.f90` | Result containers (energy, gradient, hessian) |
 | `src/vibrational/mqc_vibrational_analysis.f90` | Frequency calculations |
 | `src/vibrational/mqc_thermochemistry.f90` | Thermochemistry (RRHO) |
@@ -174,7 +187,7 @@ type :: system_geometry_t
   integer :: charge, multiplicity
 end type
 
-! QC method base class (src/methods/mqc_method_base.f90)
+! QC method base class (src/methods/dispatch/mqc_method_base.f90)
 type, abstract :: qc_method_t
 contains
   procedure(calc_energy_interface), deferred :: calc_energy
@@ -336,7 +349,7 @@ defect this way over fixing it inside an unrelated change.
 ## Common Workflows
 
 ### Add a new QC method
-1. Create `src/methods/mqc_method_newmethod.f90`
+1. Create `src/methods/dispatch/mqc_method_newmethod.f90`
 2. Extend `qc_method_t` base class
 3. Implement `compute` procedure
 4. Register in method factory

@@ -1,3 +1,6 @@
+# Configuration interaction: determinants, the Davidson solver, the reduced
+# density matrices and the ORMAS active-space machinery. Used by MCSCF and by
+# CASCI, so it belongs to neither.
 target_sources(
   ${main_lib}
   PRIVATE mqc_determinants.f90

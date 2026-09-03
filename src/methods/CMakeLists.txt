@@ -1,51 +1,21 @@
-target_sources(
-  ${main_lib}
-  PRIVATE # Method implementations
-          mqc_method_base.f90
-          mqc_semi_numerical_hessian.f90
-          mqc_method_config.f90
-          mqc_method_hf.F90
-          mqc_method_dft.F90
-          mqc_method_mcscf.f90
-          mqc_cuest_iface.f90
-          mqc_diis.f90
-          mqc_ediis.f90
-          mqc_lebedev_data.f90
-          mqc_lebedev.f90
-          mqc_dft_radial_data.f90
-          mqc_dft_radial.f90
-          mqc_dft_partition.f90
-          mqc_dft_prune.f90
-          mqc_dft_grid.f90
-          mqc_xc_spec.f90)
+# Everything a method is, one level down from the dispatch that chooses one.
+#
+# dispatch/  what `model.method` resolves to, and which backend runs it scf/
+# convergence, settings and accelerators, shared by both backends dft/       the
+# exchange-correlation grid and the functional specification ci/ determinants,
+# Davidson, RDMs, ORMAS -- MCSCF and CASCI both stubs/     the compiled-out twin
+# of each optional backend
+#
+# scf/ and ci/ were `src/scf/` and `src/mcscf/`, beside `src/methods/` rather
+# than inside it, which said they were peers of the whole method layer instead
+# of parts of it.
+add_subdirectory(dispatch)
+add_subdirectory(scf)
+add_subdirectory(dft)
+add_subdirectory(ci)
+add_subdirectory(stubs)
 
-# The cuEST bridge has two forms. The real one, in backends/cuest/, is compiled
-# only with the backend; the stub here stands in otherwise, so the method files
-# always resolve `mqc_cuest_bridge` without a preprocessor conditional.
-if(NOT MQC_ENABLE_CUEST)
-  target_sources(${main_lib} PRIVATE mqc_cuest_bridge_stub.f90)
-endif()
-
-if(MQC_ENABLE_TBLITE)
-  target_sources(${main_lib} PRIVATE mqc_method_xtb.f90)
-endif()
-
-# Factory must come after method types are defined
-target_sources(${main_lib} PRIVATE mqc_method_factory.F90)
-
-# The CPU integrals, SCF and bridge live in backends/cenzontle/, outside src/,
-# because they use libcint_fortran and fpm -- which globs src/ -- has no source
-# for it. The stub stays here and is compiled when the backend is not, so
-# `mqc_czt_bridge` resolves without a preprocessor guard at the call site -- the
-# same arrangement as mqc_cuest_bridge next door. Both defining that module name
-# is also why the real one cannot stay: fpm would reject the duplicate.
-if(NOT MQC_ENABLE_CZT)
-  target_sources(${main_lib} PRIVATE mqc_czt_bridge_stub.f90)
-endif()
-
-# The real driver lives in backends/crest/, outside src/, because fpm globs src/
-# and cannot choose between two files defining mqc_crest_driver. Only one of the
-# two is ever compiled, the same arrangement as mqc_hdf5_checkpoint_stub.
-if(NOT MQC_ENABLE_CREST)
-  target_sources(${main_lib} PRIVATE mqc_crest_driver_stub.f90)
-endif()
+# Finite-difference second derivatives for any method that has a gradient and no
+# analytic Hessian. It belongs to no single method, which is the whole idea, so
+# it sits here rather than being filed under one of them.
+target_sources(${main_lib} PRIVATE mqc_semi_numerical_hessian.f90)
