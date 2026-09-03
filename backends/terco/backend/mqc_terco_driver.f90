@@ -58,6 +58,7 @@ contains
       character(kind=c_char), allocatable :: functional_c(:)
       type(c_ptr) :: basis_handle, dguess_ptr
       integer(c_int) :: rc, nao_c, nalpha_c, nbeta_c, grid_c, maxiter_c, niter_c, nbas_c
+      integer(c_int) :: verbose_c
       integer(c_int), allocatable :: atm_c(:, :), bas_c(:, :)
       real(c_double), allocatable :: env_c(:)
       real(c_double) :: energy_c, e_xc_c
@@ -253,10 +254,19 @@ contains
       grid_c = int(settings%grid_level, c_int)
       maxiter_c = int(settings%max_iter, c_int)
 
+      ! terco prints its own iteration table when this is non-zero, straight to
+      ! stdout rather than through mqc's logger -- it is a separate library and
+      ! has no handle on ours. So it follows the deck's SCF verbosity, which is
+      ! the setting that already means "show me the iterations"; without it the
+      ! mqc log jumps from the guess to the converged energy with nothing
+      ! between, and a slow or oscillating SCF looks identical to a fast one.
+      verbose_c = 0_c_int
+      if (settings%verbose) verbose_c = 1_c_int
+
       rc = trc_scf(basis_handle, nalpha_c, nbeta_c, functional_c, grid_c, &
                    real(settings%energy_tol, c_double), &
                    real(settings%density_tol, c_double), maxiter_c, dguess_ptr, &
-                   energy_c, e_xc_c, dmat, eps, niter_c)
+                   verbose_c, energy_c, e_xc_c, dmat, eps, niter_c)
 
       ! ---- what came back ---------------------------------------------------
       select case (rc)
