@@ -136,15 +136,15 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-capacity~9">capacity</a>
+            <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-capacity~3">capacity</a>
             <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-chosen~2">chosen</a>
-            <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-f~3">f</a>
+            <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-f">f</a>
             <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-grown">grown</a>
-            <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-has_next~5">has_next</a>
-            <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-i~144">i</a>
-            <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-k~47">k</a>
-            <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-key~9">key</a>
-            <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-n~50">n</a>
+            <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-has_next~6">has_next</a>
+            <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-i~73">i</a>
+            <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-k~20">k</a>
+            <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-key~7">key</a>
+            <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-n~36">n</a>
             <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-n_added">n_added</a>
             <a class="list-group-item" href="../proc/add_vmfc_rows.html#variable-parent">parent</a>
         </div>
@@ -208,7 +208,7 @@ into the total.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~12"></span>
+              <span class="anchor" id="variable-polymers~9"></span>
               integer,
             </td>
 <td>intent(inout),</td>
@@ -223,7 +223,7 @@ into the total.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~5"></span>
+              <span class="anchor" id="variable-total_fragments~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -238,7 +238,7 @@ into the total.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~22"></span>
+              <span class="anchor" id="variable-max_level~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -668,31 +668,31 @@ large graphs.</div>
 <g id="proc~~add_vmfc_rows~~CalledByGraph_node17" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~add_vmfc_rows~~CalledByGraph_node17"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="115,-24 37,-24 37,0 115,0 115,-24"/>
-<text text-anchor="middle" x="76" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
-<g id="proc~~add_vmfc_rows~~CalledByGraph_edge20" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
-<path fill="none" stroke="#0000ff" d="M115.28,-17.83C149.12,-22.99 198.57,-30.52 234.55,-36"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="234.37,-39.51 244.78,-37.56 235.42,-32.59 234.37,-39.51"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~add_vmfc_rows~~CalledByGraph_node18" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~add_vmfc_rows~~CalledByGraph_node18"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="115,-150 37,-150 37,-126 115,-126 115,-150"/>
 <text text-anchor="middle" x="76" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
 <g id="proc~~add_vmfc_rows~~CalledByGraph_edge17" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
 <path fill="none" stroke="#00ff00" d="M115.28,-142.33C151.53,-146.42 205.7,-152.55 242.02,-156.65"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="241.89,-160.16 252.22,-157.8 242.68,-153.2 241.89,-160.16"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~add_vmfc_rows~~CalledByGraph_node18" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~add_vmfc_rows~~CalledByGraph_node18"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="115,-24 37,-24 37,0 115,0 115,-24"/>
+<text text-anchor="middle" x="76" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~add_vmfc_rows~~CalledByGraph_edge20" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0000ff" d="M115.28,-17.83C149.12,-22.99 198.57,-30.52 234.55,-36"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="234.37,-39.51 244.78,-37.56 235.42,-32.59 234.37,-39.51"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~add_vmfc_rows~~CalledByGraph_node19" class="node">
@@ -813,7 +813,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-capacity~9"></span>
+              <span class="anchor" id="variable-capacity~3"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -847,7 +847,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-f~3"></span>
+              <span class="anchor" id="variable-f"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -881,7 +881,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_next~5"></span>
+              <span class="anchor" id="variable-has_next~6"></span>
               logical,
             </td>
               <td>private</td>
@@ -898,7 +898,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~144"></span>
+              <span class="anchor" id="variable-i~73"></span>
               integer,
             </td>
               <td>private</td>
@@ -915,7 +915,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~47"></span>
+              <span class="anchor" id="variable-k~20"></span>
               integer,
             </td>
               <td>private</td>
@@ -932,7 +932,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-key~9"></span>
+              <span class="anchor" id="variable-key~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -949,7 +949,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~50"></span>
+              <span class="anchor" id="variable-n~36"></span>
               integer,
             </td>
               <td>private</td>
@@ -1089,7 +1089,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-03 04:33 +0000             </p>
+ on 2026-09-03 05:42 +0000             </p>
           </div>
         </div>
         <br>
