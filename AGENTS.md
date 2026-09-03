@@ -30,6 +30,11 @@ cmake -B build && cmake --build build -j
 # Run (parallel)
 mpirun -np 4 ./mqc input.json
 
+# Run on a cluster: srun inside a SLURM job, mpirun outside one, with the
+# rank/thread split and the GPU count worked out from the node.
+tools/run.sh -n 4 input.json
+tools/run.sh --dry-run -n 4 input.json   # show the command, run nothing
+
 # Run tests
 ctest -R "mqc"
 ```

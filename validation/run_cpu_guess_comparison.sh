@@ -24,7 +24,7 @@
 #     buys on well-behaved systems is the first two or three cycles; what it
 #     really buys is the systems where the core guess does not converge.
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 MQC=${1:-./build/mqc}
 
 # Decks live under inputs/<hardware>/<engine>/<method>/ now, so a deck name is

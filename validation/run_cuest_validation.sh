@@ -17,7 +17,7 @@
 # tight s functions cost real energy while valence properties stay comparable.
 # The def2-SVP references below already include that offset.
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 MQC=${1:-./build/mqc}
 
 # Decks live under inputs/<hardware>/<engine>/<method>/ now, so a deck name is

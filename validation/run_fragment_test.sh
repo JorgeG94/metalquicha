@@ -12,7 +12,7 @@
 #     has to GROW mid-run. A distributed-Hessian test could never reach that
 #     branch, since every displacement is the same size.
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 MQC=./build/mqc
 
 for tag in hf pbe; do
