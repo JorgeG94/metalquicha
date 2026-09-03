@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/session_run.html#variable-config~24">config</a>
+            <a class="list-group-item" href="../proc/session_run.html#variable-config~6">config</a>
             <a class="list-group-item" href="../proc/session_run.html#variable-driver~2">driver</a>
             <a class="list-group-item" href="../proc/session_run.html#variable-payload">payload</a>
         </div>
@@ -200,7 +200,7 @@ afterwards leaves N-1 ranks waiting for a geometry that never arrives.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~113"></span>
+              <span class="anchor" id="variable-this~48"></span>
               class(<a href='../type/mqc_session_t.html'>mqc_session_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -215,7 +215,7 @@ afterwards leaves N-1 ranks waiting for a geometry that never arrives.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~11"></span>
+              <span class="anchor" id="variable-settings~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -230,7 +230,7 @@ afterwards leaves N-1 ranks waiting for a geometry that never arrives.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~60"></span>
+              <span class="anchor" id="variable-sys_geom~16"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -246,7 +246,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~7"></span>
+              <span class="anchor" id="variable-terms~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -261,7 +261,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_terms"></span>
+              <span class="anchor" id="variable-n_terms~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -276,7 +276,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-label~2"></span>
+              <span class="anchor" id="variable-label~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -291,7 +291,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-write_output~5"></span>
+              <span class="anchor" id="variable-write_output~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -306,7 +306,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~42"></span>
+              <span class="anchor" id="variable-result~21"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -321,7 +321,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~119"></span>
+              <span class="anchor" id="variable-error~26"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2718,20 +2718,20 @@ passed to writes on the receiving ranks.</p>
 <path fill="none" stroke="#6800ff" d="M505.61,-451.74C528.98,-434.55 569.97,-401.1 593,-363 622.69,-313.89 586.07,-277.09 629,-239 653.63,-217.15 691.92,-213.45 720.11,-214.27"/>
 <polygon fill="#6800ff" stroke="#6800ff" points="720.22,-217.78 730.38,-214.78 720.56,-210.79 720.22,-217.78"/>
 </g>
-<!-- proc~run_libcint_efp -->
+<!-- proc~run_czt_efp -->
 <g id="proc~~session_run~~CallsGraph_node162" class="node">
-<title>proc~run_libcint_efp</title>
-<g id="a_proc~~session_run~~CallsGraph_node162"><a xlink:href="../proc/run_libcint_efp.html" xlink:title="run_libcint_efp">
-<polygon fill="#d9534f" stroke="#d9534f" points="803,-516 712,-516 712,-492 803,-492 803,-516"/>
-<text text-anchor="middle" x="757.5" y="-501.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_efp</text>
+<title>proc~run_czt_efp</title>
+<g id="a_proc~~session_run~~CallsGraph_node162"><a xlink:href="../proc/run_czt_efp.html" xlink:title="run_czt_efp">
+<polygon fill="#d9534f" stroke="#d9534f" points="794,-516 721,-516 721,-492 794,-492 794,-516"/>
+<text text-anchor="middle" x="757.5" y="-501.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_czt_efp</text>
 </a>
 </g>
 </g>
-<!-- proc~run_efp&#45;&gt;proc~run_libcint_efp -->
+<!-- proc~run_efp&#45;&gt;proc~run_czt_efp -->
 <g id="proc~~session_run~~CallsGraph_edge183" class="edge">
-<title>proc~run_efp&#45;&gt;proc~run_libcint_efp</title>
-<path fill="none" stroke="#6800ff" d="M514.23,-467.91C557.55,-474.36 644.92,-487.38 702.04,-495.89"/>
-<polygon fill="#6800ff" stroke="#6800ff" points="701.58,-499.36 711.99,-497.37 702.61,-492.43 701.58,-499.36"/>
+<title>proc~run_efp&#45;&gt;proc~run_czt_efp</title>
+<path fill="none" stroke="#6800ff" d="M514.23,-467.91C559.82,-474.7 654.2,-488.76 710.76,-497.19"/>
+<polygon fill="#6800ff" stroke="#6800ff" points="710.46,-500.68 720.87,-498.69 711.49,-493.76 710.46,-500.68"/>
 </g>
 <!-- proc~run_fragmented_calculation&#45;&gt;proc~error_has_error -->
 <g id="proc~~session_run~~CallsGraph_edge200" class="edge">
@@ -3063,20 +3063,20 @@ passed to writes on the receiving ranks.</p>
 <path fill="none" stroke="#a600ff" d="M525.05,-181.8C576.6,-189.86 669.35,-204.37 720.39,-212.35"/>
 <polygon fill="#a600ff" stroke="#a600ff" points="719.9,-215.82 730.32,-213.9 720.98,-208.9 719.9,-215.82"/>
 </g>
-<!-- proc~run_libcint_makefp -->
+<!-- proc~run_czt_makefp -->
 <g id="proc~~session_run~~CallsGraph_node163" class="node">
-<title>proc~run_libcint_makefp</title>
-<g id="a_proc~~session_run~~CallsGraph_node163"><a xlink:href="../proc/run_libcint_makefp.html" xlink:title="run_libcint_makefp">
-<polygon fill="#d9534f" stroke="#d9534f" points="814.5,-66 700.5,-66 700.5,-42 814.5,-42 814.5,-66"/>
-<text text-anchor="middle" x="757.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_makefp</text>
+<title>proc~run_czt_makefp</title>
+<g id="a_proc~~session_run~~CallsGraph_node163"><a xlink:href="../proc/run_czt_makefp.html" xlink:title="run_czt_makefp">
+<polygon fill="#d9534f" stroke="#d9534f" points="806,-66 709,-66 709,-42 806,-42 806,-66"/>
+<text text-anchor="middle" x="757.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_czt_makefp</text>
 </a>
 </g>
 </g>
-<!-- proc~run_makefp&#45;&gt;proc~run_libcint_makefp -->
+<!-- proc~run_makefp&#45;&gt;proc~run_czt_makefp -->
 <g id="proc~~session_run~~CallsGraph_edge219" class="edge">
-<title>proc~run_makefp&#45;&gt;proc~run_libcint_makefp</title>
-<path fill="none" stroke="#a600ff" d="M501.7,-163.86C525.71,-143.28 577.71,-101.65 629,-80 648.23,-71.88 670.18,-66.24 690.4,-62.34"/>
-<polygon fill="#a600ff" stroke="#a600ff" points="691.25,-65.74 700.47,-60.51 690,-58.85 691.25,-65.74"/>
+<title>proc~run_makefp&#45;&gt;proc~run_czt_makefp</title>
+<path fill="none" stroke="#a600ff" d="M501.7,-163.86C525.71,-143.28 577.71,-101.65 629,-80 650.93,-70.74 676.4,-64.7 698.79,-60.8"/>
+<polygon fill="#a600ff" stroke="#a600ff" points="699.54,-64.22 708.84,-59.15 698.4,-57.31 699.54,-64.22"/>
 </g>
 <!-- proc~run_sapt&#45;&gt;proc~error_has_error -->
 <g id="proc~~session_run~~CallsGraph_edge223" class="edge">
@@ -3126,35 +3126,35 @@ passed to writes on the receiving ranks.</p>
 <path fill="none" stroke="#c500ff" d="M500.33,-329.78C523.4,-307.71 575.6,-261.39 629,-239 658.09,-226.8 693.7,-221.67 719.88,-219.52"/>
 <polygon fill="#c500ff" stroke="#c500ff" points="720.4,-222.99 730.12,-218.79 719.9,-216.01 720.4,-222.99"/>
 </g>
-<!-- proc~run_libcint_sapt0 -->
+<!-- proc~run_czt_sapt0 -->
 <g id="proc~~session_run~~CallsGraph_node164" class="node">
-<title>proc~run_libcint_sapt0</title>
-<g id="a_proc~~session_run~~CallsGraph_node164"><a xlink:href="../proc/run_libcint_sapt0.html" xlink:title="run_libcint_sapt0">
-<polygon fill="#d9534f" stroke="#d9534f" points="809,-188 706,-188 706,-164 809,-164 809,-188"/>
-<text text-anchor="middle" x="757.5" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_sapt0</text>
+<title>proc~run_czt_sapt0</title>
+<g id="a_proc~~session_run~~CallsGraph_node164"><a xlink:href="../proc/run_czt_sapt0.html" xlink:title="run_czt_sapt0">
+<polygon fill="#d9534f" stroke="#d9534f" points="800,-188 715,-188 715,-164 800,-164 800,-188"/>
+<text text-anchor="middle" x="757.5" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_czt_sapt0</text>
 </a>
 </g>
 </g>
-<!-- proc~run_sapt&#45;&gt;proc~run_libcint_sapt0 -->
+<!-- proc~run_sapt&#45;&gt;proc~run_czt_sapt0 -->
 <g id="proc~~session_run~~CallsGraph_edge226" class="edge">
-<title>proc~run_sapt&#45;&gt;proc~run_libcint_sapt0</title>
-<path fill="none" stroke="#c500ff" d="M495.78,-329.75C514.69,-301.13 566.13,-229.84 629,-197 649.26,-186.42 673.58,-180.94 695.53,-178.17"/>
-<polygon fill="#c500ff" stroke="#c500ff" points="696.19,-181.61 705.75,-177.04 695.43,-174.66 696.19,-181.61"/>
+<title>proc~run_sapt&#45;&gt;proc~run_czt_sapt0</title>
+<path fill="none" stroke="#c500ff" d="M495.78,-329.75C514.69,-301.13 566.13,-229.84 629,-197 652.14,-184.91 680.59,-179.48 704.74,-177.14"/>
+<polygon fill="#c500ff" stroke="#c500ff" points="705.12,-180.62 714.8,-176.32 704.55,-173.64 705.12,-180.62"/>
 </g>
-<!-- proc~run_libcint_sapt2 -->
+<!-- proc~run_czt_sapt2 -->
 <g id="proc~~session_run~~CallsGraph_node165" class="node">
-<title>proc~run_libcint_sapt2</title>
-<g id="a_proc~~session_run~~CallsGraph_node165"><a xlink:href="../proc/run_libcint_sapt2.html" xlink:title="run_libcint_sapt2">
-<polygon fill="#d9534f" stroke="#d9534f" points="809,-314 706,-314 706,-290 809,-290 809,-314"/>
-<text text-anchor="middle" x="757.5" y="-299.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_sapt2</text>
+<title>proc~run_czt_sapt2</title>
+<g id="a_proc~~session_run~~CallsGraph_node165"><a xlink:href="../proc/run_czt_sapt2.html" xlink:title="run_czt_sapt2">
+<polygon fill="#d9534f" stroke="#d9534f" points="800,-314 715,-314 715,-290 800,-290 800,-314"/>
+<text text-anchor="middle" x="757.5" y="-299.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_czt_sapt2</text>
 </a>
 </g>
 </g>
-<!-- proc~run_sapt&#45;&gt;proc~run_libcint_sapt2 -->
+<!-- proc~run_sapt&#45;&gt;proc~run_czt_sapt2 -->
 <g id="proc~~session_run~~CallsGraph_edge227" class="edge">
-<title>proc~run_sapt&#45;&gt;proc~run_libcint_sapt2</title>
-<path fill="none" stroke="#c500ff" d="M516.23,-337.79C558.56,-331.49 639.52,-319.43 695.69,-311.06"/>
-<polygon fill="#c500ff" stroke="#c500ff" points="696.5,-314.48 705.88,-309.54 695.47,-307.55 696.5,-314.48"/>
+<title>proc~run_sapt&#45;&gt;proc~run_czt_sapt2</title>
+<path fill="none" stroke="#c500ff" d="M516.23,-337.79C560.84,-331.15 648.35,-318.11 704.55,-309.74"/>
+<polygon fill="#c500ff" stroke="#c500ff" points="705.28,-313.17 714.66,-308.23 704.25,-306.25 705.28,-313.17"/>
 </g>
 <!-- proc~run_unfragmented_calculation&#45;&gt;info -->
 <g id="proc~~session_run~~CallsGraph_edge230" class="edge">
@@ -3731,7 +3731,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~24"></span>
+              <span class="anchor" id="variable-config~6"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
               <td>private</td>
@@ -3937,7 +3937,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-03 00:21 +0000             </p>
+ on 2026-09-03 03:36 +0000             </p>
           </div>
         </div>
         <br>

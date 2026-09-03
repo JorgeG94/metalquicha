@@ -1434,6 +1434,12 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><p>The live session, for Fortran code that needs its communicators</p><a href="../proc/current_session.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/czt_backend_available.html'>czt_backend_available</a></td>
+                 <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
+                 <td>Function</td>
+                 <td><p>Whether this build can run an SCF on the CPU</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/davidson_flat.html'>davidson_flat</a></td>
                  <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
                  <td>Subroutine</td>
@@ -1615,7 +1621,7 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                </tr>
 			   <tr>
                  <td><a href='../proc/ecp_backend_available.html'>ecp_backend_available</a></td>
-                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
+                 <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
                  <td>Function</td>
                  <td><p>No libcint means no integral backend at all, so no ECP either.</p></td>
                </tr>
@@ -2398,15 +2404,15 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -2416,27 +2422,27 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Drain results from local workers and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
-                 <td></td>
+                 <td><p>Drain results from local workers and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -2446,15 +2452,15 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -2750,12 +2756,6 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../module/mqc_lebedev.html'>mqc_lebedev</a></td>
                  <td>Function</td>
                  <td><p>Smallest available order with at least <code>n_points</code> points</p><a href="../proc/lebedev_order_at_least.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/libcint_backend_available.html'>libcint_backend_available</a></td>
-                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
-                 <td>Function</td>
-                 <td><p>Whether this build can run an SCF on the CPU</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/libxc_role.html'>libxc_role</a></td>
@@ -4310,6 +4310,54 @@ Sends SCF energy (non-blocking) and other components (blocking)</p></td>
                  <td><p>No-op stand-in: report the missing backend, compute nothing</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/run_czt_charges.html'>run_czt_charges</a></td>
+                 <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: atomic charges need the CPU integral backend</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/run_czt_efp.html'>run_czt_efp</a></td>
+                 <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: an EFP interaction energy needs the CPU backend</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/run_czt_fmo.html'>run_czt_fmo</a></td>
+                 <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: FMO needs the CPU integral backend</p><a href="../proc/run_czt_fmo.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/run_czt_hf.html'>run_czt_hf</a></td>
+                 <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: report the missing backend, compute nothing</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/run_czt_makefp.html'>run_czt_makefp</a></td>
+                 <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: an effective fragment potential needs the CPU backend</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/run_czt_mcscf.html'>run_czt_mcscf</a></td>
+                 <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: CASSCF and CASCI need the CPU integral backend</p><a href="../proc/run_czt_mcscf.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/run_czt_sapt0.html'>run_czt_sapt0</a></td>
+                 <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: SAPT0 needs the CPU integral backend</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/run_czt_sapt2.html'>run_czt_sapt2</a></td>
+                 <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: SAPT2 needs the CPU integral backend</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/run_efp.html'>run_efp</a></td>
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
@@ -4332,54 +4380,6 @@ Sends SCF energy (non-blocking) and other components (blocking)</p></td>
                  <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
                  <td><p>Optimize <code>sys_geom</code> in place. Every rank calls this.</p><a href="../proc/run_geometry_optimization.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/run_libcint_charges.html'>run_libcint_charges</a></td>
-                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
-                 <td>Subroutine</td>
-                 <td><p>No-op stand-in: atomic charges need the CPU integral backend</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/run_libcint_efp.html'>run_libcint_efp</a></td>
-                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
-                 <td>Subroutine</td>
-                 <td><p>No-op stand-in: an EFP interaction energy needs the CPU backend</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/run_libcint_fmo.html'>run_libcint_fmo</a></td>
-                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
-                 <td>Subroutine</td>
-                 <td><p>No-op stand-in: FMO needs the CPU integral backend</p><a href="../proc/run_libcint_fmo.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/run_libcint_hf.html'>run_libcint_hf</a></td>
-                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
-                 <td>Subroutine</td>
-                 <td><p>No-op stand-in: report the missing backend, compute nothing</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/run_libcint_makefp.html'>run_libcint_makefp</a></td>
-                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
-                 <td>Subroutine</td>
-                 <td><p>No-op stand-in: an effective fragment potential needs the CPU backend</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/run_libcint_mcscf.html'>run_libcint_mcscf</a></td>
-                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
-                 <td>Subroutine</td>
-                 <td><p>No-op stand-in: CASSCF and CASCI need the CPU integral backend</p><a href="../proc/run_libcint_mcscf.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/run_libcint_sapt0.html'>run_libcint_sapt0</a></td>
-                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
-                 <td>Subroutine</td>
-                 <td><p>No-op stand-in: SAPT0 needs the CPU integral backend</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/run_libcint_sapt2.html'>run_libcint_sapt2</a></td>
-                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
-                 <td>Subroutine</td>
-                 <td><p>No-op stand-in: SAPT2 needs the CPU integral backend</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/run_makefp.html'>run_makefp</a></td>
@@ -4706,15 +4706,15 @@ Trailing newlines do not create empty lines</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/string_terms.html'>string_terms</a></td>
-                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/string_terms~2.html'>string_terms</a></td>
                  <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
                  <td>Subroutine</td>
                  <td><p>The part of a diagonal element that depends on one spin alone</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/string_terms~2.html'>string_terms</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/strings_of_one_spin.html'>strings_of_one_spin</a></td>
@@ -4906,15 +4906,15 @@ guess would be read, validated and then silently ignored.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
                  <td>Subroutine</td>
-                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop~2.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
-                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_run.html'>worker_run</a></td>
@@ -5038,9 +5038,9 @@ guess would be read, validated and then silently ignored.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/xc_available.html'>xc_available</a></td>
-                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
+                 <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
                  <td>Function</td>
-                 <td><p>No libcint means no <code>mqc_libcint_xc</code>, and therefore no functionals &ndash;
+                 <td><p>No libcint means no <code>mqc_czt_xc</code>, and therefore no functionals &ndash;
 whatever libxc itself was configured to do.</p></td>
                </tr>
 			   <tr>
@@ -5111,7 +5111,7 @@ a solvent or dielectric was given without one</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-03 00:21 +0000             </p>
+ on 2026-09-03 03:36 +0000             </p>
           </div>
         </div>
         <br>

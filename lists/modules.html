@@ -290,7 +290,7 @@ fragment, and the bonds between them.</p><a href="../module/mqc_config_types.htm
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_convergence_report.html'>mqc_convergence_report</a></td>
                  <td><a href='../sourcefile/mqc_convergence_report.f90.html'>mqc_convergence_report.f90</a></td>
-                 <td><p>Both the SCF (<code>mqc_libcint_rhf</code>) and the FMO outer loop (<code>mqc_libcint_fmo</code>)
+                 <td><p>Both the SCF (<code>mqc_czt_rhf</code>) and the FMO outer loop (<code>mqc_czt_fmo</code>)
 report convergence as the same table: a title, a ruled column header, one
 row per iteration, and a footer saying whether and in how many steps it
 converged. The rows differ &ndash; the SCF carries DIIS depth and per-iteration
@@ -318,6 +318,11 @@ provides the same module and the same <code>run_cuest_scf</code> interface.</p><
 the cuEST backend.</p></td>
                </tr>
 <!--active-->			   <tr class="">
+                 <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
+                 <td><a href='../sourcefile/mqc_czt_bridge_stub.f90.html'>mqc_czt_bridge_stub.f90</a></td>
+                 <td><p>Same name and same entry points as the real bridge, declining.</p><a href="../module/mqc_czt_bridge.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
                  <td><a href='../sourcefile/mqc_davidson.f90.html'>mqc_davidson.f90</a></td>
                  <td><p>Davidson&rsquo;s method: build a small subspace, diagonalise the Hamiltonian
@@ -325,7 +330,7 @@ inside it, and grow it in the direction the residual points. The only
 thing it asks of the operator is a matrix-vector product, which is what
 <code>sigma_vector</code> provides.</p><a href="../module/mqc_davidson.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
                  <td><a href='../sourcefile/mqc_determinants.f90.html'>mqc_determinants.f90</a></td>
                  <td><p>The bookkeeping a complete-active-space CI is built on, and nothing else:
@@ -334,43 +339,43 @@ no integrals, no orbitals, no energies. A determinant in a CAS is a pair of
 spin occupies. This module generates them, numbers them, and tabulates the
 single excitations between them.</p><a href="../module/mqc_determinants.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_dft_grid.html'>mqc_dft_grid</a></td>
                  <td><a href='../sourcefile/mqc_dft_grid.f90.html'>mqc_dft_grid.f90</a></td>
                  <td><p>Molecular integration grid for DFT</p><a href="../module/mqc_dft_grid.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_dft_partition.html'>mqc_dft_partition</a></td>
                  <td><a href='../sourcefile/mqc_dft_partition.f90.html'>mqc_dft_partition.f90</a></td>
                  <td><p>Becke partition of space into atomic cells</p><a href="../module/mqc_dft_partition.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_dft_prune.html'>mqc_dft_prune</a></td>
                  <td><a href='../sourcefile/mqc_dft_prune.f90.html'>mqc_dft_prune.f90</a></td>
                  <td><p>Angular pruning: fewer Lebedev points where the density does not need them</p><a href="../module/mqc_dft_prune.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_dft_radial.html'>mqc_dft_radial</a></td>
                  <td><a href='../sourcefile/mqc_dft_radial.f90.html'>mqc_dft_radial.f90</a></td>
                  <td><p>Radial quadrature for DFT molecular grids</p><a href="../module/mqc_dft_radial.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_dft_radial_data.html'>mqc_dft_radial_data</a></td>
                  <td><a href='../sourcefile/mqc_dft_radial_data.f90.html'>mqc_dft_radial_data.f90</a></td>
                  <td><p>Element tables for radial DFT quadrature</p><a href="../module/mqc_dft_radial_data.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_diis.html'>mqc_diis</a></td>
                  <td><a href='../sourcefile/mqc_diis.f90.html'>mqc_diis.f90</a></td>
                  <td><p>Holds the DIIS history and produces the extrapolated Fock matrix.</p><a href="../module/mqc_diis.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_dlfind_bridge.html'>mqc_dlfind_bridge</a></td>
                  <td><a href='../sourcefile/mqc_dlfind_bridge_stub.f90.html'>mqc_dlfind_bridge_stub.f90</a></td>
                  <td><p>Same name and same entry points as the real bridge, declining.
 <code>dlfind_available</code> is how a caller asks in advance.</p></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td><a href='../sourcefile/mqc_driver.f90.html'>mqc_driver.f90</a></td>
                  <td><p>Routes a configured system to the fragmented (many-body expansion) or
@@ -379,18 +384,18 @@ and SAPT.
 Main entry point for all calculations
 Multi-molecule calculation dispatcher</p></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_ecp.html'>mqc_ecp</a></td>
                  <td><a href='../sourcefile/mqc_ecp.f90.html'>mqc_ecp.f90</a></td>
                  <td><p>Holds an effective core potential in the semi-local form every code and
 every tabulation uses:</p><a href="../module/mqc_ecp.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_ediis.html'>mqc_ediis</a></td>
                  <td><a href='../sourcefile/mqc_ediis.f90.html'>mqc_ediis.f90</a></td>
                  <td><p>Energy-based coefficient solvers for the SCF accelerator.</p><a href="../module/mqc_ediis.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_elements.html'>mqc_elements</a></td>
                  <td><a href='../sourcefile/mqc_elements.f90.html'>mqc_elements.f90</a></td>
                  <td><p>Atomic numbers, element symbols, masses and radii for the complete
@@ -401,18 +406,18 @@ Get atomic mass by atomic number
 Get covalent radius by atomic number
 Get van der Waals radius by atomic number</p></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_error.html'>mqc_error</a></td>
                  <td><a href='../sourcefile/mqc_error.f90.html'>mqc_error.f90</a></td>
                  <td></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
                  <td><a href='../sourcefile/mqc_fingerprint.f90.html'>mqc_fingerprint.f90</a></td>
                  <td><p>A short hash of everything that decides a fragment energy, so a stored
 energy can be matched against the calculation asking to reuse it.</p><a href="../module/mqc_fingerprint.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></td>
                  <td><a href='../sourcefile/mqc_finite_differences.f90.html'>mqc_finite_differences.f90</a></td>
                  <td><p>Provides utilities for generating perturbed geometries and computing
@@ -424,54 +429,54 @@ Compute dipole derivatives from dipole differences
 Copy and displace geometry
 Re-export for backward compatibility</p></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_fock_projector.html'>mqc_fock_projector</a></td>
                  <td><a href='../sourcefile/mqc_fock_projector.f90.html'>mqc_fock_projector.f90</a></td>
                  <td><p>A fixed orbital basis, a partition of it into frozen and unfrozen blocks,
 and one operation: force the Fock matrix block diagonal in that partition.</p><a href="../module/mqc_fock_projector.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_frag_utils.html'>mqc_frag_utils</a></td>
                  <td><a href='../sourcefile/mqc_frag_utils.f90.html'>mqc_frag_utils.f90</a></td>
                  <td><p>The term list an expansion runs over: how it is built, screened and
 ordered.</p><a href="../module/mqc_frag_utils.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></td>
                  <td><a href='../sourcefile/mqc_fraglist.f90.html'>mqc_fraglist.f90</a></td>
                  <td><p>A list of MBE terms that can be built, handed out, filtered and handed
 back, rather than generated and consumed inside one call.</p><a href="../module/mqc_fraglist.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_fragment_lookup.html'>mqc_fragment_lookup</a></td>
                  <td><a href='../sourcefile/mqc_fragment_lookup.f90.html'>mqc_fragment_lookup.f90</a></td>
                  <td><p>Provides O(1) hash table for mapping monomer combinations to fragment indices
 Hash-based lookup table type</p></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_fragment_table_writer.html'>mqc_fragment_table_writer</a></td>
                  <td><a href='../sourcefile/mqc_fragment_table_writer.f90.html'>mqc_fragment_table_writer.f90</a></td>
                  <td><p>Writes the per-fragment MBE breakdown as a CSV sidecar next to the summary JSON.</p><a href="../module/mqc_fragment_table_writer.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_fragmentation_method.html'>mqc_fragmentation_method</a></td>
                  <td><a href='../sourcefile/mqc_fragmentation_method.f90.html'>mqc_fragmentation_method.f90</a></td>
                  <td><p><strong><code>keywords.fragmentation.method</code> was required, validated for presence,
 and then never read.</strong></p><a href="../module/mqc_fragmentation_method.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_geometry.html'>mqc_geometry</a></td>
                  <td><a href='../sourcefile/mqc_geometry.f90.html'>mqc_geometry.f90</a></td>
                  <td><p>Defines the geometry data structure for molecular systems</p></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td><a href='../sourcefile/mqc_geometry_optimizer.f90.html'>mqc_geometry_optimizer.f90</a></td>
                  <td><p>An optimization is a loop <em>over</em> calculations, so it sits above
 <code>run_calculation</code>, and the dispatch is in <code>main</code> rather than in
 <code>mqc_driver</code> to keep the two out of a circular dependency.</p><a href="../module/mqc_geometry_optimizer.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td><a href='../sourcefile/mqc_gmbe_fragment_distribution_scheme.f90.html'>mqc_gmbe_fragment_distribution_scheme.f90</a></td>
                  <td><p>Serial and MPI-parallel evaluation of a GMBE PIE term list, and the
@@ -479,7 +484,7 @@ accumulation of the results back into one energy, gradient or Hessian.
 PIE-based serial processor
 PIE-based MPI coordinator</p></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></td>
                  <td><a href='../sourcefile/mqc_gmbe_utils.f90.html'>mqc_gmbe_utils.f90</a></td>
                  <td><p>Fragment intersections, k-way intersections, and the PIE (principle of
@@ -493,39 +498,39 @@ Print GMBE energy breakdown
 Print GMBE gradient information
 Print debug information about GMBE intersections</p></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_group_batching.html'>mqc_group_batching</a></td>
                  <td><a href='../sourcefile/mqc_group_batching.f90.html'>mqc_group_batching.f90</a></td>
                  <td></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_group_shard_io.html'>mqc_group_shard_io</a></td>
                  <td><a href='../sourcefile/mqc_group_shard_io.f90.html'>mqc_group_shard_io.f90</a></td>
                  <td></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_hdf5_amplitudes.html'>mqc_hdf5_amplitudes</a></td>
                  <td><a href='../sourcefile/mqc_hdf5_amplitudes_stub.f90.html'>mqc_hdf5_amplitudes_stub.f90</a></td>
                  <td><p>Same name, same type, same procedures as the real backend, and every one
 of them declines.</p><a href="../module/mqc_hdf5_amplitudes.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_hdf5_checkpoint.html'>mqc_hdf5_checkpoint</a></td>
                  <td><a href='../sourcefile/mqc_hdf5_checkpoint_stub.f90.html'>mqc_hdf5_checkpoint_stub.f90</a></td>
                  <td><p>Same name, same type, same procedures as the real backend, and every one
 of them declines.</p><a href="../module/mqc_hdf5_checkpoint.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
                  <td><a href='../sourcefile/mqc_io_helpers.f90.html'>mqc_io_helpers.f90</a></td>
                  <td></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_json.html'>mqc_json</a></td>
                  <td><a href='../sourcefile/mqc_json.f90.html'>mqc_json.f90</a></td>
                  <td></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
                  <td><a href='../sourcefile/mqc_json_basis_reader.f90.html'>mqc_json_basis_reader.f90</a></td>
                  <td><p>Parses the JSON format served by the
@@ -533,47 +538,42 @@ of them declines.</p><a href="../module/mqc_hdf5_checkpoint.html" class="pull-ri
 Parse one element from a BSE JSON file
 Build a molecular basis from a BSE JSON file</p></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td><a href='../sourcefile/mqc_json_config_reader.f90.html'>mqc_json_config_reader.f90</a></td>
                  <td><p>The only input reader. Parses a JSON deck into <code>mqc_config_t</code>.</p><a href="../module/mqc_json_config_reader.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
                  <td><a href='../sourcefile/mqc_json_ecp_reader.f90.html'>mqc_json_ecp_reader.f90</a></td>
                  <td><p>Parses the <code>ecp_potentials</code> blocks the
 <a href="https://www.basissetexchange.org">Basis Set Exchange</a> ships alongside
 orbital basis sets, producing the <code>mqc_ecp</code> types.</p><a href="../module/mqc_json_ecp_reader.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></td>
                  <td><a href='../sourcefile/mqc_json_output_types.f90.html'>mqc_json_output_types.f90</a></td>
                  <td></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td><a href='../sourcefile/mqc_json_schema.f90.html'>mqc_json_schema.f90</a></td>
                  <td><p>Checks a deck against the input schema before anything reads it.</p><a href="../module/mqc_json_schema.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
                  <td><a href='../sourcefile/mqc_json_writer.f90.html'>mqc_json_writer.f90</a></td>
                  <td><p>Single entry point for all JSON output</p></td>
                </tr>
-<!--active-->			   <tr class="">
+<!---->			   <tr class="active">
                  <td><a href='../module/mqc_lebedev.html'>mqc_lebedev</a></td>
                  <td><a href='../sourcefile/mqc_lebedev.f90.html'>mqc_lebedev.f90</a></td>
                  <td><p>Lebedev-Laikov angular quadrature on the unit sphere</p><a href="../module/mqc_lebedev.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
-<!---->			   <tr class="active">
+<!--active-->			   <tr class="">
                  <td><a href='../module/mqc_lebedev_data.html'>mqc_lebedev_data</a></td>
                  <td><a href='../sourcefile/mqc_lebedev_data.f90.html'>mqc_lebedev_data.f90</a></td>
                  <td><p>Lebedev-Laikov octahedral orbit parameters, orders 6 to 5810</p><a href="../module/mqc_lebedev_data.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-<!--active-->			   <tr class="">
-                 <td><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></td>
-                 <td><a href='../sourcefile/mqc_libcint_bridge_stub.f90.html'>mqc_libcint_bridge_stub.f90</a></td>
-                 <td><p>Same name and same entry points as the real bridge, declining.</p><a href="../module/mqc_libcint_bridge.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_logo.html'>mqc_logo</a></td>
@@ -1191,381 +1191,381 @@ Split text into lines (for testing)</p></td>
 </a>
 </g>
 </g>
-<!-- module~mqc_davidson -->
+<!-- module~mqc_czt_bridge -->
 <g id="module~~graph~~ModuleGraph_node35" class="node">
+<title>module~mqc_czt_bridge</title>
+<g id="a_module~~graph~~ModuleGraph_node35"><a xlink:href="../module/mqc_czt_bridge.html" xlink:title="mqc_czt_bridge">
+<polygon fill="#337ab7" stroke="#337ab7" points="167.5,-1452 71.5,-1452 71.5,-1428 167.5,-1428 167.5,-1452"/>
+<text text-anchor="middle" x="119.5" y="-1437.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_czt_bridge</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_davidson -->
+<g id="module~~graph~~ModuleGraph_node36" class="node">
 <title>module~mqc_davidson</title>
-<g id="a_module~~graph~~ModuleGraph_node35"><a xlink:href="../module/mqc_davidson.html" xlink:title="mqc_davidson">
-<polygon fill="#337ab7" stroke="#337ab7" points="164,-1452 75,-1452 75,-1428 164,-1428 164,-1452"/>
-<text text-anchor="middle" x="119.5" y="-1437.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_davidson</text>
+<g id="a_module~~graph~~ModuleGraph_node36"><a xlink:href="../module/mqc_davidson.html" xlink:title="mqc_davidson">
+<polygon fill="#337ab7" stroke="#337ab7" points="164,-1494 75,-1494 75,-1470 164,-1470 164,-1494"/>
+<text text-anchor="middle" x="119.5" y="-1479.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_davidson</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_determinants -->
-<g id="module~~graph~~ModuleGraph_node36" class="node">
+<g id="module~~graph~~ModuleGraph_node37" class="node">
 <title>module~mqc_determinants</title>
-<g id="a_module~~graph~~ModuleGraph_node36"><a xlink:href="../module/mqc_determinants.html" xlink:title="mqc_determinants">
-<polygon fill="#337ab7" stroke="#337ab7" points="175.5,-1494 63.5,-1494 63.5,-1470 175.5,-1470 175.5,-1494"/>
-<text text-anchor="middle" x="119.5" y="-1479.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_determinants</text>
+<g id="a_module~~graph~~ModuleGraph_node37"><a xlink:href="../module/mqc_determinants.html" xlink:title="mqc_determinants">
+<polygon fill="#337ab7" stroke="#337ab7" points="175.5,-1536 63.5,-1536 63.5,-1512 175.5,-1512 175.5,-1536"/>
+<text text-anchor="middle" x="119.5" y="-1521.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_determinants</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_dft_grid -->
-<g id="module~~graph~~ModuleGraph_node37" class="node">
+<g id="module~~graph~~ModuleGraph_node38" class="node">
 <title>module~mqc_dft_grid</title>
-<g id="a_module~~graph~~ModuleGraph_node37"><a xlink:href="../module/mqc_dft_grid.html" xlink:title="mqc_dft_grid">
-<polygon fill="#337ab7" stroke="#337ab7" points="160.5,-1536 78.5,-1536 78.5,-1512 160.5,-1512 160.5,-1536"/>
-<text text-anchor="middle" x="119.5" y="-1521.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dft_grid</text>
+<g id="a_module~~graph~~ModuleGraph_node38"><a xlink:href="../module/mqc_dft_grid.html" xlink:title="mqc_dft_grid">
+<polygon fill="#337ab7" stroke="#337ab7" points="160.5,-1578 78.5,-1578 78.5,-1554 160.5,-1554 160.5,-1578"/>
+<text text-anchor="middle" x="119.5" y="-1563.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dft_grid</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_dft_partition -->
-<g id="module~~graph~~ModuleGraph_node38" class="node">
+<g id="module~~graph~~ModuleGraph_node39" class="node">
 <title>module~mqc_dft_partition</title>
-<g id="a_module~~graph~~ModuleGraph_node38"><a xlink:href="../module/mqc_dft_partition.html" xlink:title="mqc_dft_partition">
-<polygon fill="#337ab7" stroke="#337ab7" points="172.5,-1578 66.5,-1578 66.5,-1554 172.5,-1554 172.5,-1578"/>
-<text text-anchor="middle" x="119.5" y="-1563.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dft_partition</text>
+<g id="a_module~~graph~~ModuleGraph_node39"><a xlink:href="../module/mqc_dft_partition.html" xlink:title="mqc_dft_partition">
+<polygon fill="#337ab7" stroke="#337ab7" points="172.5,-1620 66.5,-1620 66.5,-1596 172.5,-1596 172.5,-1620"/>
+<text text-anchor="middle" x="119.5" y="-1605.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dft_partition</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_dft_prune -->
-<g id="module~~graph~~ModuleGraph_node39" class="node">
+<g id="module~~graph~~ModuleGraph_node40" class="node">
 <title>module~mqc_dft_prune</title>
-<g id="a_module~~graph~~ModuleGraph_node39"><a xlink:href="../module/mqc_dft_prune.html" xlink:title="mqc_dft_prune">
-<polygon fill="#337ab7" stroke="#337ab7" points="165.5,-1620 73.5,-1620 73.5,-1596 165.5,-1596 165.5,-1620"/>
-<text text-anchor="middle" x="119.5" y="-1605.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dft_prune</text>
+<g id="a_module~~graph~~ModuleGraph_node40"><a xlink:href="../module/mqc_dft_prune.html" xlink:title="mqc_dft_prune">
+<polygon fill="#337ab7" stroke="#337ab7" points="165.5,-1662 73.5,-1662 73.5,-1638 165.5,-1638 165.5,-1662"/>
+<text text-anchor="middle" x="119.5" y="-1647.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dft_prune</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_dft_radial -->
-<g id="module~~graph~~ModuleGraph_node40" class="node">
+<g id="module~~graph~~ModuleGraph_node41" class="node">
 <title>module~mqc_dft_radial</title>
-<g id="a_module~~graph~~ModuleGraph_node40"><a xlink:href="../module/mqc_dft_radial.html" xlink:title="mqc_dft_radial">
-<polygon fill="#337ab7" stroke="#337ab7" points="165,-1662 74,-1662 74,-1638 165,-1638 165,-1662"/>
-<text text-anchor="middle" x="119.5" y="-1647.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dft_radial</text>
+<g id="a_module~~graph~~ModuleGraph_node41"><a xlink:href="../module/mqc_dft_radial.html" xlink:title="mqc_dft_radial">
+<polygon fill="#337ab7" stroke="#337ab7" points="165,-1704 74,-1704 74,-1680 165,-1680 165,-1704"/>
+<text text-anchor="middle" x="119.5" y="-1689.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dft_radial</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_dft_radial_data -->
-<g id="module~~graph~~ModuleGraph_node41" class="node">
+<g id="module~~graph~~ModuleGraph_node42" class="node">
 <title>module~mqc_dft_radial_data</title>
-<g id="a_module~~graph~~ModuleGraph_node41"><a xlink:href="../module/mqc_dft_radial_data.html" xlink:title="mqc_dft_radial_data">
-<polygon fill="#337ab7" stroke="#337ab7" points="180,-1704 59,-1704 59,-1680 180,-1680 180,-1704"/>
-<text text-anchor="middle" x="119.5" y="-1689.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dft_radial_data</text>
+<g id="a_module~~graph~~ModuleGraph_node42"><a xlink:href="../module/mqc_dft_radial_data.html" xlink:title="mqc_dft_radial_data">
+<polygon fill="#337ab7" stroke="#337ab7" points="180,-1746 59,-1746 59,-1722 180,-1722 180,-1746"/>
+<text text-anchor="middle" x="119.5" y="-1731.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dft_radial_data</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_diis -->
-<g id="module~~graph~~ModuleGraph_node42" class="node">
+<g id="module~~graph~~ModuleGraph_node43" class="node">
 <title>module~mqc_diis</title>
-<g id="a_module~~graph~~ModuleGraph_node42"><a xlink:href="../module/mqc_diis.html" xlink:title="mqc_diis">
-<polygon fill="#337ab7" stroke="#337ab7" points="149,-1746 90,-1746 90,-1722 149,-1722 149,-1746"/>
-<text text-anchor="middle" x="119.5" y="-1731.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_diis</text>
+<g id="a_module~~graph~~ModuleGraph_node43"><a xlink:href="../module/mqc_diis.html" xlink:title="mqc_diis">
+<polygon fill="#337ab7" stroke="#337ab7" points="149,-1788 90,-1788 90,-1764 149,-1764 149,-1788"/>
+<text text-anchor="middle" x="119.5" y="-1773.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_diis</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_dlfind_bridge -->
-<g id="module~~graph~~ModuleGraph_node43" class="node">
+<g id="module~~graph~~ModuleGraph_node44" class="node">
 <title>module~mqc_dlfind_bridge</title>
-<g id="a_module~~graph~~ModuleGraph_node43"><a xlink:href="../module/mqc_dlfind_bridge.html" xlink:title="mqc_dlfind_bridge">
-<polygon fill="#337ab7" stroke="#337ab7" points="175,-1788 64,-1788 64,-1764 175,-1764 175,-1788"/>
-<text text-anchor="middle" x="119.5" y="-1773.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dlfind_bridge</text>
+<g id="a_module~~graph~~ModuleGraph_node44"><a xlink:href="../module/mqc_dlfind_bridge.html" xlink:title="mqc_dlfind_bridge">
+<polygon fill="#337ab7" stroke="#337ab7" points="175,-1830 64,-1830 64,-1806 175,-1806 175,-1830"/>
+<text text-anchor="middle" x="119.5" y="-1815.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dlfind_bridge</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_driver -->
-<g id="module~~graph~~ModuleGraph_node44" class="node">
+<g id="module~~graph~~ModuleGraph_node45" class="node">
 <title>module~mqc_driver</title>
-<g id="a_module~~graph~~ModuleGraph_node44"><a xlink:href="../module/mqc_driver.html" xlink:title="mqc_driver">
-<polygon fill="#337ab7" stroke="#337ab7" points="156,-1830 83,-1830 83,-1806 156,-1806 156,-1830"/>
-<text text-anchor="middle" x="119.5" y="-1815.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_driver</text>
+<g id="a_module~~graph~~ModuleGraph_node45"><a xlink:href="../module/mqc_driver.html" xlink:title="mqc_driver">
+<polygon fill="#337ab7" stroke="#337ab7" points="156,-1872 83,-1872 83,-1848 156,-1848 156,-1872"/>
+<text text-anchor="middle" x="119.5" y="-1857.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_driver</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_ecp -->
-<g id="module~~graph~~ModuleGraph_node45" class="node">
+<g id="module~~graph~~ModuleGraph_node46" class="node">
 <title>module~mqc_ecp</title>
-<g id="a_module~~graph~~ModuleGraph_node45"><a xlink:href="../module/mqc_ecp.html" xlink:title="mqc_ecp">
-<polygon fill="#337ab7" stroke="#337ab7" points="150,-1872 89,-1872 89,-1848 150,-1848 150,-1872"/>
-<text text-anchor="middle" x="119.5" y="-1857.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_ecp</text>
+<g id="a_module~~graph~~ModuleGraph_node46"><a xlink:href="../module/mqc_ecp.html" xlink:title="mqc_ecp">
+<polygon fill="#337ab7" stroke="#337ab7" points="150,-1914 89,-1914 89,-1890 150,-1890 150,-1914"/>
+<text text-anchor="middle" x="119.5" y="-1899.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_ecp</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_ediis -->
-<g id="module~~graph~~ModuleGraph_node46" class="node">
+<g id="module~~graph~~ModuleGraph_node47" class="node">
 <title>module~mqc_ediis</title>
-<g id="a_module~~graph~~ModuleGraph_node46"><a xlink:href="../module/mqc_ediis.html" xlink:title="mqc_ediis">
-<polygon fill="#337ab7" stroke="#337ab7" points="152.5,-1914 86.5,-1914 86.5,-1890 152.5,-1890 152.5,-1914"/>
-<text text-anchor="middle" x="119.5" y="-1899.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_ediis</text>
+<g id="a_module~~graph~~ModuleGraph_node47"><a xlink:href="../module/mqc_ediis.html" xlink:title="mqc_ediis">
+<polygon fill="#337ab7" stroke="#337ab7" points="152.5,-1956 86.5,-1956 86.5,-1932 152.5,-1932 152.5,-1956"/>
+<text text-anchor="middle" x="119.5" y="-1941.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_ediis</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_elements -->
-<g id="module~~graph~~ModuleGraph_node47" class="node">
+<g id="module~~graph~~ModuleGraph_node48" class="node">
 <title>module~mqc_elements</title>
-<g id="a_module~~graph~~ModuleGraph_node47"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
-<polygon fill="#337ab7" stroke="#337ab7" points="165,-1956 74,-1956 74,-1932 165,-1932 165,-1956"/>
-<text text-anchor="middle" x="119.5" y="-1941.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+<g id="a_module~~graph~~ModuleGraph_node48"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="165,-1998 74,-1998 74,-1974 165,-1974 165,-1998"/>
+<text text-anchor="middle" x="119.5" y="-1983.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_error -->
-<g id="module~~graph~~ModuleGraph_node48" class="node">
+<g id="module~~graph~~ModuleGraph_node49" class="node">
 <title>module~mqc_error</title>
-<g id="a_module~~graph~~ModuleGraph_node48"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
-<polygon fill="#337ab7" stroke="#337ab7" points="153,-1998 86,-1998 86,-1974 153,-1974 153,-1998"/>
-<text text-anchor="middle" x="119.5" y="-1983.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+<g id="a_module~~graph~~ModuleGraph_node49"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="153,-2040 86,-2040 86,-2016 153,-2016 153,-2040"/>
+<text text-anchor="middle" x="119.5" y="-2025.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_fingerprint -->
-<g id="module~~graph~~ModuleGraph_node49" class="node">
+<g id="module~~graph~~ModuleGraph_node50" class="node">
 <title>module~mqc_fingerprint</title>
-<g id="a_module~~graph~~ModuleGraph_node49"><a xlink:href="../module/mqc_fingerprint.html" xlink:title="mqc_fingerprint">
-<polygon fill="#337ab7" stroke="#337ab7" points="168,-2040 71,-2040 71,-2016 168,-2016 168,-2040"/>
-<text text-anchor="middle" x="119.5" y="-2025.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fingerprint</text>
+<g id="a_module~~graph~~ModuleGraph_node50"><a xlink:href="../module/mqc_fingerprint.html" xlink:title="mqc_fingerprint">
+<polygon fill="#337ab7" stroke="#337ab7" points="168,-2082 71,-2082 71,-2058 168,-2058 168,-2082"/>
+<text text-anchor="middle" x="119.5" y="-2067.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fingerprint</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_finite_differences -->
-<g id="module~~graph~~ModuleGraph_node50" class="node">
+<g id="module~~graph~~ModuleGraph_node51" class="node">
 <title>module~mqc_finite_differences</title>
-<g id="a_module~~graph~~ModuleGraph_node50"><a xlink:href="../module/mqc_finite_differences.html" xlink:title="mqc_finite_differences">
-<polygon fill="#337ab7" stroke="#337ab7" points="186,-2082 53,-2082 53,-2058 186,-2058 186,-2082"/>
-<text text-anchor="middle" x="119.5" y="-2067.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_finite_differences</text>
+<g id="a_module~~graph~~ModuleGraph_node51"><a xlink:href="../module/mqc_finite_differences.html" xlink:title="mqc_finite_differences">
+<polygon fill="#337ab7" stroke="#337ab7" points="186,-2124 53,-2124 53,-2100 186,-2100 186,-2124"/>
+<text text-anchor="middle" x="119.5" y="-2109.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_finite_differences</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_fock_projector -->
-<g id="module~~graph~~ModuleGraph_node51" class="node">
+<g id="module~~graph~~ModuleGraph_node52" class="node">
 <title>module~mqc_fock_projector</title>
-<g id="a_module~~graph~~ModuleGraph_node51"><a xlink:href="../module/mqc_fock_projector.html" xlink:title="mqc_fock_projector">
-<polygon fill="#337ab7" stroke="#337ab7" points="178,-2124 61,-2124 61,-2100 178,-2100 178,-2124"/>
-<text text-anchor="middle" x="119.5" y="-2109.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fock_projector</text>
+<g id="a_module~~graph~~ModuleGraph_node52"><a xlink:href="../module/mqc_fock_projector.html" xlink:title="mqc_fock_projector">
+<polygon fill="#337ab7" stroke="#337ab7" points="178,-2166 61,-2166 61,-2142 178,-2142 178,-2166"/>
+<text text-anchor="middle" x="119.5" y="-2151.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fock_projector</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_frag_utils -->
-<g id="module~~graph~~ModuleGraph_node52" class="node">
+<g id="module~~graph~~ModuleGraph_node53" class="node">
 <title>module~mqc_frag_utils</title>
-<g id="a_module~~graph~~ModuleGraph_node52"><a xlink:href="../module/mqc_frag_utils.html" xlink:title="mqc_frag_utils">
-<polygon fill="#337ab7" stroke="#337ab7" points="164.5,-2166 74.5,-2166 74.5,-2142 164.5,-2142 164.5,-2166"/>
-<text text-anchor="middle" x="119.5" y="-2151.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_frag_utils</text>
+<g id="a_module~~graph~~ModuleGraph_node53"><a xlink:href="../module/mqc_frag_utils.html" xlink:title="mqc_frag_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="164.5,-2208 74.5,-2208 74.5,-2184 164.5,-2184 164.5,-2208"/>
+<text text-anchor="middle" x="119.5" y="-2193.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_frag_utils</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_fraglist -->
-<g id="module~~graph~~ModuleGraph_node53" class="node">
+<g id="module~~graph~~ModuleGraph_node54" class="node">
 <title>module~mqc_fraglist</title>
-<g id="a_module~~graph~~ModuleGraph_node53"><a xlink:href="../module/mqc_fraglist.html" xlink:title="mqc_fraglist">
-<polygon fill="#337ab7" stroke="#337ab7" points="158.5,-2208 80.5,-2208 80.5,-2184 158.5,-2184 158.5,-2208"/>
-<text text-anchor="middle" x="119.5" y="-2193.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fraglist</text>
+<g id="a_module~~graph~~ModuleGraph_node54"><a xlink:href="../module/mqc_fraglist.html" xlink:title="mqc_fraglist">
+<polygon fill="#337ab7" stroke="#337ab7" points="158.5,-2250 80.5,-2250 80.5,-2226 158.5,-2226 158.5,-2250"/>
+<text text-anchor="middle" x="119.5" y="-2235.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fraglist</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_fragment_lookup -->
-<g id="module~~graph~~ModuleGraph_node54" class="node">
+<g id="module~~graph~~ModuleGraph_node55" class="node">
 <title>module~mqc_fragment_lookup</title>
-<g id="a_module~~graph~~ModuleGraph_node54"><a xlink:href="../module/mqc_fragment_lookup.html" xlink:title="mqc_fragment_lookup">
-<polygon fill="#337ab7" stroke="#337ab7" points="185.5,-2250 53.5,-2250 53.5,-2226 185.5,-2226 185.5,-2250"/>
-<text text-anchor="middle" x="119.5" y="-2235.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fragment_lookup</text>
+<g id="a_module~~graph~~ModuleGraph_node55"><a xlink:href="../module/mqc_fragment_lookup.html" xlink:title="mqc_fragment_lookup">
+<polygon fill="#337ab7" stroke="#337ab7" points="185.5,-2292 53.5,-2292 53.5,-2268 185.5,-2268 185.5,-2292"/>
+<text text-anchor="middle" x="119.5" y="-2277.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fragment_lookup</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_fragment_table_writer -->
-<g id="module~~graph~~ModuleGraph_node55" class="node">
+<g id="module~~graph~~ModuleGraph_node56" class="node">
 <title>module~mqc_fragment_table_writer</title>
-<g id="a_module~~graph~~ModuleGraph_node55"><a xlink:href="../module/mqc_fragment_table_writer.html" xlink:title="mqc_fragment_table_writer">
-<polygon fill="#337ab7" stroke="#337ab7" points="199,-2292 40,-2292 40,-2268 199,-2268 199,-2292"/>
-<text text-anchor="middle" x="119.5" y="-2277.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fragment_table_writer</text>
+<g id="a_module~~graph~~ModuleGraph_node56"><a xlink:href="../module/mqc_fragment_table_writer.html" xlink:title="mqc_fragment_table_writer">
+<polygon fill="#337ab7" stroke="#337ab7" points="199,-2334 40,-2334 40,-2310 199,-2310 199,-2334"/>
+<text text-anchor="middle" x="119.5" y="-2319.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fragment_table_writer</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_fragmentation_method -->
-<g id="module~~graph~~ModuleGraph_node56" class="node">
+<g id="module~~graph~~ModuleGraph_node57" class="node">
 <title>module~mqc_fragmentation_method</title>
-<g id="a_module~~graph~~ModuleGraph_node56"><a xlink:href="../module/mqc_fragmentation_method.html" xlink:title="mqc_fragmentation_method">
-<polygon fill="#337ab7" stroke="#337ab7" points="201.5,-2334 37.5,-2334 37.5,-2310 201.5,-2310 201.5,-2334"/>
-<text text-anchor="middle" x="119.5" y="-2319.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fragmentation_method</text>
+<g id="a_module~~graph~~ModuleGraph_node57"><a xlink:href="../module/mqc_fragmentation_method.html" xlink:title="mqc_fragmentation_method">
+<polygon fill="#337ab7" stroke="#337ab7" points="201.5,-2376 37.5,-2376 37.5,-2352 201.5,-2352 201.5,-2376"/>
+<text text-anchor="middle" x="119.5" y="-2361.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fragmentation_method</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_geometry -->
-<g id="module~~graph~~ModuleGraph_node57" class="node">
+<g id="module~~graph~~ModuleGraph_node58" class="node">
 <title>module~mqc_geometry</title>
-<g id="a_module~~graph~~ModuleGraph_node57"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
-<polygon fill="#337ab7" stroke="#337ab7" points="166,-2376 73,-2376 73,-2352 166,-2352 166,-2376"/>
-<text text-anchor="middle" x="119.5" y="-2361.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+<g id="a_module~~graph~~ModuleGraph_node58"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="166,-2418 73,-2418 73,-2394 166,-2394 166,-2418"/>
+<text text-anchor="middle" x="119.5" y="-2403.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_geometry_optimizer -->
-<g id="module~~graph~~ModuleGraph_node58" class="node">
+<g id="module~~graph~~ModuleGraph_node59" class="node">
 <title>module~mqc_geometry_optimizer</title>
-<g id="a_module~~graph~~ModuleGraph_node58"><a xlink:href="../module/mqc_geometry_optimizer.html" xlink:title="mqc_geometry_optimizer">
-<polygon fill="#337ab7" stroke="#337ab7" points="193.5,-2418 45.5,-2418 45.5,-2394 193.5,-2394 193.5,-2418"/>
-<text text-anchor="middle" x="119.5" y="-2403.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry_optimizer</text>
+<g id="a_module~~graph~~ModuleGraph_node59"><a xlink:href="../module/mqc_geometry_optimizer.html" xlink:title="mqc_geometry_optimizer">
+<polygon fill="#337ab7" stroke="#337ab7" points="193.5,-2460 45.5,-2460 45.5,-2436 193.5,-2436 193.5,-2460"/>
+<text text-anchor="middle" x="119.5" y="-2445.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry_optimizer</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_gmbe_fragment_distribution_scheme -->
-<g id="module~~graph~~ModuleGraph_node59" class="node">
+<g id="module~~graph~~ModuleGraph_node60" class="node">
 <title>module~mqc_gmbe_fragment_distribution_scheme</title>
-<g id="a_module~~graph~~ModuleGraph_node59"><a xlink:href="../module/mqc_gmbe_fragment_distribution_scheme.html" xlink:title="mqc_gmbe_fragment_distribution_scheme">
-<polygon fill="#337ab7" stroke="#337ab7" points="239,-2460 0,-2460 0,-2436 239,-2436 239,-2460"/>
-<text text-anchor="middle" x="119.5" y="-2445.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_fragment_distribution_scheme</text>
+<g id="a_module~~graph~~ModuleGraph_node60"><a xlink:href="../module/mqc_gmbe_fragment_distribution_scheme.html" xlink:title="mqc_gmbe_fragment_distribution_scheme">
+<polygon fill="#337ab7" stroke="#337ab7" points="239,-2502 0,-2502 0,-2478 239,-2478 239,-2502"/>
+<text text-anchor="middle" x="119.5" y="-2487.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_fragment_distribution_scheme</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_gmbe_utils -->
-<g id="module~~graph~~ModuleGraph_node60" class="node">
+<g id="module~~graph~~ModuleGraph_node61" class="node">
 <title>module~mqc_gmbe_utils</title>
-<g id="a_module~~graph~~ModuleGraph_node60"><a xlink:href="../module/mqc_gmbe_utils.html" xlink:title="mqc_gmbe_utils">
-<polygon fill="#337ab7" stroke="#337ab7" points="169,-2502 70,-2502 70,-2478 169,-2478 169,-2502"/>
-<text text-anchor="middle" x="119.5" y="-2487.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_utils</text>
+<g id="a_module~~graph~~ModuleGraph_node61"><a xlink:href="../module/mqc_gmbe_utils.html" xlink:title="mqc_gmbe_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="169,-2544 70,-2544 70,-2520 169,-2520 169,-2544"/>
+<text text-anchor="middle" x="119.5" y="-2529.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_utils</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_group_batching -->
-<g id="module~~graph~~ModuleGraph_node61" class="node">
+<g id="module~~graph~~ModuleGraph_node62" class="node">
 <title>module~mqc_group_batching</title>
-<g id="a_module~~graph~~ModuleGraph_node61"><a xlink:href="../module/mqc_group_batching.html" xlink:title="mqc_group_batching">
-<polygon fill="#337ab7" stroke="#337ab7" points="181.5,-2544 57.5,-2544 57.5,-2520 181.5,-2520 181.5,-2544"/>
-<text text-anchor="middle" x="119.5" y="-2529.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_group_batching</text>
+<g id="a_module~~graph~~ModuleGraph_node62"><a xlink:href="../module/mqc_group_batching.html" xlink:title="mqc_group_batching">
+<polygon fill="#337ab7" stroke="#337ab7" points="181.5,-2586 57.5,-2586 57.5,-2562 181.5,-2562 181.5,-2586"/>
+<text text-anchor="middle" x="119.5" y="-2571.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_group_batching</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_group_shard_io -->
-<g id="module~~graph~~ModuleGraph_node62" class="node">
+<g id="module~~graph~~ModuleGraph_node63" class="node">
 <title>module~mqc_group_shard_io</title>
-<g id="a_module~~graph~~ModuleGraph_node62"><a xlink:href="../module/mqc_group_shard_io.html" xlink:title="mqc_group_shard_io">
-<polygon fill="#337ab7" stroke="#337ab7" points="180.5,-2586 58.5,-2586 58.5,-2562 180.5,-2562 180.5,-2586"/>
-<text text-anchor="middle" x="119.5" y="-2571.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_group_shard_io</text>
+<g id="a_module~~graph~~ModuleGraph_node63"><a xlink:href="../module/mqc_group_shard_io.html" xlink:title="mqc_group_shard_io">
+<polygon fill="#337ab7" stroke="#337ab7" points="180.5,-2628 58.5,-2628 58.5,-2604 180.5,-2604 180.5,-2628"/>
+<text text-anchor="middle" x="119.5" y="-2613.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_group_shard_io</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_hdf5_amplitudes -->
-<g id="module~~graph~~ModuleGraph_node63" class="node">
+<g id="module~~graph~~ModuleGraph_node64" class="node">
 <title>module~mqc_hdf5_amplitudes</title>
-<g id="a_module~~graph~~ModuleGraph_node63"><a xlink:href="../module/mqc_hdf5_amplitudes.html" xlink:title="mqc_hdf5_amplitudes">
-<polygon fill="#337ab7" stroke="#337ab7" points="184.5,-2628 54.5,-2628 54.5,-2604 184.5,-2604 184.5,-2628"/>
-<text text-anchor="middle" x="119.5" y="-2613.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_hdf5_amplitudes</text>
+<g id="a_module~~graph~~ModuleGraph_node64"><a xlink:href="../module/mqc_hdf5_amplitudes.html" xlink:title="mqc_hdf5_amplitudes">
+<polygon fill="#337ab7" stroke="#337ab7" points="184.5,-2670 54.5,-2670 54.5,-2646 184.5,-2646 184.5,-2670"/>
+<text text-anchor="middle" x="119.5" y="-2655.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_hdf5_amplitudes</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_hdf5_checkpoint -->
-<g id="module~~graph~~ModuleGraph_node64" class="node">
+<g id="module~~graph~~ModuleGraph_node65" class="node">
 <title>module~mqc_hdf5_checkpoint</title>
-<g id="a_module~~graph~~ModuleGraph_node64"><a xlink:href="../module/mqc_hdf5_checkpoint.html" xlink:title="mqc_hdf5_checkpoint">
-<polygon fill="#337ab7" stroke="#337ab7" points="184,-2670 55,-2670 55,-2646 184,-2646 184,-2670"/>
-<text text-anchor="middle" x="119.5" y="-2655.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_hdf5_checkpoint</text>
+<g id="a_module~~graph~~ModuleGraph_node65"><a xlink:href="../module/mqc_hdf5_checkpoint.html" xlink:title="mqc_hdf5_checkpoint">
+<polygon fill="#337ab7" stroke="#337ab7" points="184,-2712 55,-2712 55,-2688 184,-2688 184,-2712"/>
+<text text-anchor="middle" x="119.5" y="-2697.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_hdf5_checkpoint</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_hessian_distribution_scheme -->
-<g id="module~~graph~~ModuleGraph_node65" class="node">
+<g id="module~~graph~~ModuleGraph_node66" class="node">
 <title>module~mqc_hessian_distribution_scheme</title>
-<g id="a_module~~graph~~ModuleGraph_node65"><a xlink:href="../module/mqc_hessian_distribution_scheme.html" xlink:title="mqc_hessian_distribution_scheme">
-<polygon fill="#5bc0de" stroke="#5bc0de" points="216.5,-2712 22.5,-2712 22.5,-2688 216.5,-2688 216.5,-2712"/>
-<text text-anchor="middle" x="119.5" y="-2697.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_hessian_distribution_scheme</text>
+<g id="a_module~~graph~~ModuleGraph_node66"><a xlink:href="../module/mqc_hessian_distribution_scheme.html" xlink:title="mqc_hessian_distribution_scheme">
+<polygon fill="#5bc0de" stroke="#5bc0de" points="216.5,-2754 22.5,-2754 22.5,-2730 216.5,-2730 216.5,-2754"/>
+<text text-anchor="middle" x="119.5" y="-2739.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_hessian_distribution_scheme</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_io_helpers -->
-<g id="module~~graph~~ModuleGraph_node66" class="node">
+<g id="module~~graph~~ModuleGraph_node67" class="node">
 <title>module~mqc_io_helpers</title>
-<g id="a_module~~graph~~ModuleGraph_node66"><a xlink:href="../module/mqc_io_helpers.html" xlink:title="mqc_io_helpers">
-<polygon fill="#337ab7" stroke="#337ab7" points="167.5,-2754 71.5,-2754 71.5,-2730 167.5,-2730 167.5,-2754"/>
-<text text-anchor="middle" x="119.5" y="-2739.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_io_helpers</text>
+<g id="a_module~~graph~~ModuleGraph_node67"><a xlink:href="../module/mqc_io_helpers.html" xlink:title="mqc_io_helpers">
+<polygon fill="#337ab7" stroke="#337ab7" points="167.5,-2796 71.5,-2796 71.5,-2772 167.5,-2772 167.5,-2796"/>
+<text text-anchor="middle" x="119.5" y="-2781.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_io_helpers</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_json -->
-<g id="module~~graph~~ModuleGraph_node67" class="node">
+<g id="module~~graph~~ModuleGraph_node68" class="node">
 <title>module~mqc_json</title>
-<g id="a_module~~graph~~ModuleGraph_node67"><a xlink:href="../module/mqc_json.html" xlink:title="mqc_json">
-<polygon fill="#337ab7" stroke="#337ab7" points="151,-2796 88,-2796 88,-2772 151,-2772 151,-2796"/>
-<text text-anchor="middle" x="119.5" y="-2781.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json</text>
+<g id="a_module~~graph~~ModuleGraph_node68"><a xlink:href="../module/mqc_json.html" xlink:title="mqc_json">
+<polygon fill="#337ab7" stroke="#337ab7" points="151,-2838 88,-2838 88,-2814 151,-2814 151,-2838"/>
+<text text-anchor="middle" x="119.5" y="-2823.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_json_basis_reader -->
-<g id="module~~graph~~ModuleGraph_node68" class="node">
+<g id="module~~graph~~ModuleGraph_node69" class="node">
 <title>module~mqc_json_basis_reader</title>
-<g id="a_module~~graph~~ModuleGraph_node68"><a xlink:href="../module/mqc_json_basis_reader.html" xlink:title="mqc_json_basis_reader">
-<polygon fill="#337ab7" stroke="#337ab7" points="187.5,-2838 51.5,-2838 51.5,-2814 187.5,-2814 187.5,-2838"/>
-<text text-anchor="middle" x="119.5" y="-2823.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_basis_reader</text>
+<g id="a_module~~graph~~ModuleGraph_node69"><a xlink:href="../module/mqc_json_basis_reader.html" xlink:title="mqc_json_basis_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="187.5,-2880 51.5,-2880 51.5,-2856 187.5,-2856 187.5,-2880"/>
+<text text-anchor="middle" x="119.5" y="-2865.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_basis_reader</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_json_config_reader -->
-<g id="module~~graph~~ModuleGraph_node69" class="node">
+<g id="module~~graph~~ModuleGraph_node70" class="node">
 <title>module~mqc_json_config_reader</title>
-<g id="a_module~~graph~~ModuleGraph_node69"><a xlink:href="../module/mqc_json_config_reader.html" xlink:title="mqc_json_config_reader">
-<polygon fill="#337ab7" stroke="#337ab7" points="190.5,-2880 48.5,-2880 48.5,-2856 190.5,-2856 190.5,-2880"/>
-<text text-anchor="middle" x="119.5" y="-2865.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_config_reader</text>
+<g id="a_module~~graph~~ModuleGraph_node70"><a xlink:href="../module/mqc_json_config_reader.html" xlink:title="mqc_json_config_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="190.5,-2922 48.5,-2922 48.5,-2898 190.5,-2898 190.5,-2922"/>
+<text text-anchor="middle" x="119.5" y="-2907.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_config_reader</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_json_ecp_reader -->
-<g id="module~~graph~~ModuleGraph_node70" class="node">
+<g id="module~~graph~~ModuleGraph_node71" class="node">
 <title>module~mqc_json_ecp_reader</title>
-<g id="a_module~~graph~~ModuleGraph_node70"><a xlink:href="../module/mqc_json_ecp_reader.html" xlink:title="mqc_json_ecp_reader">
-<polygon fill="#337ab7" stroke="#337ab7" points="183.5,-2922 55.5,-2922 55.5,-2898 183.5,-2898 183.5,-2922"/>
-<text text-anchor="middle" x="119.5" y="-2907.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_ecp_reader</text>
+<g id="a_module~~graph~~ModuleGraph_node71"><a xlink:href="../module/mqc_json_ecp_reader.html" xlink:title="mqc_json_ecp_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="183.5,-2964 55.5,-2964 55.5,-2940 183.5,-2940 183.5,-2964"/>
+<text text-anchor="middle" x="119.5" y="-2949.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_ecp_reader</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_json_output_types -->
-<g id="module~~graph~~ModuleGraph_node71" class="node">
+<g id="module~~graph~~ModuleGraph_node72" class="node">
 <title>module~mqc_json_output_types</title>
-<g id="a_module~~graph~~ModuleGraph_node71"><a xlink:href="../module/mqc_json_output_types.html" xlink:title="mqc_json_output_types">
-<polygon fill="#337ab7" stroke="#337ab7" points="187.5,-2964 51.5,-2964 51.5,-2940 187.5,-2940 187.5,-2964"/>
-<text text-anchor="middle" x="119.5" y="-2949.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_output_types</text>
+<g id="a_module~~graph~~ModuleGraph_node72"><a xlink:href="../module/mqc_json_output_types.html" xlink:title="mqc_json_output_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="187.5,-3006 51.5,-3006 51.5,-2982 187.5,-2982 187.5,-3006"/>
+<text text-anchor="middle" x="119.5" y="-2991.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_output_types</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_json_schema -->
-<g id="module~~graph~~ModuleGraph_node72" class="node">
+<g id="module~~graph~~ModuleGraph_node73" class="node">
 <title>module~mqc_json_schema</title>
-<g id="a_module~~graph~~ModuleGraph_node72"><a xlink:href="../module/mqc_json_schema.html" xlink:title="mqc_json_schema">
-<polygon fill="#337ab7" stroke="#337ab7" points="174.5,-3006 64.5,-3006 64.5,-2982 174.5,-2982 174.5,-3006"/>
-<text text-anchor="middle" x="119.5" y="-2991.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_schema</text>
+<g id="a_module~~graph~~ModuleGraph_node73"><a xlink:href="../module/mqc_json_schema.html" xlink:title="mqc_json_schema">
+<polygon fill="#337ab7" stroke="#337ab7" points="174.5,-3048 64.5,-3048 64.5,-3024 174.5,-3024 174.5,-3048"/>
+<text text-anchor="middle" x="119.5" y="-3033.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_schema</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_json_writer -->
-<g id="module~~graph~~ModuleGraph_node73" class="node">
+<g id="module~~graph~~ModuleGraph_node74" class="node">
 <title>module~mqc_json_writer</title>
-<g id="a_module~~graph~~ModuleGraph_node73"><a xlink:href="../module/mqc_json_writer.html" xlink:title="mqc_json_writer">
-<polygon fill="#337ab7" stroke="#337ab7" points="169,-3048 70,-3048 70,-3024 169,-3024 169,-3048"/>
-<text text-anchor="middle" x="119.5" y="-3033.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_writer</text>
+<g id="a_module~~graph~~ModuleGraph_node74"><a xlink:href="../module/mqc_json_writer.html" xlink:title="mqc_json_writer">
+<polygon fill="#337ab7" stroke="#337ab7" points="169,-3090 70,-3090 70,-3066 169,-3066 169,-3090"/>
+<text text-anchor="middle" x="119.5" y="-3075.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_writer</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_lebedev -->
-<g id="module~~graph~~ModuleGraph_node74" class="node">
+<g id="module~~graph~~ModuleGraph_node75" class="node">
 <title>module~mqc_lebedev</title>
-<g id="a_module~~graph~~ModuleGraph_node74"><a xlink:href="../module/mqc_lebedev.html" xlink:title="mqc_lebedev">
-<polygon fill="#337ab7" stroke="#337ab7" points="161.5,-3090 77.5,-3090 77.5,-3066 161.5,-3066 161.5,-3090"/>
-<text text-anchor="middle" x="119.5" y="-3075.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_lebedev</text>
+<g id="a_module~~graph~~ModuleGraph_node75"><a xlink:href="../module/mqc_lebedev.html" xlink:title="mqc_lebedev">
+<polygon fill="#337ab7" stroke="#337ab7" points="161.5,-3132 77.5,-3132 77.5,-3108 161.5,-3108 161.5,-3132"/>
+<text text-anchor="middle" x="119.5" y="-3117.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_lebedev</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_lebedev_data -->
-<g id="module~~graph~~ModuleGraph_node75" class="node">
-<title>module~mqc_lebedev_data</title>
-<g id="a_module~~graph~~ModuleGraph_node75"><a xlink:href="../module/mqc_lebedev_data.html" xlink:title="mqc_lebedev_data">
-<polygon fill="#337ab7" stroke="#337ab7" points="176,-3132 63,-3132 63,-3108 176,-3108 176,-3132"/>
-<text text-anchor="middle" x="119.5" y="-3117.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_lebedev_data</text>
-</a>
-</g>
-</g>
-<!-- module~mqc_libcint_bridge -->
 <g id="module~~graph~~ModuleGraph_node76" class="node">
-<title>module~mqc_libcint_bridge</title>
-<g id="a_module~~graph~~ModuleGraph_node76"><a xlink:href="../module/mqc_libcint_bridge.html" xlink:title="mqc_libcint_bridge">
+<title>module~mqc_lebedev_data</title>
+<g id="a_module~~graph~~ModuleGraph_node76"><a xlink:href="../module/mqc_lebedev_data.html" xlink:title="mqc_lebedev_data">
 <polygon fill="#337ab7" stroke="#337ab7" points="176,-3174 63,-3174 63,-3150 176,-3150 176,-3174"/>
-<text text-anchor="middle" x="119.5" y="-3159.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_libcint_bridge</text>
+<text text-anchor="middle" x="119.5" y="-3159.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_lebedev_data</text>
 </a>
 </g>
 </g>
@@ -2730,75 +2730,75 @@ Split text into lines (for testing)</p></td>
 </a>
 </g>
 </g>
-<!-- proc~run_efp -->
+<!-- proc~run_czt_charges -->
 <g id="module~~graph~~ModuleGraph_node206" class="node">
+<title>proc~run_czt_charges</title>
+<g id="a_module~~graph~~ModuleGraph_node206"><a xlink:href="../proc/run_czt_charges.html" xlink:title="run_czt_charges">
+<polygon fill="#d9534f" stroke="#d9534f" points="169,-8634 70,-8634 70,-8610 169,-8610 169,-8634"/>
+<text text-anchor="middle" x="119.5" y="-8619.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_czt_charges</text>
+</a>
+</g>
+</g>
+<!-- proc~run_czt_efp -->
+<g id="module~~graph~~ModuleGraph_node207" class="node">
+<title>proc~run_czt_efp</title>
+<g id="a_module~~graph~~ModuleGraph_node207"><a xlink:href="../proc/run_czt_efp.html" xlink:title="run_czt_efp">
+<polygon fill="#d9534f" stroke="#d9534f" points="156,-8676 83,-8676 83,-8652 156,-8652 156,-8676"/>
+<text text-anchor="middle" x="119.5" y="-8661.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_czt_efp</text>
+</a>
+</g>
+</g>
+<!-- proc~run_czt_fmo -->
+<g id="module~~graph~~ModuleGraph_node208" class="node">
+<title>proc~run_czt_fmo</title>
+<g id="a_module~~graph~~ModuleGraph_node208"><a xlink:href="../proc/run_czt_fmo.html" xlink:title="run_czt_fmo">
+<polygon fill="#d9534f" stroke="#d9534f" points="158,-8718 81,-8718 81,-8694 158,-8694 158,-8718"/>
+<text text-anchor="middle" x="119.5" y="-8703.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_czt_fmo</text>
+</a>
+</g>
+</g>
+<!-- proc~run_czt_makefp -->
+<g id="module~~graph~~ModuleGraph_node209" class="node">
+<title>proc~run_czt_makefp</title>
+<g id="a_module~~graph~~ModuleGraph_node209"><a xlink:href="../proc/run_czt_makefp.html" xlink:title="run_czt_makefp">
+<polygon fill="#d9534f" stroke="#d9534f" points="168,-8760 71,-8760 71,-8736 168,-8736 168,-8760"/>
+<text text-anchor="middle" x="119.5" y="-8745.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_czt_makefp</text>
+</a>
+</g>
+</g>
+<!-- proc~run_czt_sapt0 -->
+<g id="module~~graph~~ModuleGraph_node210" class="node">
+<title>proc~run_czt_sapt0</title>
+<g id="a_module~~graph~~ModuleGraph_node210"><a xlink:href="../proc/run_czt_sapt0.html" xlink:title="run_czt_sapt0">
+<polygon fill="#d9534f" stroke="#d9534f" points="162,-8802 77,-8802 77,-8778 162,-8778 162,-8802"/>
+<text text-anchor="middle" x="119.5" y="-8787.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_czt_sapt0</text>
+</a>
+</g>
+</g>
+<!-- proc~run_czt_sapt2 -->
+<g id="module~~graph~~ModuleGraph_node211" class="node">
+<title>proc~run_czt_sapt2</title>
+<g id="a_module~~graph~~ModuleGraph_node211"><a xlink:href="../proc/run_czt_sapt2.html" xlink:title="run_czt_sapt2">
+<polygon fill="#d9534f" stroke="#d9534f" points="162,-8844 77,-8844 77,-8820 162,-8820 162,-8844"/>
+<text text-anchor="middle" x="119.5" y="-8829.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_czt_sapt2</text>
+</a>
+</g>
+</g>
+<!-- proc~run_efp -->
+<g id="module~~graph~~ModuleGraph_node212" class="node">
 <title>proc~run_efp</title>
-<g id="a_module~~graph~~ModuleGraph_node206"><a xlink:href="../proc/run_efp.html" xlink:title="run_efp">
-<polygon fill="#d9534f" stroke="#d9534f" points="146.5,-8634 92.5,-8634 92.5,-8610 146.5,-8610 146.5,-8634"/>
-<text text-anchor="middle" x="119.5" y="-8619.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_efp</text>
+<g id="a_module~~graph~~ModuleGraph_node212"><a xlink:href="../proc/run_efp.html" xlink:title="run_efp">
+<polygon fill="#d9534f" stroke="#d9534f" points="146.5,-8886 92.5,-8886 92.5,-8862 146.5,-8862 146.5,-8886"/>
+<text text-anchor="middle" x="119.5" y="-8871.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_efp</text>
 </a>
 </g>
 </g>
 <!-- proc~run_final_hessian -->
-<g id="module~~graph~~ModuleGraph_node207" class="node">
-<title>proc~run_final_hessian</title>
-<g id="a_module~~graph~~ModuleGraph_node207"><a xlink:href="../proc/run_final_hessian.html" xlink:title="run_final_hessian">
-<polygon fill="#d9534f" stroke="#d9534f" points="172,-8676 67,-8676 67,-8652 172,-8652 172,-8676"/>
-<text text-anchor="middle" x="119.5" y="-8661.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_final_hessian</text>
-</a>
-</g>
-</g>
-<!-- proc~run_libcint_charges -->
-<g id="module~~graph~~ModuleGraph_node208" class="node">
-<title>proc~run_libcint_charges</title>
-<g id="a_module~~graph~~ModuleGraph_node208"><a xlink:href="../proc/run_libcint_charges.html" xlink:title="run_libcint_charges">
-<polygon fill="#d9534f" stroke="#d9534f" points="177.5,-8718 61.5,-8718 61.5,-8694 177.5,-8694 177.5,-8718"/>
-<text text-anchor="middle" x="119.5" y="-8703.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_charges</text>
-</a>
-</g>
-</g>
-<!-- proc~run_libcint_efp -->
-<g id="module~~graph~~ModuleGraph_node209" class="node">
-<title>proc~run_libcint_efp</title>
-<g id="a_module~~graph~~ModuleGraph_node209"><a xlink:href="../proc/run_libcint_efp.html" xlink:title="run_libcint_efp">
-<polygon fill="#d9534f" stroke="#d9534f" points="165,-8760 74,-8760 74,-8736 165,-8736 165,-8760"/>
-<text text-anchor="middle" x="119.5" y="-8745.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_efp</text>
-</a>
-</g>
-</g>
-<!-- proc~run_libcint_fmo -->
-<g id="module~~graph~~ModuleGraph_node210" class="node">
-<title>proc~run_libcint_fmo</title>
-<g id="a_module~~graph~~ModuleGraph_node210"><a xlink:href="../proc/run_libcint_fmo.html" xlink:title="run_libcint_fmo">
-<polygon fill="#d9534f" stroke="#d9534f" points="166.5,-8802 72.5,-8802 72.5,-8778 166.5,-8778 166.5,-8802"/>
-<text text-anchor="middle" x="119.5" y="-8787.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_fmo</text>
-</a>
-</g>
-</g>
-<!-- proc~run_libcint_makefp -->
-<g id="module~~graph~~ModuleGraph_node211" class="node">
-<title>proc~run_libcint_makefp</title>
-<g id="a_module~~graph~~ModuleGraph_node211"><a xlink:href="../proc/run_libcint_makefp.html" xlink:title="run_libcint_makefp">
-<polygon fill="#d9534f" stroke="#d9534f" points="176.5,-8844 62.5,-8844 62.5,-8820 176.5,-8820 176.5,-8844"/>
-<text text-anchor="middle" x="119.5" y="-8829.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_makefp</text>
-</a>
-</g>
-</g>
-<!-- proc~run_libcint_sapt0 -->
-<g id="module~~graph~~ModuleGraph_node212" class="node">
-<title>proc~run_libcint_sapt0</title>
-<g id="a_module~~graph~~ModuleGraph_node212"><a xlink:href="../proc/run_libcint_sapt0.html" xlink:title="run_libcint_sapt0">
-<polygon fill="#d9534f" stroke="#d9534f" points="171,-8886 68,-8886 68,-8862 171,-8862 171,-8886"/>
-<text text-anchor="middle" x="119.5" y="-8871.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_sapt0</text>
-</a>
-</g>
-</g>
-<!-- proc~run_libcint_sapt2 -->
 <g id="module~~graph~~ModuleGraph_node213" class="node">
-<title>proc~run_libcint_sapt2</title>
-<g id="a_module~~graph~~ModuleGraph_node213"><a xlink:href="../proc/run_libcint_sapt2.html" xlink:title="run_libcint_sapt2">
-<polygon fill="#d9534f" stroke="#d9534f" points="171,-8928 68,-8928 68,-8904 171,-8904 171,-8928"/>
-<text text-anchor="middle" x="119.5" y="-8913.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_sapt2</text>
+<title>proc~run_final_hessian</title>
+<g id="a_module~~graph~~ModuleGraph_node213"><a xlink:href="../proc/run_final_hessian.html" xlink:title="run_final_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="172,-8928 67,-8928 67,-8904 172,-8904 172,-8928"/>
+<text text-anchor="middle" x="119.5" y="-8913.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_final_hessian</text>
 </a>
 </g>
 </g>
@@ -2892,10 +2892,10 @@ Split text into lines (for testing)</p></td>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~graph~~ModuleGraph_node224" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~graph~~ModuleGraph_node224"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~graph~~ModuleGraph_node224"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="158.5,-9390 80.5,-9390 80.5,-9366 158.5,-9366 158.5,-9390"/>
 <text text-anchor="middle" x="119.5" y="-9375.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
@@ -3055,7 +3055,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-03 00:21 +0000             </p>
+ on 2026-09-03 03:36 +0000             </p>
           </div>
         </div>
         <br>

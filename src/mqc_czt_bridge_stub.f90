@@ -1,8 +1,8 @@
 !! Stand-in for the CPU SCF when the build has no libcint
-module mqc_libcint_bridge
+module mqc_czt_bridge
    !! Same name and same entry points as the real bridge, declining.
    !!
-   !! `libcint_backend_available` is how a caller asks in advance, so the
+   !! `czt_backend_available` is how a caller asks in advance, so the
    !! refusal can name the build option.
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t
@@ -11,15 +11,15 @@ module mqc_libcint_bridge
    implicit none
    private
 
-   public :: run_libcint_hf
-   public :: run_libcint_mcscf
-   public :: run_libcint_fmo
-   public :: run_libcint_makefp
-   public :: run_libcint_charges
-   public :: run_libcint_efp
-   public :: run_libcint_sapt0
-   public :: run_libcint_sapt2
-   public :: libcint_backend_available
+   public :: run_czt_hf
+   public :: run_czt_mcscf
+   public :: run_czt_fmo
+   public :: run_czt_makefp
+   public :: run_czt_charges
+   public :: run_czt_efp
+   public :: run_czt_sapt0
+   public :: run_czt_sapt2
+   public :: czt_backend_available
    public :: xc_available
    public :: ecp_backend_available
 
@@ -32,20 +32,20 @@ contains
    end function ecp_backend_available
 
    pure function xc_available() result(available)
-      !! No libcint means no `mqc_libcint_xc`, and therefore no functionals --
+      !! No libcint means no `mqc_czt_xc`, and therefore no functionals --
       !! whatever libxc itself was configured to do.
       logical :: available
       available = .false.
    end function xc_available
 
-   pure function libcint_backend_available() result(available)
+   pure function czt_backend_available() result(available)
       !! Whether this build can run an SCF on the CPU
       logical :: available
       available = .false.
-   end function libcint_backend_available
+   end function czt_backend_available
 
-   subroutine run_libcint_sapt0(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, basis_name, &
-                                charge_a, charge_b, terms, error)
+   subroutine run_czt_sapt0(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, basis_name, &
+                            charge_a, charge_b, terms, error)
       !! No-op stand-in: SAPT0 needs the CPU integral backend
       use pic_types, only: dp
       use mqc_program_limits, only: N_SAPT_TERMS
@@ -61,15 +61,15 @@ contains
       terms = 0.0_dp
       call error%set(ERROR_VALIDATION, &
                      "SAPT needs the CPU integral backend; build with "// &
-                     "-DMQC_ENABLE_LIBCINT=ON")
+                     "-DMQC_ENABLE_CZT=ON")
       if (size(z_a) < 0 .or. size(z_b) < 0) return
       if (len_trim(sym_a(1))*len_trim(sym_b(1))*len_trim(basis_name) < 0) return
       if (size(xyz_a) < 0 .or. size(xyz_b) < 0) return
       if (charge_a == huge(charge_a) .and. charge_b == huge(charge_b)) return
-   end subroutine run_libcint_sapt0
+   end subroutine run_czt_sapt0
 
-   subroutine run_libcint_sapt2(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, basis_name, &
-                                charge_a, charge_b, terms, error)
+   subroutine run_czt_sapt2(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, basis_name, &
+                            charge_a, charge_b, terms, error)
       !! No-op stand-in: SAPT2 needs the CPU integral backend
       use pic_types, only: dp
       use mqc_program_limits, only: N_SAPT2_TERMS
@@ -85,15 +85,15 @@ contains
       terms = 0.0_dp
       call error%set(ERROR_VALIDATION, &
                      "SAPT needs the CPU integral backend; build with "// &
-                     "-DMQC_ENABLE_LIBCINT=ON")
+                     "-DMQC_ENABLE_CZT=ON")
       if (size(z_a) < 0 .or. size(z_b) < 0) return
       if (len_trim(sym_a(1))*len_trim(sym_b(1))*len_trim(basis_name) < 0) return
       if (size(xyz_a) < 0 .or. size(xyz_b) < 0) return
       if (charge_a == huge(charge_a) .and. charge_b == huge(charge_b)) return
-   end subroutine run_libcint_sapt2
+   end subroutine run_czt_sapt2
 
-   subroutine run_libcint_charges(atomic_numbers, element_symbols, coordinates, &
-                                  basis_name, scheme, total_charge, charges, error)
+   subroutine run_czt_charges(atomic_numbers, element_symbols, coordinates, &
+                              basis_name, scheme, total_charge, charges, error)
       !! No-op stand-in: atomic charges need the CPU integral backend
       use pic_types, only: dp
       use mqc_error, only: error_t
@@ -109,14 +109,14 @@ contains
       allocate (charges(0))
       call error%set(ERROR_VALIDATION, &
                      "atomic charges need the CPU integral backend; build with "// &
-                     "-DMQC_ENABLE_LIBCINT=ON")
+                     "-DMQC_ENABLE_CZT=ON")
       if (size(atomic_numbers) < 0 .or. size(coordinates) < 0) return
       if (len_trim(element_symbols(1))*len_trim(basis_name)*len_trim(scheme) < 0) return
       if (total_charge < -huge(1)) return
-   end subroutine run_libcint_charges
+   end subroutine run_czt_charges
 
-   subroutine run_libcint_efp(potentials, fragment_sizes, fragment_atoms, &
-                              coordinates, terms, error)
+   subroutine run_czt_efp(potentials, fragment_sizes, fragment_atoms, &
+                          coordinates, terms, error)
       !! No-op stand-in: an EFP interaction energy needs the CPU backend
       use pic_types, only: dp
       use mqc_program_limits, only: N_EFP_TERMS
@@ -131,17 +131,17 @@ contains
       terms = 0.0_dp
       call error%set(ERROR_VALIDATION, &
                      "EFP needs the CPU integral backend; build with "// &
-                     "-DMQC_ENABLE_LIBCINT=ON")
+                     "-DMQC_ENABLE_CZT=ON")
       if (len_trim(potentials(1)) < 0) return
       if (size(fragment_sizes) < 0 .or. size(fragment_atoms) < 0) return
       if (size(coordinates) < 0) return
-   end subroutine run_libcint_efp
-   subroutine run_libcint_fmo(atomic_numbers, element_symbols, coordinates, owner, &
-                              basis_name, esp, expansion, far_field, resppc, &
-                              level, max_outer, outer_tol, scf_max_iter, &
-                              scf_energy_tol, scf_density_tol, scf_drive, &
-                              bond_breaking, &
-                              cap_scale, energy, error, comm)
+   end subroutine run_czt_efp
+   subroutine run_czt_fmo(atomic_numbers, element_symbols, coordinates, owner, &
+                          basis_name, esp, expansion, far_field, resppc, &
+                          level, max_outer, outer_tol, scf_max_iter, &
+                          scf_energy_tol, scf_density_tol, scf_drive, &
+                          bond_breaking, &
+                          cap_scale, energy, error, comm)
       !! No-op stand-in: FMO needs the CPU integral backend
       !!
       !! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from
@@ -173,7 +173,7 @@ contains
       energy = 0.0_dp
       call error%set(ERROR_VALIDATION, &
                      "FMO needs the CPU integral backend; build with "// &
-                     "-DMQC_ENABLE_LIBCINT=ON")
+                     "-DMQC_ENABLE_CZT=ON")
       if (size(atomic_numbers) < 0 .or. size(coordinates) < 0 .or. size(owner) < 0) return
       if (len_trim(element_symbols(1)) < 0) return
       if (len_trim(basis_name)*len_trim(esp)*len_trim(expansion)*len_trim(far_field) < 0) return
@@ -181,14 +181,14 @@ contains
       if (outer_tol < 0.0_dp .or. scf_max_iter < 0 .or. scf_energy_tol < 0.0_dp) return
       if (scf_density_tol < 0.0_dp) return
       if (present(comm)) return
-   end subroutine run_libcint_fmo
+   end subroutine run_czt_fmo
 
-   subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
-                                 basis_name, name, path, error, charge, verbose, &
-                                 aux_basis, guess, energy_tol, density_tol, grad_tol, &
-                                 scf_in, max_iter_in, &
-                                 vdwscl, dynamic_tol, dynamic_maxiter, response, &
-                                 allow_crap_response, response_batch)
+   subroutine run_czt_makefp(atomic_numbers, element_symbols, coordinates, &
+                             basis_name, name, path, error, charge, verbose, &
+                             aux_basis, guess, energy_tol, density_tol, grad_tol, &
+                             scf_in, max_iter_in, &
+                             vdwscl, dynamic_tol, dynamic_maxiter, response, &
+                             allow_crap_response, response_batch)
       !! No-op stand-in: an effective fragment potential needs the CPU backend
       use pic_types, only: dp
       use mqc_error, only: error_t
@@ -212,7 +212,7 @@ contains
 
       call error%set(ERROR_VALIDATION, &
                      "MAKEFP needs the CPU integral backend; build with "// &
-                     "-DMQC_ENABLE_LIBCINT=ON")
+                     "-DMQC_ENABLE_CZT=ON")
       if (size(atomic_numbers) < 0 .or. size(coordinates) < 0) return
       if (len_trim(element_symbols(1)) < 0) return
       if (len_trim(basis_name)*len_trim(name)*len_trim(path) < 0) return
@@ -222,9 +222,9 @@ contains
       if (present(vdwscl) .or. present(dynamic_tol)) return
       if (present(dynamic_maxiter) .or. present(response)) return
       if (present(allow_crap_response) .or. present(response_batch)) return
-   end subroutine run_libcint_makefp
+   end subroutine run_czt_makefp
 
-   subroutine run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
+   subroutine run_czt_hf(settings, fragment, result, want_gradient, want_hessian)
       !! No-op stand-in: report the missing backend, compute nothing
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
@@ -234,16 +234,16 @@ contains
 
       call result%error%set(ERROR_VALIDATION, &
                             "This calculation needs an integral backend; build with "// &
-                            "-DMQC_ENABLE_LIBCINT=ON for the CPU one, or "// &
+                            "-DMQC_ENABLE_CZT=ON for the CPU one, or "// &
                             "-DMQC_ENABLE_CUEST=ON for the GPU one")
       result%has_error = .true.
       result%has_energy = .false.
       if (len_trim(settings%basis_set) == 0 .or. fragment%n_atoms < 0) return
       if (present(want_gradient)) return
       if (present(want_hessian)) return
-   end subroutine run_libcint_hf
+   end subroutine run_czt_hf
 
-   subroutine run_libcint_mcscf(settings, fragment, result, want_gradient)
+   subroutine run_czt_mcscf(settings, fragment, result, want_gradient)
       !! No-op stand-in: CASSCF and CASCI need the CPU integral backend
       !!
       !! There is no GPU path to fall through to.
@@ -254,10 +254,10 @@ contains
 
       call result%error%set(ERROR_VALIDATION, &
                             "a multiconfigurational calculation needs the CPU integral "// &
-                            "backend; build with -DMQC_ENABLE_LIBCINT=ON")
+                            "backend; build with -DMQC_ENABLE_CZT=ON")
       result%has_error = .true.
       result%has_energy = .false.
       if (len_trim(settings%basis_set) == 0 .or. fragment%n_atoms < 0) return
-   end subroutine run_libcint_mcscf
+   end subroutine run_czt_mcscf
 
-end module mqc_libcint_bridge
+end module mqc_czt_bridge

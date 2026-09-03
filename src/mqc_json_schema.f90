@@ -480,7 +480,7 @@ contains
       !!
       !! **Only what the backend actually acts on is listed.** `mcscf_config_t`
       !! carries fields for state averaging and for a CASPT2/NEVPT2 correction,
-      !! and none of that is implemented -- `run_libcint_casscf` optimises one
+      !! and none of that is implemented -- `run_czt_casscf` optimises one
       !! state and there is no perturbative step at all. Allowing those keys
       !! would let a deck ask for a three-state average and get a ground-state
       !! energy with nothing in the output to say so.

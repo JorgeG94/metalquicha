@@ -182,7 +182,7 @@
     <div class="col-md-9" id='text'>
       <p>Hartree-Fock, and the MP2 and coupled-cluster corrections built on it.</p>
 <p>Dispatches to whichever backend <code>model.backend</code> names: the CPU one
-through <code>mqc_libcint_bridge</code>, or the GPU one through <code>mqc_cuest_bridge</code>.
+through <code>mqc_czt_bridge</code>, or the GPU one through <code>mqc_cuest_bridge</code>.
 cuEST has no conventional four-index ERI path, so J and K are always
 density-fitted there and an auxiliary (JKFIT) basis is required alongside
 the orbital basis.</p>
@@ -192,17 +192,17 @@ the orbital basis.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
+                  <li class="list-inline-item"><a href='mqc_czt_bridge.html'>mqc_czt_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
-                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
                   <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -254,37 +254,37 @@ the orbital basis.</p>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M699.5,-506.54C669.76,-500.68 659.48,-503.96 634,-487.54 592.9,-461.06 559.08,-413.62 541.85,-386.36"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="544.69,-384.3 536.46,-377.63 538.73,-387.97 544.69,-384.3"/>
 </g>
-<!-- module~mqc_error -->
+<!-- module~mqc_czt_bridge -->
 <g id="module~~mqc_method_hf~~UsesGraph_node4" class="node">
+<title>module~mqc_czt_bridge</title>
+<g id="a_module~~mqc_method_hf~~UsesGraph_node4"><a xlink:href="../module/mqc_czt_bridge.html" xlink:title="mqc_czt_bridge">
+<polygon fill="#337ab7" stroke="#337ab7" points="748.5,-211.54 652.5,-211.54 652.5,-187.54 748.5,-187.54 748.5,-211.54"/>
+<text text-anchor="middle" x="700.5" y="-197.14" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_czt_bridge</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_hf&#45;&gt;module~mqc_czt_bridge -->
+<g id="module~~mqc_method_hf~~UsesGraph_edge3" class="edge">
+<title>module~mqc_method_hf&#45;&gt;module~mqc_czt_bridge</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M888,-119.54C826.17,-96.65 755.07,-149.98 721.3,-180.32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="718.52,-178.13 713.55,-187.48 723.27,-183.27 718.52,-178.13"/>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_method_hf~~UsesGraph_node5" class="node">
 <title>module~mqc_error</title>
-<g id="a_module~~mqc_method_hf~~UsesGraph_node4"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<g id="a_module~~mqc_method_hf~~UsesGraph_node5"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
 <polygon fill="#337ab7" stroke="#337ab7" points="205.5,-150.54 138.5,-150.54 138.5,-126.54 205.5,-126.54 205.5,-150.54"/>
 <text text-anchor="middle" x="172" y="-136.14" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_method_hf&#45;&gt;module~mqc_error -->
-<g id="module~~mqc_method_hf~~UsesGraph_edge3" class="edge">
+<g id="module~~mqc_method_hf~~UsesGraph_edge4" class="edge">
 <title>module~mqc_method_hf&#45;&gt;module~mqc_error</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1055.16,-332.46C1041.24,-291.17 988.96,-156.19 890,-119.54"/>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M888,-119.54C808.5,-90.1 785.24,-92.77 701.5,-79.54"/>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M699.5,-79.54C516.22,-50.59 461.88,-33.98 282,-79.54 250.79,-87.45 218.83,-106.27 197.65,-120.54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="195.51,-117.77 189.27,-126.34 199.49,-123.53 195.51,-117.77"/>
-</g>
-<!-- module~mqc_libcint_bridge -->
-<g id="module~~mqc_method_hf~~UsesGraph_node5" class="node">
-<title>module~mqc_libcint_bridge</title>
-<g id="a_module~~mqc_method_hf~~UsesGraph_node5"><a xlink:href="../module/mqc_libcint_bridge.html" xlink:title="mqc_libcint_bridge">
-<polygon fill="#337ab7" stroke="#337ab7" points="757,-211.54 644,-211.54 644,-187.54 757,-187.54 757,-211.54"/>
-<text text-anchor="middle" x="700.5" y="-197.14" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_libcint_bridge</text>
-</a>
-</g>
-</g>
-<!-- module~mqc_method_hf&#45;&gt;module~mqc_libcint_bridge -->
-<g id="module~~mqc_method_hf~~UsesGraph_edge4" class="edge">
-<title>module~mqc_method_hf&#45;&gt;module~mqc_libcint_bridge</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M888,-119.54C826.17,-96.65 755.07,-149.98 721.3,-180.32"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="718.52,-178.13 713.55,-187.48 723.27,-183.27 718.52,-178.13"/>
 </g>
 <!-- module~mqc_method_base -->
 <g id="module~~mqc_method_hf~~UsesGraph_node6" class="node">
@@ -428,29 +428,29 @@ the orbital basis.</p>
 <title>module~mqc_cuest_iface&#45;&gt;pic_types</title>
 <path fill="none" stroke="#ff8b00" stroke-dasharray="5,2" d="M511.79,-353.46C497,-341.58 474.82,-322.38 459,-302.54 438.89,-277.33 448.76,-258.94 423,-239.54 417.29,-235.24 179.67,-175.97 173,-178.54"/>
 </g>
-<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_cuest_iface -->
+<!-- module~mqc_czt_bridge&#45;&gt;module~mqc_cuest_iface -->
 <g id="module~~mqc_method_hf~~UsesGraph_edge19" class="edge">
-<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_cuest_iface</title>
-<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M647.17,-211.66C642.4,-214.09 637.9,-217.02 634,-220.54 604.44,-247.19 621.14,-270.16 598,-302.54 585.83,-319.58 568.43,-335.5 554.21,-347.08"/>
-<polygon fill="#5cff00" stroke="#5cff00" points="551.94,-344.42 546.27,-353.38 556.29,-349.91 551.94,-344.42"/>
+<title>module~mqc_czt_bridge&#45;&gt;module~mqc_cuest_iface</title>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M652.47,-209.18C645.75,-212.04 639.32,-215.74 634,-220.54 604.44,-247.19 621.14,-270.16 598,-302.54 585.83,-319.58 568.43,-335.5 554.21,-347.08"/>
+<polygon fill="#e7ff00" stroke="#e7ff00" points="551.94,-344.42 546.27,-353.38 556.29,-349.91 551.94,-344.42"/>
 </g>
-<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_error -->
+<!-- module~mqc_czt_bridge&#45;&gt;module~mqc_error -->
 <g id="module~~mqc_method_hf~~UsesGraph_edge20" class="edge">
-<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_error</title>
-<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M659.47,-211.58C613.28,-225.12 542.03,-244.86 529.5,-241.54"/>
-<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M527.5,-241.54C470.43,-226.45 475.74,-186.07 423,-159.54 394.39,-145.15 384.96,-146.53 353.5,-140.54"/>
+<title>module~mqc_czt_bridge&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M659.47,-211.58C613.28,-225.12 542.03,-244.86 529.5,-241.54"/>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M527.5,-241.54C470.43,-226.45 475.74,-186.07 423,-159.54 394.39,-145.15 384.96,-146.53 353.5,-140.54"/>
 </g>
-<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_physical_fragment -->
+<!-- module~mqc_czt_bridge&#45;&gt;module~mqc_physical_fragment -->
 <g id="module~~mqc_method_hf~~UsesGraph_edge21" class="edge">
-<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_physical_fragment</title>
-<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M652.53,-211.66C646.09,-214.16 639.73,-217.1 634,-220.54 614.87,-232.03 616.82,-243.56 598,-255.54 592.16,-259.26 585.71,-262.57 579.17,-265.48"/>
-<polygon fill="#5cff00" stroke="#5cff00" points="577.48,-262.4 569.58,-269.46 580.16,-268.86 577.48,-262.4"/>
+<title>module~mqc_czt_bridge&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M652.53,-211.66C646.09,-214.16 639.73,-217.1 634,-220.54 614.87,-232.03 616.82,-243.56 598,-255.54 592.16,-259.26 585.71,-262.57 579.17,-265.48"/>
+<polygon fill="#e7ff00" stroke="#e7ff00" points="577.48,-262.4 569.58,-269.46 580.16,-268.86 577.48,-262.4"/>
 </g>
-<!-- module~mqc_libcint_bridge&#45;&gt;module~mqc_result_types -->
+<!-- module~mqc_czt_bridge&#45;&gt;module~mqc_result_types -->
 <g id="module~~mqc_method_hf~~UsesGraph_edge22" class="edge">
-<title>module~mqc_libcint_bridge&#45;&gt;module~mqc_result_types</title>
-<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M664.82,-187.51C654.67,-183.52 643.7,-178.76 634,-173.54 604.33,-157.57 572.99,-134.78 552.46,-118.92"/>
-<polygon fill="#5cff00" stroke="#5cff00" points="554.39,-115.99 544.36,-112.6 550.09,-121.51 554.39,-115.99"/>
+<title>module~mqc_czt_bridge&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M664.82,-187.51C654.67,-183.52 643.7,-178.76 634,-173.54 604.33,-157.57 572.99,-134.78 552.46,-118.92"/>
+<polygon fill="#e7ff00" stroke="#e7ff00" points="554.39,-115.99 544.36,-112.6 550.09,-121.51 554.39,-115.99"/>
 </g>
 <!-- module~mqc_method_base&#45;&gt;module~mqc_physical_fragment -->
 <g id="module~~mqc_method_hf~~UsesGraph_edge23" class="edge">
@@ -1290,18 +1290,18 @@ large graphs.</div>
 <path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M920.14,-362.51C874.48,-355.27 784.25,-340.97 729.36,-332.27"/>
 <polygon fill="#5cff00" stroke="#5cff00" points="729.63,-328.77 719.2,-330.66 728.53,-335.68 729.63,-328.77"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_method_hf~~UsedByGraph_node23" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_method_hf~~UsedByGraph_node23"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_method_hf~~UsedByGraph_node23"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="988.5,-337 910.5,-337 910.5,-313 988.5,-313 988.5,-337"/>
 <text text-anchor="middle" x="949.5" y="-322.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_method_hf~~UsedByGraph_edge23" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M910.25,-325C862.38,-325 780.47,-325 729.31,-325"/>
 <polygon fill="#5cff00" stroke="#5cff00" points="729.19,-321.5 719.19,-325 729.19,-328.5 729.19,-321.5"/>
 </g>
@@ -1478,17 +1478,17 @@ large graphs.</div>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_energy~4'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_energy.html'>hf_calc_energy</a></td>
+  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_energy~5'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_energy.html'>hf_calc_energy</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_gradient~4'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_gradient.html'>hf_calc_gradient</a></td>
+  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_gradient~5'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_gradient.html'>hf_calc_gradient</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_hessian~4'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_hessian.html'>hf_calc_hessian</a></td>
+  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_hessian~5'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_hessian.html'>hf_calc_hessian</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1521,7 +1521,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-accelerator~2"></span>
+              <span class="anchor" id="variable-accelerator"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1540,7 +1540,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~2"></span>
+              <span class="anchor" id="variable-allow_crap_scf"></span>
               logical,
             </td>
               <td>public</td>
@@ -1642,7 +1642,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_diis_size~3"></span>
+              <span class="anchor" id="variable-cc_diis_size"></span>
               integer,
             </td>
               <td>public</td>
@@ -1659,7 +1659,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_max_iter~2"></span>
+              <span class="anchor" id="variable-cc_max_iter"></span>
               integer,
             </td>
               <td>public</td>
@@ -1676,7 +1676,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_spin_adapted~3"></span>
+              <span class="anchor" id="variable-cc_spin_adapted"></span>
               logical,
             </td>
               <td>public</td>
@@ -1693,7 +1693,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_tolerance~3"></span>
+              <span class="anchor" id="variable-cc_tolerance"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1710,7 +1710,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_triples~3"></span>
+              <span class="anchor" id="variable-cc_triples"></span>
               logical,
             </td>
               <td>public</td>
@@ -1727,7 +1727,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-convergence_metric~2"></span>
+              <span class="anchor" id="variable-convergence_metric"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1746,7 +1746,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-corr_density_fitting~3"></span>
+              <span class="anchor" id="variable-corr_density_fitting"></span>
               logical,
             </td>
               <td>public</td>
@@ -1780,7 +1780,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~2"></span>
+              <span class="anchor" id="variable-density_tol"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1814,7 +1814,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~3"></span>
+              <span class="anchor" id="variable-diis_size"></span>
               integer,
             </td>
               <td>public</td>
@@ -1848,7 +1848,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~2"></span>
+              <span class="anchor" id="variable-energy_tol"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1885,7 +1885,7 @@ test or a new call path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grad_tol~2"></span>
+              <span class="anchor" id="variable-grad_tol"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1902,7 +1902,7 @@ test or a new call path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~7"></span>
+              <span class="anchor" id="variable-guess"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1915,12 +1915,12 @@ test or a new call path.</p>
                 <td>&#34;auto&#34;</td>
             <td>
 <p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;basis_set_projection&rsquo;
-or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~7" class="pull-right"><emph>Read more&hellip;</emph></a>
+or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~2"></span>
+              <span class="anchor" id="variable-guess_steps"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -1955,7 +1955,7 @@ preliminary SCF in order.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-incremental_fock~2"></span>
+              <span class="anchor" id="variable-incremental_fock"></span>
               logical,
             </td>
               <td>public</td>
@@ -1975,7 +1975,7 @@ which is the first thing to rule out when a run stalls.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_shift~2"></span>
+              <span class="anchor" id="variable-level_shift"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1993,7 +1993,7 @@ Zero is off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-linear_dependence~2"></span>
+              <span class="anchor" id="variable-linear_dependence"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2010,7 +2010,7 @@ Zero is off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~4"></span>
+              <span class="anchor" id="variable-max_iter"></span>
               integer,
             </td>
               <td>public</td>
@@ -2079,7 +2079,7 @@ functional, so every extending type inherits it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-run_cc~2"></span>
+              <span class="anchor" id="variable-run_cc"></span>
               logical,
             </td>
               <td>public</td>
@@ -2097,7 +2097,7 @@ the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-run_mp2~2"></span>
+              <span class="anchor" id="variable-run_mp2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2115,7 +2115,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scs_os~3"></span>
+              <span class="anchor" id="variable-scs_os~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2132,7 +2132,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scs_ss~3"></span>
+              <span class="anchor" id="variable-scs_ss~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2183,7 +2183,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~3"></span>
+              <span class="anchor" id="variable-use_diis"></span>
               logical,
             </td>
               <td>public</td>
@@ -2200,7 +2200,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose"></span>
+              <span class="anchor" id="variable-verbose~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2250,7 +2250,7 @@ from the method name, not by a deck keyword.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~106"></span>
+              <span class="anchor" id="variable-this~98"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2265,7 +2265,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~32"></span>
+              <span class="anchor" id="variable-fragment~23"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2280,7 +2280,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~38"></span>
+              <span class="anchor" id="variable-result~37"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2320,7 +2320,7 @@ from the method name, not by a deck keyword.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~108"></span>
+              <span class="anchor" id="variable-this~100"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2335,7 +2335,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~34"></span>
+              <span class="anchor" id="variable-fragment~25"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2350,7 +2350,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~40"></span>
+              <span class="anchor" id="variable-result~39"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2390,7 +2390,7 @@ from the method name, not by a deck keyword.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~109"></span>
+              <span class="anchor" id="variable-this~101"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2405,7 +2405,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~35"></span>
+              <span class="anchor" id="variable-fragment~26"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2420,7 +2420,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~41"></span>
+              <span class="anchor" id="variable-result~40"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2460,7 +2460,7 @@ from the method name, not by a deck keyword.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~107"></span>
+              <span class="anchor" id="variable-this~99"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2475,7 +2475,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~33"></span>
+              <span class="anchor" id="variable-fragment~24"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2490,7 +2490,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~39"></span>
+              <span class="anchor" id="variable-result~38"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2505,7 +2505,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~6"></span>
+              <span class="anchor" id="variable-want_gradient~3"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2520,7 +2520,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_hessian~3"></span>
+              <span class="anchor" id="variable-want_hessian~2"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -2564,7 +2564,7 @@ what reaches it; the backend decides, not this routine.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-03 00:21 +0000             </p>
+ on 2026-09-03 03:36 +0000             </p>
           </div>
         </div>
         <br>

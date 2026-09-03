@@ -137,17 +137,17 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-color">color</a>
-            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-config~8">config</a>
-            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-error~31">error</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-config~29">config</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-error~135">error</a>
             <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-has_fragmented_molecules">has_fragmented_molecules</a>
-            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-imol">imol</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-imol~6">imol</a>
             <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-individual_json_files">individual_json_files</a>
             <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-mol_name">mol_name</a>
             <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-mol_resources">mol_resources</a>
             <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-molecules_processed">molecules_processed</a>
-            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-my_rank~2">my_rank</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-my_rank">my_rank</a>
             <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-num_ranks">num_ranks</a>
-            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-sys_geom~12">sys_geom</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-sys_geom~69">sys_geom</a>
         </div>
       </div>
     </div>
@@ -194,8 +194,8 @@
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_config_types.html'>mqc_config_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_json.html'>mqc_json</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -890,7 +890,7 @@ Each molecule is independent, so assign one molecule per rank</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~4"></span>
+              <span class="anchor" id="variable-resources~16"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -905,7 +905,7 @@ Each molecule is independent, so assign one molecule per rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mqc_config"></span>
+              <span class="anchor" id="variable-mqc_config~2"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2057,20 +2057,20 @@ Each molecule is independent, so assign one molecule per rank</p>
 <path fill="none" stroke="#0011ff" d="M573.1,-3197.1C592.53,-3222.27 636.5,-3282.78 658,-3341 692.17,-3433.53 623.03,-3491.49 694,-3560 735.43,-3599.99 893.93,-3585.34 951,-3593 992.42,-3598.56 1039.93,-3605.26 1071.75,-3609.8"/>
 <polygon fill="#0011ff" stroke="#0011ff" points="1071.51,-3613.3 1081.9,-3611.25 1072.5,-3606.37 1071.51,-3613.3"/>
 </g>
-<!-- proc~run_libcint_efp -->
+<!-- proc~run_czt_efp -->
 <g id="proc~~run_multi_molecule_calculations~~CallsGraph_node89" class="node">
-<title>proc~run_libcint_efp</title>
-<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node89"><a xlink:href="../proc/run_libcint_efp.html" xlink:title="run_libcint_efp">
-<polygon fill="#d9534f" stroke="#d9534f" points="868,-3117 777,-3117 777,-3093 868,-3093 868,-3117"/>
-<text text-anchor="middle" x="822.5" y="-3102.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_efp</text>
+<title>proc~run_czt_efp</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node89"><a xlink:href="../proc/run_czt_efp.html" xlink:title="run_czt_efp">
+<polygon fill="#d9534f" stroke="#d9534f" points="859,-3117 786,-3117 786,-3093 859,-3093 859,-3117"/>
+<text text-anchor="middle" x="822.5" y="-3102.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_czt_efp</text>
 </a>
 </g>
 </g>
-<!-- proc~run_efp&#45;&gt;proc~run_libcint_efp -->
+<!-- proc~run_efp&#45;&gt;proc~run_czt_efp -->
 <g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge93" class="edge">
-<title>proc~run_efp&#45;&gt;proc~run_libcint_efp</title>
-<path fill="none" stroke="#0011ff" d="M589.66,-3176.89C632.59,-3163.58 718.66,-3136.89 772.99,-3120.04"/>
-<polygon fill="#0011ff" stroke="#0011ff" points="774.23,-3123.32 782.75,-3117.02 772.16,-3116.63 774.23,-3123.32"/>
+<title>proc~run_efp&#45;&gt;proc~run_czt_efp</title>
+<path fill="none" stroke="#0011ff" d="M589.66,-3176.89C633.44,-3163.31 722.06,-3135.84 776.16,-3119.06"/>
+<polygon fill="#0011ff" stroke="#0011ff" points="777.32,-3122.36 785.84,-3116.06 775.25,-3115.68 777.32,-3122.36"/>
 </g>
 <!-- proc~run_fragmented_calculation&#45;&gt;abort_comm -->
 <g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge96" class="edge">
@@ -2444,18 +2444,18 @@ Each molecule is independent, so assign one molecule per rank</p>
 <path fill="none" stroke="#5700ff" d="M860.61,-3542.73C886.66,-3546.25 921.91,-3552.89 951,-3565 968.75,-3572.39 969.29,-3581.51 987,-3589 1014.19,-3600.49 1047.04,-3607.14 1071.65,-3610.83"/>
 <polygon fill="#5700ff" stroke="#5700ff" points="1071.26,-3614.31 1081.65,-3612.23 1072.23,-3607.37 1071.26,-3614.31"/>
 </g>
-<!-- proc~run_libcint_makefp -->
+<!-- proc~run_czt_makefp -->
 <g id="proc~~run_multi_molecule_calculations~~CallsGraph_node90" class="node">
-<title>proc~run_libcint_makefp</title>
-<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node90"><a xlink:href="../proc/run_libcint_makefp.html" xlink:title="run_libcint_makefp">
-<polygon fill="#d9534f" stroke="#d9534f" points="1166,-3433 1052,-3433 1052,-3409 1166,-3409 1166,-3433"/>
-<text text-anchor="middle" x="1109" y="-3418.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_makefp</text>
+<title>proc~run_czt_makefp</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node90"><a xlink:href="../proc/run_czt_makefp.html" xlink:title="run_czt_makefp">
+<polygon fill="#d9534f" stroke="#d9534f" points="1157.5,-3433 1060.5,-3433 1060.5,-3409 1157.5,-3409 1157.5,-3433"/>
+<text text-anchor="middle" x="1109" y="-3418.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_czt_makefp</text>
 </a>
 </g>
 </g>
-<!-- proc~run_makefp&#45;&gt;proc~run_libcint_makefp -->
+<!-- proc~run_makefp&#45;&gt;proc~run_czt_makefp -->
 <g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge129" class="edge">
-<title>proc~run_makefp&#45;&gt;proc~run_libcint_makefp</title>
+<title>proc~run_makefp&#45;&gt;proc~run_czt_makefp</title>
 <path fill="none" stroke="#5700ff" d="M852.61,-3526.93C904.15,-3505.55 1011.46,-3461.04 1069.21,-3437.09"/>
 <polygon fill="#5700ff" stroke="#5700ff" points="1070.82,-3440.21 1078.72,-3433.14 1068.14,-3433.74 1070.82,-3440.21"/>
 </g>
@@ -2507,35 +2507,35 @@ Each molecule is independent, so assign one molecule per rank</p>
 <path fill="none" stroke="#8c00ff" d="M591.91,-3360.47C613.11,-3360.96 641.19,-3365.35 658,-3383 723.3,-3451.58 623.25,-3530.06 694,-3593 749.09,-3642.01 981.19,-3626.66 1071.67,-3618.58"/>
 <polygon fill="#8c00ff" stroke="#8c00ff" points="1072.09,-3622.06 1081.73,-3617.66 1071.45,-3615.09 1072.09,-3622.06"/>
 </g>
-<!-- proc~run_libcint_sapt0 -->
+<!-- proc~run_czt_sapt0 -->
 <g id="proc~~run_multi_molecule_calculations~~CallsGraph_node91" class="node">
-<title>proc~run_libcint_sapt0</title>
-<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node91"><a xlink:href="../proc/run_libcint_sapt0.html" xlink:title="run_libcint_sapt0">
-<polygon fill="#d9534f" stroke="#d9534f" points="874,-3395 771,-3395 771,-3371 874,-3371 874,-3395"/>
-<text text-anchor="middle" x="822.5" y="-3380.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_sapt0</text>
+<title>proc~run_czt_sapt0</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node91"><a xlink:href="../proc/run_czt_sapt0.html" xlink:title="run_czt_sapt0">
+<polygon fill="#d9534f" stroke="#d9534f" points="865,-3395 780,-3395 780,-3371 865,-3371 865,-3395"/>
+<text text-anchor="middle" x="822.5" y="-3380.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_czt_sapt0</text>
 </a>
 </g>
 </g>
-<!-- proc~run_sapt&#45;&gt;proc~run_libcint_sapt0 -->
+<!-- proc~run_sapt&#45;&gt;proc~run_czt_sapt0 -->
 <g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge136" class="edge">
-<title>proc~run_sapt&#45;&gt;proc~run_libcint_sapt0</title>
-<path fill="none" stroke="#8c00ff" d="M591.6,-3364.29C631.97,-3367.57 707.38,-3373.71 760.81,-3378.06"/>
-<polygon fill="#8c00ff" stroke="#8c00ff" points="760.6,-3381.55 770.85,-3378.88 761.17,-3374.58 760.6,-3381.55"/>
+<title>proc~run_sapt&#45;&gt;proc~run_czt_sapt0</title>
+<path fill="none" stroke="#8c00ff" d="M591.6,-3364.29C634.3,-3367.76 716.2,-3374.43 769.84,-3378.79"/>
+<polygon fill="#8c00ff" stroke="#8c00ff" points="769.59,-3382.29 779.84,-3379.61 770.15,-3375.31 769.59,-3382.29"/>
 </g>
-<!-- proc~run_libcint_sapt2 -->
+<!-- proc~run_czt_sapt2 -->
 <g id="proc~~run_multi_molecule_calculations~~CallsGraph_node92" class="node">
-<title>proc~run_libcint_sapt2</title>
-<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node92"><a xlink:href="../proc/run_libcint_sapt2.html" xlink:title="run_libcint_sapt2">
-<polygon fill="#d9534f" stroke="#d9534f" points="874,-3353 771,-3353 771,-3329 874,-3329 874,-3353"/>
-<text text-anchor="middle" x="822.5" y="-3338.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_libcint_sapt2</text>
+<title>proc~run_czt_sapt2</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node92"><a xlink:href="../proc/run_czt_sapt2.html" xlink:title="run_czt_sapt2">
+<polygon fill="#d9534f" stroke="#d9534f" points="865,-3353 780,-3353 780,-3329 865,-3329 865,-3353"/>
+<text text-anchor="middle" x="822.5" y="-3338.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_czt_sapt2</text>
 </a>
 </g>
 </g>
-<!-- proc~run_sapt&#45;&gt;proc~run_libcint_sapt2 -->
+<!-- proc~run_sapt&#45;&gt;proc~run_czt_sapt2 -->
 <g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge137" class="edge">
-<title>proc~run_sapt&#45;&gt;proc~run_libcint_sapt2</title>
-<path fill="none" stroke="#8c00ff" d="M591.6,-3359.71C631.97,-3356.43 707.38,-3350.29 760.81,-3345.94"/>
-<polygon fill="#8c00ff" stroke="#8c00ff" points="761.17,-3349.42 770.85,-3345.12 760.6,-3342.45 761.17,-3349.42"/>
+<title>proc~run_sapt&#45;&gt;proc~run_czt_sapt2</title>
+<path fill="none" stroke="#8c00ff" d="M591.6,-3359.71C634.3,-3356.24 716.2,-3349.57 769.84,-3345.21"/>
+<polygon fill="#8c00ff" stroke="#8c00ff" points="770.15,-3348.69 779.84,-3344.39 769.59,-3341.71 770.15,-3348.69"/>
 </g>
 <!-- proc~run_unfragmented_calculation&#45;&gt;info -->
 <g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge140" class="edge">
@@ -3278,27 +3278,27 @@ Each molecule is independent, so assign one molecule per rank</p>
 <path fill="none" stroke="#0800ff" d="M1119.72,-3602.98C1141.56,-3575.62 1195.37,-3506.06 1231,-3442 1250.74,-3406.5 1234.99,-3383 1267,-3358 1361.38,-3284.28 1451.37,-3402.63 1533,-3315 1626.34,-3214.79 1649.09,-2169.28 1652.12,-2003.18"/>
 <polygon fill="#0800ff" stroke="#0800ff" points="1655.62,-2003.21 1652.3,-1993.15 1648.62,-2003.08 1655.62,-2003.21"/>
 </g>
-<!-- proc~run_libcint_efp&#45;&gt;proc~error_set -->
+<!-- proc~run_czt_efp&#45;&gt;proc~error_set -->
 <g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge208" class="edge">
-<title>proc~run_libcint_efp&#45;&gt;proc~error_set</title>
-<path fill="none" stroke="#2100ff" d="M868.31,-3108.22C896.2,-3107.61 930.53,-3101.61 951,-3079 1003.91,-3020.54 941.87,-2790.66 987,-2726 1056.05,-2627.06 1161.52,-2705.64 1231,-2607 1272.85,-2547.59 1216.44,-2334.19 1267,-2282 1350.1,-2196.23 1437.43,-2315.62 1533,-2244 1613.95,-2183.34 1641.52,-2055 1649.58,-2003.29"/>
+<title>proc~run_czt_efp&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#2100ff" d="M859.28,-3108.24C888.4,-3108.73 928.26,-3104.12 951,-3079 1003.91,-3020.54 941.87,-2790.66 987,-2726 1056.05,-2627.06 1161.52,-2705.64 1231,-2607 1272.85,-2547.59 1216.44,-2334.19 1267,-2282 1350.1,-2196.23 1437.43,-2315.62 1533,-2244 1613.95,-2183.34 1641.52,-2055 1649.58,-2003.29"/>
 <polygon fill="#2100ff" stroke="#2100ff" points="1653.07,-2003.6 1651.05,-1993.2 1646.14,-2002.59 1653.07,-2003.6"/>
 </g>
-<!-- proc~run_libcint_makefp&#45;&gt;proc~error_set -->
+<!-- proc~run_czt_makefp&#45;&gt;proc~error_set -->
 <g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge209" class="edge">
-<title>proc~run_libcint_makefp&#45;&gt;proc~error_set</title>
+<title>proc~run_czt_makefp&#45;&gt;proc~error_set</title>
 <path fill="none" stroke="#3a00ff" d="M1125.47,-3408.8C1152.51,-3388.12 1210.86,-3346.36 1267,-3325 1379.27,-3282.27 1451.81,-3365.54 1533,-3277 1622.76,-3179.11 1648.44,-2167.93 1652.04,-2003.53"/>
 <polygon fill="#3a00ff" stroke="#3a00ff" points="1655.54,-2003.25 1652.26,-1993.18 1648.54,-2003.1 1655.54,-2003.25"/>
 </g>
-<!-- proc~run_libcint_sapt0&#45;&gt;proc~error_set -->
+<!-- proc~run_czt_sapt0&#45;&gt;proc~error_set -->
 <g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge210" class="edge">
-<title>proc~run_libcint_sapt0&#45;&gt;proc~error_set</title>
-<path fill="none" stroke="#5300ff" d="M874.29,-3375.82C897.74,-3372.2 925.89,-3367.43 951,-3362 1093.15,-3331.26 1124.42,-3305.7 1267,-3277 1325.48,-3265.23 1491.67,-3284.01 1533,-3241 1622.39,-3147.97 1648.34,-2165.11 1652.02,-2003.45"/>
+<title>proc~run_czt_sapt0&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#5300ff" d="M865.04,-3377.23C890.06,-3373.48 922.5,-3368.17 951,-3362 1093.15,-3331.26 1124.42,-3305.7 1267,-3277 1325.48,-3265.23 1491.67,-3284.01 1533,-3241 1622.39,-3147.97 1648.34,-2165.11 1652.02,-2003.45"/>
 <polygon fill="#5300ff" stroke="#5300ff" points="1655.52,-2003.33 1652.25,-1993.25 1648.52,-2003.17 1655.52,-2003.33"/>
 </g>
-<!-- proc~run_libcint_sapt2&#45;&gt;proc~error_set -->
+<!-- proc~run_czt_sapt2&#45;&gt;proc~error_set -->
 <g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge211" class="edge">
-<title>proc~run_libcint_sapt2&#45;&gt;proc~error_set</title>
+<title>proc~run_czt_sapt2&#45;&gt;proc~error_set</title>
 <path fill="none" stroke="#6c00ff" d="M849.51,-3328.93C875.72,-3316.46 917.03,-3295.9 951,-3275 967.81,-3264.66 968.47,-3255.81 987,-3249 1101.24,-3207.03 1446.14,-3291.25 1533,-3206 1622.45,-3118.2 1648.31,-2162.41 1652.01,-2003.37"/>
 <polygon fill="#6c00ff" stroke="#6c00ff" points="1655.51,-2003.4 1652.24,-1993.32 1648.51,-2003.24 1655.51,-2003.4"/>
 </g>
@@ -4869,7 +4869,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~8"></span>
+              <span class="anchor" id="variable-config~29"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
               <td>private</td>
@@ -4886,7 +4886,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~31"></span>
+              <span class="anchor" id="variable-error~135"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -4920,7 +4920,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imol"></span>
+              <span class="anchor" id="variable-imol~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -5005,7 +5005,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-my_rank~2"></span>
+              <span class="anchor" id="variable-my_rank"></span>
               integer,
             </td>
               <td>private</td>
@@ -5039,7 +5039,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~12"></span>
+              <span class="anchor" id="variable-sys_geom~69"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>private</td>
@@ -5305,7 +5305,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-03 00:21 +0000             </p>
+ on 2026-09-03 03:36 +0000             </p>
           </div>
         </div>
         <br>

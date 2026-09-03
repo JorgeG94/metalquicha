@@ -182,7 +182,7 @@ contains
 
          ! The -V family. Named here so an unsupported one is refused for the
          ! reason it is actually unsupported -- the non-local correlation check
-         ! in `mqc_libcint_xc`, or the meta-GGA one.
+         ! in `mqc_czt_xc`, or the meta-GGA one.
       case ("wb97x-v", "wb97xv")
          spec%from_libxc = .true.
          spec%n_components = 1

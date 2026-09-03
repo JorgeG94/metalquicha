@@ -4,7 +4,7 @@ module mqc_scf_common
    !!
    !! Orthogonalising the overlap, forming a density from occupied orbitals and
    !! measuring spin contamination are pure linear algebra, and live here so
-   !! the libcint and cuEST paths cannot drift apart on the numerics.
+   !! the cenzontle and cuEST paths cannot drift apart on the numerics.
    !!
    !! Nothing here touches integrals, DIIS or the iteration itself.
    use pic_types, only: dp
@@ -60,7 +60,7 @@ module mqc_scf_common
    logical, save :: collecting = .false.
       !! Set while a caller is running many SCFs and wants one report, not
       !! many. Module state because the report is raised deep inside
-      !! `run_libcint_rhf`, which is reached from the fragment bridge, SAPT,
+      !! `run_czt_rhf`, which is reached from the fragment bridge, SAPT,
       !! AFO, Fukui and the atomic guess.
    ! TODO(mqc): the thread-safety argument this carried is stale. It rested on
    ! fragment workers being pinned to one thread by `omp_set_num_threads(1)`,
