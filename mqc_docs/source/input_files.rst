@@ -101,6 +101,9 @@ Which integral backend runs, as a root-level key beside ``driver``:
   coupled cluster is refused too, since those have no GPU implementation here.
 - ``libcint``, or ``cpu``: force the CPU path even on a build that has cuEST,
   which is how the two are compared against each other.
+- ``terco``: run the whole SCF inside terco, on the device. Energies only, and
+  restricted to what terco's kernels cover -- see :doc:`installation`. Never
+  selected by ``auto``: it has to be asked for by name.
 
 An unrecognised name is refused rather than treated as ``auto``, so a typo
 cannot quietly select a different implementation.

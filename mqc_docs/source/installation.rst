@@ -83,6 +83,9 @@ with, run ``mqc --version``, which prints a ``features:`` line.
    * - ``MQC_ENABLE_CUEST``
      - ``OFF``
      - GPU integrals (needs ``CUEST_ROOT`` and an sm_80 card)
+   * - ``MQC_ENABLE_TERCO``
+     - ``OFF``
+     - Device-resident SCF, through terco (needs ``TERCO_ROOT``)
    * - ``MQC_ENABLE_HDF5``
      - ``OFF``
      - Binary checkpoints carrying gradients and Hessians
@@ -99,6 +102,49 @@ building makes. See :doc:`geometry_optimization`.
 a second one: it needs ``WITH_GFN0=ON`` to be useful, and CREST's own tblite pin
 disagrees with the release this project builds against. See
 :doc:`conformer_sampling`.
+
+``MQC_ENABLE_TERCO`` links terco, which runs a whole SCF -- Hartree-Fock or
+Kohn-Sham, restricted or unrestricted -- resident on the device. mqc builds the
+basis and the initial density on the CPU and hands both over; nothing comes back
+until the SCF has converged.
+
+terco is built by ``nvfortran`` and reached through its C ABI, so it is linked
+as a shared library rather than compiled into this build:
+
+.. code-block:: bash
+
+   cmake -B build -DMQC_ENABLE_TERCO=ON -DTERCO_ROOT=/path/to/terco
+
+``TERCO_ROOT/lib``, ``TERCO_ROOT/build-shared-gpu`` and
+``TERCO_ROOT/build-xc-gpu`` are searched for ``libterco``; naming the file
+outright with ``-DTERCO_LIBRARY=<path>`` overrides all of them. terco's own
+``include/trc_c_interfaces.f90`` is compiled from its checkout rather than
+copied here, so an ABI that drifts is a compile error in this build instead of a
+wrong number at run time.
+
+What the backend covers is narrower than the CPU path, and each limit is
+**refused** rather than worked around, because every one of them would otherwise
+return a plausible number over the wrong basis:
+
+- **Energies only.** A gradient request is refused; terco has no derivative
+  kernels, and a result carrying an energy but no gradient is what a geometry
+  optimisation would step on. MP2 and coupled cluster are refused for the same
+  reason.
+- **Angular momentum through d.** terco's four-centre kernels stop there.
+- **Cartesian shells.** terco reads every shell Cartesian, so a basis with d
+  functions needs ``"cartesian": true`` in the deck. Note that this makes it a
+  genuinely different basis -- six d functions rather than five -- so those
+  energies are not comparable with a spherical run of the same basis name.
+  Through p the two conventions coincide and the question does not arise.
+- **No effective core potentials.**
+
+A generally contracted basis, cc-pVDZ among them, is *not* refused: terco reads
+one contracted function per shell, so the driver splits each contraction column
+into its own shell before handing the basis over. That is exact -- the columns
+are already independent functions over shared exponents, and libcint's AO
+ordering puts the split shells where the general one was -- but it repeats the
+primitive work the columns used to share, which is the cost general contraction
+exists to avoid.
 
 .. code-block:: bash
 
