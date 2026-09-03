@@ -29,7 +29,15 @@ module mqc_czt_ecp
    !! repulsion and the electron count. Those belong to the molecule and the
    !! fragment respectively.
    use pic_types, only: dp
-   use, intrinsic :: iso_c_binding, only: c_int, c_ptr, c_loc, c_null_ptr
+   ! Through `libcint_fortran`, the same shim the rest of this backend uses,
+   ! rather than a hand-written `bind(C)` interface to libcint's C names. The
+   ! marshalling -- the env extent, the `bas` extent past `nbas`, the dims --
+   ! lives once in the shim instead of once per caller, which is what that
+   ! module exists for. The guard stays because libcint has no ECP code at
+   ! all, so this is the one integral the two backends cannot both answer.
+#ifdef MQC_WITH_LIBFINT
+   use libcint_fortran, only: libcint_ecp_sph, libcint_ecp_cart
+#endif
    use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
    private
@@ -47,34 +55,6 @@ module mqc_czt_ecp
    logical, parameter :: ECP_AVAILABLE = .true.
 #else
    logical, parameter :: ECP_AVAILABLE = .false.
-#endif
-
-#ifdef MQC_WITH_LIBFINT
-   interface
-      function cECPscalar_sph(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
-                              cache) result(ret) bind(C, name="ECPscalar_sph")
-         import :: c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env, opt, cache
-         integer(c_int) :: ret
-      end function cECPscalar_sph
-
-      function cECPscalar_cart(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
-                               cache) result(ret) bind(C, name="ECPscalar_cart")
-         import :: c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env, opt, cache
-         integer(c_int) :: ret
-      end function cECPscalar_cart
-   end interface
 #endif
 
 contains
@@ -163,10 +143,8 @@ contains
       integer, intent(in) :: necpbas
       real(dp), allocatable, intent(out) :: matrix(:, :)
 
-      real(dp), allocatable, target :: buf(:)
-      integer(c_int), allocatable, target :: shls(:)
-      integer(c_int), allocatable, target :: atm_c(:), bas_c(:)
-      real(dp), allocatable, target :: env_c(:)
+      real(dp), allocatable :: buf(:)
+      integer :: shls(2)
       integer :: ish, jsh, di, dj, i, j, io, jo, ret, nmax
 
       allocate (matrix(nao, nao))
@@ -181,11 +159,6 @@ contains
          nmax = max(nmax, shell_offset(ish + 1) - shell_offset(ish))
       end do
       allocate (buf(nmax*nmax))
-      allocate (shls(2))
-
-      atm_c = reshape(int(atm, c_int), [size(atm)])
-      bas_c = reshape(int(bas, c_int), [size(bas)])
-      env_c = env
 
       do ish = 1, nbas
          di = shell_offset(ish + 1) - shell_offset(ish)
@@ -193,20 +166,14 @@ contains
          do jsh = 1, nbas
             dj = shell_offset(jsh + 1) - shell_offset(jsh)
             jo = shell_offset(jsh)
-            shls = int([ish - 1, jsh - 1], c_int)
+            shls = [ish - 1, jsh - 1]
             buf(1:di*dj) = 0.0_dp
 
 #ifdef MQC_WITH_LIBFINT
             if (cartesian) then
-               ret = cECPscalar_cart(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                     c_loc(atm_c), int(natm, c_int), &
-                                     c_loc(bas_c), int(nbas, c_int), &
-                                     c_loc(env_c), c_null_ptr, c_null_ptr)
+               ret = libcint_ecp_cart(buf, shls, atm, natm, bas, nbas, env)
             else
-               ret = cECPscalar_sph(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                    c_loc(atm_c), int(natm, c_int), &
-                                    c_loc(bas_c), int(nbas, c_int), &
-                                    c_loc(env_c), c_null_ptr, c_null_ptr)
+               ret = libcint_ecp_sph(buf, shls, atm, natm, bas, nbas, env)
             end if
 #else
             ! Unreachable: `necpbas` is zero in a build without libfint,
