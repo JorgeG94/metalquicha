@@ -138,12 +138,12 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/validate_system.html#variable-atom">atom</a>
             <a class="list-group-item" href="../proc/validate_system.html#variable-audit">audit</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-iatom~15">iatom</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-imon~4">imon</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-islot~2">islot</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-missing_i~2">missing_i</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-missing_j~2">missing_j</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-n_missing~2">n_missing</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-iatom">iatom</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-imon">imon</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-islot">islot</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-missing_i">missing_i</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-missing_j">missing_j</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-n_missing">n_missing</a>
             <a class="list-group-item" href="../proc/validate_system.html#variable-owner_count">owner_count</a>
             <a class="list-group-item" href="../proc/validate_system.html#variable-total_charge">total_charge</a>
         </div>
@@ -203,7 +203,7 @@ count and so is asked for rather than assumed.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~35"></span>
+              <span class="anchor" id="variable-sys_geom"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -218,7 +218,7 @@ count and so is asked for rather than assumed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-strict~2"></span>
+              <span class="anchor" id="variable-strict"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -233,7 +233,7 @@ count and so is asked for rather than assumed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~77"></span>
+              <span class="anchor" id="variable-error~4"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -784,31 +784,31 @@ large graphs.</div>
 <g id="proc~~validate_system~~CalledByGraph_node14" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~validate_system~~CalledByGraph_node14"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="324,-24 246,-24 246,0 324,0 324,-24"/>
-<text text-anchor="middle" x="285" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
-<g id="proc~~validate_system~~CalledByGraph_edge17" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
-<path fill="none" stroke="#0066ff" d="M324.23,-22.42C336.04,-25.72 349.08,-29.43 361,-33 388.7,-41.29 419.58,-51.13 444.12,-59.08"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="443.29,-62.49 453.88,-62.26 445.45,-55.84 443.29,-62.49"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~validate_system~~CalledByGraph_node15" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~validate_system~~CalledByGraph_node15"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="324,-108 246,-108 246,-84 324,-84 324,-108"/>
 <text text-anchor="middle" x="285" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
 <g id="proc~~validate_system~~CalledByGraph_edge15" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
 <path fill="none" stroke="#00ff66" d="M324.26,-106.32C336.08,-109.61 349.11,-113.35 361,-117 391.67,-126.42 426.14,-138.01 451.65,-146.78"/>
 <polygon fill="#00ff66" stroke="#00ff66" points="450.71,-150.16 461.3,-150.11 452.99,-143.54 450.71,-150.16"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~validate_system~~CalledByGraph_node15" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~validate_system~~CalledByGraph_node15"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="324,-24 246,-24 246,0 324,0 324,-24"/>
+<text text-anchor="middle" x="285" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~validate_system~~CalledByGraph_edge17" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0066ff" d="M324.23,-22.42C336.04,-25.72 349.08,-29.43 361,-33 388.7,-41.29 419.58,-51.13 444.12,-59.08"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="443.29,-62.49 453.88,-62.26 445.45,-55.84 443.29,-62.49"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~validate_system~~CalledByGraph_node16" class="node">
@@ -855,11 +855,11 @@ large graphs.</div>
 <path fill="none" stroke="#00ff00" d="M143.81,-108.04C168.44,-113.3 197.4,-119.49 222.58,-124.87"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="221.88,-128.3 232.39,-126.97 223.34,-121.46 221.88,-128.3"/>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~validate_system~~CalledByGraph_edge21" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#0000ff" d="M166.01,-96C189.51,-96 214.59,-96 235.55,-96"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="235.79,-99.5 245.79,-96 235.79,-92.5 235.79,-99.5"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
+<g id="proc~~validate_system~~CalledByGraph_edge20" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#00ffff" d="M166.01,-96C189.51,-96 214.59,-96 235.55,-96"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="235.79,-99.5 245.79,-96 235.79,-92.5 235.79,-99.5"/>
 </g>
 <!-- proc~run_geometry_optimization&#45;&gt;proc~write_final_single_point -->
 <g id="proc~~validate_system~~CalledByGraph_edge22" class="edge">
@@ -876,11 +876,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
-<g id="proc~~validate_system~~CalledByGraph_edge20" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#00ffff" d="M173.12,-12C194.58,-12 216.87,-12 235.78,-12"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="235.91,-15.5 245.91,-12 235.91,-8.5 235.91,-15.5"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~validate_system~~CalledByGraph_edge21" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#0000ff" d="M173.12,-12C194.58,-12 216.87,-12 235.78,-12"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="235.91,-15.5 245.91,-12 235.91,-8.5 235.91,-15.5"/>
 </g>
 </g>
 </svg>
@@ -1020,7 +1020,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~15"></span>
+              <span class="anchor" id="variable-iatom"></span>
               integer,
             </td>
               <td>private</td>
@@ -1037,7 +1037,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imon~4"></span>
+              <span class="anchor" id="variable-imon"></span>
               integer,
             </td>
               <td>private</td>
@@ -1054,7 +1054,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-islot~2"></span>
+              <span class="anchor" id="variable-islot"></span>
               integer,
             </td>
               <td>private</td>
@@ -1071,7 +1071,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-missing_i~2"></span>
+              <span class="anchor" id="variable-missing_i"></span>
               integer,
             </td>
               <td>private,</td>
@@ -1088,7 +1088,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-missing_j~2"></span>
+              <span class="anchor" id="variable-missing_j"></span>
               integer,
             </td>
               <td>private,</td>
@@ -1105,7 +1105,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_missing~2"></span>
+              <span class="anchor" id="variable-n_missing"></span>
               integer,
             </td>
               <td>private</td>
@@ -1286,7 +1286,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-03 08:55 +0000             </p>
+ on 2026-09-03 12:17 +0000             </p>
           </div>
         </div>
         <br>
