@@ -136,9 +136,9 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/report_linear_dependence.html#variable-line~10">line</a>
+            <a class="list-group-item" href="../proc/report_linear_dependence.html#variable-line~15">line</a>
             <a class="list-group-item" href="../proc/report_linear_dependence.html#variable-n_dropped">n_dropped</a>
-            <a class="list-group-item" href="../proc/report_linear_dependence.html#variable-tol~6">tol</a>
+            <a class="list-group-item" href="../proc/report_linear_dependence.html#variable-tol~9">tol</a>
         </div>
       </div>
     </div>
@@ -182,10 +182,7 @@
 <p><strong>The warnings are not gated on <code>verbose</code>, deliberately.</strong> Dropping a
 basis function changes the space every method downstream works in:
 the SCF, the virtuals an MP2 or CC run correlates, the count in the
-output file. A quiet run that silently solves a different problem
-than the one asked for is the failure this exists to prevent, and
-<code>logger%info</code> on its own would hide it at exactly the verbosity most
-production runs use. Only the healthy-basis line is verbose-only.</p>
+output file. Only the healthy-basis line is verbose-only.</p>
 
 
     <h3>Arguments</h3>
@@ -201,7 +198,7 @@ production runs use. Only the healthy-basis line is verbose-only.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_ao~2"></span>
+              <span class="anchor" id="variable-n_ao~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -216,7 +213,7 @@ production runs use. Only the healthy-basis line is verbose-only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_mo~2"></span>
+              <span class="anchor" id="variable-n_mo~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -261,7 +258,7 @@ production runs use. Only the healthy-basis line is verbose-only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~10"></span>
+              <span class="anchor" id="variable-verbose~12"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -287,9 +284,7 @@ production runs use. Only the healthy-basis line is verbose-only.</p>
             <td><strong>threshold</strong></td>
             <td>
                 <p>The cutoff actually applied, which the message quotes. Passed
-rather than read from the parameter because a deck can move it,
-and a warning naming a cutoff the run did not use is worse than
-one that names none.</p>
+rather than read from the parameter because a deck can move it.</p>
             </td>
         </tr>
     </tbody>
@@ -457,7 +452,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~10"></span>
+              <span class="anchor" id="variable-line~15"></span>
               character(len=160),
             </td>
               <td>private</td>
@@ -491,7 +486,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tol~6"></span>
+              <span class="anchor" id="variable-tol~9"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -529,10 +524,7 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! **The warnings are not gated on `verbose`, deliberately.** Dropping a</span>
 <span class="w">      </span><span class="c">!! basis function changes the space every method downstream works in:</span>
 <span class="w">      </span><span class="c">!! the SCF, the virtuals an MP2 or CC run correlates, the count in the</span>
-<span class="w">      </span><span class="c">!! output file. A quiet run that silently solves a different problem</span>
-<span class="w">      </span><span class="c">!! than the one asked for is the failure this exists to prevent, and</span>
-<span class="w">      </span><span class="c">!! `logger%info` on its own would hide it at exactly the verbosity most</span>
-<span class="w">      </span><span class="c">!! production runs use. Only the healthy-basis line is verbose-only.</span>
+<span class="w">      </span><span class="c">!! output file. Only the healthy-basis line is verbose-only.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_ao</span><span class="w">      </span><span class="c">!! Basis functions the basis set defines</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_mo</span><span class="w">      </span><span class="c">!! Orbitals that survived orthogonalisation</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">smallest_overlap</span>
@@ -540,9 +532,7 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">verbose</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">threshold</span>
 <span class="w">         </span><span class="c">!! The cutoff actually applied, which the message quotes. Passed</span>
-<span class="w">         </span><span class="c">!! rather than read from the parameter because a deck can move it,</span>
-<span class="w">         </span><span class="c">!! and a warning naming a cutoff the run did not use is worse than</span>
-<span class="w">         </span><span class="c">!! one that names none.</span>
+<span class="w">         </span><span class="c">!! rather than read from the parameter because a deck can move it.</span>
 
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">160</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">line</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_dropped</span>
@@ -556,10 +546,8 @@ large graphs.</div>
 <span class="k">      </span><span class="n">n_dropped</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_ao</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">n_mo</span>
 
 <span class="w">      </span><span class="c">! Collecting: fold this SCF into the tally and say nothing. One</span>
-<span class="w">      </span><span class="c">! fragmented run is thousands of SCFs, and the block below is eight to</span>
-<span class="w">      </span><span class="c">! twelve lines apiece -- the advisory branch especially, which reports a</span>
-<span class="w">      </span><span class="c">! calculation that is *fine*. The information is kept; only the repetition</span>
-<span class="w">      </span><span class="c">! is dropped. See `report_linear_dependence_tally`.</span>
+<span class="w">      </span><span class="c">! fragmented run is thousands of SCFs against eight to twelve lines</span>
+<span class="w">      </span><span class="c">! apiece. See `report_linear_dependence_tally`.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">collecting</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">n_dropped</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            </span><span class="n">tally</span><span class="p">%</span><span class="n">n_reports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tally</span><span class="p">%</span><span class="n">n_reports</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
@@ -573,9 +561,8 @@ large graphs.</div>
 <span class="k">            </span><span class="n">tally</span><span class="p">%</span><span class="n">n_reports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tally</span><span class="p">%</span><span class="n">n_reports</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">            </span><span class="n">tally</span><span class="p">%</span><span class="n">n_near_scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tally</span><span class="p">%</span><span class="n">n_near_scf</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">         </span><span class="k">end if</span>
-<span class="w">         </span><span class="c">! Tracked for every SCF that reported, dropped or not: the smallest</span>
-<span class="w">         </span><span class="c">! surviving eigenvalue is what X actually divides by, and it is the</span>
-<span class="w">         </span><span class="c">! number that says how bad the worst fragment was.</span>
+<span class="w">         </span><span class="c">! Tracked whether or not anything was dropped: the smallest surviving</span>
+<span class="w">         </span><span class="c">! eigenvalue is what X actually divides by.</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">smallest_kept</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="n">tally</span><span class="p">%</span><span class="n">worst_kept</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">smallest_kept</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">tally</span><span class="p">%</span><span class="n">worst_kept</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               </span><span class="n">tally</span><span class="p">%</span><span class="n">worst_kept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">smallest_kept</span>
@@ -647,7 +634,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

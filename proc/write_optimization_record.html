@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/write_optimization_record.html#variable-record">record</a>
+            <a class="list-group-item" href="../proc/write_optimization_record.html#variable-record~3">record</a>
         </div>
       </div>
     </div>
@@ -326,7 +326,7 @@ whether it converged is a path to an unknown place.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~19"></span>
+              <span class="anchor" id="variable-sys_geom~45"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -341,7 +341,7 @@ whether it converged is a path to an unknown place.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~25"></span>
+              <span class="anchor" id="variable-config~19"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -356,7 +356,7 @@ whether it converged is a path to an unknown place.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-final_energy~3"></span>
+              <span class="anchor" id="variable-final_energy~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -371,7 +371,7 @@ whether it converged is a path to an unknown place.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~4"></span>
+              <span class="anchor" id="variable-converged~5"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -386,7 +386,7 @@ whether it converged is a path to an unknown place.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~47"></span>
+              <span class="anchor" id="variable-error~96"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -918,7 +918,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-record"></span>
+              <span class="anchor" id="variable-record~3"></span>
               type(<a href='../type/optimization_record_t.html'>optimization_record_t</a>),
             </td>
               <td>private</td>
@@ -954,6 +954,9 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Both files, or neither: a trajectory without the record that says</span>
 <span class="w">      </span><span class="c">!! whether it converged is a path to an unknown place.</span>
+<span class="w">      </span><span class="c">! TODO(mqc): `get_output_json_filename` is not referenced here, nor in</span>
+<span class="w">      </span><span class="c">! `write_optimized_xyz`; both go through `optimization_path` and</span>
+<span class="w">      </span><span class="c">! `optimized_xyz_path`, which import it themselves.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_io_helpers</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">get_output_json_filename</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
@@ -974,10 +977,8 @@ large graphs.</div>
 <span class="w">      </span><span class="n">record</span><span class="p">%</span><span class="n">element_numbers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span>
 <span class="w">      </span><span class="n">record</span><span class="p">%</span><span class="n">final_coordinates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span>
 
-<span class="w">      </span><span class="c">! Trimmed to the steps actually taken. The array is grown by doubling, so</span>
-<span class="w">      </span><span class="c">! its last frames are whatever the previous allocation held -- writing</span>
-<span class="w">      </span><span class="c">! those out would put geometries in the trajectory that the optimization</span>
-<span class="w">      </span><span class="c">! never visited.</span>
+<span class="w">      </span><span class="c">! Trimmed to the steps actually taken: the array is grown by doubling, so</span>
+<span class="w">      </span><span class="c">! its last frames are whatever the previous allocation held.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">ctx_trajectory</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">ctx_n_steps</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">record</span><span class="p">%</span><span class="n">trajectory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx_trajectory</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">ctx_n_steps</span><span class="p">)</span>
 <span class="w">         </span><span class="n">record</span><span class="p">%</span><span class="n">trajectory_energies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx_trajectory_energies</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">ctx_n_steps</span><span class="p">)</span>
@@ -1011,7 +1012,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

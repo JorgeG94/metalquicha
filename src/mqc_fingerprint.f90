@@ -3,32 +3,15 @@ module mqc_fingerprint
    !! A short hash of everything that decides a fragment energy, so a stored
    !! energy can be matched against the calculation asking to reuse it.
    !!
-   !! **This exists so that restart cannot lie.** Reusing energies is the one
-   !! feature whose failure looks like success: a resume that quietly mixes
-   !! terms from a different geometry, basis or functional finishes early and
-   !! reports a converged total, and there is nothing in the number to see. A
-   !! checkpoint carrying this hash can be refused instead.
+   !! In, because they change the number: coordinates, elements, charge and
+   !! multiplicity; the monomer partition, since a term names monomers by index;
+   !! the bonds, since they decide where caps go; the method, basis, functional
+   !! and the thresholds the SCF converges to. Out: log level, output paths,
+   !! rank counts, verbosity, GPU binding.
    !!
-   !! Two rules decide what goes in.
-   !!
-   !!   * **In, if it changes the number.** Coordinates, elements, charge and
-   !!     multiplicity; the monomer partition, because a term names monomers by
-   !!     index and a repartition silently renames every one of them; the
-   !!     bonds, because they decide where caps go; the method, basis,
-   !!     functional and the thresholds the SCF converges to.
-   !!   * **Out, if it does not.** Log level, output paths, rank counts,
-   !!     verbosity, GPU binding. These change between the run that wrote a
-   !!     checkpoint and the run that resumes it as a matter of course, and a
-   !!     hash that rejected those would be a hash nobody could use.
-   !!
-   !! When in doubt a field goes in. A false mismatch costs a recomputation; a
-   !! false match costs a wrong answer that nothing will catch.
-   !!
-   !! Reals are hashed as their IEEE bits rather than as text, so no formatting
-   !! choice can round two different geometries onto one hash. The single
-   !! exception is negative zero, normalised to positive, because it compares
-   !! equal to zero everywhere else in the program and would otherwise make an
-   !! identical geometry hash differently depending on how it was built.
+   !! Reals are hashed as their IEEE bits rather than as text, with negative
+   !! zero normalised to positive so that an identical geometry cannot hash
+   !! differently depending on how it was built.
    use pic_types, only: dp, int32, int64
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_method_config, only: method_config_t
@@ -103,9 +86,8 @@ contains
       if (allocated(sys%coordinates)) call h%real_array(reshape(sys%coordinates, &
                                                                 [size(sys%coordinates)]))
 
-      ! The partition. A term list names monomers by index, so two runs that
-      ! agree on the atoms and disagree on the grouping agree on nothing that
-      ! matters -- term (1,2) is a different dimer in each.
+      ! The partition. A term list names monomers by index, so term (1,2) is a
+      ! different dimer under a different grouping of the same atoms.
       call h%text("monomers")
       call h%int(sys%n_monomers)
       if (allocated(sys%fragment_sizes)) then
@@ -122,8 +104,8 @@ contains
       end if
 
       ! Bonds decide where caps go, and a cap is an atom that was not there
-      ! before. `is_broken` is derived from the partition, so it is not hashed
-      ! separately -- the partition above already covers it.
+      ! before. `is_broken` is derived from the partition hashed above, so it is
+      ! not folded in separately.
       call h%text("bonds")
       if (allocated(sys%bonds)) then
          call h%int(size(sys%bonds))
@@ -174,28 +156,23 @@ contains
          ! not: that one is hardcoded true and is the flag cuEST builds its AO
          ! shells with, so it hashes the same for every run. `scf%cartesian` is
          ! the one that changes the answer -- above p the two forms span
-         ! different spaces, so water at cc-pVDZ is 24 functions and -76.420342
-         ! one way and 25 and -76.421536 the other. Two runs differing only in
-         ! this are two different energies and must not share a fingerprint.
+         ! different spaces, so they are different energies.
          call h%flag(config%scf%cartesian)
          call h%text(trim(config%scf%aux_basis_set))
-         ! Whether it was asked for, not only what it is. A double hybrid fits
+         ! Whether it was asked for, not only what it is: a double hybrid fits
          ! its perturbative term when a deck names an auxiliary basis and not
-         ! when one merely defaulted, so two configs carrying the same string
-         ! for different reasons are two different energies.
+         ! when one merely defaulted.
          call h%flag(config%scf%aux_basis_named)
          call h%text(trim(config%scf%guess))
          call h%flag(config%scf%unrestricted)
          call h%int(config%scf%max_iter)
          call h%real(config%scf%energy_convergence)
          call h%real(config%scf%density_convergence)
-         ! The commutator threshold, in for the same reason the other two are:
-         ! it is half of the convergence test on both backends, so two runs
-         ! differing only in it stop at different iterations and hold different
-         ! densities. Zero -- the sentinel for "derive it" -- is a distinct
-         ! request from any number a deck could name, and hashes as one, which
-         ! is what it should be: what a backend derives depends on which
-         ! backend it is.
+         ! The commutator threshold is half of the convergence test on both
+         ! backends, so two runs differing only in it hold different densities.
+         ! Zero -- the sentinel for "derive it" -- hashes as a request distinct
+         ! from any number a deck could name, since what a backend derives
+         ! depends on which backend it is.
          call h%real(config%scf%gradient_convergence)
          if (config%method_type == METHOD_TYPE_DFT) then
             call h%text("dft")
@@ -204,10 +181,8 @@ contains
             call h%int(config%dft%radial_points)
             call h%int(config%dft%angular_points)
          end if
-         ! The continuum. A solvated fragment is a different number from a
-         ! gas-phase one -- by hundreds of kcal/mol for an ion -- and without
-         ! these a checkpoint written in the gas phase would satisfy a deck
-         ! that asked for solvent.
+         ! The continuum. Without these a checkpoint written in the gas phase
+         ! would satisfy a deck that asked for solvent.
          if (config%pcm%enabled) then
             call h%text("pcm")
             call h%text(trim(config%pcm%method))
@@ -267,7 +242,8 @@ contains
       real(dp) :: normalised
 
       ! -0.0 and 0.0 are equal everywhere else in this program, so they must
-      ! not produce different fingerprints. Adding zero collapses the two.
+      ! not produce different fingerprints; the assignment below collapses the
+      ! two onto +0.0 before the bits are taken.
       normalised = value
       if (normalised == 0.0_dp) normalised = 0.0_dp
       bits = transfer(normalised, bits)

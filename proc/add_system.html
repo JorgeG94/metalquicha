@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/add_system.html#variable-imon~5">imon</a>
-            <a class="list-group-item" href="../proc/add_system.html#variable-islot~4">islot</a>
+            <a class="list-group-item" href="../proc/add_system.html#variable-imon~7">imon</a>
+            <a class="list-group-item" href="../proc/add_system.html#variable-islot~6">islot</a>
         </div>
       </div>
     </div>
@@ -193,7 +193,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~17"></span>
+              <span class="anchor" id="variable-h~26"></span>
               type(<a href='../type/hasher_t.html'>hasher_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -825,7 +825,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-imon~5"></span>
+              <span class="anchor" id="variable-imon~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -842,7 +842,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-islot~4"></span>
+              <span class="anchor" id="variable-islot~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -888,9 +888,8 @@ large graphs.</div>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">sys</span><span class="p">%</span><span class="n">coordinates</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">h</span><span class="p">%</span><span class="n">real_array</span><span class="p">(</span><span class="nb">reshape</span><span class="p">(</span><span class="n">sys</span><span class="p">%</span><span class="n">coordinates</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                                                </span><span class="p">[</span><span class="n">size</span><span class="p">(</span><span class="n">sys</span><span class="p">%</span><span class="n">coordinates</span><span class="p">)]))</span>
 
-<span class="w">      </span><span class="c">! The partition. A term list names monomers by index, so two runs that</span>
-<span class="w">      </span><span class="c">! agree on the atoms and disagree on the grouping agree on nothing that</span>
-<span class="w">      </span><span class="c">! matters -- term (1,2) is a different dimer in each.</span>
+<span class="w">      </span><span class="c">! The partition. A term list names monomers by index, so term (1,2) is a</span>
+<span class="w">      </span><span class="c">! different dimer under a different grouping of the same atoms.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">h</span><span class="p">%</span><span class="n">text</span><span class="p">(</span><span class="s2">"monomers"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">h</span><span class="p">%</span><span class="nb">int</span><span class="p">(</span><span class="n">sys</span><span class="p">%</span><span class="n">n_monomers</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">sys</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
@@ -907,8 +906,8 @@ large graphs.</div>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! Bonds decide where caps go, and a cap is an atom that was not there</span>
-<span class="w">      </span><span class="c">! before. `is_broken` is derived from the partition, so it is not hashed</span>
-<span class="w">      </span><span class="c">! separately -- the partition above already covers it.</span>
+<span class="w">      </span><span class="c">! before. `is_broken` is derived from the partition hashed above, so it is</span>
+<span class="w">      </span><span class="c">! not folded in separately.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">h</span><span class="p">%</span><span class="n">text</span><span class="p">(</span><span class="s2">"bonds"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">sys</span><span class="p">%</span><span class="n">bonds</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">h</span><span class="p">%</span><span class="nb">int</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">sys</span><span class="p">%</span><span class="n">bonds</span><span class="p">))</span>
@@ -944,7 +943,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

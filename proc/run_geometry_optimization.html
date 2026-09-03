@@ -136,16 +136,16 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-atomic_numbers~6">atomic_numbers</a>
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-converged~3">converged</a>
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-coords~7">coords</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-atomic_numbers~8">atomic_numbers</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-converged~4">converged</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-coords~5">coords</a>
             <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-endpoint_geom">endpoint_geom</a>
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-final_energy~2">final_energy</a>
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-n_atoms~11">n_atoms</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-final_energy">final_energy</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-n_atoms~16">n_atoms</a>
             <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-probe_status">probe_status</a>
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-rank~4">rank</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-rank~5">rank</a>
             <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-refused">refused</a>
-            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-residues~2">residues</a>
+            <a class="list-group-item" href="../proc/run_geometry_optimization.html#variable-residues">residues</a>
         </div>
       </div>
     </div>
@@ -205,7 +205,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~4"></span>
+              <span class="anchor" id="variable-resources~6"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -220,7 +220,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~22"></span>
+              <span class="anchor" id="variable-config~16"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -235,7 +235,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~9"></span>
+              <span class="anchor" id="variable-sys_geom~35"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -250,7 +250,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~5"></span>
+              <span class="anchor" id="variable-bonds~7"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -265,7 +265,7 @@ Rank 0 is the only rank whose copy should be written out.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~45"></span>
+              <span class="anchor" id="variable-error~94"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3483,7 +3483,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~6"></span>
+              <span class="anchor" id="variable-atomic_numbers~8"></span>
               integer,
             </td>
               <td>private,</td>
@@ -3500,7 +3500,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~3"></span>
+              <span class="anchor" id="variable-converged~4"></span>
               logical,
             </td>
               <td>private</td>
@@ -3517,7 +3517,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~7"></span>
+              <span class="anchor" id="variable-coords~5"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -3551,7 +3551,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-final_energy~2"></span>
+              <span class="anchor" id="variable-final_energy"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -3568,7 +3568,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~11"></span>
+              <span class="anchor" id="variable-n_atoms~16"></span>
               integer,
             </td>
               <td>private</td>
@@ -3602,7 +3602,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-rank~4"></span>
+              <span class="anchor" id="variable-rank~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -3636,7 +3636,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-residues~2"></span>
+              <span class="anchor" id="variable-residues"></span>
               integer,
             </td>
               <td>private,</td>
@@ -3700,10 +3700,9 @@ large graphs.</div>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="w">      </span><span class="c">! The engine has to exist before anything is broadcast: a refusal</span>
-<span class="w">      </span><span class="c">! discovered after the workers were told to expect a geometry would</span>
-<span class="w">      </span><span class="c">! leave them waiting for one that never comes. Same ordering rule as</span>
-<span class="w">      </span><span class="c">! mqc_session%run.</span>
+<span class="w">      </span><span class="c">! Every refusal is decided before anything is broadcast: one discovered</span>
+<span class="w">      </span><span class="c">! after the workers were told to expect a geometry leaves them waiting</span>
+<span class="w">      </span><span class="c">! for one that never comes.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">dlfind_available</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -3711,9 +3710,7 @@ large graphs.</div>
 <span class="w">                           </span><span class="s2">"Configure with -DMQC_ENABLE_DLFIND=ON."</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">coordinates</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">OPT_COORDS_UNKNOWN</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">            </span><span class="c">! A backstop for the callers that convert a config without passing</span>
-<span class="w">            </span><span class="c">! an error to `config_to_driver`. Reaching here means the spelling</span>
-<span class="w">            </span><span class="c">! was refused there and nobody was listening; optimizing in</span>
-<span class="w">            </span><span class="c">! whatever the default happened to be would be worse.</span>
+<span class="w">            </span><span class="c">! an error to `config_to_driver`.</span>
 <span class="w">            </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="s2">"Unknown keywords.optimization.coordinates. Use cartesian, "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="s2">"hdlc, hdlc-tc, dlc or dlc-tc."</span><span class="p">)</span>
@@ -3725,10 +3722,7 @@ large graphs.</div>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="s2">"Nothing to optimize: a single atom has no geometry."</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">hess_end</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">is_restricted_hf</span><span class="p">(</span><span class="n">config</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="w">            </span><span class="c">! Refused here rather than after the optimization, which is the</span>
-<span class="w">            </span><span class="c">! only place the news is cheap. Discovering it at the end means the</span>
-<span class="w">            </span><span class="c">! steps have already been paid for and the one thing the run was</span>
-<span class="w">            </span><span class="c">! asked to establish is the thing it cannot do.</span>
+<span class="w">            </span><span class="c">! Refused before the steps are paid for rather than after.</span>
 <span class="w">            </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="s2">"keywords.optimization.hess_end is restricted to restricted "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="s2">"Hartree-Fock for now. Drop the keyword, or run the "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -3738,10 +3732,9 @@ large graphs.</div>
 <span class="k">      end if</span>
 
 <span class="w">      </span><span class="c">! Every rank has to learn the answer, not just the one that worked it</span>
-<span class="w">      </span><span class="c">! out. A rank 0 that refused and returned on its own would leave the</span>
-<span class="w">      </span><span class="c">! workers heading into `worker_loop` to block on a broadcast that is</span>
-<span class="w">      </span><span class="c">! never coming -- the job would hang instead of printing the message</span>
-<span class="w">      </span><span class="c">! that was already sitting in `error`.</span>
+<span class="w">      </span><span class="c">! out: a rank 0 that refused and returned on its own would leave the</span>
+<span class="w">      </span><span class="c">! workers blocked in `worker_loop` and the job would hang rather than</span>
+<span class="w">      </span><span class="c">! print the message already sitting in `error`.</span>
 <span class="w">      </span><span class="n">refused</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0_int32</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="n">refused</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int32</span>
 <span class="w">      </span><span class="k">call </span><span class="n">bcast</span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">refused</span><span class="p">,</span><span class="w"> </span><span class="mi">1_int32</span><span class="p">,</span><span class="w"> </span><span class="mi">0_int32</span><span class="p">)</span>
@@ -3757,27 +3750,18 @@ large graphs.</div>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">atomic_numbers</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">),</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">)</span>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">residues</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">))</span>
 <span class="w">         </span><span class="k">call </span><span class="n">build_residues</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">residues</span><span class="p">)</span>
-<span class="w">         </span><span class="c">! Reported because HDLC's residues decide the coordinate system, and a</span>
-<span class="w">         </span><span class="c">! wrong partition does not fail -- it converges early somewhere slightly</span>
-<span class="w">         </span><span class="c">! above the minimum. One residue for a system that visibly comes apart</span>
-<span class="w">         </span><span class="c">! is the sign of that, and it is invisible unless the count is printed.</span>
+<span class="w">         </span><span class="c">! HDLC's residues decide the coordinate system, and a wrong partition</span>
+<span class="w">         </span><span class="c">! does not fail -- it converges early, slightly above the minimum. One</span>
+<span class="w">         </span><span class="c">! residue for a system that visibly comes apart is the sign of that.</span>
 <span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">verbose</span><span class="p">(</span><span class="s2">"  optimizer residues: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="nb">maxval</span><span class="p">(</span><span class="n">residues</span><span class="p">))</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                             </span><span class="s2">" for "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">)</span><span class="o">//</span><span class="s2">" atoms"</span><span class="p">)</span>
 
 <span class="w">         </span><span class="c">! One gradient before handing over, to find out whether this method</span>
-<span class="w">         </span><span class="c">! can produce one at all.</span>
-<span class="w">         </span><span class="c">!</span>
-<span class="w">         </span><span class="c">! Not every method here can: the CPU ab initio backend computes</span>
-<span class="w">         </span><span class="c">! energies and refuses gradients, and there is no way to ask in</span>
-<span class="w">         </span><span class="c">! advance -- the refusal is raised where the gradient would have been</span>
-<span class="w">         </span><span class="c">! built. Without this probe that refusal reaches DL-FIND as a failed</span>
-<span class="w">         </span><span class="c">! first step, and DL-FIND responds by calling dlf_error, which ends</span>
-<span class="w">         </span><span class="c">! the process with a Fortran backtrace. The message was correct and</span>
-<span class="w">         </span><span class="c">! the presentation was a crash.</span>
-<span class="w">         </span><span class="c">!</span>
-<span class="w">         </span><span class="c">! It costs one evaluation on a run that works. That is a few percent</span>
-<span class="w">         </span><span class="c">! of a short optimization and nothing on a long one, against turning</span>
-<span class="w">         </span><span class="c">! an unsupported method from a backtrace into one line.</span>
+<span class="w">         </span><span class="c">! can produce one at all. There is no way to ask in advance -- the</span>
+<span class="w">         </span><span class="c">! refusal is raised where the gradient would have been built -- and</span>
+<span class="w">         </span><span class="c">! without the probe it reaches DL-FIND as a failed first step, which</span>
+<span class="w">         </span><span class="c">! DL-FIND answers with dlf_error and a Fortran backtrace. It costs one</span>
+<span class="w">         </span><span class="c">! evaluation on a run that works.</span>
 <span class="w">         </span><span class="k">call </span><span class="n">probe_gradient</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">coords</span><span class="p">,</span><span class="w"> </span><span class="n">probe_status</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">probe_status</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -3788,25 +3772,23 @@ large graphs.</div>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 
-<span class="w">         </span><span class="c">! The step table's frame, shared with the SCF and CCSD tables. The rows</span>
-<span class="w">         </span><span class="c">! are written from the engine's callback as each step is accepted; the</span>
-<span class="w">         </span><span class="c">! verdict and the totals are `report_result` below, so the table closes</span>
-<span class="w">         </span><span class="c">! on a plain rule rather than a "converged in N" line that would say the</span>
-<span class="w">         </span><span class="c">! same thing twice.</span>
+<span class="w">         </span><span class="c">! The step table's frame, shared with the SCF and CCSD tables. Rows are</span>
+<span class="w">         </span><span class="c">! written from the engine's callback as each step is accepted; the</span>
+<span class="w">         </span><span class="c">! verdict and the totals come from `report_result` below.</span>
 <span class="w">         </span><span class="n">ctx_qc_accum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 <span class="w">         </span><span class="n">ctx_last_print_wall</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 <span class="w">         </span><span class="k">call </span><span class="n">ctx_wall</span><span class="p">%</span><span class="n">start</span><span class="p">()</span>
 <span class="w">         </span><span class="k">call </span><span class="n">convergence_header</span><span class="p">(.</span><span class="n">true</span><span class="p">.,</span><span class="w"> </span><span class="s2">"optimization steps"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="s2">"    step                 energy        |g|max     qc_time    opt_time"</span><span class="p">,</span><span class="w"> </span><span class="mi">69</span><span class="p">)</span>
-<span class="w">         </span><span class="c">! The analytic Hessian is offered only where there is one. For any</span>
-<span class="w">         </span><span class="c">! other method DL-FIND builds its own from `6N` gradients, which is</span>
-<span class="w">         </span><span class="c">! the same matrix and slower -- so the argument is omitted rather than</span>
-<span class="w">         </span><span class="c">! passed and refused per geometry, which would spend a failed</span>
-<span class="w">         </span><span class="c">! calculation to learn what is already known here.</span>
-<span class="w">         </span><span class="c">! `endpoint_geom` stays unallocated for an ordinary optimization, and an</span>
-<span class="w">         </span><span class="c">! unallocated allocatable is absent at an optional dummy -- so one pair</span>
-<span class="w">         </span><span class="c">! of call sites serves both the band and the single structure.</span>
+<span class="w">         </span><span class="c">! `endpoint_geom` stays unallocated for an ordinary optimization, and</span>
+<span class="w">         </span><span class="c">! an unallocated allocatable is absent at an optional dummy, so one</span>
+<span class="w">         </span><span class="c">! pair of call sites serves both the band and the single structure.</span>
+<span class="w">         </span><span class="c">! The analytic Hessian below is offered only where there is one; any</span>
+<span class="w">         </span><span class="c">! other method has DL-FIND build its own from `6N` gradients.</span>
 <span class="w">         </span><span class="k">call </span><span class="n">load_endpoint</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">endpoint</span><span class="p">,</span><span class="w"> </span><span class="n">atomic_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">endpoint_geom</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">         </span><span class="c">! TODO(mqc): this return skips `stop_workers` and `end_context`, so a</span>
+<span class="w">         </span><span class="c">! bad `endpoint` file hangs every other rank in `worker_loop` and</span>
+<span class="w">         </span><span class="c">! leaves `active` set for the rest of the process.</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">algorithm_needs_hessian</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">algorithm</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
@@ -3822,9 +3804,9 @@ large graphs.</div>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  "</span><span class="o">//</span><span class="nb">repeat</span><span class="p">(</span><span class="s2">"-"</span><span class="p">,</span><span class="w"> </span><span class="mi">69</span><span class="p">))</span>
 
-<span class="w">         </span><span class="c">! Stop the workers whether or not that succeeded. A rank 0 that</span>
-<span class="w">         </span><span class="c">! returned an error without sending this would leave N-1 ranks</span>
-<span class="w">         </span><span class="c">! blocked in bcast for the rest of the job.</span>
+<span class="w">         </span><span class="c">! Stop the workers whether or not that succeeded: a rank 0 that</span>
+<span class="w">         </span><span class="c">! returned an error without sending this would leave N-1 ranks blocked</span>
+<span class="w">         </span><span class="c">! in bcast for the rest of the job.</span>
 <span class="w">         </span><span class="k">call </span><span class="n">stop_workers</span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">)</span>
 
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
@@ -3832,18 +3814,16 @@ large graphs.</div>
 <span class="w">            </span><span class="n">converged</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx_last_gradient_max</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">gradient_tolerance</span>
 <span class="w">            </span><span class="k">call </span><span class="n">write_final_single_point</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">)</span>
 <span class="w">            </span><span class="k">call </span><span class="n">report_result</span><span class="p">(</span><span class="n">final_energy</span><span class="p">,</span><span class="w"> </span><span class="n">converged</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">gradient_tolerance</span><span class="p">)</span>
-<span class="w">            </span><span class="c">! Written either way. A run that ran out of steps left the geometry</span>
-<span class="w">            </span><span class="c">! closer to the minimum than it started, and that is exactly what</span>
-<span class="w">            </span><span class="c">! someone wants to restart from.</span>
+<span class="w">            </span><span class="c">! Written either way: a run that ran out of steps still left the</span>
+<span class="w">            </span><span class="c">! geometry closer to the minimum than it started.</span>
 <span class="w">            </span><span class="k">call </span><span class="n">write_optimized_xyz</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">final_energy</span><span class="p">,</span><span class="w"> </span><span class="n">converged</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               call </span><span class="n">write_optimization_record</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">final_energy</span><span class="p">,</span><span class="w"> </span><span class="n">converged</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
 
-<span class="w">            </span><span class="c">! Only on a converged geometry. The curvature at a point the</span>
-<span class="w">            </span><span class="c">! optimizer was still moving away from describes that point and</span>
-<span class="w">            </span><span class="c">! not the minimum, and reporting it beside a "did not converge"</span>
-<span class="w">            </span><span class="c">! line invites it to be read as the minimum's.</span>
+<span class="w">            </span><span class="c">! Only on a converged geometry: the curvature at a point the</span>
+<span class="w">            </span><span class="c">! optimizer was still moving away from describes that point and not</span>
+<span class="w">            </span><span class="c">! the minimum.</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">connect</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">converged</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               call </span><span class="n">report_connected_minima</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
@@ -3890,7 +3870,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

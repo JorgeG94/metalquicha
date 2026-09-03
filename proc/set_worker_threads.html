@@ -169,10 +169,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item"><a href='https://www.openmp.org/spec-html/5.1/openmpch3.html#x156-1890003'>omp_lib</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='../module/mqc_method_types.html'>mqc_method_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -340,18 +340,12 @@ large graphs.</div>
 
 
     <p>Give a worker rank its threads, and say what it got</p>
-<p>This used to be an unconditional <code>omp_set_num_threads(1)</code>, which made
-&ldquo;one fragment per rank, several threads per rank&rdquo; impossible: the ranks
-that run the chemistry were clamped to one thread whatever the launcher
-asked for, so raising OMP_NUM_THREADS did nothing and the cause was
-nowhere near the command line.</p>
-<p>The clamp exists for tblite, which corrupts a result when threaded
-rather than failing, so it is kept for exactly that &ndash; and the ranks
-running anything else now use the threads they were given. A libcint
-Fock build threads its own quartet loop, which is where they go.</p>
-<p>Every rank reports its role and thread count because the failure this
-replaces was invisible: nothing in the output distinguished &ldquo;four
-threads, no speedup&rdquo; from &ldquo;one thread all along&rdquo;.</p>
+<p>The clamp to one thread is for tblite alone, which corrupts a result
+when threaded rather than failing. Every other method keeps the
+threads the launcher gave it &ndash; a libcint Fock build threads its own
+quartet loop, which is where they go.</p>
+<p>The role and thread count are logged because &ldquo;four threads, no
+speedup&rdquo; and &ldquo;one thread all along&rdquo; are otherwise indistinguishable.</p>
 
 
     <h3>Arguments</h3>
@@ -367,7 +361,7 @@ threads, no speedup&rdquo; from &ldquo;one thread all along&rdquo;.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~132"></span>
+              <span class="anchor" id="variable-this~75"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -382,7 +376,7 @@ threads, no speedup&rdquo; from &ldquo;one thread all along&rdquo;.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-role~3"></span>
+              <span class="anchor" id="variable-role"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -719,20 +713,13 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">set_worker_threads</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">role</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Give a worker rank its threads, and say what it got</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! This used to be an unconditional `omp_set_num_threads(1)`, which made</span>
-<span class="w">      </span><span class="c">!! "one fragment per rank, several threads per rank" impossible: the ranks</span>
-<span class="w">      </span><span class="c">!! that run the chemistry were clamped to one thread whatever the launcher</span>
-<span class="w">      </span><span class="c">!! asked for, so raising OMP_NUM_THREADS did nothing and the cause was</span>
-<span class="w">      </span><span class="c">!! nowhere near the command line.</span>
+<span class="w">      </span><span class="c">!! The clamp to one thread is for tblite alone, which corrupts a result</span>
+<span class="w">      </span><span class="c">!! when threaded rather than failing. Every other method keeps the</span>
+<span class="w">      </span><span class="c">!! threads the launcher gave it -- a libcint Fock build threads its own</span>
+<span class="w">      </span><span class="c">!! quartet loop, which is where they go.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The clamp exists for tblite, which corrupts a result when threaded</span>
-<span class="w">      </span><span class="c">!! rather than failing, so it is kept for exactly that -- and the ranks</span>
-<span class="w">      </span><span class="c">!! running anything else now use the threads they were given. A libcint</span>
-<span class="w">      </span><span class="c">!! Fock build threads its own quartet loop, which is where they go.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Every rank reports its role and thread count because the failure this</span>
-<span class="w">      </span><span class="c">!! replaces was invisible: nothing in the output distinguished "four</span>
-<span class="w">      </span><span class="c">!! threads, no speedup" from "one thread all along".</span>
+<span class="w">      </span><span class="c">!! The role and thread count are logged because "four threads, no</span>
+<span class="w">      </span><span class="c">!! speedup" and "one thread all along" are otherwise indistinguishable.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">omp_lib</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">omp_set_num_threads</span><span class="p">,</span><span class="w"> </span><span class="n">omp_get_max_threads</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_method_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">needs_serial_execution</span>
 <span class="w">      </span><span class="k">use </span><span class="n">pic_logger</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">logger</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">global_logger</span>
@@ -769,7 +756,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

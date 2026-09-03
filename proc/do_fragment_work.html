@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-calc_type_local">calc_type_local</a>
-            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-calculator">calculator</a>
-            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-current_log_level">current_log_level</a>
-            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-is_verbose~2">is_verbose</a>
-            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-local_config">local_config</a>
+            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-calc_type_local~2">calc_type_local</a>
+            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-calculator~3">calculator</a>
+            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-current_log_level~7">current_log_level</a>
+            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-is_verbose~3">is_verbose</a>
+            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-local_config~3">local_config</a>
             <a class="list-group-item" href="../proc/do_fragment_work.html#variable-show_geometry">show_geometry</a>
         </div>
       </div>
@@ -300,9 +300,8 @@ large graphs.</div>
 
 
     <p>Process a single fragment for quantum chemistry calculation</p>
-<p>Performs energy and gradient calculation on a molecular fragment using
-the factory pattern to create a calculator from the provided method_config.
-Verbosity is controlled by the global logger level.</p>
+<p>The calculator comes from <code>method_config</code>; verbosity follows the global
+logger level.</p>
 
 
     <h3>Arguments</h3>
@@ -318,7 +317,7 @@ Verbosity is controlled by the global logger level.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~2"></span>
+              <span class="anchor" id="variable-fragment_idx~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -333,7 +332,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~26"></span>
+              <span class="anchor" id="variable-result~50"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -348,7 +347,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config"></span>
+              <span class="anchor" id="variable-method_config~9"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -363,7 +362,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-phys_frag"></span>
+              <span class="anchor" id="variable-phys_frag~3"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in),</td>
@@ -378,7 +377,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~2"></span>
+              <span class="anchor" id="variable-calc_type~12"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -393,7 +392,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~4"></span>
+              <span class="anchor" id="variable-world_comm~21"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -408,7 +407,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-print_geometry"></span>
+              <span class="anchor" id="variable-print_geometry~2"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -1230,7 +1229,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type_local"></span>
+              <span class="anchor" id="variable-calc_type_local~2"></span>
               integer(kind=int32),
             </td>
               <td>private</td>
@@ -1247,7 +1246,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calculator"></span>
+              <span class="anchor" id="variable-calculator~3"></span>
               class(<a href='../type/qc_method_t.html'>qc_method_t</a>),
             </td>
               <td>private,</td>
@@ -1264,7 +1263,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level"></span>
+              <span class="anchor" id="variable-current_log_level~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -1281,7 +1280,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-is_verbose~2"></span>
+              <span class="anchor" id="variable-is_verbose~3"></span>
               logical,
             </td>
               <td>private</td>
@@ -1298,7 +1297,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-local_config"></span>
+              <span class="anchor" id="variable-local_config~3"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
               <td>private</td>
@@ -1350,9 +1349,8 @@ large graphs.</div>
 <span class="w">                                      </span><span class="n">print_geometry</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Process a single fragment for quantum chemistry calculation</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Performs energy and gradient calculation on a molecular fragment using</span>
-<span class="w">      </span><span class="c">!! the factory pattern to create a calculator from the provided method_config.</span>
-<span class="w">      </span><span class="c">!! Verbosity is controlled by the global logger level.</span>
+<span class="w">      </span><span class="c">!! The calculator comes from `method_config`; verbosity follows the global</span>
+<span class="w">      </span><span class="c">!! logger level.</span>
 
 <span class="w">      </span><span class="k">use </span><span class="n">pic_logger</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">verbose_level</span>
 
@@ -1380,9 +1378,8 @@ large graphs.</div>
 <span class="w">      </span><span class="n">is_verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">current_log_level</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">verbose_level</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! Print fragment geometry if provided and verbose mode is enabled.</span>
-<span class="w">      </span><span class="c">! Suppressed for displaced tasks: a flattened Hessian has 6N+1 tasks per</span>
-<span class="w">      </span><span class="c">! fragment, and dumping a near-identical geometry for every one of them buries</span>
-<span class="w">      </span><span class="c">! the log without adding anything the reference geometry does not already show.</span>
+<span class="w">      </span><span class="c">! Suppressed for displaced tasks: 6N+1 near-identical geometries per</span>
+<span class="w">      </span><span class="c">! fragment bury the log and add nothing the reference does not show.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">phys_frag</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">is_verbose</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">show_geometry</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">print_fragment_xyz</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">phys_frag</span><span class="p">)</span>
@@ -1452,7 +1449,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

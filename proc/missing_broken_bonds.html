@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/missing_broken_bonds.html#variable-count~13">count</a>
-            <a class="list-group-item" href="../proc/missing_broken_bonds.html#variable-ibond~5">ibond</a>
+            <a class="list-group-item" href="../proc/missing_broken_bonds.html#variable-count~15">count</a>
+            <a class="list-group-item" href="../proc/missing_broken_bonds.html#variable-ibond~6">ibond</a>
             <a class="list-group-item" href="../proc/missing_broken_bonds.html#variable-n_perceived">n_perceived</a>
             <a class="list-group-item" href="../proc/missing_broken_bonds.html#variable-perceived">perceived</a>
         </div>
@@ -180,13 +180,11 @@
     
 
     <p>Bonds the geometry says are cut that the caller never mentioned</p>
-<p>The audit the declaration check cannot do on its own. Verifying that a
-declared bond is marked broken catches a caller who mis-labelled one;
-it cannot catch a caller who left one out entirely, because nothing in
-the declared list refers to it. This looks at the geometry instead.</p>
-<p>Reported rather than acted on. Perception is a heuristic, and a caller
-may have good reason to omit something it thinks is a bond &ndash; so this
-hands back a list and lets the caller decide whether it is a mistake.</p>
+<p>Checking the declared list against itself catches a mis-labelled bond
+but not an omitted one, since nothing in it refers to the omission.
+This looks at the geometry instead.</p>
+<p>Reported rather than acted on: perception is a heuristic, and a caller
+may have good reason to omit something it calls a bond.</p>
 
 
     <h3>Arguments</h3>
@@ -202,7 +200,7 @@ hands back a list and lets the caller decide whether it is a mistake.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~83"></span>
+              <span class="anchor" id="variable-sys_geom~76"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -247,7 +245,7 @@ hands back a list and lets the caller decide whether it is a mistake.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-missing_i~4"></span>
+              <span class="anchor" id="variable-missing_i~2"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -262,7 +260,7 @@ hands back a list and lets the caller decide whether it is a mistake.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-missing_j~4"></span>
+              <span class="anchor" id="variable-missing_j~2"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -277,7 +275,7 @@ hands back a list and lets the caller decide whether it is a mistake.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_missing~4"></span>
+              <span class="anchor" id="variable-n_missing~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -292,7 +290,7 @@ hands back a list and lets the caller decide whether it is a mistake.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~12"></span>
+              <span class="anchor" id="variable-tolerance~13"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -937,7 +935,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~13"></span>
+              <span class="anchor" id="variable-count~15"></span>
               integer,
             </td>
               <td>private</td>
@@ -954,7 +952,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ibond~5"></span>
+              <span class="anchor" id="variable-ibond~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -1023,14 +1021,12 @@ large graphs.</div>
 <span class="w">                                   </span><span class="n">n_missing</span><span class="p">,</span><span class="w"> </span><span class="n">tolerance</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Bonds the geometry says are cut that the caller never mentioned</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The audit the declaration check cannot do on its own. Verifying that a</span>
-<span class="w">      </span><span class="c">!! declared bond is marked broken catches a caller who mis-labelled one;</span>
-<span class="w">      </span><span class="c">!! it cannot catch a caller who left one out entirely, because nothing in</span>
-<span class="w">      </span><span class="c">!! the declared list refers to it. This looks at the geometry instead.</span>
+<span class="w">      </span><span class="c">!! Checking the declared list against itself catches a mis-labelled bond</span>
+<span class="w">      </span><span class="c">!! but not an omitted one, since nothing in it refers to the omission.</span>
+<span class="w">      </span><span class="c">!! This looks at the geometry instead.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Reported rather than acted on. Perception is a heuristic, and a caller</span>
-<span class="w">      </span><span class="c">!! may have good reason to omit something it thinks is a bond -- so this</span>
-<span class="w">      </span><span class="c">!! hands back a list and lets the caller decide whether it is a mistake.</span>
+<span class="w">      </span><span class="c">!! Reported rather than acted on: perception is a heuristic, and a caller</span>
+<span class="w">      </span><span class="c">!! may have good reason to omit something it calls a bond.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">declared</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_declared</span>
@@ -1090,7 +1086,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

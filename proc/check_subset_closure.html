@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/check_subset_closure.html#variable-iterm~2">iterm</a>
-            <a class="list-group-item" href="../proc/check_subset_closure.html#variable-level~13">level</a>
+            <a class="list-group-item" href="../proc/check_subset_closure.html#variable-iterm~6">iterm</a>
+            <a class="list-group-item" href="../proc/check_subset_closure.html#variable-level~20">level</a>
             <a class="list-group-item" href="../proc/check_subset_closure.html#variable-missing_slot">missing_slot</a>
         </div>
       </div>
@@ -181,9 +181,7 @@
     <p>Every proper subset of every term must itself be a term</p>
 <p>An n-body contribution is the term&rsquo;s energy less the delta of each
 proper subset, so a missing one is not an approximation &ndash; the
-assembly looks it up and fails. A screen that keeps a trimer while
-dropping its dimers looks perfectly sensible and produces exactly
-this. <code>fraglist_t%close_subsets</code> is the fix.</p>
+assembly looks it up and fails. <code>fraglist_t%close_subsets</code> is the fix.</p>
 
 
     <h3>Arguments</h3>
@@ -199,7 +197,7 @@ this. <code>fraglist_t%close_subsets</code> is the fix.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~7"></span>
+              <span class="anchor" id="variable-terms~13"></span>
               type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(in)</td>
@@ -214,7 +212,7 @@ this. <code>fraglist_t%close_subsets</code> is the fix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-strict~3"></span>
+              <span class="anchor" id="variable-strict~4"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -229,7 +227,7 @@ this. <code>fraglist_t%close_subsets</code> is the fix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~98"></span>
+              <span class="anchor" id="variable-error~172"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -886,7 +884,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterm~2"></span>
+              <span class="anchor" id="variable-iterm~6"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -903,7 +901,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~13"></span>
+              <span class="anchor" id="variable-level~20"></span>
               integer(kind=default_int),
             </td>
               <td>private</td>
@@ -956,9 +954,11 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! An n-body contribution is the term's energy less the delta of each</span>
 <span class="w">      </span><span class="c">!! proper subset, so a missing one is not an approximation -- the</span>
-<span class="w">      </span><span class="c">!! assembly looks it up and fails. A screen that keeps a trimer while</span>
-<span class="w">      </span><span class="c">!! dropping its dimers looks perfectly sensible and produces exactly</span>
-<span class="w">      </span><span class="c">!! this. `fraglist_t%close_subsets` is the fix.</span>
+<span class="w">      </span><span class="c">!! assembly looks it up and fails. `fraglist_t%close_subsets` is the fix.</span>
+<span class="w">      </span><span class="c">! TODO(mqc): `contains_term` scans the whole list for each subset of each</span>
+<span class="w">      </span><span class="c">! term, so this is quadratic in the term count on a check every run pays.</span>
+<span class="w">      </span><span class="c">! It also compares slots in order, so a supplied term whose monomers are</span>
+<span class="w">      </span><span class="c">! not in ascending order is reported missing when it is present.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">fraglist_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">terms</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">strict</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
@@ -970,10 +970,9 @@ large graphs.</div>
 <span class="w">         </span><span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">terms</span><span class="p">%</span><span class="n">level_of</span><span class="p">(</span><span class="n">iterm</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">level</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
 
-<span class="w">         </span><span class="c">! Only the (n-1)-subsets are checked. If every one of those is</span>
-<span class="w">         </span><span class="c">! present, its own subsets are guaranteed by the same check applied</span>
-<span class="w">         </span><span class="c">! to it -- so the whole closure follows without enumerating 2^n sets</span>
-<span class="w">         </span><span class="c">! per term.</span>
+<span class="w">         </span><span class="c">! Only the (n-1)-subsets are checked: if each is present, its own</span>
+<span class="w">         </span><span class="c">! subsets follow from the same check applied to it, so the closure</span>
+<span class="w">         </span><span class="c">! holds without enumerating 2^n sets per term.</span>
 <span class="w">         </span><span class="n">missing_slot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">first_missing_subset</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span><span class="w"> </span><span class="n">iterm</span><span class="p">,</span><span class="w"> </span><span class="n">level</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">missing_slot</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">complain</span><span class="p">(</span><span class="n">strict</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="s2">"term "</span><span class="o">//</span><span class="n">text64</span><span class="p">(</span><span class="n">iterm</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1009,7 +1008,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

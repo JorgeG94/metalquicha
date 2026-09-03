@@ -170,9 +170,9 @@
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_scf_types.html'>mqc_scf_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -333,11 +333,9 @@ large graphs.</div>
     </div>
 
 
-    <p>Run FMO2 (or EE-MBE) over a partitioned system</p>
-<p>Options arrive as plain scalars rather than the backend&rsquo;s own options
-type, so the layer above never has to see a type it cannot compile
-without the backend. Coordinates are Bohr; <code>owner(i)</code> is atom i&rsquo;s
-fragment, numbered from one with no gaps.</p>
+    <p>No-op stand-in: FMO needs the CPU integral backend</p>
+<p>Coordinates are Bohr; <code>owner(i)</code> is atom i&rsquo;s fragment, numbered from
+one with no gaps.</p>
 
 
     <h3>Arguments</h3>
@@ -353,7 +351,7 @@ fragment, numbered from one with no gaps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~2"></span>
+              <span class="anchor" id="variable-atomic_numbers~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -383,7 +381,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~6"></span>
+              <span class="anchor" id="variable-coordinates~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -398,7 +396,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~2"></span>
+              <span class="anchor" id="variable-owner"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -443,7 +441,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expansion~2"></span>
+              <span class="anchor" id="variable-expansion"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -488,7 +486,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~4"></span>
+              <span class="anchor" id="variable-level~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -623,7 +621,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~5"></span>
+              <span class="anchor" id="variable-energy~6"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -638,7 +636,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~37"></span>
+              <span class="anchor" id="variable-error~27"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -653,7 +651,7 @@ fragment, numbered from one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~7"></span>
+              <span class="anchor" id="variable-comm~4"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -946,12 +944,10 @@ large graphs.</div>
 <span class="w">                              </span><span class="n">scf_energy_tol</span><span class="p">,</span><span class="w"> </span><span class="n">scf_density_tol</span><span class="p">,</span><span class="w"> </span><span class="n">scf_drive</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="n">bond_breaking</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="n">cap_scale</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">comm</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Run FMO2 (or EE-MBE) over a partitioned system</span>
+<span class="w">      </span><span class="c">!! No-op stand-in: FMO needs the CPU integral backend</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Options arrive as plain scalars rather than the backend's own options</span>
-<span class="w">      </span><span class="c">!! type, so the layer above never has to see a type it cannot compile</span>
-<span class="w">      </span><span class="c">!! without the backend. Coordinates are Bohr; `owner(i)` is atom i's</span>
-<span class="w">      </span><span class="c">!! fragment, numbered from one with no gaps.</span>
+<span class="w">      </span><span class="c">!! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from</span>
+<span class="w">      </span><span class="c">!! one with no gaps.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">pic_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">dp</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_error</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">error_t</span>
 <span class="w">      </span><span class="k">use </span><span class="n">pic_mpi_lib</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">comm_t</span>
@@ -1011,7 +1007,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

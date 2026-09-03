@@ -136,10 +136,10 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/write_fukui_section.html#variable-arr~4">arr</a>
+            <a class="list-group-item" href="../proc/write_fukui_section.html#variable-arr~2">arr</a>
             <a class="list-group-item" href="../proc/write_fukui_section.html#variable-entry~10">entry</a>
-            <a class="list-group-item" href="../proc/write_fukui_section.html#variable-i~157">i</a>
-            <a class="list-group-item" href="../proc/write_fukui_section.html#variable-natm~3">natm</a>
+            <a class="list-group-item" href="../proc/write_fukui_section.html#variable-i~62">i</a>
+            <a class="list-group-item" href="../proc/write_fukui_section.html#variable-natm~2">natm</a>
             <a class="list-group-item" href="../proc/write_fukui_section.html#variable-section~2">section</a>
         </div>
       </div>
@@ -181,11 +181,10 @@
     
 
     <p>Where the molecule reacts, per atom, for something other than a reader</p>
-<p>Emitted per atom rather than reduced to a most-reactive site, because
-ranking sites is the caller&rsquo;s job and which index to rank on depends on
-the reaction being asked about &ndash; <code>f+</code> for an incoming nucleophile,
-<code>f-</code> for an electrophile, the dual descriptor to tell the two kinds of
-site apart.</p>
+<p>Emitted per atom rather than reduced to a most-reactive site: which
+index to rank on depends on the reaction being asked about &ndash; <code>f+</code> for
+an incoming nucleophile, <code>f-</code> for an electrophile, the dual descriptor
+to tell the two kinds of site apart.</p>
 <p><code>anion_bound</code> travels with the numbers. When it is false the <code>f_plus</code>
 column describes an orbital the basis invented rather than a real
 anion, and nothing about the values themselves says so &ndash; a consumer
@@ -205,7 +204,7 @@ sorting on <code>f_plus</code> would rank sites confidently off a fiction.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~45"></span>
+              <span class="anchor" id="variable-json~16"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -235,7 +234,7 @@ sorting on <code>f_plus</code> would rank sites confidently off a fiction.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~9"></span>
+              <span class="anchor" id="variable-data~6"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -807,7 +806,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~4"></span>
+              <span class="anchor" id="variable-arr~2"></span>
               type(json_value),
             </td>
               <td>private,</td>
@@ -841,7 +840,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~157"></span>
+              <span class="anchor" id="variable-i~62"></span>
               integer,
             </td>
               <td>private</td>
@@ -858,7 +857,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-natm~3"></span>
+              <span class="anchor" id="variable-natm~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -909,11 +908,10 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">write_fukui_section</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">parent</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Where the molecule reacts, per atom, for something other than a reader</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Emitted per atom rather than reduced to a most-reactive site, because</span>
-<span class="w">      </span><span class="c">!! ranking sites is the caller's job and which index to rank on depends on</span>
-<span class="w">      </span><span class="c">!! the reaction being asked about -- `f+` for an incoming nucleophile,</span>
-<span class="w">      </span><span class="c">!! `f-` for an electrophile, the dual descriptor to tell the two kinds of</span>
-<span class="w">      </span><span class="c">!! site apart.</span>
+<span class="w">      </span><span class="c">!! Emitted per atom rather than reduced to a most-reactive site: which</span>
+<span class="w">      </span><span class="c">!! index to rank on depends on the reaction being asked about -- `f+` for</span>
+<span class="w">      </span><span class="c">!! an incoming nucleophile, `f-` for an electrophile, the dual descriptor</span>
+<span class="w">      </span><span class="c">!! to tell the two kinds of site apart.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! `anion_bound` travels with the numbers. When it is false the `f_plus`</span>
 <span class="w">      </span><span class="c">!! column describes an orbital the basis invented rather than a real</span>
@@ -945,9 +943,8 @@ large graphs.</div>
 <span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">natm</span>
 <span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="k">entry</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span>
 <span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="k">entry</span><span class="p">)</span>
-<span class="w">         </span><span class="c">! Numbered rather than named: the output payload carries no element</span>
-<span class="w">         </span><span class="c">! symbols, and the atom order is the input order, so a consumer that</span>
-<span class="w">         </span><span class="c">! read the geometry already knows which is which.</span>
+<span class="w">         </span><span class="c">! Numbered rather than named: the payload carries no element symbols</span>
+<span class="w">         </span><span class="c">! and the order is the input order.</span>
 <span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="k">entry</span><span class="p">,</span><span class="w"> </span><span class="s2">"atom"</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
 <span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="k">entry</span><span class="p">,</span><span class="w"> </span><span class="s2">"f_plus"</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">fukui_plus</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
 <span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="k">entry</span><span class="p">,</span><span class="w"> </span><span class="s2">"f_minus"</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">fukui_minus</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
@@ -979,7 +976,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -138,9 +138,9 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/check_bonding_analysis.html#variable-analysis">analysis</a>
             <a class="list-group-item" href="../proc/check_bonding_analysis.html#variable-entry~8">entry</a>
-            <a class="list-group-item" href="../proc/check_bonding_analysis.html#variable-found~36">found</a>
+            <a class="list-group-item" href="../proc/check_bonding_analysis.html#variable-found~20">found</a>
             <a class="list-group-item" href="../proc/check_bonding_analysis.html#variable-name~17">name</a>
-            <a class="list-group-item" href="../proc/check_bonding_analysis.html#variable-properties~6">properties</a>
+            <a class="list-group-item" href="../proc/check_bonding_analysis.html#variable-properties~5">properties</a>
         </div>
       </div>
     </div>
@@ -181,10 +181,9 @@
     
 
     <p>The value of <code>properties.bonding_analysis</code> names an analysis we have</p>
-<p>Checked here rather than left to the reader because an unknown name is
-the failure this schema exists to catch: a deck that asks for an
-analysis nobody implements would otherwise run a perfectly good energy
-and report nothing, which looks like the analysis found nothing to say.</p>
+<p>A deck asking for an analysis nobody implements would otherwise run a
+perfectly good energy and report nothing, which looks like the analysis
+found nothing to say.</p>
 
 
     <h3>Arguments</h3>
@@ -230,7 +229,7 @@ and report nothing, which looks like the analysis found nothing to say.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~77"></span>
+              <span class="anchor" id="variable-error~71"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -689,7 +688,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~36"></span>
+              <span class="anchor" id="variable-found~20"></span>
               logical,
             </td>
               <td>private</td>
@@ -723,7 +722,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties~6"></span>
+              <span class="anchor" id="variable-properties~5"></span>
               type(json_value),
             </td>
               <td>private,</td>
@@ -757,10 +756,9 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">check_bonding_analysis</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The value of `properties.bonding_analysis` names an analysis we have</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Checked here rather than left to the reader because an unknown name is</span>
-<span class="w">      </span><span class="c">!! the failure this schema exists to catch: a deck that asks for an</span>
-<span class="w">      </span><span class="c">!! analysis nobody implements would otherwise run a perfectly good energy</span>
-<span class="w">      </span><span class="c">!! and report nothing, which looks like the analysis found nothing to say.</span>
+<span class="w">      </span><span class="c">!! A deck asking for an analysis nobody implements would otherwise run a</span>
+<span class="w">      </span><span class="c">!! perfectly good energy and report nothing, which looks like the analysis</span>
+<span class="w">      </span><span class="c">!! found nothing to say.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_core</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">core</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_value</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">root</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
@@ -826,7 +824,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

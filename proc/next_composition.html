@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/next_composition.html#variable-k~47">k</a>
-            <a class="list-group-item" href="../proc/next_composition.html#variable-m~7">m</a>
+            <a class="list-group-item" href="../proc/next_composition.html#variable-k~10">k</a>
+            <a class="list-group-item" href="../proc/next_composition.html#variable-m">m</a>
             <a class="list-group-item" href="../proc/next_composition.html#variable-n_boxes">n_boxes</a>
             <a class="list-group-item" href="../proc/next_composition.html#variable-remaining~3">remaining</a>
             <a class="list-group-item" href="../proc/next_composition.html#variable-room~2">room</a>
@@ -181,10 +181,8 @@
     
 
     <p>The next way, or a flag saying there is none</p>
-<p>Find the rightmost box that can give a particle to some box on its
-right, move one out of it, and repack everything to its right greedily
-from the left. That is the successor in descending-lexicographic
-order, and it visits every composition exactly once.</p>
+<p>The successor in descending-lexicographic order; the walk visits every
+composition exactly once.</p>
 
 
     <h3>Arguments</h3>
@@ -200,7 +198,7 @@ order, and it visits every composition exactly once.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-capacity~4"></span>
+              <span class="anchor" id="variable-capacity~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -230,7 +228,7 @@ order, and it visits every composition exactly once.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total~17"></span>
+              <span class="anchor" id="variable-total~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -429,7 +427,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~47"></span>
+              <span class="anchor" id="variable-k~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -446,7 +444,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~7"></span>
+              <span class="anchor" id="variable-m"></span>
               integer,
             </td>
               <td>private</td>
@@ -531,10 +529,8 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure subroutine </span><span class="n">next_composition</span><span class="p">(</span><span class="n">capacity</span><span class="p">,</span><span class="w"> </span><span class="n">minimum</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="n">occupation</span><span class="p">,</span><span class="w"> </span><span class="n">exhausted</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The next way, or a flag saying there is none</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Find the rightmost box that can give a particle to some box on its</span>
-<span class="w">      </span><span class="c">!! right, move one out of it, and repack everything to its right greedily</span>
-<span class="w">      </span><span class="c">!! from the left. That is the successor in descending-lexicographic</span>
-<span class="w">      </span><span class="c">!! order, and it visits every composition exactly once.</span>
+<span class="w">      </span><span class="c">!! The successor in descending-lexicographic order; the walk visits every</span>
+<span class="w">      </span><span class="c">!! composition exactly once.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">capacity</span><span class="p">(:),</span><span class="w"> </span><span class="n">minimum</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">occupation</span><span class="p">(:)</span>
@@ -583,7 +579,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

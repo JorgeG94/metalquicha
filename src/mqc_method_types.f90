@@ -1,13 +1,12 @@
 !! Method type constants for quantum chemistry methods
 module mqc_method_types
-   !! Defines integer constants for quantum chemistry methods to avoid string comparisons
-   !! throughout the codebase. Provides conversion utilities between string
-   !! representations and integer constants.
+   !! The `METHOD_TYPE_*` constants, and what an input-file spelling parses to.
    use pic_types, only: int32, dp
    implicit none
    private
 
    public :: needs_serial_execution
+
    ! Public constants - Semi-empirical
    public :: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
    ! Public constants - SCF methods
@@ -26,10 +25,14 @@ module mqc_method_types
 
    ! Public functions
    public :: method_type_from_string, method_type_to_string
-   public :: parse_method_string  !! Input-file spelling -> method type
-   public :: method_spin_scaling  !! Spin-component scaling a spelling implies
-   public :: method_wants_density_fitting  !! Whether a spelling asks for RI
-   public :: method_is_casci  !! Whether a spelling asks for fixed orbitals
+   public :: parse_method_string
+   !! Input-file spelling -> method type
+   public :: method_spin_scaling
+   !! Spin-component scaling a spelling implies
+   public :: method_wants_density_fitting
+   !! Whether a spelling asks for RI
+   public :: method_is_casci
+   !! Whether a spelling asks for fixed orbitals
 
    ! Method type constants
    integer(int32), parameter :: METHOD_TYPE_UNKNOWN = 0
@@ -45,11 +48,10 @@ module mqc_method_types
    ! Multi-reference (20-29)
    integer(int32), parameter :: METHOD_TYPE_MCSCF = 20
 
-   !> Effective fragment potentials (60-69). Unlike every other entry here, this
-   !> solves no wavefunction of its own: each fragment carries one already, computed
-   !> when its potential was made, and what is evaluated is the interaction between
-   !> them.
    integer(int32), parameter :: METHOD_TYPE_EFP2 = 60
+   !! Effective fragment potentials (60-69). Solves no wavefunction of its own:
+   !! each fragment carries one already, computed when its potential was made,
+   !! and what is evaluated is the interaction between them.
 
    ! Perturbation theory (30-39)
    integer(int32), parameter :: METHOD_TYPE_MP2 = 30
@@ -61,45 +63,38 @@ module mqc_method_types
    integer(int32), parameter :: METHOD_TYPE_CCSD_F12 = 42
    integer(int32), parameter :: METHOD_TYPE_CCSD_T_F12 = 43  !! CCSD(T)-F12
 
-   !> Interaction energies that come out decomposed (60-69). Unlike the entries
-   !> above, these do not return the energy of *a* system: they return the
-   !> interaction between two of them, broken into named physical terms.
-   !>
-   !> 60 is EFP2 on `feat/efp-efp`; SAPT0 takes 61 so the two branches can merge
-   !> without either constant moving.
    integer(int32), parameter :: METHOD_TYPE_SAPT0 = 61
    integer(int32), parameter :: METHOD_TYPE_SAPT2 = 62
+   !! Interaction energies that come out decomposed. Unlike the entries above,
+   !! these do not return the energy of *a* system: they return the interaction
+   !! between two of them, broken into named physical terms.
+   ! TODO(mqc): 61 and 62 sit inside the 60-69 block `METHOD_TYPE_EFP2`
+   ! documents as its own, so the next member of either family has no
+   ! unambiguous number to take.
 
 contains
 
    pure function needs_serial_execution(method_type) result(serial)
       !! Whether this method has to be run on one thread
-      !!
-      !! An allow-list of the safe ones would be the tempting shape and the
-      !! wrong one: a method added later would default to "safe" and inherit a
-      !! silent data race. Naming the unsafe ones means a new method is clamped
-      !! until someone looks at it, which is the failure that costs an hour
-      !! rather than a week.
-      !!
-      !! Lives here rather than in the driver because two places need it and one
-      !! of them -- the fragment workers -- is used *by* the driver, so it cannot
-      !! reach back. It used to be in the driver alone, and the worker path
-      !! clamped everything instead of asking.
       integer, intent(in) :: method_type
       logical :: serial
 
       ! tblite. Threaded it corrupts a result rather than stopping, which is
       ! why this is not merely a performance choice.
+      ! TODO(mqc): revisit once tblite is thread-safe.
       serial = (method_type == METHOD_TYPE_GFN1 .or. method_type == METHOD_TYPE_GFN2)
    end function needs_serial_execution
 
+   ! TODO(mqc): the same lowercasing loop is open-coded in five routines below,
+   ! one of which allocates `lower_str` before an assignment that reallocates it.
    pure function method_type_from_string(method_str) result(method_type)
-      !! Convert method type string to integer constant
+      !! Method type for an input-file spelling
       !!
-      !! Performs case-insensitive comparison and returns appropriate constant.
-      !! Returns METHOD_TYPE_UNKNOWN for unrecognized strings.
-      character(len=*), intent(in) :: method_str  !! Input string (e.g., "gfn1", "gfn2", "hf")
-      integer(int32) :: method_type                !! Output integer constant
+      !! Case-insensitive. `METHOD_TYPE_UNKNOWN` for anything unrecognized.
+      character(len=*), intent(in) :: method_str
+      !! Input string (e.g., "gfn1", "gfn2", "hf")
+      integer(int32) :: method_type
+      !! Output integer constant
 
       character(len=len_trim(method_str)) :: lower_str
       integer :: i
@@ -130,13 +125,10 @@ contains
       case ("mcscf", "casscf", "casci")
          method_type = METHOD_TYPE_MCSCF
 
-         ! Effective fragment potentials. "efp" alone means EFP2: there is no EFP1
-         ! here, and spelling it out is what a deck written for another program does.
+         ! Effective fragment potentials. "efp" alone means EFP2
       case ("efp2", "efp")
          method_type = METHOD_TYPE_EFP2
-         ! Interaction energies. "sapt" alone means SAPT0: the bare name has
-         ! always meant the base order here, and changing what an old deck
-         ! computes would be worse than asking for the 2.
+         ! Interaction energies. "sapt" alone means SAPT0.
       case ("sapt0", "sapt")
          method_type = METHOD_TYPE_SAPT0
       case ("sapt2")
@@ -165,9 +157,7 @@ contains
    end function method_type_from_string
 
    pure function method_type_to_string(method_type) result(method_str)
-      !! Convert method type integer constant to string
-      !!
-      !! Provides human-readable string representation of method type.
+      !! The canonical spelling of a method type constant
       integer(int32), intent(in) :: method_type         !! Input integer constant
       character(len=:), allocatable :: method_str       !! Output string representation
 
@@ -222,12 +212,6 @@ contains
    subroutine method_spin_scaling(method_str, use_scs, ss_scale, os_scale)
       !! The spin-component scaling a method name implies, if any
       !!
-      !! "scs-mp2" and "sos-mp2" both parse to METHOD_TYPE_MP2, so the type
-      !! alone cannot tell them from plain MP2 and a deck asking for either
-      !! would run unscaled and report it as scaled. The spelling is the only
-      !! place the intent survives, so it is read here, beside the parser that
-      !! already has the lowercased string.
-      !!
       !! SCS-MP2 is Grimme: 1.2 opposite-spin, one third same-spin. SOS-MP2 is
       !! Head-Gordon: 1.3 opposite-spin with the same-spin term dropped, which
       !! is what makes it cheaper rather than merely different.
@@ -258,20 +242,12 @@ contains
          os_scale = 1.3_dp
          ss_scale = 0.0_dp
       case default
-         ! Every other spelling, including plain "mp2", is unscaled. The values
-         ! set above the select already say so; this is here to be explicit
-         ! that no scaling is the deliberate answer rather than a gap.
+         ! Every other spelling, including plain "mp2", is unscaled.
       end select
    end subroutine method_spin_scaling
 
    function method_wants_density_fitting(method_str) result(wants_df)
       !! Whether a method name asks for the fitted route
-      !!
-      !! "ri-mp2" and "df-mp2" parse to METHOD_TYPE_MP2 exactly as "mp2" does,
-      !! so without this a deck asking for either would run the conventional
-      !! four-index transform and report it as RI -- right answer, wrong method,
-      !! and no way to tell from the output. Same reason `method_spin_scaling`
-      !! exists: the spelling carries intent the type discards.
       character(len=*), intent(in) :: method_str
       logical :: wants_df
 
@@ -293,10 +269,7 @@ contains
       !!
       !! "casci" and "casscf" are the same wavefunction ansatz -- a full CI in a
       !! chosen active space -- and differ only in whether the orbitals are
-      !! optimised alongside the CI coefficients. That is one boolean, not two
-      !! method types, so both spellings parse to METHOD_TYPE_MCSCF and the
-      !! distinction is recovered here while the spelling still exists. Exactly
-      !! the same job `method_wants_density_fitting` does for the RI prefix.
+      !! optimised alongside the CI coefficients.
       character(len=*), intent(in) :: method_str
       logical :: is_casci
 

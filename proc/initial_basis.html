@@ -137,11 +137,11 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/initial_basis.html#variable-best">best</a>
-            <a class="list-group-item" href="../proc/initial_basis.html#variable-i~16">i</a>
+            <a class="list-group-item" href="../proc/initial_basis.html#variable-i~21">i</a>
             <a class="list-group-item" href="../proc/initial_basis.html#variable-iroot~3">iroot</a>
-            <a class="list-group-item" href="../proc/initial_basis.html#variable-j~5">j</a>
+            <a class="list-group-item" href="../proc/initial_basis.html#variable-j~6">j</a>
             <a class="list-group-item" href="../proc/initial_basis.html#variable-norm~2">norm</a>
-            <a class="list-group-item" href="../proc/initial_basis.html#variable-overlap~4">overlap</a>
+            <a class="list-group-item" href="../proc/initial_basis.html#variable-overlap~2">overlap</a>
             <a class="list-group-item" href="../proc/initial_basis.html#variable-pick">pick</a>
             <a class="list-group-item" href="../proc/initial_basis.html#variable-taken">taken</a>
         </div>
@@ -199,7 +199,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-diagonal~3"></span>
+              <span class="anchor" id="variable-diagonal~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -214,7 +214,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~3"></span>
+              <span class="anchor" id="variable-n_roots~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -229,7 +229,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndet~3"></span>
+              <span class="anchor" id="variable-ndet~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -259,7 +259,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~3"></span>
+              <span class="anchor" id="variable-guess~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -460,7 +460,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~16"></span>
+              <span class="anchor" id="variable-i~21"></span>
               integer,
             </td>
               <td>private</td>
@@ -494,7 +494,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~5"></span>
+              <span class="anchor" id="variable-j~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -528,7 +528,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~4"></span>
+              <span class="anchor" id="variable-overlap~2"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -595,6 +595,9 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">initial_basis</span><span class="p">(</span><span class="n">diagonal</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">guess</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Starting vectors: the supplied ones, or the lowest determinants</span>
+<span class="w">      </span><span class="c">! TODO(mqc): a supplied vector that is linearly dependent on an earlier</span>
+<span class="w">      </span><span class="c">! one is left unnormalised rather than replaced, so the subspace starts</span>
+<span class="w">      </span><span class="c">! with a near-null column and the Ritz vectors built on it are meaningless.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">diagonal</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_roots</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
@@ -658,7 +661,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -139,10 +139,10 @@
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-initial_max_pie_terms">INITIAL_MAX_PIE_TERMS</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-candidates">candidates</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-clique">clique</a>
-            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-current_atoms">current_atoms</a>
-            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-i~80">i</a>
-            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-j~17">j</a>
-            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-max_atoms~5">max_atoms</a>
+            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-current_atoms~2">current_atoms</a>
+            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-i~147">i</a>
+            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-j~46">j</a>
+            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-max_atoms~6">max_atoms</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-max_terms">max_terms</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-max_terms_i">max_terms_i</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-n_candidates">n_candidates</a>
@@ -532,14 +532,11 @@ large graphs.</div>
     </div>
 
 
-    <p>Enumerate all unique intersections via DFS and accumulate PIE coefficients
-This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
-<p>Algorithm:
-1. For each primary i, start DFS with clique=[i]
-2. Recursively grow cliques by adding overlapping primaries
-3. For each clique of size k, compute intersection and add PIE coefficient:
-   coefficient = (+1) if k odd, (-1) if k even
-4. Accumulate coefficients for each unique atom set</p>
+    <p>The unique intersections of a set of primaries, with their PIE coefficients</p>
+<p>A clique of k overlapping primaries contributes <code>(-1)**(k+1)</code> to the
+coefficient of its intersection, and coefficients accumulate per unique
+atom set. <code>pie_atom_sets</code> and <code>pie_coefficients</code> are left unallocated
+when there are no terms.</p>
 
 
     <h3>Arguments</h3>
@@ -555,7 +552,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~31"></span>
+              <span class="anchor" id="variable-sys_geom~68"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -630,7 +627,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~2"></span>
+              <span class="anchor" id="variable-pie_atom_sets~4"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -645,7 +642,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~2"></span>
+              <span class="anchor" id="variable-pie_coefficients~4"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -660,7 +657,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~2"></span>
+              <span class="anchor" id="variable-n_pie_terms~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(out)</td>
@@ -675,7 +672,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~83"></span>
+              <span class="anchor" id="variable-error~128"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1470,7 +1467,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_atoms"></span>
+              <span class="anchor" id="variable-current_atoms~2"></span>
               integer,
             </td>
               <td>private,</td>
@@ -1487,7 +1484,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~80"></span>
+              <span class="anchor" id="variable-i~147"></span>
               integer,
             </td>
               <td>private</td>
@@ -1504,7 +1501,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~17"></span>
+              <span class="anchor" id="variable-j~46"></span>
               integer,
             </td>
               <td>private</td>
@@ -1521,7 +1518,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~5"></span>
+              <span class="anchor" id="variable-max_atoms~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -1673,15 +1670,12 @@ parameter
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">gmbe_enumerate_pie_terms</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">primaries</span><span class="p">,</span><span class="w"> </span><span class="n">n_primaries</span><span class="p">,</span><span class="w"> </span><span class="n">polymer_level</span><span class="p">,</span><span class="w"> </span><span class="n">max_k_level</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                       </span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">initial_max_terms</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Enumerate all unique intersections via DFS and accumulate PIE coefficients</span>
-<span class="w">      </span><span class="c">!! This implements the GMBE(N) algorithm with inclusion-exclusion principle</span>
+<span class="w">      </span><span class="c">!! The unique intersections of a set of primaries, with their PIE coefficients</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Algorithm:</span>
-<span class="w">      </span><span class="c">!! 1. For each primary i, start DFS with clique=[i]</span>
-<span class="w">      </span><span class="c">!! 2. Recursively grow cliques by adding overlapping primaries</span>
-<span class="w">      </span><span class="c">!! 3. For each clique of size k, compute intersection and add PIE coefficient:</span>
-<span class="w">      </span><span class="c">!!    coefficient = (+1) if k odd, (-1) if k even</span>
-<span class="w">      </span><span class="c">!! 4. Accumulate coefficients for each unique atom set</span>
+<span class="w">      </span><span class="c">!! A clique of k overlapping primaries contributes `(-1)**(k+1)` to the</span>
+<span class="w">      </span><span class="c">!! coefficient of its intersection, and coefficients accumulate per unique</span>
+<span class="w">      </span><span class="c">!! atom set. `pie_atom_sets` and `pie_coefficients` are left unallocated</span>
+<span class="w">      </span><span class="c">!! when there are no terms.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_physical_fragment</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">system_geometry_t</span>
 
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
@@ -1818,7 +1812,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

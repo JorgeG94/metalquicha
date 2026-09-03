@@ -138,7 +138,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/guess_step_t.html#variable-basis~6">basis</a>
             <a class="list-group-item" href="../type/guess_step_t.html#variable-maxiter">maxiter</a>
-            <a class="list-group-item" href="../type/guess_step_t.html#variable-tolerance~9">tolerance</a>
+            <a class="list-group-item" href="../type/guess_step_t.html#variable-tolerance~6">tolerance</a>
         </div>
       </div>
     </div>
@@ -177,12 +177,9 @@
       <h2 id="type-def-statement">
         type, public :: guess_step_t</h2>
     <p>One rung of a basis-set-projection ladder</p>
-<p>Each rung converges an SCF in its own basis and hands the result to the
-next as a starting density. The convergence settings are per rung
-because the rungs are not doing the same job: an early one only has to
-land in the right basin and can stop loosely, where the last one before
-the target may as well be tight since it is cheap relative to what
-follows.</p>
+<p>Each rung converges an SCF in its own basis and hands the result to
+the next as a starting density. Convergence settings are per rung: an
+early one only has to land in the right basin.</p>
 <br>      <div class="card">
         <div class="card-header">
           <h3 class="card-title">Inherited by</h3>
@@ -215,7 +212,7 @@ follows.</p>
 </g>
 </g>
 <!-- type~cuest_scf_settings_t&#45;&gt;type~guess_step_t -->
-<g id="type~~guess_step_t~~InheritedByGraph_edge2" class="edge">
+<g id="type~~guess_step_t~~InheritedByGraph_edge4" class="edge">
 <title>type~cuest_scf_settings_t&#45;&gt;type~guess_step_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M581.9,-188.89C511.35,-189.68 388.45,-194.03 285,-213 256.44,-218.24 251.39,-229.17 222.5,-232"/>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M220.5,-232C145.99,-236.56 81.57,-159.4 54.55,-121.44"/>
@@ -232,7 +229,7 @@ follows.</p>
 </g>
 </g>
 <!-- type~cuest_scf_settings_t&#45;&gt;type~deltascf_options_t -->
-<g id="type~~guess_step_t~~InheritedByGraph_edge9" class="edge">
+<g id="type~~guess_step_t~~InheritedByGraph_edge11" class="edge">
 <title>type~cuest_scf_settings_t&#45;&gt;type~deltascf_options_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M609.17,-176.95C569.84,-161.33 501.17,-134.04 457.72,-116.78"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="458.91,-113.49 448.32,-113.05 456.32,-119.99 458.91,-113.49"/>
@@ -271,7 +268,7 @@ follows.</p>
 </g>
 </g>
 <!-- type~scf_config_t&#45;&gt;type~guess_step_t -->
-<g id="type~~guess_step_t~~InheritedByGraph_edge4" class="edge">
+<g id="type~~guess_step_t~~InheritedByGraph_edge1" class="edge">
 <title>type~scf_config_t&#45;&gt;type~guess_step_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M488.56,-232.33C431.41,-228.72 318.14,-223.63 222.5,-232"/>
 <text text-anchor="middle" x="315" y="-230.4" font-family="Helvetica,sans-Serif" font-size="9.50">guess_steps</text>
@@ -286,7 +283,7 @@ follows.</p>
 </g>
 </g>
 <!-- type~scf_numerics_t&#45;&gt;type~guess_step_t -->
-<g id="type~~guess_step_t~~InheritedByGraph_edge1" class="edge">
+<g id="type~~guess_step_t~~InheritedByGraph_edge2" class="edge">
 <title>type~scf_numerics_t&#45;&gt;type~guess_step_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M175.67,-101C149.72,-101 117.03,-101 90.36,-101"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="90.08,-97.5 80.08,-101 90.08,-104.5 90.08,-97.5"/>
@@ -323,7 +320,7 @@ follows.</p>
 </g>
 </g>
 <!-- type~fmo_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~guess_step_t~~InheritedByGraph_edge20" class="edge">
+<g id="type~~guess_step_t~~InheritedByGraph_edge22" class="edge">
 <title>type~fmo_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#00ffff" d="M1348,-141C1338.22,-143.64 1338.67,-149.75 1330,-155 1320.56,-160.72 1309.93,-166.08 1299.85,-170.72"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="1298.12,-167.66 1290.41,-174.93 1300.97,-174.05 1298.12,-167.66"/>
@@ -354,7 +351,7 @@ follows.</p>
 </g>
 </g>
 <!-- type~method_config_t&#45;&gt;type~properties_config_t -->
-<g id="type~~guess_step_t~~InheritedByGraph_edge25" class="edge">
+<g id="type~~guess_step_t~~InheritedByGraph_edge24" class="edge">
 <title>type~method_config_t&#45;&gt;type~properties_config_t</title>
 <path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M811.98,-192.87C777.55,-174.31 711.73,-138.84 672.71,-117.82"/>
 <polygon fill="#ff00ff" stroke="#ff00ff" points="674.34,-114.72 663.87,-113.06 671.02,-120.88 674.34,-114.72"/>
@@ -377,7 +374,7 @@ follows.</p>
 <polygon fill="#7f00ff" stroke="#7f00ff" points="277.18,-97.18 267.18,-100.68 277.18,-104.18 277.18,-97.18"/>
 </g>
 <!-- type~scf_options_t&#45;&gt;type~properties_config_t -->
-<g id="type~~guess_step_t~~InheritedByGraph_edge24" class="edge">
+<g id="type~~guess_step_t~~InheritedByGraph_edge25" class="edge">
 <title>type~scf_options_t&#45;&gt;type~properties_config_t</title>
 <path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M794.88,-69.22C785.73,-71.12 776.02,-73.13 767,-75 747.7,-79 726.74,-83.34 707.57,-87.32"/>
 <polygon fill="#ff00ff" stroke="#ff00ff" points="706.81,-83.9 697.73,-89.35 708.23,-90.75 706.81,-83.9"/>
@@ -393,7 +390,7 @@ follows.</p>
 </g>
 </g>
 <!-- type~dft_options_t&#45;&gt;type~scf_options_t -->
-<g id="type~~guess_step_t~~InheritedByGraph_edge15" class="edge">
+<g id="type~~guess_step_t~~InheritedByGraph_edge14" class="edge">
 <title>type~dft_options_t&#45;&gt;type~scf_options_t</title>
 <path fill="none" stroke="#7f00ff" d="M1013.1,-29.09C984.18,-41.8 942.47,-59.98 940.5,-60"/>
 <path fill="none" stroke="#7f00ff" d="M938.5,-60C921.49,-60.17 902.88,-60.35 886.27,-60.51"/>
@@ -409,7 +406,7 @@ follows.</p>
 </g>
 </g>
 <!-- type~driver_config_t&#45;&gt;type~method_config_t -->
-<g id="type~~guess_step_t~~InheritedByGraph_edge12" class="edge">
+<g id="type~~guess_step_t~~InheritedByGraph_edge13" class="edge">
 <title>type~driver_config_t&#45;&gt;type~method_config_t</title>
 <path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M995.98,-222.2C966.79,-219.05 928.26,-214.9 896.39,-211.46"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="896.61,-207.96 886.29,-210.37 895.86,-214.92 896.61,-207.96"/>
@@ -425,12 +422,12 @@ follows.</p>
 </g>
 </g>
 <!-- type~hf_options_t&#45;&gt;type~scf_options_t -->
-<g id="type~~guess_step_t~~InheritedByGraph_edge14" class="edge">
+<g id="type~~guess_step_t~~InheritedByGraph_edge16" class="edge">
 <title>type~hf_options_t&#45;&gt;type~scf_options_t</title>
 <path fill="none" stroke="#7f00ff" d="M1012.53,-88.91C984.3,-76.8 944.35,-59.96 940.5,-60"/>
 </g>
 <!-- type~many_body_expansion_t&#45;&gt;type~method_config_t -->
-<g id="type~~guess_step_t~~InheritedByGraph_edge13" class="edge">
+<g id="type~~guess_step_t~~InheritedByGraph_edge12" class="edge">
 <title>type~many_body_expansion_t&#45;&gt;type~method_config_t</title>
 <path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M1187.96,-188.93C1134.53,-190.51 1059.1,-192.98 993,-196 961.02,-197.46 925.39,-199.48 896.21,-201.24"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="895.94,-197.75 886.17,-201.84 896.37,-204.73 895.94,-197.75"/>
@@ -453,12 +450,12 @@ follows.</p>
 </g>
 </g>
 <!-- type~mcscf_options_t&#45;&gt;type~scf_options_t -->
-<g id="type~~guess_step_t~~InheritedByGraph_edge16" class="edge">
+<g id="type~~guess_step_t~~InheritedByGraph_edge15" class="edge">
 <title>type~mcscf_options_t&#45;&gt;type~scf_options_t</title>
 <path fill="none" stroke="#7f00ff" d="M992.94,-59.48C976.35,-59.65 957.6,-59.83 940.5,-60"/>
 </g>
 <!-- type~properties_config_t&#45;&gt;type~deltascf_options_t -->
-<g id="type~~guess_step_t~~InheritedByGraph_edge11" class="edge">
+<g id="type~~guess_step_t~~InheritedByGraph_edge9" class="edge">
 <title>type~properties_config_t&#45;&gt;type~deltascf_options_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M583.32,-101C552.21,-101 513.44,-101 481.27,-101"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="481.07,-97.5 471.07,-101 481.07,-104.5 481.07,-97.5"/>
@@ -520,7 +517,7 @@ follows.</p>
 </g>
 </g>
 <!-- type~mbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~guess_step_t~~InheritedByGraph_edge22" class="edge">
+<g id="type~~guess_step_t~~InheritedByGraph_edge20" class="edge">
 <title>type~mbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#00ffff" d="M1385.57,-176.06C1379.37,-178.84 1372.91,-181.9 1367,-185 1358.69,-189.35 1358.37,-195.71 1349,-196"/>
 <path fill="none" stroke="#00ffff" d="M1348,-196C1345.45,-196.08 1342.86,-196.11 1340.24,-196.1"/>
@@ -649,7 +646,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~9"></span>
+              <span class="anchor" id="variable-tolerance~6"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -678,12 +675,9 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">guess_step_t</span>
 <span class="w">      </span><span class="c">!! One rung of a basis-set-projection ladder</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Each rung converges an SCF in its own basis and hands the result to the</span>
-<span class="w">      </span><span class="c">!! next as a starting density. The convergence settings are per rung</span>
-<span class="w">      </span><span class="c">!! because the rungs are not doing the same job: an early one only has to</span>
-<span class="w">      </span><span class="c">!! land in the right basin and can stop loosely, where the last one before</span>
-<span class="w">      </span><span class="c">!! the target may as well be tight since it is cheap relative to what</span>
-<span class="w">      </span><span class="c">!! follows.</span>
+<span class="w">      </span><span class="c">!! Each rung converges an SCF in its own basis and hands the result to</span>
+<span class="w">      </span><span class="c">!! the next as a starting density. Convergence settings are per rung: an</span>
+<span class="w">      </span><span class="c">!! early one only has to land in the right basin.</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">maxiter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">50</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0e-5_dp</span>
@@ -710,7 +704,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

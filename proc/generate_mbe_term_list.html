@@ -136,9 +136,9 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/generate_mbe_term_list.html#variable-imon~4">imon</a>
-            <a class="list-group-item" href="../proc/generate_mbe_term_list.html#variable-monomers~13">monomers</a>
-            <a class="list-group-item" href="../proc/generate_mbe_term_list.html#variable-n_rows~3">n_rows</a>
+            <a class="list-group-item" href="../proc/generate_mbe_term_list.html#variable-imon">imon</a>
+            <a class="list-group-item" href="../proc/generate_mbe_term_list.html#variable-monomers">monomers</a>
+            <a class="list-group-item" href="../proc/generate_mbe_term_list.html#variable-n_rows">n_rows</a>
         </div>
       </div>
     </div>
@@ -794,19 +794,15 @@ large graphs.</div>
 
     <p>The term list a plain MBE run evaluates, at this geometry</p>
 <p>Monomers first, then every n-mer up to <code>max_level</code>, then distance
-screening, then the size sort. Extracted from the driver so that a
-caller who needs to know the list <em>before</em> running &ndash; a geometry
-optimization freezing it against the surface moving underneath &ndash; gets
-the same list the driver would have generated rather than a
-reimplementation of it that drifts the first time screening changes.</p>
-<p>Monomers are part of the list here, unlike <code>fraglist_t</code>, which starts
-at pairs. That difference is the reason this exists rather than the
-two being merged: <code>supplied_terms</code> is fed straight into the expansion
-and the expansion expects the monomers to be in it.</p>
-<p>Screening leaves the list closed under subsets already:
-<code>fragment_should_be_screened</code> drops an n-mer if <em>any</em> of its k-subsets
-exceeds the k-mer cutoff, so a surviving trimer&rsquo;s dimers all survived
-too. Nothing further has to close it.</p>
+screening, the counterpoise rows if any, and the size sort. This is
+the same list the driver evaluates, for a caller that needs it in
+advance &ndash; an optimization freezing the term list, say.</p>
+<p>Monomers are in the list here, unlike <code>fraglist_t</code>, which starts at
+pairs: <code>supplied_terms</code> is fed straight into the expansion and the
+expansion expects them.</p>
+<p>The result is closed under subsets. <code>fragment_should_be_screened</code>
+drops an n-mer if <em>any</em> of its k-subsets exceeds the k-mer cutoff, so
+a surviving trimer&rsquo;s dimers all survived too.</p>
 
 
     <h3>Arguments</h3>
@@ -822,7 +818,7 @@ too. Nothing further has to close it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~50"></span>
+              <span class="anchor" id="variable-sys_geom~4"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -852,7 +848,7 @@ too. Nothing further has to close it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~13"></span>
+              <span class="anchor" id="variable-max_level"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -867,7 +863,7 @@ too. Nothing further has to close it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~14"></span>
+              <span class="anchor" id="variable-polymers"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -882,7 +878,7 @@ too. Nothing further has to close it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~4"></span>
+              <span class="anchor" id="variable-total_fragments"></span>
               integer(kind=int64),
             </td>
 <td>intent(out)</td>
@@ -1785,7 +1781,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-imon~4"></span>
+              <span class="anchor" id="variable-imon"></span>
               integer,
             </td>
               <td>private</td>
@@ -1802,7 +1798,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~13"></span>
+              <span class="anchor" id="variable-monomers"></span>
               integer,
             </td>
               <td>private,</td>
@@ -1819,7 +1815,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_rows~3"></span>
+              <span class="anchor" id="variable-n_rows"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1854,21 +1850,17 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! The term list a plain MBE run evaluates, at this geometry</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Monomers first, then every n-mer up to `max_level`, then distance</span>
-<span class="w">      </span><span class="c">!! screening, then the size sort. Extracted from the driver so that a</span>
-<span class="w">      </span><span class="c">!! caller who needs to know the list *before* running -- a geometry</span>
-<span class="w">      </span><span class="c">!! optimization freezing it against the surface moving underneath -- gets</span>
-<span class="w">      </span><span class="c">!! the same list the driver would have generated rather than a</span>
-<span class="w">      </span><span class="c">!! reimplementation of it that drifts the first time screening changes.</span>
+<span class="w">      </span><span class="c">!! screening, the counterpoise rows if any, and the size sort. This is</span>
+<span class="w">      </span><span class="c">!! the same list the driver evaluates, for a caller that needs it in</span>
+<span class="w">      </span><span class="c">!! advance -- an optimization freezing the term list, say.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Monomers are part of the list here, unlike `fraglist_t`, which starts</span>
-<span class="w">      </span><span class="c">!! at pairs. That difference is the reason this exists rather than the</span>
-<span class="w">      </span><span class="c">!! two being merged: `supplied_terms` is fed straight into the expansion</span>
-<span class="w">      </span><span class="c">!! and the expansion expects the monomers to be in it.</span>
+<span class="w">      </span><span class="c">!! Monomers are in the list here, unlike `fraglist_t`, which starts at</span>
+<span class="w">      </span><span class="c">!! pairs: `supplied_terms` is fed straight into the expansion and the</span>
+<span class="w">      </span><span class="c">!! expansion expects them.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Screening leaves the list closed under subsets already:</span>
-<span class="w">      </span><span class="c">!! `fragment_should_be_screened` drops an n-mer if *any* of its k-subsets</span>
-<span class="w">      </span><span class="c">!! exceeds the k-mer cutoff, so a surviving trimer's dimers all survived</span>
-<span class="w">      </span><span class="c">!! too. Nothing further has to close it.</span>
+<span class="w">      </span><span class="c">!! The result is closed under subsets. `fragment_should_be_screened`</span>
+<span class="w">      </span><span class="c">!! drops an n-mer if *any* of its k-subsets exceeds the k-mer cutoff, so</span>
+<span class="w">      </span><span class="c">!! a surviving trimer's dimers all survived too.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_config_adapter</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">driver_config_t</span>
 
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
@@ -1933,7 +1925,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

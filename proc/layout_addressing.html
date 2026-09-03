@@ -136,13 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/layout_addressing.html#variable-a~20">a</a>
-            <a class="list-group-item" href="../proc/layout_addressing.html#variable-ga~2">ga</a>
-            <a class="list-group-item" href="../proc/layout_addressing.html#variable-gb~2">gb</a>
+            <a class="list-group-item" href="../proc/layout_addressing.html#variable-a~11">a</a>
+            <a class="list-group-item" href="../proc/layout_addressing.html#variable-ga~8">ga</a>
+            <a class="list-group-item" href="../proc/layout_addressing.html#variable-gb~8">gb</a>
             <a class="list-group-item" href="../proc/layout_addressing.html#variable-n_alpha_classes~2">n_alpha_classes</a>
             <a class="list-group-item" href="../proc/layout_addressing.html#variable-n_beta_classes~2">n_beta_classes</a>
-            <a class="list-group-item" href="../proc/layout_addressing.html#variable-running~2">running</a>
-            <a class="list-group-item" href="../proc/layout_addressing.html#variable-total~19">total</a>
+            <a class="list-group-item" href="../proc/layout_addressing.html#variable-running">running</a>
+            <a class="list-group-item" href="../proc/layout_addressing.html#variable-total~4">total</a>
         </div>
       </div>
     </div>
@@ -187,8 +187,6 @@
 beta classes appear in order, each contributing a dense block of its own
 strings. Three tables say it all &ndash; how long a row is, where each beta
 class starts within one, and where each alpha string&rsquo;s row begins.</p>
-<p>Written against a grid rather than against a space because the space
-and its one-excitation closure differ in nothing else.</p>
 
 
     <h3>Arguments</h3>
@@ -204,7 +202,7 @@ and its one-excitation closure differ in nothing else.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid~3"></span>
+              <span class="anchor" id="variable-grid"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -354,7 +352,7 @@ and its one-excitation closure differ in nothing else.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~160"></span>
+              <span class="anchor" id="variable-error~46"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -700,7 +698,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-a~20"></span>
+              <span class="anchor" id="variable-a~11"></span>
               integer,
             </td>
               <td>private</td>
@@ -717,7 +715,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ga~2"></span>
+              <span class="anchor" id="variable-ga~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -734,7 +732,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gb~2"></span>
+              <span class="anchor" id="variable-gb~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -785,7 +783,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-running~2"></span>
+              <span class="anchor" id="variable-running"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -802,7 +800,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total~19"></span>
+              <span class="anchor" id="variable-total~4"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -842,9 +840,6 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! beta classes appear in order, each contributing a dense block of its own</span>
 <span class="w">      </span><span class="c">!! strings. Three tables say it all -- how long a row is, where each beta</span>
 <span class="w">      </span><span class="c">!! class starts within one, and where each alpha string's row begins.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Written against a grid rather than against a space because the space</span>
-<span class="w">      </span><span class="c">!! and its one-excitation closure differ in nothing else.</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">grid</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha_size</span><span class="p">(:),</span><span class="w"> </span><span class="n">beta_size</span><span class="p">(:),</span><span class="w"> </span><span class="n">alpha_offset</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha_string_class</span><span class="p">(:)</span>
@@ -918,7 +913,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

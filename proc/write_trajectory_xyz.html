@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/write_trajectory_xyz.html#variable-iatom~14">iatom</a>
+            <a class="list-group-item" href="../proc/write_trajectory_xyz.html#variable-iatom~29">iatom</a>
             <a class="list-group-item" href="../proc/write_trajectory_xyz.html#variable-istep~2">istep</a>
-            <a class="list-group-item" href="../proc/write_trajectory_xyz.html#variable-n_atoms~31">n_atoms</a>
-            <a class="list-group-item" href="../proc/write_trajectory_xyz.html#variable-stat~3">stat</a>
-            <a class="list-group-item" href="../proc/write_trajectory_xyz.html#variable-unit~7">unit</a>
+            <a class="list-group-item" href="../proc/write_trajectory_xyz.html#variable-n_atoms~46">n_atoms</a>
+            <a class="list-group-item" href="../proc/write_trajectory_xyz.html#variable-stat~6">stat</a>
+            <a class="list-group-item" href="../proc/write_trajectory_xyz.html#variable-unit~9">unit</a>
         </div>
       </div>
     </div>
@@ -182,9 +182,8 @@
 
     <p>Write the path the optimization took, as a multi-frame .xyz</p>
 <p>One frame per accepted geometry, in the order they were accepted, with
-the energy on each comment line. That is the format every viewer and
-trajectory reader already understands, so nothing here has to be
-taught to anything.</p>
+the energy on each comment line. Nothing is written when the record
+carries no trajectory.</p>
 
 
     <h3>Arguments</h3>
@@ -200,7 +199,7 @@ taught to anything.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~24"></span>
+              <span class="anchor" id="variable-path~29"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -215,7 +214,7 @@ taught to anything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-record~4"></span>
+              <span class="anchor" id="variable-record~6"></span>
               type(<a href='../type/optimization_record_t.html'>optimization_record_t</a>),
             </td>
 <td>intent(in)</td>
@@ -230,7 +229,7 @@ taught to anything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~95"></span>
+              <span class="anchor" id="variable-error~180"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -576,7 +575,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~14"></span>
+              <span class="anchor" id="variable-iatom~29"></span>
               integer,
             </td>
               <td>private</td>
@@ -610,7 +609,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~31"></span>
+              <span class="anchor" id="variable-n_atoms~46"></span>
               integer,
             </td>
               <td>private</td>
@@ -627,7 +626,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stat~3"></span>
+              <span class="anchor" id="variable-stat~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -644,7 +643,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~7"></span>
+              <span class="anchor" id="variable-unit~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -679,9 +678,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Write the path the optimization took, as a multi-frame .xyz</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! One frame per accepted geometry, in the order they were accepted, with</span>
-<span class="w">      </span><span class="c">!! the energy on each comment line. That is the format every viewer and</span>
-<span class="w">      </span><span class="c">!! trajectory reader already understands, so nothing here has to be</span>
-<span class="w">      </span><span class="c">!! taught to anything.</span>
+<span class="w">      </span><span class="c">!! the energy on each comment line. Nothing is written when the record</span>
+<span class="w">      </span><span class="c">!! carries no trajectory.</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">path</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">optimization_record_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">record</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
@@ -738,7 +736,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

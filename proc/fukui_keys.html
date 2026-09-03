@@ -166,15 +166,11 @@
     
 
     <p>Settings for the Fukui index analysis</p>
-<p><code>population</code> defaults to CHELPG. It was required rather than
-defaulted, on the argument that a choice which changes the numbers
-should be written down rather than inherited &ndash; but the two schemes
-are not equal candidates. CHELPG fits the electrostatic potential and
-is what a condensed Fukui index is normally reported from; Mulliken is
-basis-set dependent to the point of changing which site ranks first.
-Defaulting to the better one and naming the other is more useful than
-refusing to choose, and the scheme is echoed in the report and the
-JSON either way, so nothing is inherited silently.</p>
+<p><code>population</code> defaults to CHELPG, which fits the electrostatic
+potential and is what a condensed Fukui index is normally reported
+from; Mulliken is basis-set dependent to the point of changing which
+site ranks first. The scheme is echoed in the report and the JSON
+either way.</p>
 
 
     <h3>Arguments</h3>
@@ -569,30 +565,20 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">fukui_keys</span><span class="p">()</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Settings for the Fukui index analysis</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! `population` defaults to CHELPG. It was required rather than</span>
-<span class="w">      </span><span class="c">!! defaulted, on the argument that a choice which changes the numbers</span>
-<span class="w">      </span><span class="c">!! should be written down rather than inherited -- but the two schemes</span>
-<span class="w">      </span><span class="c">!! are not equal candidates. CHELPG fits the electrostatic potential and</span>
-<span class="w">      </span><span class="c">!! is what a condensed Fukui index is normally reported from; Mulliken is</span>
-<span class="w">      </span><span class="c">!! basis-set dependent to the point of changing which site ranks first.</span>
-<span class="w">      </span><span class="c">!! Defaulting to the better one and naming the other is more useful than</span>
-<span class="w">      </span><span class="c">!! refusing to choose, and the scheme is echoed in the report and the</span>
-<span class="w">      </span><span class="c">!! JSON either way, so nothing is inherited silently.</span>
+<span class="w">      </span><span class="c">!! `population` defaults to CHELPG, which fits the electrostatic</span>
+<span class="w">      </span><span class="c">!! potential and is what a condensed Fukui index is normally reported</span>
+<span class="w">      </span><span class="c">!! from; Mulliken is basis-set dependent to the point of changing which</span>
+<span class="w">      </span><span class="c">!! site ranks first. The scheme is echoed in the report and the JSON</span>
+<span class="w">      </span><span class="c">!! either way.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">key_set_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">keys</span>
 <span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"population"</span><span class="p">)</span>
-<span class="w">      </span><span class="c">! Which starting density each ion gets: "neutral" or "independent".</span>
-<span class="w">      </span><span class="c">!</span>
-<span class="w">      </span><span class="c">! **Deliberately a sibling of `scf`, not a key inside it**, even though</span>
-<span class="w">      </span><span class="c">! `scf` has a `guess` of its own. The two are different questions and the</span>
-<span class="w">      </span><span class="c">! spelling collides: this one says whether the ion starts from the</span>
-<span class="w">      </span><span class="c">! neutral's converged orbitals at all, while `scf.guess` says how a</span>
-<span class="w">      </span><span class="c">! density is built when it starts from nothing -- `core`, `gwh`, `sad`.</span>
-<span class="w">      </span><span class="c">! Nesting is what keeps them apart, so moving this one inside `scf` would</span>
-<span class="w">      </span><span class="c">! put two unrelated meanings on one name.</span>
+<span class="w">      </span><span class="c">! Which starting density each ion gets: "neutral" or "independent". A</span>
+<span class="w">      </span><span class="c">! sibling of `scf` and not a key inside it, because `scf.guess` is a</span>
+<span class="w">      </span><span class="c">! different question -- how a density is built when it starts from</span>
+<span class="w">      </span><span class="c">! nothing.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"guess"</span><span class="p">)</span>
-<span class="w">      </span><span class="c">! The ions are their own SCF problem and are configured as one, with the</span>
-<span class="w">      </span><span class="c">! same key spellings `keywords.scf` uses so a block can be moved between</span>
-<span class="w">      </span><span class="c">! them unchanged.</span>
+<span class="w">      </span><span class="c">! The ions are their own SCF problem, configured with the same key</span>
+<span class="w">      </span><span class="c">! spellings `keywords.scf` uses.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">"scf"</span><span class="p">)</span>
 <span class="w">   </span><span class="k">end function </span><span class="n">fukui_keys</span>
 </pre></div>
@@ -618,7 +604,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

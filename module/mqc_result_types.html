@@ -229,8 +229,7 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>Defines data structures for storing and managing results from
-quantum chemistry calculations including energies, gradients, and properties.
+      <p>Energy, gradient and property containers, and the MPI transfer of one.
 MP2 energy components type
 Coupled cluster energy components type
 Energy components type
@@ -245,8 +244,8 @@ Receive result over MPI</p>
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1892,9 +1891,9 @@ parameter
 <td> =</td>
                 <td>2</td>
             <td>
-                <p>Ran out of iterations. The energy is whatever the last cycle held,
-and putting it into an expansion poisons the total silently &ndash; it is
-a number of the right magnitude, so nothing downstream notices.</p>
+                <p>Ran out of iterations. The energy is whatever the last cycle held &ndash;
+a number of the right magnitude, so an expansion that sums it is
+silently wrong.</p>
             </td>
         </tr>
         <tr>
@@ -1984,7 +1983,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_charges"></span>
+              <span class="anchor" id="variable-atomic_charges~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1997,11 +1996,7 @@ parameter
                 <td></td>
             <td>
 <p>(natoms) nuclear charge minus the electrons assigned to the atom, so
-positive is electron-poor. <strong>Fragment-local, and caps are in it</strong> &ndash;
-the same convention <code>bond_orders</code> uses, and here it is what makes
-the numbers checkable: the array sums to the charge of the molecule
-the SCF actually saw. Dropping the caps would leave a column that
-sums to nothing in particular.</p>
+positive is electron-poor.</p>
             </td>
         </tr>
         <tr>
@@ -2019,12 +2014,12 @@ sums to nothing in particular.</p>
                 <td></td>
             <td>
 <p>Wiberg-Mayer bond orders, (natoms, natoms), symmetric with a zero
-diagonal.</p><a href="../type/calculation_result_t.html#variable-bond_orders" class="pull-right"><emph>Read more&hellip;</emph></a>
+diagonal.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge_scheme"></span>
+              <span class="anchor" id="variable-charge_scheme~2"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -2036,14 +2031,13 @@ diagonal.</p><a href="../type/calculation_result_t.html#variable-bond_orders" cl
 <td> =</td>
                 <td>&#34;&#34;</td>
             <td>
-<p>Which partition produced them. Travels with the numbers because two
-schemes disagree by design, so a charge without its scheme is not
-interpretable.</p>
+<p>Which partition produced them. Two schemes disagree by design, so a
+charge without its scheme is not interpretable.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole"></span>
+              <span class="anchor" id="variable-dipole~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2060,7 +2054,7 @@ interpretable.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives"></span>
+              <span class="anchor" id="variable-dipole_derivatives~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2077,7 +2071,7 @@ interpretable.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-distance"></span>
+              <span class="anchor" id="variable-distance~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2094,7 +2088,7 @@ interpretable.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~3"></span>
+              <span class="anchor" id="variable-energy~18"></span>
               type(<a href='../type/energy_t.html'>energy_t</a>),
             </td>
               <td>public</td>
@@ -2111,7 +2105,7 @@ interpretable.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~3"></span>
+              <span class="anchor" id="variable-error~107"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>public</td>
@@ -2128,7 +2122,7 @@ interpretable.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_anion_bound"></span>
+              <span class="anchor" id="variable-fukui_anion_bound~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2140,14 +2134,13 @@ interpretable.</p>
 <td> =</td>
                 <td>.true.</td>
             <td>
-<p>Carried so a consumer can discard <code>f+</code> without re-deriving why. An
-unbound anion makes that column describe an orbital the basis
-invented, and nothing about the numbers themselves says so.</p>
+<p>False when the anion is unbound, in which case <code>f+</code> describes an
+orbital the basis invented and nothing about the numbers says so.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_dual"></span>
+              <span class="anchor" id="variable-fukui_dual~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2164,7 +2157,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_ea"></span>
+              <span class="anchor" id="variable-fukui_ea~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2181,7 +2174,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_electrophilicity"></span>
+              <span class="anchor" id="variable-fukui_electrophilicity~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2198,7 +2191,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_hardness"></span>
+              <span class="anchor" id="variable-fukui_hardness~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2215,7 +2208,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_ip"></span>
+              <span class="anchor" id="variable-fukui_ip~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2232,7 +2225,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_minus"></span>
+              <span class="anchor" id="variable-fukui_minus~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2249,7 +2242,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_plus"></span>
+              <span class="anchor" id="variable-fukui_plus~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2266,7 +2259,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_scheme"></span>
+              <span class="anchor" id="variable-fukui_scheme~2"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -2283,7 +2276,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~2"></span>
+              <span class="anchor" id="variable-gradient~11"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2317,7 +2310,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_charges"></span>
+              <span class="anchor" id="variable-has_charges~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2334,7 +2327,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_dipole"></span>
+              <span class="anchor" id="variable-has_dipole~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2368,7 +2361,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_energy"></span>
+              <span class="anchor" id="variable-has_energy~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2402,7 +2395,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_fukui"></span>
+              <span class="anchor" id="variable-has_fukui~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2419,7 +2412,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_gradient"></span>
+              <span class="anchor" id="variable-has_gradient~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2436,7 +2429,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_hessian"></span>
+              <span class="anchor" id="variable-has_hessian~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2453,7 +2446,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_ieda"></span>
+              <span class="anchor" id="variable-has_ieda~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2470,7 +2463,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_orbitals"></span>
+              <span class="anchor" id="variable-has_orbitals~5"></span>
               logical,
             </td>
               <td>public</td>
@@ -2504,7 +2497,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~2"></span>
+              <span class="anchor" id="variable-hessian~11"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2521,7 +2514,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-homo"></span>
+              <span class="anchor" id="variable-homo~5"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2538,7 +2531,7 @@ invented, and nothing about the numbers themselves says so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ieda_atom"></span>
+              <span class="anchor" id="variable-ieda_atom~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2557,7 +2550,7 @@ An atom deformed by the molecule, not a free one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ieda_classical"></span>
+              <span class="anchor" id="variable-ieda_classical~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2570,13 +2563,12 @@ An atom deformed by the molecule, not a free one.</p>
                 <td></td>
             <td>
 <p>(natoms, natoms) the part of the pair energy an electrostatic model
-could produce. What is left is interference, which is where the
-analysis argues covalent binding lives.</p>
+could produce; the remainder is interference.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ieda_formation"></span>
+              <span class="anchor" id="variable-ieda_formation~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2593,7 +2585,7 @@ analysis argues covalent binding lives.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ieda_free_atom"></span>
+              <span class="anchor" id="variable-ieda_free_atom~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2611,7 +2603,7 @@ what it cost to prepare it in the shape the molecule needs.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ieda_pair"></span>
+              <span class="anchor" id="variable-ieda_pair~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2631,7 +2623,7 @@ is <code>sum(ieda_atom) + 0.5*sum(ieda_pair)</code> and not a triangle sum.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lumo"></span>
+              <span class="anchor" id="variable-lumo~5"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2665,7 +2657,7 @@ is <code>sum(ieda_atom) + 0.5*sum(ieda_pair)</code> and not a triangle sum.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_status"></span>
+              <span class="anchor" id="variable-scf_status~8"></span>
               integer,
             </td>
               <td>public</td>
@@ -2682,7 +2674,7 @@ is <code>sum(ieda_atom) + 0.5*sum(ieda_pair)</code> and not a triangle sum.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma"></span>
+              <span class="anchor" id="variable-sigma~8"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2699,7 +2691,7 @@ is <code>sum(ieda_atom) + 0.5*sum(ieda_pair)</code> and not a triangle sum.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spin_populations"></span>
+              <span class="anchor" id="variable-spin_populations~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2713,9 +2705,8 @@ is <code>sum(ieda_atom) + 0.5*sum(ieda_pair)</code> and not a triangle sum.</p>
             <td>
 <p>(natoms) the same partition applied to <code>P_alpha - P_beta</code>, so it
 sums to <code>n_alpha - n_beta</code>. Allocated only for an unrestricted
-reference under Mulliken: CHELPG fits the electrostatic potential,
-which the total density alone determines, so there is no spin
-analogue of it to report.</p>
+reference under Mulliken; CHELPG fits the electrostatic potential,
+which has no spin analogue.</p>
             </td>
         </tr>
     </tbody>
@@ -2729,12 +2720,12 @@ analogue of it to report.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/calculation_result_t.html#boundprocedure-destroy'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/result_destroy.html'>result_destroy</a></td>
+  <strong><a href='../type/calculation_result_t.html#boundprocedure-destroy~21'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/result_destroy.html'>result_destroy</a></td>
                   <td><p>Clean up allocated memory</p></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/calculation_result_t.html#boundprocedure-reset~4'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/result_reset.html'>result_reset</a></td>
+  <strong><a href='../type/calculation_result_t.html#boundprocedure-reset~6'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/result_reset.html'>result_reset</a></td>
                   <td><p>Reset all values and flags</p></td>
               </tr>
           </tbody>
@@ -2832,12 +2823,12 @@ analogue of it to report.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/cc_energy_t.html#boundprocedure-reset~2'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/cc_reset.html'>cc_reset</a></td>
+  <strong><a href='../type/cc_energy_t.html#boundprocedure-reset~4'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/cc_reset.html'>cc_reset</a></td>
                   <td><p>Reset all components to zero</p></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/cc_energy_t.html#boundprocedure-total~2'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/cc_total.html'>cc_total</a></td>
+  <strong><a href='../type/cc_energy_t.html#boundprocedure-total~12'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/cc_total.html'>cc_total</a></td>
                   <td><p>Compute total CC correlation</p></td>
               </tr>
           </tbody>
@@ -2870,7 +2861,7 @@ analogue of it to report.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc"></span>
+              <span class="anchor" id="variable-cc~2"></span>
               type(<a href='../type/cc_energy_t.html'>cc_energy_t</a>),
             </td>
               <td>public</td>
@@ -2899,7 +2890,7 @@ analogue of it to report.</p>
 <td> =</td>
                 <td>0.0_dp</td>
             <td>
-<p>The perturbative part of a double hybrid&rsquo;s <em>functional</em>.</p><a href="../type/energy_t.html#variable-dh_pt2" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>The perturbative part of a double hybrid&rsquo;s <em>functional</em>.</p>
             </td>
         </tr>
         <tr>
@@ -2921,7 +2912,7 @@ analogue of it to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf"></span>
+              <span class="anchor" id="variable-scf~6"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2947,12 +2938,12 @@ analogue of it to report.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/energy_t.html#boundprocedure-reset~3'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/energy_reset.html'>energy_reset</a></td>
+  <strong><a href='../type/energy_t.html#boundprocedure-reset~5'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/energy_reset.html'>energy_reset</a></td>
                   <td><p>Reset all components to zero</p></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/energy_t.html#boundprocedure-total~3'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/energy_total.html'>energy_total</a></td>
+  <strong><a href='../type/energy_t.html#boundprocedure-total~13'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/energy_total.html'>energy_total</a></td>
                   <td><p>Compute total energy from components</p></td>
               </tr>
           </tbody>
@@ -2985,7 +2976,7 @@ analogue of it to report.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole~2"></span>
+              <span class="anchor" id="variable-dipole~3"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -3002,7 +2993,7 @@ analogue of it to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~2"></span>
+              <span class="anchor" id="variable-dipole_derivatives~3"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -3019,7 +3010,7 @@ analogue of it to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~3"></span>
+              <span class="anchor" id="variable-gradient~12"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -3036,7 +3027,7 @@ analogue of it to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_dipole~2"></span>
+              <span class="anchor" id="variable-has_dipole~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -3070,7 +3061,7 @@ analogue of it to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_energy~2"></span>
+              <span class="anchor" id="variable-has_energy~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -3087,7 +3078,7 @@ analogue of it to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_gradient~2"></span>
+              <span class="anchor" id="variable-has_gradient~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -3104,7 +3095,7 @@ analogue of it to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_hessian~2"></span>
+              <span class="anchor" id="variable-has_hessian~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -3121,7 +3112,7 @@ analogue of it to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~3"></span>
+              <span class="anchor" id="variable-hessian~12"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -3138,7 +3129,7 @@ analogue of it to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy"></span>
+              <span class="anchor" id="variable-total_energy~5"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3179,12 +3170,12 @@ analogue of it to report.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mbe_result_t.html#boundprocedure-destroy~2'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_result_destroy.html'>mbe_result_destroy</a></td>
+  <strong><a href='../type/mbe_result_t.html#boundprocedure-destroy~22'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_result_destroy.html'>mbe_result_destroy</a></td>
                   <td><p>Clean up allocated memory</p></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mbe_result_t.html#boundprocedure-reset~5'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_result_reset.html'>mbe_result_reset</a></td>
+  <strong><a href='../type/mbe_result_t.html#boundprocedure-reset~7'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_result_reset.html'>mbe_result_reset</a></td>
                   <td><p>Reset all values and flags</p></td>
               </tr>
           </tbody>
@@ -3234,7 +3225,7 @@ analogue of it to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-os_scale"></span>
+              <span class="anchor" id="variable-os_scale~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3268,7 +3259,7 @@ analogue of it to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ss_scale"></span>
+              <span class="anchor" id="variable-ss_scale~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3299,7 +3290,7 @@ analogue of it to report.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mp2_energy_t.html#boundprocedure-reset'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mp2_reset.html'>mp2_reset</a></td>
+  <strong><a href='../type/mp2_energy_t.html#boundprocedure-reset~3'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mp2_reset.html'>mp2_reset</a></td>
                   <td><p>Reset both components to zero</p></td>
               </tr>
               <tr>
@@ -3309,7 +3300,7 @@ analogue of it to report.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mp2_energy_t.html#boundprocedure-total'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mp2_total.html'>mp2_total</a></td>
+  <strong><a href='../type/mp2_energy_t.html#boundprocedure-total~11'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mp2_total.html'>mp2_total</a></td>
                   <td><p>Compute total MP2 correlation</p></td>
               </tr>
           </tbody>
@@ -3342,7 +3333,7 @@ analogue of it to report.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterations"></span>
+              <span class="anchor" id="variable-iterations~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3387,7 +3378,7 @@ analogue of it to report.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~6"></span>
+              <span class="anchor" id="variable-status~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3432,7 +3423,7 @@ analogue of it to report.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~7"></span>
+              <span class="anchor" id="variable-this~90"></span>
               class(<a href='../type/cc_energy_t.html'>cc_energy_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3477,7 +3468,7 @@ analogue of it to report.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~10"></span>
+              <span class="anchor" id="variable-this~93"></span>
               class(<a href='../type/energy_t.html'>energy_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3522,7 +3513,7 @@ analogue of it to report.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~4"></span>
+              <span class="anchor" id="variable-this~87"></span>
               class(<a href='../type/mp2_energy_t.html'>mp2_energy_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3552,7 +3543,7 @@ analogue of it to report.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>The correlation energy as scaled, which for plain MP2 is the sum</p><a href="../proc/mp2_total.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>The correlation energy as scaled, which for plain MP2 is the sum</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -3567,7 +3558,7 @@ analogue of it to report.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~3"></span>
+              <span class="anchor" id="variable-this~86"></span>
               class(<a href='../type/mp2_energy_t.html'>mp2_energy_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3617,7 +3608,7 @@ analogue of it to report.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies"></span>
+              <span class="anchor" id="variable-energies~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3647,7 +3638,7 @@ analogue of it to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-homo~2"></span>
+              <span class="anchor" id="variable-homo~6"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -3662,7 +3653,7 @@ analogue of it to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lumo~2"></span>
+              <span class="anchor" id="variable-lumo~6"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -3677,7 +3668,7 @@ analogue of it to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found"></span>
+              <span class="anchor" id="variable-found~30"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -3718,7 +3709,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~6"></span>
+              <span class="anchor" id="variable-result~36"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3733,7 +3724,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~6"></span>
+              <span class="anchor" id="variable-comm~15"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3748,7 +3739,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-source~3"></span>
+              <span class="anchor" id="variable-source~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3778,7 +3769,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~2"></span>
+              <span class="anchor" id="variable-req~4"></span>
               type(request_t),
             </td>
 <td>intent(out)</td>
@@ -3819,7 +3810,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~4"></span>
+              <span class="anchor" id="variable-result~34"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3834,7 +3825,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~4"></span>
+              <span class="anchor" id="variable-comm~13"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3849,7 +3840,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest~3"></span>
+              <span class="anchor" id="variable-dest~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3879,7 +3870,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req"></span>
+              <span class="anchor" id="variable-req~3"></span>
               type(request_t),
             </td>
 <td>intent(out)</td>
@@ -3904,8 +3895,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Receive calculation result over MPI (blocking)
-Receives energy components and conditionally receives gradient based on flag</p>
+  <p>Receive calculation result over MPI (blocking)</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -3920,7 +3910,7 @@ Receives energy components and conditionally receives gradient based on flag</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~5"></span>
+              <span class="anchor" id="variable-result~35"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3935,7 +3925,7 @@ Receives energy components and conditionally receives gradient based on flag</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~5"></span>
+              <span class="anchor" id="variable-comm~14"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3950,7 +3940,7 @@ Receives energy components and conditionally receives gradient based on flag</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-source~2"></span>
+              <span class="anchor" id="variable-source~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3980,7 +3970,7 @@ Receives energy components and conditionally receives gradient based on flag</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~4"></span>
+              <span class="anchor" id="variable-status~13"></span>
               type(MPI_Status),
             </td>
 <td>intent(out)</td>
@@ -4005,8 +3995,7 @@ Receives energy components and conditionally receives gradient based on flag</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Send calculation result over MPI (blocking)
-Sends energy components and conditionally sends gradient based on has_gradient flag</p>
+  <p>Send calculation result over MPI (blocking)</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -4021,7 +4010,7 @@ Sends energy components and conditionally sends gradient based on has_gradient f
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~3"></span>
+              <span class="anchor" id="variable-result~33"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4036,7 +4025,7 @@ Sends energy components and conditionally sends gradient based on has_gradient f
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~3"></span>
+              <span class="anchor" id="variable-comm~12"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -4051,7 +4040,7 @@ Sends energy components and conditionally sends gradient based on has_gradient f
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest~2"></span>
+              <span class="anchor" id="variable-dest~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -4107,7 +4096,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~9"></span>
+              <span class="anchor" id="variable-this~92"></span>
               class(<a href='../type/cc_energy_t.html'>cc_energy_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4147,7 +4136,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~8"></span>
+              <span class="anchor" id="variable-this~91"></span>
               class(<a href='../type/cc_energy_t.html'>cc_energy_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4187,7 +4176,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~11"></span>
+              <span class="anchor" id="variable-this~94"></span>
               class(<a href='../type/energy_t.html'>energy_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4227,7 +4216,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~18"></span>
+              <span class="anchor" id="variable-this~101"></span>
               class(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4267,7 +4256,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~16"></span>
+              <span class="anchor" id="variable-this~99"></span>
               class(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4282,7 +4271,7 @@ Correlation energies should be negative; positive values indicate instability</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_atoms"></span>
+              <span class="anchor" id="variable-total_atoms~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -4322,7 +4311,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~17"></span>
+              <span class="anchor" id="variable-this~100"></span>
               class(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4337,7 +4326,7 @@ Correlation energies should be negative; positive values indicate instability</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_atoms~2"></span>
+              <span class="anchor" id="variable-total_atoms~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -4377,7 +4366,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~14"></span>
+              <span class="anchor" id="variable-this~97"></span>
               class(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4417,7 +4406,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~15"></span>
+              <span class="anchor" id="variable-this~98"></span>
               class(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4458,7 +4447,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~6"></span>
+              <span class="anchor" id="variable-this~89"></span>
               class(<a href='../type/mp2_energy_t.html'>mp2_energy_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4498,7 +4487,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~5"></span>
+              <span class="anchor" id="variable-this~88"></span>
               class(<a href='../type/mp2_energy_t.html'>mp2_energy_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4538,7 +4527,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~2"></span>
+              <span class="anchor" id="variable-result~32"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4553,7 +4542,7 @@ Correlation energies should be negative; positive values indicate instability</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~2"></span>
+              <span class="anchor" id="variable-comm~11"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -4568,7 +4557,7 @@ Correlation energies should be negative; positive values indicate instability</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-source"></span>
+              <span class="anchor" id="variable-source~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -4623,7 +4612,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~12"></span>
+              <span class="anchor" id="variable-this~95"></span>
               class(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4663,7 +4652,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~13"></span>
+              <span class="anchor" id="variable-this~96"></span>
               class(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4703,7 +4692,7 @@ Correlation energies should be negative; positive values indicate instability</p
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result"></span>
+              <span class="anchor" id="variable-result~31"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4718,7 +4707,7 @@ Correlation energies should be negative; positive values indicate instability</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm"></span>
+              <span class="anchor" id="variable-comm~10"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -4733,7 +4722,7 @@ Correlation energies should be negative; positive values indicate instability</p
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest"></span>
+              <span class="anchor" id="variable-dest~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -4791,7 +4780,7 @@ Correlation energies should be negative; positive values indicate instability</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

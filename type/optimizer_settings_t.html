@@ -140,18 +140,18 @@
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-connect">connect</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-connect_distort">connect_distort</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-constraints">constraints</a>
-            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-coordinates">coordinates</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-coordinates~7">coordinates</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-dimer_max_rotations">dimer_max_rotations</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-dimer_rotation_tolerance">dimer_rotation_tolerance</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-dimer_separation">dimer_separation</a>
-            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-endpoint">endpoint</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-endpoint~2">endpoint</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-energy_tolerance">energy_tolerance</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-freeze_terms">freeze_terms</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-friction">friction</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-friction_factor">friction_factor</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-friction_rising">friction_rising</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-frozen_atoms">frozen_atoms</a>
-            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-gradient_tolerance">gradient_tolerance</a>
+            <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-gradient_tolerance~2">gradient_tolerance</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-hess_end">hess_end</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-hessian_update">hessian_update</a>
             <a class="list-group-item" href="../type/optimizer_settings_t.html#variable-lbfgs_memory">lbfgs_memory</a>
@@ -206,11 +206,8 @@
         type, public :: optimizer_settings_t</h2>
     <p>One optimization&rsquo;s settings, as the deck asked for them</p>
 <p>A negative real or integer means &ldquo;leave the engine&rsquo;s own default
-alone&rdquo;, which is DL-FIND&rsquo;s own convention internally and is why it is
-used here rather than transcribing every default twice. The two
-settings a user actually reads back &ndash; the step cap and the gradient
-threshold &ndash; are given real defaults anyway, because a run that stops
-should be able to say what it stopped on.</p>
+alone&rdquo;. The step cap and the gradient threshold carry real defaults
+anyway, so a run that stops can say what it stopped on.</p>
 <br>      <div class="card">
         <div class="card-header">
           <h3 class="card-title">Inherits</h3>
@@ -366,7 +363,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~fmo_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~optimizer_settings_t~~InheritedByGraph_edge3" class="edge">
+<g id="type~~optimizer_settings_t~~InheritedByGraph_edge5" class="edge">
 <title>type~fmo_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#ff0000" d="M597.74,-83.84C592.59,-81.29 587.49,-78.33 583,-75 573.13,-67.67 577.29,-54 565,-54"/>
 </g>
@@ -394,7 +391,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~mbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~optimizer_settings_t~~InheritedByGraph_edge5" class="edge">
+<g id="type~~optimizer_settings_t~~InheritedByGraph_edge3" class="edge">
 <title>type~mbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#ff0000" d="M597.74,-24.16C592.59,-26.71 587.49,-29.67 583,-33 573.13,-40.33 577.29,-54 565,-54"/>
 <path fill="none" stroke="#ff0000" d="M564,-54C561.46,-54 558.88,-54 556.27,-54"/>
@@ -503,10 +500,8 @@ large graphs.</div>
                 <td>.false.</td>
             <td>
                 <p>After the saddle is found, follow its imaginary mode downhill in
-both directions and report the two minima it falls to. One
-imaginary frequency proves a first-order saddle; it does not prove
-the saddle joins the two structures anybody had in mind, and this
-is the check that settles it.</p>
+both directions and report the two minima it falls to &ndash; which is
+what says whether the saddle joins the structures anybody meant.</p>
             </td>
         </tr>
         <tr>
@@ -548,7 +543,7 @@ system to hold them in &ndash; see <code>mqc_dlfind_bridge</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates"></span>
+              <span class="anchor" id="variable-coordinates~7"></span>
               integer,
             </td>
               <td>public</td>
@@ -619,7 +614,7 @@ gradient difference is not noise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-endpoint"></span>
+              <span class="anchor" id="variable-endpoint~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -632,8 +627,7 @@ gradient difference is not noise.</p>
                 <td></td>
             <td>
                 <p>Path to a second geometry: the product, for a chain-of-states run.
-Unallocated is the ordinary single-structure optimization, and is
-what makes NEB opt-in rather than inferred.</p>
+Unallocated is the ordinary single-structure optimization.</p>
             </td>
         </tr>
         <tr>
@@ -747,7 +741,7 @@ so a frozen pair contributes no coordinates at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient_tolerance"></span>
+              <span class="anchor" id="variable-gradient_tolerance~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -777,15 +771,12 @@ so a frozen pair contributes no coordinates at all.</p>
                 <td>.false.</td>
             <td>
                 <p>Compute a Hessian at the converged geometry and say whether any
-frequency came back imaginary.</p>
-<p>A minimiser converges on the gradient alone, and a vanishing
-gradient is a stationary point rather than a minimum &ndash; a saddle
-satisfies it exactly as well. Nothing in the optimization can tell
-the two apart, so a run that ends &ldquo;converged&rdquo; has not established
-what it converged <em>to</em>. This is what establishes it.</p>
-<p>Off by default because it is not free: one Hessian on top of the
-optimization, analytic for restricted Hartree-Fock and central
-differences of gradients otherwise.</p>
+frequency came back imaginary. A vanishing gradient is a stationary
+point and not necessarily a minimum, so this is what establishes
+what the run converged <em>to</em>.</p>
+<p>Off by default: one Hessian on top of the optimization, analytic
+for restricted Hartree-Fock and central differences of gradients
+otherwise.</p>
             </td>
         </tr>
         <tr>
@@ -872,8 +863,7 @@ Ignored by the algorithms that never build one.</p>
                 <td>0</td>
             <td>
                 <p>Images along the path, endpoints included. Zero means the engine&rsquo;s
-own default. DL-FIND refuses fewer than three, since two images are
-just the endpoints and there is no path between them to relax.</p>
+own default; fewer than <code>MIN_NEB_IMAGES</code> is refused.</p>
             </td>
         </tr>
         <tr>
@@ -1014,9 +1004,8 @@ Independent of <code>algorithm</code> on purpose &ndash; see <code>OPT_TARGET_SA
                 <td>.true.</td>
             <td>
                 <p>Record every accepted geometry, for analysing the path afterwards.
-Worth turning off for a large system optimized over many steps:
-the geometries are held until the run ends so they can be written
-as one document, which is 3N doubles per step of memory.</p>
+The geometries are held until the run ends, 3N doubles per step, so
+this is worth turning off for a large system over many steps.</p>
             </td>
         </tr>
         <tr>
@@ -1055,11 +1044,8 @@ none, which is why this is off by default.</p>
 <span class="w">      </span><span class="c">!! One optimization's settings, as the deck asked for them</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! A negative real or integer means "leave the engine's own default</span>
-<span class="w">      </span><span class="c">!! alone", which is DL-FIND's own convention internally and is why it is</span>
-<span class="w">      </span><span class="c">!! used here rather than transcribing every default twice. The two</span>
-<span class="w">      </span><span class="c">!! settings a user actually reads back -- the step cap and the gradient</span>
-<span class="w">      </span><span class="c">!! threshold -- are given real defaults anyway, because a run that stops</span>
-<span class="w">      </span><span class="c">!! should be able to say what it stopped on.</span>
+<span class="w">      </span><span class="c">!! alone". The step cap and the gradient threshold carry real defaults</span>
+<span class="w">      </span><span class="c">!! anyway, so a run that stops can say what it stopped on.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_steps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_OPT_MAX_STEPS</span>
 <span class="w">         </span><span class="c">!! Give up after this many steps without converging</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">gradient_tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_OPT_GRADIENT_TOLERANCE</span>
@@ -1083,12 +1069,10 @@ none, which is why this is off by default.</p>
 <span class="w">         </span><span class="c">!! Independent of `algorithm` on purpose -- see `OPT_TARGET_SADDLE`.</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">endpoint</span>
 <span class="w">         </span><span class="c">!! Path to a second geometry: the product, for a chain-of-states run.</span>
-<span class="w">         </span><span class="c">!! Unallocated is the ordinary single-structure optimization, and is</span>
-<span class="w">         </span><span class="c">!! what makes NEB opt-in rather than inferred.</span>
+<span class="w">         </span><span class="c">!! Unallocated is the ordinary single-structure optimization.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_images</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">         </span><span class="c">!! Images along the path, endpoints included. Zero means the engine's</span>
-<span class="w">         </span><span class="c">!! own default. DL-FIND refuses fewer than three, since two images are</span>
-<span class="w">         </span><span class="c">!! just the endpoints and there is no path between them to relax.</span>
+<span class="w">         </span><span class="c">!! own default; fewer than `MIN_NEB_IMAGES` is refused.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">neb_spring</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mf">1.0_dp</span>
 <span class="w">         </span><span class="c">!! Spring constant holding neighbouring images apart. Negative means</span>
 <span class="w">         </span><span class="c">!! the engine default.</span>
@@ -1115,10 +1099,8 @@ none, which is why this is off by default.</p>
 <span class="w">         </span><span class="c">!! default.</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">connect</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">         </span><span class="c">!! After the saddle is found, follow its imaginary mode downhill in</span>
-<span class="w">         </span><span class="c">!! both directions and report the two minima it falls to. One</span>
-<span class="w">         </span><span class="c">!! imaginary frequency proves a first-order saddle; it does not prove</span>
-<span class="w">         </span><span class="c">!! the saddle joins the two structures anybody had in mind, and this</span>
-<span class="w">         </span><span class="c">!! is the check that settles it.</span>
+<span class="w">         </span><span class="c">!! both directions and report the two minima it falls to -- which is</span>
+<span class="w">         </span><span class="c">!! what says whether the saddle joins the structures anybody meant.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">connect_distort</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mf">1.0_dp</span>
 <span class="w">         </span><span class="c">!! How far to displace along the imaginary mode before relaxing.</span>
 <span class="w">         </span><span class="c">!! Negative is the engine default. Too small and both sides fall back</span>
@@ -1146,22 +1128,17 @@ none, which is why this is off by default.</p>
 <span class="w">         </span><span class="c">!! system to hold them in -- see `mqc_dlfind_bridge`.</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hess_end</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">         </span><span class="c">!! Compute a Hessian at the converged geometry and say whether any</span>
-<span class="w">         </span><span class="c">!! frequency came back imaginary.</span>
+<span class="w">         </span><span class="c">!! frequency came back imaginary. A vanishing gradient is a stationary</span>
+<span class="w">         </span><span class="c">!! point and not necessarily a minimum, so this is what establishes</span>
+<span class="w">         </span><span class="c">!! what the run converged *to*.</span>
 <span class="w">         </span><span class="c">!!</span>
-<span class="w">         </span><span class="c">!! A minimiser converges on the gradient alone, and a vanishing</span>
-<span class="w">         </span><span class="c">!! gradient is a stationary point rather than a minimum -- a saddle</span>
-<span class="w">         </span><span class="c">!! satisfies it exactly as well. Nothing in the optimization can tell</span>
-<span class="w">         </span><span class="c">!! the two apart, so a run that ends "converged" has not established</span>
-<span class="w">         </span><span class="c">!! what it converged *to*. This is what establishes it.</span>
-<span class="w">         </span><span class="c">!!</span>
-<span class="w">         </span><span class="c">!! Off by default because it is not free: one Hessian on top of the</span>
-<span class="w">         </span><span class="c">!! optimization, analytic for restricted Hartree-Fock and central</span>
-<span class="w">         </span><span class="c">!! differences of gradients otherwise.</span>
+<span class="w">         </span><span class="c">!! Off by default: one Hessian on top of the optimization, analytic</span>
+<span class="w">         </span><span class="c">!! for restricted Hartree-Fock and central differences of gradients</span>
+<span class="w">         </span><span class="c">!! otherwise.</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">trajectory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">         </span><span class="c">!! Record every accepted geometry, for analysing the path afterwards.</span>
-<span class="w">         </span><span class="c">!! Worth turning off for a large system optimized over many steps:</span>
-<span class="w">         </span><span class="c">!! the geometries are held until the run ends so they can be written</span>
-<span class="w">         </span><span class="c">!! as one document, which is 3N doubles per step of memory.</span>
+<span class="w">         </span><span class="c">!! The geometries are held until the run ends, 3N doubles per step, so</span>
+<span class="w">         </span><span class="c">!! this is worth turning off for a large system over many steps.</span>
 <span class="w">   </span><span class="k">end type </span><span class="n">optimizer_settings_t</span>
 </pre></div>
 
@@ -1185,7 +1162,7 @@ none, which is why this is off by default.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

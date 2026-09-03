@@ -138,10 +138,10 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/compute_vibrational_frequencies.html#variable-do_projection">do_projection</a>
             <a class="list-group-item" href="../proc/compute_vibrational_frequencies.html#variable-eigenvalues~3">eigenvalues</a>
-            <a class="list-group-item" href="../proc/compute_vibrational_frequencies.html#variable-i~165">i</a>
-            <a class="list-group-item" href="../proc/compute_vibrational_frequencies.html#variable-info~4">info</a>
+            <a class="list-group-item" href="../proc/compute_vibrational_frequencies.html#variable-i~196">i</a>
+            <a class="list-group-item" href="../proc/compute_vibrational_frequencies.html#variable-info~6">info</a>
             <a class="list-group-item" href="../proc/compute_vibrational_frequencies.html#variable-mw_hessian">mw_hessian</a>
-            <a class="list-group-item" href="../proc/compute_vibrational_frequencies.html#variable-n_coords">n_coords</a>
+            <a class="list-group-item" href="../proc/compute_vibrational_frequencies.html#variable-n_coords~3">n_coords</a>
         </div>
       </div>
     </div>
@@ -182,13 +182,10 @@
     
 
     <p>Compute vibrational frequencies from the Hessian matrix.</p>
-<p>Algorithm:
-1. Mass-weight the Hessian: H_mw = M^{-1/2} * H * M^{-1/2}
-2. Optionally project out translation/rotation modes
-3. Diagonalize H_mw to get eigenvalues
-4. Convert eigenvalues to frequencies in cm⁻¹</p>
-<p>Negative eigenvalues produce negative frequencies (imaginary modes,
-indicating transition states or saddle points).</p>
+<p>The Hessian is mass-weighted, <code>H_mw = M^{-1/2} H M^{-1/2}</code>, optionally
+projected free of translation and rotation, then diagonalized.</p>
+<p>A negative eigenvalue comes back as a negative frequency: an imaginary
+mode, so a transition state or a saddle point.</p>
 
 
     <h3>Arguments</h3>
@@ -204,7 +201,7 @@ indicating transition states or saddle points).</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~11"></span>
+              <span class="anchor" id="variable-hessian~16"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -234,7 +231,7 @@ indicating transition states or saddle points).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~9"></span>
+              <span class="anchor" id="variable-frequencies~10"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1152,7 +1149,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~165"></span>
+              <span class="anchor" id="variable-i~196"></span>
               integer,
             </td>
               <td>private</td>
@@ -1169,7 +1166,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-info~4"></span>
+              <span class="anchor" id="variable-info~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -1203,7 +1200,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_coords"></span>
+              <span class="anchor" id="variable-n_coords~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1240,14 +1237,11 @@ large graphs.</div>
 <span class="w">                                              </span><span class="n">projected_hessian_out</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Compute vibrational frequencies from the Hessian matrix.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Algorithm:</span>
-<span class="w">      </span><span class="c">!! 1. Mass-weight the Hessian: H_mw = M^{-1/2} * H * M^{-1/2}</span>
-<span class="w">      </span><span class="c">!! 2. Optionally project out translation/rotation modes</span>
-<span class="w">      </span><span class="c">!! 3. Diagonalize H_mw to get eigenvalues</span>
-<span class="w">      </span><span class="c">!! 4. Convert eigenvalues to frequencies in cm⁻¹</span>
+<span class="w">      </span><span class="c">!! The Hessian is mass-weighted, `H_mw = M^{-1/2} H M^{-1/2}`, optionally</span>
+<span class="w">      </span><span class="c">!! projected free of translation and rotation, then diagonalized.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Negative eigenvalues produce negative frequencies (imaginary modes,</span>
-<span class="w">      </span><span class="c">!! indicating transition states or saddle points).</span>
+<span class="w">      </span><span class="c">!! A negative eigenvalue comes back as a negative frequency: an imaginary</span>
+<span class="w">      </span><span class="c">!! mode, so a transition state or a saddle point.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hessian</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">         </span><span class="c">!! Hessian matrix in Hartree/Bohr² (3*N x 3*N)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">element_numbers</span><span class="p">(:)</span>
@@ -1311,7 +1305,9 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">pic_syev</span><span class="p">(</span><span class="n">mw_hessian</span><span class="p">,</span><span class="w"> </span><span class="n">eigenvalues</span><span class="p">,</span><span class="w"> </span><span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">info</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="w">         </span><span class="c">! Eigenvalue decomposition failed</span>
+<span class="w">         </span><span class="c">! TODO(mqc): returns with `eigenvalues_out` and `eigenvectors`</span>
+<span class="w">         </span><span class="c">! unallocated, and `compute_vibrational_analysis` hands both straight</span>
+<span class="w">         </span><span class="c">! to `compute_reduced_masses` without checking.</span>
 <span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"Eigenvalue decomposition in vibrational frequencies failed"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">frequencies</span><span class="p">(</span><span class="n">n_coords</span><span class="p">))</span>
 <span class="w">         </span><span class="n">frequencies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
@@ -1368,7 +1364,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

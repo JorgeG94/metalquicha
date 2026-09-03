@@ -136,12 +136,12 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/worker_run.html#variable-config~35">config</a>
+            <a class="list-group-item" href="../proc/worker_run.html#variable-config~23">config</a>
             <a class="list-group-item" href="../proc/worker_run.html#variable-driver">driver</a>
             <a class="list-group-item" href="../proc/worker_run.html#variable-dummy_terms">dummy_terms</a>
-            <a class="list-group-item" href="../proc/worker_run.html#variable-error~101">error</a>
-            <a class="list-group-item" href="../proc/worker_run.html#variable-settings~8">settings</a>
-            <a class="list-group-item" href="../proc/worker_run.html#variable-sys_geom~40">sys_geom</a>
+            <a class="list-group-item" href="../proc/worker_run.html#variable-error~118">error</a>
+            <a class="list-group-item" href="../proc/worker_run.html#variable-settings~10">settings</a>
+            <a class="list-group-item" href="../proc/worker_run.html#variable-sys_geom~59">sys_geom</a>
         </div>
       </div>
     </div>
@@ -183,11 +183,9 @@
 
     <p>A worker&rsquo;s half of a calculation</p>
 <p>Receives what rank 0 sends, in the order rank 0 sends it, and then
-calls the same <code>run_calculation</code> rank 0 does. The two sides are the
-same three steps written twice rather than shared, because they are
-mirror images and a shared routine would be mostly <code>if (is_root)</code>.
-Keep them in step: a broadcast added to one and not the other hangs
-the job rather than failing it.</p>
+calls the same <code>run_calculation</code> rank 0 does. <strong>Keep this and
+<code>session_run</code> in step</strong>: a broadcast added to one and not the other
+hangs the job rather than failing it.</p>
 
 
     <h3>Arguments</h3>
@@ -203,7 +201,7 @@ the job rather than failing it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~64"></span>
+              <span class="anchor" id="variable-this~112"></span>
               type(<a href='../type/mqc_session_t.html'>mqc_session_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5671,7 +5669,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~35"></span>
+              <span class="anchor" id="variable-config~23"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
               <td>private</td>
@@ -5722,7 +5720,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~101"></span>
+              <span class="anchor" id="variable-error~118"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -5739,7 +5737,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~8"></span>
+              <span class="anchor" id="variable-settings~10"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -5756,7 +5754,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~40"></span>
+              <span class="anchor" id="variable-sys_geom~59"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>private</td>
@@ -5791,11 +5789,9 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! A worker's half of a calculation</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Receives what rank 0 sends, in the order rank 0 sends it, and then</span>
-<span class="w">      </span><span class="c">!! calls the same `run_calculation` rank 0 does. The two sides are the</span>
-<span class="w">      </span><span class="c">!! same three steps written twice rather than shared, because they are</span>
-<span class="w">      </span><span class="c">!! mirror images and a shared routine would be mostly `if (is_root)`.</span>
-<span class="w">      </span><span class="c">!! Keep them in step: a broadcast added to one and not the other hangs</span>
-<span class="w">      </span><span class="c">!! the job rather than failing it.</span>
+<span class="w">      </span><span class="c">!! calls the same `run_calculation` rank 0 does. **Keep this and</span>
+<span class="w">      </span><span class="c">!! `session_run` in step**: a broadcast added to one and not the other</span>
+<span class="w">      </span><span class="c">!! hangs the job rather than failing it.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mqc_session_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">settings</span>
@@ -5811,11 +5807,9 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">bcast_system_geometry</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="mi">0_int32</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! Rank 0 parsed this before it committed to the run, so a worker reaching</span>
-<span class="w">      </span><span class="c">! here has a document already known to be good. Parsing it again rather</span>
-<span class="w">      </span><span class="c">! than receiving a filled struct is the whole reason the settings travel</span>
-<span class="w">      </span><span class="c">! as text: there is no field list to keep in step, so there is no field</span>
-<span class="w">      </span><span class="c">! to forget, and a worker cannot end up running a different method than</span>
-<span class="w">      </span><span class="c">! was asked for.</span>
+<span class="w">      </span><span class="c">! here has a document already known to be good. The settings travel as</span>
+<span class="w">      </span><span class="c">! text and are parsed again rather than sent as a filled struct, so there</span>
+<span class="w">      </span><span class="c">! is no field list to keep in step.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">read_json_config_text</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 <span class="w">      </span><span class="c">! Same count as rank 0, from the geometry that just arrived. See</span>
@@ -5827,9 +5821,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! and workers build them from sys_geom, so the list never leaves rank 0.</span>
 <span class="w">      </span><span class="n">dummy_terms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 
-<span class="w">      </span><span class="c">! No result and no output. Both are rank-0-only inside `run_calculation`</span>
-<span class="w">      </span><span class="c">! and neither is collective, so this asks for nothing rather than asking</span>
-<span class="w">      </span><span class="c">! for something that would be discarded.</span>
+<span class="w">      </span><span class="c">! No result and no output: both are rank-0-only inside `run_calculation`</span>
+<span class="w">      </span><span class="c">! and neither is collective.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">run_calculation</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">resources</span><span class="p">,</span><span class="w"> </span><span class="n">driver</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="n">supplied_terms</span><span class="o">=</span><span class="n">dummy_terms</span><span class="p">,</span><span class="w"> </span><span class="n">n_supplied_terms</span><span class="o">=</span><span class="mi">0_int64</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="n">write_output</span><span class="o">=</span><span class="p">.</span><span class="n">false</span><span class="p">.)</span>
@@ -5857,7 +5850,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

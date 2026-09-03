@@ -136,13 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/ci_hamiltonian.html#variable-column~2">column</a>
-            <a class="list-group-item" href="../proc/ci_hamiltonian.html#variable-ia~5">ia</a>
-            <a class="list-group-item" href="../proc/ci_hamiltonian.html#variable-ib~4">ib</a>
+            <a class="list-group-item" href="../proc/ci_hamiltonian.html#variable-column~4">column</a>
+            <a class="list-group-item" href="../proc/ci_hamiltonian.html#variable-ia~9">ia</a>
+            <a class="list-group-item" href="../proc/ci_hamiltonian.html#variable-ib~9">ib</a>
             <a class="list-group-item" href="../proc/ci_hamiltonian.html#variable-idet">idet</a>
-            <a class="list-group-item" href="../proc/ci_hamiltonian.html#variable-na~10">na</a>
-            <a class="list-group-item" href="../proc/ci_hamiltonian.html#variable-nb~7">nb</a>
-            <a class="list-group-item" href="../proc/ci_hamiltonian.html#variable-ndet~6">ndet</a>
+            <a class="list-group-item" href="../proc/ci_hamiltonian.html#variable-na~6">na</a>
+            <a class="list-group-item" href="../proc/ci_hamiltonian.html#variable-nb~5">nb</a>
+            <a class="list-group-item" href="../proc/ci_hamiltonian.html#variable-ndet~4">ndet</a>
             <a class="list-group-item" href="../proc/ci_hamiltonian.html#variable-unit_vector">unit_vector</a>
         </div>
       </div>
@@ -184,16 +184,10 @@
     
 
     <p>The Hamiltonian as a dense matrix, one column at a time</p>
-<p>Only for spaces small enough that it fits, which past CAS(8,8) is none
-of them &ndash; CAS(10,10) would be 32 GB. It exists because it makes the
-sigma build testable against a dense eigensolver, separating &ldquo;is the
-Hamiltonian right&rdquo; from &ldquo;does the iterative solver find its lowest
-eigenvalue&rdquo;, which are different questions and worth failing
-separately. It is also what a Davidson preconditioner will want for a
-small subspace of determinants.</p>
-<p>Symmetry is not imposed. It comes out symmetric only if the excitation
-tables and the folding are consistent, which makes it worth asserting
-rather than assuming.</p>
+<p>One sigma build per determinant and an <code>n_det</code> square matrix, so only
+for spaces small enough to hold both. Symmetry is not imposed: the
+matrix comes out symmetric only if the excitation tables and the
+folding are consistent, so it is worth asserting rather than assuming.</p>
 
 
     <h3>Arguments</h3>
@@ -209,7 +203,7 @@ rather than assuming.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~5"></span>
+              <span class="anchor" id="variable-folded~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -224,7 +218,7 @@ rather than assuming.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~6"></span>
+              <span class="anchor" id="variable-alpha~8"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in)</td>
@@ -239,7 +233,7 @@ rather than assuming.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~6"></span>
+              <span class="anchor" id="variable-beta~8"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in)</td>
@@ -254,7 +248,7 @@ rather than assuming.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-matrix"></span>
+              <span class="anchor" id="variable-matrix~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -269,7 +263,7 @@ rather than assuming.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~55"></span>
+              <span class="anchor" id="variable-error~15"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -513,7 +507,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-column~2"></span>
+              <span class="anchor" id="variable-column~4"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -530,7 +524,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ia~5"></span>
+              <span class="anchor" id="variable-ia~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -547,7 +541,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ib~4"></span>
+              <span class="anchor" id="variable-ib~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -581,7 +575,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-na~10"></span>
+              <span class="anchor" id="variable-na~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -598,7 +592,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nb~7"></span>
+              <span class="anchor" id="variable-nb~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -615,7 +609,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndet~6"></span>
+              <span class="anchor" id="variable-ndet~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -666,17 +660,10 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">ci_hamiltonian</span><span class="p">(</span><span class="n">folded</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span><span class="p">,</span><span class="w"> </span><span class="n">matrix</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The Hamiltonian as a dense matrix, one column at a time</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Only for spaces small enough that it fits, which past CAS(8,8) is none</span>
-<span class="w">      </span><span class="c">!! of them -- CAS(10,10) would be 32 GB. It exists because it makes the</span>
-<span class="w">      </span><span class="c">!! sigma build testable against a dense eigensolver, separating "is the</span>
-<span class="w">      </span><span class="c">!! Hamiltonian right" from "does the iterative solver find its lowest</span>
-<span class="w">      </span><span class="c">!! eigenvalue", which are different questions and worth failing</span>
-<span class="w">      </span><span class="c">!! separately. It is also what a Davidson preconditioner will want for a</span>
-<span class="w">      </span><span class="c">!! small subspace of determinants.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Symmetry is not imposed. It comes out symmetric only if the excitation</span>
-<span class="w">      </span><span class="c">!! tables and the folding are consistent, which makes it worth asserting</span>
-<span class="w">      </span><span class="c">!! rather than assuming.</span>
+<span class="w">      </span><span class="c">!! One sigma build per determinant and an `n_det` square matrix, so only</span>
+<span class="w">      </span><span class="c">!! for spaces small enough to hold both. Symmetry is not imposed: the</span>
+<span class="w">      </span><span class="c">!! matrix comes out symmetric only if the excitation tables and the</span>
+<span class="w">      </span><span class="c">!! folding are consistent, so it is worth asserting rather than assuming.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">folded</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">link_table_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">matrix</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
@@ -726,7 +713,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

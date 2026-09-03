@@ -137,8 +137,8 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/error_t.html#variable-call_stack">call_stack</a>
-            <a class="list-group-item" href="../type/error_t.html#variable-code~3">code</a>
-            <a class="list-group-item" href="../type/error_t.html#variable-message~2">message</a>
+            <a class="list-group-item" href="../type/error_t.html#variable-code~5">code</a>
+            <a class="list-group-item" href="../type/error_t.html#variable-message~4">message</a>
             <a class="list-group-item" href="../type/error_t.html#variable-stack_depth">stack_depth</a>
         </div>
       </div>
@@ -195,7 +195,16 @@
     <div class="col-md-9" id='text'>
       <h2 id="type-def-statement">
         type, public :: error_t</h2>
-    
+    <p>Unified error type with stack trace support</p>
+<p><strong>Inside an OpenMP region, clear it explicitly.</strong> Every routine in this
+project opens with <code>if (error%has_error()) return</code>, which is a fine
+convention serially and a trap in a parallel one. A <code>private</code> copy of an
+<code>error_t</code> is reused across the iterations one thread runs, so a single
+failure disables every later iteration on that thread; and a copy whose
+default initialisation the compiler has not applied disables all of them
+from the start. Neither crashes. Both look like work that quietly did not
+happen. Call <code>err%clear()</code> at the top of the loop body, not once before
+the region.</p>
 <br>      <div class="card">
         <div class="card-header">
           <h3 class="card-title">Inherited by</h3>
@@ -320,7 +329,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-code~3"></span>
+              <span class="anchor" id="variable-code~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -337,7 +346,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-message~2"></span>
+              <span class="anchor" id="variable-message~4"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -350,12 +359,6 @@ large graphs.</div>
                 <td></td>
             <td>
                 <p>Error message</p>
-<p>Stack trace support</p>
-<p>Allocated on the first add_context rather than held inline. An error_t is
-embedded by value in calculation_result_t, which the coordinator allocates
-one of per fragment &ndash; an inline MAX_STACK_DEPTH*MAX_LOCATION_LEN buffer made
-every result 3104 bytes, of which 2560 was an empty call stack. On runs with
-millions of fragments that was gigabytes of untouched buffer on rank 0.</p>
             </td>
         </tr>
         <tr>
@@ -402,8 +405,7 @@ millions of fragments that was gigabytes of untouched buffer on rank 0.</p>
 </h3>
     
 
-  <p>Add a call location to the stack trace
-Typically called when propagating errors upward</p><a href="../proc/error_add_context.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Add a call location to the stack trace</p><a href="../proc/error_add_context.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -585,8 +587,7 @@ Typically called when propagating errors upward</p><a href="../proc/error_add_co
 </h3>
     
 
-  <p>Get complete error message with stack trace
-Returns a multi-line string with error and call stack</p>
+  <p>Get complete error message with stack trace</p><a href="../proc/error_get_full_trace.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -906,16 +907,22 @@ Resets the stack trace</p>
     <section>
     <h3><span class="anchor" id="src"></span>Source Code</h3>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error_t</span>
+<span class="w">      </span><span class="c">!! Unified error type with stack trace support</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! **Inside an OpenMP region, clear it explicitly.** Every routine in this</span>
+<span class="w">      </span><span class="c">!! project opens with `if (error%has_error()) return`, which is a fine</span>
+<span class="w">      </span><span class="c">!! convention serially and a trap in a parallel one. A `private` copy of an</span>
+<span class="w">      </span><span class="c">!! `error_t` is reused across the iterations one thread runs, so a single</span>
+<span class="w">      </span><span class="c">!! failure disables every later iteration on that thread; and a copy whose</span>
+<span class="w">      </span><span class="c">!! default initialisation the compiler has not applied disables all of them</span>
+<span class="w">      </span><span class="c">!! from the start. Neither crashes. Both look like work that quietly did not</span>
+<span class="w">      </span><span class="c">!! happen. Call `err%clear()` at the top of the loop body, not once before</span>
+<span class="w">      </span><span class="c">!! the region.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SUCCESS</span><span class="w">  </span><span class="c">!! Error code (0 = no error)</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">message</span><span class="w">  </span><span class="c">!! Error message</span>
-
-<span class="w">      </span><span class="c">!! Stack trace support</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Allocated on the first add_context rather than held inline. An error_t is</span>
-<span class="w">      </span><span class="c">!! embedded by value in calculation_result_t, which the coordinator allocates</span>
-<span class="w">      </span><span class="c">!! one of per fragment -- an inline MAX_STACK_DEPTH*MAX_LOCATION_LEN buffer made</span>
-<span class="w">      </span><span class="c">!! every result 3104 bytes, of which 2560 was an empty call stack. On runs with</span>
-<span class="w">      </span><span class="c">!! millions of fragments that was gigabytes of untouched buffer on rank 0.</span>
+<span class="w">      </span><span class="c">! `call_stack` is allocated on the first `add_context` rather than held</span>
+<span class="w">      </span><span class="c">! inline: an `error_t` is embedded by value in every</span>
+<span class="w">      </span><span class="c">! `calculation_result_t`, of which there is one per fragment.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">stack_depth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">  </span><span class="c">!! Current stack depth</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="n">MAX_LOCATION_LEN</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">call_stack</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Call locations</span>
 <span class="w">   </span><span class="k">contains</span>
@@ -950,7 +957,7 @@ Resets the stack trace</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

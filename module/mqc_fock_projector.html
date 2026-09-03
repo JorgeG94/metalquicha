@@ -182,19 +182,8 @@
       <p>A fixed orbital basis, a partition of it into frozen and unfrozen blocks,
 and one operation: force the Fock matrix block diagonal in that partition.</p>
 <p>This is GAFO &ndash; the generalized adjusted frozen orbital scheme &ndash; reduced
-to the part that has nothing to do with why the orbitals were frozen. What
-makes an orbital frozen, and where the frozen orbitals came from, is the
-caller&rsquo;s business; what is here is the constraint itself, which is dense
-linear algebra over <code>F</code>, <code>C</code> and <code>S</code> and knows nothing about fragments,
-bonds or integrals.</p>
-<p><strong>Why zeroing rather than a level shift.</strong> The obvious way to keep an
-orbital out of the occupied space is to add a penalty, <code>F + B S v v^T S</code>
-with <code>B</code> large. That raises the orbital&rsquo;s energy and does not decouple it:
-the off-diagonal Fock elements between the frozen and variational
-subspaces survive untouched, the two mix, and the matrix is not block
-diagonal in the partition the method assumes it is. Raising <code>B</code> makes the
-diagonal larger and leaves the coupling exactly where it was. Zeroing the
-couplings is the fix, and it is why this scheme exists at all.</p>
+to dense linear algebra over <code>F</code>, <code>C</code> and <code>S</code>. What makes an orbital
+frozen, and where the frozen orbitals came from, is the caller&rsquo;s business.</p>
 <p><strong>The transform.</strong> With <code>C</code> an orthonormal basis in the metric <code>S</code> &ndash;
 <code>C^T S C = I</code>, frozen orbitals in the leading columns &ndash;</p>
 <div class="codehilite"><pre><span></span><code><span class="n">F_mo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">C</span><span class="o">^</span><span class="n">T</span><span class="w"> </span><span class="n">F</span><span class="w"> </span><span class="n">C</span><span class="w">          </span><span class="n">to</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">frozen</span><span class="o">-</span><span class="n">orbital</span><span class="w"> </span><span class="n">basis</span>
@@ -205,27 +194,22 @@ couplings is the fix, and it is why this scheme exists at all.</p>
 <p>The back transform is the inverse of the forward one because <code>C^T S C = I</code>
 makes <code>C^-1 = C^T S</code>, so <code>(C^T)^-1 = S C</code>. Not an approximation and not a
 symmetrisation: with nothing frozen and <code>C</code> spanning the whole AO space
-the round trip returns <code>F</code> to roundoff, which is what the test asserts.</p>
-<p><code>S C</code> is formed once in <code>init</code> rather than each application, since neither
-factor moves once the frozen orbitals are chosen.</p>
+the round trip returns <code>F</code> to roundoff.</p>
+<p>The couplings are zeroed and not penalised. <code>F + B S v v^T S</code> raises the
+frozen orbital&rsquo;s energy and leaves the off-diagonal Fock elements between
+the frozen and variational subspaces exactly where they were, however
+large <code>B</code> is.</p>
 <p><strong>Choosing the shift.</strong> Smaller than instinct suggests. The back
 transform <code>(SC) F_mo (SC)^T</code> spreads the shifted block over every element,
-so the <em>unfrozen</em> block &ndash; the one carrying the physics &ndash; is clean only
-to about <code>shift * epsilon</code>. At the 1e6 the reference implementations use,
-that is around 1e-10 Hartree, against a validation suite that works at
-1e-9.</p>
-<p>Nothing here needs a shift that large. A penalty scheme does, because it
-is trying to overwhelm a coupling it never removed; here the coupling is
-gone, and the shift has only to lift the frozen virtuals clear of the
-occupied manifold so that filling by aufbau does not reach them. A few
-hundred Hartree is decisive for that and costs three or four digits less.
-<code>projector_shift_sets_the_precision_floor</code> measures it.</p>
+so the <em>unfrozen</em> block is clean only to about <code>shift * epsilon</code>. At the
+1e6 the reference implementations use, that is around 1e-10 Hartree,
+against a validation suite that works at 1e-9. The shift has only to lift
+the frozen virtuals clear of the occupied manifold, for which a few
+hundred Hartree is decisive.</p>
 <p><strong>Where to apply it.</strong> Immediately after the Fock build and <em>before</em> the
 DIIS error and extrapolation. The constraint is a linear map and DIIS
 extrapolation is a linear combination whose coefficients sum to one, so a
-combination of matrices sharing this block structure has it too &ndash; the
-zeros stay zero and the shifted diagonal comes through unchanged. Applied
-there, every consumer downstream sees the same constrained object; applied
+combination of matrices sharing this block structure has it too. Applied
 after DIIS, the error vector measures a matrix nobody diagonalizes.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -233,11 +217,11 @@ after DIIS, the error vector measures a matrix nobody diagonalizes.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item">pic_blas_interfaces</li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">pic_lapack_interfaces</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_scf_common.html'>mqc_scf_common</a></li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -476,7 +460,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~8"></span>
+              <span class="anchor" id="variable-basis~3"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -495,7 +479,7 @@ lets a block be named by an index range.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen~2"></span>
+              <span class="anchor" id="variable-n_frozen"></span>
               integer,
             </td>
               <td>public</td>
@@ -544,12 +528,12 @@ left alone; only its couplings to everything else are cut.</p>
                 <td></td>
                 <td></td>
             <td>
-<p><code>S C</code>, the back transform, formed once</p>
+<p><code>S C</code>, the back transform, formed once in <code>init</code></p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-shift~5"></span>
+              <span class="anchor" id="variable-shift~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -575,12 +559,12 @@ left alone; only its couplings to everything else are cut.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/fock_projector_t.html#boundprocedure-apply~3'>apply</a></strong></td>
+  <strong><a href='../type/fock_projector_t.html#boundprocedure-apply~4'>apply</a></strong></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/fock_projector_t.html#boundprocedure-init~7'>init</a></strong></td>
+  <strong><a href='../type/fock_projector_t.html#boundprocedure-init~2'>init</a></strong></td>
                   <td></td>
               </tr>
           </tbody>
@@ -644,7 +628,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~10"></span>
+              <span class="anchor" id="variable-overlap~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -659,7 +643,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~9"></span>
+              <span class="anchor" id="variable-basis~4"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -674,7 +658,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_mo~3"></span>
+              <span class="anchor" id="variable-n_mo"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -689,7 +673,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~155"></span>
+              <span class="anchor" id="variable-error~32"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -729,7 +713,7 @@ left alone; only its couplings to everything else are cut.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~134"></span>
+              <span class="anchor" id="variable-this~24"></span>
               class(<a href='../type/fock_projector_t.html'>fock_projector_t</a>),
             </td>
 <td>intent(in)</td>
@@ -744,7 +728,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fock~4"></span>
+              <span class="anchor" id="variable-fock"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -759,7 +743,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~158"></span>
+              <span class="anchor" id="variable-error~35"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -799,7 +783,7 @@ left alone; only its couplings to everything else are cut.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~133"></span>
+              <span class="anchor" id="variable-this~23"></span>
               class(<a href='../type/fock_projector_t.html'>fock_projector_t</a>),
             </td>
 <td>intent(out)</td>
@@ -814,7 +798,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~10"></span>
+              <span class="anchor" id="variable-basis~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -829,7 +813,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~12"></span>
+              <span class="anchor" id="variable-overlap~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -859,7 +843,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen~4"></span>
+              <span class="anchor" id="variable-n_frozen~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -874,7 +858,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-shift~6"></span>
+              <span class="anchor" id="variable-shift~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -889,7 +873,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~157"></span>
+              <span class="anchor" id="variable-error~34"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -930,7 +914,7 @@ orthonormalise what is left among itself in the metric <code>overlap</code></p><
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~11"></span>
+              <span class="anchor" id="variable-overlap~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -990,7 +974,7 @@ orthonormalise what is left among itself in the metric <code>overlap</code></p><
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~156"></span>
+              <span class="anchor" id="variable-error~33"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1033,7 +1017,7 @@ orthonormalise what is left among itself in the metric <code>overlap</code></p><
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

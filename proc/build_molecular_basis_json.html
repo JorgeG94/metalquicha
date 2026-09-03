@@ -136,16 +136,16 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-iatom~11">iatom</a>
-            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-is_new~2">is_new</a>
-            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-iunique~2">iunique</a>
-            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-match~2">match</a>
+            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-iatom~2">iatom</a>
+            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-is_new">is_new</a>
+            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-iunique">iunique</a>
+            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-match">match</a>
             <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-molecule_form">molecule_form</a>
-            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-n_atoms~25">n_atoms</a>
-            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-n_unique~2">n_unique</a>
+            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-n_atoms~9">n_atoms</a>
+            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-n_unique">n_unique</a>
             <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-unique_bases">unique_bases</a>
-            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-unique_z~2">unique_z</a>
-            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-z~5">z</a>
+            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-unique_z">unique_z</a>
+            <a class="list-group-item" href="../proc/build_molecular_basis_json.html#variable-z~2">z</a>
         </div>
       </div>
     </div>
@@ -201,7 +201,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_path~6"></span>
+              <span class="anchor" id="variable-json_path~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -246,7 +246,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~90"></span>
+              <span class="anchor" id="variable-error~38"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -791,7 +791,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~11"></span>
+              <span class="anchor" id="variable-iatom~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -808,7 +808,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-is_new~2"></span>
+              <span class="anchor" id="variable-is_new"></span>
               logical,
             </td>
               <td>private</td>
@@ -825,7 +825,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iunique~2"></span>
+              <span class="anchor" id="variable-iunique"></span>
               integer,
             </td>
               <td>private</td>
@@ -842,7 +842,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-match~2"></span>
+              <span class="anchor" id="variable-match"></span>
               integer,
             </td>
               <td>private</td>
@@ -876,7 +876,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~25"></span>
+              <span class="anchor" id="variable-n_atoms~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -893,7 +893,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_unique~2"></span>
+              <span class="anchor" id="variable-n_unique"></span>
               integer,
             </td>
               <td>private</td>
@@ -927,7 +927,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unique_z~2"></span>
+              <span class="anchor" id="variable-unique_z"></span>
               integer,
             </td>
               <td>private,</td>
@@ -944,7 +944,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-z~5"></span>
+              <span class="anchor" id="variable-z~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1013,11 +1013,9 @@ large graphs.</div>
 <span class="k">         end if</span>
 <span class="k">      end do</span>
 
-<span class="w">      </span><span class="c">! One convention for the molecule, from the atoms that are actually in</span>
-<span class="w">      </span><span class="c">! it. Hydrogen in 6-31G* has no shell above s and so votes for nothing;</span>
-<span class="w">      </span><span class="c">! oxygen has a Cartesian d and settles it. An element that genuinely</span>
-<span class="w">      </span><span class="c">! disagrees with another is refused rather than resolved -- the integrals</span>
-<span class="w">      </span><span class="c">! are built one way for every shell at once.</span>
+<span class="w">      </span><span class="c">! One convention for the molecule, from the atoms actually in it: an</span>
+<span class="w">      </span><span class="c">! element with no shell above p votes for nothing. Two that genuinely</span>
+<span class="w">      </span><span class="c">! disagree are refused rather than resolved.</span>
 <span class="w">      </span><span class="n">molecule_form</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ANGULAR_FORM_UNSET</span>
 <span class="w">      </span><span class="k">do </span><span class="n">iunique</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_unique</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">unique_bases</span><span class="p">(</span><span class="n">iunique</span><span class="p">)%</span><span class="n">angular_form</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">ANGULAR_FORM_UNSET</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
@@ -1076,7 +1074,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

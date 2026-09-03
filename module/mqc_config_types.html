@@ -182,15 +182,8 @@
     <div class="col-md-9" id='text'>
       <p><code>mqc_config_t</code> and the pieces it is made of: one molecule, one input
 fragment, and the bonds between them.</p>
-<p>These live apart from any reader on purpose. Nearly everything that
-touches a config only wants the <em>type</em> &ndash; the driver, the adapter, the
-MBE engine and the tests all import <code>mqc_config_t</code> and never parse
-anything &ndash; so tying the type to one file format would make every
-consumer depend on that format&rsquo;s parser. It also means a second reader
-is a new module rather than a change to an existing one.</p>
-<p>Defaults are declared here, once, and a reader that finds no value for a
-key simply leaves the component alone. That is the whole mechanism: there
-is no separate table of defaults to drift out of step.
+<p>Every default is declared here, once. A reader that finds no value for a
+key leaves the component alone, so there is no second table of defaults.
 Everything one input file specifies
 One molecule of a multi-molecule input
 One fragment definition, as written in the input
@@ -201,13 +194,13 @@ Re-exported so consumers need only this module</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
                   <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1582,8 +1575,8 @@ large graphs.</div>
       </h3>
     </div>
     <div class="card-body">
-      <p>Input fragment definition with charge, multiplicity, and atom indices
-This is the parsed representation from the input file, not the computational fragment</p>
+      <p>One fragment as the input file declares it: charge, multiplicity and
+atom indices</p><a href="../type/input_fragment_t.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
         <h4>Components</h4>
           <table class="table table-striped varlist">
@@ -1598,7 +1591,7 @@ This is the parsed representation from the input file, not the computational fra
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~5"></span>
+              <span class="anchor" id="variable-charge~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1615,7 +1608,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~3"></span>
+              <span class="anchor" id="variable-indices~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1632,7 +1625,7 @@ This is the parsed representation from the input file, not the computational fra
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~4"></span>
+              <span class="anchor" id="variable-multiplicity~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1661,10 +1654,10 @@ This is the parsed representation from the input file, not the computational fra
                 <td></td>
                 <td></td>
             <td>
-<p>The effective fragment potential describing this fragment, if it has one.
-A fragment carrying one is an EFP fragment and a fragment without one stays
-quantum, which is how a mixed calculation is spelled &ndash; there is no second way
-to declare a fragment. The path is resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_fragment_t.html#variable-potential" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>The effective fragment potential describing this fragment, if it has
+one. A fragment carrying one is an EFP fragment, one without stays
+quantum, which is how a mixed calculation is spelled. The path is
+resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_fragment_t.html#variable-potential" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
     </tbody>
@@ -1678,7 +1671,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/input_fragment_t.html#boundprocedure-destroy~11'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/input_fragment_destroy.html'>input_fragment_destroy</a></td>
+  <strong><a href='../type/input_fragment_t.html#boundprocedure-destroy~14'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/input_fragment_destroy.html'>input_fragment_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1711,7 +1704,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~7"></span>
+              <span class="anchor" id="variable-bonds~3"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
               <td>public,</td>
@@ -1728,7 +1721,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~6"></span>
+              <span class="anchor" id="variable-charge~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -1745,7 +1738,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~5"></span>
+              <span class="anchor" id="variable-fragments"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
               <td>public,</td>
@@ -1779,7 +1772,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~5"></span>
+              <span class="anchor" id="variable-multiplicity~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1796,7 +1789,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~12"></span>
+              <span class="anchor" id="variable-name~8"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -1813,7 +1806,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbonds~3"></span>
+              <span class="anchor" id="variable-nbonds"></span>
               integer,
             </td>
               <td>public</td>
@@ -1830,7 +1823,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbroken~3"></span>
+              <span class="anchor" id="variable-nbroken"></span>
               integer,
             </td>
               <td>public</td>
@@ -1847,7 +1840,7 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~5"></span>
+              <span class="anchor" id="variable-nfrag"></span>
               integer,
             </td>
               <td>public</td>
@@ -1876,12 +1869,10 @@ to declare a fragment. The path is resolved relative to the deck, like <code>xyz
 <td> =</td>
                 <td>.false.</td>
             <td>
-<p>Every fragment is the same species, so one potential describes all of them.
-Set by <code>uniform_system</code> in the deck, which is what lets <code>fragment_potentials</code>
-be a single name rather than ten thousand copies of it. It is an assertion the
-reader checks rather than takes on trust: the fragments must agree in size, so
-a deck claiming uniformity without it is refused rather than quietly handed
-the wrong potential.</p>
+<p>Every fragment is the same species, so one potential describes all
+of them, which is what lets <code>fragment_potentials</code> be a single name.
+Checked rather than taken on trust: the fragments must agree in
+size, so a deck claiming uniformity without it is refused.</p>
             </td>
         </tr>
     </tbody>
@@ -1895,7 +1886,7 @@ the wrong potential.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/molecule_t.html#boundprocedure-destroy~12'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecule_destroy.html'>molecule_destroy</a></td>
+  <strong><a href='../type/molecule_t.html#boundprocedure-destroy~15'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecule_destroy.html'>molecule_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1913,7 +1904,7 @@ the wrong potential.</p>
       </h3>
     </div>
     <div class="card-body">
-      <p>Complete configuration from .mqc file</p>
+      <p>Complete configuration parsed from one input deck</p>
 
         <h4>Components</h4>
           <table class="table table-striped varlist">
@@ -1996,7 +1987,7 @@ the wrong potential.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~4"></span>
+              <span class="anchor" id="variable-allow_crap_scf~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -2008,7 +1999,11 @@ the wrong potential.</p>
 <td> =</td>
                 <td>.false.</td>
             <td>
-
+<p>Let a non-converged SCF into the expansion instead of stopping. Off
+by default: the energy of an SCF that ran out of iterations is of
+the right magnitude and nothing downstream can tell. On, every
+offender is named at the end of the run and marked in the fragment
+table.</p>
             </td>
         </tr>
         <tr>
@@ -2030,7 +2025,7 @@ the wrong potential.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~2"></span>
+              <span class="anchor" id="variable-backend~5"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -2047,7 +2042,7 @@ the wrong potential.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~3"></span>
+              <span class="anchor" id="variable-basis~7"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2112,10 +2107,9 @@ analysis; &ldquo;gms_quao&rdquo; means the quasi-atomic bonding picture.</p>
                 <td>.false.</td>
             <td>
 <p>From <code>properties.bonding_analysis.energy_decomposition</code>. Off by
-default because the two-electron term needs the dense <code>n_ao^4</code>
-integral array, and the bonding tables on their own need only
-one-electron integrals. Asking for the decomposition is asking for
-that memory.</p>
+default: the two-electron term needs the dense <code>n_ao^4</code> integral
+array, where the bonding tables on their own need only one-electron
+integrals.</p>
             </td>
         </tr>
         <tr>
@@ -2134,8 +2128,7 @@ that memory.</p>
             <td>
 <p>From <code>properties.bonding_analysis.no_sharing</code>. Asks for the
 no-sharing wave function, which needs a full valence CI over the
-quasi-atomic orbitals and is therefore far too expensive to do by
-default.</p>
+quasi-atomic orbitals, so it is off by default.</p>
             </td>
         </tr>
         <tr>
@@ -2178,8 +2171,7 @@ this chooses how it is computed, not which one it is.</p>
 the quasi-atomic localization to the wave function&rsquo;s
 occupation-restricted subspaces, so that no rotation mixes two of
 them and the wave function stays invariant under the
-transformation. Off by default, and that is a measurement rather
-than a preference &ndash; see <code>mqc_docs/source/bonding_analysis.rst</code>.</p>
+transformation. Off by default.</p>
             </td>
         </tr>
         <tr>
@@ -2198,14 +2190,12 @@ than a preference &ndash; see <code>mqc_docs/source/bonding_analysis.rst</code>.
             <td>
 <p>From <code>properties.bonding_analysis.energy_threshold</code>, in kcal/mol.
 Orbital pairs whose kinetic bond order is weaker than this are
-counted and then not printed. Formyl chloride has 27 pairs above
-GAMESS&rsquo;s own cutoff and eight above one kcal/mol, and the other
-nineteen are tenths of a kcal/mol that bury the four bonds.</p>
+counted and then not printed.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~8"></span>
+              <span class="anchor" id="variable-bonds~4"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
               <td>public,</td>
@@ -2256,7 +2246,7 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~3"></span>
+              <span class="anchor" id="variable-cartesian~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -2268,7 +2258,7 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
 <td> =</td>
                 <td>.false.</td>
             <td>
-<p>Read the basis in Cartesian form whatever its file declares.</p><a href="../type/mqc_config_t.html#variable-cartesian~3" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Read the basis in Cartesian form whatever its file declares.</p><a href="../type/mqc_config_t.html#variable-cartesian~4" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -2290,7 +2280,7 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_diis_size~2"></span>
+              <span class="anchor" id="variable-cc_diis_size"></span>
               integer,
             </td>
               <td>public</td>
@@ -2324,7 +2314,7 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_spin_adapted~2"></span>
+              <span class="anchor" id="variable-cc_spin_adapted"></span>
               logical,
             </td>
               <td>public</td>
@@ -2337,12 +2327,12 @@ nineteen are tenths of a kcal/mol that bury the four bonds.</p>
                 <td>.true.</td>
             <td>
 <p>Which coupled-cluster formulation runs: spin-adapted (spatial
-orbitals) when true, spin orbitals when false.</p><a href="../type/mqc_config_t.html#variable-cc_spin_adapted~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+orbitals) when true, spin orbitals when false.</p><a href="../type/mqc_config_t.html#variable-cc_spin_adapted" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_tolerance~2"></span>
+              <span class="anchor" id="variable-cc_tolerance"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2359,7 +2349,7 @@ orbitals) when true, spin orbitals when false.</p><a href="../type/mqc_config_t.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_triples~2"></span>
+              <span class="anchor" id="variable-cc_triples"></span>
               logical,
             </td>
               <td>public</td>
@@ -2396,7 +2386,7 @@ absent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~7"></span>
+              <span class="anchor" id="variable-charge~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -2426,10 +2416,8 @@ absent one.</p>
                 <td></td>
             <td>
 <p>From <code>properties.charges.scheme</code>. Allocated means the deck asked for
-atomic partial charges; &ldquo;mulliken&rdquo; or &ldquo;chelpg&rdquo; chooses how the
-converged density is partitioned. Unlike <code>fukui_population</code> this
-carries a default, because here the scheme is the whole request
-rather than one half of it &ndash; see <code>charges_keys</code> in the schema.</p>
+atomic partial charges; &ldquo;mulliken&rdquo; (the default) or &ldquo;chelpg&rdquo; chooses
+how the converged density is partitioned.</p>
             </td>
         </tr>
         <tr>
@@ -2453,7 +2441,7 @@ fingerprint disagrees with this run is refused, not overwritten.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-corr_density_fitting~2"></span>
+              <span class="anchor" id="variable-corr_density_fitting"></span>
               logical,
             </td>
               <td>public</td>
@@ -2636,14 +2624,7 @@ fingerprint disagrees with this run is refused, not overwritten.</p>
 <td> =</td>
                 <td>-1</td>
             <td>
-<p>Fit J and K against the auxiliary basis, on the CPU backend
-Let a non-converged SCF into the expansion instead of stopping.
-Off by default: the energy of an SCF that ran out of iterations is
-of the right magnitude and nothing downstream can tell, so silence
-is the one thing it must not be. On, every offender is named at the
-end of the run and marked in the fragment table.
-Force UHF/UKS even when the shell is closed
-XC functional name, only meaningful when method = dft</p>
+
             </td>
         </tr>
         <tr>
@@ -2741,7 +2722,7 @@ whole basis, which is how a run measures what the screen is worth.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~3"></span>
+              <span class="anchor" id="variable-dielectric~4"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2858,9 +2839,8 @@ an all-electron calculation.</p>
 <td> =</td>
                 <td>EFP_RESPONSE_AUTO</td>
             <td>
-<p>Held as a code rather than as the spelling, the same as <code>calc_type</code>:
-the reader is the only place that has to know the three words, and it
-refuses a fourth there rather than somewhere an SCF has already run.</p>
+<p>Held as a code rather than as the spelling, like <code>calc_type</code>; the
+reader is the only place that knows the three words it can take.</p>
             </td>
         </tr>
         <tr>
@@ -3114,7 +3094,7 @@ so a deck still naming them fails at parse time and says which.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~6"></span>
+              <span class="anchor" id="variable-fragments~2"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
               <td>public,</td>
@@ -3126,7 +3106,8 @@ so a deck still naming them fails at parse time and says which.</p>
                 <td></td>
                 <td></td>
             <td>
-
+<p>As on <code>molecule_t</code>: every fragment the same species, which is what lets
+<code>fragment_potentials</code> be one name rather than one per fragment.</p>
             </td>
         </tr>
         <tr>
@@ -3161,8 +3142,9 @@ so a deck still naming them fails at parse time and says which.</p>
                 <td></td>
             <td>
 <p>From <code>properties.fukui.population</code>. Allocated means the deck asked
-for Fukui indices; &ldquo;chelpg&rdquo; or &ldquo;mulliken&rdquo; chooses how the density
-difference is condensed onto atoms.</p><a href="../type/mqc_config_t.html#variable-fukui_population~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+for Fukui indices; &ldquo;chelpg&rdquo; (the default) or &ldquo;mulliken&rdquo; chooses how
+the density difference is condensed onto atoms. The object may omit
+it &ndash; <code>properties: {"fukui": {}}</code> is a valid request.</p>
             </td>
         </tr>
         <tr>
@@ -3196,7 +3178,7 @@ difference is condensed onto atoms.</p><a href="../type/mqc_config_t.html#variab
                 <td></td>
                 <td></td>
             <td>
-
+<p>XC functional name, only meaningful when method = dft</p>
             </td>
         </tr>
         <tr>
@@ -3270,7 +3252,7 @@ told apart: absent leaves <code>backend</code> alone, false pins it to the CPU.<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~2"></span>
+              <span class="anchor" id="variable-guess_steps~3"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -3282,7 +3264,7 @@ told apart: absent leaves <code>backend</code> alone, false pins it to the CPU.<
                 <td></td>
                 <td></td>
             <td>
-<p>The projection ladder, from <code>keywords.guess.subscf.steps</code>.</p><a href="../type/mqc_config_t.html#variable-guess_steps~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>The projection ladder, from <code>keywords.guess.subscf.steps</code>.</p><a href="../type/mqc_config_t.html#variable-guess_steps~3" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -3304,7 +3286,7 @@ told apart: absent leaves <code>backend</code> alone, false pins it to the CPU.<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian_displacement"></span>
+              <span class="anchor" id="variable-hessian_displacement~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3619,7 +3601,7 @@ space, which is the one subspace covering everything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~5"></span>
+              <span class="anchor" id="variable-method~8"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -3653,7 +3635,7 @@ space, which is the one subspace covering everything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~6"></span>
+              <span class="anchor" id="variable-multiplicity~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -3670,7 +3652,7 @@ space, which is the one subspace covering everything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbonds~4"></span>
+              <span class="anchor" id="variable-nbonds~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -3687,7 +3669,7 @@ space, which is the one subspace covering everything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbroken~4"></span>
+              <span class="anchor" id="variable-nbroken~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -3704,7 +3686,7 @@ space, which is the one subspace covering everything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~6"></span>
+              <span class="anchor" id="variable-nfrag~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -4329,8 +4311,7 @@ space, which is the one subspace covering everything.</p>
                 <td>-1.0_dp</td>
             <td>
 <p>Solvent dielectric constant. Required: there is no solvent-name
-table on this path, because inventing one that disagreed with
-tblite&rsquo;s would make the same deck mean two things.</p>
+table on this path.</p>
             </td>
         </tr>
         <tr>
@@ -4487,7 +4468,7 @@ which is today&rsquo;s energy-and-commutator pair.</p>
 <td> =</td>
                 <td>.false.</td>
             <td>
-
+<p>Fit J and K against the auxiliary basis, on the CPU backend</p>
             </td>
         </tr>
         <tr>
@@ -4539,15 +4520,9 @@ which is today&rsquo;s energy-and-commutator pair.</p>
                 <td>8</td>
             <td>
 <p><code>keywords.scf.diis_size</code>, the subspace the extrapolation is drawn
-from. Eight is the usual default and was, until this keyword, the
-only value obtainable &ndash; the field existed all the way down to
-<code>scf_config_t</code> and nothing read it from a deck. Widening it to
-12-20 is the first thing to try on an open-shell SCF that converges
-monotonically but slowly, where a level shift would only make it
-slower.
-Hartree added to the virtual orbitals before each diagonalisation.
-Zero is off, which is the default: a shift costs iterations near the
-solution and only earns them far from it.</p>
+from. Widening it to 12-20 is the first thing to try on an
+open-shell SCF that converges monotonically but slowly, where a
+level shift would only make it slower.</p>
             </td>
         </tr>
         <tr>
@@ -4616,7 +4591,9 @@ iteration; see <code>scf_config_t</code> for why anyone would want that.</p>
 <td> =</td>
                 <td>0.0_dp</td>
             <td>
-
+<p>Hartree added to the virtual orbitals before each diagonalisation.
+Zero is off, which is the default: a shift costs iterations near the
+solution and only earns them far from it.</p>
             </td>
         </tr>
         <tr>
@@ -4653,7 +4630,7 @@ discard.</p><a href="../type/mqc_config_t.html#variable-scf_linear_dependence" c
 <td> =</td>
                 <td>300</td>
             <td>
-<p>Using 300 (parser-specific, different from DEFAULT_SCF_MAXITER)</p>
+
             </td>
         </tr>
         <tr>
@@ -4704,11 +4681,10 @@ discard.</p><a href="../type/mqc_config_t.html#variable-scf_linear_dependence" c
 <td> =</td>
                 <td>.false.</td>
             <td>
-<p>Whether the deck named it. Needed because &ldquo;the default&rdquo; and &ldquo;the
-user asked for the default&rdquo; are different requests to a caller that
-has a stricter default of its own &ndash; MAKEFP converges to 1e-10/1e-8
-because the multipoles are taken from that density, and must keep
-doing so unless a deck says otherwise.</p>
+<p>Whether the deck named it. &ldquo;The default&rdquo; and &ldquo;the user asked for
+the default&rdquo; are different requests to a caller with a stricter
+default of its own &ndash; MAKEFP converges to 1e-10/1e-8, because the
+multipoles are taken from that density, unless a deck says otherwise.</p>
             </td>
         </tr>
         <tr>
@@ -4846,8 +4822,7 @@ hiding a problem, not a way to run one.</p>
 <td> =</td>
                 <td>.false.</td>
             <td>
-<p>As on <code>molecule_t</code>: every fragment the same species, which is what lets
-<code>fragment_potentials</code> be one name rather than one per fragment.</p>
+
             </td>
         </tr>
         <tr>
@@ -4869,7 +4844,7 @@ hiding a problem, not a way to run one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unrestricted~2"></span>
+              <span class="anchor" id="variable-unrestricted~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -4881,9 +4856,7 @@ hiding a problem, not a way to run one.</p>
 <td> =</td>
                 <td>.false.</td>
             <td>
-<p><code>model.unrestricted</code>. Unprefixed because the model fields are &ndash;
-<code>basis</code>, <code>functional</code>, <code>cartesian</code> &ndash; and prefixes here track the
-deck block the value came from.</p>
+<p><code>model.unrestricted</code>. Force UHF/UKS even when the shell is closed.</p>
             </td>
         </tr>
         <tr>
@@ -4931,7 +4904,7 @@ deck block the value came from.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mqc_config_t.html#boundprocedure-destroy~13'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a></td>
+  <strong><a href='../type/mqc_config_t.html#boundprocedure-destroy~16'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -4965,7 +4938,7 @@ deck block the value came from.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~38"></span>
+              <span class="anchor" id="variable-this~48"></span>
               class(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5005,7 +4978,7 @@ deck block the value came from.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~39"></span>
+              <span class="anchor" id="variable-this~49"></span>
               class(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5045,7 +5018,7 @@ deck block the value came from.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~37"></span>
+              <span class="anchor" id="variable-this~47"></span>
               class(<a href='../type/molecule_t.html'>molecule_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5088,7 +5061,7 @@ deck block the value came from.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

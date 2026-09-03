@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-i~49">i</a>
-            <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-j~8">j</a>
+            <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-i~97">i</a>
+            <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-j~31">j</a>
             <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-next~2">next</a>
             <a class="list-group-item" href="../proc/vmfc_subset_key.html#variable-taken~2">taken</a>
         </div>
@@ -186,9 +186,8 @@ in the parent&rsquo;s basis &ndash; so the superposition error that inflates the
 parent stands on both sides of the difference and cancels rather than
 surviving into the total.</p>
 <p>So the key is the chosen monomers positive and <em>everything else in the
-parent</em> negative. For the pair [1,2] choosing [1], that is [1,-2]. The
-recursion, the hash table and the dispatch are untouched: a signed key
-is just another key, and it sorts and hashes like any other.</p>
+parent</em> negative. For the pair <code>[1,2]</code> choosing <code>[1]</code>, that is
+<code>[1,-2]</code>.</p>
 
 
     <h3>Arguments</h3>
@@ -204,7 +203,7 @@ is just another key, and it sorts and hashes like any other.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~7"></span>
+              <span class="anchor" id="variable-fragment~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -219,7 +218,7 @@ is just another key, and it sorts and hashes like any other.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~20"></span>
+              <span class="anchor" id="variable-n~35"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -234,7 +233,7 @@ is just another key, and it sorts and hashes like any other.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-chosen"></span>
+              <span class="anchor" id="variable-chosen~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -249,7 +248,7 @@ is just another key, and it sorts and hashes like any other.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~7"></span>
+              <span class="anchor" id="variable-k~30"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -264,7 +263,7 @@ is just another key, and it sorts and hashes like any other.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-key~4"></span>
+              <span class="anchor" id="variable-key~8"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -734,7 +733,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~49"></span>
+              <span class="anchor" id="variable-i~97"></span>
               integer,
             </td>
               <td>private</td>
@@ -751,7 +750,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~8"></span>
+              <span class="anchor" id="variable-j~31"></span>
               integer,
             </td>
               <td>private</td>
@@ -826,9 +825,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! surviving into the total.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! So the key is the chosen monomers positive and *everything else in the</span>
-<span class="w">      </span><span class="c">!! parent* negative. For the pair [1,2] choosing [1], that is [1,-2]. The</span>
-<span class="w">      </span><span class="c">!! recursion, the hash table and the dispatch are untouched: a signed key</span>
-<span class="w">      </span><span class="c">!! is just another key, and it sorts and hashes like any other.</span>
+<span class="w">      </span><span class="c">!! parent* negative. For the pair `[1,2]` choosing `[1]`, that is</span>
+<span class="w">      </span><span class="c">!! `[1,-2]`.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span><span class="p">(:)</span><span class="w">   </span><span class="c">!! The parent's monomers, all positive</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span><span class="w">             </span><span class="c">!! How many of them</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">chosen</span><span class="p">(:)</span><span class="w">     </span><span class="c">!! Positions within `fragment`, size k</span>
@@ -875,7 +873,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

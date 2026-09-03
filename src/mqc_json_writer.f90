@@ -23,10 +23,10 @@ contains
       !! Nuclear gradient, as the norm and as the components it came from
       !!
       !! The norm alone cannot separate a correct gradient from one with a sign
-      !! error, a swapped pair of atoms, or a wrong component that happens to
-      !! preserve the magnitude, so validation compares the components. Written
-      !! in Hartree/Bohr, the internal unit -- unlike the optimization
-      !! trajectory, which converts to Angstrom because a viewer expects it.
+      !! error, a swapped pair of atoms, or a wrong component that preserves the
+      !! magnitude, so validation compares the components. Hartree/Bohr, the
+      !! internal unit -- unlike the optimization trajectory, which converts to
+      !! Angstrom.
       type(json_core), intent(inout) :: json
       type(json_value), pointer, intent(in) :: parent
       real(dp), intent(in) :: gradient(:, :)  !! (3, natoms)
@@ -53,14 +53,10 @@ contains
    subroutine add_hessian(json, parent, hessian)
       !! Second derivatives, as the Frobenius norm and as the matrix itself
       !!
-      !! The norm went in first and is kept, because it is what a manifest of
-      !! many systems can afford to carry. It is not what a Hessian should be
-      !! validated on: it is one number out of `9N^2`, invariant under any
-      !! orthogonal mixing, so a transposed block, a swapped atom pair or a
-      !! sign flip in an off-diagonal element all leave it unchanged. Every
-      !! one of those is a real way to get a Hessian wrong here -- the
-      !! assembly is `(3, 3, natm, natm)` collapsed to `(3N, 3N)` -- and none
-      !! would move the norm at all.
+      !! The norm is one number out of `9N^2` and invariant under any orthogonal
+      !! mixing, so a transposed block, a swapped atom pair or a sign flip in an
+      !! off-diagonal element all leave it unchanged. It is kept for a manifest
+      !! of many systems; it is not what a Hessian should be validated on.
       !!
       !! One row per array row, in the `(3N, 3N)` order the vibrational
       !! analysis reads, atom-major with `x, y, z` inside each atom. Hartree
@@ -88,10 +84,10 @@ contains
    end subroutine add_hessian
 
    subroutine write_json_output(output_data)
-      !! THE single entry point for all JSON output
+      !! The single entry point for all JSON output
       !!
-      !! Dispatches to the appropriate JSON writer based on output_mode.
-      !! This is the ONLY place in the codebase where JSON files are written.
+      !! Dispatches on `output_mode`. The only place in the codebase where JSON
+      !! files are written.
       type(json_output_data_t), intent(in) :: output_data
 
       select case (output_data%output_mode)
@@ -106,10 +102,10 @@ contains
          if (output_data%has_vibrational) then
             call write_vibrational_json_impl(output_data)
          else
-            ! The per-fragment table goes to exactly one place. Embedding it in the
-            ! JSON costs 18.3 us per fragment against 2.95 us flat, and forces the
-            ! consumer to hold the whole document resident; the summary is written
-            ! either way, so "csv" loses nothing but the duplication.
+            ! The per-fragment table goes to exactly one place: in the JSON it
+            ! costs six times as much per fragment and forces the consumer to
+            ! hold the whole document resident. The summary is written either
+            ! way, so "csv" loses nothing but the duplication.
             call write_mbe_breakdown_json_impl(output_data)
             if (trim(output_data%fragment_breakdown) == "csv") then
                call write_fragment_table(output_data)
@@ -145,8 +141,7 @@ contains
       call json%create_object(root, "")
       call json%create_object(main_obj, trim(basename))
       call json%add(root, main_obj)
-      ! Stamped by every writer, so no output format is the one that forgets.
-      ! A restart reads this before it reuses anything.
+      ! Stamped by every writer; a restart reads it before it reuses anything.
       if (len_trim(data%fingerprint) > 0) then
          call json%add(main_obj, "fingerprint", trim(data%fingerprint))
       end if
@@ -206,6 +201,7 @@ contains
       type(json_value), pointer :: root, main_obj, levels_arr, level_obj, frags_arr, frag_obj
       type(json_value), pointer :: dipole_obj
       integer(int64) :: i, count_by_level
+      ! TODO(mqc): `j` is dead here.
       integer :: fragment_size, j, frag_level, iunit, io_stat
       integer, allocatable :: indices(:)
       character(len=32) :: level_name
@@ -222,8 +218,7 @@ contains
       call json%create_object(root, "")
       call json%create_object(main_obj, trim(basename))
       call json%add(root, main_obj)
-      ! Stamped by every writer, so no output format is the one that forgets.
-      ! A restart reads this before it reuses anything.
+      ! Stamped by every writer; a restart reads it before it reuses anything.
       if (len_trim(data%fingerprint) > 0) then
          call json%add(main_obj, "fingerprint", trim(data%fingerprint))
       end if
@@ -325,10 +320,8 @@ contains
    subroutine write_charges_section(json, parent, data)
       !! Atomic partial charges, per atom, with the scheme that produced them
       !!
-      !! The scheme travels with the numbers rather than being left for the
-      !! reader to remember. Two schemes disagree by design -- that is the
-      !! point of having two -- so a charge without its scheme is not a
-      !! quantity anyone can compare against anything.
+      !! The scheme travels with the numbers: two schemes disagree by design, so
+      !! a charge without its scheme is not comparable against anything.
       !!
       !! `spin_populations` appears only for an unrestricted reference under
       !! Mulliken. Its absence is meaningful and not a gap: a closed shell has
@@ -351,10 +344,10 @@ contains
       call json%create_object(section, "atomic_charges")
       call json%add(parent, section)
       call json%add(section, "scheme", trim(data%charge_scheme))
-      ! What the column has to add up to, written out so a consumer can check
-      ! rather than trust. Mulliken satisfies it as a trace identity and CHELPG
-      ! as the constraint its fit is solved under, so a mismatch here is a bug
-      ! in the bookkeeping and never a property of the molecule.
+      ! What the column has to add up to, so a consumer can check rather than
+      ! trust. Mulliken satisfies it as a trace identity and CHELPG as the
+      ! constraint its fit is solved under, so a mismatch is a bookkeeping bug
+      ! and never a property of the molecule.
       call json%add(section, "sum", sum(data%atomic_charges))
 
       call json%create_array(arr, "atoms")
@@ -375,11 +368,10 @@ contains
    subroutine write_fukui_section(json, parent, data)
       !! Where the molecule reacts, per atom, for something other than a reader
       !!
-      !! Emitted per atom rather than reduced to a most-reactive site, because
-      !! ranking sites is the caller's job and which index to rank on depends on
-      !! the reaction being asked about -- `f+` for an incoming nucleophile,
-      !! `f-` for an electrophile, the dual descriptor to tell the two kinds of
-      !! site apart.
+      !! Emitted per atom rather than reduced to a most-reactive site: which
+      !! index to rank on depends on the reaction being asked about -- `f+` for
+      !! an incoming nucleophile, `f-` for an electrophile, the dual descriptor
+      !! to tell the two kinds of site apart.
       !!
       !! `anion_bound` travels with the numbers. When it is false the `f_plus`
       !! column describes an orbital the basis invented rather than a real
@@ -411,9 +403,8 @@ contains
       do i = 1, natm
          call json%create_object(entry, "")
          call json%add(arr, entry)
-         ! Numbered rather than named: the output payload carries no element
-         ! symbols, and the atom order is the input order, so a consumer that
-         ! read the geometry already knows which is which.
+         ! Numbered rather than named: the payload carries no element symbols
+         ! and the order is the input order.
          call json%add(entry, "atom", i)
          call json%add(entry, "f_plus", data%fukui_plus(i))
          call json%add(entry, "f_minus", data%fukui_minus(i))
@@ -427,12 +418,8 @@ contains
       !! The fragments whose SCF failed, in a form a follow-up job can be built from
       !!
       !! Written whenever the method reports convergence at all, **including
-      !! when nothing failed**: a `count` of zero is a statement, and its
-      !! absence would be indistinguishable from a run whose method never
-      !! reported. A consumer can then treat a missing section as "no
-      !! information" rather than as "all good", which is the reading that
-      !! matters when the whole point is that unconverged fragments still
-      !! produce numbers of the right magnitude.
+      !! when nothing failed**: a `count` of zero is a statement, so a consumer
+      !! reads a missing section as "no information" rather than "all good".
       !!
       !! Each entry carries the monomers the fragment was built from, so a
       !! dimer can be reconstructed without reading back the per-fragment
@@ -470,14 +457,11 @@ contains
          end if
       end do
 
-      ! How much of the total rests on fragments that never converged. A count
-      ! says how many are suspect; this says whether to care, and most of the
-      ! time the answer is that screening already made them negligible.
+      ! How much of the total rests on fragments that never converged.
       if (size(data%unconverged_ids) > 0 .and. allocated(data%unconverged_deltas)) then
          ! Signed, because the failures are a subset of a sum with cancellation
-         ! in it and their net effect is what a total is exposed to. The largest
-         ! single one is given beside it, since a net near zero can still be two
-         ! large terms that happen to oppose.
+         ! in it. The largest single one is given beside it, since a net near
+         ! zero can still be two large terms that happen to oppose.
          call json%add(section, "energy_at_stake", sum(data%unconverged_deltas))
          call json%add(section, "largest_contribution", &
                        maxval(abs(data%unconverged_deltas)))
@@ -506,6 +490,7 @@ contains
 
       type(json_core) :: json
       type(json_value), pointer :: root, main_obj, pie_obj, terms_arr, term_obj
+      ! TODO(mqc): `j` is dead here.
       integer :: j, max_atoms, n_atoms, iunit, io_stat
       integer(int64) :: i, n_nonzero_terms
       integer, allocatable :: atom_indices(:)
@@ -518,8 +503,7 @@ contains
       call json%create_object(root, "")
       call json%create_object(main_obj, trim(basename))
       call json%add(root, main_obj)
-      ! Stamped by every writer, so no output format is the one that forgets.
-      ! A restart reads this before it reuses anything.
+      ! Stamped by every writer; a restart reads it before it reuses anything.
       if (len_trim(data%fingerprint) > 0) then
          call json%add(main_obj, "fingerprint", trim(data%fingerprint))
       end if
@@ -611,6 +595,8 @@ contains
       character(len=256) :: output_file, basename
       real(dp) :: pV_cal, H_vib_cal, H_rot_cal, H_trans_cal, H_total_cal
       real(dp) :: Cv_total, S_total, S_total_J, H_int_cal, Cv_int, S_int, S_int_J, Cp_trans
+      ! TODO(mqc): `hess_norm` is computed below and never read; `add_hessian`
+      ! writes the norm itself.
       real(dp) :: hess_norm
 
       output_file = get_output_json_filename()
@@ -624,8 +610,7 @@ contains
       ! Create main object with basename as key
       call json%create_object(main_obj, trim(basename))
       call json%add(root, main_obj)
-      ! Stamped by every writer, so no output format is the one that forgets.
-      ! A restart reads this before it reuses anything.
+      ! Stamped by every writer; a restart reads it before it reuses anything.
       if (len_trim(data%fingerprint) > 0) then
          call json%add(main_obj, "fingerprint", trim(data%fingerprint))
       end if
@@ -834,10 +819,8 @@ contains
       !! The energy resolved onto atoms and atom pairs, under `bonding_energy`
       !!
       !! Written whenever `properties.bonding_analysis.energy_decomposition`
-      !! ran. The tables are printed too -- that is what the deck asked for --
-      !! but a printed table is not a number a script can act on, and the whole
-      !! point of the decomposition is deciding which atoms and which pairs are
-      !! worth attention.
+      !! ran. The tables are printed too, but a printed table is not a number a
+      !! script can act on.
       !!
       !! **Atom indices are 0-based**, as everywhere else in the interfaces,
       !! and the pairs are written once each with `i < j` carrying the full
@@ -904,7 +887,9 @@ contains
       !! The decomposition, under `sapt`, when there is one
       !!
       !! Named rather than a bare array: the order is fixed in
-      !! `SAPT_TERM_NAMES` and nothing downstream should have to know it.
+      !! `SAPT2_TERM_NAMES` and nothing downstream should have to know it.
+      ! TODO(mqc): `SAPT_TERM_NAMES` is imported and never used -- both levels
+      ! are labelled from `SAPT2_TERM_NAMES`, whose first terms it duplicates.
       use mqc_program_limits, only: N_SAPT_TERMS, SAPT_TERM_NAMES, &
                                     N_SAPT2_TERMS, SAPT2_TERM_NAMES
       type(json_core), intent(inout) :: json

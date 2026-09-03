@@ -249,15 +249,9 @@
     <div class="col-md-9" id='text'>
       <p>The vocabulary shared by the optimization driver and whichever engine
 takes the steps. It knows about neither: no MPI, no DL-FIND, no quantum
-chemistry. That is what lets <code>mqc_geometry_optimizer</code> and
-<code>mqc_dlfind_bridge</code> reach each other without a circular dependency &ndash; the
-driver hands the engine a procedure matching <code>energy_gradient_i</code>, and the
-engine calls it without ever learning what is on the other end.</p>
-<p>The same arrangement is what makes the optimizer backend-agnostic. The
-evaluator behind that interface is <code>run_calculation</code> with a gradient
-request, so xTB through tblite, Hartree-Fock through libcint and HF/DFT
-through cuEST all arrive here as the same three arrays, fragmented or
-not, and no engine has to be taught about any of them.</p>
+chemistry, which is what lets <code>mqc_geometry_optimizer</code> and
+<code>mqc_dlfind_bridge</code> reach each other through <code>energy_gradient_i</code> without
+a circular dependency.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
@@ -1310,7 +1304,8 @@ parameter
 <td> =</td>
                 <td>0</td>
             <td>
-                
+                <p>Endpoints held fixed, and the default for a chain-of-states run &ndash;
+the two structures given are usually already optimized minima.</p>
             </td>
         </tr>
         <tr>
@@ -1362,10 +1357,8 @@ parameter
 <td> =</td>
                 <td>5</td>
             <td>
-                <p>Conjugate gradient restarting on the Powell-Beale test rather than
-every ten steps. The other spelling of the same method: <code>cg</code> restarts
-on a fixed schedule, this one when the search directions stop being
-usefully conjugate.</p>
+                <p>Conjugate gradient restarting on the Powell-Beale test rather than on
+<code>cg</code>&rsquo;s fixed ten-step schedule.</p>
             </td>
         </tr>
         <tr>
@@ -1608,10 +1601,9 @@ parameter
                 <td>5</td>
             <td>
                 <p>DLC over a total connection scheme</p>
-<p>One residue, totally connected. Unlike plain <code>dlc</code> this does not fail on
-a cluster &ndash; the total connection supplies the coordinates spanning the
-molecules that no bond provides &ndash; but it pays that quadratic cost over
-the whole system rather than within a residue.</p>
+<p>One residue, totally connected. Unlike plain <code>dlc</code> it does not fail on
+a cluster, but pays that quadratic cost over the whole system rather
+than within a residue.</p>
             </td>
         </tr>
         <tr>
@@ -1647,11 +1639,9 @@ parameter
             <td>
                 <p>HDLC over a total connection scheme</p>
 <p>The primitive internals of a residue are built from every atom pair in
-it rather than from the perceived bonds. That is what makes it useful on
-a system whose connectivity is not what a covalent-radius rule says: a
-weakly bound complex the perception splits, an ion pair it merges, a
-transition state where a bond is half formed. The cost is quadratic in
-residue size where a bond list is linear, so it is for small residues.</p>
+it rather than from the perceived bonds, so connectivity a
+covalent-radius rule gets wrong does not matter. Quadratic in residue
+size where a bond list is linear, so it is for small residues.</p>
             </td>
         </tr>
         <tr>
@@ -1794,8 +1784,7 @@ parameter
             <td>
                 <p>Two images a short distance apart, rotated to find the softest
 direction and translated with the force along it inverted. Never forms
-a Hessian at all, which is the point: on a system where the analytic
-Hessian is the bottleneck, this is the method that runs.</p>
+a Hessian.</p>
             </td>
         </tr>
         <tr>
@@ -1838,9 +1827,7 @@ parameter
   <p>Energy and gradient at a geometry, in atomic units</p>
 <p>Coordinates are Bohr and the gradient is Hartree/Bohr, both in the
 system&rsquo;s own atom order. Fragmentation and hydrogen caps have
-already been folded back in by the time an engine sees this, so an
-engine never learns whether the number it was handed came from one
-calculation or from twenty thousand.</p>
+already been folded back in by the time an engine sees this.</p>
 <p><code>status</code> is 0 for success. An engine must stop on anything else
 rather than step on a gradient that was never computed &ndash; a failed
 fragment leaves the array at whatever it held, which reads as a
@@ -1859,7 +1846,7 @@ perfectly plausible small gradient.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~2"></span>
+              <span class="anchor" id="variable-n_atoms~24"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1874,7 +1861,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~2"></span>
+              <span class="anchor" id="variable-coords~12"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1889,7 +1876,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy"></span>
+              <span class="anchor" id="variable-energy~16"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1904,7 +1891,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient"></span>
+              <span class="anchor" id="variable-gradient~9"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1919,7 +1906,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~2"></span>
+              <span class="anchor" id="variable-status~11"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1951,15 +1938,12 @@ perfectly plausible small gradient.</p>
 
     </h3>
   <p>Second derivatives at a geometry, Hartree/Bohr^2</p>
-<p>Cartesian, <code>(3N, 3N)</code>, in the system&rsquo;s own atom order. Cartesian
-regardless of the coordinate system the optimization runs in: the
-engine transforms it to whatever internals it is using, and cannot
-do that if it is handed something already transformed.</p>
+<p>Cartesian, <code>(3N, 3N)</code>, in the system&rsquo;s own atom order, whatever
+coordinate system the optimization itself runs in &ndash; the engine
+transforms it.</p>
 <p><code>status</code> is 0 for success. Anything else means no Hessian was
-produced, which is not a failure &ndash; an engine that asked for one is
-expected to fall back to finite differences of gradients, which is
-slower and correct. That is why this interface has no <code>error_t</code>:
-there is nothing here a caller could not recover from.</p>
+produced, which is not a failure: the engine falls back to finite
+differences of gradients, so there is no <code>error_t</code> here.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1974,7 +1958,7 @@ there is nothing here a caller could not recover from.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms"></span>
+              <span class="anchor" id="variable-n_atoms~23"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1989,7 +1973,7 @@ there is nothing here a caller could not recover from.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords"></span>
+              <span class="anchor" id="variable-coords~11"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2004,7 +1988,7 @@ there is nothing here a caller could not recover from.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian"></span>
+              <span class="anchor" id="variable-hessian~9"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2019,7 +2003,7 @@ there is nothing here a caller could not recover from.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status"></span>
+              <span class="anchor" id="variable-status~10"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2052,10 +2036,8 @@ there is nothing here a caller could not recover from.</p>
     </h3>
   <p>One accepted geometry, as the optimization passes through it</p>
 <p>Called by the engine for each step it accepts &ndash; not for every
-energy evaluation, which includes the trial points of a line
-search and would make a trajectory that goes backwards. What the
-driver does with it (writes a frame, records it for the output
-document) is not the engine&rsquo;s business.</p>
+energy evaluation, which includes the trial points of a line search
+and would make a trajectory that goes backwards.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2070,7 +2052,7 @@ document) is not the engine&rsquo;s business.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~3"></span>
+              <span class="anchor" id="variable-n_atoms~25"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2085,7 +2067,7 @@ document) is not the engine&rsquo;s business.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~3"></span>
+              <span class="anchor" id="variable-coords~13"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2100,7 +2082,7 @@ document) is not the engine&rsquo;s business.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~2"></span>
+              <span class="anchor" id="variable-energy~17"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2151,7 +2133,7 @@ document) is not the engine&rsquo;s business.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atoms"></span>
+              <span class="anchor" id="variable-atoms~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2168,7 +2150,7 @@ document) is not the engine&rsquo;s business.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-kind"></span>
+              <span class="anchor" id="variable-kind~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2247,10 +2229,8 @@ document) is not the engine&rsquo;s business.</p>
                 <td>.false.</td>
             <td>
 <p>After the saddle is found, follow its imaginary mode downhill in
-both directions and report the two minima it falls to. One
-imaginary frequency proves a first-order saddle; it does not prove
-the saddle joins the two structures anybody had in mind, and this
-is the check that settles it.</p>
+both directions and report the two minima it falls to &ndash; which is
+what says whether the saddle joins the structures anybody meant.</p>
             </td>
         </tr>
         <tr>
@@ -2292,7 +2272,7 @@ system to hold them in &ndash; see <code>mqc_dlfind_bridge</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates"></span>
+              <span class="anchor" id="variable-coordinates~7"></span>
               integer,
             </td>
               <td>public</td>
@@ -2363,7 +2343,7 @@ gradient difference is not noise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-endpoint"></span>
+              <span class="anchor" id="variable-endpoint~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2376,8 +2356,7 @@ gradient difference is not noise.</p>
                 <td></td>
             <td>
 <p>Path to a second geometry: the product, for a chain-of-states run.
-Unallocated is the ordinary single-structure optimization, and is
-what makes NEB opt-in rather than inferred.</p>
+Unallocated is the ordinary single-structure optimization.</p>
             </td>
         </tr>
         <tr>
@@ -2491,7 +2470,7 @@ so a frozen pair contributes no coordinates at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient_tolerance"></span>
+              <span class="anchor" id="variable-gradient_tolerance~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2521,7 +2500,9 @@ so a frozen pair contributes no coordinates at all.</p>
                 <td>.false.</td>
             <td>
 <p>Compute a Hessian at the converged geometry and say whether any
-frequency came back imaginary.</p><a href="../type/optimizer_settings_t.html#variable-hess_end" class="pull-right"><emph>Read more&hellip;</emph></a>
+frequency came back imaginary. A vanishing gradient is a stationary
+point and not necessarily a minimum, so this is what establishes
+what the run converged <em>to</em>.</p><a href="../type/optimizer_settings_t.html#variable-hess_end" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -2608,8 +2589,7 @@ Ignored by the algorithms that never build one.</p>
                 <td>0</td>
             <td>
 <p>Images along the path, endpoints included. Zero means the engine&rsquo;s
-own default. DL-FIND refuses fewer than three, since two images are
-just the endpoints and there is no path between them to relax.</p>
+own default; fewer than <code>MIN_NEB_IMAGES</code> is refused.</p>
             </td>
         </tr>
         <tr>
@@ -2750,9 +2730,8 @@ Independent of <code>algorithm</code> on purpose &ndash; see <code>OPT_TARGET_SA
                 <td>.true.</td>
             <td>
 <p>Record every accepted geometry, for analysing the path afterwards.
-Worth turning off for a large system optimized over many steps:
-the geometries are held until the run ends so they can be written
-as one document, which is 3N doubles per step of memory.</p>
+The geometries are held until the run ends, 3N doubles per step, so
+this is worth turning off for a large system over many steps.</p>
             </td>
         </tr>
         <tr>
@@ -2855,7 +2834,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~3"></span>
+              <span class="anchor" id="variable-text~12"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2990,7 +2969,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-kind~3"></span>
+              <span class="anchor" id="variable-kind~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3035,7 +3014,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~13"></span>
+              <span class="anchor" id="variable-text~22"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3080,7 +3059,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text"></span>
+              <span class="anchor" id="variable-text~10"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3125,7 +3104,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~3"></span>
+              <span class="anchor" id="variable-coordinates~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3170,7 +3149,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~11"></span>
+              <span class="anchor" id="variable-text~20"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3260,7 +3239,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~7"></span>
+              <span class="anchor" id="variable-text~16"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3350,7 +3329,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~5"></span>
+              <span class="anchor" id="variable-text~14"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3395,7 +3374,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~2"></span>
+              <span class="anchor" id="variable-method~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3425,7 +3404,7 @@ none, which is why this is off by default.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Parse what the deck says it is looking for</p><a href="../proc/target_from_string.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Parse what the deck says it is looking for</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -3440,7 +3419,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~9"></span>
+              <span class="anchor" id="variable-text~18"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3485,7 +3464,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-want~2"></span>
+              <span class="anchor" id="variable-want~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3515,7 +3494,7 @@ none, which is why this is off by default.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Case-insensitive comparison, the way mqc_calc_types does it</p>
+  <p>Trimmed, left-adjusted, ASCII-lowercased copy of <code>text</code></p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -3530,7 +3509,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~14"></span>
+              <span class="anchor" id="variable-text~23"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3579,7 +3558,7 @@ none, which is why this is off by default.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

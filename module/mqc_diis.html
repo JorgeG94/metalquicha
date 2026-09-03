@@ -213,17 +213,10 @@
 
     <div class="col-md-9" id='text'>
       <p>Holds the DIIS history and produces the extrapolated Fock matrix.</p>
-<p>Split out of the cuEST SCF driver for two reasons. It is pure linear
-algebra over flat vectors with no integrals backend behind it, so it builds
-and is unit-tested without a GPU &ndash; which the SCF driver is not, since that
-needs libcuest and an sm_80 card. And it gives the device port a host
-reference to diff against: the failure mode of a device DIIS is a silently
-stale history producing plausible-but-wrong coefficients, which only shows
-up against a known-good implementation.</p>
-<p>Vectors are stored flat, one column per subspace entry, which serves the
-restricted case (one n_ao*n_ao Fock) and the unrestricted case (both spins
-stacked into one vector) through the same code, and is the layout a device
-reduction wants: contiguous and coalesced.
+<p>Pure linear algebra over flat vectors, with no integrals backend behind
+it. Vectors are stored flat, one column per subspace entry, which serves
+the restricted case (one n_ao*n_ao Fock) and the unrestricted case (both
+spins stacked into one vector) through the same code.
 Ring slot holding the age-th oldest entry
 Extrapolation weights from a cached overlap matrix</p>
 <br>          <div class="card mb-4">
@@ -232,9 +225,9 @@ Extrapolation weights from a cached overlap matrix</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_ediis.html'>mqc_ediis</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -464,27 +457,15 @@ parameter
                 <td>1.0e-2_dp</td>
             <td>
                 <p>Error-vector norm below which an energy-based scheme hands over to
-DIIS.</p>
-<p><strong>This is a deliberate deviation from PySCF</strong>, which has no handover:
-setting <code>mf.DIIS</code> to <code>ADIIS</code> or <code>EDIIS</code> there runs that class from the
-first iteration to the last. The deviation is measured rather than
-assumed. On water/def2-SVP/PBE from a core guess, all three landing on
--76.271664064937: DIIS 10 iterations, ADIIS 11, EDIIS 32 with the
-handover, against ADIIS 43 and EDIIS 92 without it.</p>
-<p>Those counts drift by an iteration or two with anything that touches
-the quadrature &ndash; they read 10 / 10 / 25 before the ECP work changed
-the exchange-correlation grid to be built from the element rather than
-the effective charge. The energies do not move and the conclusion does
-not either, so do not quote them more precisely than the gap they
-show. Neither energy scheme is usable alone, and the reason is structural rather than incidental
-&ndash; the convex constraint that keeps them inside the hull of the
-densities seen so far is exactly what stops them reaching a solution
-that lies outside it.</p>
-<p>The handover is a <em>performance</em> choice and nothing rests on it for
-correctness. It could not have been said before the SCF convergence
-test learned to check the commutator: until then a handover would have
-hidden EDIIS stalling at an energy 0.11 Hartree wrong by switching
-away before anything noticed.</p>
+DIIS. Applied by the SCF driver, not by this module.</p>
+<p><strong>A deliberate deviation from PySCF</strong>, which has no handover: setting
+<code>mf.DIIS</code> to <code>ADIIS</code> or <code>EDIIS</code> there runs that class from the first
+iteration to the last. Neither energy scheme is usable alone, and the
+reason is structural: the convex constraint that keeps them inside the
+hull of the densities seen so far is what stops them reaching a
+solution lying outside it.</p>
+<p>The handover is a <em>performance</em> choice; nothing rests on it for
+correctness.</p>
             </td>
         </tr>
         <tr>
@@ -501,8 +482,7 @@ parameter
 <td> =</td>
                 <td>1.0e-14_dp</td>
             <td>
-                <p>The two procedures above are the parts of DIIS that have nothing to do
-Below this a pivot is treated as singular and extrapolation is skipped</p>
+                <p>Below this a pivot is treated as singular and extrapolation is skipped</p>
             </td>
         </tr>
     </tbody>
@@ -558,7 +538,7 @@ Below this a pivot is treated as singular and extrapolation is skipped</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-df"></span>
+              <span class="anchor" id="variable-df~3"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -571,7 +551,7 @@ Below this a pivot is treated as singular and extrapolation is skipped</p>
                 <td></td>
             <td>
 <p>(max_vectors, max_vectors) cached <D_i | F_j> in slot coordinates,
-which is everything EDIIS and ADIIS need from the history.</p><a href="../type/diis_state_t.html#variable-df" class="pull-right"><emph>Read more&hellip;</emph></a>
+which is everything EDIIS and ADIIS need from the history.</p><a href="../type/diis_state_t.html#variable-df~3" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -590,9 +570,7 @@ which is everything EDIIS and ADIIS need from the history.</p><a href="../type/d
             <td>
 <p>Whether the history below is carried. Off by default and allocated
 only on request: a density is the size of a Fock matrix, so this
-doubles the history&rsquo;s footprint &ndash; 14 MB at 472 basis functions
-across eight slots &ndash; and a run that only ever calls DIIS should not
-pay for it.</p>
+doubles the history&rsquo;s footprint.</p>
             </td>
         </tr>
         <tr>
@@ -699,7 +677,7 @@ pay for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_stored"></span>
+              <span class="anchor" id="variable-n_stored~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -733,7 +711,7 @@ pay for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap"></span>
+              <span class="anchor" id="variable-overlap~9"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -762,12 +740,12 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/diis_state_t.html#boundprocedure-count'>count</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_count.html'>diis_count</a></td>
+  <strong><a href='../type/diis_state_t.html#boundprocedure-count~13'>count</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_count.html'>diis_count</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/diis_state_t.html#boundprocedure-destroy~3'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_destroy.html'>diis_destroy</a></td>
+  <strong><a href='../type/diis_state_t.html#boundprocedure-destroy~28'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_destroy.html'>diis_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -782,7 +760,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/diis_state_t.html#boundprocedure-init'>init</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_init.html'>diis_init</a></td>
+  <strong><a href='../type/diis_state_t.html#boundprocedure-init~7'>init</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_init.html'>diis_init</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -820,7 +798,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~3"></span>
+              <span class="anchor" id="variable-scheme~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -880,7 +858,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_stored~2"></span>
+              <span class="anchor" id="variable-n_stored~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -955,7 +933,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~20"></span>
+              <span class="anchor" id="variable-this~133"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1000,7 +978,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~21"></span>
+              <span class="anchor" id="variable-this~134"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1065,7 +1043,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~2"></span>
+              <span class="anchor" id="variable-overlap~10"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1095,7 +1073,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_stored~3"></span>
+              <span class="anchor" id="variable-n_stored~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1125,7 +1103,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coefficients~3"></span>
+              <span class="anchor" id="variable-coefficients~10"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1142,7 +1120,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~4"></span>
+              <span class="anchor" id="variable-ok~12"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1182,7 +1160,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~6"></span>
+              <span class="anchor" id="variable-name~40"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1197,7 +1175,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~2"></span>
+              <span class="anchor" id="variable-scheme~13"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1212,7 +1190,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~2"></span>
+              <span class="anchor" id="variable-ok~10"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1252,7 +1230,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~25"></span>
+              <span class="anchor" id="variable-this~138"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1292,7 +1270,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~24"></span>
+              <span class="anchor" id="variable-this~137"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1307,7 +1285,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fock~3"></span>
+              <span class="anchor" id="variable-fock~4"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -1322,7 +1300,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~3"></span>
+              <span class="anchor" id="variable-ok~11"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1362,7 +1340,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~23"></span>
+              <span class="anchor" id="variable-this~136"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1377,7 +1355,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme"></span>
+              <span class="anchor" id="variable-scheme~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1392,7 +1370,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fock~2"></span>
+              <span class="anchor" id="variable-fock~3"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -1407,7 +1385,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok"></span>
+              <span class="anchor" id="variable-ok~9"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1447,7 +1425,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~19"></span>
+              <span class="anchor" id="variable-this~132"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1548,7 +1526,7 @@ false, so a plain DIIS caller allocates exactly what it did before.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~22"></span>
+              <span class="anchor" id="variable-this~135"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1563,7 +1541,7 @@ false, so a plain DIIS caller allocates exactly what it did before.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fock"></span>
+              <span class="anchor" id="variable-fock~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1593,7 +1571,7 @@ false, so a plain DIIS caller allocates exactly what it did before.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density"></span>
+              <span class="anchor" id="variable-density~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1611,7 +1589,7 @@ the trace both energy models want.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~4"></span>
+              <span class="anchor" id="variable-energy~21"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1626,7 +1604,7 @@ the trace both energy models want.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~5"></span>
+              <span class="anchor" id="variable-error~145"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -1681,7 +1659,7 @@ the trace both energy models want.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coefficients~4"></span>
+              <span class="anchor" id="variable-coefficients~11"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1696,7 +1674,7 @@ the trace both energy models want.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~5"></span>
+              <span class="anchor" id="variable-ok~13"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1739,7 +1717,7 @@ the trace both energy models want.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

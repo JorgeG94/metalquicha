@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/drop_unreachable_classes.html#variable-ga~4">ga</a>
-            <a class="list-group-item" href="../proc/drop_unreachable_classes.html#variable-gb~4">gb</a>
+            <a class="list-group-item" href="../proc/drop_unreachable_classes.html#variable-ga~10">ga</a>
+            <a class="list-group-item" href="../proc/drop_unreachable_classes.html#variable-gb~10">gb</a>
             <a class="list-group-item" href="../proc/drop_unreachable_classes.html#variable-keep_alpha">keep_alpha</a>
             <a class="list-group-item" href="../proc/drop_unreachable_classes.html#variable-keep_beta">keep_beta</a>
         </div>
@@ -181,20 +181,12 @@
 
     <p>Keep the classes the space uses and the ones an excitation can reach</p>
 <p>A class earns its place by appearing in some allowed pair, or by being
-one excitation away from one that does. Anything further away can hold
-no determinant of the space and can be reached by nothing the sigma
-build ever forms, so its strings are weight without use.</p>
+one excitation away from one that does. Anything further can hold no
+determinant of the space and can be reached by nothing the sigma build
+forms.</p>
 <p><strong>One move, not none.</strong> Pruning to the classes that appear in the space
-would be tighter &ndash; it is what GAMESS does &ndash; and it would be wrong
-here. An excitation routinely leaves the space and the intermediate has
-to name where it went; a program whose sigma works on determinant pairs
-never names that string and can afford the tighter bound. Ours is a
-vector indexed by determinant, so every class the closure touches needs
-to exist.</p>
-<p>The saving is nothing on a small space and decisive on a real one:
-singles and doubles from seven orbitals into twenty-nine keeps 136,620
-alpha strings out of 8,347,680, and every per-string table shrinks with
-them.</p>
+is wrong here: the sigma intermediate is a vector indexed by
+determinant, so every class the closure touches has to exist.</p>
 
 
     <h3>Arguments</h3>
@@ -210,7 +202,7 @@ them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~5"></span>
+              <span class="anchor" id="variable-space~18"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -514,7 +506,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ga~4"></span>
+              <span class="anchor" id="variable-ga~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -531,7 +523,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gb~4"></span>
+              <span class="anchor" id="variable-gb~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -600,22 +592,13 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Keep the classes the space uses and the ones an excitation can reach</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! A class earns its place by appearing in some allowed pair, or by being</span>
-<span class="w">      </span><span class="c">!! one excitation away from one that does. Anything further away can hold</span>
-<span class="w">      </span><span class="c">!! no determinant of the space and can be reached by nothing the sigma</span>
-<span class="w">      </span><span class="c">!! build ever forms, so its strings are weight without use.</span>
+<span class="w">      </span><span class="c">!! one excitation away from one that does. Anything further can hold no</span>
+<span class="w">      </span><span class="c">!! determinant of the space and can be reached by nothing the sigma build</span>
+<span class="w">      </span><span class="c">!! forms.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! **One move, not none.** Pruning to the classes that appear in the space</span>
-<span class="w">      </span><span class="c">!! would be tighter -- it is what GAMESS does -- and it would be wrong</span>
-<span class="w">      </span><span class="c">!! here. An excitation routinely leaves the space and the intermediate has</span>
-<span class="w">      </span><span class="c">!! to name where it went; a program whose sigma works on determinant pairs</span>
-<span class="w">      </span><span class="c">!! never names that string and can afford the tighter bound. Ours is a</span>
-<span class="w">      </span><span class="c">!! vector indexed by determinant, so every class the closure touches needs</span>
-<span class="w">      </span><span class="c">!! to exist.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The saving is nothing on a small space and decisive on a real one:</span>
-<span class="w">      </span><span class="c">!! singles and doubles from seven orbitals into twenty-nine keeps 136,620</span>
-<span class="w">      </span><span class="c">!! alpha strings out of 8,347,680, and every per-string table shrinks with</span>
-<span class="w">      </span><span class="c">!! them.</span>
+<span class="w">      </span><span class="c">!! is wrong here: the sigma intermediate is a vector indexed by</span>
+<span class="w">      </span><span class="c">!! determinant, so every class the closure touches has to exist.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_space_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">space</span>
 
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">keep_alpha</span><span class="p">(:),</span><span class="w"> </span><span class="n">keep_beta</span><span class="p">(:)</span>
@@ -664,7 +647,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

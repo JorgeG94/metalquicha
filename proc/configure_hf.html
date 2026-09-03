@@ -181,7 +181,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~3"></span>
+              <span class="anchor" id="variable-m~5"></span>
               type(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -196,7 +196,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~31"></span>
+              <span class="anchor" id="variable-config~30"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -221,11 +221,10 @@
             <td>::</td>
             <td><strong>with_mp2</strong></td>
             <td>
-                <p>Follow the reference with MP2. MP2 is dispatched onto the same
-method object rather than a class of its own, because that is what
-it is: a Hartree-Fock calculation and a correction built from its
-orbitals. A separate class would duplicate every SCF setting to
-reach the same code.</p>
+                <p>Follow the reference with MP2. MP2 and coupled cluster are
+dispatched onto this same method object rather than classes of
+their own: each is a Hartree-Fock calculation plus a correction
+built from its orbitals.</p>
             </td>
         </tr>
         <tr>
@@ -240,8 +239,7 @@ reach the same code.</p>
             <td>::</td>
             <td><strong>with_cc</strong></td>
             <td>
-                <p>Follow the reference with coupled cluster. Same argument as
-<code>with_mp2</code>: a method, not an option.</p>
+                <p>Follow the reference with coupled cluster.</p>
             </td>
         </tr>
     </tbody>
@@ -697,18 +695,13 @@ large graphs.</div>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">hf_method_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">m</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">method_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">with_cc</span>
-<span class="w">         </span><span class="c">!! Follow the reference with coupled cluster. Same argument as</span>
-<span class="w">         </span><span class="c">!! `with_mp2`: a method, not an option.</span>
+<span class="w">         </span><span class="c">!! Follow the reference with coupled cluster.</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">with_mp2</span>
-<span class="w">         </span><span class="c">!! Follow the reference with MP2. MP2 is dispatched onto the same</span>
-<span class="w">         </span><span class="c">!! method object rather than a class of its own, because that is what</span>
-<span class="w">         </span><span class="c">!! it is: a Hartree-Fock calculation and a correction built from its</span>
-<span class="w">         </span><span class="c">!! orbitals. A separate class would duplicate every SCF setting to</span>
-<span class="w">         </span><span class="c">!! reach the same code.</span>
+<span class="w">         </span><span class="c">!! Follow the reference with MP2. MP2 and coupled cluster are</span>
+<span class="w">         </span><span class="c">!! dispatched onto this same method object rather than classes of</span>
+<span class="w">         </span><span class="c">!! their own: each is a Hartree-Fock calculation plus a correction</span>
+<span class="w">         </span><span class="c">!! built from its orbitals.</span>
 
-<span class="w">      </span><span class="c">! Common settings</span>
-
-<span class="w">      </span><span class="c">! SCF settings from shared config%scf</span>
 <span class="w">      </span><span class="k">call </span><span class="n">configure_scf</span><span class="p">(</span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">with_mp2</span><span class="p">))</span><span class="w"> </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">run_mp2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">with_mp2</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">with_cc</span><span class="p">))</span><span class="w"> </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">run_cc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">with_cc</span>
@@ -728,12 +721,7 @@ large graphs.</div>
 <span class="k">         </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">scs_ss</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">corr</span><span class="p">%</span><span class="n">scs_ss</span>
 <span class="w">         </span><span class="n">m</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">scs_os</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">corr</span><span class="p">%</span><span class="n">scs_os</span>
 <span class="w">      </span><span class="k">end if</span>
-
-<span class="w">      </span><span class="c">! Not from `config%dft`, and so easy to leave out: the continuum sits on</span>
-<span class="w">      </span><span class="c">! the shared config beside the SCF settings precisely because it applies</span>
-<span class="w">      </span><span class="c">! to any reference. `configure_dft` copied it and this did not, which made</span>
-<span class="w">      </span><span class="c">! `keywords.pcm` a no-op for Hartree-Fock, MP2 and coupled cluster.</span>
-<span class="w">   </span><span class="k">end subroutine </span><span class="n">configure_hf</span>
+<span class="k">   end subroutine </span><span class="n">configure_hf</span>
 </pre></div>
 
     </section>
@@ -757,7 +745,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

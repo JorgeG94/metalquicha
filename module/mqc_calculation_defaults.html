@@ -199,9 +199,8 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>Provides compile-time constants for default calculation parameters.
-These defaults are used throughout the codebase when users don&rsquo;t specify values.
-This single source of truth prevents divergence between serial and parallel paths.</p>
+      <p>Compile-time constants for the values a deck gets when it names none,
+kept in one place so the serial and parallel paths cannot diverge.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
@@ -2388,7 +2387,7 @@ parameter
 <td> =</td>
                 <td>0.005_dp</td>
             <td>
-                <p>Bohr (~0.05 Angstrom)</p>
+                <p>Bohr</p>
             </td>
         </tr>
         <tr>
@@ -2427,18 +2426,12 @@ relative to the right-hand side, when a deck does not name a tolerance.</p>
 <p><strong>The largest cheap lever on that solve.</strong> Every iteration is four passes
 over the integrals, so the iteration count is the cost and this sets the
 count. The EFMO literature runs the equivalent CPHF and TDHF solves at
-<code>5e-5</code> and reports the resulting error in the total interaction energy at
-about <code>3e-6</code> Hartree &ndash; Sattasathuchana et al., JCTC 20, 2445 (2024),
-Tables 2 and 3, where loosening from <code>1e-7</code> to <code>5e-5</code> cut their adenine
-wall time from 39.1 to 17.2 minutes.</p>
-<p>Left at <code>1e-7</code> all the same. That measurement is of their code and their
-accumulation, and what a potential built here does to an interaction
-energy still has not been measured. <code>keywords.efp.dynamic_tolerance</code> is
-how that measurement gets made without a rebuild, and it is the one EFP
-key that changes the numbers a potential reports rather than only how
+<code>5e-5</code> &ndash; Sattasathuchana et al., JCTC 20, 2445 (2024) &ndash; for an error of
+about <code>3e-6</code> Hartree in the total interaction energy.</p>
+<p>Left at <code>1e-7</code> because what a potential built here does to an interaction
+energy has not been measured. <code>keywords.efp.dynamic_tolerance</code> is the one
+EFP key that changes the numbers a potential reports rather than only how
 they are arrived at.</p>
-<p>Here rather than beside the solver so that the default a deck inherits
-and the default the solver falls back on are the same constant.</p>
             </td>
         </tr>
         <tr>
@@ -2489,10 +2482,9 @@ parameter
 <td> =</td>
                 <td>-1.0_dp</td>
             <td>
-                <p>Negative means &ldquo;leave the engine&rsquo;s own default alone&rdquo;. Used for the
-settings where DL-FIND&rsquo;s choice is better than a second one invented
-here: the step cap and the curvature history depend on the coordinate
-system, which this program does not want to reason about.</p>
+                <p>Negative means &ldquo;leave the engine&rsquo;s own default alone&rdquo;, which is what the
+settings below it use: the step cap and the curvature history depend on
+the coordinate system, so DL-FIND chooses them.</p>
             </td>
         </tr>
         <tr>
@@ -2509,9 +2501,9 @@ parameter
 <td> =</td>
                 <td>4.5e-4_dp</td>
             <td>
-                <p>Convergence on the largest gradient component, Hartree/Bohr.
-DL-FIND&rsquo;s own default, restated here so a deck that never mentions it
-still gets a number this program can print and a user can look up.</p>
+                <p>Convergence on the largest gradient component, Hartree/Bohr. DL-FIND&rsquo;s
+own default, restated here so a deck that never mentions it still gets a
+number this program can print.</p>
             </td>
         </tr>
         <tr>
@@ -2597,14 +2589,10 @@ parameter
                 <td>302</td>
             <td>
                 <p>Angular points per atom on a continuum cavity, for the ab initio PCM.</p>
-<p>302, matching what PySCF and most codes use for a cavity. This was 110 on
-the assumption that a cavity needs far fewer points than an
-exchange-correlation grid, and that was measured to be wrong: on water in
-water, 110 points per atom gave a dielectric energy 21% short of the
-converged value (-8.07 mHartree against -10.21), while 302 agrees with
-PySCF&rsquo;s C-PCM to 1.5% and reproduces its solvated dipole to 0.0013 D. A
-continuum surface is a two-dimensional integral of a function with a cusp
-where spheres intersect, so it is not the easy quadrature it looks like.</p>
+<p>302, matching what PySCF and most codes use for a cavity. A continuum
+surface is a two-dimensional integral of a function with a cusp where
+spheres intersect, so it is not the easy quadrature it looks like: at 110
+points per atom the dielectric energy comes out 21% short.</p>
             </td>
         </tr>
         <tr>
@@ -2642,15 +2630,11 @@ parameter
 <p>Used as zeta_i = zeta * sqrt(n_angular) / R_i, since the exponent has to
 scale with the spacing between surface points, which on a sphere of radius
 R carrying n points goes as R/sqrt(n).</p>
-<p><strong>Calibrated, not derived, and that is worth stating.</strong> Lange and Herbert
-[JCP 133, 244111 (2010)] fit 4.9 for Lebedev cavities, but cuEST takes the
-exponents themselves rather than a prefactor and its convention is not
-documented in the bindings &ndash; so 4.9 here is not necessarily 4.9 there. Two
-is the value that reproduces PySCF&rsquo;s C-PCM on water in water; at 4.9 the
-dielectric energy came out half. What that means is that this number
-absorbs whatever cuEST&rsquo;s definition actually is, so it should be treated as
-an empirical constant of this interface rather than a physical one, and it
-is a keyword so it can be revisited.</p>
+<p><strong>Calibrated, not derived.</strong> Lange and Herbert [JCP 133, 244111 (2010)]
+fit 4.9 for Lebedev cavities, but cuEST takes the exponents themselves
+rather than a prefactor and its convention is undocumented, so this number
+absorbs whatever that definition is. Treat it as an empirical constant of
+this interface rather than a physical one.</p>
             </td>
         </tr>
         <tr>
@@ -2686,14 +2670,11 @@ parameter
             <td>
                 <p>Densities contracted against one pass over the integrals in the
 frequency-dependent response.</p>
-<p>A machine number, not a physical one: a pass evaluates the same
-quartets whatever it contracts against them, so wide batches
-amortise the integrals &ndash; while each thread scatters into an
-accumulator that grows with the batch and with the square of the
-basis. Measured on a water 20-mer in 6-31G, 260 functions on 16
-Broadwell cores, widening 4 to 8 cut the work 1.67 times, so the
-integrals dominate at that size. Where the accumulator starts to
-win back depends on the cache, which is why
+<p>A machine number, not a physical one: a pass evaluates the same quartets
+whatever it contracts against them, so wide batches amortise the
+integrals, while each thread scatters into an accumulator that grows with
+the batch and with the square of the basis. Where the accumulator starts
+to win back depends on the cache, which is why
 <code>keywords.efp.response_batch</code> exists rather than a second guess.</p>
             </td>
         </tr>
@@ -2711,7 +2692,8 @@ parameter
 <td> =</td>
                 <td>1.0e-9_dp</td>
             <td>
-                
+                <p>Convergence threshold a deck gets when it does not name
+<code>keywords.scf.tolerance</code>.</p>
             </td>
         </tr>
         <tr>
@@ -2728,9 +2710,7 @@ parameter
 <td> =</td>
                 <td>1.0e-6_dp</td>
             <td>
-                <p>Density convergence a deck gets when it does not say. Matches what
-<code>method_config_t</code> already defaulted to, so naming the key changes nothing
-for a deck that leaves it alone.</p>
+                <p>Density convergence a deck gets when it does not say.</p>
             </td>
         </tr>
         <tr>
@@ -2800,13 +2780,8 @@ parameter
             <td>
                 <p>Innermost layer of the EFP screening grid, as a fraction of a van der
 Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
-<p>One name for what used to be <code>VDW_SCALE</code> in the screening grid and
-<code>vdwscl</code> on the potential writer, and now one number as well: the grid
-takes the scale the potential was built with, so the <code>VDWSCL</code> the SCREEN
-header reports is the one the fit was made against. They were only
-<em>equal</em> before, which was fine while nobody could change either &ndash; and
-not fine the moment <code>keywords.efp.vdw_scale</code> existed, because it would
-have moved the header and left the grid where it was.</p>
+<p>The grid takes the scale the potential was built with, so the <code>VDWSCL</code>
+the SCREEN header reports is the one the fit was made against.</p>
             </td>
         </tr>
         <tr>
@@ -2840,7 +2815,12 @@ parameter
 <td> =</td>
                 <td>huge(0)</td>
             <td>
-                
+                <p>Displacement code carried by every work task.</p>
+<p>DISP_WHOLE_FRAGMENT means &ldquo;run the requested calc_type on the fragment as
+it stands&rdquo;, which is every energy/gradient run and the whole GMBE path.
+Any other value marks a task from a flattened Hessian queue: 0 is the
+undisplaced reference point and +/-k displaces coordinate k
+forward/backward (see <code>build_hessian_task_table</code>).</p>
             </td>
         </tr>
         <tr>
@@ -2858,15 +2838,12 @@ parameter
                 <td>0</td>
             <td>
                 <p>How the frequency-dependent response is obtained: <code>keywords.efp.response</code>.</p>
-<p><code>auto</code> is the rule the code followed before there was a keyword &ndash; build
-<code>(A+B)</code> and <code>(A-B)</code> and factorise them, unless three <code>n_ov^2</code> matrices
-would pass <code>DENSE_OPERATOR_LIMIT</code>, and iterate matrix-free when they
-would. The two forcing values exist because that crossover is a statement
-about memory and not about wall clock, and the two routes could not be
-compared from a deck at all: <code>dense</code> builds the operator however large it
-is, <code>matrix_free</code> never builds it however small. They solve the same
-equations, so a small molecule run both ways prices the iterative route
-against an exact reference.</p>
+<p><code>auto</code> builds <code>(A+B)</code> and <code>(A-B)</code> and factorises them, unless three
+<code>n_ov^2</code> matrices would pass <code>DENSE_OPERATOR_LIMIT</code>, and iterates
+matrix-free when they would. <code>dense</code> builds the operator however large it
+is and <code>matrix_free</code> never builds it however small; the crossover is a
+statement about memory rather than wall clock, and the two routes solve
+the same equations.</p>
             </td>
         </tr>
         <tr>
@@ -2918,12 +2895,6 @@ parameter
                 <td>1</td>
             <td>
                 <p>Fragment specified by atom list (GMBE/PIE)</p>
-<p>Displacement code carried by every work task.</p>
-<p>DISP_WHOLE_FRAGMENT means &ldquo;run the requested calc_type on the fragment as it
-stands&rdquo; &ndash; the original one-fragment-per-task behaviour, still used by every
-energy/gradient run and by the whole GMBE path. Any other value marks a task
-from a flattened Hessian queue: 0 is the undisplaced reference point and +/-k
-displaces coordinate k forward/backward (see build_hessian_task_table).</p>
             </td>
         </tr>
         <tr>
@@ -2975,7 +2946,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -136,20 +136,20 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-basis~4">basis</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-basis~10">basis</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#variable-cap_bonded_to">cap_bonded_to</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#variable-cap_replaces_atom">cap_replaces_atom</a>
-            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-cap_scale~4">cap_scale</a>
-            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-charge~9">charge</a>
-            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-coordinates~12">coordinates</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-cap_scale~5">cap_scale</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-charge~8">charge</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-coordinates~11">coordinates</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#variable-distance~3">distance</a>
-            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-element_numbers~2">element_numbers</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-element_numbers">element_numbers</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#variable-is_ghost">is_ghost</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#variable-local_to_global">local_to_global</a>
-            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-multiplicity~8">multiplicity</a>
-            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-n_atoms~36">n_atoms</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-multiplicity~7">multiplicity</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-n_atoms~27">n_atoms</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#variable-n_caps">n_caps</a>
-            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-nelec">nelec</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#variable-nelec~2">nelec</a>
         </div>
       </div>
     </div>
@@ -177,7 +177,7 @@
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/physical_fragment_t.html#boundprocedure-compute_nelec">compute_nelec</a>
-            <a class="list-group-item" href="../type/physical_fragment_t.html#boundprocedure-destroy~18">destroy</a>
+            <a class="list-group-item" href="../type/physical_fragment_t.html#boundprocedure-destroy~23">destroy</a>
             <a class="list-group-item" href="../type/physical_fragment_t.html#boundprocedure-set_basis">set_basis</a>
         </div>
       </div>
@@ -200,9 +200,7 @@
     <div class="col-md-9" id='text'>
       <h2 id="type-def-statement">
         type, public :: physical_fragment_t</h2>
-    <p>Physical molecular fragment with atomic coordinates and properties</p>
-<p>Represents a molecular fragment containing atomic positions, element types,
-electronic structure information, and basis set data for quantum calculations.</p>
+    <p>One fragment as a QC method sees it: geometry, electron count, basis</p>
 <br>      <div class="card">
         <div class="card-header">
           <h3 class="card-title">Inherits</h3>
@@ -433,7 +431,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~4"></span>
+              <span class="anchor" id="variable-basis~10"></span>
               type(<a href='molecular_basis_type.html'>molecular_basis_type</a>),
             </td>
               <td>public,</td>
@@ -486,7 +484,7 @@ cap sits on the line between the two, so both ends move it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cap_scale~4"></span>
+              <span class="anchor" id="variable-cap_scale~5"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -498,14 +496,13 @@ cap sits on the line between the two, so both ends move it.</p>
 <td> =</td>
                 <td>1.0_dp</td>
             <td>
-                <p>Where each cap sits along its cut bond, <code>R_H = R_kept + s (R_gone - R_kept)</code>.
-One value for the fragment rather than per cap: it is a convention,
-not a property of a particular bond.</p>
+                <p>Where each cap sits along its cut bond,
+<code>R_H = R_kept + s (R_gone - R_kept)</code>. One value for the fragment.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~9"></span>
+              <span class="anchor" id="variable-charge~8"></span>
               integer,
             </td>
               <td>public</td>
@@ -522,7 +519,7 @@ not a property of a particular bond.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~12"></span>
+              <span class="anchor" id="variable-coordinates~11"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -556,7 +553,7 @@ not a property of a particular bond.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers~2"></span>
+              <span class="anchor" id="variable-element_numbers"></span>
               integer,
             </td>
               <td>public,</td>
@@ -587,13 +584,8 @@ not a property of a particular bond.</p>
             <td>
                 <p>Which atoms carry basis functions but no nucleus and no electrons
 (size: n_atoms). Unallocated means none, which is every fragment a
-plain expansion builds.</p>
-<p>This is what a counterpoise-corrected term is made of: a monomer
-computed in the <em>pair&rsquo;s</em> basis, so that the basis-set superposition
-error which inflates the pair cancels out of the difference instead
-of being absorbed into it. <code>charge</code>, <code>nelec</code> and <code>multiplicity</code> count
-the real atoms only &ndash; whoever builds the fragment owns that, since
-only they know which atoms they meant.</p>
+plain expansion builds. <code>charge</code>, <code>nelec</code> and <code>multiplicity</code> count
+the real atoms only.</p>
             </td>
         </tr>
         <tr>
@@ -615,7 +607,7 @@ only they know which atoms they meant.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~8"></span>
+              <span class="anchor" id="variable-multiplicity~7"></span>
               integer,
             </td>
               <td>public</td>
@@ -632,7 +624,7 @@ only they know which atoms they meant.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~36"></span>
+              <span class="anchor" id="variable-n_atoms~27"></span>
               integer,
             </td>
               <td>public</td>
@@ -666,7 +658,7 @@ only they know which atoms they meant.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nelec"></span>
+              <span class="anchor" id="variable-nelec~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -752,7 +744,7 @@ only they know which atoms they meant.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-destroy~18"></span>
+      <span class="anchor" id="boundprocedure-destroy~23"></span>
       <h3>
           procedure, public ::
   <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fragment_destroy.html'>fragment_destroy</a>
@@ -885,10 +877,7 @@ only they know which atoms they meant.</p>
     <section>
     <h3><span class="anchor" id="src"></span>Source Code</h3>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">physical_fragment_t</span>
-<span class="w">      </span><span class="c">!! Physical molecular fragment with atomic coordinates and properties</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Represents a molecular fragment containing atomic positions, element types,</span>
-<span class="w">      </span><span class="c">!! electronic structure information, and basis set data for quantum calculations.</span>
+<span class="w">      </span><span class="c">!! One fragment as a QC method sees it: geometry, electron count, basis</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span><span class="w">  </span><span class="c">!! Number of atoms in this fragment</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">element_numbers</span><span class="p">(:)</span><span class="w">     </span><span class="c">!! Atomic numbers (Z values)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">     </span><span class="c">!! Cartesian coordinates (3, n_atoms) in Bohr</span>
@@ -906,23 +895,16 @@ only they know which atoms they meant.</p>
 <span class="w">         </span><span class="c">!! 0-based like `cap_replaces_atom`. Needed only to differentiate: the</span>
 <span class="w">         </span><span class="c">!! cap sits on the line between the two, so both ends move it.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cap_scale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span>
-<span class="w">         </span><span class="c">!! Where each cap sits along its cut bond, `R_H = R_kept + s (R_gone - R_kept)`.</span>
-<span class="w">         </span><span class="c">!! One value for the fragment rather than per cap: it is a convention,</span>
-<span class="w">         </span><span class="c">!! not a property of a particular bond.</span>
+<span class="w">         </span><span class="c">!! Where each cap sits along its cut bond,</span>
+<span class="w">         </span><span class="c">!! `R_H = R_kept + s (R_gone - R_kept)`. One value for the fragment.</span>
 
 <span class="w">      </span><span class="c">! Gradient redistribution support</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">local_to_global</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Map fragment atom index to system atom index (size: n_atoms - n_caps)</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">is_ghost</span><span class="p">(:)</span>
 <span class="w">         </span><span class="c">!! Which atoms carry basis functions but no nucleus and no electrons</span>
 <span class="w">         </span><span class="c">!! (size: n_atoms). Unallocated means none, which is every fragment a</span>
-<span class="w">         </span><span class="c">!! plain expansion builds.</span>
-<span class="w">         </span><span class="c">!!</span>
-<span class="w">         </span><span class="c">!! This is what a counterpoise-corrected term is made of: a monomer</span>
-<span class="w">         </span><span class="c">!! computed in the *pair's* basis, so that the basis-set superposition</span>
-<span class="w">         </span><span class="c">!! error which inflates the pair cancels out of the difference instead</span>
-<span class="w">         </span><span class="c">!! of being absorbed into it. `charge`, `nelec` and `multiplicity` count</span>
-<span class="w">         </span><span class="c">!! the real atoms only -- whoever builds the fragment owns that, since</span>
-<span class="w">         </span><span class="c">!! only they know which atoms they meant.</span>
+<span class="w">         </span><span class="c">!! plain expansion builds. `charge`, `nelec` and `multiplicity` count</span>
+<span class="w">         </span><span class="c">!! the real atoms only.</span>
 
 <span class="w">      </span><span class="c">! Fragment distance (for screening)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">distance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">  </span><span class="c">!! Minimal atomic distance between monomers in fragment (Angstrom, 0 for monomers)</span>
@@ -956,7 +938,7 @@ only they know which atoms they meant.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

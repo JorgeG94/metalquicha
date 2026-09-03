@@ -139,16 +139,16 @@
             <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-global_i">global_i</a>
             <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-global_j">global_j</a>
             <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-global_original_idx">global_original_idx</a>
-            <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-i~143">i</a>
+            <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-i~125">i</a>
             <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-i_cap~3">i_cap</a>
             <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-i_cap_2">i_cap_2</a>
             <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-icart~2">icart</a>
-            <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-j~38">j</a>
+            <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-j~37">j</a>
             <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-jcart">jcart</a>
             <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-local_cap_idx~2">local_cap_idx</a>
             <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-local_cap_idx_2">local_cap_idx_2</a>
             <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-n_real_atoms~2">n_real_atoms</a>
-            <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-t~4">t</a>
+            <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-t~3">t</a>
             <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-t2">t2</a>
             <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-tgt~2">tgt</a>
             <a class="list-group-item" href="../proc/redistribute_cap_hessian.html#variable-tgt2">tgt2</a>
@@ -194,18 +194,10 @@
 </h2>
     
 
-    <p>Redistribute hydrogen cap Hessian to original atoms</p>
-<p>This subroutine handles Hessian redistribution for fragments with hydrogen caps.
-The Hessian is a rank-2 tensor (3N × 3N) representing second derivatives of energy
-with respect to atomic coordinates. Similar to gradient redistribution, cap contributions
-must be transferred to the original atoms they replace.</p>
-<p>Algorithm:
-  1. For real atoms (indices 1 to n_atoms - n_caps):
-     Accumulate Hessian blocks to system using local_to_global mapping for both dimensions
-  2. For hydrogen caps (indices n_atoms - n_caps + 1 to n_atoms):
-     Add cap Hessian blocks (row and column) to the original atom it replaces</p>
-<p>Note: Hessian is stored as a flattened 2D array (3<em>n_atoms, 3</em>n_atoms)
-      where rows and columns are grouped by atoms (x,y,z for atom 1, then x,y,z for atom 2, etc.)</p>
+    <p>Accumulate a fragment Hessian into the system Hessian</p>
+<p>As <code>redistribute_cap_gradients</code>, but the chain rule applies to both
+indices, so a cap-cap block spreads over four atom pairs. Rows and
+columns are grouped by atom: x, y, z for atom 1, then atom 2, and so on.</p>
 
 
     <h3>Arguments</h3>
@@ -221,7 +213,7 @@ must be transferred to the original atoms they replace.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~31"></span>
+              <span class="anchor" id="variable-fragment~29"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -796,7 +788,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~143"></span>
+              <span class="anchor" id="variable-i~125"></span>
               integer,
             </td>
               <td>private</td>
@@ -864,7 +856,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~38"></span>
+              <span class="anchor" id="variable-j~37"></span>
               integer,
             </td>
               <td>private</td>
@@ -949,7 +941,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-t~4"></span>
+              <span class="anchor" id="variable-t~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1083,21 +1075,11 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">redistribute_cap_hessian</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_hessian</span><span class="p">,</span><span class="w"> </span><span class="n">system_hessian</span><span class="p">,</span><span class="w"> </span><span class="nb">scale</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Redistribute hydrogen cap Hessian to original atoms</span>
+<span class="w">      </span><span class="c">!! Accumulate a fragment Hessian into the system Hessian</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! This subroutine handles Hessian redistribution for fragments with hydrogen caps.</span>
-<span class="w">      </span><span class="c">!! The Hessian is a rank-2 tensor (3N × 3N) representing second derivatives of energy</span>
-<span class="w">      </span><span class="c">!! with respect to atomic coordinates. Similar to gradient redistribution, cap contributions</span>
-<span class="w">      </span><span class="c">!! must be transferred to the original atoms they replace.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Algorithm:</span>
-<span class="w">      </span><span class="c">!!   1. For real atoms (indices 1 to n_atoms - n_caps):</span>
-<span class="w">      </span><span class="c">!!      Accumulate Hessian blocks to system using local_to_global mapping for both dimensions</span>
-<span class="w">      </span><span class="c">!!   2. For hydrogen caps (indices n_atoms - n_caps + 1 to n_atoms):</span>
-<span class="w">      </span><span class="c">!!      Add cap Hessian blocks (row and column) to the original atom it replaces</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Note: Hessian is stored as a flattened 2D array (3*n_atoms, 3*n_atoms)</span>
-<span class="w">      </span><span class="c">!!       where rows and columns are grouped by atoms (x,y,z for atom 1, then x,y,z for atom 2, etc.)</span>
+<span class="w">      </span><span class="c">!! As `redistribute_cap_gradients`, but the chain rule applies to both</span>
+<span class="w">      </span><span class="c">!! indices, so a cap-cap block spreads over four atom pairs. Rows and</span>
+<span class="w">      </span><span class="c">!! columns are grouped by atom: x, y, z for atom 1, then atom 2, and so on.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_hessian</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">   </span><span class="c">!! (3*n_atoms_fragment, 3*n_atoms_fragment)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">system_hessian</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3*n_atoms_system, 3*n_atoms_system)</span>
@@ -1226,7 +1208,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

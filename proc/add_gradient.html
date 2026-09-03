@@ -138,8 +138,8 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/add_gradient.html#variable-atom_arr">atom_arr</a>
             <a class="list-group-item" href="../proc/add_gradient.html#variable-grad_arr">grad_arr</a>
-            <a class="list-group-item" href="../proc/add_gradient.html#variable-iatom~22">iatom</a>
-            <a class="list-group-item" href="../proc/add_gradient.html#variable-icomp~2">icomp</a>
+            <a class="list-group-item" href="../proc/add_gradient.html#variable-iatom~7">iatom</a>
+            <a class="list-group-item" href="../proc/add_gradient.html#variable-icomp">icomp</a>
         </div>
       </div>
     </div>
@@ -181,10 +181,10 @@
 
     <p>Nuclear gradient, as the norm and as the components it came from</p>
 <p>The norm alone cannot separate a correct gradient from one with a sign
-error, a swapped pair of atoms, or a wrong component that happens to
-preserve the magnitude, so validation compares the components. Written
-in Hartree/Bohr, the internal unit &ndash; unlike the optimization
-trajectory, which converts to Angstrom because a viewer expects it.</p>
+error, a swapped pair of atoms, or a wrong component that preserves the
+magnitude, so validation compares the components. Hartree/Bohr, the
+internal unit &ndash; unlike the optimization trajectory, which converts to
+Angstrom.</p>
 
 
     <h3>Arguments</h3>
@@ -200,7 +200,7 @@ trajectory, which converts to Angstrom because a viewer expects it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~40"></span>
+              <span class="anchor" id="variable-json~11"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -230,7 +230,7 @@ trajectory, which converts to Angstrom because a viewer expects it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~10"></span>
+              <span class="anchor" id="variable-gradient~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -887,7 +887,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~22"></span>
+              <span class="anchor" id="variable-iatom~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -904,7 +904,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-icomp~2"></span>
+              <span class="anchor" id="variable-icomp"></span>
               integer,
             </td>
               <td>private</td>
@@ -939,10 +939,10 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Nuclear gradient, as the norm and as the components it came from</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! The norm alone cannot separate a correct gradient from one with a sign</span>
-<span class="w">      </span><span class="c">!! error, a swapped pair of atoms, or a wrong component that happens to</span>
-<span class="w">      </span><span class="c">!! preserve the magnitude, so validation compares the components. Written</span>
-<span class="w">      </span><span class="c">!! in Hartree/Bohr, the internal unit -- unlike the optimization</span>
-<span class="w">      </span><span class="c">!! trajectory, which converts to Angstrom because a viewer expects it.</span>
+<span class="w">      </span><span class="c">!! error, a swapped pair of atoms, or a wrong component that preserves the</span>
+<span class="w">      </span><span class="c">!! magnitude, so validation compares the components. Hartree/Bohr, the</span>
+<span class="w">      </span><span class="c">!! internal unit -- unlike the optimization trajectory, which converts to</span>
+<span class="w">      </span><span class="c">!! Angstrom.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_core</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_value</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">parent</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">gradient</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, natoms)</span>
@@ -988,7 +988,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

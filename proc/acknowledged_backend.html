@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/acknowledged_backend.html#variable-kind~5">kind</a>
+            <a class="list-group-item" href="../proc/acknowledged_backend.html#variable-kind">kind</a>
             <a class="list-group-item" href="../proc/acknowledged_backend.html#variable-parse_error">parse_error</a>
         </div>
       </div>
@@ -178,20 +178,6 @@
     
 
     <p>Which library will actually do the work, as one of ACK_*</p>
-<p>This mirrors the dispatch in <code>mqc_method_hf</code> and <code>mqc_method_dft</code>, and
-has to keep mirroring it: an explicit request is honoured, and <code>auto</code>
-resolves to cuEST exactly when this build has cuEST <em>and</em> the method is
-one cuEST implements. Anything else is the CPU path.</p>
-<p>One known divergence, on a cuEST build only. <code>hf_run</code>&rsquo;s <code>auto</code> branch
-is a bare <code>#ifdef MQC_WITH_CUEST</code> with no check that cuEST implements
-the method, so an <code>auto</code> MP2 or CCSD is handed to <code>run_cuest_scf</code> there
-&ndash; while the explicit <code>cuest</code> branch right above it refuses exactly
-that combination. This function follows the explicit branch, which is
-the behaviour the refusal describes. When <code>hf_run</code> grows the same guard
-on <code>auto</code>, the two agree and this note can go.</p>
-<p>The semi-empirical methods never reach either &ndash; they are tblite&rsquo;s own
-and take no <code>backend</code> &ndash; so they are answered before the request is
-even looked at.</p>
 
 
     <h3>Arguments</h3>
@@ -207,7 +193,7 @@ even looked at.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~6"></span>
+              <span class="anchor" id="variable-method_type~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -222,7 +208,7 @@ even looked at.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~6"></span>
+              <span class="anchor" id="variable-backend~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -578,7 +564,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-kind~5"></span>
+              <span class="anchor" id="variable-kind"></span>
               integer,
             </td>
               <td>private</td>
@@ -628,23 +614,6 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">acknowledged_backend</span><span class="p">(</span><span class="n">method_type</span><span class="p">,</span><span class="w"> </span><span class="n">backend</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">which</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Which library will actually do the work, as one of ACK_*</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! This mirrors the dispatch in `mqc_method_hf` and `mqc_method_dft`, and</span>
-<span class="w">      </span><span class="c">!! has to keep mirroring it: an explicit request is honoured, and `auto`</span>
-<span class="w">      </span><span class="c">!! resolves to cuEST exactly when this build has cuEST *and* the method is</span>
-<span class="w">      </span><span class="c">!! one cuEST implements. Anything else is the CPU path.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! One known divergence, on a cuEST build only. `hf_run`'s `auto` branch</span>
-<span class="w">      </span><span class="c">!! is a bare `#ifdef MQC_WITH_CUEST` with no check that cuEST implements</span>
-<span class="w">      </span><span class="c">!! the method, so an `auto` MP2 or CCSD is handed to `run_cuest_scf` there</span>
-<span class="w">      </span><span class="c">!! -- while the explicit `cuest` branch right above it refuses exactly</span>
-<span class="w">      </span><span class="c">!! that combination. This function follows the explicit branch, which is</span>
-<span class="w">      </span><span class="c">!! the behaviour the refusal describes. When `hf_run` grows the same guard</span>
-<span class="w">      </span><span class="c">!! on `auto`, the two agree and this note can go.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The semi-empirical methods never reach either -- they are tblite's own</span>
-<span class="w">      </span><span class="c">!! and take no `backend` -- so they are answered before the request is</span>
-<span class="w">      </span><span class="c">!! even looked at.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method_type</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">backend</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">which</span>
@@ -701,7 +670,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

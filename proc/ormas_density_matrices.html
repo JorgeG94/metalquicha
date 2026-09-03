@@ -136,32 +136,32 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-alpha~13">alpha</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-alpha~3">alpha</a>
             <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-alpha_hi~5">alpha_hi</a>
             <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-alpha_lo~5">alpha_lo</a>
             <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-alpha_table~6">alpha_table</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-base~9">base</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-beta~13">beta</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-base~3">base</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-beta~3">beta</a>
             <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-beta_table~6">beta_table</a>
             <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-block_pair">block_pair</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-closure~8">closure</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-closure~6">closure</a>
             <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-embedded~2">embedded</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-ga~13">ga</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-gathered~7">gathered</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-gb~13">gb</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-ia~12">ia</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-ib~11">ib</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-ga~6">ga</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-gathered~3">gathered</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-gb~6">gb</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-ia~5">ia</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-ib~5">ib</a>
             <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-ncols~2">ncols</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-norb~13">norb</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-npair~6">npair</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-p~14">p</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-paired~2">paired</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-pq~3">pq</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-q~9">q</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-qp~2">qp</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-r~14">r</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-rs~3">rs</a>
-            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-s~16">s</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-norb~6">norb</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-npair~2">npair</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-p~5">p</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-paired">paired</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-pq">pq</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-q~4">q</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-qp">qp</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-r">r</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-rs">rs</a>
+            <a class="list-group-item" href="../proc/ormas_density_matrices.html#variable-s~4">s</a>
         </div>
       </div>
     </div>
@@ -205,14 +205,12 @@
 <p><code>D_pq = &lt;Psi|E_pq|Psi&gt;</code> and <code>d_pqrs = &lt;Psi|E_pq E_rs|Psi&gt; - delta_qr
 &lt;Psi|E_ps|Psi&gt;</code>, the second being what contracts with <code>(pq|rs)</code> to give
 the two-electron energy.</p>
-<p>The one-particle matrix needs nothing outside the space: it contracts
-the intermediate back against the vector, and the vector is zero
-wherever the windows exclude. The two-particle matrix does need the
-closure, and this is the sharpest place that shows &ndash; it is
-<code>&lt;E_qp Psi|E_rs Psi&gt;</code>, an inner product of two intermediates, and both
-of them have weight on determinants the space does not contain. Summing
-only over the space would drop those products silently, leaving density
-matrices whose traces are all correct and whose energy is not.</p>
+<p>The one-particle matrix needs nothing outside the space, since the
+vector is zero wherever the windows exclude. The two-particle one does:
+it is <code>&lt;E_qp Psi|E_rs Psi&gt;</code>, an inner product of two intermediates that
+both carry weight on determinants the space does not contain. Summing
+only over the space drops those products silently, for density matrices
+whose traces are correct and whose energy is not.</p>
 
 
     <h3>Arguments</h3>
@@ -228,7 +226,7 @@ matrices whose traces are all correct and whose energy is not.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~29"></span>
+              <span class="anchor" id="variable-space~12"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in),</td>
@@ -243,7 +241,7 @@ matrices whose traces are all correct and whose energy is not.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ci~10"></span>
+              <span class="anchor" id="variable-ci~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -258,7 +256,7 @@ matrices whose traces are all correct and whose energy is not.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dm1~3"></span>
+              <span class="anchor" id="variable-dm1"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -273,7 +271,7 @@ matrices whose traces are all correct and whose energy is not.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dm2~3"></span>
+              <span class="anchor" id="variable-dm2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -288,7 +286,7 @@ matrices whose traces are all correct and whose energy is not.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~171"></span>
+              <span class="anchor" id="variable-error~9"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -956,7 +954,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~13"></span>
+              <span class="anchor" id="variable-alpha~3"></span>
               integer(kind=int64),
             </td>
               <td>private,</td>
@@ -1024,7 +1022,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-base~9"></span>
+              <span class="anchor" id="variable-base~3"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1041,7 +1039,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~13"></span>
+              <span class="anchor" id="variable-beta~3"></span>
               integer(kind=int64),
             </td>
               <td>private,</td>
@@ -1092,7 +1090,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-closure~8"></span>
+              <span class="anchor" id="variable-closure~6"></span>
               type(<a href='../type/ormas_closure_t.html'>ormas_closure_t</a>),
             </td>
               <td>private</td>
@@ -1126,7 +1124,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ga~13"></span>
+              <span class="anchor" id="variable-ga~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -1143,7 +1141,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gathered~7"></span>
+              <span class="anchor" id="variable-gathered~3"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1160,7 +1158,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gb~13"></span>
+              <span class="anchor" id="variable-gb~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -1177,7 +1175,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ia~12"></span>
+              <span class="anchor" id="variable-ia~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -1194,7 +1192,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ib~11"></span>
+              <span class="anchor" id="variable-ib~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -1228,7 +1226,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-norb~13"></span>
+              <span class="anchor" id="variable-norb~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -1245,7 +1243,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-npair~6"></span>
+              <span class="anchor" id="variable-npair~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1262,7 +1260,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-p~14"></span>
+              <span class="anchor" id="variable-p~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -1279,7 +1277,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-paired~2"></span>
+              <span class="anchor" id="variable-paired"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1296,7 +1294,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pq~3"></span>
+              <span class="anchor" id="variable-pq"></span>
               integer,
             </td>
               <td>private</td>
@@ -1313,7 +1311,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-q~9"></span>
+              <span class="anchor" id="variable-q~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -1330,7 +1328,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-qp~2"></span>
+              <span class="anchor" id="variable-qp"></span>
               integer,
             </td>
               <td>private</td>
@@ -1347,7 +1345,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-r~14"></span>
+              <span class="anchor" id="variable-r"></span>
               integer,
             </td>
               <td>private</td>
@@ -1364,7 +1362,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-rs~3"></span>
+              <span class="anchor" id="variable-rs"></span>
               integer,
             </td>
               <td>private</td>
@@ -1381,7 +1379,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-s~16"></span>
+              <span class="anchor" id="variable-s~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -1419,14 +1417,12 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! &lt;Psi|E_ps|Psi&gt;`, the second being what contracts with `(pq|rs)` to give</span>
 <span class="w">      </span><span class="c">!! the two-electron energy.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The one-particle matrix needs nothing outside the space: it contracts</span>
-<span class="w">      </span><span class="c">!! the intermediate back against the vector, and the vector is zero</span>
-<span class="w">      </span><span class="c">!! wherever the windows exclude. The two-particle matrix does need the</span>
-<span class="w">      </span><span class="c">!! closure, and this is the sharpest place that shows -- it is</span>
-<span class="w">      </span><span class="c">!! `&lt;E_qp Psi|E_rs Psi&gt;`, an inner product of two intermediates, and both</span>
-<span class="w">      </span><span class="c">!! of them have weight on determinants the space does not contain. Summing</span>
-<span class="w">      </span><span class="c">!! only over the space would drop those products silently, leaving density</span>
-<span class="w">      </span><span class="c">!! matrices whose traces are all correct and whose energy is not.</span>
+<span class="w">      </span><span class="c">!! The one-particle matrix needs nothing outside the space, since the</span>
+<span class="w">      </span><span class="c">!! vector is zero wherever the windows exclude. The two-particle one does:</span>
+<span class="w">      </span><span class="c">!! it is `&lt;E_qp Psi|E_rs Psi&gt;`, an inner product of two intermediates that</span>
+<span class="w">      </span><span class="c">!! both carry weight on determinants the space does not contain. Summing</span>
+<span class="w">      </span><span class="c">!! only over the space drops those products silently, for density matrices</span>
+<span class="w">      </span><span class="c">!! whose traces are correct and whose energy is not.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_space_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">target</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">space</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ci</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dm1</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">dm2</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:)</span>
@@ -1546,7 +1542,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

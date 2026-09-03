@@ -96,26 +96,31 @@
 minimal-basis orbitals. This module owns that basis and the counting that
 comes with it: how many minimal-basis orbitals a molecule has, how many of
 them are chemical core, and therefore how many valence-virtual orbitals have
-to be recovered from the virtual space.</p><a href="../module/mqc_aambs.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+to be recovered from the virtual space.
+Locate aambs.json
+Chemical core and valence orbital counts for one Z
+The minimal-basis dimensions of a whole molecule
+Principal and angular numbers, per minimal-basis function</p></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_acknowledgements.html'>mqc_acknowledgements</a></td>
                  <td><a href='../sourcefile/mqc_acknowledgements.f90.html'>mqc_acknowledgements.F90</a></td>
                  <td><p>Prints a banner naming the integral backend a calculation is about to run
-on, and thanking the people who wrote it.</p><a href="../module/mqc_acknowledgements.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+on, and thanking the people who wrote it.
+Banner for the backend this run will use
+Which backend that is; exposed for testing</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_atomic_guess_common.html'>mqc_atomic_guess_common</a></td>
                  <td><a href='../sourcefile/mqc_atomic_guess_common.f90.html'>mqc_atomic_guess_common.f90</a></td>
                  <td><p>What a superposition-of-atomic-densities guess needs to know about a free
-atom before any integrals exist.</p><a href="../module/mqc_atomic_guess_common.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+atom before any integrals exist.</p></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_atomic_radii.html'>mqc_atomic_radii</a></td>
                  <td><a href='../sourcefile/mqc_atomic_radii.f90.html'>mqc_atomic_radii.f90</a></td>
-                 <td><p>The atomic radii the program uses, gathered so that a caller picks a
-parametrisation deliberately instead of finding whichever table happened
-to be nearest.</p><a href="../module/mqc_atomic_radii.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>The atomic radii the program uses, named for their source so that a caller
+picks a parametrisation deliberately.</p><a href="../module/mqc_atomic_radii.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_basis_normalization.html'>mqc_basis_normalization</a></td>
@@ -125,7 +130,7 @@ to be nearest.</p><a href="../module/mqc_atomic_radii.html" class="pull-right"><
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_basis_utils.html'>mqc_basis_utils</a></td>
                  <td><a href='../sourcefile/mqc_basis_utils.f90.html'>mqc_basis_utils.F90</a></td>
-                 <td><p>Normalizes basis set names and locates the JSON file that defines them.</p><a href="../module/mqc_basis_utils.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Normalizes basis set names and locates the JSON file that defines them.</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_bcast.html'>mqc_bcast</a></td>
@@ -148,22 +153,20 @@ they left out.</p><a href="../module/mqc_bond_perception.html" class="pull-right
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_calc_types.html'>mqc_calc_types</a></td>
                  <td><a href='../sourcefile/mqc_calc_types.f90.html'>mqc_calc_types.f90</a></td>
-                 <td><p>Defines integer constants for calculation types to avoid string comparisons
-throughout the codebase. Provides conversion utilities between string
-representations and integer constants.</p></td>
+                 <td><p>The <code>CALC_TYPE_*</code> constants, and conversion between them and the driver
+names a deck spells.</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_calculation_defaults.html'>mqc_calculation_defaults</a></td>
                  <td><a href='../sourcefile/mqc_calculation_defaults.f90.html'>mqc_calculation_defaults.f90</a></td>
-                 <td><p>Provides compile-time constants for default calculation parameters.
-These defaults are used throughout the codebase when users don&rsquo;t specify values.
-This single source of truth prevents divergence between serial and parallel paths.</p></td>
+                 <td><p>Compile-time constants for the values a deck gets when it names none,
+kept in one place so the serial and parallel paths cannot diverge.</p></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_calculation_interface.html'>mqc_calculation_interface</a></td>
                  <td><a href='../sourcefile/mqc_calculation_interface.f90.html'>mqc_calculation_interface.f90</a></td>
-                 <td><p>Provides a clean interface for computing energies and forces
-that can be used by optimization algorithms, MD integrators, and MC samplers</p></td>
+                 <td><p>Energies and forces for a geometry, in the shape an optimizer, an MD
+integrator or an MC sampler wants them.</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_calculation_keywords.html'>mqc_calculation_keywords</a></td>
@@ -174,7 +177,7 @@ These types are embedded in driver_config_t to organize keywords by category</p>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_capi_bond_orders.html'>mqc_capi_bond_orders</a></td>
                  <td><a href='../sourcefile/mqc_capi_bond_orders.f90.html'>mqc_capi_bond_orders.F90</a></td>
-                 <td><p>Wiberg-Mayer bond orders from xTB, on a system handle.</p><a href="../module/mqc_capi_bond_orders.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Wiberg-Mayer bond orders from xTB, on a system handle.</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_capi_charges.html'>mqc_capi_charges</a></td>
@@ -227,11 +230,7 @@ rerun computes only what is missing.</p><a href="../module/mqc_checkpoint.html" 
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
                  <td><a href='../sourcefile/mqc_ci.f90.html'>mqc_ci.f90</a></td>
-                 <td><p><code>sigma = H c</code> for a complete active space, which is the operation a CI
-solver spends all of its time in and the only one that has to be fast.
-The Hamiltonian is never built: at CAS(10,10) it would be 32 GB and at
-CAS(12,12) it does not bear writing down, while the vector it acts on is
-508 kB and 6.8 MB.</p><a href="../module/mqc_ci.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p><code>sigma = H c</code> for a complete active space, without ever forming <code>H</code>.</p><a href="../module/mqc_ci.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_ci_transform.html'>mqc_ci_transform</a></td>
@@ -250,7 +249,7 @@ Parsed command line arguments container
 Main argument parsing routine
 Display program usage information
 Standardize basis set names
-Locate basis set files</p></td>
+Locate basis set files</p><a href="../module/mqc_cli_parser.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
@@ -275,11 +274,12 @@ Calculate minimal distances for all fragments</p></td>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></td>
                  <td><a href='../sourcefile/mqc_config_adapter.f90.html'>mqc_config_adapter.f90</a></td>
-                 <td><p>Provides conversion utilities from mqc_config_t to driver-compatible structures
+                 <td><p>Converts a parsed input deck into the structures the driver and the
+methods read: <code>driver_config_t</code> and <code>system_geometry_t</code>.
 Minimal config for driver
 Convert log level string to integer
 Check for overlapping fragments (for testing)
-Refuse a counterpoise this expansion cannot honour</p><a href="../module/mqc_config_adapter.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+Refuse a counterpoise this expansion cannot honour</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_config_types.html'>mqc_config_types</a></td>
@@ -315,17 +315,15 @@ provides the same module and the same <code>run_cuest_scf</code> interface.</p><
                  <td><a href='../module/mqc_cuest_iface.html'>mqc_cuest_iface</a></td>
                  <td><a href='../sourcefile/mqc_cuest_iface.f90.html'>mqc_cuest_iface.f90</a></td>
                  <td><p>Holds <code>cuest_scf_settings_t</code>, the settings an HF or DFT method hands to
-the cuEST backend.</p><a href="../module/mqc_cuest_iface.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+the cuEST backend.</p></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
                  <td><a href='../sourcefile/mqc_davidson.f90.html'>mqc_davidson.f90</a></td>
                  <td><p>Davidson&rsquo;s method: build a small subspace, diagonalise the Hamiltonian
 inside it, and grow it in the direction the residual points. The only
-thing it asks of the operator is a matrix-vector product, which is exactly
-what <code>sigma_vector</code> provides and all that is affordable &ndash; the matrix
-whose lowest eigenvalue is wanted is 32 GB at CAS(10,10) and unthinkable
-past that, while the subspace here is a few dozen vectors.</p><a href="../module/mqc_davidson.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+thing it asks of the operator is a matrix-vector product, which is what
+<code>sigma_vector</code> provides.</p><a href="../module/mqc_davidson.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_determinants.html'>mqc_determinants</a></td>
@@ -369,13 +367,15 @@ single excitations between them.</p><a href="../module/mqc_determinants.html" cl
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_dlfind_bridge.html'>mqc_dlfind_bridge</a></td>
                  <td><a href='../sourcefile/mqc_dlfind_bridge_stub.f90.html'>mqc_dlfind_bridge_stub.f90</a></td>
-                 <td><p>Same name and same entry points as the real bridge, declining.</p><a href="../module/mqc_dlfind_bridge.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Same name and same entry points as the real bridge, declining.
+<code>dlfind_available</code> is how a caller asks in advance.</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td><a href='../sourcefile/mqc_driver.f90.html'>mqc_driver.f90</a></td>
-                 <td><p>Handles both fragmented (many-body expansion) and unfragmented calculations
-with MPI parallelization and node-based work distribution.
+                 <td><p>Routes a configured system to the fragmented (many-body expansion) or
+unfragmented path, and holds the run types that take neither: MAKEFP, EFP
+and SAPT.
 Main entry point for all calculations
 Multi-molecule calculation dispatcher</p></td>
                </tr>
@@ -388,13 +388,13 @@ every tabulation uses:</p><a href="../module/mqc_ecp.html" class="pull-right"><e
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_ediis.html'>mqc_ediis</a></td>
                  <td><a href='../sourcefile/mqc_ediis.f90.html'>mqc_ediis.f90</a></td>
-                 <td><p>What DIIS cannot do, and why these exist.</p><a href="../module/mqc_ediis.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Energy-based coefficient solvers for the SCF accelerator.</p><a href="../module/mqc_ediis.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_elements.html'>mqc_elements</a></td>
                  <td><a href='../sourcefile/mqc_elements.f90.html'>mqc_elements.f90</a></td>
-                 <td><p>Provides atomic numbers, element symbols, and atomic masses for the complete
-periodic table (elements 1-118) with conversion functions between representations.
+                 <td><p>Atomic numbers, element symbols, masses and radii for the complete
+periodic table (elements 1-118), and the conversions between them.
 Convert element symbol to atomic number
 Convert atomic number to element symbol
 Get atomic mass by atomic number
@@ -404,7 +404,7 @@ Get van der Waals radius by atomic number</p></td>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_error.html'>mqc_error</a></td>
                  <td><a href='../sourcefile/mqc_error.f90.html'>mqc_error.f90</a></td>
-                 <td><p>Error codes</p></td>
+                 <td></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
@@ -433,8 +433,8 @@ and one operation: force the Fock matrix block diagonal in that partition.</p><a
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_frag_utils.html'>mqc_frag_utils</a></td>
                  <td><a href='../sourcefile/mqc_frag_utils.f90.html'>mqc_frag_utils.f90</a></td>
-                 <td><p>Provides combinatorial functions and algorithms for generating molecular
-fragments, managing fragment lists, and performing many-body expansion calculations.</p><a href="../module/mqc_frag_utils.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>The term list an expansion runs over: how it is built, screened and
+ordered.</p><a href="../module/mqc_frag_utils.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></td>
@@ -468,26 +468,22 @@ and then never read.</strong></p><a href="../module/mqc_fragmentation_method.htm
                  <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td><a href='../sourcefile/mqc_geometry_optimizer.f90.html'>mqc_geometry_optimizer.f90</a></td>
                  <td><p>An optimization is a loop <em>over</em> calculations, so it sits above
-<code>run_calculation</code> rather than inside it. That is also why the dispatch is
-in <code>main</code> and not in <code>mqc_driver</code>: the driver would otherwise have to use
-this module while this module uses the driver, which Fortran will not
-compile.</p><a href="../module/mqc_geometry_optimizer.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+<code>run_calculation</code>, and the dispatch is in <code>main</code> rather than in
+<code>mqc_driver</code> to keep the two out of a circular dependency.</p><a href="../module/mqc_geometry_optimizer.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td><a href='../sourcefile/mqc_gmbe_fragment_distribution_scheme.f90.html'>mqc_gmbe_fragment_distribution_scheme.f90</a></td>
-                 <td><p>Implements fragment distribution schemes for GMBE calculations with overlapping fragments
-Handles both serial and MPI-parallelized distribution of monomers and intersection fragments
-term index, fragment type, atom count, atom list, displacement code
+                 <td><p>Serial and MPI-parallel evaluation of a GMBE PIE term list, and the
+accumulation of the results back into one energy, gradient or Hessian.
 PIE-based serial processor
 PIE-based MPI coordinator</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></td>
                  <td><a href='../sourcefile/mqc_gmbe_utils.f90.html'>mqc_gmbe_utils.f90</a></td>
-                 <td><p>Provides functions for computing fragment intersections, generating k-way
-intersections, and enumerating PIE (Principle of Inclusion-Exclusion) terms
-for GMBE calculations with overlapping molecular fragments.
+                 <td><p>Fragment intersections, k-way intersections, and the PIE (principle of
+inclusion-exclusion) term list a GMBE expansion evaluates.
 Find shared atoms between two fragments
 Generate all k-way intersections for GMBE
 Compute atom list for polymer (union of fragments)
@@ -533,8 +529,9 @@ of them declines.</p><a href="../module/mqc_hdf5_checkpoint.html" class="pull-ri
                  <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
                  <td><a href='../sourcefile/mqc_json_basis_reader.f90.html'>mqc_json_basis_reader.f90</a></td>
                  <td><p>Parses the JSON format served by the
-<a href="https://www.basissetexchange.org">Basis Set Exchange</a>, producing the
-same <code>mqc_cgto</code> types as the Gaussian94 and GAMESS readers.</p><a href="../module/mqc_json_basis_reader.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+<a href="https://www.basissetexchange.org">Basis Set Exchange</a>
+Parse one element from a BSE JSON file
+Build a molecular basis from a BSE JSON file</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
@@ -588,13 +585,15 @@ Display ASCII sunflower logo and project info</p></td>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
                  <td><a href='../sourcefile/mqc_many_body_expansion.f90.html'>mqc_many_body_expansion.f90</a></td>
-                 <td><p>Provides an abstract base class for all many-body expansion methods
-with concrete implementations for standard MBE and generalized MBE (GMBE).</p></td>
+                 <td><p>The abstract base every many-body expansion shares, and the three
+concrete ones: standard MBE, generalized MBE, and FMO2 with the
+electrostatically embedded MBE beside it.</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_math_utils.html'>mqc_math_utils</a></td>
                  <td><a href='../sourcefile/mqc_math_utils.f90.html'>mqc_math_utils.f90</a></td>
-                 <td><p>Pure combinatorial arithmetic, shared rather than reimplemented.</p><a href="../module/mqc_math_utils.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Pure combinatorial arithmetic, shared rather than reimplemented: a
+fragment count and a determinant count want the same function.</p></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
@@ -641,36 +640,31 @@ JSON output has been centralized in mqc_json_writer module</p></td>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_method_base.html'>mqc_method_base</a></td>
                  <td><a href='../sourcefile/mqc_method_base.f90.html'>mqc_method_base.f90</a></td>
-                 <td><p>Defines the common interface that all quantum chemistry methods must implement,
-providing a unified API for energy and gradient calculations.
+                 <td><p>Common interface every quantum chemistry method implements: energy,
+gradient and Hessian for a single fragment.
 Abstract base type for all QC methods</p></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_method_config.html'>mqc_method_config</a></td>
                  <td><a href='../sourcefile/mqc_method_config.f90.html'>mqc_method_config.f90</a></td>
-                 <td><p>Provides configuration types for all quantum chemistry methods.
-Uses composition pattern: method_config_t contains nested config types
-for each method family. The factory reads from the appropriate nested type.
-Re-exported from mqc_config_types</p></td>
+                 <td><p>Configuration types for every quantum chemistry method.</p><a href="../module/mqc_method_config.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_method_dft.html'>mqc_method_dft</a></td>
                  <td><a href='../sourcefile/mqc_method_dft.f90.html'>mqc_method_dft.F90</a></td>
-                 <td><p>Closed-shell Kohn-Sham DFT.</p><a href="../module/mqc_method_dft.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Kohn-Sham density functional theory.</p><a href="../module/mqc_method_dft.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_method_factory.html'>mqc_method_factory</a></td>
                  <td><a href='../sourcefile/mqc_method_factory.f90.html'>mqc_method_factory.F90</a></td>
-                 <td><p>Provides centralized creation of quantum chemistry method instances.
-The factory pattern encapsulates method instantiation and configuration,
-making it easy to add new methods without modifying calling code.
+                 <td><p>One place that turns a <code>method_config_t</code> into an allocated <code>qc_method_t</code>.
 Convenience function
 Whether this build can run a method at all</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_method_hf.html'>mqc_method_hf</a></td>
                  <td><a href='../sourcefile/mqc_method_hf.f90.html'>mqc_method_hf.F90</a></td>
-                 <td><p>Closed-shell Hartree-Fock.</p><a href="../module/mqc_method_hf.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Hartree-Fock, and the MP2 and coupled-cluster corrections built on it.</p><a href="../module/mqc_method_hf.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_method_mcscf.html'>mqc_method_mcscf</a></td>
@@ -680,9 +674,7 @@ Whether this build can run a method at all</p></td>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_method_types.html'>mqc_method_types</a></td>
                  <td><a href='../sourcefile/mqc_method_types.f90.html'>mqc_method_types.f90</a></td>
-                 <td><p>Defines integer constants for quantum chemistry methods to avoid string comparisons
-throughout the codebase. Provides conversion utilities between string
-representations and integer constants.
+                 <td><p>The <code>METHOD_TYPE_*</code> constants, and what an input-file spelling parses to.
 Input-file spelling -&gt; method type
 Spin-component scaling a spelling implies
 Whether a spelling asks for RI
@@ -691,8 +683,7 @@ Whether a spelling asks for fixed orbitals</p></td>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_method_xtb.html'>mqc_method_xtb</a></td>
                  <td><a href='../sourcefile/mqc_method_xtb.f90.html'>mqc_method_xtb.f90</a></td>
-                 <td><p>Provides GFN1-xTB and GFN2-xTB methods via the tblite library,
-implementing the abstract method interface for energy and gradient calculations.
+                 <td><p>GFN1-xTB and GFN2-xTB through the tblite library.
 XTB method implementation type</p></td>
                </tr>
 <!---->			   <tr class="active">
@@ -703,7 +694,7 @@ XTB method implementation type</p></td>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_mpi_tags.html'>mqc_mpi_tags</a></td>
                  <td><a href='../sourcefile/mqc_mpi_tags.f90.html'>mqc_mpi_tags.f90</a></td>
-                 <td><p>Module defining MPI communication tags for clarity and maintainability</p></td>
+                 <td><p>Tag numbers, grouped by the phase of the run that uses them.</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_nuclear_repulsion.html'>mqc_nuclear_repulsion</a></td>
@@ -714,17 +705,17 @@ XTB method implementation type</p></td>
                  <td><a href='../module/mqc_optimization_output.html'>mqc_optimization_output</a></td>
                  <td><a href='../sourcefile/mqc_optimization_output.f90.html'>mqc_optimization_output.f90</a></td>
                  <td><p>Writes <code>output_&lt;name&gt;_optimization.json</code> and
-<code>output_&lt;name&gt;_trajectory.xyz</code>.</p><a href="../module/mqc_optimization_output.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+<code>output_&lt;name&gt;_trajectory.xyz</code>, both separate from the calculation&rsquo;s own
+<code>output_&lt;name&gt;.json</code>.</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></td>
                  <td><a href='../sourcefile/mqc_optimizer_types.f90.html'>mqc_optimizer_types.f90</a></td>
                  <td><p>The vocabulary shared by the optimization driver and whichever engine
 takes the steps. It knows about neither: no MPI, no DL-FIND, no quantum
-chemistry. That is what lets <code>mqc_geometry_optimizer</code> and
-<code>mqc_dlfind_bridge</code> reach each other without a circular dependency &ndash; the
-driver hands the engine a procedure matching <code>energy_gradient_i</code>, and the
-engine calls it without ever learning what is on the other end.</p><a href="../module/mqc_optimizer_types.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+chemistry, which is what lets <code>mqc_geometry_optimizer</code> and
+<code>mqc_dlfind_bridge</code> reach each other through <code>energy_gradient_i</code> without
+a circular dependency.</p></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
@@ -734,11 +725,10 @@ engine calls it without ever learning what is on the other end.</p><a href="../m
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
                  <td><a href='../sourcefile/mqc_ormas_space.f90.html'>mqc_ormas_space.f90</a></td>
-                 <td><p>A CAS says how many electrons go into how many orbitals and stops there.
-ORMAS cuts the active orbitals into consecutive subspaces and puts a
-window on the electron count of each, which is enough to express RAS, a
-truncated CI, several non-communicating active spaces, or a fragment
-model with limited charge transfer &ndash; all as the same object.</p><a href="../module/mqc_ormas_space.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>ORMAS cuts the active orbitals into consecutive subspaces and puts a
+window on the electron count of each, which expresses RAS, a truncated CI,
+several non-communicating active spaces, or a fragment model with limited
+charge transfer as one object.</p><a href="../module/mqc_ormas_space.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_pcm_radii.html'>mqc_pcm_radii</a></td>
@@ -748,27 +738,35 @@ model with limited charge transfer &ndash; all as the same object.</p><a href=".
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_physical_constants.html'>mqc_physical_constants</a></td>
                  <td><a href='../sourcefile/mqc_physical_constants.f90.html'>mqc_physical_constants.F90</a></td>
-                 <td><p>Contains fundamental physical constants and unit conversion factors
-used throughout the metalquicha codebase.</p><a href="../module/mqc_physical_constants.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Fundamental physical constants and unit conversion factors.</p><a href="../module/mqc_physical_constants.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td><a href='../sourcefile/mqc_physical_fragment.f90.html'>mqc_physical_fragment.f90</a></td>
-                 <td><p>Physical molecular fragment representation and geometry handling</p><a href="../module/mqc_physical_fragment.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Fragments as the QC methods see them, the system they are cut from, and
+the redistribution of cap derivatives back onto the atoms a cap replaces.
+Bond connectivity type
+Single molecular fragment type
+Complete system geometry type
+System geometry initialization
+Charge/multiplicity a set of monomers forms
+Build fragment from explicit atom indices (for intersections)
+Validate fragment has no overlapping atoms
+Validate the whole system before any work starts</p><a href="../module/mqc_physical_fragment.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_population_analysis.html'>mqc_population_analysis</a></td>
                  <td><a href='../sourcefile/mqc_population_analysis.f90.html'>mqc_population_analysis.f90</a></td>
                  <td><p>The Mulliken partition needs a density, an overlap and a statement of
 which atom each basis function belongs to. None of that is particular to
-an integrals backend, so none of it is written twice: this module holds
-the arithmetic and each backend supplies the three arrays its own way.</p><a href="../module/mqc_population_analysis.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+an integrals backend: this module holds the arithmetic and each backend
+supplies the three arrays its own way.</p><a href="../module/mqc_population_analysis.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_program_limits.html'>mqc_program_limits</a></td>
                  <td><a href='../sourcefile/mqc_program_limits.f90.html'>mqc_program_limits.f90</a></td>
-                 <td><p>Contains compile-time limits and default values for the metalquicha program.
-These are tunable parameter that control memory allocation and algorithm behavior.</p></td>
+                 <td><p>Compile-time limits and defaults that control memory allocation and
+algorithm behaviour.</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_rdm.html'>mqc_rdm</a></td>
@@ -783,8 +781,7 @@ These are tunable parameter that control memory allocation and algorithm behavio
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
                  <td><a href='../sourcefile/mqc_result_types.f90.html'>mqc_result_types.f90</a></td>
-                 <td><p>Defines data structures for storing and managing results from
-quantum chemistry calculations including energies, gradients, and properties.
+                 <td><p>Energy, gradient and property containers, and the MPI transfer of one.
 MP2 energy components type
 Coupled cluster energy components type
 Energy components type
@@ -801,12 +798,17 @@ Receive result over MPI</p></td>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_scf_convergence.html'>mqc_scf_convergence</a></td>
                  <td><a href='../sourcefile/mqc_scf_convergence.f90.html'>mqc_scf_convergence.f90</a></td>
-                 <td><p><strong>What stops an SCF, decided in one place instead of at each loop.</strong></p><a href="../module/mqc_scf_convergence.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>What stops an SCF, as a value rather than a test spelled out at each
+loop. <code>scf_convergence_t</code> carries which metric decides and the threshold
+it is measured against, <code>is_converged</code> is the only place the comparison
+happens, and <code>describe</code> is what the iteration table prints.</p><a href="../module/mqc_scf_convergence.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/mqc_scf_types.html'>mqc_scf_types</a></td>
                  <td><a href='../sourcefile/mqc_scf_types.f90.html'>mqc_scf_types.f90</a></td>
-                 <td><p><strong>Here rather than in <code>mqc_config_types</code>, where these started.</strong></p><a href="../module/mqc_scf_types.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Every SCF in the program &ndash; the supermolecular one, the deltaSCF ions
+behind a Fukui analysis, each rung of a basis-projection ladder, each
+fragment of an FMO run &ndash; is configured by the types here.</p><a href="../module/mqc_scf_types.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></td>
@@ -3053,7 +3055,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

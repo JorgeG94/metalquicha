@@ -139,10 +139,10 @@
             <a class="list-group-item" href="../proc/ormas_sigma.html#variable-acted">acted</a>
             <a class="list-group-item" href="../proc/ormas_sigma.html#variable-at~2">at</a>
             <a class="list-group-item" href="../proc/ormas_sigma.html#variable-embedded">embedded</a>
-            <a class="list-group-item" href="../proc/ormas_sigma.html#variable-ga~9">ga</a>
-            <a class="list-group-item" href="../proc/ormas_sigma.html#variable-gb~9">gb</a>
-            <a class="list-group-item" href="../proc/ormas_sigma.html#variable-ia~8">ia</a>
-            <a class="list-group-item" href="../proc/ormas_sigma.html#variable-ib~7">ib</a>
+            <a class="list-group-item" href="../proc/ormas_sigma.html#variable-ga~2">ga</a>
+            <a class="list-group-item" href="../proc/ormas_sigma.html#variable-gb~2">gb</a>
+            <a class="list-group-item" href="../proc/ormas_sigma.html#variable-ia">ia</a>
+            <a class="list-group-item" href="../proc/ormas_sigma.html#variable-ib">ib</a>
         </div>
       </div>
     </div>
@@ -187,19 +187,11 @@
 restriction excludes; apply the complete-space Hamiltonian; keep only
 what lands back inside. Because the vector vanishes outside, the sum
 that reaches an in-space determinant runs only over in-space
-determinants, so this <em>is</em> the restricted Hamiltonian &ndash; not an
+determinants, so this <em>is</em> the restricted Hamiltonian and not an
 approximation to it.</p>
-<p>Which makes it correct by construction and, for the moment, the whole
-implementation: it inherits a sigma already checked against PySCF
-rather than introducing a second one to get wrong.</p>
-<p>What it does not inherit is the saving. The work is that of the
-complete space, so this is the route while a space is small enough to
-check, and not the route that makes a restricted space worth having.
-The intermediate a direct build needs is subtler than it looks: an
-excitation may leave the space and a second bring it back, so the
-basis it lives on is the space plus one excitation, and truncating it
-to the space itself silently drops terms. That is the next piece, and
-it has to reproduce this one.</p>
+<p>The work is that of the complete space, so this is the reference the
+direct build is checked against rather than the route that makes a
+restricted space worth having.</p>
 
 
     <h3>Arguments</h3>
@@ -215,7 +207,7 @@ it has to reproduce this one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~21"></span>
+              <span class="anchor" id="variable-space~4"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -230,7 +222,7 @@ it has to reproduce this one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~7"></span>
+              <span class="anchor" id="variable-folded~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -305,7 +297,7 @@ it has to reproduce this one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ci~7"></span>
+              <span class="anchor" id="variable-ci"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -320,7 +312,7 @@ it has to reproduce this one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma~8"></span>
+              <span class="anchor" id="variable-sigma~4"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -335,7 +327,7 @@ it has to reproduce this one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~167"></span>
+              <span class="anchor" id="variable-error~5"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -765,7 +757,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ga~9"></span>
+              <span class="anchor" id="variable-ga~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -782,7 +774,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gb~9"></span>
+              <span class="anchor" id="variable-gb~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -799,7 +791,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ia~8"></span>
+              <span class="anchor" id="variable-ia"></span>
               integer,
             </td>
               <td>private</td>
@@ -816,7 +808,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ib~7"></span>
+              <span class="anchor" id="variable-ib"></span>
               integer,
             </td>
               <td>private</td>
@@ -855,21 +847,12 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! restriction excludes; apply the complete-space Hamiltonian; keep only</span>
 <span class="w">      </span><span class="c">!! what lands back inside. Because the vector vanishes outside, the sum</span>
 <span class="w">      </span><span class="c">!! that reaches an in-space determinant runs only over in-space</span>
-<span class="w">      </span><span class="c">!! determinants, so this *is* the restricted Hamiltonian -- not an</span>
+<span class="w">      </span><span class="c">!! determinants, so this *is* the restricted Hamiltonian and not an</span>
 <span class="w">      </span><span class="c">!! approximation to it.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Which makes it correct by construction and, for the moment, the whole</span>
-<span class="w">      </span><span class="c">!! implementation: it inherits a sigma already checked against PySCF</span>
-<span class="w">      </span><span class="c">!! rather than introducing a second one to get wrong.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! What it does not inherit is the saving. The work is that of the</span>
-<span class="w">      </span><span class="c">!! complete space, so this is the route while a space is small enough to</span>
-<span class="w">      </span><span class="c">!! check, and not the route that makes a restricted space worth having.</span>
-<span class="w">      </span><span class="c">!! The intermediate a direct build needs is subtler than it looks: an</span>
-<span class="w">      </span><span class="c">!! excitation may leave the space and a second bring it back, so the</span>
-<span class="w">      </span><span class="c">!! basis it lives on is the space plus one excitation, and truncating it</span>
-<span class="w">      </span><span class="c">!! to the space itself silently drops terms. That is the next piece, and</span>
-<span class="w">      </span><span class="c">!! it has to reproduce this one.</span>
+<span class="w">      </span><span class="c">!! The work is that of the complete space, so this is the reference the</span>
+<span class="w">      </span><span class="c">!! direct build is checked against rather than the route that makes a</span>
+<span class="w">      </span><span class="c">!! restricted space worth having.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_space_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">space</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">folded</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">link_table_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha_table</span><span class="p">,</span><span class="w"> </span><span class="n">beta_table</span>
@@ -936,7 +919,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

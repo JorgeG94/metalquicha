@@ -187,18 +187,13 @@ something, before anything spends a node-hour finding out it did not.</p>
 is well formed &ndash; keys spelled right, required ones present. These checks
 are about the thing the document describes, and apply equally to a system
 assembled through the C interface, which never sees a document at all.</p>
-<p><strong>Everything here has bitten somebody.</strong> The checks are not hypothetical
-failure modes; they are the ones this code has actually produced, and
-they share a shape: none of them crashes. A term list that is not closed
-under subsets, fragment charges that do not sum, an atom in no monomer &ndash;
-each yields a converged number that is wrong, which is the most expensive
-kind of bug a calculation can have.</p>
-<p><code>strict</code> is the default and refuses. The permissive mode exists because
-some of these are conventions rather than laws &ndash; a partition that
-deliberately omits atoms, a hand-built term list with a scheme of its own
-&ndash; and a user who knows which one they are breaking should not be stopped
-by a tool that does not. It reports rather than refusing; it does not
-stop checking.
+<p><strong>None of these failures crashes.</strong> A term list that is not closed under
+subsets, fragment charges that do not sum, an atom in no monomer &ndash; each
+yields a converged number that is wrong.</p>
+<p><code>strict</code> is the default and refuses. The permissive mode warns instead,
+for the cases that are conventions rather than laws &ndash; a partition that
+deliberately omits atoms, a hand-built term list with a scheme of its
+own. It does not stop checking.
 Check a system describes a fragmentable molecule
 Check a term list can actually be assembled</p>
 <br>          <div class="card mb-4">
@@ -207,13 +202,13 @@ Check a term list can actually be assembled</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_string_utils.html'>mqc_string_utils</a></li>
-                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
                   <li class="list-inline-item"><a href='mqc_fraglist.html'>mqc_fraglist</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_string_utils.html'>mqc_string_utils</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1018,7 +1013,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~9"></span>
+              <span class="anchor" id="variable-terms~15"></span>
               type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1048,7 +1043,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~15"></span>
+              <span class="anchor" id="variable-level~22"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1093,7 +1088,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~8"></span>
+              <span class="anchor" id="variable-terms~14"></span>
               type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1108,7 +1103,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterm~3"></span>
+              <span class="anchor" id="variable-iterm~7"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1123,7 +1118,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~14"></span>
+              <span class="anchor" id="variable-level~21"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1168,7 +1163,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~13"></span>
+              <span class="anchor" id="variable-value~18"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1218,7 +1213,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~38"></span>
+              <span class="anchor" id="variable-sys_geom~84"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1233,7 +1228,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-strict"></span>
+              <span class="anchor" id="variable-strict~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1248,7 +1243,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~96"></span>
+              <span class="anchor" id="variable-error~170"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1303,7 +1298,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~6"></span>
+              <span class="anchor" id="variable-terms~12"></span>
               type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1318,7 +1313,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~39"></span>
+              <span class="anchor" id="variable-sys_geom~85"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1333,7 +1328,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-strict~2"></span>
+              <span class="anchor" id="variable-strict~3"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1348,7 +1343,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~97"></span>
+              <span class="anchor" id="variable-error~171"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1388,7 +1383,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~7"></span>
+              <span class="anchor" id="variable-terms~13"></span>
               type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1403,7 +1398,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-strict~3"></span>
+              <span class="anchor" id="variable-strict~4"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1418,7 +1413,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~98"></span>
+              <span class="anchor" id="variable-error~172"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1458,7 +1453,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-strict~4"></span>
+              <span class="anchor" id="variable-strict~5"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1473,7 +1468,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~99"></span>
+              <span class="anchor" id="variable-error~173"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1488,7 +1483,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-message~5"></span>
+              <span class="anchor" id="variable-message~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1531,7 +1526,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/fraglist_keep.html#variable-iterm~8">iterm</a>
-            <a class="list-group-item" href="../proc/fraglist_keep.html#variable-kept~6">kept</a>
+            <a class="list-group-item" href="../proc/fraglist_keep.html#variable-iterm">iterm</a>
+            <a class="list-group-item" href="../proc/fraglist_keep.html#variable-kept~4">kept</a>
             <a class="list-group-item" href="../proc/fraglist_keep.html#variable-kept_distances">kept_distances</a>
             <a class="list-group-item" href="../proc/fraglist_keep.html#variable-n_kept">n_kept</a>
         </div>
@@ -180,10 +180,9 @@
     
 
     <p>Keep the terms the mask selects, in their existing order</p>
-<p>The one operation every screen reduces to. Distance screening, an
+<p>The one operation every screen reduces to: distance screening, an
 energy threshold read out of a previous run&rsquo;s CSV, and resuming from
-the terms a dead run never reached are the same call with a different
-mask &ndash; which is the point of the list being an object.</p>
+the terms a dead run never reached are this call with a different mask.</p>
 
     <h3>Type Bound</h3>
     <p><a href='../type/fraglist_t.html'>fraglist_t</a></p>
@@ -201,7 +200,7 @@ mask &ndash; which is the point of the list being an object.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~151"></span>
+              <span class="anchor" id="variable-this~120"></span>
               class(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -231,7 +230,7 @@ mask &ndash; which is the point of the list being an object.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~186"></span>
+              <span class="anchor" id="variable-error~126"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -385,7 +384,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterm~8"></span>
+              <span class="anchor" id="variable-iterm"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -402,7 +401,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-kept~6"></span>
+              <span class="anchor" id="variable-kept~4"></span>
               integer(kind=default_int),
             </td>
               <td>private,</td>
@@ -470,10 +469,9 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">fraglist_keep</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">mask</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Keep the terms the mask selects, in their existing order</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The one operation every screen reduces to. Distance screening, an</span>
+<span class="w">      </span><span class="c">!! The one operation every screen reduces to: distance screening, an</span>
 <span class="w">      </span><span class="c">!! energy threshold read out of a previous run's CSV, and resuming from</span>
-<span class="w">      </span><span class="c">!! the terms a dead run never reached are the same call with a different</span>
-<span class="w">      </span><span class="c">!! mask -- which is the point of the list being an object.</span>
+<span class="w">      </span><span class="c">!! the terms a dead run never reached are this call with a different mask.</span>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">fraglist_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mask</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! One entry per term</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
@@ -528,7 +526,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

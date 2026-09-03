@@ -4,20 +4,8 @@ module mqc_fock_projector
    !! and one operation: force the Fock matrix block diagonal in that partition.
    !!
    !! This is GAFO -- the generalized adjusted frozen orbital scheme -- reduced
-   !! to the part that has nothing to do with why the orbitals were frozen. What
-   !! makes an orbital frozen, and where the frozen orbitals came from, is the
-   !! caller's business; what is here is the constraint itself, which is dense
-   !! linear algebra over `F`, `C` and `S` and knows nothing about fragments,
-   !! bonds or integrals.
-   !!
-   !! **Why zeroing rather than a level shift.** The obvious way to keep an
-   !! orbital out of the occupied space is to add a penalty, `F + B S v v^T S`
-   !! with `B` large. That raises the orbital's energy and does not decouple it:
-   !! the off-diagonal Fock elements between the frozen and variational
-   !! subspaces survive untouched, the two mix, and the matrix is not block
-   !! diagonal in the partition the method assumes it is. Raising `B` makes the
-   !! diagonal larger and leaves the coupling exactly where it was. Zeroing the
-   !! couplings is the fix, and it is why this scheme exists at all.
+   !! to dense linear algebra over `F`, `C` and `S`. What makes an orbital
+   !! frozen, and where the frozen orbitals came from, is the caller's business.
    !!
    !! **The transform.** With `C` an orthonormal basis in the metric `S` --
    !! `C^T S C = I`, frozen orbitals in the leading columns --
@@ -29,31 +17,25 @@ module mqc_fock_projector
    !! The back transform is the inverse of the forward one because `C^T S C = I`
    !! makes `C^-1 = C^T S`, so `(C^T)^-1 = S C`. Not an approximation and not a
    !! symmetrisation: with nothing frozen and `C` spanning the whole AO space
-   !! the round trip returns `F` to roundoff, which is what the test asserts.
+   !! the round trip returns `F` to roundoff.
    !!
-   !! `S C` is formed once in `init` rather than each application, since neither
-   !! factor moves once the frozen orbitals are chosen.
+   !! The couplings are zeroed and not penalised. `F + B S v v^T S` raises the
+   !! frozen orbital's energy and leaves the off-diagonal Fock elements between
+   !! the frozen and variational subspaces exactly where they were, however
+   !! large `B` is.
    !!
    !! **Choosing the shift.** Smaller than instinct suggests. The back
    !! transform `(SC) F_mo (SC)^T` spreads the shifted block over every element,
-   !! so the *unfrozen* block -- the one carrying the physics -- is clean only
-   !! to about `shift * epsilon`. At the 1e6 the reference implementations use,
-   !! that is around 1e-10 Hartree, against a validation suite that works at
-   !! 1e-9.
-   !!
-   !! Nothing here needs a shift that large. A penalty scheme does, because it
-   !! is trying to overwhelm a coupling it never removed; here the coupling is
-   !! gone, and the shift has only to lift the frozen virtuals clear of the
-   !! occupied manifold so that filling by aufbau does not reach them. A few
-   !! hundred Hartree is decisive for that and costs three or four digits less.
-   !! `projector_shift_sets_the_precision_floor` measures it.
+   !! so the *unfrozen* block is clean only to about `shift * epsilon`. At the
+   !! 1e6 the reference implementations use, that is around 1e-10 Hartree,
+   !! against a validation suite that works at 1e-9. The shift has only to lift
+   !! the frozen virtuals clear of the occupied manifold, for which a few
+   !! hundred Hartree is decisive.
    !!
    !! **Where to apply it.** Immediately after the Fock build and *before* the
    !! DIIS error and extrapolation. The constraint is a linear map and DIIS
    !! extrapolation is a linear combination whose coefficients sum to one, so a
-   !! combination of matrices sharing this block structure has it too -- the
-   !! zeros stay zero and the shifted diagonal comes through unchanged. Applied
-   !! there, every consumer downstream sees the same constrained object; applied
+   !! combination of matrices sharing this block structure has it too. Applied
    !! after DIIS, the error vector measures a matrix nobody diagonalizes.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
@@ -66,14 +48,14 @@ module mqc_fock_projector
    public :: fock_projector_t
    public :: build_frozen_basis
 
-   !> A frozen-orbital partition, and the constraint it implies
    type :: fock_projector_t
+      !! A frozen-orbital partition, and the constraint it implies
       real(dp), allocatable :: basis(:, :)
          !! `C`, `n_ao` by `n_mo`, orthonormal in the metric `S`, with the
          !! frozen orbitals in the leading columns. Their being leading is what
          !! lets a block be named by an index range.
       real(dp), allocatable :: sc(:, :)
-         !! `S C`, the back transform, formed once
+         !! `S C`, the back transform, formed once in `init`
       integer :: n_frozen_occ = 0
          !! Columns `1 : n_frozen_occ` -- frozen and occupied. Their block is
          !! left alone; only its couplings to everything else are cut.
@@ -93,34 +75,25 @@ contains
    subroutine build_frozen_basis(frozen, n_frozen_occ, overlap, basis, n_mo, error)
       !! Turn a set of chosen orbitals into a basis `init` will accept
       !!
-      !! The constraint names its blocks by index range, so the orbitals to be
-      !! frozen have to sit in the leading columns of an orthonormal basis, in
-      !! block order, with the rest of the space after them. What arrives from a
-      !! localization is none of those things: the chosen orbitals are neither
-      !! mutually orthogonal nor normalised, and they span a few dimensions of
-      !! many.
+      !! The constraint names its blocks by index range, so the frozen orbitals
+      !! have to sit in the leading columns of an orthonormal basis, in block
+      !! order, with the rest of the space after them. What arrives from a
+      !! localization is neither orthogonal nor normalised.
       !!
-      !! **Block by block, and that is the whole subtlety.** Orthonormalising
-      !! the frozen set in one pass -- the obvious thing -- mixes the frozen
-      !! occupied orbitals with the frozen virtual ones, and then the block
-      !! boundary means nothing: `apply` would leave part of a virtual untouched
-      !! and hold part of an occupied at the level shift. Mixing *within* a
-      !! block is harmless, because the occupied block is left alone by the
-      !! constraint and the virtual block is made degenerate, and both are
-      !! invariant under a rotation among their own members. So each block is
-      !! projected against everything already placed and then orthonormalised
-      !! among itself, which mixes only where mixing costs nothing.
+      !! **Each block is orthonormalised separately.** Doing the frozen set in
+      !! one pass mixes the frozen occupied orbitals with the frozen virtual
+      !! ones, and then the block boundary means nothing: `apply` would leave
+      !! part of a virtual untouched and hold part of an occupied at the level
+      !! shift. Mixing *within* a block is harmless, since both blocks are
+      !! invariant under a rotation among their own members.
       !!
-      !! Canonical rather than symmetric orthonormalisation, for the reason
-      !! `build_orthogonalizer` gives and one more: the completion step is
-      !! deliberately rank deficient -- it starts from a basis for the whole
-      !! space and must come back with the part not already spanned -- so the
-      !! same routine has to drop null directions rather than amplify them.
+      !! Canonical rather than symmetric orthonormalisation: the completion
+      !! step is deliberately rank deficient, so null directions have to be
+      !! dropped rather than amplified.
       !!
-      !! Near-dependence among the frozen orbitals themselves is a caller's bug
-      !! rather than something to quietly absorb: two localized orbitals that
-      !! are the same orbital means the bond was assigned twice, and freezing it
-      !! twice would be silent. It is refused.
+      !! Near-dependence among the frozen orbitals themselves is refused --
+      !! two localized orbitals that are the same orbital means the bond was
+      !! assigned twice, and freezing it twice would be silent.
       real(dp), intent(in) :: frozen(:, :)
          !! `n_ao` by `n_frozen`, occupied first, in the order the blocks want
       integer, intent(in) :: n_frozen_occ
@@ -182,9 +155,9 @@ contains
          basis(:, n_frozen_occ + 1:n_frozen) = piece
       end if
 
-      ! Whatever is left of the space. Starting from a basis for all of it and
-      ! projecting out what is placed leaves exactly `n_mo - n_frozen`
-      ! directions, and the count coming back is the check that it did.
+      ! Whatever is left of the space: a basis for all of it, with what is
+      ! already placed projected out, leaves exactly `n_mo - n_frozen`
+      ! directions.
       piece = x
       call orthonormalize_against(overlap, basis, n_frozen, piece, error)
       if (error%has_error()) return
@@ -296,10 +269,9 @@ contains
 
       if (error%has_error()) return
 
-      ! Nothing frozen is not "the identity to roundoff", it is the identity:
-      ! returning here rather than transforming there and back is what makes a
+      ! Returning here rather than transforming there and back is what keeps a
       ! calculation with no frozen orbitals bit-identical to one that never had
-      ! a projector, which is the regression guarantee this is worth having.
+      ! a projector.
       if (this%n_frozen == 0) return
 
       n_ao = size(fock, 1)
@@ -319,8 +291,7 @@ contains
       nfr = this%n_frozen
 
       ! Every coupling out of the frozen-occupied block. The block itself is
-      ! left as it is -- those orbitals stay occupied and keep their own
-      ! structure; what must go is their mixing with anything else.
+      ! left as it is; what must go is its mixing with anything else.
       if (nfo > 0) then
          f_mo(nfo + 1:, :nfo) = 0.0_dp
          f_mo(:nfo, nfo + 1:) = 0.0_dp
@@ -328,9 +299,7 @@ contains
 
       ! The frozen-virtual block, held degenerate at `shift` and cut from the
       ! unfrozen space. Degenerate rather than merely shifted: an off-diagonal
-      ! left inside this block would let its orbitals rotate among themselves,
-      ! and they are meant to be the orbitals that were chosen, not a basis for
-      ! them.
+      ! left inside this block would let its orbitals rotate among themselves.
       if (nfr > nfo) then
          f_mo(nfo + 1:nfr, nfo + 1:nfr) = 0.0_dp
          do i = nfo + 1, nfr

@@ -181,28 +181,23 @@
 
     <div class="col-md-9" id='text'>
       <p>Sends a <code>system_geometry_t</code> to every rank, component by component.</p>
-<p>Needed because a worker builds each fragment from its own copy of the
-system &ndash; <code>build_fragment_from_indices(sys_geom, ...)</code> &ndash; so receiving a
-list of monomer indices is not enough on its own. The existing program
-never has to send it: every rank parses the same input file. A run driven
-from outside cannot do that, because the workers never see a filename.</p>
-<p><strong>Every component travels, and none is derived on arrival.</strong> It would be
-cheaper to send the partition and recompute, say, <code>atoms_per_monomer</code>,
-and it would be one more place for the ranks to disagree. Anything a
-worker reads is something rank 0 sent it.</p>
-<p>Two-dimensional arrays go as their flattening plus both extents rather
-than through a shaped transfer, so the receiving side reconstructs the
-shape from data that arrived with it and never assumes one.</p>
+<p>A worker builds each fragment from its own copy of the system, so a list
+of monomer indices is not enough on its own. The ordinary program never
+needs this &ndash; every rank parses the same input file &ndash; but a run driven
+from outside gives its workers no filename to parse.</p>
+<p>Nothing is derived on arrival: anything a worker reads is something rank
+0 sent it. Two-dimensional arrays travel as their flattening plus both
+extents, so the receiving side never assumes a shape.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_bcast.html'>mqc_bcast</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -786,9 +781,8 @@ parameter
 <td> =</td>
                 <td>5</td>
             <td>
-                <p>n_monomers, atoms_per_monomer, total_atoms, charge, multiplicity &ndash;
-sent as one message because they are the sizes everything else is
-checked against, and splitting them invites sending four of five</p>
+                <p>n_monomers, atoms_per_monomer, total_atoms, charge, multiplicity,
+sent as one message.</p>
             </td>
         </tr>
     </tbody>
@@ -824,7 +818,7 @@ checked against, and splitting them invites sending four of five</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~19"></span>
+              <span class="anchor" id="variable-comm~16"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -839,7 +833,7 @@ checked against, and splitting them invites sending four of five</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~89"></span>
+              <span class="anchor" id="variable-sys_geom~63"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -854,7 +848,7 @@ checked against, and splitting them invites sending four of five</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~25"></span>
+              <span class="anchor" id="variable-root~22"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -879,7 +873,7 @@ checked against, and splitting them invites sending four of five</p>
 </h3></div>
     <div class="card-body">
           
-  <p>The bond list, as four parallel arrays</p><a href="../proc/bcast_bonds.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>The bond list, packed four integers to a bond</p><a href="../proc/bcast_bonds.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -894,7 +888,7 @@ checked against, and splitting them invites sending four of five</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~23"></span>
+              <span class="anchor" id="variable-comm~20"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -909,7 +903,7 @@ checked against, and splitting them invites sending four of five</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~21"></span>
+              <span class="anchor" id="variable-bonds~15"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -924,7 +918,7 @@ checked against, and splitting them invites sending four of five</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~29"></span>
+              <span class="anchor" id="variable-root~26"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -979,7 +973,7 @@ checked against, and splitting them invites sending four of five</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~20"></span>
+              <span class="anchor" id="variable-comm~17"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1009,7 +1003,7 @@ checked against, and splitting them invites sending four of five</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~26"></span>
+              <span class="anchor" id="variable-root~23"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1064,7 +1058,7 @@ checked against, and splitting them invites sending four of five</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~21"></span>
+              <span class="anchor" id="variable-comm~18"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1094,7 +1088,7 @@ checked against, and splitting them invites sending four of five</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~27"></span>
+              <span class="anchor" id="variable-root~24"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1149,7 +1143,7 @@ checked against, and splitting them invites sending four of five</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~22"></span>
+              <span class="anchor" id="variable-comm~19"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1179,7 +1173,7 @@ checked against, and splitting them invites sending four of five</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~28"></span>
+              <span class="anchor" id="variable-root~25"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1237,7 +1231,7 @@ checked against, and splitting them invites sending four of five</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

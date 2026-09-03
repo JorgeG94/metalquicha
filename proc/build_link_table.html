@@ -136,12 +136,12 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/build_link_table.html#variable-count~11">count</a>
+            <a class="list-group-item" href="../proc/build_link_table.html#variable-count~4">count</a>
             <a class="list-group-item" href="../proc/build_link_table.html#variable-excited">excited</a>
-            <a class="list-group-item" href="../proc/build_link_table.html#variable-istr~2">istr</a>
+            <a class="list-group-item" href="../proc/build_link_table.html#variable-istr">istr</a>
             <a class="list-group-item" href="../proc/build_link_table.html#variable-n_virtual">n_virtual</a>
-            <a class="list-group-item" href="../proc/build_link_table.html#variable-occupied~3">occupied</a>
-            <a class="list-group-item" href="../proc/build_link_table.html#variable-row~7">row</a>
+            <a class="list-group-item" href="../proc/build_link_table.html#variable-occupied">occupied</a>
+            <a class="list-group-item" href="../proc/build_link_table.html#variable-row">row</a>
             <a class="list-group-item" href="../proc/build_link_table.html#variable-string~4">string</a>
             <a class="list-group-item" href="../proc/build_link_table.html#variable-strings~2">strings</a>
             <a class="list-group-item" href="../proc/build_link_table.html#variable-virtual">virtual</a>
@@ -187,10 +187,8 @@
     <p>Tabulate every single excitation out of every string</p>
 <p>Row order follows PySCF: the diagonal entries first, then one block per
 occupied orbital in ascending order, each listing the virtual orbitals
-in ascending order. The order carries no meaning &ndash; a contraction sums
-over rows &ndash; but matching it makes the table directly comparable
-against the reference implementation, which is worth more than the
-freedom to choose.</p>
+in ascending order. A contraction sums over rows, so the order carries
+no meaning beyond being comparable against the reference.</p>
 
 
     <h3>Arguments</h3>
@@ -221,7 +219,7 @@ freedom to choose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_electrons~8"></span>
+              <span class="anchor" id="variable-n_electrons~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -236,7 +234,7 @@ freedom to choose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-table~3"></span>
+              <span class="anchor" id="variable-table"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(out)</td>
@@ -251,7 +249,7 @@ freedom to choose.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~59"></span>
+              <span class="anchor" id="variable-error~3"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -571,7 +569,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~11"></span>
+              <span class="anchor" id="variable-count~4"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -605,7 +603,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-istr~2"></span>
+              <span class="anchor" id="variable-istr"></span>
               integer,
             </td>
               <td>private</td>
@@ -639,7 +637,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-occupied~3"></span>
+              <span class="anchor" id="variable-occupied"></span>
               integer,
             </td>
               <td>private</td>
@@ -656,7 +654,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-row~7"></span>
+              <span class="anchor" id="variable-row"></span>
               integer,
             </td>
               <td>private</td>
@@ -743,10 +741,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Row order follows PySCF: the diagonal entries first, then one block per</span>
 <span class="w">      </span><span class="c">!! occupied orbital in ascending order, each listing the virtual orbitals</span>
-<span class="w">      </span><span class="c">!! in ascending order. The order carries no meaning -- a contraction sums</span>
-<span class="w">      </span><span class="c">!! over rows -- but matching it makes the table directly comparable</span>
-<span class="w">      </span><span class="c">!! against the reference implementation, which is worth more than the</span>
-<span class="w">      </span><span class="c">!! freedom to choose.</span>
+<span class="w">      </span><span class="c">!! in ascending order. A contraction sums over rows, so the order carries</span>
+<span class="w">      </span><span class="c">!! no meaning beyond being comparable against the reference.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_orbitals</span><span class="p">,</span><span class="w"> </span><span class="n">n_electrons</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">link_table_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">table</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
@@ -827,7 +823,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

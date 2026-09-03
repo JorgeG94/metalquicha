@@ -136,21 +136,21 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-accelerator~3">accelerator</a>
-            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-allow_crap_scf~6">allow_crap_scf</a>
-            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-convergence_metric~3">convergence_metric</a>
-            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-density_tol~3">density_tol</a>
-            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-diis_size~4">diis_size</a>
-            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-energy_tol~3">energy_tol</a>
-            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-grad_tol~3">grad_tol</a>
-            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-guess~8">guess</a>
-            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-guess_steps~4">guess_steps</a>
-            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-incremental_fock~3">incremental_fock</a>
+            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-accelerator~2">accelerator</a>
+            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-allow_crap_scf~2">allow_crap_scf</a>
+            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-convergence_metric~2">convergence_metric</a>
+            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-density_tol~2">density_tol</a>
+            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-diis_size~3">diis_size</a>
+            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-energy_tol~2">energy_tol</a>
+            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-grad_tol~2">grad_tol</a>
+            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-guess~7">guess</a>
+            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-guess_steps~2">guess_steps</a>
+            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-incremental_fock~2">incremental_fock</a>
             <a class="list-group-item" href="../type/deltascf_options_t.html#variable-inherit_scf">inherit_scf</a>
-            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-level_shift~3">level_shift</a>
-            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-linear_dependence~3">linear_dependence</a>
-            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-max_iter~6">max_iter</a>
-            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-use_diis~5">use_diis</a>
+            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-level_shift~2">level_shift</a>
+            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-linear_dependence~2">linear_dependence</a>
+            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-max_iter~4">max_iter</a>
+            <a class="list-group-item" href="../type/deltascf_options_t.html#variable-use_diis~3">use_diis</a>
         </div>
       </div>
     </div>
@@ -189,19 +189,14 @@
       <h2 id="type-def-statement">
         type, public, extends(<a href='scf_numerics_t.html'>scf_numerics_t</a>) :: deltascf_options_t</h2>
     <p>Convergence settings for a second SCF run beside the first</p>
-<p>The ions behind a Fukui analysis are their own SCF problem and are
-allowed to be configured as one. They are harder than the neutral &ndash; a
-charged species in a basis chosen to describe a neutral one &ndash; so
-inheriting whatever converged the neutral is a default rather than a
-rule.</p>
+<p>The ions behind a Fukui analysis are their own SCF problem: a charged
+species in a basis chosen for a neutral one, so whatever converged the
+neutral is a default rather than a rule.</p>
 <p><strong>Inheritance happens at read time, not here.</strong> The reader seeds every
-field above from the resolved <code>keywords.scf</code> before it looks at the
-deck, so a key the deck does not name keeps the neutral&rsquo;s value and a
-key it does name wins. That is why nothing here carries a sentinel:
-there is no &ldquo;unset&rdquo; state to encode, because &ldquo;unset&rdquo; is spelled by the
-field already holding the inherited value. The three fields this
-replaced each needed one, and <code>level_shift</code> could not have a clean one
-at all.</p>
+inherited field from the resolved <code>keywords.scf</code> before it looks at
+the deck, so a key the deck does not name keeps the neutral&rsquo;s value
+and a key it does name wins. Nothing here carries an &ldquo;unset&rdquo; sentinel
+because unset is spelled by the field holding the inherited value.</p>
 <br>      <div class="card">
         <div class="card-header">
           <h3 class="card-title">Inherits</h3>
@@ -340,7 +335,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~cuest_scf_settings_t&#45;&gt;type~deltascf_options_t -->
-<g id="type~~deltascf_options_t~~InheritedByGraph_edge1" class="edge">
+<g id="type~~deltascf_options_t~~InheritedByGraph_edge3" class="edge">
 <title>type~cuest_scf_settings_t&#45;&gt;type~deltascf_options_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M189.48,-177.96C167.21,-173 141.25,-167.22 118.11,-162.06"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="118.57,-158.58 108.05,-159.82 117.05,-165.41 118.57,-158.58"/>
@@ -372,7 +367,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~properties_config_t&#45;&gt;type~deltascf_options_t -->
-<g id="type~~deltascf_options_t~~InheritedByGraph_edge3" class="edge">
+<g id="type~~deltascf_options_t~~InheritedByGraph_edge1" class="edge">
 <title>type~properties_config_t&#45;&gt;type~deltascf_options_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M189.48,-118.04C167.21,-123 141.25,-128.78 118.11,-133.94"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="117.05,-130.59 108.05,-136.18 118.57,-137.42 117.05,-130.59"/>
@@ -388,7 +383,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~method_config_t&#45;&gt;type~properties_config_t -->
-<g id="type~~deltascf_options_t~~InheritedByGraph_edge5" class="edge">
+<g id="type~~deltascf_options_t~~InheritedByGraph_edge4" class="edge">
 <title>type~method_config_t&#45;&gt;type~properties_config_t</title>
 <path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M388.8,-129.76C365.23,-125.85 336.75,-121.13 311.41,-116.93"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="311.95,-113.47 301.51,-115.29 310.8,-120.37 311.95,-113.47"/>
@@ -404,7 +399,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~scf_options_t&#45;&gt;type~properties_config_t -->
-<g id="type~~deltascf_options_t~~InheritedByGraph_edge4" class="edge">
+<g id="type~~deltascf_options_t~~InheritedByGraph_edge5" class="edge">
 <title>type~scf_options_t&#45;&gt;type~properties_config_t</title>
 <path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M398.97,-87.26C376.13,-88.26 346.88,-90.01 321,-93 317.99,-93.35 314.92,-93.74 311.82,-94.16"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="311.28,-90.7 301.88,-95.59 312.28,-97.63 311.28,-90.7"/>
@@ -420,7 +415,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~dft_options_t&#45;&gt;type~scf_options_t -->
-<g id="type~~deltascf_options_t~~InheritedByGraph_edge9" class="edge">
+<g id="type~~deltascf_options_t~~InheritedByGraph_edge8" class="edge">
 <title>type~dft_options_t&#45;&gt;type~scf_options_t</title>
 <path fill="none" stroke="#00ffff" d="M615.64,-83.95C591.28,-74.36 558.24,-62.88 544.5,-65"/>
 </g>
@@ -434,7 +429,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~driver_config_t&#45;&gt;type~method_config_t -->
-<g id="type~~deltascf_options_t~~InheritedByGraph_edge6" class="edge">
+<g id="type~~deltascf_options_t~~InheritedByGraph_edge7" class="edge">
 <title>type~driver_config_t&#45;&gt;type~method_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M599.98,-138C570.79,-138 532.26,-138 500.39,-138"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="500.29,-134.5 490.29,-138 500.29,-141.5 500.29,-134.5"/>
@@ -450,7 +445,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~hf_options_t&#45;&gt;type~scf_options_t -->
-<g id="type~~deltascf_options_t~~InheritedByGraph_edge8" class="edge">
+<g id="type~~deltascf_options_t~~InheritedByGraph_edge10" class="edge">
 <title>type~hf_options_t&#45;&gt;type~scf_options_t</title>
 <path fill="none" stroke="#00ffff" d="M607.36,-57.3C588.48,-59.18 565.21,-61.8 544.5,-65"/>
 </g>
@@ -464,7 +459,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~many_body_expansion_t&#45;&gt;type~method_config_t -->
-<g id="type~~deltascf_options_t~~InheritedByGraph_edge7" class="edge">
+<g id="type~~deltascf_options_t~~InheritedByGraph_edge6" class="edge">
 <title>type~many_body_expansion_t&#45;&gt;type~method_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M791.87,-168.87C785.83,-168.92 779.81,-168.97 774,-169 655.54,-169.67 625.24,-168.98 508,-152 505.46,-151.63 502.87,-151.23 500.26,-150.8"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="500.6,-147.3 490.14,-149.01 499.38,-154.19 500.6,-147.3"/>
@@ -487,7 +482,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~mcscf_options_t&#45;&gt;type~scf_options_t -->
-<g id="type~~deltascf_options_t~~InheritedByGraph_edge10" class="edge">
+<g id="type~~deltascf_options_t~~InheritedByGraph_edge9" class="edge">
 <title>type~mcscf_options_t&#45;&gt;type~scf_options_t</title>
 <path fill="none" stroke="#00ffff" d="M615.58,-24.06C609.38,-26.85 602.91,-29.91 597,-33 572.79,-45.66 571.51,-60.83 544.5,-65"/>
 <path fill="none" stroke="#00ffff" d="M542.5,-65C525.34,-67.65 506.69,-71.27 490.09,-74.76"/>
@@ -519,7 +514,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~fmo_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~deltascf_options_t~~InheritedByGraph_edge14" class="edge">
+<g id="type~~deltascf_options_t~~InheritedByGraph_edge16" class="edge">
 <title>type~fmo_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#0066ff" d="M985.74,-197.84C980.59,-195.29 975.49,-192.33 971,-189 961.13,-181.67 965.29,-168 953,-168"/>
 </g>
@@ -563,7 +558,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~mbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~deltascf_options_t~~InheritedByGraph_edge16" class="edge">
+<g id="type~~deltascf_options_t~~InheritedByGraph_edge14" class="edge">
 <title>type~mbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#0066ff" d="M985.74,-138.16C980.59,-140.71 975.49,-143.67 971,-147 961.13,-154.33 965.29,-168 953,-168"/>
 <path fill="none" stroke="#0066ff" d="M952,-168C949.46,-168 946.88,-168 944.27,-168"/>
@@ -658,7 +653,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-accelerator~3"></span>
+              <span class="anchor" id="variable-accelerator~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -670,12 +665,14 @@ large graphs.</div>
 <td> =</td>
                 <td>&#34;diis&#34;</td>
             <td>
-                
+                <p>&lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or &lsquo;ediis&rsquo;. The energy-based pair
+runs only while the error is large and hands over to DIIS, so
+naming one asks for a different opening, not a different endgame.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~6"></span>
+              <span class="anchor" id="variable-allow_crap_scf~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -692,7 +689,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-convergence_metric~3"></span>
+              <span class="anchor" id="variable-convergence_metric~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -706,15 +703,12 @@ large graphs.</div>
             <td>
                 <p>Which measure decides this SCF has stopped. See
 <code>mqc_scf_convergence</code>; the default is the energy-and-commutator
-pair every loop tested before that module existed.
-&lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or &lsquo;ediis&rsquo;. The energy-based pair
-runs only while the error is large and hands over to DIIS, so
-naming one asks for a different opening, not a different endgame.</p>
+pair.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~3"></span>
+              <span class="anchor" id="variable-density_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -731,7 +725,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~4"></span>
+              <span class="anchor" id="variable-diis_size~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -748,7 +742,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~3"></span>
+              <span class="anchor" id="variable-energy_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -765,7 +759,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grad_tol~3"></span>
+              <span class="anchor" id="variable-grad_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -782,7 +776,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~8"></span>
+              <span class="anchor" id="variable-guess~7"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -799,14 +793,13 @@ or &lsquo;auto&rsquo;, where the backend picks.</p>
 <p><strong>Not the same key as <code>mqc_config_t%fukui_guess</code></strong>, which takes
 &lsquo;neutral&rsquo; or &lsquo;independent&rsquo; and says whether the ion starts from the
 neutral&rsquo;s converged density at all. This one says how a density is
-built when it starts from nothing. They are one level apart in the
-deck and spelled the same, which is a trap: see <code>fukui_keys</code> in
-<code>mqc_json_schema</code>.</p>
+built when it starts from nothing. The two are one level apart in
+the deck and spelled the same.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~4"></span>
+              <span class="anchor" id="variable-guess_steps~2"></span>
               type(<a href='guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -824,7 +817,7 @@ preliminary SCF in order.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-incremental_fock~3"></span>
+              <span class="anchor" id="variable-incremental_fock~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -856,17 +849,14 @@ which is the first thing to rule out when a run stalls.</p>
 <td> =</td>
                 <td>.true.</td>
             <td>
-                <p>Seed from <code>keywords.scf</code> (the default) or from the defaults above.</p>
-<p>False is for the case where the neutral was converged tightly, or
-with an accelerator chosen for it, and carrying that onto a charged
-species is the wrong starting point rather than a cautious one. It
-does not stop the deck naming keys explicitly &ndash; those still win
-either way; it only changes what the unnamed ones fall back to.</p>
+                <p>Seed from <code>keywords.scf</code> (the default) or from the defaults above.
+Only changes what the keys the deck does not name fall back to;
+keys it does name win either way.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_shift~3"></span>
+              <span class="anchor" id="variable-level_shift~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -879,13 +869,12 @@ either way; it only changes what the unnamed ones fall back to.</p>
                 <td>0.0_dp</td>
             <td>
                 <p>Hartree added to the virtual block before each diagonalisation.
-Zero is off &ndash; which is why this could never carry a sentinel for
-&ldquo;unset&rdquo;, and why the ions used to spell theirs &ldquo;any negative&rdquo;.</p>
+Zero is off.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-linear_dependence~3"></span>
+              <span class="anchor" id="variable-linear_dependence~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -902,7 +891,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~6"></span>
+              <span class="anchor" id="variable-max_iter~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -919,7 +908,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~5"></span>
+              <span class="anchor" id="variable-use_diis~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -948,28 +937,19 @@ Zero is off &ndash; which is why this could never carry a sentinel for
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="p">,</span><span class="w"> </span><span class="k">extends</span><span class="p">(</span><span class="n">scf_numerics_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">deltascf_options_t</span>
 <span class="w">      </span><span class="c">!! Convergence settings for a second SCF run beside the first</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The ions behind a Fukui analysis are their own SCF problem and are</span>
-<span class="w">      </span><span class="c">!! allowed to be configured as one. They are harder than the neutral -- a</span>
-<span class="w">      </span><span class="c">!! charged species in a basis chosen to describe a neutral one -- so</span>
-<span class="w">      </span><span class="c">!! inheriting whatever converged the neutral is a default rather than a</span>
-<span class="w">      </span><span class="c">!! rule.</span>
+<span class="w">      </span><span class="c">!! The ions behind a Fukui analysis are their own SCF problem: a charged</span>
+<span class="w">      </span><span class="c">!! species in a basis chosen for a neutral one, so whatever converged the</span>
+<span class="w">      </span><span class="c">!! neutral is a default rather than a rule.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! **Inheritance happens at read time, not here.** The reader seeds every</span>
-<span class="w">      </span><span class="c">!! field above from the resolved `keywords.scf` before it looks at the</span>
-<span class="w">      </span><span class="c">!! deck, so a key the deck does not name keeps the neutral's value and a</span>
-<span class="w">      </span><span class="c">!! key it does name wins. That is why nothing here carries a sentinel:</span>
-<span class="w">      </span><span class="c">!! there is no "unset" state to encode, because "unset" is spelled by the</span>
-<span class="w">      </span><span class="c">!! field already holding the inherited value. The three fields this</span>
-<span class="w">      </span><span class="c">!! replaced each needed one, and `level_shift` could not have a clean one</span>
-<span class="w">      </span><span class="c">!! at all.</span>
+<span class="w">      </span><span class="c">!! inherited field from the resolved `keywords.scf` before it looks at</span>
+<span class="w">      </span><span class="c">!! the deck, so a key the deck does not name keeps the neutral's value</span>
+<span class="w">      </span><span class="c">!! and a key it does name wins. Nothing here carries an "unset" sentinel</span>
+<span class="w">      </span><span class="c">!! because unset is spelled by the field holding the inherited value.</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">inherit_scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">         </span><span class="c">!! Seed from `keywords.scf` (the default) or from the defaults above.</span>
-<span class="w">         </span><span class="c">!!</span>
-<span class="w">         </span><span class="c">!! False is for the case where the neutral was converged tightly, or</span>
-<span class="w">         </span><span class="c">!! with an accelerator chosen for it, and carrying that onto a charged</span>
-<span class="w">         </span><span class="c">!! species is the wrong starting point rather than a cautious one. It</span>
-<span class="w">         </span><span class="c">!! does not stop the deck naming keys explicitly -- those still win</span>
-<span class="w">         </span><span class="c">!! either way; it only changes what the unnamed ones fall back to.</span>
+<span class="w">         </span><span class="c">!! Only changes what the keys the deck does not name fall back to;</span>
+<span class="w">         </span><span class="c">!! keys it does name win either way.</span>
 <span class="w">   </span><span class="k">end type </span><span class="n">deltascf_options_t</span>
 </pre></div>
 
@@ -993,7 +973,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -1,22 +1,15 @@
 !! Energy-based DIIS coefficient solvers: EDIIS and ADIIS
 module mqc_ediis
-   !! What DIIS cannot do, and why these exist.
+   !! Energy-based coefficient solvers for the SCF accelerator.
    !!
    !! DIIS minimises the norm of a combination of *error* vectors and knows
-   !! nothing about the energy. Its coefficients are unconstrained apart from
-   !! summing to one, so they go negative and large and the extrapolated Fock
-   !! matrix can lie far outside the densities it was built from. Near the
-   !! solution that freedom is exactly what makes it fast. Far from it, the same
-   !! freedom is what lets an SCF oscillate, stall, or settle onto a saddle
-   !! point with a perfectly small residual.
-   !!
-   !! EDIIS and ADIIS replace the residual with an energy model and constrain
-   !! the coefficients to the simplex -- non-negative and summing to one -- so
-   !! the result is an *interpolation* between densities already visited. That
-   !! is what makes them descend from a bad starting point, and also what makes
-   !! them slow at the end: the true solution is generally outside the hull of
-   !! what has been seen. So neither replaces DIIS. The pair is the method:
-   !! energy-based while the error is large, DIIS once it is small.
+   !! nothing about the energy; its coefficients are unconstrained apart from
+   !! summing to one. EDIIS and ADIIS replace the residual with an energy model
+   !! and constrain the coefficients to the simplex -- non-negative and summing
+   !! to one -- so the result is an *interpolation* between densities already
+   !! visited. That makes them descend from a bad starting point and slow at the
+   !! end, so neither replaces DIIS: the pair is the method, energy-based while
+   !! the error is large and DIIS once it is small.
    !!
    !! **EDIIS** (Kudin, Scuseria, Cances, JCP 116, 8255 (2002)):
    !!
@@ -45,14 +38,11 @@ module mqc_ediis
    public :: simplex_quadratic_min
 
    integer, parameter :: MAX_STEPS = 200
-      !! BFGS iterations. PySCF stops at `tol = 1e-9`; a handful of variables
-      !! reaches that in well under this, and the bound is a runaway guard.
-      !! Iterations of the simplex minimisation. The subspace is a handful of
-      !! vectors, so this is small work beside one Fock build; the bound exists
-      !! to stop a pathological case spinning, not to ration effort.
+      !! BFGS iterations of the simplex minimisation. A runaway guard rather
+      !! than a ration: the subspace is a handful of vectors, so this is small
+      !! work beside one Fock build.
    real(dp), parameter :: GRAD_FLOOR = 1.0e-10_dp
       !! Projected-gradient norm below which the minimum is taken as found.
-      !! PySCF asks scipy for `tol = 1e-9`; this is the same order.
    real(dp), parameter :: STEP_FLOOR = 1.0e-14_dp
       !! Backtracking gives up below this and keeps the best point so far
 
@@ -68,14 +58,9 @@ contains
       !! `b = E` and `A = -(df_ii + df_jj - df_ij - df_ji)`.
       !!
       !! **The published functional carries a 1/2 on that sum and this does
-      !! not**, because `pyscf/scf/diis.py:ediis_minimize` does not: its
-      !! `costf` is `c.es - c.df.c` against a `df` already symmetrised into the
-      !! bracket above. The factor is not cosmetic -- it reweights the energies
-      !! against the correction and moves where the minimum sits -- so one of
-      !! the two had to be chosen rather than averaged. PySCF is chosen for the
-      !! reason the VV10 port gives for following it term for term: it makes a
-      !! disagreement a porting bug rather than a difference of convention, and
-      !! there is a reference implementation to diff against.
+      !! not**, following `pyscf/scf/diis.py:ediis_minimize`. The factor is not
+      !! cosmetic: it reweights the energies against the correction and moves
+      !! where the minimum sits.
       !!
       !! The quadratic term is *not* positive definite, so the minimisation is
       !! a descent method on the simplex rather than a solve.
@@ -145,28 +130,21 @@ contains
       !!
       !! **The constraint is removed rather than enforced.** Writing
       !! `c_i = x_i^2 / sum_j x_j^2` satisfies both conditions for any real `x`,
-      !! which turns a constrained problem into an unconstrained one. This is
-      !! the parameterisation `pyscf/scf/diis.py` uses, and the chain rule
-      !! through it is the same:
+      !! so the problem becomes unconstrained, with
       !!
       !!     dE/dx_n = (2 x_n / S) * (g_n - sum_k c_k g_k),   g = dE/dc
       !!
       !! The bracket is the gradient projected onto the simplex, so no separate
-      !! projection appears -- it is what the parameterisation produces.
+      !! projection appears.
       !!
-      !! **BFGS, not steepest descent.** `A` is not positive definite, and on a
-      !! badly conditioned quadratic steepest descent stalls short of the
-      !! minimum and returns coefficients that are merely nearby. That is
-      !! invisible: the SCF still converges, via DIIS-like behaviour, just
-      !! slower -- which is exactly the symptom that would be read as "the
-      !! energy schemes are slow" rather than "the inner minimisation is not
-      !! converged". PySCF uses BFGS at `tol = 1e-9`; this matches it, with a
-      !! backtracking Armijo line search so an indefinite region cannot take an
-      !! unbounded step.
+      !! **BFGS, not steepest descent**, with a backtracking Armijo line search:
+      !! `A` is not positive definite, and steepest descent stalls short of the
+      !! minimum on a badly conditioned quadratic and returns coefficients that
+      !! are merely nearby -- invisibly, since the SCF still converges, just
+      !! slower.
       !!
-      !! Started from a uniform `x`, as PySCF does. The obvious alternative --
-      !! all weight on the newest entry -- is a different basin on a non-convex
-      !! model, so it is not a free choice.
+      !! Started from a uniform `x`. The model is not convex, so all weight on
+      !! the newest entry is a different basin rather than a free choice.
       real(dp), intent(in) :: a(:, :)   !! (n, n)
       real(dp), intent(in) :: b(:)      !! (n)
       integer, intent(in) :: n

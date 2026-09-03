@@ -166,12 +166,6 @@
     
 
     <p>Create a copy of reference geometry with one coordinate displaced</p>
-<p>Args:
-  reference_geom: Original geometry to copy
-  atom_idx: Atom to displace (1-based)
-  coord_idx: Coordinate to displace (1=x, 2=y, 3=z)
-  displacement: Amount to displace in Bohr (positive or negative)
-  displaced_geom: Output displaced geometry</p>
 
 
     <h3>Arguments</h3>
@@ -202,7 +196,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_idx~3"></span>
+              <span class="anchor" id="variable-atom_idx~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -212,12 +206,12 @@
             <td>::</td>
             <td><strong>atom_idx</strong></td>
             <td>
-                
+                <p>1-based atom; 1=x, 2=y, 3=z</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_idx~2"></span>
+              <span class="anchor" id="variable-coord_idx"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -227,7 +221,7 @@
             <td>::</td>
             <td><strong>coord_idx</strong></td>
             <td>
-                
+                <p>1-based atom; 1=x, 2=y, 3=z</p>
             </td>
         </tr>
         <tr>
@@ -242,7 +236,7 @@
             <td>::</td>
             <td><strong>displacement</strong></td>
             <td>
-                
+                <p>Signed, in Bohr</p>
             </td>
         </tr>
         <tr>
@@ -614,16 +608,13 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">copy_and_displace_geometry</span><span class="p">(</span><span class="n">reference_geom</span><span class="p">,</span><span class="w"> </span><span class="n">atom_idx</span><span class="p">,</span><span class="w"> </span><span class="n">coord_idx</span><span class="p">,</span><span class="w"> </span><span class="n">displacement</span><span class="p">,</span><span class="w"> </span><span class="n">displaced_geom</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Create a copy of reference geometry with one coordinate displaced</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Args:</span>
-<span class="w">      </span><span class="c">!!   reference_geom: Original geometry to copy</span>
-<span class="w">      </span><span class="c">!!   atom_idx: Atom to displace (1-based)</span>
-<span class="w">      </span><span class="c">!!   coord_idx: Coordinate to displace (1=x, 2=y, 3=z)</span>
-<span class="w">      </span><span class="c">!!   displacement: Amount to displace in Bohr (positive or negative)</span>
-<span class="w">      </span><span class="c">!!   displaced_geom: Output displaced geometry</span>
+<span class="w">      </span><span class="c">! TODO(mqc): copies `cap_replaces_atom` but not `cap_bonded_to` or</span>
+<span class="w">      </span><span class="c">! `cap_scale`, and not `is_ghost` either, so a displaced fragment</span>
+<span class="w">      </span><span class="c">! redistributes its cap derivatives by weights the reference did not use</span>
+<span class="w">      </span><span class="c">! and its ghost centres come back as real atoms.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">reference_geom</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_idx</span><span class="p">,</span><span class="w"> </span><span class="n">coord_idx</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">displacement</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_idx</span><span class="p">,</span><span class="w"> </span><span class="n">coord_idx</span><span class="w">  </span><span class="c">!! 1-based atom; 1=x, 2=y, 3=z</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">displacement</span><span class="w">  </span><span class="c">!! Signed, in Bohr</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">displaced_geom</span>
 
 <span class="w">      </span><span class="c">! Copy basic properties</span>
@@ -656,10 +647,10 @@ large graphs.</div>
 <span class="w">      </span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="n">coord_idx</span><span class="p">,</span><span class="w"> </span><span class="n">atom_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">         </span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="n">coord_idx</span><span class="p">,</span><span class="w"> </span><span class="n">atom_idx</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">displacement</span>
 
-<span class="w">      </span><span class="c">! Copy basis set if present (same basis, just different geometry)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">reference_geom</span><span class="p">%</span><span class="n">basis</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="w">         </span><span class="c">! Note: Basis set will need to be rebuilt with new coordinates</span>
-<span class="w">         </span><span class="c">! For now, we don't copy it - it should be set up during calculation</span>
+<span class="w">         </span><span class="c">! TODO(mqc): empty, and so is the copy -- a displaced geometry comes</span>
+<span class="w">         </span><span class="c">! back with no basis and the caller has to build one against the new</span>
+<span class="w">         </span><span class="c">! coordinates.</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="k">   end subroutine </span><span class="n">copy_and_displace_geometry</span>
@@ -686,7 +677,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

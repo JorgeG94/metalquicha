@@ -5,7 +5,6 @@ module mqc_ci_transform
    !! determinants. This module performs that re-expansion, so that a CI which
    !! has been solved in one basis need not be solved again in the other.
    !!
-   !! The identity is the one every textbook derives and nobody writes down.
    !! With orbitals related by an orthogonal `T`,
    !!
    !!     |q> = sum_p |p> T(p,q)
@@ -22,24 +21,13 @@ module mqc_ci_transform
    !!     C' = M_alpha^T C M_beta
    !!
    !! **`M` is exactly the size of the CI vector, and the transformation costs
-   !! one dimension more.** For a CAS(14,14) the vector is 3432 x 3432 and the
-   !! products are 3432^3, which is dense BLAS and a few seconds. Compare that
-   !! with re-solving: a Davidson in a basis with no dominant determinant starts
-   !! from a guess with negligible overlap and preconditions on a diagonal that
-   !! no longer approximates the spectrum, and may take hundreds of iterations
-   !! or none that converge.
+   !! one dimension more.** For a CAS(14,14) the products are 3432 cubed, which
+   !! is dense BLAS.
    !!
-   !! **`M` inherits `T`'s orthogonality**, which is the check worth making and
-   !! `rotation_is_orthogonal` makes it. If `T` is orthogonal then so is `M`,
-   !! for every electron count at once, and a violation means the rotation
-   !! handed in was not what it claimed to be rather than that this arithmetic
-   !! is wrong.
-   !!
-   !! The asymptotically better route is Malmqvist's: factorize `T` into
-   !! elementary one-orbital operations and apply each straight to the vector,
-   !! `O(n_str^2 n_orb^2)` and no `M` stored. It is considerably more code, and
-   !! the active spaces a full CI can be solved in at all are small enough that
-   !! the matrix form is not the constraint.
+   !! **`M` inherits `T`'s orthogonality**, for every electron count at once, so
+   !! a violation means the rotation handed in was not what it claimed to be
+   !! rather than that this arithmetic is wrong. `rotation_is_orthogonal` is the
+   !! check.
    use, intrinsic :: iso_fortran_env, only: int64
    use pic_types, only: dp
    use pic_io, only: to_char
@@ -57,19 +45,11 @@ module mqc_ci_transform
    public :: orthogonality_defect
 
    real(dp), parameter :: TOL_ORTHOGONAL = 1.0e-10_dp
-      !! How far `T^T T` may sit from the identity, per element. The
-      !! transformations this is fed are built from a symmetric
-      !! orthogonalization followed by Jacobi rotations, so they are orthogonal
-      !! to rounding and nothing else is expected to reach here.
+      !! How far `T^T T` may sit from the identity, per element
    integer(int64), parameter :: MAX_RECTANGLE = 2_int64**28
-      !! Determinants, about 2.1 GB of coefficients. The ceiling on
-      !! `scatter_restricted_ci`, and it is a real one: a restricted space is
-      !! chosen precisely because the complete space is unaffordable, and this
-      !! routine spends the complete space anyway. Ethane's full valence
-      !! CAS(14,14) is 11,778,624 determinants -- ninety-four megabytes, and
-      !! twenty times inside this -- so the molecules the analysis can reach at
-      !! all are reachable. Benzene's is 2.4e16 and is not, by this route or any
-      !! other.
+      !! Determinants, about 2.1 GB of coefficients: the ceiling on
+      !! `scatter_restricted_ci`, which spends the complete space even where the
+      !! space being written out is a restricted one.
    real(dp), parameter :: TOL_NORM = 1.0e-8_dp
       !! How far the transformed vector's norm may drift from the original's.
       !! An orthogonal transformation preserves it exactly, so this tolerates
@@ -80,10 +60,9 @@ contains
    pure function rotation_is_orthogonal(rotation) result(orthogonal)
       !! Whether `T^T T` is the identity to `TOL_ORTHOGONAL`
       !!
-      !! Cheap -- `n_orb^3` on a matrix whose dimension is the active space --
-      !! and the precondition for everything below, since a non-orthogonal
-      !! rotation does not relate two orthonormal determinant bases and the
-      !! minors would not be a transformation of anything.
+      !! The precondition for everything below: a non-orthogonal rotation does
+      !! not relate two orthonormal determinant bases, so its minors are not a
+      !! transformation of anything.
       real(dp), intent(in) :: rotation(:, :)
       logical :: orthogonal
 
@@ -93,11 +72,9 @@ contains
    pure function orthogonality_defect(rotation) result(defect)
       !! The largest element of `T^T T - I`, or `huge` if `T` is not square
       !!
-      !! Reported rather than only tested because the size of the miss is the
-      !! diagnosis. Two orthonormal bases of the *same* space give rounding;
-      !! two bases of spaces that merely have the same dimension give something
-      !! far larger, and a caller deciding whether to trust an offered wave
-      !! function wants to be able to say which it is looking at.
+      !! The size of the miss is the diagnosis: two orthonormal bases of the
+      !! *same* space differ by rounding, two bases of spaces that merely share
+      !! a dimension by far more.
       real(dp), intent(in) :: rotation(:, :)
       real(dp) :: defect
 
@@ -179,8 +156,7 @@ contains
       end if
 
       ! Which orbitals each string occupies, ascending, once rather than once
-      ! per pair: the pair count is the square of the string count, so scanning
-      ! bits inside the double loop would repeat every scan `n_str` times.
+      ! per pair.
       allocate (occupancy(n_electrons, n_str))
       do i = 1, n_str
          filled = 0
@@ -192,9 +168,8 @@ contains
          end do
       end do
 
-      ! `rows` is hoisted out of the inner loop: for a fixed source string the
-      ! rows of the submatrix are the same for every target string, and only
-      ! the columns gathered from them change.
+      ! For a fixed source string the rows of the submatrix are the same for
+      ! every target string, so only the columns gathered from them change.
       !$omp parallel default(shared) private(i, j, k, rows, work)
       allocate (rows(n_electrons, n_orb), work(n_electrons, n_electrons))
       !$omp do schedule(static)
@@ -219,9 +194,8 @@ contains
    pure function determinant(a) result(value)
       !! Gaussian elimination with partial pivoting, on a copy
       !!
-      !! Small -- the dimension is the electron count of one spin -- so LAPACK
-      !! would spend more in its own call overhead than this spends computing,
-      !! and it is called once per pair of strings.
+      !! The dimension is the electron count of one spin, and this is called
+      !! once per pair of strings.
       real(dp), intent(in) :: a(:, :)
       real(dp) :: value
 
@@ -269,30 +243,11 @@ contains
       !!
       !! **This exists so that a restricted wave function can be rotated at
       !! all.** A restricted space is not closed under rotation of its active
-      !! orbitals -- mixing two active orbitals stops being redundant the moment
-      !! the space is incomplete -- so a rotation carries such a wave function
-      !! out of its own space and there is nowhere in that space to put the
-      !! answer. The complete space is where the answer lives, for the same
-      !! reason that a subspace rotated inside a larger space lands on a
-      !! different subspace of it.
+      !! orbitals, so a rotation carries such a wave function out of its own
+      !! space and the answer lives in the complete space.
       !!
-      !! GAMESS solves the same problem the other way, by *forbidding* the
-      !! rotation to leave the space: `LOCAL_PPASVD` builds the quasi-atomic
-      !! transformation block-diagonal over the subspaces and
-      !! `LOCAL_BLOCK_ORMAS` asserts it six times over. The expansion done here
-      !! is named there as `MALMQ_CIDRIV` option 2, "expands ORMAS CI vector
-      !! from NSPACE>1 to NSPACE=1 form", and declined -- "THIS OPTION IS NOT
-      !! YET IMPLEMENTED AND MIGHT NOT BE". That is a reasonable decision for
-      !! Malmqvist's algorithm, which acts on the vector in its own space and
-      !! would lose its whole advantage by expanding; it is not one for a
-      !! transformation that is already dense matrix products over the complete
-      !! rectangle.
-      !!
-      !! The cost is honest and is the reason for `MAX_RECTANGLE`: the
-      !! restriction buys a cheap *solve* and this spends the complete space to
-      !! store the result. For ethane that is 16,500 determinants converged and
-      !! 11.7 million stored, which is the right trade; past a point it is not
-      !! available at all.
+      !! The restriction buys a cheap *solve* and this spends the complete space
+      !! to store the result, which `MAX_RECTANGLE` bounds.
       type(ormas_space_t), intent(in) :: space
       real(dp), intent(in) :: flat(:)          !! (space%n_determinants)
       real(dp), allocatable, intent(out) :: ci(:, :)
@@ -343,9 +298,7 @@ contains
          end do
       end do
 
-      ! Every coefficient placed exactly once, nothing dropped and nothing
-      ! written twice. A collision in the addressing would show up here and
-      ! nowhere else downstream.
+      ! A collision in the addressing shows up here and nowhere else downstream.
       before = sum(flat**2)
       after = sum(ci**2)
       if (abs(after - before) > TOL_NORM*max(1.0_dp, before)) then
@@ -361,11 +314,10 @@ contains
    subroutine transform_ci_vector(m_alpha, m_beta, ci, transformed, error)
       !! Re-expand a CI vector in the target basis: `C' = M_alpha^T C M_beta`
       !!
-      !! The amplitudes change and the wave function does not. What comes back
-      !! is the same state, so its energy against the target-basis Hamiltonian
-      !! must equal the energy it had in the basis it was solved in -- which is
-      !! the check a caller should make, because it tests the whole chain
-      !! rather than this arithmetic alone.
+      !! The amplitudes change and the wave function does not, so the energy of
+      !! the result against the target-basis Hamiltonian must equal the energy
+      !! it had in the basis it was solved in. That is the check a caller should
+      !! make: it tests the whole chain rather than this arithmetic alone.
       real(dp), intent(in) :: m_alpha(:, :)   !! From `string_rotation_matrix`, alpha
       real(dp), intent(in) :: m_beta(:, :)    !! The same for beta
       real(dp), intent(in) :: ci(:, :)        !! (n_alpha_strings, n_beta_strings)
@@ -392,9 +344,8 @@ contains
       call pic_gemm(m_alpha, ci, work, transa="T")
       call pic_gemm(work, m_beta, transformed)
 
-      ! Orthogonal in, orthogonal out. This does not prove the convention is
-      ! right -- a sign error survives it -- but it does catch a transformation
-      ! built for the wrong space, which is the mistake with no other symptom.
+      ! Orthogonal in, orthogonal out. A sign error survives this; a
+      ! transformation built for the wrong space does not.
       before = sum(ci**2)
       after = sum(transformed**2)
       if (abs(after - before) > TOL_NORM*max(1.0_dp, before)) then

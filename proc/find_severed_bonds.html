@@ -136,10 +136,10 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/find_severed_bonds.html#variable-count~14">count</a>
-            <a class="list-group-item" href="../proc/find_severed_bonds.html#variable-iatom~32">iatom</a>
-            <a class="list-group-item" href="../proc/find_severed_bonds.html#variable-jatom~5">jatom</a>
-            <a class="list-group-item" href="../proc/find_severed_bonds.html#variable-tol~8">tol</a>
+            <a class="list-group-item" href="../proc/find_severed_bonds.html#variable-count~16">count</a>
+            <a class="list-group-item" href="../proc/find_severed_bonds.html#variable-iatom~23">iatom</a>
+            <a class="list-group-item" href="../proc/find_severed_bonds.html#variable-jatom~6">jatom</a>
+            <a class="list-group-item" href="../proc/find_severed_bonds.html#variable-tol~6">tol</a>
         </div>
       </div>
     </div>
@@ -180,20 +180,14 @@
     
 
     <p>Every bond whose two atoms were put in different fragments</p>
-<p><code>refuse_severed_bonds</code> in the FMO backend asks a coarser question &ndash;
-does any covalent molecule span two fragments &ndash; and answers it with
-one example, which is what a refusal needs. This is for the caller that
-is going to <em>do</em> something about each cut and therefore needs all of
-them, with the fragments named.</p>
+<p>Every cut, with the fragments named &ndash; unlike <code>refuse_severed_bonds</code>
+in the FMO backend, which needs only one example to refuse on.</p>
 <p>The partition comes in as <code>owner</code> rather than being read off the
 geometry, because the caller doing the fragmenting is not always the
 one that built <code>sys_geom%monomers</code>.</p>
 <p><strong>Bond order is not reported and cannot be.</strong> Perception here is
 distance-based and calls everything single; a cut double bond looks
-exactly like a cut short single one. That question is answerable, but
-only with a wave function &ndash; localize the bond region and count the
-orbitals sitting on it &ndash; so it belongs where that calculation happens
-and not here, where the only honest answer would be a guess.</p>
+exactly like a cut short single one.</p>
 
 
     <h3>Arguments</h3>
@@ -209,7 +203,7 @@ and not here, where the only honest answer would be a guess.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~84"></span>
+              <span class="anchor" id="variable-sys_geom~77"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -269,7 +263,7 @@ and not here, where the only honest answer would be a guess.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~13"></span>
+              <span class="anchor" id="variable-tolerance~14"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -493,7 +487,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~14"></span>
+              <span class="anchor" id="variable-count~16"></span>
               integer,
             </td>
               <td>private</td>
@@ -510,7 +504,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~32"></span>
+              <span class="anchor" id="variable-iatom~23"></span>
               integer,
             </td>
               <td>private</td>
@@ -527,7 +521,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-jatom~5"></span>
+              <span class="anchor" id="variable-jatom~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -544,7 +538,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tol~8"></span>
+              <span class="anchor" id="variable-tol~6"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -578,11 +572,8 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">find_severed_bonds</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">owner</span><span class="p">,</span><span class="w"> </span><span class="n">cuts</span><span class="p">,</span><span class="w"> </span><span class="n">n_cuts</span><span class="p">,</span><span class="w"> </span><span class="n">tolerance</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Every bond whose two atoms were put in different fragments</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! `refuse_severed_bonds` in the FMO backend asks a coarser question --</span>
-<span class="w">      </span><span class="c">!! does any covalent molecule span two fragments -- and answers it with</span>
-<span class="w">      </span><span class="c">!! one example, which is what a refusal needs. This is for the caller that</span>
-<span class="w">      </span><span class="c">!! is going to *do* something about each cut and therefore needs all of</span>
-<span class="w">      </span><span class="c">!! them, with the fragments named.</span>
+<span class="w">      </span><span class="c">!! Every cut, with the fragments named -- unlike `refuse_severed_bonds`</span>
+<span class="w">      </span><span class="c">!! in the FMO backend, which needs only one example to refuse on.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! The partition comes in as `owner` rather than being read off the</span>
 <span class="w">      </span><span class="c">!! geometry, because the caller doing the fragmenting is not always the</span>
@@ -590,10 +581,7 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! **Bond order is not reported and cannot be.** Perception here is</span>
 <span class="w">      </span><span class="c">!! distance-based and calls everything single; a cut double bond looks</span>
-<span class="w">      </span><span class="c">!! exactly like a cut short single one. That question is answerable, but</span>
-<span class="w">      </span><span class="c">!! only with a wave function -- localize the bond region and count the</span>
-<span class="w">      </span><span class="c">!! orbitals sitting on it -- so it belongs where that calculation happens</span>
-<span class="w">      </span><span class="c">!! and not here, where the only honest answer would be a guess.</span>
+<span class="w">      </span><span class="c">!! exactly like a cut short single one.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">owner</span><span class="p">(:)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">severed_bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cuts</span><span class="p">(:)</span>
@@ -654,7 +642,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -138,9 +138,9 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/ormas_operator_t.html#variable-alpha_table">alpha_table</a>
             <a class="list-group-item" href="../type/ormas_operator_t.html#variable-beta_table">beta_table</a>
-            <a class="list-group-item" href="../type/ormas_operator_t.html#variable-closure~3">closure</a>
-            <a class="list-group-item" href="../type/ormas_operator_t.html#variable-folded~6">folded</a>
-            <a class="list-group-item" href="../type/ormas_operator_t.html#variable-space~18">space</a>
+            <a class="list-group-item" href="../type/ormas_operator_t.html#variable-closure">closure</a>
+            <a class="list-group-item" href="../type/ormas_operator_t.html#variable-folded">folded</a>
+            <a class="list-group-item" href="../type/ormas_operator_t.html#variable-space">space</a>
         </div>
       </div>
     </div>
@@ -167,7 +167,7 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/ormas_operator_t.html#boundprocedure-apply~4">apply</a>
+            <a class="list-group-item" href="../type/ormas_operator_t.html#boundprocedure-apply">apply</a>
         </div>
       </div>
     </div>
@@ -191,8 +191,8 @@
         type, private, extends(<a href='sigma_operator_t.html'>sigma_operator_t</a>) :: ormas_operator_t</h2>
     <p>The restricted Hamiltonian, as something Davidson can multiply by</p>
 <p>Holds what <code>ormas_sigma_direct</code> needs and nothing else. The vector it
-is handed is already flat, which is the reason the method had to be
-written that way: a restricted space has no rectangle to reshape into.</p>
+is handed is already flat: a restricted space has no rectangle to
+reshape into.</p>
 <br>      <div class="card">
         <div class="card-header">
           <h3 class="card-title">Inherits</h3>
@@ -381,7 +381,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-closure~3"></span>
+              <span class="anchor" id="variable-closure"></span>
               type(<a href='ormas_closure_t.html'>ormas_closure_t</a>),
             </td>
               <td>public,</td>
@@ -398,7 +398,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~6"></span>
+              <span class="anchor" id="variable-folded"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -415,7 +415,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~18"></span>
+              <span class="anchor" id="variable-space"></span>
               type(<a href='ormas_space_t.html'>ormas_space_t</a>),
             </td>
               <td>public,</td>
@@ -443,7 +443,7 @@ large graphs.</div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-apply~4"></span>
+      <span class="anchor" id="boundprocedure-apply"></span>
       <h3>
           procedure, public ::
   <strong>apply</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/ormas_apply.html'>ormas_apply</a>
@@ -547,8 +547,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! The restricted Hamiltonian, as something Davidson can multiply by</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Holds what `ormas_sigma_direct` needs and nothing else. The vector it</span>
-<span class="w">      </span><span class="c">!! is handed is already flat, which is the reason the method had to be</span>
-<span class="w">      </span><span class="c">!! written that way: a restricted space has no rectangle to reshape into.</span>
+<span class="w">      </span><span class="c">!! is handed is already flat: a restricted space has no rectangle to</span>
+<span class="w">      </span><span class="c">!! reshape into.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_space_t</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">space</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">null</span><span class="p">()</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_closure_t</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">closure</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">null</span><span class="p">()</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">folded</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">null</span><span class="p">()</span>
@@ -578,7 +578,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

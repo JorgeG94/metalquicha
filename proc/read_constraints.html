@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/read_constraints.html#variable-atom~2">atom</a>
+            <a class="list-group-item" href="../proc/read_constraints.html#variable-atom~4">atom</a>
             <a class="list-group-item" href="../proc/read_constraints.html#variable-expected">expected</a>
-            <a class="list-group-item" href="../proc/read_constraints.html#variable-found~10">found</a>
-            <a class="list-group-item" href="../proc/read_constraints.html#variable-i~23">i</a>
-            <a class="list-group-item" href="../proc/read_constraints.html#variable-k~2">k</a>
+            <a class="list-group-item" href="../proc/read_constraints.html#variable-found~37">found</a>
+            <a class="list-group-item" href="../proc/read_constraints.html#variable-i~169">i</a>
+            <a class="list-group-item" href="../proc/read_constraints.html#variable-k~48">k</a>
             <a class="list-group-item" href="../proc/read_constraints.html#variable-kind_text">kind_text</a>
             <a class="list-group-item" href="../proc/read_constraints.html#variable-n_atoms_here">n_atoms_here</a>
             <a class="list-group-item" href="../proc/read_constraints.html#variable-n_cons">n_cons</a>
@@ -339,10 +339,9 @@ large graphs.</div>
 
     <p><code>keywords.optimization.constraints</code>, one object per held coordinate</p>
 <p>Each names a <code>type</code> and the <code>atoms</code> it is measured over, and the two
-have to agree: a bond takes two atoms and a torsion four. Checked here
-rather than in the bridge, because the deck is where the mistake was
-made and the count is the only thing that can catch it &ndash; three atoms
-under <code>"type": "torsion"</code> is a perfectly well-formed list of integers.</p>
+have to agree: a bond takes two atoms and a torsion four. The count is
+the only thing that can catch the mistake &ndash; three atoms under
+<code>"type": "torsion"</code> is a perfectly well-formed list of integers.</p>
 
 
     <h3>Arguments</h3>
@@ -358,7 +357,7 @@ under <code>"type": "torsion"</code> is a perfectly well-formed list of integers
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~11"></span>
+              <span class="anchor" id="variable-json~32"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -373,7 +372,7 @@ under <code>"type": "torsion"</code> is a perfectly well-formed list of integers
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~15"></span>
+              <span class="anchor" id="variable-config~41"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -388,7 +387,7 @@ under <code>"type": "torsion"</code> is a perfectly well-formed list of integers
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~22"></span>
+              <span class="anchor" id="variable-error~154"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -918,7 +917,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom~2"></span>
+              <span class="anchor" id="variable-atom~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -952,7 +951,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~10"></span>
+              <span class="anchor" id="variable-found~37"></span>
               logical,
             </td>
               <td>private</td>
@@ -969,7 +968,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~23"></span>
+              <span class="anchor" id="variable-i~169"></span>
               integer,
             </td>
               <td>private</td>
@@ -986,7 +985,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~2"></span>
+              <span class="anchor" id="variable-k~48"></span>
               integer,
             </td>
               <td>private</td>
@@ -1089,10 +1088,9 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! `keywords.optimization.constraints`, one object per held coordinate</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Each names a `type` and the `atoms` it is measured over, and the two</span>
-<span class="w">      </span><span class="c">!! have to agree: a bond takes two atoms and a torsion four. Checked here</span>
-<span class="w">      </span><span class="c">!! rather than in the bridge, because the deck is where the mistake was</span>
-<span class="w">      </span><span class="c">!! made and the count is the only thing that can catch it -- three atoms</span>
-<span class="w">      </span><span class="c">!! under `"type": "torsion"` is a perfectly well-formed list of integers.</span>
+<span class="w">      </span><span class="c">!! have to agree: a bond takes two atoms and a torsion four. The count is</span>
+<span class="w">      </span><span class="c">!! the only thing that can catch the mistake -- three atoms under</span>
+<span class="w">      </span><span class="c">!! `"type": "torsion"` is a perfectly well-formed list of integers.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_optimizer_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">constraint_from_string</span><span class="p">,</span><span class="w"> </span><span class="n">constraint_atom_count</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mqc_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
@@ -1172,7 +1170,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

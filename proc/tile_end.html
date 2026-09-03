@@ -137,7 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/tile_end.html#variable-limit">limit</a>
-            <a class="list-group-item" href="../proc/tile_end.html#variable-norb~11">norb</a>
+            <a class="list-group-item" href="../proc/tile_end.html#variable-norb~4">norb</a>
         </div>
       </div>
     </div>
@@ -179,8 +179,8 @@
 
     <p>The longest run of alpha strings from here that stays inside the budget</p>
 <p>At least one string always, even where that one exceeds the budget by
-itself: a single alpha string&rsquo;s row of the closure is the smallest
-thing this can work on, and a large allocation beats a refusal.</p>
+itself &ndash; a single alpha string&rsquo;s row of the closure is the smallest
+unit this can work on.</p>
 
 
     <h3>Arguments</h3>
@@ -196,7 +196,7 @@ thing this can work on, and a large allocation beats a refusal.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~26"></span>
+              <span class="anchor" id="variable-space~9"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -211,7 +211,7 @@ thing this can work on, and a large allocation beats a refusal.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-closure~5"></span>
+              <span class="anchor" id="variable-closure~3"></span>
               type(<a href='../type/ormas_closure_t.html'>ormas_closure_t</a>),
             </td>
 <td>intent(in)</td>
@@ -266,9 +266,7 @@ thing this can work on, and a large allocation beats a refusal.</p>
             <td>::</td>
             <td><strong>max_columns</strong></td>
             <td>
-                <p>Overrides the budget. Only a test has a reason to: the runs have to
-give the same answer as one pass over everything, and on any space
-small enough to check that against, the budget is never reached.</p>
+                <p>Overrides the budget; testing only</p>
             </td>
         </tr>
     </tbody>
@@ -586,7 +584,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-norb~11"></span>
+              <span class="anchor" id="variable-norb~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -621,15 +619,13 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! The longest run of alpha strings from here that stays inside the budget</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! At least one string always, even where that one exceeds the budget by</span>
-<span class="w">      </span><span class="c">!! itself: a single alpha string's row of the closure is the smallest</span>
-<span class="w">      </span><span class="c">!! thing this can work on, and a large allocation beats a refusal.</span>
+<span class="w">      </span><span class="c">!! itself -- a single alpha string's row of the closure is the smallest</span>
+<span class="w">      </span><span class="c">!! unit this can work on.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_space_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">space</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_closure_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">closure</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha_lo</span><span class="p">,</span><span class="w"> </span><span class="n">n_alpha_strings</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_columns</span>
-<span class="w">         </span><span class="c">!! Overrides the budget. Only a test has a reason to: the runs have to</span>
-<span class="w">         </span><span class="c">!! give the same answer as one pass over everything, and on any space</span>
-<span class="w">         </span><span class="c">!! small enough to check that against, the budget is never reached.</span>
+<span class="w">         </span><span class="c">!! Overrides the budget; testing only</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha_hi</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">limit</span>
@@ -668,7 +664,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

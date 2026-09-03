@@ -138,15 +138,15 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-address~3">address</a>
             <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-after">after</a>
-            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-alpha~9">alpha</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-alpha~12">alpha</a>
             <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-before">before</a>
-            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-beta~9">beta</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-beta~12">beta</a>
             <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-fa">fa</a>
             <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-fb">fb</a>
-            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-ga">ga</a>
-            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-gb">gb</a>
-            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-ia~7">ia</a>
-            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-ib~6">ib</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-ga~7">ga</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-gb~7">gb</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-ia~11">ia</a>
+            <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-ib~11">ib</a>
             <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-n_full_alpha">n_full_alpha</a>
             <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-n_full_beta">n_full_beta</a>
             <a class="list-group-item" href="../proc/scatter_restricted_ci.html#variable-n_orb~2">n_orb</a>
@@ -197,28 +197,10 @@ everywhere the restriction excluded, which is the same wave function
 written in the complete basis.</p>
 <p><strong>This exists so that a restricted wave function can be rotated at
 all.</strong> A restricted space is not closed under rotation of its active
-orbitals &ndash; mixing two active orbitals stops being redundant the moment
-the space is incomplete &ndash; so a rotation carries such a wave function
-out of its own space and there is nowhere in that space to put the
-answer. The complete space is where the answer lives, for the same
-reason that a subspace rotated inside a larger space lands on a
-different subspace of it.</p>
-<p>GAMESS solves the same problem the other way, by <em>forbidding</em> the
-rotation to leave the space: <code>LOCAL_PPASVD</code> builds the quasi-atomic
-transformation block-diagonal over the subspaces and
-<code>LOCAL_BLOCK_ORMAS</code> asserts it six times over. The expansion done here
-is named there as <code>MALMQ_CIDRIV</code> option 2, &ldquo;expands ORMAS CI vector
-from NSPACE&gt;1 to NSPACE=1 form&rdquo;, and declined &ndash; &ldquo;THIS OPTION IS NOT
-YET IMPLEMENTED AND MIGHT NOT BE&rdquo;. That is a reasonable decision for
-Malmqvist&rsquo;s algorithm, which acts on the vector in its own space and
-would lose its whole advantage by expanding; it is not one for a
-transformation that is already dense matrix products over the complete
-rectangle.</p>
-<p>The cost is honest and is the reason for <code>MAX_RECTANGLE</code>: the
-restriction buys a cheap <em>solve</em> and this spends the complete space to
-store the result. For ethane that is 16,500 determinants converged and
-11.7 million stored, which is the right trade; past a point it is not
-available at all.</p>
+orbitals, so a rotation carries such a wave function out of its own
+space and the answer lives in the complete space.</p>
+<p>The restriction buys a cheap <em>solve</em> and this spends the complete space
+to store the result, which <code>MAX_RECTANGLE</code> bounds.</p>
 
 
     <h3>Arguments</h3>
@@ -234,7 +216,7 @@ available at all.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space"></span>
+              <span class="anchor" id="variable-space~14"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -249,7 +231,7 @@ available at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-flat~3"></span>
+              <span class="anchor" id="variable-flat"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -264,7 +246,7 @@ available at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ci~5"></span>
+              <span class="anchor" id="variable-ci~8"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -279,7 +261,7 @@ available at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~145"></span>
+              <span class="anchor" id="variable-error~40"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -708,7 +690,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~9"></span>
+              <span class="anchor" id="variable-alpha~12"></span>
               integer(kind=int64),
             </td>
               <td>private,</td>
@@ -742,7 +724,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~9"></span>
+              <span class="anchor" id="variable-beta~12"></span>
               integer(kind=int64),
             </td>
               <td>private,</td>
@@ -793,7 +775,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ga"></span>
+              <span class="anchor" id="variable-ga~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -810,7 +792,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gb"></span>
+              <span class="anchor" id="variable-gb~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -827,7 +809,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ia~7"></span>
+              <span class="anchor" id="variable-ia~11"></span>
               integer,
             </td>
               <td>private</td>
@@ -844,7 +826,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ib~6"></span>
+              <span class="anchor" id="variable-ib~11"></span>
               integer,
             </td>
               <td>private</td>
@@ -937,30 +919,11 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! **This exists so that a restricted wave function can be rotated at</span>
 <span class="w">      </span><span class="c">!! all.** A restricted space is not closed under rotation of its active</span>
-<span class="w">      </span><span class="c">!! orbitals -- mixing two active orbitals stops being redundant the moment</span>
-<span class="w">      </span><span class="c">!! the space is incomplete -- so a rotation carries such a wave function</span>
-<span class="w">      </span><span class="c">!! out of its own space and there is nowhere in that space to put the</span>
-<span class="w">      </span><span class="c">!! answer. The complete space is where the answer lives, for the same</span>
-<span class="w">      </span><span class="c">!! reason that a subspace rotated inside a larger space lands on a</span>
-<span class="w">      </span><span class="c">!! different subspace of it.</span>
+<span class="w">      </span><span class="c">!! orbitals, so a rotation carries such a wave function out of its own</span>
+<span class="w">      </span><span class="c">!! space and the answer lives in the complete space.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! GAMESS solves the same problem the other way, by *forbidding* the</span>
-<span class="w">      </span><span class="c">!! rotation to leave the space: `LOCAL_PPASVD` builds the quasi-atomic</span>
-<span class="w">      </span><span class="c">!! transformation block-diagonal over the subspaces and</span>
-<span class="w">      </span><span class="c">!! `LOCAL_BLOCK_ORMAS` asserts it six times over. The expansion done here</span>
-<span class="w">      </span><span class="c">!! is named there as `MALMQ_CIDRIV` option 2, "expands ORMAS CI vector</span>
-<span class="w">      </span><span class="c">!! from NSPACE&gt;1 to NSPACE=1 form", and declined -- "THIS OPTION IS NOT</span>
-<span class="w">      </span><span class="c">!! YET IMPLEMENTED AND MIGHT NOT BE". That is a reasonable decision for</span>
-<span class="w">      </span><span class="c">!! Malmqvist's algorithm, which acts on the vector in its own space and</span>
-<span class="w">      </span><span class="c">!! would lose its whole advantage by expanding; it is not one for a</span>
-<span class="w">      </span><span class="c">!! transformation that is already dense matrix products over the complete</span>
-<span class="w">      </span><span class="c">!! rectangle.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The cost is honest and is the reason for `MAX_RECTANGLE`: the</span>
-<span class="w">      </span><span class="c">!! restriction buys a cheap *solve* and this spends the complete space to</span>
-<span class="w">      </span><span class="c">!! store the result. For ethane that is 16,500 determinants converged and</span>
-<span class="w">      </span><span class="c">!! 11.7 million stored, which is the right trade; past a point it is not</span>
-<span class="w">      </span><span class="c">!! available at all.</span>
+<span class="w">      </span><span class="c">!! The restriction buys a cheap *solve* and this spends the complete space</span>
+<span class="w">      </span><span class="c">!! to store the result, which `MAX_RECTANGLE` bounds.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_space_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">space</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">flat</span><span class="p">(:)</span><span class="w">          </span><span class="c">!! (space%n_determinants)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ci</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
@@ -1011,9 +974,7 @@ large graphs.</div>
 <span class="w">         </span><span class="k">end do</span>
 <span class="k">      end do</span>
 
-<span class="w">      </span><span class="c">! Every coefficient placed exactly once, nothing dropped and nothing</span>
-<span class="w">      </span><span class="c">! written twice. A collision in the addressing would show up here and</span>
-<span class="w">      </span><span class="c">! nowhere else downstream.</span>
+<span class="w">      </span><span class="c">! A collision in the addressing shows up here and nowhere else downstream.</span>
 <span class="w">      </span><span class="n">before</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">flat</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 <span class="w">      </span><span class="n">after</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">ci</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">after</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">before</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">TOL_NORM</span><span class="o">*</span><span class="nb">max</span><span class="p">(</span><span class="mf">1.0_dp</span><span class="p">,</span><span class="w"> </span><span class="n">before</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
@@ -1048,7 +1009,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

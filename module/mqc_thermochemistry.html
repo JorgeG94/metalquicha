@@ -200,25 +200,24 @@
 
     <div class="col-md-9" id='text'>
       <p>Computes thermodynamic properties from vibrational frequencies and molecular geometry.</p>
-<p>This module implements standard RRHO thermochemistry calculations including:
-- Zero-point vibrational energy (ZPE)
-- Translational, rotational, vibrational, and electronic contributions
-- Thermal corrections to energy, enthalpy, and Gibbs free energy</p>
-<p>Default conditions: T = 298.15 K, P = 1 atm
-Output follows Gaussian-style formatting for compatibility.</p>
+<p>Zero-point energy, the translational, rotational, vibrational and
+electronic contributions, and the thermal corrections to energy, enthalpy
+and Gibbs free energy.</p>
+<p>Default conditions: T = 298.15 K, P = 1 atm. Output follows Gaussian-style
+formatting.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
-                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">pic_lapack_interfaces</li>
+                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
+                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1453,7 +1452,7 @@ parameter
 <td> =</td>
                 <td>1</td>
             <td>
-                <p>Default spin multiplicity (singlet)</p>
+                <p>Default spin multiplicity, a singlet</p>
             </td>
         </tr>
         <tr>
@@ -1470,7 +1469,7 @@ parameter
 <td> =</td>
                 <td>1</td>
             <td>
-                <p>Default symmetry number</p>
+                <p>Default rotational symmetry number</p>
             </td>
         </tr>
         <tr>
@@ -1487,7 +1486,7 @@ parameter
 <td> =</td>
                 <td>0.0_dp</td>
             <td>
-                <p>Threshold for considering a frequency as imaginary</p>
+                <p>A frequency below this is imaginary. In cm^-1.</p>
             </td>
         </tr>
         <tr>
@@ -1504,7 +1503,8 @@ parameter
 <td> =</td>
                 <td>1.0e-6_dp</td>
             <td>
-                <p>Threshold for considering a moment of inertia as zero (linear molecule detection)</p>
+                <p>A moment of inertia below this counts as zero, which is how a linear
+molecule is detected. In amu*Angstrom^2.</p>
             </td>
         </tr>
     </tbody>
@@ -1798,7 +1798,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pressure~2"></span>
+              <span class="anchor" id="variable-pressure"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1917,7 +1917,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-temperature~2"></span>
+              <span class="anchor" id="variable-temperature"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2124,7 +2124,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~5"></span>
+              <span class="anchor" id="variable-coords"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2139,7 +2139,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~4"></span>
+              <span class="anchor" id="variable-atomic_numbers"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2154,7 +2154,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~5"></span>
+              <span class="anchor" id="variable-n_atoms~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2354,7 +2354,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-temperature~4"></span>
+              <span class="anchor" id="variable-temperature~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2469,7 +2469,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~6"></span>
+              <span class="anchor" id="variable-coords~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2484,7 +2484,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~5"></span>
+              <span class="anchor" id="variable-atomic_numbers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2499,7 +2499,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~4"></span>
+              <span class="anchor" id="variable-frequencies~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2514,7 +2514,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~6"></span>
+              <span class="anchor" id="variable-n_atoms~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2544,7 +2544,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~10"></span>
+              <span class="anchor" id="variable-result~4"></span>
               type(<a href='../type/thermochemistry_result_t.html'>thermochemistry_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2559,7 +2559,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-temperature~7"></span>
+              <span class="anchor" id="variable-temperature~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -2574,7 +2574,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pressure~5"></span>
+              <span class="anchor" id="variable-pressure~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -2659,7 +2659,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-temperature~3"></span>
+              <span class="anchor" id="variable-temperature~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2674,7 +2674,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pressure~3"></span>
+              <span class="anchor" id="variable-pressure~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2759,7 +2759,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~2"></span>
+              <span class="anchor" id="variable-frequencies~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2789,7 +2789,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-temperature~5"></span>
+              <span class="anchor" id="variable-temperature~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2874,7 +2874,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies"></span>
+              <span class="anchor" id="variable-frequencies~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2974,7 +2974,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~11"></span>
+              <span class="anchor" id="variable-result~5"></span>
               type(<a href='../type/thermochemistry_result_t.html'>thermochemistry_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3074,7 +3074,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~3"></span>
+              <span class="anchor" id="variable-frequencies~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3104,7 +3104,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-temperature~6"></span>
+              <span class="anchor" id="variable-temperature~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3119,7 +3119,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pressure~4"></span>
+              <span class="anchor" id="variable-pressure~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3134,7 +3134,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma~4"></span>
+              <span class="anchor" id="variable-sigma~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3237,7 +3237,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

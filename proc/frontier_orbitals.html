@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/frontier_orbitals.html#variable-i~6">i</a>
+            <a class="list-group-item" href="../proc/frontier_orbitals.html#variable-i~112">i</a>
             <a class="list-group-item" href="../proc/frontier_orbitals.html#variable-i_homo">i_homo</a>
         </div>
       </div>
@@ -180,10 +180,8 @@
     <p>Pick HOMO and LUMO out of an ascending orbital spectrum</p>
 <p>Occupation-driven rather than counting electrons, so the same routine
 serves restricted and unrestricted spectra. The threshold is half an
-electron: with Fermi smearing the frontier occupations are fractional
-rather than 0 or 2, and any cut inside that range names the same pair
-for a molecule with a real gap. It is arbitrary for a system without
-one, which is a system whose gap was not going to mean much anyway.</p>
+electron, which under Fermi smearing names the same pair as any other
+cut for a molecule with a real gap, and is arbitrary without one.</p>
 
 
     <h3>Arguments</h3>
@@ -199,7 +197,7 @@ one, which is a system whose gap was not going to mean much anyway.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies"></span>
+              <span class="anchor" id="variable-energies~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -229,7 +227,7 @@ one, which is a system whose gap was not going to mean much anyway.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-homo~2"></span>
+              <span class="anchor" id="variable-homo~6"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -244,7 +242,7 @@ one, which is a system whose gap was not going to mean much anyway.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lumo~2"></span>
+              <span class="anchor" id="variable-lumo~6"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -259,7 +257,7 @@ one, which is a system whose gap was not going to mean much anyway.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found"></span>
+              <span class="anchor" id="variable-found~30"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -458,7 +456,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~6"></span>
+              <span class="anchor" id="variable-i~112"></span>
               integer,
             </td>
               <td>private</td>
@@ -511,10 +509,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Occupation-driven rather than counting electrons, so the same routine</span>
 <span class="w">      </span><span class="c">!! serves restricted and unrestricted spectra. The threshold is half an</span>
-<span class="w">      </span><span class="c">!! electron: with Fermi smearing the frontier occupations are fractional</span>
-<span class="w">      </span><span class="c">!! rather than 0 or 2, and any cut inside that range names the same pair</span>
-<span class="w">      </span><span class="c">!! for a molecule with a real gap. It is arbitrary for a system without</span>
-<span class="w">      </span><span class="c">!! one, which is a system whose gap was not going to mean much anyway.</span>
+<span class="w">      </span><span class="c">!! electron, which under Fermi smearing names the same pair as any other</span>
+<span class="w">      </span><span class="c">!! cut for a molecule with a real gap, and is arbitrary without one.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energies</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">occupations</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">homo</span><span class="p">,</span><span class="w"> </span><span class="n">lumo</span>
@@ -530,8 +526,7 @@ large graphs.</div>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">occupations</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.5_dp</span><span class="p">)</span><span class="w"> </span><span class="n">i_homo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span>
 <span class="w">      </span><span class="k">end do</span>
 
-<span class="w">      </span><span class="c">! Nothing occupied, or nothing empty: no frontier pair to report, and</span>
-<span class="w">      </span><span class="c">! saying so beats inventing one from an end of the spectrum.</span>
+<span class="w">      </span><span class="c">! Nothing occupied, or nothing empty: no frontier pair to report.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i_homo</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">i_homo</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">energies</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 
 <span class="k">      </span><span class="n">homo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">energies</span><span class="p">(</span><span class="n">i_homo</span><span class="p">)</span>
@@ -561,7 +556,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

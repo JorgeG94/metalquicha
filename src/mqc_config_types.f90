@@ -3,16 +3,8 @@ module mqc_config_types
    !! `mqc_config_t` and the pieces it is made of: one molecule, one input
    !! fragment, and the bonds between them.
    !!
-   !! These live apart from any reader on purpose. Nearly everything that
-   !! touches a config only wants the *type* -- the driver, the adapter, the
-   !! MBE engine and the tests all import `mqc_config_t` and never parse
-   !! anything -- so tying the type to one file format would make every
-   !! consumer depend on that format's parser. It also means a second reader
-   !! is a new module rather than a change to an existing one.
-   !!
-   !! Defaults are declared here, once, and a reader that finds no value for a
-   !! key simply leaves the component alone. That is the whole mechanism: there
-   !! is no separate table of defaults to drift out of step.
+   !! Every default is declared here, once. A reader that finds no value for a
+   !! key leaves the component alone, so there is no second table of defaults.
    use pic_types, only: dp, int32
    use mqc_scf_types, only: guess_step_t, scf_numerics_t, deltascf_options_t
    use mqc_method_types, only: METHOD_TYPE_GFN2
@@ -43,21 +35,22 @@ module mqc_config_types
    public :: bond_t             !! Re-exported so consumers need only this module
 
    type :: input_fragment_t
-      !! Input fragment definition with charge, multiplicity, and atom indices
-      !! This is the parsed representation from the input file, not the computational fragment
+      !! One fragment as the input file declares it: charge, multiplicity and
+      !! atom indices
+      !!
+      !! The parsed representation, not the computational fragment.
       integer :: charge = 0
       integer :: multiplicity = 1
       integer, allocatable :: indices(:)  !! Atom indices in this fragment
-      !> The effective fragment potential describing this fragment, if it has one.
-      !> A fragment carrying one is an EFP fragment and a fragment without one stays
-      !> quantum, which is how a mixed calculation is spelled -- there is no second way
-      !> to declare a fragment. The path is resolved relative to the deck, like `xyz`.
-      !>
-      !> **A path, not a format.** GAMESS's `.efp` text is what exists today, but the
-      !> potential is moving to JSON, so nothing here may require an extension or infer
-      !> a format from one. Whoever loads it dispatches on what the file actually is;
-      !> the deck only ever names it.
       character(len=:), allocatable :: potential
+         !! The effective fragment potential describing this fragment, if it has
+         !! one. A fragment carrying one is an EFP fragment, one without stays
+         !! quantum, which is how a mixed calculation is spelled. The path is
+         !! resolved relative to the deck, like `xyz`.
+         !!
+         !! **A path, not a format.** Nothing here may require an extension or
+         !! infer a format from one; whoever loads it dispatches on what the
+         !! file actually is.
    contains
       procedure :: destroy => input_fragment_destroy
    end type input_fragment_t
@@ -76,13 +69,11 @@ module mqc_config_types
       ! Fragments
       integer :: nfrag = 0
       type(input_fragment_t), allocatable :: fragments(:)
-      !> Every fragment is the same species, so one potential describes all of them.
-      !> Set by `uniform_system` in the deck, which is what lets `fragment_potentials`
-      !> be a single name rather than ten thousand copies of it. It is an assertion the
-      !> reader checks rather than takes on trust: the fragments must agree in size, so
-      !> a deck claiming uniformity without it is refused rather than quietly handed
-      !> the wrong potential.
       logical :: uniform_system = .false.
+         !! Every fragment is the same species, so one potential describes all
+         !! of them, which is what lets `fragment_potentials` be a single name.
+         !! Checked rather than taken on trust: the fragments must agree in
+         !! size, so a deck claiming uniformity without it is refused.
 
       ! Connectivity
       integer :: nbonds = 0
@@ -94,7 +85,7 @@ module mqc_config_types
    end type molecule_t
 
    type :: mqc_config_t
-      !! Complete configuration from .mqc file
+      !! Complete configuration parsed from one input deck
 
       ! Schema information
       character(len=:), allocatable :: schema_name
@@ -110,61 +101,43 @@ module mqc_config_types
          !! analysis; "gms_quao" means the quasi-atomic bonding picture.
       character(len=:), allocatable :: fukui_population
          !! From `properties.fukui.population`. Allocated means the deck asked
-         !! for Fukui indices; "chelpg" or "mulliken" chooses how the density
-         !! difference is condensed onto atoms.
-         !!
-         !! **Defaults to CHELPG**, which is what the reader fills in when the
-         !! object omits it -- `properties: {"fukui": {}}` is a valid request
-         !! and one of the validation decks is written that way. It was
-         !! required once, on the argument that a choice which moves the
-         !! numbers should be written down rather than inherited; that was
-         !! reversed because the two schemes are not equal candidates, and this
-         !! comment did not follow. See `fukui_keys` in `mqc_json_schema` for
-         !! the reasoning that stands.
+         !! for Fukui indices; "chelpg" (the default) or "mulliken" chooses how
+         !! the density difference is condensed onto atoms. The object may omit
+         !! it -- `properties: {"fukui": {}}` is a valid request.
       character(len=:), allocatable :: fukui_guess
          !! `properties.fukui.guess`: "neutral" (the default) or "independent".
          !!
          !! "neutral" seeds each ion from the converged neutral's orbitals,
-         !! filled Aufbau at that ion's own occupation. That is usually much the
-         !! better start -- an unseeded anion can begin a Hartree or two above
-         !! its own answer -- but it puts the extra electron in the *neutral's*
-         !! LUMO, and where that orbital is a poor guess for the ion's own the
-         !! SCF can settle on a different stationary point rather than climb
-         !! out. "independent" lets each ion take the ordinary guess instead.
+         !! filled Aufbau at that ion's own occupation. Usually much the better
+         !! start, but it puts the extra electron in the *neutral's* LUMO, and
+         !! where that orbital is a poor guess for the ion's own the SCF can
+         !! settle on a different stationary point rather than climb out.
+         !! "independent" lets each ion take the ordinary guess instead.
       type(deltascf_options_t) :: fukui_scf
          !! `properties.fukui.scf`: how the ion SCFs converge.
          !!
          !! Seeded from the resolved `keywords.scf` by the reader unless
          !! `inherit_scf` is false, then overwritten by whatever the object
-         !! names. This replaced three hand-picked fields -- `maxiter`,
-         !! `diis_size` and `level_shift` -- that were each threaded through
-         !! five layers by hand and each needed a sentinel for "absent";
-         !! `level_shift` never had a clean one, since zero is a real value
-         !! meaning "off".
+         !! names.
       character(len=:), allocatable :: charges_scheme
          !! From `properties.charges.scheme`. Allocated means the deck asked for
-         !! atomic partial charges; "mulliken" or "chelpg" chooses how the
-         !! converged density is partitioned. Unlike `fukui_population` this
-         !! carries a default, because here the scheme is the whole request
-         !! rather than one half of it -- see `charges_keys` in the schema.
+         !! atomic partial charges; "mulliken" (the default) or "chelpg" chooses
+         !! how the converged density is partitioned.
       logical :: bonding_energy = .false.
          !! From `properties.bonding_analysis.energy_decomposition`. Off by
-         !! default because the two-electron term needs the dense `n_ao^4`
-         !! integral array, and the bonding tables on their own need only
-         !! one-electron integrals. Asking for the decomposition is asking for
-         !! that memory.
+         !! default: the two-electron term needs the dense `n_ao^4` integral
+         !! array, where the bonding tables on their own need only one-electron
+         !! integrals.
       logical :: bonding_no_sharing = .false.
          !! From `properties.bonding_analysis.no_sharing`. Asks for the
          !! no-sharing wave function, which needs a full valence CI over the
-         !! quasi-atomic orbitals and is therefore far too expensive to do by
-         !! default.
+         !! quasi-atomic orbitals, so it is off by default.
       logical :: bonding_restrict_localization = .false.
          !! From `properties.bonding_analysis.restrict_localization`. Confine
          !! the quasi-atomic localization to the wave function's
          !! occupation-restricted subspaces, so that no rotation mixes two of
          !! them and the wave function stays invariant under the
-         !! transformation. Off by default, and that is a measurement rather
-         !! than a preference -- see `mqc_docs/source/bonding_analysis.rst`.
+         !! transformation. Off by default.
       character(len=:), allocatable :: bonding_no_sharing_ci
          !! From `properties.bonding_analysis.no_sharing_ci`. How the CI
          !! expansion over quasi-atomic orbitals is obtained: `"transform"`
@@ -175,9 +148,7 @@ module mqc_config_types
       real(dp) :: bonding_threshold = 1.0_dp
          !! From `properties.bonding_analysis.energy_threshold`, in kcal/mol.
          !! Orbital pairs whose kinetic bond order is weaker than this are
-         !! counted and then not printed. Formyl chloride has 27 pairs above
-         !! GAMESS's own cutoff and eight above one kcal/mol, and the other
-         !! nineteen are tenths of a kcal/mol that bury the four bonds.
+         !! counted and then not printed.
 
       ! Model information
       integer(int32) :: method = METHOD_TYPE_GFN2
@@ -193,12 +164,10 @@ module mqc_config_types
          !!
          !! Not a preference: for a basis with a shell above p the two forms
          !! span different spaces and give different energies, so this changes
-         !! the model rather than its representation. It exists because BSE is
-         !! inconsistent about the Pople sets -- 6-31G* is marked Cartesian and
-         !! cc-pVDZ spherical -- and because GAMESS assumes Cartesian for the
-         !! Pople sets throughout, so reproducing a GAMESS number needs a way
-         !! to say so. Defaults false, which honours the file.
+         !! the model rather than its representation. Defaults false, which
+         !! honours the file.
       character(len=:), allocatable :: functional
+         !! XC functional name, only meaningful when method = dft
       logical :: scf_incremental_fock = .true.
          !! `keywords.scf.incremental_fock`. False forces a full Fock build every
          !! iteration; see `scf_config_t` for why anyone would want that.
@@ -211,9 +180,7 @@ module mqc_config_types
          !! Initial guess name from `keywords.scf.guess`.
          !!
          !! Superseded by `keywords.guess.type`. Still read so existing decks
-         !! keep working, and setting both is an error rather than a precedence
-         !! rule: two keys naming one thing is confusing enough without the
-         !! answer depending on which one the reader happened to reach first.
+         !! keep working; naming both is an error rather than a precedence rule.
       character(len=:), allocatable :: guess_type
          !! Initial guess name from `keywords.guess.type`, the current spelling.
       type(guess_step_t), allocatable :: guess_steps(:)
@@ -223,11 +190,15 @@ module mqc_config_types
          !! `model.basis` and is not repeated here, so three SCFs -- STO-3G, then
          !! 6-31G, then cc-pVTZ -- is two steps and a model basis.
       logical :: unrestricted = .false.
-         !! `model.unrestricted`. Unprefixed because the model fields are --
-         !! `basis`, `functional`, `cartesian` -- and prefixes here track the
-         !! deck block the value came from.
+         !! `model.unrestricted`. Force UHF/UKS even when the shell is closed.
       logical :: allow_crap_scf = .false.
+         !! Let a non-converged SCF into the expansion instead of stopping. Off
+         !! by default: the energy of an SCF that ran out of iterations is of
+         !! the right magnitude and nothing downstream can tell. On, every
+         !! offender is named at the end of the run and marked in the fragment
+         !! table.
       logical :: scf_density_fitting = .false.
+         !! Fit J and K against the auxiliary basis, on the CPU backend
       ! keywords.correlation -- post-Hartree-Fock, kept apart from the SCF ones
       logical :: corr_freeze_core = .true.
       integer :: corr_n_frozen_core = -1   !! -1 counts the core from the elements
@@ -250,12 +221,10 @@ module mqc_config_types
          !! Which coupled-cluster formulation runs: spin-adapted (spatial
          !! orbitals) when true, spin orbitals when false.
          !!
-         !! Defaults to spin-adapted because for the closed-shell reference
-         !! that is the only one either formulation supports, it is strictly
-         !! better on both axes -- about sixteen times less memory and several
-         !! times faster. The spin-orbital path stays reachable, and is what the
-         !! two are cross-checked against: they must agree to machine precision,
-         !! so a deck can settle any doubt about a number by running it twice.
+         !! The two agree to machine precision for the closed-shell reference
+         !! either formulation supports, so this chooses how a number is
+         !! computed and not which number. Spin-adapted is the default: about
+         !! sixteen times less memory and several times faster.
       ! keywords.mcscf -- the active space, for CASSCF and CASCI
       character(len=:), allocatable :: mcscf_avas_orbitals(:)
          !! Atomic orbital labels from `keywords.mcscf.avas.orbitals`, e.g.
@@ -302,30 +271,19 @@ module mqc_config_types
          !! expensive here. Negative means the backend's own default.
       integer :: dft_radial_points = -1    !! -1 leaves grid_level in charge
       integer :: dft_angular_points = -1
-         !! Fit J and K against the auxiliary basis, on the CPU backend
-         !! Let a non-converged SCF into the expansion instead of stopping.
-         !! Off by default: the energy of an SCF that ran out of iterations is
-         !! of the right magnitude and nothing downstream can tell, so silence
-         !! is the one thing it must not be. On, every offender is named at the
-         !! end of the run and marked in the fragment table.
-         !! Force UHF/UKS even when the shell is closed
-         !! XC functional name, only meaningful when method = dft
 
       ! keywords.pcm -- the polarizable continuum on the ab initio backends.
       !
-      ! Deliberately not the xTB solvation keys below. Those configure tblite's
-      ! own CPCM, which builds its own cavity with its own defaults
-      ! (cpcm_rscale is 1.0 there, against the 1.2 conventional for a van der
-      ! Waals cavity), and routing one implementation's settings into another's
-      ! would make two different models look like one keyword.
+      ! Not the xTB solvation keys below: those configure tblite's own CPCM,
+      ! which builds its own cavity with its own defaults -- cpcm_rscale is 1.0
+      ! there, against the 1.2 conventional for a van der Waals cavity.
       ! Which integral backend to run on: "auto" (default), "cuest"/"gpu", or
       ! "libcint"/"cpu". A request that the build or the method cannot honour is
       ! refused, not substituted.
       character(len=16) :: backend = "auto"
-      ! system.gpu -- the same choice said the way people ask for it. It resolves
-      ! into `backend` above rather than being carried alongside it, so there is
-      ! one answer downstream however the deck spelled the question; naming both
-      ! and disagreeing is refused rather than given a precedence rule.
+      ! system.gpu -- the same choice said the way people ask for it. It
+      ! resolves into `backend` above, so there is one answer downstream however
+      ! the deck spelled the question; naming both and disagreeing is refused.
       logical :: gpu = .false.
       logical :: gpu_set = .false.
          !! Whether the deck named `system.gpu`. "Absent" and "false" have to be
@@ -336,8 +294,7 @@ module mqc_config_types
          !! Continuum model: "cpcm" or "iefpcm". See `pcm_config_t`.
       real(dp) :: pcm_dielectric = -1.0_dp
          !! Solvent dielectric constant. Required: there is no solvent-name
-         !! table on this path, because inventing one that disagreed with
-         !! tblite's would make the same deck mean two things.
+         !! table on this path.
       integer :: pcm_angular_points = DEFAULT_PCM_NANG
       real(dp) :: pcm_radii_scale = DEFAULT_PCM_RSCALE
       real(dp) :: pcm_zeta = DEFAULT_PCM_ZETA
@@ -372,8 +329,8 @@ module mqc_config_types
       ! Fragments
       integer :: nfrag = 0
       type(input_fragment_t), allocatable :: fragments(:)
-      !> As on `molecule_t`: every fragment the same species, which is what lets
-      !> `fragment_potentials` be one name rather than one per fragment.
+      !! As on `molecule_t`: every fragment the same species, which is what lets
+      !! `fragment_potentials` be one name rather than one per fragment.
       logical :: uniform_system = .false.
 
       ! Connectivity
@@ -382,7 +339,11 @@ module mqc_config_types
       type(bond_t), allocatable :: bonds(:)
 
       ! SCF settings
-      integer :: scf_maxiter = 300              !! Using 300 (parser-specific, different from DEFAULT_SCF_MAXITER)
+      ! TODO(mqc): 300 here against `DEFAULT_SCF_MAXITER` = 100 in
+      ! `mqc_calculation_defaults`, which `scf_config_t` uses. How many
+      ! iterations an SCF is allowed depends on which of the two built its
+      ! config, and neither number is derived from the other.
+      integer :: scf_maxiter = 300
       real(dp) :: scf_tolerance = DEFAULT_SCF_CONV
       logical :: scf_maxiter_set = .false.
          !! Whether the deck named `keywords.scf.maxiter`; see `scf_config_t`.
@@ -390,11 +351,10 @@ module mqc_config_types
          !! `keywords.scf.convergence_metric`. Unallocated leaves the default,
          !! which is today's energy-and-commutator pair.
       logical :: scf_tolerance_set = .false.
-         !! Whether the deck named it. Needed because "the default" and "the
-         !! user asked for the default" are different requests to a caller that
-         !! has a stricter default of its own -- MAKEFP converges to 1e-10/1e-8
-         !! because the multipoles are taken from that density, and must keep
-         !! doing so unless a deck says otherwise.
+         !! Whether the deck named it. "The default" and "the user asked for
+         !! the default" are different requests to a caller with a stricter
+         !! default of its own -- MAKEFP converges to 1e-10/1e-8, because the
+         !! multipoles are taken from that density, unless a deck says otherwise.
       real(dp) :: scf_density_tolerance = DEFAULT_SCF_DENSITY_CONV
       real(dp) :: scf_gradient_tolerance = 0.0_dp
          !! `keywords.scf.gradient_tolerance`; zero derives `sqrt(tolerance)`
@@ -405,45 +365,32 @@ module mqc_config_types
          !! discard.
          !!
          !! Zero means "not set", and the orthogonaliser then uses
-         !! `LINEAR_DEPENDENCE_TOL`. A sentinel rather than spelling 1e-7
-         !! again here: this module would otherwise carry a second copy of a
-         !! constant that already exists in `mqc_scf_common`, which is the
-         !! arrangement that let the two backends drift apart the last time
-         !! -- see the note on `LINEAR_DEPENDENCE_TOL` itself. Zero is not a
-         !! meaningful cutoff on its own, so nothing is lost by spending it.
+         !! `LINEAR_DEPENDENCE_TOL` from `mqc_scf_common`.
       logical :: scf_density_tolerance_set = .false.
       real(dp) :: scf_level_shift = 0.0_dp
+         !! Hartree added to the virtual orbitals before each diagonalisation.
+         !! Zero is off, which is the default: a shift costs iterations near the
+         !! solution and only earns them far from it.
       logical :: scf_use_diis = .true.
          !! `keywords.scf.diis`. Off is a diagnostic rather than a setting: an
          !! SCF without DIIS is how you find out whether DIIS is the thing
          !! hiding a problem, not a way to run one.
       integer :: scf_diis_size = 8
          !! `keywords.scf.diis_size`, the subspace the extrapolation is drawn
-         !! from. Eight is the usual default and was, until this keyword, the
-         !! only value obtainable -- the field existed all the way down to
-         !! `scf_config_t` and nothing read it from a deck. Widening it to
-         !! 12-20 is the first thing to try on an open-shell SCF that converges
-         !! monotonically but slowly, where a level shift would only make it
-         !! slower.
-         !! Hartree added to the virtual orbitals before each diagonalisation.
-         !! Zero is off, which is the default: a shift costs iterations near the
-         !! solution and only earns them far from it.
+         !! from. Widening it to 12-20 is the first thing to try on an
+         !! open-shell SCF that converges monotonically but slowly, where a
+         !! level shift would only make it slower.
 
-      ! EFP settings, read from `keywords.efp` and used only by the MAKEFP driver
-      !
-      ! Apart from `scf` on purpose. The SCF a potential runs is configured by
-      ! `keywords.scf` and reads those keys already; adding a second spelling of a
-      ! tolerance here would let one deck set the same thing twice and then have to
-      ! decide which copy wins. These four are the stages after the SCF, which is
-      ! where the wall clock of a MAKEFP run actually goes.
+      ! EFP settings, read from `keywords.efp` and used only by the MAKEFP
+      ! driver. These are the stages after the SCF; the SCF a potential runs is
+      ! configured by `keywords.scf` and has no second spelling here.
       real(dp) :: efp_dynamic_tolerance = DEFAULT_DYNAMIC_TOL
       integer :: efp_dynamic_maxiter = DEFAULT_DYNAMIC_MAXITER
       logical :: efp_allow_crap_response = .false.
       integer :: efp_response_batch = DEFAULT_RESPONSE_BATCH
       integer :: efp_response = EFP_RESPONSE_AUTO
-         !! Held as a code rather than as the spelling, the same as `calc_type`:
-         !! the reader is the only place that has to know the three words, and it
-         !! refuses a fourth there rather than somewhere an SCF has already run.
+         !! Held as a code rather than as the spelling, like `calc_type`; the
+         !! reader is the only place that knows the three words it can take.
       real(dp) :: efp_vdw_scale = DEFAULT_VDW_SCALE
 
       ! Hessian settings
@@ -457,11 +404,8 @@ module mqc_config_types
       real(dp) :: aimd_initial_temperature = DEFAULT_AIMD_TEMPERATURE  !! Initial temperature for velocity init (K)
       integer :: aimd_output_frequency = DEFAULT_AIMD_OUTPUT_FREQ    !! Write output every N steps
 
-      ! Geometry optimization settings
-      !
-      ! The two spelled ones stay strings here and are parsed in the adapter,
-      ! where a misspelling can be refused by name. Parsing them in the reader
-      ! instead would put the vocabulary in two places.
+      ! Geometry optimization settings. The spelled ones stay strings here and
+      ! are parsed in the adapter, where a misspelling is refused by name.
       integer :: opt_max_steps = DEFAULT_OPT_MAX_STEPS
       real(dp) :: opt_gradient_tolerance = DEFAULT_OPT_GRADIENT_TOLERANCE  !! Hartree/Bohr
       real(dp) :: opt_energy_tolerance = DEFAULT_OPT_ENERGY_TOLERANCE      !! Hartree; <0 = engine default
@@ -513,15 +457,14 @@ module mqc_config_types
          !!
          !! Under "none" each subfragment is solved in its own basis, so a pair
          !! borrows functions its monomers did not have and looks more bound
-         !! than it is. That error lands in the pair term and survives
+         !! than it is; that error lands in the pair term and survives
          !! truncation. "vmfc" solves every subfragment in its parent's basis
          !! instead -- valiron-mayer function counterpoise -- so the borrowing
          !! appears on both sides of each difference and cancels.
          !!
-         !! It is not free: a monomer's energy stops being one number reusable
-         !! across every pair it belongs to and becomes one number per pair, so
-         !! a level-2 expansion goes from N + C(N,2) subcalculations to
-         !! 3*C(N,2).
+         !! It is not free: a monomer's energy becomes one number per pair
+         !! rather than one reusable across every pair it belongs to, so a
+         !! level-2 expansion goes from N + C(N,2) subcalculations to 3*C(N,2).
 
       character(len=:), allocatable :: fmo_far_field
          !! What a distant fragment contributes: mulliken, chelpg or ignore
@@ -542,28 +485,23 @@ module mqc_config_types
       character(len=:), allocatable :: bond_breaking
          !! How a fragment represents a covalent bond the partition cut.
          !!
-         !! `"none"` refuses a partition that cuts one, which is the only honest
-         !! answer for a method with no way to represent the dangling valence.
-         !! `"caps"` closes it with a hydrogen. `"afo"` is the adjusted frozen
-         !! orbital, and IS built -- see `mqc_libcint_afo.f90` and
-         !! `mqc_docs/source/fmo.rst`. An FMO expansion accepts `"none"` and
-         !! `"afo"`; it refuses `"caps"` as not implemented for that expansion.
+         !! `"none"` refuses a partition that cuts one. `"caps"` closes it with
+         !! a hydrogen. `"afo"` is the adjusted frozen orbital -- see
+         !! `mqc_libcint_afo.f90` and `mqc_docs/source/fmo.rst`. An FMO
+         !! expansion accepts `"none"` and `"afo"`; it refuses `"caps"` as not
+         !! implemented for that expansion.
          !!
-         !! Separate from `embedding` on purpose: what closes a cut bond and what
-         !! field a fragment sits in are independent choices, and only some of
-         !! their pairings are sound -- a cap puts an electron where an exact
-         !! embedding already supplies the neighbour's density, so the two
-         !! double-count and the combination is refused rather than approximated.
+         !! Independent of `embedding`, but not every pairing of the two is
+         !! sound: a cap puts an electron where an exact embedding already
+         !! supplies the neighbour's density, so that combination is refused.
       real(dp) :: cap_scale = 1.0_dp
          !! Where the cap goes along the cut bond: `R_H = R_kept + s (R_gone - R_kept)`.
          !!
-         !! `1.0` puts it exactly where the removed atom was, which is what this
-         !! program has always done, and is why redistributing the cap's gradient
-         !! onto that atom is the whole chain rule rather than an approximation.
-         !! A physical C-H wants roughly `0.71` of a C-C, and the gradient then
-         !! splits `s` and `1 - s` between the two atoms -- still exact, one term
-         !! longer. The default keeps existing numbers reproducible; it is not a
-         !! recommendation.
+         !! `1.0`, the default, puts it exactly where the removed atom was, so
+         !! redistributing the cap's gradient onto that atom is the whole chain
+         !! rule rather than an approximation. A physical C-H wants roughly
+         !! `0.71` of a C-C, and the gradient then splits `s` and `1 - s`
+         !! between the two atoms -- still exact, one term longer.
       character(len=:), allocatable :: embedding
       character(len=:), allocatable :: cutoff_method
       character(len=:), allocatable :: distance_metric
@@ -583,13 +521,10 @@ module mqc_config_types
       logical :: unchecked_input = .false.
          !! Downgrade semantic validation to warnings.
          !!
-         !! Off by default and meant to stay that way. The checks it disables
-         !! are for inputs that produce a converged, plausible, wrong answer --
-         !! monomer charges that do not sum, atoms in no fragment, a term list
-         !! the expansion cannot be assembled from. Some are conventions rather
-         !! than laws and a user may be breaking one deliberately, which is why
-         !! the escape exists; it is deliberately not a comfortable thing to
-         !! reach for.
+         !! Off by default. The checks it disables are for inputs that produce a
+         !! converged, plausible, wrong answer -- monomer charges that do not
+         !! sum, atoms in no fragment, a term list the expansion cannot be
+         !! assembled from.
       character(len=:), allocatable :: fragment_breakdown
          !! Where the per-fragment MBE table goes: "csv", "json" or "none"
 

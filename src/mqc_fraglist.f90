@@ -3,21 +3,17 @@ module mqc_fraglist
    !! A list of MBE terms that can be built, handed out, filtered and handed
    !! back, rather than generated and consumed inside one call.
    !!
-   !! Why this is a type and not a local array. The MBE engine has always
-   !! generated its own term list and screened it by distance on the way past,
-   !! which means distance is the only criterion that can ever be applied.
-   !! Anything else -- keeping terms whose delta_energy from a previous run
-   !! cleared a threshold, resuming a run that died part way, hand-picking a
-   !! set -- needs the list to exist as something a caller can hold.
+   !! A screen the MBE engine applies on the way past can only ever be a
+   !! distance screen. Keeping terms whose `delta_energy` from a previous run
+   !! cleared a threshold, resuming a run that died part way, or hand-picking a
+   !! set all need the list to exist as something a caller can hold.
    !!
    !! Layout. Terms are **monomer index sets**, not atom sets, and the store is
    !! rectangular `(n_terms, max_level)` with unused slots zero -- one term per
    !! ROW, which is the order `generate_fragment_list` writes and every MBE
    !! consumer reads (`count(polymers(i, :) > 0)` is the order of term i). It
    !! is also the shape the per-fragment CSV writes, `m1..m<max_level>`
-   !! zero-filled, so a term here and a row there line up. A ragged
-   !! representation would be tighter for a level-2 list padded to level 4 and
-   !! would not be worth the translation at either boundary.
+   !! zero-filled, so a term here and a row there line up.
    !!
    !! Indices are 1-based monomer numbers, matching `create_monomer_list` and
    !! the CSV. That differs from the 0-based *atom* indices the input schema
@@ -41,7 +37,7 @@ module mqc_fraglist
    type :: fraglist_t
       !! A term list, and whatever has been computed about its terms
       integer(default_int) :: max_level = 0
-         !! Rows in `terms`; a term of lower order zero-fills the rest
+         !! Columns in `terms`; a term of lower order zero-fills the rest
       integer(int64) :: n_terms = 0
       integer(default_int), allocatable :: terms(:, :)
          !! (n_terms, max_level), 1-based monomer indices, zero-padded
@@ -149,8 +145,8 @@ contains
       !! Compute the minimum inter-monomer distance of every term
       !!
       !! Separate from `create` because a list that arrived from a caller needs
-      !! it too, and because a caller screening on energy never needs it at all
-      !! -- it is O(n_terms * atoms^2) and worth not paying for.
+      !! it too, and because it is `O(n_terms * atoms^2)` and a caller screening
+      !! on energy never needs it at all.
       class(fraglist_t), intent(inout) :: this
       type(system_geometry_t), intent(in) :: sys_geom
       type(error_t), intent(inout) :: error
@@ -169,10 +165,9 @@ contains
    subroutine fraglist_keep(this, mask, error)
       !! Keep the terms the mask selects, in their existing order
       !!
-      !! The one operation every screen reduces to. Distance screening, an
+      !! The one operation every screen reduces to: distance screening, an
       !! energy threshold read out of a previous run's CSV, and resuming from
-      !! the terms a dead run never reached are the same call with a different
-      !! mask -- which is the point of the list being an object.
+      !! the terms a dead run never reached are this call with a different mask.
       class(fraglist_t), intent(inout) :: this
       logical, intent(in) :: mask(:)  !! One entry per term
       type(error_t), intent(inout) :: error
@@ -216,9 +211,13 @@ contains
       !! restores what computing them requires.
       !!
       !! That is also why an energy screen saves less than it first appears: a
-      !! trimer kept for its own sake drags in three dimers and three monomers,
-      !! most of which the screen had already rejected on their own account.
-      !! The saving is real but it is in the tail, not the whole list.
+      !! kept trimer drags in three dimers and three monomers, most of which
+      !! the screen had already rejected.
+      ! TODO(mqc): quadratic, and on the path every screened run has to take.
+      ! `add_unique` scans everything already stored for each of the 2^level
+      ! subsets of every term, so the cost grows with the square of the closed
+      ! list. The store is also preallocated at `n_terms * 2**max_level` rows,
+      ! eight times the term count at level 3, before any of it is filled.
       class(fraglist_t), intent(inout) :: this
       type(error_t), intent(inout) :: error
 
@@ -250,26 +249,13 @@ contains
          do size_wanted = 1, level
             call first_combination(subset, size_wanted)
             do
-               !
                ! Gathered into a local rather than passed as
-               ! `[(term(subset(i)), i=1, size_wanted)]`.
-               !
-               ! An array constructor as an actual argument builds a temporary,
-               ! and nvfortran sizes that temporary WRONG under `-Mvect=simd`
-               ! -- which `-fast` implies, so every optimised NVHPC build was
-               ! affected. The symptom is a runtime abort asking for a garbage
-               ! allocation, e.g.
-               !
-               !     0: ALLOCATE: 562935672259264 bytes requested
-               !
-               ! the size varying run to run because the value comes from
-               ! uninitialised stack. `-O2` alone is fine, `-fast -Mnovect` is
-               ! fine, and adding a print anywhere nearby makes it vanish.
-               !
-               ! Gathering explicitly removes the temporary, so there is
-               ! nothing to size wrongly. It also stops allocating one per
-               ! iteration of the innermost loop, which this did not need.
-               !
+               ! `[(term(subset(i)), i=1, size_wanted)]`. An array constructor
+               ! as an actual argument builds a temporary, and nvfortran sizes
+               ! that temporary wrongly under `-Mvect=simd`, which `-fast`
+               ! implies: the run aborts asking for a garbage allocation whose
+               ! size varies run to run. `-O2` alone and `-fast -Mnovect` are
+               ! both fine.
                do i = 1, size_wanted
                   pick(i) = term(subset(i))
                end do
@@ -353,6 +339,7 @@ contains
    end function fraglist_level_of
 
    subroutine fraglist_destroy(this)
+      !! Release the term store and anything measured about it
       class(fraglist_t), intent(inout) :: this
 
       if (allocated(this%terms)) deallocate (this%terms)

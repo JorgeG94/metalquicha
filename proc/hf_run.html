@@ -137,7 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/hf_run.html#variable-backend_error~2">backend_error</a>
-            <a class="list-group-item" href="../proc/hf_run.html#variable-settings~12">settings</a>
+            <a class="list-group-item" href="../proc/hf_run.html#variable-settings~9">settings</a>
         </div>
       </div>
     </div>
@@ -177,7 +177,7 @@
 </h2>
     
 
-    <p>Run a density-fitted RHF calculation through cuEST</p>
+    <p>Run the SCF through whichever backend <code>options%backend</code> resolves to</p>
 
 
     <h3>Arguments</h3>
@@ -193,7 +193,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~111"></span>
+              <span class="anchor" id="variable-this~107"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -208,7 +208,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~35"></span>
+              <span class="anchor" id="variable-fragment~33"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -223,7 +223,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~51"></span>
+              <span class="anchor" id="variable-result~39"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -238,7 +238,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~5"></span>
+              <span class="anchor" id="variable-want_gradient~6"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -264,8 +264,7 @@
             <td><strong>want_hessian</strong></td>
             <td>
                 <p>Only the CPU backend has an analytic Hessian, and only for some of
-what reaches it. Passed along rather than decided here: which cases
-qualify is a fact about that backend.</p>
+what reaches it; the backend decides, not this routine.</p>
             </td>
         </tr>
     </tbody>
@@ -699,7 +698,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~12"></span>
+              <span class="anchor" id="variable-settings~9"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
               <td>private</td>
@@ -731,15 +730,14 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">hf_run</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">want_gradient</span><span class="p">,</span><span class="w"> </span><span class="n">want_hessian</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Run a density-fitted RHF calculation through cuEST</span>
+<span class="w">      </span><span class="c">!! Run the SCF through whichever backend `options%backend` resolves to</span>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">hf_method_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
 <span class="k">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">want_gradient</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">want_hessian</span>
 <span class="w">         </span><span class="c">!! Only the CPU backend has an analytic Hessian, and only for some of</span>
-<span class="w">         </span><span class="c">!! what reaches it. Passed along rather than decided here: which cases</span>
-<span class="w">         </span><span class="c">!! qualify is a fact about that backend.</span>
+<span class="w">         </span><span class="c">!! what reaches it; the backend decides, not this routine.</span>
 
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">cuest_scf_settings_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">settings</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">backend_error</span>
@@ -757,8 +755,6 @@ large graphs.</div>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">scs_ss</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">scs_ss</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">scs_os</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">scs_os</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">functional</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="w">        </span><span class="c">! empty selects pure Hartree-Fock</span>
-<span class="w">      </span><span class="c">! Resolved here rather than carried as a string, so an unknown name fails</span>
-<span class="w">      </span><span class="c">! once, before any integrals, instead of at each dispatch.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">parse_backend_name</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">backend</span><span class="p">,</span><span class="w"> </span><span class="n">settings</span><span class="p">%</span><span class="n">backend</span><span class="p">,</span><span class="w"> </span><span class="n">backend_error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">backend_error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">backend_error</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
@@ -766,18 +762,13 @@ large graphs.</div>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="w">      </span><span class="c">! cuEST when this build has it, because that is the production path and</span>
-<span class="w">      </span><span class="c">! the only one with gradients. The CPU backend takes over when it does</span>
-<span class="w">      </span><span class="c">! not, which is how a fragmented Hartree-Fock runs on a laptop at all --</span>
-<span class="w">      </span><span class="c">! and, when both are built, gives the GPU one something to be compared</span>
-<span class="w">      </span><span class="c">! against.</span>
-<span class="w">      </span><span class="c">! Which backend, and refuse a request that cannot be honoured.</span>
-<span class="w">      </span><span class="c">!</span>
-<span class="w">      </span><span class="c">! `run_cuest_scf` exists either way -- the stub compiled without the</span>
-<span class="w">      </span><span class="c">! backend reports the missing build and computes nothing -- so asking for</span>
-<span class="w">      </span><span class="c">! cuEST on a CPU-only build produces that message rather than silently</span>
-<span class="w">      </span><span class="c">! running on the CPU. That is the point of naming a backend: a deck that</span>
-<span class="w">      </span><span class="c">! said `cuest` and got libcint would report a provenance that was not true.</span>
+<span class="w">      </span><span class="c">! Which backend, and refuse a request that cannot be honoured. Asking for</span>
+<span class="w">      </span><span class="c">! cuEST on a CPU-only build reaches the stub `run_cuest_scf`, which</span>
+<span class="w">      </span><span class="c">! reports the missing build rather than falling through to libcint.</span>
+<span class="w">      </span><span class="c">! TODO(mqc): the MP2/CC refusal below guards BACKEND_CUEST only. On a</span>
+<span class="w">      </span><span class="c">! cuEST build `backend: auto` falls into the default branch and runs</span>
+<span class="w">      </span><span class="c">! `run_cuest_scf` for an MP2 or CC deck too -- which is exactly what the</span>
+<span class="w">      </span><span class="c">! refusal's own message advises the user to do.</span>
 <span class="w">      </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">settings</span><span class="p">%</span><span class="n">backend</span><span class="p">)</span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">BACKEND_CUEST</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">settings</span><span class="p">%</span><span class="n">cartesian</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -841,7 +832,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

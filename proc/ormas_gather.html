@@ -136,18 +136,18 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/ormas_gather.html#variable-base~8">base</a>
-            <a class="list-group-item" href="../proc/ormas_gather.html#variable-column~4">column</a>
-            <a class="list-group-item" href="../proc/ormas_gather.html#variable-ga~12">ga</a>
-            <a class="list-group-item" href="../proc/ormas_gather.html#variable-gb~12">gb</a>
-            <a class="list-group-item" href="../proc/ormas_gather.html#variable-ia~11">ia</a>
+            <a class="list-group-item" href="../proc/ormas_gather.html#variable-base~2">base</a>
+            <a class="list-group-item" href="../proc/ormas_gather.html#variable-column~2">column</a>
+            <a class="list-group-item" href="../proc/ormas_gather.html#variable-ga~5">ga</a>
+            <a class="list-group-item" href="../proc/ormas_gather.html#variable-gb~5">gb</a>
+            <a class="list-group-item" href="../proc/ormas_gather.html#variable-ia~4">ia</a>
             <a class="list-group-item" href="../proc/ormas_gather.html#variable-ia2~2">ia2</a>
-            <a class="list-group-item" href="../proc/ormas_gather.html#variable-ib~10">ib</a>
+            <a class="list-group-item" href="../proc/ormas_gather.html#variable-ib~4">ib</a>
             <a class="list-group-item" href="../proc/ormas_gather.html#variable-ib2~2">ib2</a>
-            <a class="list-group-item" href="../proc/ormas_gather.html#variable-norb~12">norb</a>
-            <a class="list-group-item" href="../proc/ormas_gather.html#variable-pair~5">pair</a>
-            <a class="list-group-item" href="../proc/ormas_gather.html#variable-row~11">row</a>
-            <a class="list-group-item" href="../proc/ormas_gather.html#variable-weight~6">weight</a>
+            <a class="list-group-item" href="../proc/ormas_gather.html#variable-norb~5">norb</a>
+            <a class="list-group-item" href="../proc/ormas_gather.html#variable-pair~2">pair</a>
+            <a class="list-group-item" href="../proc/ormas_gather.html#variable-row~4">row</a>
+            <a class="list-group-item" href="../proc/ormas_gather.html#variable-weight~2">weight</a>
         </div>
       </div>
     </div>
@@ -190,21 +190,15 @@
     <p><code>E_pq |c&gt;</code> for every orbital pair, over one run of alpha strings</p>
 <p>Column <code>d</code> and row <code>p + (q-1) n_orb</code> hold the component on closure
 determinant <code>alpha_base(alpha_lo) + d</code> of <code>E_pq |c&gt;</code>.</p>
-<p>The whole intermediate is <code>n_orb^2</code> by the size of the closure, and for
-anything worth restricting that does not fit &ndash; singles and doubles on
-methanol would want 39 GB of it. But the contraction that consumes it
-treats each determinant column independently, so it can be built a run
-of alpha strings at a time and consumed before the next is built. The
-closure is laid out alpha-major, so a run of alpha strings is a
-contiguous block of columns and no gathering is repeated.</p>
+<p>The whole intermediate is <code>n_orb^2</code> by the size of the closure. The
+contraction that consumes it treats each determinant column
+independently, so it is built a run of alpha strings at a time; the
+closure is alpha-major, so a run is a contiguous block of columns.</p>
 <p><strong>The alpha half is driven from the destination</strong>, which is what makes
-a tile self-contained: contributions to a column can come from an alpha
-string outside the run, so enumerating by source would need every tile
-to sweep every string. Reading the excitation table from the other end
-costs nothing and needs no second table &ndash; the row of <code>a2</code> that leads
-back to <code>a</code> is the same excitation with the orbitals exchanged, and the
-phase is the same because the occupied orbitals it steps over are the
-same. Hence the swapped <code>des</code>/<code>cre</code> below, which is deliberate.</p>
+a run self-contained: contributions to a column can come from an alpha
+string outside it. The row of <code>a2</code> leading back to <code>a</code> is the same
+excitation with the orbitals exchanged and carries the same phase,
+hence the swapped <code>des</code>/<code>cre</code> below, which is deliberate.</p>
 <p>The beta half needs no such trick: a beta excitation leaves the alpha
 string alone, so everything it writes is already in the run.</p>
 
@@ -222,7 +216,7 @@ string alone, so everything it writes is already in the run.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~28"></span>
+              <span class="anchor" id="variable-space~11"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -237,7 +231,7 @@ string alone, so everything it writes is already in the run.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-closure~7"></span>
+              <span class="anchor" id="variable-closure~5"></span>
               type(<a href='../type/ormas_closure_t.html'>ormas_closure_t</a>),
             </td>
 <td>intent(in)</td>
@@ -282,7 +276,7 @@ string alone, so everything it writes is already in the run.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ci~9"></span>
+              <span class="anchor" id="variable-ci~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -327,7 +321,7 @@ string alone, so everything it writes is already in the run.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gathered~6"></span>
+              <span class="anchor" id="variable-gathered~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -646,7 +640,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-base~8"></span>
+              <span class="anchor" id="variable-base~2"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -663,7 +657,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-column~4"></span>
+              <span class="anchor" id="variable-column~2"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -680,7 +674,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ga~12"></span>
+              <span class="anchor" id="variable-ga~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -697,7 +691,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gb~12"></span>
+              <span class="anchor" id="variable-gb~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -714,7 +708,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ia~11"></span>
+              <span class="anchor" id="variable-ia~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -748,7 +742,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ib~10"></span>
+              <span class="anchor" id="variable-ib~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -782,7 +776,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-norb~12"></span>
+              <span class="anchor" id="variable-norb~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -799,7 +793,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair~5"></span>
+              <span class="anchor" id="variable-pair~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -816,7 +810,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-row~11"></span>
+              <span class="anchor" id="variable-row~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -833,7 +827,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-weight~6"></span>
+              <span class="anchor" id="variable-weight~2"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -871,22 +865,16 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Column `d` and row `p + (q-1) n_orb` hold the component on closure</span>
 <span class="w">      </span><span class="c">!! determinant `alpha_base(alpha_lo) + d` of `E_pq |c&gt;`.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The whole intermediate is `n_orb^2` by the size of the closure, and for</span>
-<span class="w">      </span><span class="c">!! anything worth restricting that does not fit -- singles and doubles on</span>
-<span class="w">      </span><span class="c">!! methanol would want 39 GB of it. But the contraction that consumes it</span>
-<span class="w">      </span><span class="c">!! treats each determinant column independently, so it can be built a run</span>
-<span class="w">      </span><span class="c">!! of alpha strings at a time and consumed before the next is built. The</span>
-<span class="w">      </span><span class="c">!! closure is laid out alpha-major, so a run of alpha strings is a</span>
-<span class="w">      </span><span class="c">!! contiguous block of columns and no gathering is repeated.</span>
+<span class="w">      </span><span class="c">!! The whole intermediate is `n_orb^2` by the size of the closure. The</span>
+<span class="w">      </span><span class="c">!! contraction that consumes it treats each determinant column</span>
+<span class="w">      </span><span class="c">!! independently, so it is built a run of alpha strings at a time; the</span>
+<span class="w">      </span><span class="c">!! closure is alpha-major, so a run is a contiguous block of columns.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! **The alpha half is driven from the destination**, which is what makes</span>
-<span class="w">      </span><span class="c">!! a tile self-contained: contributions to a column can come from an alpha</span>
-<span class="w">      </span><span class="c">!! string outside the run, so enumerating by source would need every tile</span>
-<span class="w">      </span><span class="c">!! to sweep every string. Reading the excitation table from the other end</span>
-<span class="w">      </span><span class="c">!! costs nothing and needs no second table -- the row of `a2` that leads</span>
-<span class="w">      </span><span class="c">!! back to `a` is the same excitation with the orbitals exchanged, and the</span>
-<span class="w">      </span><span class="c">!! phase is the same because the occupied orbitals it steps over are the</span>
-<span class="w">      </span><span class="c">!! same. Hence the swapped `des`/`cre` below, which is deliberate.</span>
+<span class="w">      </span><span class="c">!! a run self-contained: contributions to a column can come from an alpha</span>
+<span class="w">      </span><span class="c">!! string outside it. The row of `a2` leading back to `a` is the same</span>
+<span class="w">      </span><span class="c">!! excitation with the orbitals exchanged and carries the same phase,</span>
+<span class="w">      </span><span class="c">!! hence the swapped `des`/`cre` below, which is deliberate.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! The beta half needs no such trick: a beta excitation leaves the alpha</span>
 <span class="w">      </span><span class="c">!! string alone, so everything it writes is already in the run.</span>
@@ -962,7 +950,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

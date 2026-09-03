@@ -16,11 +16,10 @@ module mqc_lebedev
    !!    code 4   (a, b, 0)      b = sqrt(1-a^2)  24 points
    !!    code 5   (a, b, c)      c = sqrt(1-a^2-b^2)  48 points
    !!
-   !! Rather than tabulate each orbit's points, `expand_orbit` generates them
-   !! from the seed and discards duplicates -- which is where the smaller counts
-   !! come from, a seed with a repeated or zero coordinate having a smaller
-   !! orbit than the 48 of a general point. The expected size is asserted, so a
-   !! seed that collapsed further than it should cannot pass silently.
+   !! `expand_orbit` generates the points from the seed and discards
+   !! duplicates, which is where the smaller counts come from: a seed with a
+   !! repeated or zero coordinate has a smaller orbit than the 48 of a general
+   !! point. The expected size is asserted.
    !!
    !! Weights are normalised to sum to 1: the 4*pi of the sphere's surface is
    !! not included and must be supplied by the caller if it is wanted.
@@ -37,34 +36,32 @@ module mqc_lebedev
    public :: lebedev_has_negative_weights  !! Whether an order carries negative weights
    public :: lebedev_grid            !! Points and weights for an order
 
-   !> Number of orbit types, codes 0 to N_ORBIT_CODES-1
    integer, parameter :: N_ORBIT_CODES = 6
+      !! Number of orbit types, codes 0 to N_ORBIT_CODES-1
 
-   !> Largest orbit: a seed with three distinct non-zero coordinates reaches
-   !> all 6 permutations in all 8 sign combinations.
    integer, parameter :: MAX_ORBIT_POINTS = 48
+      !! Largest orbit: a seed with three distinct non-zero coordinates reaches
+      !! all 6 permutations in all 8 sign combinations.
 
-   !> Permutations of three coordinates
    integer, parameter :: N_PERMUTATIONS = 6
+      !! Permutations of three coordinates
 
-   !> Spatial dimensions
    integer, parameter :: N_DIM = 3
+      !! Spatial dimensions
 
-   !> Points in the orbit of each code, before duplicates are removed
    integer, parameter :: ORBIT_SIZE(0:N_ORBIT_CODES - 1) = [6, 12, 8, 24, 24, MAX_ORBIT_POINTS]
+      !! Points in the orbit of each code, before duplicates are removed
 
-   !> Orders whose weights are not all positive.
-   !>
-   !> These are valid quadratures -- they integrate to the stated accuracy, and
-   !> their weights still sum to 1 -- but a negative weight can drive a
-   !> numerically integrated density negative in a low-density region, so DFT
-   !> grids conventionally avoid them. Checked against PySCF: the same three
-   !> orders, with 8, 6 and 18 negative weights respectively.
    integer, parameter :: NEGATIVE_WEIGHT_ORDERS(3) = [74, 230, 266]
+      !! Orders whose weights are not all positive. They are valid quadratures
+      !! -- they integrate to the stated accuracy and their weights still sum
+      !! to 1 -- but a negative weight can drive a numerically integrated
+      !! density negative in a low-density region, so DFT grids conventionally
+      !! avoid them.
 
-   !> Two generated points closer than this are the same point. Seeds differ in
-   !> their parameters by far more than this, so no distinct pair can merge.
    real(dp), parameter :: DUPLICATE_TOL = 1.0e-12_dp
+      !! Two generated points closer than this are the same point. Seeds differ
+      !! in their parameters by far more, so no distinct pair can merge.
 
 contains
 
@@ -84,8 +81,7 @@ contains
    pure function lebedev_order_at_least(n_points) result(order)
       !! Smallest available order with at least `n_points` points
       !!
-      !! Returns the largest order, 5810, if more than that is asked for; there
-      !! is nothing finer to offer and refusing would be less useful.
+      !! Returns the largest order, 5810, when more than that is asked for.
       integer, intent(in) :: n_points
       integer :: order
       integer :: i
@@ -114,6 +110,9 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp) :: orbit(N_DIM, MAX_ORBIT_POINTS)
+      ! TODO(mqc): the orbit loop writes into `points` at `n_written` with no
+      ! bound against `n_points`; the short-fill check only runs afterwards, so
+      ! a wrong `ORDER_OFFSET` would overrun the array before it is reached.
       integer :: order_index, record, first, last, n_written, n_orbit, i
       character(len=64) :: message
 
@@ -171,9 +170,9 @@ contains
       real(dp), intent(out) :: points(N_DIM, MAX_ORBIT_POINTS)  !! Distinct images, first `n_points` valid
       integer, intent(out) :: n_points
 
-      !> The six permutations of three coordinates
       integer, parameter :: PERM(N_DIM, N_PERMUTATIONS) = reshape([1, 2, 3, 1, 3, 2, 2, 1, 3, &
                                                                    2, 3, 1, 3, 1, 2, 3, 2, 1], [N_DIM, N_PERMUTATIONS])
+         !! The six permutations of three coordinates
       real(dp) :: seed(3), candidate(3)
       integer :: p, sx, sy, sz, i
       logical :: seen

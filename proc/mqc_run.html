@@ -136,13 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mqc_run.html#variable-error~116">error</a>
-            <a class="list-group-item" href="../proc/mqc_run.html#variable-h~14">h</a>
-            <a class="list-group-item" href="../proc/mqc_run.html#variable-iterm~5">iterm</a>
+            <a class="list-group-item" href="../proc/mqc_run.html#variable-error~166">error</a>
+            <a class="list-group-item" href="../proc/mqc_run.html#variable-h~23">h</a>
+            <a class="list-group-item" href="../proc/mqc_run.html#variable-iterm~4">iterm</a>
             <a class="list-group-item" href="../proc/mqc_run.html#variable-list~2">list</a>
             <a class="list-group-item" href="../proc/mqc_run.html#variable-n_supplied">n_supplied</a>
-            <a class="list-group-item" href="../proc/mqc_run.html#variable-result~45">result</a>
-            <a class="list-group-item" href="../proc/mqc_run.html#variable-session~2">session</a>
+            <a class="list-group-item" href="../proc/mqc_run.html#variable-result~53">result</a>
+            <a class="list-group-item" href="../proc/mqc_run.html#variable-session">session</a>
             <a class="list-group-item" href="../proc/mqc_run.html#variable-supplied">supplied</a>
         </div>
       </div>
@@ -188,10 +188,9 @@
 ordinary fragmented run, with distance screening and sorting. A list
 that <em>is</em> supplied is taken as given, in the order given, and must be
 closed under subsets; <code>run_calculation</code> refuses one that is not.</p>
-<p><code>energy</code> is the total. The per-term breakdown is not returned, because
-it is what a screening pass wants and it is already written to the
-fragment breakdown file &ndash; which is why <code>write_output</code> and a returned
-result are independent rather than a single switch.</p>
+<p><code>energy</code> is the total. The per-term breakdown is not returned; it goes
+to the fragment breakdown file, which is why <code>write_output</code> and the
+returned energy are independent rather than one switch.</p>
 
 
     <h3>Arguments</h3>
@@ -222,7 +221,7 @@ result are independent rather than a single switch.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~12"></span>
+              <span class="anchor" id="variable-terms~11"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -252,7 +251,7 @@ result are independent rather than a single switch.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~11"></span>
+              <span class="anchor" id="variable-settings~13"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(in)</td>
@@ -282,7 +281,7 @@ result are independent rather than a single switch.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-label~4"></span>
+              <span class="anchor" id="variable-label~6"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(in)</td>
@@ -312,7 +311,7 @@ result are independent rather than a single switch.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~16"></span>
+              <span class="anchor" id="variable-energy~22"></span>
               real(kind=c_double),
             </td>
 <td>intent(out)</td>
@@ -330,7 +329,7 @@ result are independent rather than a single switch.</p>
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-status~29"></span>
+          <span class="anchor" id="variable-status~31"></span>
           integer(kind=c_int)
         </small>
       </h3>
@@ -3747,7 +3746,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~116"></span>
+              <span class="anchor" id="variable-error~166"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -3764,7 +3763,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~14"></span>
+              <span class="anchor" id="variable-h~23"></span>
               type(<a href='../type/system_handle_t.html'>system_handle_t</a>),
             </td>
               <td>private,</td>
@@ -3781,7 +3780,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterm~5"></span>
+              <span class="anchor" id="variable-iterm~4"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -3832,7 +3831,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~45"></span>
+              <span class="anchor" id="variable-result~53"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private</td>
@@ -3849,7 +3848,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-session~2"></span>
+              <span class="anchor" id="variable-session"></span>
               type(<a href='../type/mqc_session_t.html'>mqc_session_t</a>),
             </td>
               <td>private,</td>
@@ -3906,10 +3905,9 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! that *is* supplied is taken as given, in the order given, and must be</span>
 <span class="w">      </span><span class="c">!! closed under subsets; `run_calculation` refuses one that is not.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! `energy` is the total. The per-term breakdown is not returned, because</span>
-<span class="w">      </span><span class="c">!! it is what a screening pass wants and it is already written to the</span>
-<span class="w">      </span><span class="c">!! fragment breakdown file -- which is why `write_output` and a returned</span>
-<span class="w">      </span><span class="c">!! result are independent rather than a single switch.</span>
+<span class="w">      </span><span class="c">!! `energy` is the total. The per-term breakdown is not returned; it goes</span>
+<span class="w">      </span><span class="c">!! to the fragment breakdown file, which is why `write_output` and the</span>
+<span class="w">      </span><span class="c">!! returned energy are independent rather than one switch.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">settings_len</span><span class="p">,</span><span class="w"> </span><span class="n">label_len</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">system</span>
 <span class="nb">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">terms</span><span class="w">  </span><span class="c">!! May be null: generate the list instead</span>
@@ -3938,10 +3936,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! A caller who never mentioned bonds is not a caller with no bonds, and</span>
 <span class="w">      </span><span class="c">! the difference is invisible further down: `validate_system` audits the</span>
 <span class="w">      </span><span class="c">! declared list against the geometry, and an empty list has nothing to</span>
-<span class="w">      </span><span class="c">! audit. So a covalent molecule cut into monomers with no bonds declared</span>
-<span class="w">      </span><span class="c">! would fragment into radicals, cap nothing, and return a number.</span>
-<span class="w">      </span><span class="c">! `bonds_declared` is the only place that distinction survives, so this</span>
-<span class="w">      </span><span class="c">! is the only place the check can be made.</span>
+<span class="w">      </span><span class="c">! audit. `bonds_declared` is the only place the distinction survives, so</span>
+<span class="w">      </span><span class="c">! this is the only place the check can be made.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">h</span><span class="p">%</span><span class="n">bonds_declared</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">refuse_undeclared_cuts</span><span class="p">(</span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">MQC_OK</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
@@ -3984,10 +3980,8 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! A failure inside a fragment lands on the result, not on the session</span>
 <span class="w">      </span><span class="c">! error: the driver keeps going so it can report every bad term at the</span>
-<span class="w">      </span><span class="c">! end rather than the first. Checking only `error` therefore returned</span>
-<span class="w">      </span><span class="c">! MQC_OK with whatever total had accumulated -- for a gradient the CPU</span>
-<span class="w">      </span><span class="c">! backend refuses, that was a clean 0.0 handed back as a success, which</span>
-<span class="w">      </span><span class="c">! is the worst shape a failure can take.</span>
+<span class="w">      </span><span class="c">! end rather than the first. Checking `error` alone would hand back</span>
+<span class="w">      </span><span class="c">! whatever total had accumulated, as a success.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">()</span>
 <span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_FAIL</span>
@@ -4020,7 +4014,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

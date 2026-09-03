@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/set_optimization_vocabulary.html#variable-want~4">want</a>
+            <a class="list-group-item" href="../proc/set_optimization_vocabulary.html#variable-want">want</a>
         </div>
       </div>
     </div>
@@ -294,11 +294,9 @@ large graphs.</div>
 
 
     <p>Turn the two spelled optimization settings into constants</p>
-<p>Kept out of the reader on purpose: the reader&rsquo;s job is to get the
-document&rsquo;s values into the config, and the vocabulary of what those
-values may say belongs with the type that holds the constants. An
-unrecognised spelling is refused here by name, which is the only place
-that still has the string the user typed.</p>
+<p>The vocabulary lives with the type that holds the constants rather
+than in the reader. An unrecognised spelling is refused here by name,
+this being the last place that still has the string the user typed.</p>
 
 
     <h3>Arguments</h3>
@@ -329,7 +327,7 @@ that still has the string the user typed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~5"></span>
+              <span class="anchor" id="variable-driver_config~6"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -344,7 +342,7 @@ that still has the string the user typed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~130"></span>
+              <span class="anchor" id="variable-error~84"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -952,7 +950,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-want~4"></span>
+              <span class="anchor" id="variable-want"></span>
               integer,
             </td>
               <td>private</td>
@@ -986,11 +984,9 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">set_optimization_vocabulary</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">,</span><span class="w"> </span><span class="n">driver_config</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Turn the two spelled optimization settings into constants</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Kept out of the reader on purpose: the reader's job is to get the</span>
-<span class="w">      </span><span class="c">!! document's values into the config, and the vocabulary of what those</span>
-<span class="w">      </span><span class="c">!! values may say belongs with the type that holds the constants. An</span>
-<span class="w">      </span><span class="c">!! unrecognised spelling is refused here by name, which is the only place</span>
-<span class="w">      </span><span class="c">!! that still has the string the user typed.</span>
+<span class="w">      </span><span class="c">!! The vocabulary lives with the type that holds the constants rather</span>
+<span class="w">      </span><span class="c">!! than in the reader. An unrecognised spelling is refused here by name,</span>
+<span class="w">      </span><span class="c">!! this being the last place that still has the string the user typed.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">pic_io</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">to_char</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mqc_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mqc_config</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">driver_config</span>
@@ -1043,12 +1039,10 @@ large graphs.</div>
 <span class="k">         end if</span>
 <span class="k">      end if</span>
 
-<span class="w">      </span><span class="c">! Parsed into a local and only then stored, which the siblings above do</span>
-<span class="w">      </span><span class="c">! not need to do: `error` is optional, and the callers that omit it -- the</span>
-<span class="w">      </span><span class="c">! session, the tests -- would otherwise carry the parse failure into the</span>
+<span class="w">      </span><span class="c">! Parsed into a local and only then stored: `error` is optional, and a</span>
+<span class="w">      </span><span class="c">! caller that omits it would otherwise carry the parse failure into the</span>
 <span class="w">      </span><span class="c">! driver, where a sentinel below OPT_TARGET_MINIMUM reads as "not a</span>
-<span class="w">      </span><span class="c">! saddle" and runs a minimisation. Refusing without `error` still has to</span>
-<span class="w">      </span><span class="c">! leave the default behind rather than a value nothing recognises.</span>
+<span class="w">      </span><span class="c">! saddle" and runs a minimisation.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_target</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">want</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">target_from_string</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_target</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">want</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">OPT_TARGET_MINIMUM</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -1083,9 +1077,9 @@ large graphs.</div>
 <span class="k">      end if</span>
 
 <span class="w">      </span><span class="c">! The path keywords describe a band, and a band needs two structures. A</span>
-<span class="w">      </span><span class="c">! deck that sets images or a spring without an endpoint has described</span>
-<span class="w">      </span><span class="c">! something it did not supply, and running the ordinary single-structure</span>
-<span class="w">      </span><span class="c">! optimization would silently do different work from the one asked for.</span>
+<span class="w">      </span><span class="c">! deck that sets images or a spring without an endpoint would otherwise</span>
+<span class="w">      </span><span class="c">! get the ordinary single-structure optimization, which is different work</span>
+<span class="w">      </span><span class="c">! from the one asked for.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">driver_config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">endpoint</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_n_images</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_neb_ends</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">             </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_neb_spring</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -1140,9 +1134,8 @@ large graphs.</div>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">connect_distort</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_connect_distort</span>
 
 <span class="w">      </span><span class="c">! Following a saddle downhill needs a saddle to follow. Asked for</span>
-<span class="w">      </span><span class="c">! alongside a minimisation it describes something that cannot happen, and</span>
-<span class="w">      </span><span class="c">! running the minimisation and ignoring the request would report success</span>
-<span class="w">      </span><span class="c">! for half of what the deck asked.</span>
+<span class="w">      </span><span class="c">! alongside a minimisation, running it anyway would report success for</span>
+<span class="w">      </span><span class="c">! half of what the deck asked.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_connect</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">          </span><span class="n">driver_config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="k">target</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">OPT_TARGET_SADDLE</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">error</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
@@ -1156,10 +1149,9 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! A connect run does not stop at the saddle -- it carries on downhill</span>
 <span class="w">      </span><span class="c">! twice -- so the geometry it finishes with is the second minimum. A</span>
-<span class="w">      </span><span class="c">! Hessian there describes that minimum and reports, correctly and</span>
-<span class="w">      </span><span class="c">! uselessly, that it has no imaginary frequencies. Refused rather than</span>
-<span class="w">      </span><span class="c">! run, because the output would read as the saddle having been checked</span>
-<span class="w">      </span><span class="c">! and failed.</span>
+<span class="w">      </span><span class="c">! Hessian there describes that minimum and reports, correctly, that it</span>
+<span class="w">      </span><span class="c">! has no imaginary frequencies, which would read as the saddle having</span>
+<span class="w">      </span><span class="c">! been checked and failed.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_connect</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">opt_hess_end</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">error</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1174,11 +1166,9 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! A saddle is not something every algorithm can look for. Steepest</span>
 <span class="w">      </span><span class="c">! descent and the quasi-Newton minimisers go downhill by construction and</span>
-<span class="w">      </span><span class="c">! will report a minimum however the target is spelled, so asking them for</span>
-<span class="w">      </span><span class="c">! a saddle is a deck that cannot be satisfied rather than one that will</span>
-<span class="w">      </span><span class="c">! be satisfied slowly. Refused rather than silently switched: choosing an</span>
-<span class="w">      </span><span class="c">! optimizer on the user's behalf is how a run ends up being something</span>
-<span class="w">      </span><span class="c">! other than what was asked for.</span>
+<span class="w">      </span><span class="c">! report a minimum however the target is spelled, so asking them for a</span>
+<span class="w">      </span><span class="c">! saddle is a deck that cannot be satisfied. Refused rather than silently</span>
+<span class="w">      </span><span class="c">! switched to one that can.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">driver_config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="k">target</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">OPT_TARGET_SADDLE</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">         </span><span class="c">! The dimer finds a saddle by construction -- it inverts the force</span>
 <span class="w">         </span><span class="c">! along the softest direction -- so the algorithm beside it is only</span>
@@ -1211,16 +1201,11 @@ large graphs.</div>
 <span class="k">         end if</span>
 <span class="w">         </span><span class="c">! Cartesian P-RFO maximises along the lowest eigenvalue, and in</span>
 <span class="w">         </span><span class="c">! Cartesian coordinates the lowest six are translations and rotations.</span>
-<span class="w">         </span><span class="c">! It follows one of those instead of the reaction mode and wanders. On</span>
-<span class="w">         </span><span class="c">! the HCN-HNC saddle that is 60 steps without converging in Cartesians</span>
-<span class="w">         </span><span class="c">! and four in DLC, from the same guess and the same Hessian.</span>
-<span class="w">         </span><span class="c">! Warned rather than refused, because a Cartesian saddle search is a</span>
-<span class="w">         </span><span class="c">! deck that can be satisfied -- from a guess close enough that the</span>
-<span class="w">         </span><span class="c">! reaction mode is already the lowest eigenvalue -- where a downhill</span>
-<span class="w">         </span><span class="c">! algorithm is one that cannot. But Cartesian is the default</span>
-<span class="w">         </span><span class="c">! coordinate system, so a deck that simply never mentioned coordinates</span>
-<span class="w">         </span><span class="c">! lands here, which is why the warning says what it will cost rather</span>
-<span class="w">         </span><span class="c">! than only what it is.</span>
+<span class="w">         </span><span class="c">! It follows one of those instead of the reaction mode and wanders.</span>
+<span class="w">         </span><span class="c">! Warned rather than refused: from a guess close enough that the</span>
+<span class="w">         </span><span class="c">! reaction mode is already the lowest eigenvalue this can be</span>
+<span class="w">         </span><span class="c">! satisfied, where a downhill algorithm cannot. Cartesian is also the</span>
+<span class="w">         </span><span class="c">! default, so a deck that never mentioned coordinates lands here.</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">driver_config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">coordinates</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">OPT_COORDS_CARTESIAN</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">             </span><span class="n">driver_config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">saddle_method</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">SADDLE_METHOD_PRFO</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">             </span><span class="n">driver_config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">zero_modes</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -1266,7 +1251,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

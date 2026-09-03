@@ -166,16 +166,11 @@
     
 
     <p>The analytic Hessian where there is one, central differences otherwise</p>
-<p>The same shape as <code>hf_calc_hessian</code>, and for the same reason: whether
-an analytic Hessian applies depends on what the backend knows &ndash; which
-rung the functional sits on, whether it carries VV10, whether the SCF
-converged restricted and unfitted &ndash; and not on anything visible here.
-The request goes down and <code>has_hessian</code> comes back: true means it was
-computed, false with no error means it was declined and finite
-differences take over.</p>
-<p>Declining is not failing. A backend that cannot honour a <em>gradient</em>
-refuses loudly, because there is no other way to get one; a Hessian
-has a second way that is correct and merely slower.</p>
+<p>The same shape as <code>hf_calc_hessian</code>: the request goes down and
+<code>has_hessian</code> comes back, true meaning it was computed and false with
+no error meaning it was declined and finite differences take over.
+Which functionals qualify is a fact about the backend, not about
+anything visible here.</p>
 
     <h3>Type Bound</h3>
     <p><a href='../type/dft_method_t.html'>dft_method_t</a></p>
@@ -193,7 +188,7 @@ has a second way that is correct and merely slower.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~47"></span>
+              <span class="anchor" id="variable-this~85"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -208,7 +203,7 @@ has a second way that is correct and merely slower.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~11"></span>
+              <span class="anchor" id="variable-fragment~21"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -223,7 +218,7 @@ has a second way that is correct and merely slower.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~32"></span>
+              <span class="anchor" id="variable-result~30"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -792,17 +787,11 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">dft_calc_hessian</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The analytic Hessian where there is one, central differences otherwise</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The same shape as `hf_calc_hessian`, and for the same reason: whether</span>
-<span class="w">      </span><span class="c">!! an analytic Hessian applies depends on what the backend knows -- which</span>
-<span class="w">      </span><span class="c">!! rung the functional sits on, whether it carries VV10, whether the SCF</span>
-<span class="w">      </span><span class="c">!! converged restricted and unfitted -- and not on anything visible here.</span>
-<span class="w">      </span><span class="c">!! The request goes down and `has_hessian` comes back: true means it was</span>
-<span class="w">      </span><span class="c">!! computed, false with no error means it was declined and finite</span>
-<span class="w">      </span><span class="c">!! differences take over.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Declining is not failing. A backend that cannot honour a *gradient*</span>
-<span class="w">      </span><span class="c">!! refuses loudly, because there is no other way to get one; a Hessian</span>
-<span class="w">      </span><span class="c">!! has a second way that is correct and merely slower.</span>
+<span class="w">      </span><span class="c">!! The same shape as `hf_calc_hessian`: the request goes down and</span>
+<span class="w">      </span><span class="c">!! `has_hessian` comes back, true meaning it was computed and false with</span>
+<span class="w">      </span><span class="c">!! no error meaning it was declined and finite differences take over.</span>
+<span class="w">      </span><span class="c">!! Which functionals qualify is a fact about the backend, not about</span>
+<span class="w">      </span><span class="c">!! anything visible here.</span>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">dft_method_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
@@ -811,9 +800,8 @@ large graphs.</div>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_hessian</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 
-<span class="w">      </span><span class="c">! Declined. Nothing computed above is reusable -- the finite-difference</span>
-<span class="w">      </span><span class="c">! path runs its own reference point -- so this starts over rather than</span>
-<span class="w">      </span><span class="c">! trying to keep the SCF that just ran.</span>
+<span class="w">      </span><span class="c">! Declined. The finite-difference path runs its own reference point, so</span>
+<span class="w">      </span><span class="c">! nothing computed above is reusable.</span>
 <span class="w">      </span><span class="k">call result</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
 <span class="w">      </span><span class="k">call </span><span class="n">finite_difference_hessian</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="o">=</span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">verbose</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                     </span><span class="n">displacement_in</span><span class="o">=</span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">hessian_displacement</span><span class="p">)</span>
@@ -841,7 +829,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

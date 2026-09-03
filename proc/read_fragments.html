@@ -136,12 +136,12 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/read_fragments.html#variable-found~15">found</a>
+            <a class="list-group-item" href="../proc/read_fragments.html#variable-found~42">found</a>
             <a class="list-group-item" href="../proc/read_fragments.html#variable-frag_path">frag_path</a>
             <a class="list-group-item" href="../proc/read_fragments.html#variable-has_list">has_list</a>
-            <a class="list-group-item" href="../proc/read_fragments.html#variable-ifrag">ifrag</a>
-            <a class="list-group-item" href="../proc/read_fragments.html#variable-indices">indices</a>
-            <a class="list-group-item" href="../proc/read_fragments.html#variable-n_here">n_here</a>
+            <a class="list-group-item" href="../proc/read_fragments.html#variable-ifrag~2">ifrag</a>
+            <a class="list-group-item" href="../proc/read_fragments.html#variable-indices~10">indices</a>
+            <a class="list-group-item" href="../proc/read_fragments.html#variable-n_here~2">n_here</a>
             <a class="list-group-item" href="../proc/read_fragments.html#variable-n_pot">n_pot</a>
             <a class="list-group-item" href="../proc/read_fragments.html#variable-one">one</a>
             <a class="list-group-item" href="../proc/read_fragments.html#variable-shared">shared</a>
@@ -186,15 +186,12 @@
 
     <p>The fragments array, with its parallel charge, multiplicity and potential lists</p>
 <p><code>fragment_potentials</code> is the one of those that may be given as a <strong>single
-string rather than a list</strong>, when <code>uniform_system</code> says every fragment is the
-same species. That is not sugar for its own sake: a ten-thousand-water cluster
-would otherwise repeat one filename ten thousand times, and a list that long is
-somewhere for a typo to hide rather than information.</p>
-<p>Potential paths are resolved against the deck, exactly as <code>xyz</code> is, so a
-deck refers to the potential beside it and works from any directory.</p>
-<p><code>uniform_system</code> is checked rather than believed. Fragments claimed uniform
-must agree in atom count, so a deck that mixes species and says otherwise is
-refused here instead of being handed the wrong potential and run.</p>
+string rather than a list</strong>, when <code>uniform_system</code> says every fragment is
+the same species.</p>
+<p>Potential paths are resolved against the deck, exactly as <code>xyz</code> is.</p>
+<p><code>uniform_system</code> is checked rather than believed: fragments claimed
+uniform must agree in atom count, so a deck that mixes species and says
+otherwise is refused rather than handed the wrong potential.</p>
 
 
     <h3>Arguments</h3>
@@ -210,7 +207,7 @@ refused here instead of being handed the wrong potential and run.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~19"></span>
+              <span class="anchor" id="variable-json~40"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -255,7 +252,7 @@ refused here instead of being handed the wrong potential and run.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-natoms~3"></span>
+              <span class="anchor" id="variable-natoms~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -270,7 +267,7 @@ refused here instead of being handed the wrong potential and run.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~2"></span>
+              <span class="anchor" id="variable-nfrag~6"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -285,7 +282,7 @@ refused here instead of being handed the wrong potential and run.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~2"></span>
+              <span class="anchor" id="variable-fragments~7"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(out),</td>
@@ -315,7 +312,7 @@ refused here instead of being handed the wrong potential and run.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~28"></span>
+              <span class="anchor" id="variable-error~160"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -809,7 +806,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~15"></span>
+              <span class="anchor" id="variable-found~42"></span>
               logical,
             </td>
               <td>private</td>
@@ -860,7 +857,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ifrag"></span>
+              <span class="anchor" id="variable-ifrag~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -877,7 +874,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices"></span>
+              <span class="anchor" id="variable-indices~10"></span>
               integer,
             </td>
               <td>private,</td>
@@ -894,7 +891,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_here"></span>
+              <span class="anchor" id="variable-n_here~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -980,17 +977,14 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! The fragments array, with its parallel charge, multiplicity and potential lists</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! `fragment_potentials` is the one of those that may be given as a **single</span>
-<span class="w">      </span><span class="c">!! string rather than a list**, when `uniform_system` says every fragment is the</span>
-<span class="w">      </span><span class="c">!! same species. That is not sugar for its own sake: a ten-thousand-water cluster</span>
-<span class="w">      </span><span class="c">!! would otherwise repeat one filename ten thousand times, and a list that long is</span>
-<span class="w">      </span><span class="c">!! somewhere for a typo to hide rather than information.</span>
+<span class="w">      </span><span class="c">!! string rather than a list**, when `uniform_system` says every fragment is</span>
+<span class="w">      </span><span class="c">!! the same species.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Potential paths are resolved against the deck, exactly as `xyz` is, so a</span>
-<span class="w">      </span><span class="c">!! deck refers to the potential beside it and works from any directory.</span>
+<span class="w">      </span><span class="c">!! Potential paths are resolved against the deck, exactly as `xyz` is.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! `uniform_system` is checked rather than believed. Fragments claimed uniform</span>
-<span class="w">      </span><span class="c">!! must agree in atom count, so a deck that mixes species and says otherwise is</span>
-<span class="w">      </span><span class="c">!! refused here instead of being handed the wrong potential and run.</span>
+<span class="w">      </span><span class="c">!! `uniform_system` is checked rather than believed: fragments claimed</span>
+<span class="w">      </span><span class="c">!! uniform must agree in atom count, so a deck that mixes species and says</span>
+<span class="w">      </span><span class="c">!! otherwise is refused rather than handed the wrong potential.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">prefix</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">base_dir</span><span class="w">  </span><span class="c">!! For resolving relative potential paths</span>
@@ -1086,10 +1080,10 @@ large graphs.</div>
 <span class="k">         end if</span>
 <span class="k">      end do</span>
 
-<span class="w">      </span><span class="c">! The uniformity claim, checked. Atom count is what a potential has to agree with</span>
-<span class="w">      </span><span class="c">! for its own atoms to be superposable onto a fragment's, so it is the cheap</span>
-<span class="w">      </span><span class="c">! necessary condition; the loader still has to check composition when it reads</span>
-<span class="w">      </span><span class="c">! the file, which is where the elements become known.</span>
+<span class="w">      </span><span class="c">! The uniformity claim, checked. Atom count is the cheap necessary</span>
+<span class="w">      </span><span class="c">! condition for a potential's atoms to be superposable onto a fragment's;</span>
+<span class="w">      </span><span class="c">! the loader still checks composition when it reads the file, which is</span>
+<span class="w">      </span><span class="c">! where the elements become known.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">uniform</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         do </span><span class="n">ifrag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">nfrag</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">fragments</span><span class="p">(</span><span class="n">ifrag</span><span class="p">)%</span><span class="n">indices</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">fragments</span><span class="p">(</span><span class="mi">1</span><span class="p">)%</span><span class="n">indices</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
@@ -1127,7 +1121,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

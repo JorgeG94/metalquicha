@@ -138,9 +138,9 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/system_handle_t.html#variable-bond_orders~2">bond_orders</a>
             <a class="list-group-item" href="../type/system_handle_t.html#variable-bonds_declared">bonds_declared</a>
-            <a class="list-group-item" href="../type/system_handle_t.html#variable-charge_scheme~2">charge_scheme</a>
-            <a class="list-group-item" href="../type/system_handle_t.html#variable-charges~2">charges</a>
-            <a class="list-group-item" href="../type/system_handle_t.html#variable-geom~6">geom</a>
+            <a class="list-group-item" href="../type/system_handle_t.html#variable-charge_scheme~3">charge_scheme</a>
+            <a class="list-group-item" href="../type/system_handle_t.html#variable-charges~5">charges</a>
+            <a class="list-group-item" href="../type/system_handle_t.html#variable-geom~4">geom</a>
         </div>
       </div>
     </div>
@@ -319,10 +319,8 @@ large graphs.</div>
                 <td></td>
             <td>
                 <p>Wiberg-Mayer orders from <code>mqc_system_compute_bond_orders</code>, if it has
-run. On the handle rather than returned directly because a caller
-deciding where to cut reads the same matrix many times while trying
-partitions, and recomputing it per question would be an xTB
-calculation per question.</p>
+run. Cached on the handle because a caller deciding where to cut
+reads the same matrix once per partition it tries.</p>
             </td>
         </tr>
         <tr>
@@ -344,7 +342,7 @@ calculation per question.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge_scheme~2"></span>
+              <span class="anchor" id="variable-charge_scheme~3"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -356,14 +354,13 @@ calculation per question.</p>
 <td> =</td>
                 <td>&#34;&#34;</td>
             <td>
-                <p>Which scheme produced <code>charges</code>. Kept because &ldquo;the charge on atom 3&rdquo;
-is not a well-defined number without it, and a caller comparing two
-systems has to be able to check they were partitioned the same way.</p>
+                <p>Which scheme produced <code>charges</code>. &ldquo;The charge on atom 3&rdquo; is not a
+well-defined number without it.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charges~2"></span>
+              <span class="anchor" id="variable-charges~5"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -376,13 +373,13 @@ systems has to be able to check they were partitioned the same way.</p>
                 <td></td>
             <td>
                 <p>Atomic partial charges from <code>mqc_system_compute_charges</code>, if it has
-run. Cached for the same reason as the bond orders, and more so:
-these cost an SCF rather than an xTB single point.</p>
+run. Cached for the same reason, and more so: these cost an SCF
+rather than an xTB single point.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~6"></span>
+              <span class="anchor" id="variable-geom~4"></span>
               type(<a href='system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public</td>
@@ -419,18 +416,15 @@ these cost an SCF rather than an xTB single point.</p>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds_declared</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bond_orders</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">         </span><span class="c">!! Wiberg-Mayer orders from `mqc_system_compute_bond_orders`, if it has</span>
-<span class="w">         </span><span class="c">!! run. On the handle rather than returned directly because a caller</span>
-<span class="w">         </span><span class="c">!! deciding where to cut reads the same matrix many times while trying</span>
-<span class="w">         </span><span class="c">!! partitions, and recomputing it per question would be an xTB</span>
-<span class="w">         </span><span class="c">!! calculation per question.</span>
+<span class="w">         </span><span class="c">!! run. Cached on the handle because a caller deciding where to cut</span>
+<span class="w">         </span><span class="c">!! reads the same matrix once per partition it tries.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">charges</span><span class="p">(:)</span>
 <span class="w">         </span><span class="c">!! Atomic partial charges from `mqc_system_compute_charges`, if it has</span>
-<span class="w">         </span><span class="c">!! run. Cached for the same reason as the bond orders, and more so:</span>
-<span class="w">         </span><span class="c">!! these cost an SCF rather than an xTB single point.</span>
+<span class="w">         </span><span class="c">!! run. Cached for the same reason, and more so: these cost an SCF</span>
+<span class="w">         </span><span class="c">!! rather than an xTB single point.</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">charge_scheme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span>
-<span class="w">         </span><span class="c">!! Which scheme produced `charges`. Kept because "the charge on atom 3"</span>
-<span class="w">         </span><span class="c">!! is not a well-defined number without it, and a caller comparing two</span>
-<span class="w">         </span><span class="c">!! systems has to be able to check they were partitioned the same way.</span>
+<span class="w">         </span><span class="c">!! Which scheme produced `charges`. "The charge on atom 3" is not a</span>
+<span class="w">         </span><span class="c">!! well-defined number without it.</span>
 <span class="w">   </span><span class="k">end type </span><span class="n">system_handle_t</span>
 </pre></div>
 
@@ -454,7 +448,7 @@ these cost an SCF rather than an xTB single point.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

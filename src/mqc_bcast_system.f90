@@ -2,20 +2,14 @@
 module mqc_bcast_system
    !! Sends a `system_geometry_t` to every rank, component by component.
    !!
-   !! Needed because a worker builds each fragment from its own copy of the
-   !! system -- `build_fragment_from_indices(sys_geom, ...)` -- so receiving a
-   !! list of monomer indices is not enough on its own. The existing program
-   !! never has to send it: every rank parses the same input file. A run driven
-   !! from outside cannot do that, because the workers never see a filename.
+   !! A worker builds each fragment from its own copy of the system, so a list
+   !! of monomer indices is not enough on its own. The ordinary program never
+   !! needs this -- every rank parses the same input file -- but a run driven
+   !! from outside gives its workers no filename to parse.
    !!
-   !! **Every component travels, and none is derived on arrival.** It would be
-   !! cheaper to send the partition and recompute, say, `atoms_per_monomer`,
-   !! and it would be one more place for the ranks to disagree. Anything a
-   !! worker reads is something rank 0 sent it.
-   !!
-   !! Two-dimensional arrays go as their flattening plus both extents rather
-   !! than through a shaped transfer, so the receiving side reconstructs the
-   !! shape from data that arrived with it and never assumes one.
+   !! Nothing is derived on arrival: anything a worker reads is something rank
+   !! 0 sent it. Two-dimensional arrays travel as their flattening plus both
+   !! extents, so the receiving side never assumes a shape.
    use pic_types, only: dp, int32
    use pic_mpi_lib, only: comm_t, bcast
    use mqc_physical_fragment, only: system_geometry_t, bond_t
@@ -26,9 +20,8 @@ module mqc_bcast_system
    public :: bcast_system_geometry
 
    integer, parameter :: N_SCALARS = 5
-      !! n_monomers, atoms_per_monomer, total_atoms, charge, multiplicity --
-      !! sent as one message because they are the sizes everything else is
-      !! checked against, and splitting them invites sending four of five
+      !! n_monomers, atoms_per_monomer, total_atoms, charge, multiplicity,
+      !! sent as one message.
 
 contains
 
@@ -37,6 +30,10 @@ contains
       !!
       !! Collective: every rank calls it. On `root` the argument is read; on
       !! every other rank it is overwritten, whatever it held before.
+      ! TODO(mqc): `cap_scale` and `fragment_potentials` are the two components
+      ! of `system_geometry_t` that never travel. A worker therefore caps broken
+      ! bonds at the default scale of 1 whatever the deck asked for, and an EFP
+      ! system arrives with no potentials at all.
       type(comm_t), intent(in) :: comm
       type(system_geometry_t), intent(inout) :: sys_geom
       integer(int32), intent(in) :: root
@@ -193,12 +190,11 @@ contains
    end subroutine bcast_real_2d
 
    subroutine bcast_bonds(comm, bonds, root, is_root)
-      !! The bond list, as four parallel arrays
+      !! The bond list, packed four integers to a bond
       !!
-      !! A derived type with no allocatable components could in principle be
-      !! moved as raw bytes, but its layout is the compiler's business and not
-      !! guaranteed to match across a heterogeneous job. Four arrays of things
-      !! MPI has types for cannot be wrong.
+      !! Component by component rather than as raw bytes: a derived type's
+      !! layout is the compiler's business and need not match across a
+      !! heterogeneous job.
       type(comm_t), intent(in) :: comm
       type(bond_t), allocatable, intent(inout) :: bonds(:)
       integer(int32), intent(in) :: root

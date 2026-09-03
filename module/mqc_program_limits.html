@@ -144,7 +144,7 @@
             <a class="list-group-item" href="../module/mqc_program_limits.html#variable-eri_core_budget_share">ERI_CORE_BUDGET_SHARE</a>
             <a class="list-group-item" href="../module/mqc_program_limits.html#variable-group_result_batch_size">GROUP_RESULT_BATCH_SIZE</a>
             <a class="list-group-item" href="../module/mqc_program_limits.html#variable-json_real_format">JSON_REAL_FORMAT</a>
-            <a class="list-group-item" href="../module/mqc_program_limits.html#variable-max_element_symbol_len~3">MAX_ELEMENT_SYMBOL_LEN</a>
+            <a class="list-group-item" href="../module/mqc_program_limits.html#variable-max_element_symbol_len">MAX_ELEMENT_SYMBOL_LEN</a>
             <a class="list-group-item" href="../module/mqc_program_limits.html#variable-max_line_length">MAX_LINE_LENGTH</a>
             <a class="list-group-item" href="../module/mqc_program_limits.html#variable-max_mbe_level">MAX_MBE_LEVEL</a>
             <a class="list-group-item" href="../module/mqc_program_limits.html#variable-max_orbital_label_len">MAX_ORBITAL_LABEL_LEN</a>
@@ -184,8 +184,8 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>Contains compile-time limits and default values for the metalquicha program.
-These are tunable parameter that control memory allocation and algorithm behavior.</p>
+      <p>Compile-time limits and defaults that control memory allocation and
+algorithm behaviour.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
@@ -2762,10 +2762,9 @@ parameter
             <td>
                 <p>Auxiliary functions per thread chunk in the fitted Coulomb build.</p>
 <p>Both halves of J are BLAS-2 over a column block of B, and this is how
-wide a block is. Small enough that a few thousand auxiliary functions
-still make many more chunks than there are threads &ndash; the balance a
-static schedule needs &ndash; and large enough that the per-call overhead of
-BLAS is amortised rather than paid n_aux times.</p>
+wide a block is: small enough that a few thousand auxiliary functions
+still make many more chunks than there are threads, large enough that
+the per-call BLAS overhead is not paid n_aux times.</p>
             </td>
         </tr>
         <tr>
@@ -2785,10 +2784,8 @@ parameter
                 <p>Working size of one row panel of the fitted-tensor metric contraction.</p>
 <p><code>B = (mn|Q) J^(-1/2)</code> is split over the pair index so that each thread
 reads its own slice of the three-centre tensor rather than all of it,
-and this is how tall a slice is. Two megabytes because the panel is
-packed per thread and lives for the whole call: a hundred threads
-holding it is two hundred megabytes, where a panel sized for GEMM
-efficiency alone would be gigabytes for a few per cent more throughput.</p>
+and this is how tall a slice is. The panel is packed per thread and
+lives for the whole call, so the cost is this times the thread count.</p>
             </td>
         </tr>
         <tr>
@@ -2809,12 +2806,9 @@ parameter
 <p>Schwarz: <code>|(mn|P)| &lt;= sqrt((mn|mn)) sqrt((P|P))</code>, so a pair whose
 bound times the largest auxiliary diagonal falls under this cannot
 reach it, for any P, and the whole shell triplet is skipped.</p>
-<p>1e-12 rather than the 1e-10 the literature usually quotes, because
-the validation suite compares total energies at 1e-9 and a fitted
-energy has already spent its error budget on the fit. The cost of the
-stricter threshold is small: the bound falls off exponentially with
-pair separation, so two orders cost far less than two orders&rsquo; worth
-of pairs.</p>
+<p>1e-12 rather than the 1e-10 the literature usually quotes, because the
+validation suite compares total energies at 1e-9 and a fitted energy
+has already spent its error budget on the fit.</p>
             </td>
         </tr>
         <tr>
@@ -2852,17 +2846,9 @@ parameter
 <td> =</td>
                 <td>2.0e9_dp</td>
             <td>
-                <p>How much memory a rank will spend on stored two-electron integrals.</p>
-<p>Here rather than beside the CPU backend that reads them because they are
-what this module is for, and because that backend is not always compiled:
-a number describing a policy should not disappear with whichever code
-happens to enforce it today.
-Ceiling on what one rank may spend on stored two-electron integrals.</p>
-<p>The tensor is the full n^4, not the eightfold-unique set, so this is
-reached at 128 functions. Packing it would push that to 215, which is
-worth doing when something needs it &ndash; <code>eris_packed</code> already exists for
-the correlated methods &ndash; but the contraction in <code>build_fock</code> addresses
-the tensor as four indices and would have to be rewritten with it.</p>
+                <p>Ceiling on what one rank may spend on stored two-electron integrals.</p>
+<p>The tensor is the full n^4, not the eightfold-unique set, so the cap is
+reached at 128 functions.</p>
             </td>
         </tr>
         <tr>
@@ -2880,23 +2866,13 @@ parameter
                 <td>0.25_dp</td>
             <td>
                 <p>Fraction of <em>currently available</em> memory a rank will claim.</p>
-<p>This used to be a flat two gigabytes, on the reasoning that a
-fragmented run puts one MPI rank per fragment on a node and sizing
-from total memory would have every rank conclude it could have all of
-it. That is right for a cluster node and wrong for the machine this
-project also aims at: four ranks on a sixteen-gigabyte laptop, each
-helping itself to two gigabytes of integrals, is most of the machine
-before anything else is counted &ndash; and the laptop is running a browser.</p>
-<p>Reading what is <em>available</em> rather than what is installed handles the
-several-ranks-per-node case without needing to know how many there
-are, which is not discoverable here: there is no node-local
-communicator to ask. Ranks that decide earlier have already allocated,
-so the ones deciding later see less and claim less. That degrades
-rather than resolving &ndash; ranks deciding at the same instant see the
-same number &ndash; which is why the share is a quarter and not a half.</p>
-<p>The asymmetry is what sets the direction. Claiming too much is fatal;
+<p>Available rather than installed, so several ranks on one node degrade
+toward smaller claims &ndash; a rank deciding later sees what the earlier
+ones already took &ndash; without needing a count that is not discoverable
+here. Ranks deciding at the same instant see the same number, which is
+why the share is a quarter and not a half. Claiming too much is fatal;
 claiming too little falls back to a direct build, which is slower and
-correct. So this errs low on purpose.</p>
+correct.</p>
             </td>
         </tr>
         <tr>
@@ -2936,7 +2912,7 @@ Valid values: &lsquo;G&rsquo;, &lsquo;E&rsquo;, &lsquo;EN&rsquo;, &lsquo;ES&rsqu
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_element_symbol_len~3"></span>
+              <span class="anchor" id="variable-max_element_symbol_len"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2948,7 +2924,7 @@ parameter
 <td> =</td>
                 <td>4</td>
             <td>
-                
+                <p>Maximum length for element symbols (e.g., &ldquo;He&rdquo;, &ldquo;Uue&rdquo;)</p>
             </td>
         </tr>
         <tr>
@@ -3000,8 +2976,7 @@ parameter
 <td> =</td>
                 <td>8</td>
             <td>
-                <p>Maximum length for element symbols (e.g., &ldquo;He&rdquo;, &ldquo;Uue&rdquo;)
-&ldquo;Cr 3d&rdquo; and its longest relatives. An atomic orbital label is an
+                <p>&ldquo;Cr 3d&rdquo; and its longest relatives. An atomic orbital label is an
 element symbol, a space, a principal quantum number and a subshell
 letter, so eight characters is generous.</p>
             </td>
@@ -3039,10 +3014,7 @@ parameter
                 <td>6</td>
             <td>
                 <p>Terms in an EFP2 interaction energy: electrostatics, polarization,
-exchange repulsion, dispersion, charge transfer, and their total. Here
-rather than beside the EFP code because the real CPU bridge and the stub
-that stands in for it must agree, and only one of those is compiled with
-the backend present.</p>
+exchange repulsion, dispersion, charge transfer, and their total.</p>
             </td>
         </tr>
         <tr>
@@ -3079,11 +3051,8 @@ parameter
 <td> =</td>
                 <td>12</td>
             <td>
-                <p>Terms a SAPT0 interaction energy is reported as: electrostatics, exchange,
-induction, exchange-induction, dispersion, exchange-dispersion, the
-delta-HF correction, the supermolecular HF reference, and the total. Here
-rather than beside the SAPT code because the real CPU bridge and the stub
-standing in for it must agree, and only one is compiled with the backend.</p>
+                <p>Terms a SAPT0 interaction energy is reported as; <code>SAPT_TERM_NAMES</code> names
+them in slot order.</p>
             </td>
         </tr>
         <tr>
@@ -3118,17 +3087,11 @@ parameter
                 <td>0.8_dp</td>
             <td>
                 <p>Fraction of available memory a SAPT run may size itself against.</p>
-<p>Deliberately far above <code>ERI_CORE_BUDGET_SHARE</code>, and for a reason that
-is about consequences rather than appetite. An SCF that decides the
-integrals do not fit falls back to a direct build and returns the same
-energy more slowly, so claiming too little there costs time. SAPT has
-no direct path: every term is a contraction over the stored dimer
-tensor, so refusing is refusing the calculation. A quarter-of-memory
-rule would turn runs that complete today into errors.</p>
-<p>So this guard exists only to convert the failure that would happen
-anyway &ndash; an OOM kill, or an hour of swapping &ndash; into a message that
-names the basis as the thing to change. It should refuse only what
-genuinely cannot run.</p>
+<p>Far above <code>ERI_CORE_BUDGET_SHARE</code> because SAPT has no direct path:
+every term is a contraction over the stored dimer tensor, so refusing
+the memory refuses the calculation, where an SCF only gets slower. The
+guard turns an OOM kill into a message naming the basis, and should
+refuse only what genuinely cannot run.</p>
             </td>
         </tr>
         <tr>
@@ -3146,10 +3109,8 @@ parameter
                 <td>[character(len=12)::&#34;elst10&#34;, &#34;exch10_s2&#34;, &#34;exch10&#34;, &#34;ind20_u&#34;, &#34;ind20_r&#34;, &#34;exch_ind20_u&#34;, &#34;exch_ind20_r&#34;, &#34;disp20&#34;, &#34;exch_disp20&#34;, &#34;delta_hf&#34;, &#34;e_int_hf_cp&#34;, &#34;total&#34;]</td>
             <td>
                 <p>The slot each SAPT term occupies, and the name it is written out under.
-Both sides of the backend gate index this array, and so does the JSON
-writer, so the order is fixed in exactly one place. The names are the
-literature&rsquo;s rather than the console&rsquo;s prose, because their reason to
-exist is being compared against another code&rsquo;s output.</p>
+The names are the literature&rsquo;s rather than the console&rsquo;s prose, since
+these exist to be compared against another code&rsquo;s output.</p>
 <p><code>_u</code> is uncoupled and <code>_r</code> is response (coupled); <code>_s2</code> is the single
 exchange approximation against the full <code>S^inf</code>. A code that reports only
 one of each pair cannot be checked against one that reports the other.</p>
@@ -3187,7 +3148,7 @@ one of each pair cannot be checked against one that reports the other.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

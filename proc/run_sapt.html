@@ -136,24 +136,24 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/run_sapt.html#variable-a~2">a</a>
-            <a class="list-group-item" href="../proc/run_sapt.html#variable-charge_a">charge_a</a>
-            <a class="list-group-item" href="../proc/run_sapt.html#variable-charge_b">charge_b</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-a~3">a</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-charge_a~3">charge_a</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-charge_b~3">charge_b</a>
             <a class="list-group-item" href="../proc/run_sapt.html#variable-err">err</a>
-            <a class="list-group-item" href="../proc/run_sapt.html#variable-i~19">i</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-i~26">i</a>
             <a class="list-group-item" href="../proc/run_sapt.html#variable-is_sapt2">is_sapt2</a>
-            <a class="list-group-item" href="../proc/run_sapt.html#variable-json_data~5">json_data</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-json_data~9">json_data</a>
             <a class="list-group-item" href="../proc/run_sapt.html#variable-mult_a">mult_a</a>
             <a class="list-group-item" href="../proc/run_sapt.html#variable-mult_b">mult_b</a>
-            <a class="list-group-item" href="../proc/run_sapt.html#variable-na~3">na</a>
-            <a class="list-group-item" href="../proc/run_sapt.html#variable-nb~3">nb</a>
-            <a class="list-group-item" href="../proc/run_sapt.html#variable-sym_a">sym_a</a>
-            <a class="list-group-item" href="../proc/run_sapt.html#variable-sym_b">sym_b</a>
-            <a class="list-group-item" href="../proc/run_sapt.html#variable-terms">terms</a>
-            <a class="list-group-item" href="../proc/run_sapt.html#variable-xyz_a">xyz_a</a>
-            <a class="list-group-item" href="../proc/run_sapt.html#variable-xyz_b">xyz_b</a>
-            <a class="list-group-item" href="../proc/run_sapt.html#variable-z_a">z_a</a>
-            <a class="list-group-item" href="../proc/run_sapt.html#variable-z_b">z_b</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-na~10">na</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-nb~9">nb</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-sym_a~3">sym_a</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-sym_b~3">sym_b</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-terms~5">terms</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-xyz_a~3">xyz_a</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-xyz_b~3">xyz_b</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-z_a~3">z_a</a>
+            <a class="list-group-item" href="../proc/run_sapt.html#variable-z_b~3">z_b</a>
         </div>
       </div>
     </div>
@@ -197,11 +197,11 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_method_types.html'>mqc_method_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_method_types.html'>mqc_method_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_elements.html'>mqc_elements</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -836,20 +836,12 @@ large graphs.</div>
 
 
     <p>SAPT0 or SAPT2 between the deck&rsquo;s two fragments</p>
-<p>The monomers are the deck&rsquo;s own <code>fragments</code>, so no new keyword is needed
-&ndash; a SAPT deck is a geometry, a basis, and the partition that says which
-atoms are which monomer:</p>
-<div class="codehilite"><pre><span></span><code>"model":     {"method": "sapt0", "basis": "6-31g"},
-"molecules": [{"xyz": "dimer.xyz", "fragments": [[0,1,2],[3,4,5]], ...}]
-</code></pre></div>
-
+<p>The monomers are the deck&rsquo;s own <code>fragments</code>, so no new keyword is
+needed. Rank zero only.</p>
 <p><strong>Exactly two fragments.</strong> SAPT partitions the Hamiltonian as
-<code>H_A + H_B + V</code>; there is no slot for a third monomer, and a cluster is
-a separate SAPT calculation per pair rather than one calculation. That
-is the theory rather than a limit of this code &ndash; see
-<code>validation/check_sapt.f90</code>, which walks the pairs of a six-water prism.</p>
-<p>Rank zero only. The pairs of a cluster are the obvious thing to
-distribute, and a single pair is not.</p>
+<code>H_A + H_B + V</code>; there is no slot for a third monomer, so a cluster is
+one SAPT calculation per pair. See <code>validation/check_sapt.f90</code>, which
+walks the pairs of a six-water prism.</p>
 
 
     <h3>Arguments</h3>
@@ -865,7 +857,7 @@ distribute, and a single pair is not.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~5"></span>
+              <span class="anchor" id="variable-config~9"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -880,7 +872,7 @@ distribute, and a single pair is not.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~6"></span>
+              <span class="anchor" id="variable-sys_geom~13"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2377,7 +2369,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-a~2"></span>
+              <span class="anchor" id="variable-a~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -2394,7 +2386,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge_a"></span>
+              <span class="anchor" id="variable-charge_a~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -2411,7 +2403,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge_b"></span>
+              <span class="anchor" id="variable-charge_b~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -2445,7 +2437,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~19"></span>
+              <span class="anchor" id="variable-i~26"></span>
               integer,
             </td>
               <td>private</td>
@@ -2479,7 +2471,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~5"></span>
+              <span class="anchor" id="variable-json_data~9"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
               <td>private</td>
@@ -2530,7 +2522,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-na~3"></span>
+              <span class="anchor" id="variable-na~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -2547,7 +2539,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nb~3"></span>
+              <span class="anchor" id="variable-nb~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -2564,7 +2556,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sym_a"></span>
+              <span class="anchor" id="variable-sym_a~3"></span>
               character(len=8),
             </td>
               <td>private,</td>
@@ -2581,7 +2573,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sym_b"></span>
+              <span class="anchor" id="variable-sym_b~3"></span>
               character(len=8),
             </td>
               <td>private,</td>
@@ -2598,7 +2590,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms"></span>
+              <span class="anchor" id="variable-terms~5"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2615,7 +2607,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-xyz_a"></span>
+              <span class="anchor" id="variable-xyz_a~3"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2632,7 +2624,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-xyz_b"></span>
+              <span class="anchor" id="variable-xyz_b~3"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2649,7 +2641,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-z_a"></span>
+              <span class="anchor" id="variable-z_a~3"></span>
               integer,
             </td>
               <td>private,</td>
@@ -2666,7 +2658,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-z_b"></span>
+              <span class="anchor" id="variable-z_b~3"></span>
               integer,
             </td>
               <td>private,</td>
@@ -2700,21 +2692,13 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_sapt</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">rank</span><span class="p">,</span><span class="w"> </span><span class="n">write_output</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! SAPT0 or SAPT2 between the deck's two fragments</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The monomers are the deck's own `fragments`, so no new keyword is needed</span>
-<span class="w">      </span><span class="c">!! -- a SAPT deck is a geometry, a basis, and the partition that says which</span>
-<span class="w">      </span><span class="c">!! atoms are which monomer:</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!!     "model":     {"method": "sapt0", "basis": "6-31g"},</span>
-<span class="w">      </span><span class="c">!!     "molecules": [{"xyz": "dimer.xyz", "fragments": [[0,1,2],[3,4,5]], ...}]</span>
+<span class="w">      </span><span class="c">!! The monomers are the deck's own `fragments`, so no new keyword is</span>
+<span class="w">      </span><span class="c">!! needed. Rank zero only.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! **Exactly two fragments.** SAPT partitions the Hamiltonian as</span>
-<span class="w">      </span><span class="c">!! `H_A + H_B + V`; there is no slot for a third monomer, and a cluster is</span>
-<span class="w">      </span><span class="c">!! a separate SAPT calculation per pair rather than one calculation. That</span>
-<span class="w">      </span><span class="c">!! is the theory rather than a limit of this code -- see</span>
-<span class="w">      </span><span class="c">!! `validation/check_sapt.f90`, which walks the pairs of a six-water prism.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Rank zero only. The pairs of a cluster are the obvious thing to</span>
-<span class="w">      </span><span class="c">!! distribute, and a single pair is not.</span>
+<span class="w">      </span><span class="c">!! `H_A + H_B + V`; there is no slot for a third monomer, so a cluster is</span>
+<span class="w">      </span><span class="c">!! one SAPT calculation per pair. See `validation/check_sapt.f90`, which</span>
+<span class="w">      </span><span class="c">!! walks the pairs of a six-water prism.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_libcint_bridge</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">run_libcint_sapt0</span><span class="p">,</span><span class="w"> </span><span class="n">run_libcint_sapt2</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_method_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">METHOD_TYPE_SAPT2</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_program_limits</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">N_SAPT_TERMS</span><span class="p">,</span><span class="w"> </span><span class="n">N_SAPT2_TERMS</span>
@@ -2747,11 +2731,8 @@ large graphs.</div>
 <span class="k">      end if</span>
 
 <span class="w">      </span><span class="c">! The monomers' own charges and multiplicities, which decide how many</span>
-<span class="w">      </span><span class="c">! electrons each SCF is run with. Absent them a charged monomer is solved</span>
-<span class="w">      </span><span class="c">! as the neutral species and the interaction energy is quietly wrong, so</span>
-<span class="w">      </span><span class="c">! they are read here and passed on rather than defaulted downstream. The</span>
-<span class="w">      </span><span class="c">! arrays are optional in `system_geometry_t`; a deck that omits them means</span>
-<span class="w">      </span><span class="c">! neutral singlets.</span>
+<span class="w">      </span><span class="c">! electrons each SCF is run with. The arrays are optional in</span>
+<span class="w">      </span><span class="c">! `system_geometry_t`; a deck that omits them means neutral singlets.</span>
 <span class="w">      </span><span class="n">charge_a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">      </span><span class="n">charge_b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">      </span><span class="n">mult_a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
@@ -2765,10 +2746,10 @@ large graphs.</div>
 <span class="w">         </span><span class="n">mult_b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_multiplicities</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
-<span class="w">      </span><span class="c">! Both monomer references are RHF. An open-shell monomer is refused here</span>
-<span class="w">      </span><span class="c">! rather than at the electron-count parity check further in, which only</span>
-<span class="w">      </span><span class="c">! catches the odd-electron half of the problem: a triplet has an even</span>
-<span class="w">      </span><span class="c">! count and would otherwise be solved as the singlet.</span>
+<span class="w">      </span><span class="c">! Both monomer references are RHF. Refused here rather than at the</span>
+<span class="w">      </span><span class="c">! electron-count parity check further in, which catches only the</span>
+<span class="w">      </span><span class="c">! odd-electron half: a triplet has an even count and would otherwise be</span>
+<span class="w">      </span><span class="c">! solved as the singlet.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mult_a</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">mult_b</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">refuse</span><span class="p">(</span><span class="n">result_out</span><span class="p">,</span><span class="w"> </span><span class="s2">"SAPT: both monomers must be closed shell; "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                     </span><span class="s2">"this deck asks for multiplicities "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mult_a</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -2812,10 +2793,9 @@ large graphs.</div>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="w">      </span><span class="c">! The response terms are what enters the total; the uncoupled ones and</span>
-<span class="w">      </span><span class="c">! the S^2 exchange are printed beside them because they are what another</span>
-<span class="w">      </span><span class="c">! code's output is quoted in, and a term can only be checked against the</span>
-<span class="w">      </span><span class="c">! same term.</span>
+<span class="w">      </span><span class="c">! The response terms are what enters the total; the uncoupled ones and the</span>
+<span class="w">      </span><span class="c">! S^2 exchange are printed beside them because that is what another code's</span>
+<span class="w">      </span><span class="c">! output is usually quoted in.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">is_sapt2</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  SAPT2 interaction energy, Hartree"</span><span class="p">)</span>
@@ -2850,8 +2830,8 @@ large graphs.</div>
 <span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">result_out</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="w">         </span><span class="c">! The `scf` slot, being the reference `energy_t%total()` sums. This is an</span>
-<span class="w">         </span><span class="c">! interaction energy and not an SCF energy; nothing here pretends otherwise.</span>
+<span class="w">         </span><span class="c">! The `scf` slot, being the reference `energy_t%total()` sums. This is</span>
+<span class="w">         </span><span class="c">! an interaction energy and not an SCF energy.</span>
 <span class="w">         </span><span class="n">result_out</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">terms</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">terms</span><span class="p">))</span>
 <span class="w">         </span><span class="n">result_out</span><span class="p">%</span><span class="n">has_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">      </span><span class="k">end if</span>
@@ -2892,7 +2872,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

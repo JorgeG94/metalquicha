@@ -137,12 +137,12 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/dft_grid_t.html#variable-adjust">adjust</a>
-            <a class="list-group-item" href="../type/dft_grid_t.html#variable-atom~4">atom</a>
-            <a class="list-group-item" href="../type/dft_grid_t.html#variable-coords~13">coords</a>
+            <a class="list-group-item" href="../type/dft_grid_t.html#variable-atom">atom</a>
+            <a class="list-group-item" href="../type/dft_grid_t.html#variable-coords~4">coords</a>
             <a class="list-group-item" href="../type/dft_grid_t.html#variable-n_points">n_points</a>
             <a class="list-group-item" href="../type/dft_grid_t.html#variable-numbers">numbers</a>
             <a class="list-group-item" href="../type/dft_grid_t.html#variable-quad_weights">quad_weights</a>
-            <a class="list-group-item" href="../type/dft_grid_t.html#variable-scheme~5">scheme</a>
+            <a class="list-group-item" href="../type/dft_grid_t.html#variable-scheme~4">scheme</a>
             <a class="list-group-item" href="../type/dft_grid_t.html#variable-weights">weights</a>
         </div>
       </div>
@@ -170,7 +170,7 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/dft_grid_t.html#boundprocedure-destroy~8">destroy</a>
+            <a class="list-group-item" href="../type/dft_grid_t.html#boundprocedure-destroy~12">destroy</a>
         </div>
       </div>
     </div>
@@ -226,7 +226,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom~4"></span>
+              <span class="anchor" id="variable-atom"></span>
               integer,
             </td>
               <td>public,</td>
@@ -243,7 +243,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~13"></span>
+              <span class="anchor" id="variable-coords~4"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -307,17 +307,15 @@
                 <td></td>
             <td>
                 <p>(n_points), the radial times angular weight <em>before</em> the Becke
-partition multiplies it in. Kept because a gradient needs the
-partition weight and the quadrature weight separately &ndash; the
-partition depends on where the nuclei are and the quadrature does
-not, so only one of the two carries a derivative. Recovering it by
-dividing <code>weights</code> by the partition would divide by zero exactly
-where the partition underflows.</p>
+partition multiplies it in. Only the partition carries a nuclear
+derivative, so a gradient needs the two factors apart, and
+recovering this by dividing <code>weights</code> by the partition would divide
+by zero exactly where the partition underflows.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~5"></span>
+              <span class="anchor" id="variable-scheme~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -362,7 +360,7 @@ where the partition underflows.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-destroy~8"></span>
+      <span class="anchor" id="boundprocedure-destroy~12"></span>
       <h3>
           procedure, public ::
   <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_grid_destroy.html'>dft_grid_destroy</a>
@@ -424,17 +422,13 @@ where the partition underflows.</p>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">weights</span><span class="p">(:)</span><span class="w">    </span><span class="c">!! (n_points), full volume weight</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">quad_weights</span><span class="p">(:)</span>
 <span class="w">         </span><span class="c">!! (n_points), the radial times angular weight *before* the Becke</span>
-<span class="w">         </span><span class="c">!! partition multiplies it in. Kept because a gradient needs the</span>
-<span class="w">         </span><span class="c">!! partition weight and the quadrature weight separately -- the</span>
-<span class="w">         </span><span class="c">!! partition depends on where the nuclei are and the quadrature does</span>
-<span class="w">         </span><span class="c">!! not, so only one of the two carries a derivative. Recovering it by</span>
-<span class="w">         </span><span class="c">!! dividing `weights` by the partition would divide by zero exactly</span>
-<span class="w">         </span><span class="c">!! where the partition underflows.</span>
+<span class="w">         </span><span class="c">!! partition multiplies it in. Only the partition carries a nuclear</span>
+<span class="w">         </span><span class="c">!! derivative, so a gradient needs the two factors apart, and</span>
+<span class="w">         </span><span class="c">!! recovering this by dividing `weights` by the partition would divide</span>
+<span class="w">         </span><span class="c">!! by zero exactly where the partition underflows.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom</span><span class="p">(:)</span><span class="w">        </span><span class="c">!! (n_points), owning atom</span>
-<span class="w">      </span><span class="c">! What the partition was built with. Recorded because a gradient has to</span>
-<span class="w">      </span><span class="c">! differentiate the same partition the energy integrated over, and a</span>
-<span class="w">      </span><span class="c">! caller reconstructing these from defaults would silently differentiate</span>
-<span class="w">      </span><span class="c">! a different one the moment the defaults changed.</span>
+<span class="w">      </span><span class="c">! What the partition was built with: a gradient has to differentiate the</span>
+<span class="w">      </span><span class="c">! same partition the energy integrated over.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scheme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PARTITION_BECKE</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">adjust</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ADJUST_TREUTLER</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">numbers</span><span class="p">(:)</span><span class="w">     </span><span class="c">!! (n_atoms), Z, for the partition radii</span>
@@ -463,7 +457,7 @@ where the partition underflows.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

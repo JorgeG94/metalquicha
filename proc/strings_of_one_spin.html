@@ -138,13 +138,13 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/strings_of_one_spin.html#variable-block">block</a>
             <a class="list-group-item" href="../proc/strings_of_one_spin.html#variable-g~7">g</a>
-            <a class="list-group-item" href="../proc/strings_of_one_spin.html#variable-index~3">index</a>
-            <a class="list-group-item" href="../proc/strings_of_one_spin.html#variable-k~53">k</a>
+            <a class="list-group-item" href="../proc/strings_of_one_spin.html#variable-index~2">index</a>
+            <a class="list-group-item" href="../proc/strings_of_one_spin.html#variable-k~16">k</a>
             <a class="list-group-item" href="../proc/strings_of_one_spin.html#variable-n_classes~4">n_classes</a>
             <a class="list-group-item" href="../proc/strings_of_one_spin.html#variable-part~2">part</a>
-            <a class="list-group-item" href="../proc/strings_of_one_spin.html#variable-shift~8">shift</a>
-            <a class="list-group-item" href="../proc/strings_of_one_spin.html#variable-sizes~4">sizes</a>
-            <a class="list-group-item" href="../proc/strings_of_one_spin.html#variable-stride~2">stride</a>
+            <a class="list-group-item" href="../proc/strings_of_one_spin.html#variable-shift~5">shift</a>
+            <a class="list-group-item" href="../proc/strings_of_one_spin.html#variable-sizes~2">sizes</a>
+            <a class="list-group-item" href="../proc/strings_of_one_spin.html#variable-stride">stride</a>
         </div>
       </div>
     </div>
@@ -186,12 +186,10 @@
 
     <p>Every string of one spin, in global index order</p>
 <p>Within a class the subspaces are independent, so the strings are the
-product of each subspace&rsquo;s own strings &ndash; taken with the <em>last</em>
-subspace varying fastest, which is the order the mixed-radix address
-in <code>within_class_rank</code> inverts. Each subspace&rsquo;s own strings come from
-<code>mqc_determinants</code>, so the ordering inside a subspace is the same
-ascending-bit-pattern one used everywhere else in this code and there
-is only one combinatorial kernel to be wrong.</p>
+product of each subspace&rsquo;s own strings, with the <em>last</em> subspace
+varying fastest &ndash; the order the mixed-radix address in
+<code>within_class_rank</code> inverts. Inside a subspace the strings come from
+<code>mqc_determinants</code>, in ascending bit-pattern order.</p>
 
 
     <h3>Arguments</h3>
@@ -207,7 +205,7 @@ is only one combinatorial kernel to be wrong.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~12"></span>
+              <span class="anchor" id="variable-space~25"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -252,7 +250,7 @@ is only one combinatorial kernel to be wrong.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-strings~4"></span>
+              <span class="anchor" id="variable-strings~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(out),</td>
@@ -267,7 +265,7 @@ is only one combinatorial kernel to be wrong.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~163"></span>
+              <span class="anchor" id="variable-error~49"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -750,7 +748,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-index~3"></span>
+              <span class="anchor" id="variable-index~2"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -767,7 +765,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~53"></span>
+              <span class="anchor" id="variable-k~16"></span>
               integer,
             </td>
               <td>private</td>
@@ -818,7 +816,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-shift~8"></span>
+              <span class="anchor" id="variable-shift~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -835,7 +833,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sizes~4"></span>
+              <span class="anchor" id="variable-sizes~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -852,7 +850,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stride~2"></span>
+              <span class="anchor" id="variable-stride"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -887,12 +885,10 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Every string of one spin, in global index order</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Within a class the subspaces are independent, so the strings are the</span>
-<span class="w">      </span><span class="c">!! product of each subspace's own strings -- taken with the *last*</span>
-<span class="w">      </span><span class="c">!! subspace varying fastest, which is the order the mixed-radix address</span>
-<span class="w">      </span><span class="c">!! in `within_class_rank` inverts. Each subspace's own strings come from</span>
-<span class="w">      </span><span class="c">!! `mqc_determinants`, so the ordering inside a subspace is the same</span>
-<span class="w">      </span><span class="c">!! ascending-bit-pattern one used everywhere else in this code and there</span>
-<span class="w">      </span><span class="c">!! is only one combinatorial kernel to be wrong.</span>
+<span class="w">      </span><span class="c">!! product of each subspace's own strings, with the *last* subspace</span>
+<span class="w">      </span><span class="c">!! varying fastest -- the order the mixed-radix address in</span>
+<span class="w">      </span><span class="c">!! `within_class_rank` inverts. Inside a subspace the strings come from</span>
+<span class="w">      </span><span class="c">!! `mqc_determinants`, in ascending bit-pattern order.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_space_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">space</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">classes</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">offsets</span><span class="p">(:)</span>
@@ -957,7 +953,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

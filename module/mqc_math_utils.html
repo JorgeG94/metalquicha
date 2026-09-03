@@ -177,14 +177,8 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>Pure combinatorial arithmetic, shared rather than reimplemented.</p>
-<p><code>binomial</code> existed three times before this module did: once in
-<code>mqc_combinatorics</code> for counting fragments and twice in <code>src/mcscf</code> for
-sizing CI vectors. The two in <code>src/mcscf</code> were identical to the character;
-the one in <code>mqc_combinatorics</code> was subtly weaker, and that is the reason
-this lives here rather than in either of them. Neither domain owns it,
-and a fragment count and a determinant count want exactly the same
-function.</p>
+      <p>Pure combinatorial arithmetic, shared rather than reimplemented: a
+fragment count and a determinant count want the same function.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
@@ -1167,10 +1161,9 @@ large graphs.</div>
     </div>
       <div class="card-body">
         <p><code>C(n, k)</code>, exactly, in 64-bit integers, for either integer kind.</p>
-<p>Two specifics rather than one because <code>pic</code>&rsquo;s <code>default_int</code> is not a
-fixed kind &ndash; it is <code>int64</code> in a USE_INT8 build and <code>c_int</code> otherwise &ndash;
-so a single specific would compile in one configuration and not the
-other.</p>
+<p>Two specifics because <code>pic</code>&rsquo;s <code>default_int</code> is not a fixed kind: it is
+<code>int64</code> in a USE_INT8 build and <code>c_int</code> otherwise, so one specific
+would compile in one configuration and not the other.</p>
       </div>
     <ul class="list-group">
           <li class="list-group-item">
@@ -1194,7 +1187,7 @@ other.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~34"></span>
+              <span class="anchor" id="variable-n~62"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1209,7 +1202,7 @@ other.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~21"></span>
+              <span class="anchor" id="variable-k~49"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1239,13 +1232,8 @@ other.</p>
     </h3>
     
   <p><code>C(n, k)</code>, exactly, in 64-bit integers</p>
-<p>One factor at a time, multiplying before dividing, so the running value
-is always the binomial coefficient of a smaller problem and never
-exceeds the answer &ndash; which the naive factorial form does by an enormous
-margin, overflowing at <code>n = 21</code> for a result that fits easily.</p>
-<p><code>kk = min(k, n - k)</code> is not only a saving: it is what keeps the
-intermediate products small. Out-of-range arguments give zero rather
-than a wrong number, which the count of an empty set should be.</p>
+<p>One factor at a time, multiplying before dividing, so no intermediate
+exceeds the answer. Out-of-range arguments give zero.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1260,7 +1248,7 @@ than a wrong number, which the count of an empty set should be.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~35"></span>
+              <span class="anchor" id="variable-n~63"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1275,7 +1263,7 @@ than a wrong number, which the count of an empty set should be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~22"></span>
+              <span class="anchor" id="variable-k~50"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1328,7 +1316,7 @@ than a wrong number, which the count of an empty set should be.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~34"></span>
+              <span class="anchor" id="variable-n~62"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1343,7 +1331,7 @@ than a wrong number, which the count of an empty set should be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~21"></span>
+              <span class="anchor" id="variable-k~49"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1388,7 +1376,7 @@ than a wrong number, which the count of an empty set should be.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~35"></span>
+              <span class="anchor" id="variable-n~63"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1403,7 +1391,7 @@ than a wrong number, which the count of an empty set should be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~22"></span>
+              <span class="anchor" id="variable-k~50"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1452,7 +1440,7 @@ than a wrong number, which the count of an empty set should be.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -179,23 +179,19 @@
 
     <div class="col-md-9" id='text'>
       <p>Van der Waals radii, and the scaling that turns them into a solute cavity.</p>
-<p><strong>This is our data, which is the whole risk.</strong> A continuum model&rsquo;s answer
-depends on the cavity more strongly than on almost anything else in it &ndash; the
-solvation energy goes roughly as 1/R &ndash; so a radius that is wrong by a few
-percent produces a solvation energy that is wrong by a few percent while
-looking entirely reasonable. There is no internal identity that catches it,
-the way the electron count catches a wrong density. So: one table, in one
-place, with the paper it came from written beside it, and a test that pins
-the values a reader is most likely to recognise.</p>
+<p><strong>A continuum model&rsquo;s answer depends on the cavity above almost anything
+else in it.</strong> The solvation energy goes roughly as 1/R, so a radius wrong
+by a few percent gives a solvation energy wrong by a few percent, and no
+internal identity catches it the way the electron count catches a wrong
+density.</p>
 <p>The values are Bondi&rsquo;s [J. Phys. Chem. 68, 441 (1964)], filled in for the
 elements Bondi did not cover from Mantina et al. [J. Phys. Chem. A 113, 5806
 (2009)], which is the same combination PySCF, ORCA and Q-Chem use for their
 default PCM cavities. They are <em>van der Waals</em> radii and not the
 Bragg-Slater ones in <code>mqc_dft_radial</code>: those size an integration grid, are
 systematically smaller, and using them here would shrink every cavity.</p>
-<p>Radii are returned in <strong>Bohr</strong>, like every other length in this program,
-though the table is written in Angstrom because that is how both papers
-tabulate them and a converted table cannot be checked against its source.</p>
+<p>Radii are returned in <strong>Bohr</strong>, though the table is written in Angstrom,
+which is how both papers tabulate them.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
@@ -204,8 +200,8 @@ tabulate them and a converted table cannot be checked against its source.</p>
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='mqc_atomic_radii.html'>mqc_atomic_radii</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -405,12 +401,6 @@ parameter
                 <td>1.2_dp</td>
             <td>
                 <p>Scaling from a van der Waals radius to a cavity radius.</p>
-<p>1.2 is the long-standing convention, from the observation that the solute
-cavity that reproduces experimental solvation energies is somewhat larger
-than the bare van der Waals surface. It is a fitted number, not a derived
-one, and codes differ: Gaussian&rsquo;s UFF cavity and ORCA&rsquo;s default differ from
-this and from each other. So it is a default rather than a constant, and a
-deck can override it.</p>
             </td>
         </tr>
         <tr>
@@ -428,9 +418,6 @@ parameter
                 <td>MAX_Z_BONDI</td>
             <td>
                 <p>Highest atomic number with a radius here.</p>
-<p>Argon, matching the range the CPU validation suite covers. A heavier atom
-is refused rather than given a guessed radius: an invented cavity radius is
-exactly the failure this module is arranged to prevent.</p>
             </td>
         </tr>
     </tbody>
@@ -466,7 +453,7 @@ exactly the failure this module is arranged to prevent.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~24"></span>
+              <span class="anchor" id="variable-atomic_number~18"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -481,7 +468,7 @@ exactly the failure this module is arranged to prevent.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scale~7"></span>
+              <span class="anchor" id="variable-scale~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -496,7 +483,7 @@ exactly the failure this module is arranged to prevent.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-radius~10"></span>
+              <span class="anchor" id="variable-radius~5"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -511,7 +498,7 @@ exactly the failure this module is arranged to prevent.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~150"></span>
+              <span class="anchor" id="variable-error~99"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -551,7 +538,7 @@ exactly the failure this module is arranged to prevent.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~23"></span>
+              <span class="anchor" id="variable-atomic_number~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -566,7 +553,7 @@ exactly the failure this module is arranged to prevent.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-radius~9"></span>
+              <span class="anchor" id="variable-radius~4"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -581,7 +568,7 @@ exactly the failure this module is arranged to prevent.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~149"></span>
+              <span class="anchor" id="variable-error~98"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -624,7 +611,7 @@ exactly the failure this module is arranged to prevent.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -138,18 +138,18 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/build_dft_grid.html#variable-cached_order">cached_order</a>
             <a class="list-group-item" href="../proc/build_dft_grid.html#variable-dr">dr</a>
-            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-i~57">i</a>
-            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-ia">ia</a>
-            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-j~12">j</a>
-            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-k~12">k</a>
-            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-n_atoms~19">n_atoms</a>
-            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-na~4">na</a>
+            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-i~45">i</a>
+            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-ia~12">ia</a>
+            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-j~17">j</a>
+            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-k~18">k</a>
+            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-n_atoms~13">n_atoms</a>
+            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-na~12">na</a>
             <a class="list-group-item" href="../proc/build_dft_grid.html#variable-nr">nr</a>
-            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-offset">offset</a>
-            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-r~4">r</a>
+            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-offset~2">offset</a>
+            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-r~6">r</a>
             <a class="list-group-item" href="../proc/build_dft_grid.html#variable-shell_order">shell_order</a>
             <a class="list-group-item" href="../proc/build_dft_grid.html#variable-sphere">sphere</a>
-            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-total~8">total</a>
+            <a class="list-group-item" href="../proc/build_dft_grid.html#variable-total~6">total</a>
             <a class="list-group-item" href="../proc/build_dft_grid.html#variable-used_adjust">used_adjust</a>
             <a class="list-group-item" href="../proc/build_dft_grid.html#variable-used_level">used_level</a>
             <a class="list-group-item" href="../proc/build_dft_grid.html#variable-used_prune">used_prune</a>
@@ -196,9 +196,8 @@
 
     <p>Build the molecular grid</p>
 <p><code>level</code> picks per-element sizes from the standard tables. <code>n_radial</code>
-and <code>n_angular</code> override it for every atom, which is what a convergence
-study wants; supplying one without the other is refused rather than
-silently half-applied.</p>
+and <code>n_angular</code> override it for every atom; supplying one without the
+other is refused rather than silently half-applied.</p>
 
 
     <h3>Arguments</h3>
@@ -229,7 +228,7 @@ silently half-applied.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~9"></span>
+              <span class="anchor" id="variable-atomic_numbers~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -244,7 +243,7 @@ silently half-applied.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid"></span>
+              <span class="anchor" id="variable-grid~2"></span>
               type(<a href='../type/dft_grid_t.html'>dft_grid_t</a>),
             </td>
 <td>intent(out)</td>
@@ -259,7 +258,7 @@ silently half-applied.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~51"></span>
+              <span class="anchor" id="variable-error~52"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -274,7 +273,7 @@ silently half-applied.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~8"></span>
+              <span class="anchor" id="variable-level~7"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -289,7 +288,7 @@ silently half-applied.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~6"></span>
+              <span class="anchor" id="variable-scheme~5"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -334,7 +333,7 @@ silently half-applied.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_angular~2"></span>
+              <span class="anchor" id="variable-n_angular~5"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -874,7 +873,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~57"></span>
+              <span class="anchor" id="variable-i~45"></span>
               integer,
             </td>
               <td>private</td>
@@ -891,7 +890,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ia"></span>
+              <span class="anchor" id="variable-ia~12"></span>
               integer,
             </td>
               <td>private</td>
@@ -908,7 +907,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~12"></span>
+              <span class="anchor" id="variable-j~17"></span>
               integer,
             </td>
               <td>private</td>
@@ -925,7 +924,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~12"></span>
+              <span class="anchor" id="variable-k~18"></span>
               integer,
             </td>
               <td>private</td>
@@ -942,7 +941,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~19"></span>
+              <span class="anchor" id="variable-n_atoms~13"></span>
               integer,
             </td>
               <td>private</td>
@@ -959,7 +958,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-na~4"></span>
+              <span class="anchor" id="variable-na~12"></span>
               integer,
             </td>
               <td>private</td>
@@ -993,7 +992,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-offset"></span>
+              <span class="anchor" id="variable-offset~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1010,7 +1009,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-r~4"></span>
+              <span class="anchor" id="variable-r~6"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1061,7 +1060,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total~8"></span>
+              <span class="anchor" id="variable-total~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -1182,9 +1181,12 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Build the molecular grid</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! `level` picks per-element sizes from the standard tables. `n_radial`</span>
-<span class="w">      </span><span class="c">!! and `n_angular` override it for every atom, which is what a convergence</span>
-<span class="w">      </span><span class="c">!! study wants; supplying one without the other is refused rather than</span>
-<span class="w">      </span><span class="c">!! silently half-applied.</span>
+<span class="w">      </span><span class="c">!! and `n_angular` override it for every atom; supplying one without the</span>
+<span class="w">      </span><span class="c">!! other is refused rather than silently half-applied.</span>
+<span class="w">      </span><span class="c">! TODO(mqc): the override is still pruned. With the default</span>
+<span class="w">      </span><span class="c">! `PRUNE_NWCHEM` an explicit `n_angular` is the valence-zone order only,</span>
+<span class="w">      </span><span class="c">! so a convergence study asking for 302 points gets 50/86/266/302/266 by</span>
+<span class="w">      </span><span class="c">! zone unless it also passes `prune = PRUNE_NONE`.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_coords</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">   </span><span class="c">!! (3, n_atoms), Bohr</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atomic_numbers</span><span class="p">(:)</span><span class="w">    </span><span class="c">!! Z per atom</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">dft_grid_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">grid</span>
@@ -1228,7 +1230,7 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! Size the whole grid first so it can be allocated once. With pruning the</span>
 <span class="w">      </span><span class="c">! count is no longer nr*na: each shell carries its own order, and those</span>
-<span class="w">      </span><span class="c">! depend on the radii, so the radial mesh has to be built here as well.</span>
+<span class="w">      </span><span class="c">! depend on the radii, so the radial mesh is built here as well.</span>
 <span class="w">      </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">      </span><span class="k">do </span><span class="n">ia</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span>
 <span class="w">         </span><span class="k">call </span><span class="n">atom_sizes</span><span class="p">(</span><span class="n">atomic_numbers</span><span class="p">(</span><span class="n">ia</span><span class="p">),</span><span class="w"> </span><span class="n">used_level</span><span class="p">,</span><span class="w"> </span><span class="n">n_radial</span><span class="p">,</span><span class="w"> </span><span class="n">n_angular</span><span class="p">,</span><span class="w"> </span><span class="n">nr</span><span class="p">,</span><span class="w"> </span><span class="n">na</span><span class="p">)</span>
@@ -1259,8 +1261,7 @@ large graphs.</div>
 
 <span class="w">         </span><span class="c">! Shells sharing an order are not contiguous -- the outer zone repeats</span>
 <span class="w">         </span><span class="c">! the order of the third -- so hold the last sphere built and reuse it</span>
-<span class="w">         </span><span class="c">! when the order does not change, rather than regenerating a 302-point</span>
-<span class="w">         </span><span class="c">! grid for every shell that wants one.</span>
+<span class="w">         </span><span class="c">! when the order does not change.</span>
 <span class="w">         </span><span class="n">cached_order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nr</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">shell_order</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">cached_order</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -1313,7 +1314,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

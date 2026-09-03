@@ -165,11 +165,10 @@
 </h2>
     
 
-    <p>Handle unfragmented calculation (nlevel=0)</p>
-<p>For single-molecule mode: Only rank 0 runs (validates single rank)
-For multi-molecule mode: ALL ranks can run (each with their own molecule)
-For Hessian calculations with multiple ranks: Uses distributed parallelization
-If result_out is present, returns result instead of writing JSON</p>
+    <p>Run the whole system as one calculation (<code>nlevel = 0</code>)</p>
+<p>Rank 0 alone for a single molecule; every rank for a multi-molecule
+run, each with its own. A Hessian across more than one rank goes to
+<code>distributed_unfragmented_hessian</code>, which spreads the displacements.</p>
 
 
     <h3>Arguments</h3>
@@ -185,7 +184,7 @@ If result_out is present, returns result instead of writing JSON</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm"></span>
+              <span class="anchor" id="variable-world_comm~4"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -200,7 +199,7 @@ If result_out is present, returns result instead of writing JSON</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~2"></span>
+              <span class="anchor" id="variable-sys_geom~9"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -215,7 +214,7 @@ If result_out is present, returns result instead of writing JSON</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~2"></span>
+              <span class="anchor" id="variable-config~6"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -245,7 +244,7 @@ If result_out is present, returns result instead of writing JSON</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~3"></span>
+              <span class="anchor" id="variable-json_data~7"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2262,12 +2261,11 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_unfragmented_calculation</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Handle unfragmented calculation (nlevel=0)</span>
+<span class="w">      </span><span class="c">!! Run the whole system as one calculation (`nlevel = 0`)</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! For single-molecule mode: Only rank 0 runs (validates single rank)</span>
-<span class="w">      </span><span class="c">!! For multi-molecule mode: ALL ranks can run (each with their own molecule)</span>
-<span class="w">      </span><span class="c">!! For Hessian calculations with multiple ranks: Uses distributed parallelization</span>
-<span class="w">      </span><span class="c">!! If result_out is present, returns result instead of writing JSON</span>
+<span class="w">      </span><span class="c">!! Rank 0 alone for a single molecule; every rank for a multi-molecule</span>
+<span class="w">      </span><span class="c">!! run, each with its own. A Hessian across more than one rank goes to</span>
+<span class="w">      </span><span class="c">!! `distributed_unfragmented_hessian`, which spreads the displacements.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">world_comm</span><span class="w">  </span><span class="c">!! Global MPI communicator</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span><span class="w">  </span><span class="c">!! Complete system geometry</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span><span class="w">  </span><span class="c">!! Driver configuration (includes method_config, calc_type, etc.)</span>
@@ -2326,7 +2324,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

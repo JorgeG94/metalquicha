@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/shell_angular_form.html#variable-found~45">found</a>
+            <a class="list-group-item" href="../proc/shell_angular_form.html#variable-found~4">found</a>
             <a class="list-group-item" href="../proc/shell_angular_form.html#variable-function_type">function_type</a>
         </div>
       </div>
@@ -179,14 +179,9 @@
 
     <p>What one shell entry&rsquo;s <code>function_type</code> says about the angular form</p>
 <p>Returns <code>ANGULAR_FORM_UNSET</code> for anything at or below p, whatever the
-file calls it. An s shell is one function and a p shell is three in
-both conventions, so those entries carry no information &ndash; and BSE
-labels them the neutral <code>gto</code> for exactly that reason. Only d and
-above distinguish 6d from 5d, and only those are evidence.</p>
-<p>Anything that is not spelled <code>gto_cartesian</code> reads as spherical. That
-is the same default the reader had before it looked at the key at all,
-so an unfamiliar spelling behaves as it always did rather than
-flipping the convention on a typo.</p>
+file calls it: an s shell is one function and a p shell three in both
+conventions, so only d and above are evidence.</p>
+<p>Anything not spelled <code>gto_cartesian</code> reads as spherical.</p>
 
 
     <h3>Arguments</h3>
@@ -202,7 +197,7 @@ flipping the convention on a typo.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~33"></span>
+              <span class="anchor" id="variable-json~4"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -217,7 +212,7 @@ flipping the convention on a typo.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_key~3"></span>
+              <span class="anchor" id="variable-element_key~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -555,7 +550,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~45"></span>
+              <span class="anchor" id="variable-found~4"></span>
               logical,
             </td>
               <td>private</td>
@@ -607,15 +602,10 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! What one shell entry's `function_type` says about the angular form</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Returns `ANGULAR_FORM_UNSET` for anything at or below p, whatever the</span>
-<span class="w">      </span><span class="c">!! file calls it. An s shell is one function and a p shell is three in</span>
-<span class="w">      </span><span class="c">!! both conventions, so those entries carry no information -- and BSE</span>
-<span class="w">      </span><span class="c">!! labels them the neutral `gto` for exactly that reason. Only d and</span>
-<span class="w">      </span><span class="c">!! above distinguish 6d from 5d, and only those are evidence.</span>
+<span class="w">      </span><span class="c">!! file calls it: an s shell is one function and a p shell three in both</span>
+<span class="w">      </span><span class="c">!! conventions, so only d and above are evidence.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Anything that is not spelled `gto_cartesian` reads as spherical. That</span>
-<span class="w">      </span><span class="c">!! is the same default the reader had before it looked at the key at all,</span>
-<span class="w">      </span><span class="c">!! so an unfamiliar spelling behaves as it always did rather than</span>
-<span class="w">      </span><span class="c">!! flipping the convention on a typo.</span>
+<span class="w">      </span><span class="c">!! Anything not spelled `gto_cartesian` reads as spherical.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">element_key</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ishell</span>
@@ -662,7 +652,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

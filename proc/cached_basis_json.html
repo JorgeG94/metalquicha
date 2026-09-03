@@ -136,10 +136,10 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/cached_basis_json.html#variable-bigger~2">bigger</a>
-            <a class="list-group-item" href="../proc/cached_basis_json.html#variable-file_exists~4">file_exists</a>
-            <a class="list-group-item" href="../proc/cached_basis_json.html#variable-i~88">i</a>
-            <a class="list-group-item" href="../proc/cached_basis_json.html#variable-n~36">n</a>
+            <a class="list-group-item" href="../proc/cached_basis_json.html#variable-bigger">bigger</a>
+            <a class="list-group-item" href="../proc/cached_basis_json.html#variable-file_exists">file_exists</a>
+            <a class="list-group-item" href="../proc/cached_basis_json.html#variable-i~30">i</a>
+            <a class="list-group-item" href="../proc/cached_basis_json.html#variable-n~9">n</a>
         </div>
       </div>
     </div>
@@ -195,7 +195,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_path~4"></span>
+              <span class="anchor" id="variable-json_path"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -210,7 +210,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~31"></span>
+              <span class="anchor" id="variable-json~2"></span>
               type(json_file),
             </td>
 <td>intent(out),</td>
@@ -225,7 +225,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~88"></span>
+              <span class="anchor" id="variable-error~36"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -562,7 +562,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-bigger~2"></span>
+              <span class="anchor" id="variable-bigger"></span>
               type(<a href='../type/cached_basis_t.html'>cached_basis_t</a>),
             </td>
               <td>private,</td>
@@ -579,7 +579,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-file_exists~4"></span>
+              <span class="anchor" id="variable-file_exists"></span>
               logical,
             </td>
               <td>private</td>
@@ -596,7 +596,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~88"></span>
+              <span class="anchor" id="variable-i~30"></span>
               integer,
             </td>
               <td>private</td>
@@ -613,7 +613,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~36"></span>
+              <span class="anchor" id="variable-n~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -646,6 +646,10 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">cached_basis_json</span><span class="p">(</span><span class="n">json_path</span><span class="p">,</span><span class="w"> </span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The parsed basis file, loading it the first time it is asked for</span>
+<span class="w">      </span><span class="c">! TODO(mqc): a file that fails to parse stays in the cache under its</span>
+<span class="w">      </span><span class="c">! path, so the next request for it matches, clears the exception and</span>
+<span class="w">      </span><span class="c">! hands back the empty tree with no error. The parse failure is reported</span>
+<span class="w">      </span><span class="c">! once and reads as "element not found" from then on.</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json_path</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
@@ -712,7 +716,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

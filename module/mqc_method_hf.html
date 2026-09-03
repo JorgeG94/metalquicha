@@ -180,14 +180,12 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>Closed-shell Hartree-Fock.</p>
-<p>With the cuEST backend (CMake, MQC_ENABLE_CUEST=ON) the integrals come
-the GPU and the SCF runs in <code>mqc_cuest_scf</code>. Because cuEST offers no
-conventional four-index ERI path, J and K are always density-fitted, so
-an auxiliary (JKFIT) basis is required alongside the orbital basis.</p>
-<p>Without that backend the method reports a clear error rather than a
-placeholder number &ndash; a silently wrong energy inside a many-body
-expansion is far worse than a failed fragment.</p>
+      <p>Hartree-Fock, and the MP2 and coupled-cluster corrections built on it.</p>
+<p>Dispatches to whichever backend <code>model.backend</code> names: the CPU one
+through <code>mqc_libcint_bridge</code>, or the GPU one through <code>mqc_cuest_bridge</code>.
+cuEST has no conventional four-index ERI path, so J and K are always
+density-fitted there and an auxiliary (JKFIT) basis is required alongside
+the orbital basis.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
@@ -195,16 +193,16 @@ expansion is far worse than a failed fragment.</p>
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
                   <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
-                  <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1454,7 +1452,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-options~5"></span>
+              <span class="anchor" id="variable-options~4"></span>
               type(<a href='../type/hf_options_t.html'>hf_options_t</a>),
             </td>
               <td>public</td>
@@ -1480,17 +1478,17 @@ large graphs.</div>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_energy~5'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_energy.html'>hf_calc_energy</a></td>
+  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_energy~4'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_energy.html'>hf_calc_energy</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_gradient~5'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_gradient.html'>hf_calc_gradient</a></td>
+  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_gradient~4'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_gradient.html'>hf_calc_gradient</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_hessian~5'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_hessian.html'>hf_calc_hessian</a></td>
+  <strong><a href='../type/hf_method_t.html#boundprocedure-calc_hessian~4'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hf_calc_hessian.html'>hf_calc_hessian</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1523,7 +1521,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-accelerator~3"></span>
+              <span class="anchor" id="variable-accelerator~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1535,12 +1533,14 @@ large graphs.</div>
 <td> =</td>
                 <td>&#34;diis&#34;</td>
             <td>
-
+<p>&lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or &lsquo;ediis&rsquo;. The energy-based pair
+runs only while the error is large and hands over to DIIS, so
+naming one asks for a different opening, not a different endgame.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~6"></span>
+              <span class="anchor" id="variable-allow_crap_scf~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1557,7 +1557,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_named~3"></span>
+              <span class="anchor" id="variable-aux_basis_named~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1574,7 +1574,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set~4"></span>
+              <span class="anchor" id="variable-aux_basis_set~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1591,7 +1591,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~3"></span>
+              <span class="anchor" id="variable-backend"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1608,7 +1608,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_set~2"></span>
+              <span class="anchor" id="variable-basis_set"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1625,7 +1625,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~5"></span>
+              <span class="anchor" id="variable-cartesian~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1727,7 +1727,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-convergence_metric~3"></span>
+              <span class="anchor" id="variable-convergence_metric~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1741,10 +1741,7 @@ large graphs.</div>
             <td>
 <p>Which measure decides this SCF has stopped. See
 <code>mqc_scf_convergence</code>; the default is the energy-and-commutator
-pair every loop tested before that module existed.
-&lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or &lsquo;ediis&rsquo;. The energy-based pair
-runs only while the error is large and hands over to DIIS, so
-naming one asks for a different opening, not a different endgame.</p>
+pair.</p>
             </td>
         </tr>
         <tr>
@@ -1766,7 +1763,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_fitting~3"></span>
+              <span class="anchor" id="variable-density_fitting~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1783,7 +1780,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~3"></span>
+              <span class="anchor" id="variable-density_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1800,7 +1797,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-device_rank~2"></span>
+              <span class="anchor" id="variable-device_rank"></span>
               integer,
             </td>
               <td>public</td>
@@ -1817,7 +1814,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~4"></span>
+              <span class="anchor" id="variable-diis_size~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1834,7 +1831,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ecp_set~2"></span>
+              <span class="anchor" id="variable-ecp_set"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1851,7 +1848,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~3"></span>
+              <span class="anchor" id="variable-energy_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1868,7 +1865,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-freeze_core~2"></span>
+              <span class="anchor" id="variable-freeze_core"></span>
               logical,
             </td>
               <td>public</td>
@@ -1880,16 +1877,15 @@ naming one asks for a different opening, not a different endgame.</p>
 <td> =</td>
                 <td>.true.</td>
             <td>
-<p>Matches <code>correlation_config_t</code>, which is where this is always
-filled from. It read <code>.false.</code> while that read <code>.true.</code> &ndash; harmless
-while the copy happens, and a trap the moment anyone constructs
-this type directly, in a test or a new call path.
-Exclude core orbitals from a post-SCF correlation treatment</p>
+<p>Exclude core orbitals from a post-SCF correlation treatment. Always
+filled from <code>correlation_config_t</code>, whose default this must match:
+a mismatch bites whenever this type is constructed directly, in a
+test or a new call path.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grad_tol~3"></span>
+              <span class="anchor" id="variable-grad_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1906,7 +1902,7 @@ Exclude core orbitals from a post-SCF correlation treatment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~8"></span>
+              <span class="anchor" id="variable-guess~7"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1919,12 +1915,12 @@ Exclude core orbitals from a post-SCF correlation treatment</p>
                 <td>&#34;auto&#34;</td>
             <td>
 <p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;basis_set_projection&rsquo;
-or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~8" class="pull-right"><emph>Read more&hellip;</emph></a>
+or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~7" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~4"></span>
+              <span class="anchor" id="variable-guess_steps~2"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -1942,7 +1938,7 @@ preliminary SCF in order.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian_displacement~2"></span>
+              <span class="anchor" id="variable-hessian_displacement"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1954,12 +1950,12 @@ preliminary SCF in order.</p>
 <td> =</td>
                 <td>DEFAULT_DISPLACEMENT</td>
             <td>
-<p>Step for a finite-difference Hessian, in Bohr.</p><a href="../type/scf_options_t.html#variable-hessian_displacement~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Step for a finite-difference Hessian, in Bohr.</p><a href="../type/scf_options_t.html#variable-hessian_displacement" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-incremental_fock~3"></span>
+              <span class="anchor" id="variable-incremental_fock~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1979,7 +1975,7 @@ which is the first thing to rule out when a run stalls.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_shift~3"></span>
+              <span class="anchor" id="variable-level_shift~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1992,13 +1988,12 @@ which is the first thing to rule out when a run stalls.</p>
                 <td>0.0_dp</td>
             <td>
 <p>Hartree added to the virtual block before each diagonalisation.
-Zero is off &ndash; which is why this could never carry a sentinel for
-&ldquo;unset&rdquo;, and why the ions used to spell theirs &ldquo;any negative&rdquo;.</p>
+Zero is off.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-linear_dependence~3"></span>
+              <span class="anchor" id="variable-linear_dependence~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2015,7 +2010,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~6"></span>
+              <span class="anchor" id="variable-max_iter~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2032,7 +2027,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen_core~2"></span>
+              <span class="anchor" id="variable-n_frozen_core"></span>
               integer,
             </td>
               <td>public</td>
@@ -2049,7 +2044,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pcm~2"></span>
+              <span class="anchor" id="variable-pcm"></span>
               type(<a href='../type/pcm_config_t.html'>pcm_config_t</a>),
             </td>
               <td>public</td>
@@ -2061,16 +2056,13 @@ Zero is off &ndash; which is why this could never carry a sentinel for
                 <td></td>
                 <td></td>
             <td>
-<p>Continuum solvation. A property of the reference rather than of
-the functional, which is why it sits here: Hartree-Fock, DFT, MP2
-and coupled cluster all reach the backend through an extending
-type, and leaving it off one of them meant <code>keywords.pcm</code> was read,
-validated and then silently dropped for that path.</p>
+<p>Continuum solvation. A property of the reference rather than of the
+functional, so every extending type inherits it.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties~2"></span>
+              <span class="anchor" id="variable-properties"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
               <td>public</td>
@@ -2100,8 +2092,7 @@ validated and then silently dropped for that path.</p>
                 <td>.false.</td>
             <td>
 <p>Follow the reference with coupled cluster. Set by the factory from
-the method name, for the same reason <code>run_mp2</code> is: &ldquo;ccsd&rdquo; is a
-method, not an option on Hartree-Fock.</p>
+the method name, not by a deck keyword.</p>
             </td>
         </tr>
         <tr>
@@ -2119,8 +2110,7 @@ method, not an option on Hartree-Fock.</p>
                 <td>.false.</td>
             <td>
 <p>Follow the reference with an MP2 correction. Set by the factory
-from the method name rather than by a keyword: &ldquo;mp2&rdquo; is a method,
-not an option on Hartree-Fock.</p>
+from the method name, not by a deck keyword.</p>
             </td>
         </tr>
         <tr>
@@ -2159,7 +2149,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spherical~2"></span>
+              <span class="anchor" id="variable-spherical"></span>
               logical,
             </td>
               <td>public</td>
@@ -2176,7 +2166,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unrestricted~4"></span>
+              <span class="anchor" id="variable-unrestricted~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2193,7 +2183,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~5"></span>
+              <span class="anchor" id="variable-use_diis~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -2210,7 +2200,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~8"></span>
+              <span class="anchor" id="variable-verbose"></span>
               logical,
             </td>
               <td>public</td>
@@ -2245,7 +2235,7 @@ not an option on Hartree-Fock.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Calculate electronic energy using Hartree-Fock method</p>
+  <p>Electronic energy of a fragment</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2260,7 +2250,77 @@ not an option on Hartree-Fock.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~110"></span>
+              <span class="anchor" id="variable-this~106"></span>
+              class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment~32"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~38"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-hf_calc_gradient"></span> <h3>private  subroutine <a href='../proc/hf_calc_gradient.html'>hf_calc_gradient</a>(this, fragment, result)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Energy and nuclear gradient of a fragment</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~108"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2290,77 +2350,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~50"></span>
-              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>result</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-hf_calc_gradient"></span> <h3>private  subroutine <a href='../proc/hf_calc_gradient.html'>hf_calc_gradient</a>(this, fragment, result)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Calculate energy gradient using Hartree-Fock method</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-this~112"></span>
-              class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>this</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-fragment~36"></span>
-              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>fragment</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-result~52"></span>
+              <span class="anchor" id="variable-result~40"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2400,77 +2390,7 @@ not an option on Hartree-Fock.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~113"></span>
-              class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>this</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-fragment~37"></span>
-              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>fragment</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-result~53"></span>
-              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>result</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-hf_run"></span> <h3>private  subroutine <a href='../proc/hf_run.html'>hf_run</a>(this, fragment, result, want_gradient, want_hessian)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Run a density-fitted RHF calculation through cuEST</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-this~111"></span>
+              <span class="anchor" id="variable-this~109"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2500,7 +2420,77 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~51"></span>
+              <span class="anchor" id="variable-result~41"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-hf_run"></span> <h3>private  subroutine <a href='../proc/hf_run.html'>hf_run</a>(this, fragment, result, want_gradient, want_hessian)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Run the SCF through whichever backend <code>options%backend</code> resolves to</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~107"></span>
+              class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment~33"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~39"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2515,7 +2505,7 @@ not an option on Hartree-Fock.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~5"></span>
+              <span class="anchor" id="variable-want_gradient~6"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2541,8 +2531,7 @@ not an option on Hartree-Fock.</p>
             <td><strong>want_hessian</strong></td>
             <td>
 <p>Only the CPU backend has an analytic Hessian, and only for some of
-what reaches it. Passed along rather than decided here: which cases
-qualify is a fact about that backend.</p>
+what reaches it; the backend decides, not this routine.</p>
             </td>
         </tr>
     </tbody>
@@ -2575,7 +2564,7 @@ qualify is a fact about that backend.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

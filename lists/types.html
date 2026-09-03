@@ -118,7 +118,7 @@
                  <td><a href='../type/bond_t.html'>bond_t</a></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>None</td>
-                 <td><p>Bond definition with atom indices, order, and broken status</p><a href="../type/bond_t.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>A bond between two system atoms, and whether a partition cut it</p></td>
                </tr>
 			   <tr>
                  <td><a href='../type/cached_basis_t.html'>cached_basis_t</a></td>
@@ -196,8 +196,7 @@
                  <td><a href='../type/dft_config_t.html'>dft_config_t</a></td>
                  <td><a href='../module/mqc_method_config.html'>mqc_method_config</a></td>
                  <td>None</td>
-                 <td><p>Configuration for Kohn-Sham DFT method
-Note: SCF settings (convergence, DIIS) come from scf_config_t</p></td>
+                 <td><p>Configuration for Kohn-Sham DFT. SCF settings come from <code>scf_config_t</code>.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../type/dft_grid_t.html'>dft_grid_t</a></td>
@@ -209,7 +208,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p></td>
                  <td><a href='../type/dft_method_t.html'>dft_method_t</a></td>
                  <td><a href='../module/mqc_method_dft.html'>mqc_method_dft</a></td>
                  <td><a href='../type/qc_method_t.html'>qc_method_t</a></td>
-                 <td><p>DFT method implementation</p><a href="../type/dft_method_t.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Kohn-Sham DFT with a configurable functional and integration grid</p></td>
                </tr>
 			   <tr>
                  <td><a href='../type/dft_options_t.html'>dft_options_t</a></td>
@@ -233,7 +232,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p></td>
                  <td><a href='../type/driver_config_t.html'>driver_config_t</a></td>
                  <td><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></td>
                  <td>None</td>
-                 <td></td>
+                 <td><p>Runtime configuration for the driver (internal use only)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../type/ecp_shell_type.html'>ecp_shell_type</a></td>
@@ -257,7 +256,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p></td>
                  <td><a href='../type/error_t.html'>error_t</a></td>
                  <td><a href='../module/mqc_error.html'>mqc_error</a></td>
                  <td>None</td>
-                 <td></td>
+                 <td><p>Unified error type with stack trace support</p><a href="../type/error_t.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../type/f12_config_t.html'>f12_config_t</a></td>
@@ -353,8 +352,8 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p></td>
                  <td><a href='../type/input_fragment_t.html'>input_fragment_t</a></td>
                  <td><a href='../module/mqc_config_types.html'>mqc_config_types</a></td>
                  <td>None</td>
-                 <td><p>Input fragment definition with charge, multiplicity, and atom indices
-This is the parsed representation from the input file, not the computational fragment</p></td>
+                 <td><p>One fragment as the input file declares it: charge, multiplicity and
+atom indices</p><a href="../type/input_fragment_t.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../type/json_output_data_t.html'>json_output_data_t</a></td>
@@ -408,7 +407,8 @@ This is the parsed representation from the input file, not the computational fra
                  <td><a href='../type/mcscf_method_t.html'>mcscf_method_t</a></td>
                  <td><a href='../module/mqc_method_mcscf.html'>mqc_method_mcscf</a></td>
                  <td><a href='../type/qc_method_t.html'>qc_method_t</a></td>
-                 <td><p>MCSCF/CASSCF method implementation</p><a href="../type/mcscf_method_t.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Complete active space SCF: near-degeneracy, bond breaking, open-shell
+transition metals</p></td>
                </tr>
 			   <tr>
                  <td><a href='../type/mcscf_options_t.html'>mcscf_options_t</a></td>
@@ -420,13 +420,13 @@ This is the parsed representation from the input file, not the computational fra
                  <td><a href='../type/method_config_t.html'>method_config_t</a></td>
                  <td><a href='../module/mqc_method_config.html'>mqc_method_config</a></td>
                  <td>None</td>
-                 <td><p>Master configuration containing all method-specific configs</p><a href="../type/method_config_t.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Master configuration containing all method-specific configs</p></td>
                </tr>
 			   <tr>
                  <td><a href='../type/method_factory_t.html'>method_factory_t</a></td>
                  <td><a href='../module/mqc_method_factory.html'>mqc_method_factory</a></td>
                  <td>None</td>
-                 <td><p>Factory for creating quantum chemistry method instances</p><a href="../type/method_factory_t.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Factory for creating quantum chemistry method instances</p></td>
                </tr>
 			   <tr>
                  <td><a href='../type/molecular_basis_type.html'>molecular_basis_type</a></td>
@@ -462,7 +462,7 @@ This is the parsed representation from the input file, not the computational fra
                  <td><a href='../type/mqc_config_t.html'>mqc_config_t</a></td>
                  <td><a href='../module/mqc_config_types.html'>mqc_config_types</a></td>
                  <td>None</td>
-                 <td><p>Complete configuration from .mqc file</p></td>
+                 <td><p>Complete configuration parsed from one input deck</p></td>
                </tr>
 			   <tr>
                  <td><a href='../type/mqc_session_t.html'>mqc_session_t</a></td>
@@ -516,7 +516,7 @@ This is the parsed representation from the input file, not the computational fra
                  <td><a href='../type/physical_fragment_t.html'>physical_fragment_t</a></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>None</td>
-                 <td><p>Physical molecular fragment with atomic coordinates and properties</p><a href="../type/physical_fragment_t.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>One fragment as a QC method sees it: geometry, electron count, basis</p></td>
                </tr>
 			   <tr>
                  <td><a href='../type/properties_config_t.html'>properties_config_t</a></td>
@@ -528,7 +528,7 @@ This is the parsed representation from the input file, not the computational fra
                  <td><a href='../type/qc_method_t.html'>qc_method_t</a></td>
                  <td><a href='../module/mqc_method_base.html'>mqc_method_base</a></td>
                  <td>None</td>
-                 <td><p>Abstract base type for all quantum chemistry methods</p><a href="../type/qc_method_t.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Abstract base type for all quantum chemistry methods</p></td>
                </tr>
 			   <tr>
                  <td><a href='../type/queue_t.html'>queue_t</a></td>
@@ -576,10 +576,7 @@ This is the parsed representation from the input file, not the computational fra
                  <td><a href='../type/severed_bond_t.html'>severed_bond_t</a></td>
                  <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
                  <td>None</td>
-                 <td><p>One bond that a partition cuts, and enough about it to decide what to do
-Atom indices are 1-based here, unlike <code>bond_t</code>, because the callers
-that want this &ndash; fragment assembly and the frozen-orbital schemes &ndash;
-index the system directly rather than through a deck.</p></td>
+                 <td><p>One bond that a partition cuts, and enough about it to decide what to do</p><a href="../type/severed_bond_t.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../type/sigma_operator_t.html'>sigma_operator_t</a></td>
@@ -597,7 +594,7 @@ index the system directly rather than through a deck.</p></td>
                  <td><a href='../type/system_geometry_t.html'>system_geometry_t</a></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>None</td>
-                 <td><p>Complete molecular system geometry for fragment-based calculations</p><a href="../type/system_geometry_t.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>The whole system, laid out by monomer, that fragments are cut from</p></td>
                </tr>
 			   <tr>
                  <td><a href='../type/system_handle_t.html'>system_handle_t</a></td>
@@ -639,7 +636,7 @@ index the system directly rather than through a deck.</p></td>
                  <td><a href='../type/xtb_method_t.html'>xtb_method_t</a></td>
                  <td><a href='../module/mqc_method_xtb.html'>mqc_method_xtb</a></td>
                  <td><a href='../type/qc_method_t.html'>qc_method_t</a></td>
-                 <td><p>Extended Tight-Binding (xTB) method implementation</p><a href="../type/xtb_method_t.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Extended Tight-Binding (xTB) method implementation</p></td>
                </tr>
 			 </tbody></table>
              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -2137,7 +2134,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

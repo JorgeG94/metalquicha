@@ -136,9 +136,9 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/add_nuclear_repulsion_gradient.html#variable-a~7">a</a>
-            <a class="list-group-item" href="../proc/add_nuclear_repulsion_gradient.html#variable-b~4">b</a>
-            <a class="list-group-item" href="../proc/add_nuclear_repulsion_gradient.html#variable-r~9">r</a>
+            <a class="list-group-item" href="../proc/add_nuclear_repulsion_gradient.html#variable-a~13">a</a>
+            <a class="list-group-item" href="../proc/add_nuclear_repulsion_gradient.html#variable-b~10">b</a>
+            <a class="list-group-item" href="../proc/add_nuclear_repulsion_gradient.html#variable-r~5">r</a>
             <a class="list-group-item" href="../proc/add_nuclear_repulsion_gradient.html#variable-rvec">rvec</a>
         </div>
       </div>
@@ -183,10 +183,6 @@
 <p>The derivative on A points away from every other nucleus: repulsion
 pushes atoms apart, and a gradient is the direction of steepest
 <em>ascent</em>, which is what sets the sign below.</p>
-<p>Accumulates rather than assigns, because every caller but one was
-adding this to a gradient that already had electronic terms in it. The
-one that was not now zeroes its own array first, where that intent is
-visible.</p>
 
 
     <h3>Arguments</h3>
@@ -202,7 +198,7 @@ visible.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-charges~7"></span>
+              <span class="anchor" id="variable-charges~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -217,7 +213,7 @@ visible.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~11"></span>
+              <span class="anchor" id="variable-coordinates~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -232,7 +228,7 @@ visible.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~9"></span>
+              <span class="anchor" id="variable-gradient~5"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -265,7 +261,7 @@ visible.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-a~7"></span>
+              <span class="anchor" id="variable-a~13"></span>
               integer,
             </td>
               <td>private</td>
@@ -282,7 +278,7 @@ visible.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-b~4"></span>
+              <span class="anchor" id="variable-b~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -299,7 +295,7 @@ visible.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-r~9"></span>
+              <span class="anchor" id="variable-r~5"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -353,11 +349,6 @@ visible.</p>
 <span class="w">      </span><span class="c">!! The derivative on A points away from every other nucleus: repulsion</span>
 <span class="w">      </span><span class="c">!! pushes atoms apart, and a gradient is the direction of steepest</span>
 <span class="w">      </span><span class="c">!! *ascent*, which is what sets the sign below.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Accumulates rather than assigns, because every caller but one was</span>
-<span class="w">      </span><span class="c">!! adding this to a gradient that already had electronic terms in it. The</span>
-<span class="w">      </span><span class="c">!! one that was not now zeroes its own array first, where that intent is</span>
-<span class="w">      </span><span class="c">!! visible.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">charges</span><span class="p">(:)</span><span class="w">         </span><span class="c">!! Nuclear charges</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, n_atoms), Bohr</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">gradient</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, n_atoms)</span>
@@ -399,7 +390,7 @@ visible.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

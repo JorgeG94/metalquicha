@@ -137,13 +137,13 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/optimization_record_t.html#variable-algorithm~6">algorithm</a>
-            <a class="list-group-item" href="../type/optimization_record_t.html#variable-converged~7">converged</a>
-            <a class="list-group-item" href="../type/optimization_record_t.html#variable-coordinates~9">coordinates</a>
-            <a class="list-group-item" href="../type/optimization_record_t.html#variable-element_numbers">element_numbers</a>
+            <a class="list-group-item" href="../type/optimization_record_t.html#variable-converged~9">converged</a>
+            <a class="list-group-item" href="../type/optimization_record_t.html#variable-coordinates~13">coordinates</a>
+            <a class="list-group-item" href="../type/optimization_record_t.html#variable-element_numbers~3">element_numbers</a>
             <a class="list-group-item" href="../type/optimization_record_t.html#variable-final_coordinates">final_coordinates</a>
-            <a class="list-group-item" href="../type/optimization_record_t.html#variable-final_energy~6">final_energy</a>
+            <a class="list-group-item" href="../type/optimization_record_t.html#variable-final_energy~5">final_energy</a>
             <a class="list-group-item" href="../type/optimization_record_t.html#variable-final_gradient_max">final_gradient_max</a>
-            <a class="list-group-item" href="../type/optimization_record_t.html#variable-gradient_tolerance~2">gradient_tolerance</a>
+            <a class="list-group-item" href="../type/optimization_record_t.html#variable-gradient_tolerance~3">gradient_tolerance</a>
             <a class="list-group-item" href="../type/optimization_record_t.html#variable-n_evaluations">n_evaluations</a>
             <a class="list-group-item" href="../type/optimization_record_t.html#variable-n_steps~3">n_steps</a>
             <a class="list-group-item" href="../type/optimization_record_t.html#variable-trajectory~2">trajectory</a>
@@ -219,7 +219,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~7"></span>
+              <span class="anchor" id="variable-converged~9"></span>
               logical,
             </td>
               <td>public</td>
@@ -236,7 +236,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~9"></span>
+              <span class="anchor" id="variable-coordinates~13"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -253,7 +253,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers"></span>
+              <span class="anchor" id="variable-element_numbers~3"></span>
               integer,
             </td>
               <td>public,</td>
@@ -283,13 +283,11 @@
                 <td></td>
             <td>
                 <p>(3, n_atoms), Bohr</p>
-<p>(3, n_atoms, n_steps) in Bohr, and the energy at each. Empty when the
-deck turned the trajectory off.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-final_energy~6"></span>
+              <span class="anchor" id="variable-final_energy~5"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -323,7 +321,7 @@ deck turned the trajectory off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient_tolerance~2"></span>
+              <span class="anchor" id="variable-gradient_tolerance~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -386,7 +384,8 @@ deck turned the trajectory off.</p>
                 <td></td>
                 <td></td>
             <td>
-                
+                <p>(3, n_atoms, n_steps) in Bohr. Unallocated when the deck turned the
+trajectory off.</p>
             </td>
         </tr>
         <tr>
@@ -403,7 +402,7 @@ deck turned the trajectory off.</p>
                 <td></td>
                 <td></td>
             <td>
-                
+                <p>(n_steps), Hartree, one per trajectory frame</p>
             </td>
         </tr>
     </tbody>
@@ -431,10 +430,11 @@ deck turned the trajectory off.</p>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">element_numbers</span><span class="p">(:)</span><span class="w">     </span><span class="c">!! (n_atoms)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">final_coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, n_atoms), Bohr</span>
 
-<span class="w">      </span><span class="c">!! (3, n_atoms, n_steps) in Bohr, and the energy at each. Empty when the</span>
-<span class="w">      </span><span class="c">!! deck turned the trajectory off.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">trajectory</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! (3, n_atoms, n_steps) in Bohr. Unallocated when the deck turned the</span>
+<span class="w">         </span><span class="c">!! trajectory off.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">trajectory_energies</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! (n_steps), Hartree, one per trajectory frame</span>
 <span class="w">   </span><span class="k">end type </span><span class="n">optimization_record_t</span>
 </pre></div>
 
@@ -458,7 +458,7 @@ deck turned the trajectory off.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

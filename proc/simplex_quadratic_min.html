@@ -144,17 +144,17 @@
             <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-gx_new">gx_new</a>
             <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-hmat">hmat</a>
             <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-hy">hy</a>
-            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-i~115">i</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-i~36">i</a>
             <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-it">it</a>
-            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-j~30">j</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-j~13">j</a>
             <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-ls">ls</a>
-            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-p~5">p</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-p~10">p</a>
             <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-rho">rho</a>
             <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-slope">slope</a>
-            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-step~4">step</a>
-            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-sv">sv</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-step">step</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-sv~2">sv</a>
             <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-sy">sy</a>
-            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-x~4">x</a>
+            <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-x~3">x</a>
             <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-x_new">x_new</a>
             <a class="list-group-item" href="../proc/simplex_quadratic_min.html#variable-yv">yv</a>
         </div>
@@ -199,26 +199,19 @@
     <p>Minimise <code>b . c + c^T A c</code> over the simplex: c_i &gt;= 0, sum(c) = 1</p>
 <p><strong>The constraint is removed rather than enforced.</strong> Writing
 <code>c_i = x_i^2 / sum_j x_j^2</code> satisfies both conditions for any real <code>x</code>,
-which turns a constrained problem into an unconstrained one. This is
-the parameterisation <code>pyscf/scf/diis.py</code> uses, and the chain rule
-through it is the same:</p>
+so the problem becomes unconstrained, with</p>
 <div class="codehilite"><pre><span></span><code>dE/dx_n = (2 x_n / S) * (g_n - sum_k c_k g_k),   g = dE/dc
 </code></pre></div>
 
 <p>The bracket is the gradient projected onto the simplex, so no separate
-projection appears &ndash; it is what the parameterisation produces.</p>
-<p><strong>BFGS, not steepest descent.</strong> <code>A</code> is not positive definite, and on a
-badly conditioned quadratic steepest descent stalls short of the
-minimum and returns coefficients that are merely nearby. That is
-invisible: the SCF still converges, via DIIS-like behaviour, just
-slower &ndash; which is exactly the symptom that would be read as &ldquo;the
-energy schemes are slow&rdquo; rather than &ldquo;the inner minimisation is not
-converged&rdquo;. PySCF uses BFGS at <code>tol = 1e-9</code>; this matches it, with a
-backtracking Armijo line search so an indefinite region cannot take an
-unbounded step.</p>
-<p>Started from a uniform <code>x</code>, as PySCF does. The obvious alternative &ndash;
-all weight on the newest entry &ndash; is a different basin on a non-convex
-model, so it is not a free choice.</p>
+projection appears.</p>
+<p><strong>BFGS, not steepest descent</strong>, with a backtracking Armijo line search:
+<code>A</code> is not positive definite, and steepest descent stalls short of the
+minimum on a badly conditioned quadratic and returns coefficients that
+are merely nearby &ndash; invisibly, since the SCF still converges, just
+slower.</p>
+<p>Started from a uniform <code>x</code>. The model is not convex, so all weight on
+the newest entry is a different basin rather than a free choice.</p>
 
 
     <h3>Arguments</h3>
@@ -234,7 +227,7 @@ model, so it is not a free choice.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-a~10"></span>
+              <span class="anchor" id="variable-a~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -249,7 +242,7 @@ model, so it is not a free choice.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-b~7"></span>
+              <span class="anchor" id="variable-b~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -264,7 +257,7 @@ model, so it is not a free choice.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~44"></span>
+              <span class="anchor" id="variable-n~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -279,7 +272,7 @@ model, so it is not a free choice.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-c~5"></span>
+              <span class="anchor" id="variable-c"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -770,7 +763,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~115"></span>
+              <span class="anchor" id="variable-i~36"></span>
               integer,
             </td>
               <td>private</td>
@@ -804,7 +797,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~30"></span>
+              <span class="anchor" id="variable-j~13"></span>
               integer,
             </td>
               <td>private</td>
@@ -838,7 +831,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-p~5"></span>
+              <span class="anchor" id="variable-p~10"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -889,7 +882,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-step~4"></span>
+              <span class="anchor" id="variable-step"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -906,7 +899,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sv"></span>
+              <span class="anchor" id="variable-sv~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -940,7 +933,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-x~4"></span>
+              <span class="anchor" id="variable-x~3"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1010,28 +1003,21 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! **The constraint is removed rather than enforced.** Writing</span>
 <span class="w">      </span><span class="c">!! `c_i = x_i^2 / sum_j x_j^2` satisfies both conditions for any real `x`,</span>
-<span class="w">      </span><span class="c">!! which turns a constrained problem into an unconstrained one. This is</span>
-<span class="w">      </span><span class="c">!! the parameterisation `pyscf/scf/diis.py` uses, and the chain rule</span>
-<span class="w">      </span><span class="c">!! through it is the same:</span>
+<span class="w">      </span><span class="c">!! so the problem becomes unconstrained, with</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!!     dE/dx_n = (2 x_n / S) * (g_n - sum_k c_k g_k),   g = dE/dc</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! The bracket is the gradient projected onto the simplex, so no separate</span>
-<span class="w">      </span><span class="c">!! projection appears -- it is what the parameterisation produces.</span>
+<span class="w">      </span><span class="c">!! projection appears.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! **BFGS, not steepest descent.** `A` is not positive definite, and on a</span>
-<span class="w">      </span><span class="c">!! badly conditioned quadratic steepest descent stalls short of the</span>
-<span class="w">      </span><span class="c">!! minimum and returns coefficients that are merely nearby. That is</span>
-<span class="w">      </span><span class="c">!! invisible: the SCF still converges, via DIIS-like behaviour, just</span>
-<span class="w">      </span><span class="c">!! slower -- which is exactly the symptom that would be read as "the</span>
-<span class="w">      </span><span class="c">!! energy schemes are slow" rather than "the inner minimisation is not</span>
-<span class="w">      </span><span class="c">!! converged". PySCF uses BFGS at `tol = 1e-9`; this matches it, with a</span>
-<span class="w">      </span><span class="c">!! backtracking Armijo line search so an indefinite region cannot take an</span>
-<span class="w">      </span><span class="c">!! unbounded step.</span>
+<span class="w">      </span><span class="c">!! **BFGS, not steepest descent**, with a backtracking Armijo line search:</span>
+<span class="w">      </span><span class="c">!! `A` is not positive definite, and steepest descent stalls short of the</span>
+<span class="w">      </span><span class="c">!! minimum on a badly conditioned quadratic and returns coefficients that</span>
+<span class="w">      </span><span class="c">!! are merely nearby -- invisibly, since the SCF still converges, just</span>
+<span class="w">      </span><span class="c">!! slower.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Started from a uniform `x`, as PySCF does. The obvious alternative --</span>
-<span class="w">      </span><span class="c">!! all weight on the newest entry -- is a different basin on a non-convex</span>
-<span class="w">      </span><span class="c">!! model, so it is not a free choice.</span>
+<span class="w">      </span><span class="c">!! Started from a uniform `x`. The model is not convex, so all weight on</span>
+<span class="w">      </span><span class="c">!! the newest entry is a different basin rather than a free choice.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">a</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">   </span><span class="c">!! (n, n)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">b</span><span class="p">(:)</span><span class="w">      </span><span class="c">!! (n)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span>
@@ -1133,7 +1119,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

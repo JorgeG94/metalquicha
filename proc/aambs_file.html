@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/aambs_file.html#variable-candidate~3">candidate</a>
-            <a class="list-group-item" href="../proc/aambs_file.html#variable-directories~3">directories</a>
+            <a class="list-group-item" href="../proc/aambs_file.html#variable-candidate">candidate</a>
+            <a class="list-group-item" href="../proc/aambs_file.html#variable-directories">directories</a>
             <a class="list-group-item" href="../proc/aambs_file.html#variable-exists~2">exists</a>
-            <a class="list-group-item" href="../proc/aambs_file.html#variable-idir~2">idir</a>
-            <a class="list-group-item" href="../proc/aambs_file.html#variable-tried~2">tried</a>
+            <a class="list-group-item" href="../proc/aambs_file.html#variable-idir">idir</a>
+            <a class="list-group-item" href="../proc/aambs_file.html#variable-tried">tried</a>
         </div>
       </div>
     </div>
@@ -181,15 +181,6 @@
     
 
     <p>Locate <code>aambs/aambs.json</code> on the basis search path</p>
-<p>In a subdirectory rather than beside the other basis sets, and
-deliberately: <code>mqc_extract_basis_sets</code> deletes any <code>*.json</code> under
-<code>basis_sets/</code> that <code>MQC_BASIS_SETS</code> does not name, and this file is
-tracked rather than extracted from the Basis Set Exchange bundle. The
-subdirectory is what keeps a configure from removing it.</p>
-<p>The glob is written <code>*.json</code> under <code>basis_sets/</code> rather than the
-obvious way round because CMake&rsquo;s Ninja generator preprocesses every
-Fortran source to scan module dependencies, and <code>cpp</code> reads a literal
-slash-star as the start of a C comment that never closes.</p>
 
 
     <h3>Arguments</h3>
@@ -205,7 +196,7 @@ slash-star as the start of a C comment that never closes.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~9"></span>
+              <span class="anchor" id="variable-filename~2"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -220,7 +211,7 @@ slash-star as the start of a C comment that never closes.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~119"></span>
+              <span class="anchor" id="variable-error~102"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -539,7 +530,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-candidate~3"></span>
+              <span class="anchor" id="variable-candidate"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -556,7 +547,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-directories~3"></span>
+              <span class="anchor" id="variable-directories"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -590,7 +581,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-idir~2"></span>
+              <span class="anchor" id="variable-idir"></span>
               integer,
             </td>
               <td>private</td>
@@ -607,7 +598,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tried~2"></span>
+              <span class="anchor" id="variable-tried"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -640,17 +631,13 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">aambs_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Locate `aambs/aambs.json` on the basis search path</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! In a subdirectory rather than beside the other basis sets, and</span>
-<span class="w">      </span><span class="c">!! deliberately: `mqc_extract_basis_sets` deletes any `*.json` under</span>
-<span class="w">      </span><span class="c">!! `basis_sets/` that `MQC_BASIS_SETS` does not name, and this file is</span>
-<span class="w">      </span><span class="c">!! tracked rather than extracted from the Basis Set Exchange bundle. The</span>
-<span class="w">      </span><span class="c">!! subdirectory is what keeps a configure from removing it.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The glob is written `*.json` under `basis_sets/` rather than the</span>
-<span class="w">      </span><span class="c">!! obvious way round because CMake's Ninja generator preprocesses every</span>
-<span class="w">      </span><span class="c">!! Fortran source to scan module dependencies, and `cpp` reads a literal</span>
-<span class="w">      </span><span class="c">!! slash-star as the start of a C comment that never closes.</span>
+<span class="w">      </span><span class="c">! In a subdirectory rather than beside the other basis sets:</span>
+<span class="w">      </span><span class="c">! `mqc_extract_basis_sets` deletes any `*.json` under `basis_sets/` that</span>
+<span class="w">      </span><span class="c">! `MQC_BASIS_SETS` does not name, and this file is tracked rather than</span>
+<span class="w">      </span><span class="c">! extracted. Written `*.json` under `basis_sets/` rather than the other</span>
+<span class="w">      </span><span class="c">! way round because CMake's Ninja generator preprocesses every Fortran</span>
+<span class="w">      </span><span class="c">! source to scan module dependencies, and `cpp` reads a literal</span>
+<span class="w">      </span><span class="c">! slash-star as the start of a C comment that never closes.</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">filename</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 
@@ -700,7 +687,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

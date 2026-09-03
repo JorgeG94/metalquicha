@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-prefix">PREFIX</a>
-            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-cutoff~2">cutoff</a>
-            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-found~8">found</a>
+            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-prefix~2">PREFIX</a>
+            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-cutoff~3">cutoff</a>
+            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-found~35">found</a>
             <a class="list-group-item" href="../proc/read_cutoffs.html#variable-highest~2">highest</a>
-            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-level~2">level</a>
+            <a class="list-group-item" href="../proc/read_cutoffs.html#variable-level~17">level</a>
             <a class="list-group-item" href="../proc/read_cutoffs.html#variable-present_level">present_level</a>
             <a class="list-group-item" href="../proc/read_cutoffs.html#variable-previous">previous</a>
         </div>
@@ -188,9 +188,8 @@ a decimal string (&ldquo;2&rdquo;, &ldquo;3&rdquo;, &hellip;); both spellings me
 and the JSON may mix them. The result is an array indexed by level and
 sized to the highest one present, so <code>fragment_cutoffs(3)</code> is the
 trimer cutoff whichever spelling produced it.</p>
-<p>Both spellings are probed rather than enumerated because json-fortran
-offers no way to list an object&rsquo;s keys through the <code>json_file</code>
-interface.</p>
+<p>Both spellings are probed rather than enumerated: json-fortran offers
+no way to list an object&rsquo;s keys through the <code>json_file</code> interface.</p>
 
 
     <h3>Arguments</h3>
@@ -206,7 +205,7 @@ interface.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~8"></span>
+              <span class="anchor" id="variable-json~29"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -221,7 +220,7 @@ interface.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~12"></span>
+              <span class="anchor" id="variable-config~38"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -236,7 +235,7 @@ interface.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~18"></span>
+              <span class="anchor" id="variable-error~150"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -703,7 +702,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-prefix"></span>
+              <span class="anchor" id="variable-prefix~2"></span>
               character(len=*),
             </td>
               <td>private,</td>
@@ -720,7 +719,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cutoff~2"></span>
+              <span class="anchor" id="variable-cutoff~3"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -737,7 +736,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~8"></span>
+              <span class="anchor" id="variable-found~35"></span>
               logical,
             </td>
               <td>private</td>
@@ -771,7 +770,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~2"></span>
+              <span class="anchor" id="variable-level~17"></span>
               integer,
             </td>
               <td>private</td>
@@ -845,9 +844,8 @@ parameter
 <span class="w">      </span><span class="c">!! sized to the highest one present, so `fragment_cutoffs(3)` is the</span>
 <span class="w">      </span><span class="c">!! trimer cutoff whichever spelling produced it.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Both spellings are probed rather than enumerated because json-fortran</span>
-<span class="w">      </span><span class="c">!! offers no way to list an object's keys through the `json_file`</span>
-<span class="w">      </span><span class="c">!! interface.</span>
+<span class="w">      </span><span class="c">!! Both spellings are probed rather than enumerated: json-fortran offers</span>
+<span class="w">      </span><span class="c">!! no way to list an object's keys through the `json_file` interface.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mqc_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
@@ -874,9 +872,9 @@ parameter
 <span class="k">      end do</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">highest</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 
-<span class="w">      </span><span class="c">! Sized to every supported level and filled with the same -1 sentinel the</span>
-<span class="w">      </span><span class="c">! .mqc parser uses, because downstream code reads "no cutoff at this</span>
-<span class="w">      </span><span class="c">! level" off that sentinel and would take a 0 as "screen everything out".</span>
+<span class="w">      </span><span class="c">! Sized to every supported level and filled with -1: downstream code reads</span>
+<span class="w">      </span><span class="c">! "no cutoff at this level" off that sentinel and would take a 0 as</span>
+<span class="w">      </span><span class="c">! "screen everything out".</span>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">fragment_cutoffs</span><span class="p">(</span><span class="n">MAX_MBE_LEVEL</span><span class="p">))</span>
 <span class="w">      </span><span class="n">config</span><span class="p">%</span><span class="n">fragment_cutoffs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mf">1.0_dp</span>
 
@@ -926,7 +924,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

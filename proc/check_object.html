@@ -137,10 +137,10 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/check_object.html#variable-child">child</a>
-            <a class="list-group-item" href="../proc/check_object.html#variable-found~26">found</a>
+            <a class="list-group-item" href="../proc/check_object.html#variable-found~10">found</a>
             <a class="list-group-item" href="../proc/check_object.html#variable-ichild">ichild</a>
             <a class="list-group-item" href="../proc/check_object.html#variable-ikey">ikey</a>
-            <a class="list-group-item" href="../proc/check_object.html#variable-n_children">n_children</a>
+            <a class="list-group-item" href="../proc/check_object.html#variable-n_children~2">n_children</a>
             <a class="list-group-item" href="../proc/check_object.html#variable-name~13">name</a>
         </div>
       </div>
@@ -227,7 +227,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~19"></span>
+              <span class="anchor" id="variable-path~10"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -257,7 +257,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~67"></span>
+              <span class="anchor" id="variable-error~61"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -900,7 +900,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~26"></span>
+              <span class="anchor" id="variable-found~10"></span>
               logical,
             </td>
               <td>private</td>
@@ -951,7 +951,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_children"></span>
+              <span class="anchor" id="variable-n_children~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1020,10 +1020,9 @@ large graphs.</div>
 <span class="k">         call </span><span class="n">core</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="n">child</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">name</span><span class="p">))</span><span class="w"> </span><span class="k">cycle</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">is_allowed</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="w">            </span><span class="c">! A key that moved gets told where it went. The generic message</span>
-<span class="w">            </span><span class="c">! lists what is allowed *here*, which for a relocated key is the</span>
-<span class="w">            </span><span class="c">! one list guaranteed not to contain it -- so it reads as "no such</span>
-<span class="w">            </span><span class="c">! setting" when the setting exists a line away.</span>
+<span class="w">            </span><span class="c">! A key that moved gets told where it went: the generic message</span>
+<span class="w">            </span><span class="c">! lists what is allowed *here*, which is the one list guaranteed</span>
+<span class="w">            </span><span class="c">! not to contain a relocated key.</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">path</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"keywords.scf"</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"unrestricted"</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.unrestricted has moved "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="s2">"to model.unrestricted. It selects which wavefunction is "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1069,7 +1068,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

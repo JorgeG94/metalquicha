@@ -136,18 +136,18 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/apply_excitations.html#variable-ia~3">ia</a>
-            <a class="list-group-item" href="../proc/apply_excitations.html#variable-ib~2">ib</a>
-            <a class="list-group-item" href="../proc/apply_excitations.html#variable-na~8">na</a>
-            <a class="list-group-item" href="../proc/apply_excitations.html#variable-nb~5">nb</a>
-            <a class="list-group-item" href="../proc/apply_excitations.html#variable-ndet~4">ndet</a>
-            <a class="list-group-item" href="../proc/apply_excitations.html#variable-norb~3">norb</a>
-            <a class="list-group-item" href="../proc/apply_excitations.html#variable-npair~2">npair</a>
-            <a class="list-group-item" href="../proc/apply_excitations.html#variable-pair~2">pair</a>
-            <a class="list-group-item" href="../proc/apply_excitations.html#variable-row~5">row</a>
-            <a class="list-group-item" href="../proc/apply_excitations.html#variable-source~7">source</a>
+            <a class="list-group-item" href="../proc/apply_excitations.html#variable-ia~7">ia</a>
+            <a class="list-group-item" href="../proc/apply_excitations.html#variable-ib~7">ib</a>
+            <a class="list-group-item" href="../proc/apply_excitations.html#variable-na~4">na</a>
+            <a class="list-group-item" href="../proc/apply_excitations.html#variable-nb~3">nb</a>
+            <a class="list-group-item" href="../proc/apply_excitations.html#variable-ndet~2">ndet</a>
+            <a class="list-group-item" href="../proc/apply_excitations.html#variable-norb~9">norb</a>
+            <a class="list-group-item" href="../proc/apply_excitations.html#variable-npair~4">npair</a>
+            <a class="list-group-item" href="../proc/apply_excitations.html#variable-pair~4">pair</a>
+            <a class="list-group-item" href="../proc/apply_excitations.html#variable-row~6">row</a>
+            <a class="list-group-item" href="../proc/apply_excitations.html#variable-source~2">source</a>
             <a class="list-group-item" href="../proc/apply_excitations.html#variable-target_string~2">target_string</a>
-            <a class="list-group-item" href="../proc/apply_excitations.html#variable-weight~2">weight</a>
+            <a class="list-group-item" href="../proc/apply_excitations.html#variable-weight~3">weight</a>
         </div>
       </div>
     </div>
@@ -190,15 +190,10 @@
     <p><code>E_pq |c&gt;</code> for every orbital pair at once</p>
 <p>Returns <code>(n_orbitals^2, n_determinants)</code>, column <code>d</code> and row
 <code>p + (q-1) n_orb</code> holding the determinant-<code>d</code> component of <code>E_pq |c&gt;</code>.</p>
-<p>Shared between the sigma build and the density matrices, which is not
-an economy but a correctness argument: both are built entirely out of
-this one operation, and it carries the excitation phases. Two copies
-would be two places for a sign to go wrong, and the second copy would
-be exercised only by the density matrices &ndash; where a sign error does
-not change the energy at all and so would survive every test that
-looks at one.</p>
-<p>Alpha excitations move the first index of the vector and beta the
-second. That is the only place the two spins differ anywhere in the CI.</p>
+<p>Shared with the density matrices, so that the excitation phases are
+carried in one place. Alpha excitations move the first index of the
+vector and beta the second, which is the only place the two spins
+differ anywhere in the CI.</p>
 
 
     <h3>Arguments</h3>
@@ -214,7 +209,7 @@ second. That is the only place the two spins differ anywhere in the CI.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ci~2"></span>
+              <span class="anchor" id="variable-ci~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -229,7 +224,7 @@ second. That is the only place the two spins differ anywhere in the CI.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~4"></span>
+              <span class="anchor" id="variable-alpha~6"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in)</td>
@@ -244,7 +239,7 @@ second. That is the only place the two spins differ anywhere in the CI.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~4"></span>
+              <span class="anchor" id="variable-beta~6"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in)</td>
@@ -259,7 +254,7 @@ second. That is the only place the two spins differ anywhere in the CI.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gathered~2"></span>
+              <span class="anchor" id="variable-gathered~5"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -413,7 +408,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ia~3"></span>
+              <span class="anchor" id="variable-ia~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -430,7 +425,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ib~2"></span>
+              <span class="anchor" id="variable-ib~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -447,7 +442,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-na~8"></span>
+              <span class="anchor" id="variable-na~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -464,7 +459,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nb~5"></span>
+              <span class="anchor" id="variable-nb~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -481,7 +476,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndet~4"></span>
+              <span class="anchor" id="variable-ndet~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -498,7 +493,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-norb~3"></span>
+              <span class="anchor" id="variable-norb~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -515,7 +510,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-npair~2"></span>
+              <span class="anchor" id="variable-npair~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -532,7 +527,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair~2"></span>
+              <span class="anchor" id="variable-pair~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -549,7 +544,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-row~5"></span>
+              <span class="anchor" id="variable-row~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -566,7 +561,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-source~7"></span>
+              <span class="anchor" id="variable-source~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -600,7 +595,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-weight~2"></span>
+              <span class="anchor" id="variable-weight~3"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -637,16 +632,13 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Returns `(n_orbitals^2, n_determinants)`, column `d` and row</span>
 <span class="w">      </span><span class="c">!! `p + (q-1) n_orb` holding the determinant-`d` component of `E_pq |c&gt;`.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Shared between the sigma build and the density matrices, which is not</span>
-<span class="w">      </span><span class="c">!! an economy but a correctness argument: both are built entirely out of</span>
-<span class="w">      </span><span class="c">!! this one operation, and it carries the excitation phases. Two copies</span>
-<span class="w">      </span><span class="c">!! would be two places for a sign to go wrong, and the second copy would</span>
-<span class="w">      </span><span class="c">!! be exercised only by the density matrices -- where a sign error does</span>
-<span class="w">      </span><span class="c">!! not change the energy at all and so would survive every test that</span>
-<span class="w">      </span><span class="c">!! looks at one.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Alpha excitations move the first index of the vector and beta the</span>
-<span class="w">      </span><span class="c">!! second. That is the only place the two spins differ anywhere in the CI.</span>
+<span class="w">      </span><span class="c">!! Shared with the density matrices, so that the excitation phases are</span>
+<span class="w">      </span><span class="c">!! carried in one place. Alpha excitations move the first index of the</span>
+<span class="w">      </span><span class="c">!! vector and beta the second, which is the only place the two spins</span>
+<span class="w">      </span><span class="c">!! differ anywhere in the CI.</span>
+<span class="w">      </span><span class="c">! TODO(mqc): `source`, `target_string`, `row`, `pair`, `ia`, `ib` and</span>
+<span class="w">      </span><span class="c">! `weight` are left over from before the body became one call to</span>
+<span class="w">      </span><span class="c">! `excitations_block`, and none of them is used.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ci</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">      </span><span class="c">!! (n_alpha_strings, n_beta_strings)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">link_table_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">gathered</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
@@ -686,7 +678,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

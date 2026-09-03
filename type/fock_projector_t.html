@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/fock_projector_t.html#variable-basis~8">basis</a>
-            <a class="list-group-item" href="../type/fock_projector_t.html#variable-n_frozen~2">n_frozen</a>
+            <a class="list-group-item" href="../type/fock_projector_t.html#variable-basis~3">basis</a>
+            <a class="list-group-item" href="../type/fock_projector_t.html#variable-n_frozen">n_frozen</a>
             <a class="list-group-item" href="../type/fock_projector_t.html#variable-n_frozen_occ">n_frozen_occ</a>
             <a class="list-group-item" href="../type/fock_projector_t.html#variable-sc">sc</a>
-            <a class="list-group-item" href="../type/fock_projector_t.html#variable-shift~5">shift</a>
+            <a class="list-group-item" href="../type/fock_projector_t.html#variable-shift~2">shift</a>
         </div>
       </div>
     </div>
@@ -167,8 +167,8 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/fock_projector_t.html#boundprocedure-apply~3">apply</a>
-            <a class="list-group-item" href="../type/fock_projector_t.html#boundprocedure-init~7">init</a>
+            <a class="list-group-item" href="../type/fock_projector_t.html#boundprocedure-apply~4">apply</a>
+            <a class="list-group-item" href="../type/fock_projector_t.html#boundprocedure-init~2">init</a>
         </div>
       </div>
     </div>
@@ -207,7 +207,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~8"></span>
+              <span class="anchor" id="variable-basis~3"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -226,7 +226,7 @@ lets a block be named by an index range.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen~2"></span>
+              <span class="anchor" id="variable-n_frozen"></span>
               integer,
             </td>
               <td>public</td>
@@ -275,12 +275,12 @@ left alone; only its couplings to everything else are cut.</p>
                 <td></td>
                 <td></td>
             <td>
-                <p><code>S C</code>, the back transform, formed once</p>
+                <p><code>S C</code>, the back transform, formed once in <code>init</code></p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-shift~5"></span>
+              <span class="anchor" id="variable-shift~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -308,7 +308,7 @@ left alone; only its couplings to everything else are cut.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-apply~3"></span>
+      <span class="anchor" id="boundprocedure-apply~4"></span>
       <h3>
           procedure, public ::
   <strong>apply</strong>
@@ -392,7 +392,7 @@ left alone; only its couplings to everything else are cut.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-init~7"></span>
+      <span class="anchor" id="boundprocedure-init~2"></span>
       <h3>
           procedure, public ::
   <strong>init</strong>
@@ -538,12 +538,13 @@ left alone; only its couplings to everything else are cut.</p>
     <section>
     <h3><span class="anchor" id="src"></span>Source Code</h3>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fock_projector_t</span>
+<span class="w">      </span><span class="c">!! A frozen-orbital partition, and the constraint it implies</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">         </span><span class="c">!! `C`, `n_ao` by `n_mo`, orthonormal in the metric `S`, with the</span>
 <span class="w">         </span><span class="c">!! frozen orbitals in the leading columns. Their being leading is what</span>
 <span class="w">         </span><span class="c">!! lets a block be named by an index range.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sc</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
-<span class="w">         </span><span class="c">!! `S C`, the back transform, formed once</span>
+<span class="w">         </span><span class="c">!! `S C`, the back transform, formed once in `init`</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_frozen_occ</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">         </span><span class="c">!! Columns `1 : n_frozen_occ` -- frozen and occupied. Their block is</span>
 <span class="w">         </span><span class="c">!! left alone; only its couplings to everything else are cut.</span>
@@ -579,7 +580,7 @@ left alone; only its couplings to everything else are cut.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

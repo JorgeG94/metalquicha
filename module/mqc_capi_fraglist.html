@@ -199,17 +199,13 @@
       <p>The fragment list, reachable from C and so from Python.</p>
 <p>Three verbs: create a list, read it out, put a different one back. A
 screen &ndash; by distance, by a previous run&rsquo;s energies, by whatever a caller
-invents &ndash; is read-then-put-back, and needs nothing here to know about
-it. That is the whole point: the criterion lives with the caller and the
-combinatorics stay in Fortran, where they already are.</p>
+invents &ndash; is read-then-put-back, so the criterion lives with the caller
+and the combinatorics stay in Fortran.</p>
 <p><strong>Handles are opaque and owned by the caller.</strong> <code>mqc_fraglist_new</code>
 allocates, <code>mqc_fraglist_free</code> releases, and nothing here keeps a
-registry &ndash; a leaked handle leaks its term list, which for a
-twenty-million-term run is not a small leak.</p>
-<p><strong>Reading out is two calls, deliberately.</strong> Ask for the count, allocate,
-then fill. Returning an allocated buffer across the boundary would put
-the free on the wrong side of it, and a term list is large enough that
-getting that wrong matters.</p>
+registry, so a leaked handle leaks its whole term list.</p>
+<p><strong>Reading out is two calls.</strong> Ask for the count, allocate, then fill;
+nothing allocates across the boundary.</p>
 <p>The array handed back is packed <strong>one term per row</strong>: term <code>i</code> occupies
 elements <code>i*max_level .. i*max_level + max_level - 1</code>, zero-padded. That
 is a C-contiguous <code>(n_terms, max_level)</code> array, and the same shape the
@@ -217,22 +213,20 @@ per-fragment CSV writes its <code>m1..m&lt;max_level&gt;</code> columns in, so a
 screening against a previous run&rsquo;s CSV can index the two alike. Note the
 Fortran store is <code>(n_terms, max_level)</code>, so this is a transpose of its
 memory order, not a reinterpretation of it.</p>
-<p>Every entry point returns 0 for success and non-zero for failure rather
-than reporting through <code>error_t</code>: a C caller cannot read one, and a
-Python wrapper turns a status into an exception anyway. The message is
-retrievable through <code>mqc_fraglist_last_error</code> while it is still the most
-recent thing that happened.</p>
+<p>Every entry point returns 0 for success and non-zero for failure, with
+the message retrievable through <code>mqc_fraglist_last_error</code> while it is
+still the most recent thing that happened.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_fraglist.html'>mqc_fraglist</a></li>
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
                   <li class="list-inline-item"><a href='mqc_capi_status.html'>mqc_capi_status</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_fraglist.html'>mqc_fraglist</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -764,10 +758,8 @@ parameter
 <td> =</td>
                 <td>&#34;&#34;</td>
             <td>
-                <p>Most recent failure, for a caller that wants to say why. Process-wide
-and overwritten by the next failure &ndash; read it immediately or not at
-all. Python only ever runs on one rank here, so there is no thread or
-rank to race with.</p>
+                <p>Most recent failure. Process-wide and overwritten by the next one &ndash;
+read it immediately or not at all.</p>
             </td>
         </tr>
     </tbody>
@@ -907,7 +899,7 @@ rank to race with.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~11"></span>
+              <span class="anchor" id="variable-n_monomers~12"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -922,7 +914,7 @@ rank to race with.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~24"></span>
+              <span class="anchor" id="variable-max_level~28"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -982,7 +974,7 @@ rank to race with.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~14"></span>
+              <span class="anchor" id="variable-terms~16"></span>
               integer(kind=c_int),
             </td>
 <td>intent(inout)</td>
@@ -997,7 +989,7 @@ rank to race with.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_terms~4"></span>
+              <span class="anchor" id="variable-n_terms~6"></span>
               integer(kind=c_int64_t),
             </td>
 <td></td>
@@ -1012,7 +1004,7 @@ rank to race with.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~25"></span>
+              <span class="anchor" id="variable-max_level~29"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1042,7 +1034,7 @@ rank to race with.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Row count of the term array, or -1 for a bad handle</p>
+  <p>Slots per term in the term array, or -1 for a bad handle</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1135,7 +1127,7 @@ rank to race with.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~15"></span>
+              <span class="anchor" id="variable-terms~17"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1150,7 +1142,7 @@ rank to race with.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_terms~5"></span>
+              <span class="anchor" id="variable-n_terms~7"></span>
               integer(kind=c_int64_t),
             </td>
 <td></td>
@@ -1165,7 +1157,7 @@ rank to race with.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~26"></span>
+              <span class="anchor" id="variable-max_level~30"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1210,7 +1202,7 @@ rank to race with.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~181"></span>
+              <span class="anchor" id="variable-error~184"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1300,7 +1292,7 @@ rank to race with.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-buffer~18"></span>
+              <span class="anchor" id="variable-buffer~17"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(inout)</td>
@@ -1358,7 +1350,7 @@ rank to race with.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

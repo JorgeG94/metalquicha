@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/build_residues.html#variable-atom~3">atom</a>
-            <a class="list-group-item" href="../proc/build_residues.html#variable-component~2">component</a>
-            <a class="list-group-item" href="../proc/build_residues.html#variable-imon">imon</a>
-            <a class="list-group-item" href="../proc/build_residues.html#variable-k~6">k</a>
-            <a class="list-group-item" href="../proc/build_residues.html#variable-n_components~2">n_components</a>
+            <a class="list-group-item" href="../proc/build_residues.html#variable-atom~2">atom</a>
+            <a class="list-group-item" href="../proc/build_residues.html#variable-component">component</a>
+            <a class="list-group-item" href="../proc/build_residues.html#variable-imon~2">imon</a>
+            <a class="list-group-item" href="../proc/build_residues.html#variable-k~29">k</a>
+            <a class="list-group-item" href="../proc/build_residues.html#variable-n_components">n_components</a>
         </div>
       </div>
     </div>
@@ -181,24 +181,14 @@
     
 
     <p>Group the atoms the way an internal-coordinate scheme needs them</p>
-<p>A residue is a group of atoms that an optimizer may describe with
-bonds, angles and torsions among themselves. This program already
-knows that grouping &ndash; it is the monomers &ndash; so HDLC gets the
-chemically right answer for free rather than having to perceive it.</p>
-<p><strong>A residue is a connectivity question, not a fragmentation one.</strong> When
-the calculation is fragmented the monomers already answer it, so those
-are used. When it is not, the answer used to be &ldquo;one residue&rdquo; &ndash; and for
-a single molecule that is right, but for a cluster it is wrong in a way
-that only shows up in the optimizer: HDLC then tries to build bonds,
-angles and torsions across a gap where there is no bond, and struggles
-on exactly the disjoint systems it should handle well.</p>
-<p>So an unfragmented system perceives its own connectivity. A water dimer
-optimizes as two residues without the deck having to request a
-fragmented energy it did not want, and a single molecule still comes
-back as one residue because that is what its connectivity says.</p>
-<p>This changes no energy. It changes which internal coordinates the
-optimizer works in, which moves the path taken and not the minimum
-arrived at.</p>
+<p>A residue is a group of atoms an optimizer may describe with bonds,
+angles and torsions among themselves, numbered from 1 in <code>residues</code>.</p>
+<p>A fragmented calculation uses its monomers. An unfragmented one
+perceives its own connectivity, so a cluster comes back as one residue
+per molecule and HDLC does not try to build coordinates across the gap
+between them; a single molecule comes back as one residue.</p>
+<p>This changes no energy, only which internal coordinates the optimizer
+works in.</p>
 
 
     <h3>Arguments</h3>
@@ -214,7 +204,7 @@ arrived at.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~20"></span>
+              <span class="anchor" id="variable-sys_geom~46"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -229,7 +219,7 @@ arrived at.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-residues~3"></span>
+              <span class="anchor" id="variable-residues~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -633,7 +623,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom~3"></span>
+              <span class="anchor" id="variable-atom~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -650,7 +640,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-component~2"></span>
+              <span class="anchor" id="variable-component"></span>
               integer,
             </td>
               <td>private,</td>
@@ -667,7 +657,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imon"></span>
+              <span class="anchor" id="variable-imon~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -684,7 +674,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~6"></span>
+              <span class="anchor" id="variable-k~29"></span>
               integer,
             </td>
               <td>private</td>
@@ -701,7 +691,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_components~2"></span>
+              <span class="anchor" id="variable-n_components"></span>
               integer,
             </td>
               <td>private</td>
@@ -735,27 +725,16 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">build_residues</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">residues</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Group the atoms the way an internal-coordinate scheme needs them</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! A residue is a group of atoms that an optimizer may describe with</span>
-<span class="w">      </span><span class="c">!! bonds, angles and torsions among themselves. This program already</span>
-<span class="w">      </span><span class="c">!! knows that grouping -- it is the monomers -- so HDLC gets the</span>
-<span class="w">      </span><span class="c">!! chemically right answer for free rather than having to perceive it.</span>
+<span class="w">      </span><span class="c">!! A residue is a group of atoms an optimizer may describe with bonds,</span>
+<span class="w">      </span><span class="c">!! angles and torsions among themselves, numbered from 1 in `residues`.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! **A residue is a connectivity question, not a fragmentation one.** When</span>
-<span class="w">      </span><span class="c">!! the calculation is fragmented the monomers already answer it, so those</span>
-<span class="w">      </span><span class="c">!! are used. When it is not, the answer used to be "one residue" -- and for</span>
-<span class="w">      </span><span class="c">!! a single molecule that is right, but for a cluster it is wrong in a way</span>
-<span class="w">      </span><span class="c">!! that only shows up in the optimizer: HDLC then tries to build bonds,</span>
-<span class="w">      </span><span class="c">!! angles and torsions across a gap where there is no bond, and struggles</span>
-<span class="w">      </span><span class="c">!! on exactly the disjoint systems it should handle well.</span>
+<span class="w">      </span><span class="c">!! A fragmented calculation uses its monomers. An unfragmented one</span>
+<span class="w">      </span><span class="c">!! perceives its own connectivity, so a cluster comes back as one residue</span>
+<span class="w">      </span><span class="c">!! per molecule and HDLC does not try to build coordinates across the gap</span>
+<span class="w">      </span><span class="c">!! between them; a single molecule comes back as one residue.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! So an unfragmented system perceives its own connectivity. A water dimer</span>
-<span class="w">      </span><span class="c">!! optimizes as two residues without the deck having to request a</span>
-<span class="w">      </span><span class="c">!! fragmented energy it did not want, and a single molecule still comes</span>
-<span class="w">      </span><span class="c">!! back as one residue because that is what its connectivity says.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! This changes no energy. It changes which internal coordinates the</span>
-<span class="w">      </span><span class="c">!! optimizer works in, which moves the path taken and not the minimum</span>
-<span class="w">      </span><span class="c">!! arrived at.</span>
+<span class="w">      </span><span class="c">!! This changes no energy, only which internal coordinates the optimizer</span>
+<span class="w">      </span><span class="c">!! works in.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">residues</span><span class="p">(:)</span>
 
@@ -809,7 +788,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mqc_system_set_fragment_potentials.html#variable-base~2">base</a>
-            <a class="list-group-item" href="../proc/mqc_system_set_fragment_potentials.html#variable-h~5">h</a>
+            <a class="list-group-item" href="../proc/mqc_system_set_fragment_potentials.html#variable-base~5">base</a>
+            <a class="list-group-item" href="../proc/mqc_system_set_fragment_potentials.html#variable-h~9">h</a>
             <a class="list-group-item" href="../proc/mqc_system_set_fragment_potentials.html#variable-ichar">ichar</a>
             <a class="list-group-item" href="../proc/mqc_system_set_fragment_potentials.html#variable-ipot~4">ipot</a>
-            <a class="list-group-item" href="../proc/mqc_system_set_fragment_potentials.html#variable-path~17">path</a>
+            <a class="list-group-item" href="../proc/mqc_system_set_fragment_potentials.html#variable-path~18">path</a>
         </div>
       </div>
     </div>
@@ -183,16 +183,12 @@
     <p>The effective fragment potential each monomer carries</p>
 <p>One path per monomer, in monomer order, and every monomer needs one:
 EFP2 evaluates the interaction between potentials, so a fragment
-without one is not a quantum fragment here, it is a fragment the sum
-cannot include. A mixed quantum/EFP system is a deck-only feature and
-is refused rather than half-supported.</p>
+without one is one the sum cannot include. A mixed quantum/EFP system
+is a deck-only feature and is refused here.</p>
 <p><code>paths</code> is one buffer of <code>stride</code>-character slots, blank-padded, the
-same shape <code>set_monomers</code> uses for its atom columns &ndash; a char** would
-mean trusting a caller&rsquo;s pointer arithmetic for a list that is read
-once.</p>
-<p>The potentials themselves are read when the calculation runs, not
-here: a missing file is the backend&rsquo;s error to report, with the
-parse failure that comes with it, rather than a stat() in the setter.</p>
+same shape <code>set_monomers</code> uses for its atom columns.</p>
+<p>The files themselves are read when the calculation runs, not here, so
+a missing one is the backend&rsquo;s error to report.</p>
 
 
     <h3>Arguments</h3>
@@ -208,7 +204,7 @@ parse failure that comes with it, rather than a stat() in the setter.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~5"></span>
+              <span class="anchor" id="variable-handle~9"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -238,7 +234,7 @@ parse failure that comes with it, rather than a stat() in the setter.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stride"></span>
+              <span class="anchor" id="variable-stride~2"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -271,7 +267,7 @@ parse failure that comes with it, rather than a stat() in the setter.</p>
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-status~12"></span>
+          <span class="anchor" id="variable-status~18"></span>
           integer(kind=c_int)
         </small>
       </h3>
@@ -293,7 +289,7 @@ parse failure that comes with it, rather than a stat() in the setter.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-base~2"></span>
+              <span class="anchor" id="variable-base~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -310,7 +306,7 @@ parse failure that comes with it, rather than a stat() in the setter.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~5"></span>
+              <span class="anchor" id="variable-h~9"></span>
               type(<a href='../type/system_handle_t.html'>system_handle_t</a>),
             </td>
               <td>private,</td>
@@ -361,7 +357,7 @@ parse failure that comes with it, rather than a stat() in the setter.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~17"></span>
+              <span class="anchor" id="variable-path~18"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -398,18 +394,14 @@ parse failure that comes with it, rather than a stat() in the setter.</p>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! One path per monomer, in monomer order, and every monomer needs one:</span>
 <span class="w">      </span><span class="c">!! EFP2 evaluates the interaction between potentials, so a fragment</span>
-<span class="w">      </span><span class="c">!! without one is not a quantum fragment here, it is a fragment the sum</span>
-<span class="w">      </span><span class="c">!! cannot include. A mixed quantum/EFP system is a deck-only feature and</span>
-<span class="w">      </span><span class="c">!! is refused rather than half-supported.</span>
+<span class="w">      </span><span class="c">!! without one is one the sum cannot include. A mixed quantum/EFP system</span>
+<span class="w">      </span><span class="c">!! is a deck-only feature and is refused here.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! `paths` is one buffer of `stride`-character slots, blank-padded, the</span>
-<span class="w">      </span><span class="c">!! same shape `set_monomers` uses for its atom columns -- a char** would</span>
-<span class="w">      </span><span class="c">!! mean trusting a caller's pointer arithmetic for a list that is read</span>
-<span class="w">      </span><span class="c">!! once.</span>
+<span class="w">      </span><span class="c">!! same shape `set_monomers` uses for its atom columns.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The potentials themselves are read when the calculation runs, not</span>
-<span class="w">      </span><span class="c">!! here: a missing file is the backend's error to report, with the</span>
-<span class="w">      </span><span class="c">!! parse failure that comes with it, rather than a stat() in the setter.</span>
+<span class="w">      </span><span class="c">!! The files themselves are read when the calculation runs, not here, so</span>
+<span class="w">      </span><span class="c">!! a missing one is the backend's error to report.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handle</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_potentials</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">stride</span>
@@ -493,7 +485,7 @@ parse failure that comes with it, rather than a stat() in the setter.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

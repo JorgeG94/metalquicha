@@ -165,9 +165,8 @@
 </h2>
     
 
-    <p>Configure XTB solvation settings from driver configuration</p>
-<p>Sets up all XTB-specific parameters and applies default solvation model
-logic (alpb if solvent or dielectric is specified but no model given).</p>
+    <p>Set the XTB solvation parameters, defaulting the model to &ldquo;alpb&rdquo; when
+a solvent or dielectric was given without one</p>
 
     <h3>Type Bound</h3>
     <p><a href='../type/xtb_config_t.html'>xtb_config_t</a></p>
@@ -185,7 +184,7 @@ logic (alpb if solvent or dielectric is specified but no model given).</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~49"></span>
+              <span class="anchor" id="variable-this~2"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -200,7 +199,7 @@ logic (alpb if solvent or dielectric is specified but no model given).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_cds~5"></span>
+              <span class="anchor" id="variable-use_cds~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -215,7 +214,7 @@ logic (alpb if solvent or dielectric is specified but no model given).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_shift~5"></span>
+              <span class="anchor" id="variable-use_shift~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -230,7 +229,7 @@ logic (alpb if solvent or dielectric is specified but no model given).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~6"></span>
+              <span class="anchor" id="variable-dielectric~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -245,7 +244,7 @@ logic (alpb if solvent or dielectric is specified but no model given).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_nang~5"></span>
+              <span class="anchor" id="variable-cpcm_nang~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -260,7 +259,7 @@ logic (alpb if solvent or dielectric is specified but no model given).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_rscale~5"></span>
+              <span class="anchor" id="variable-cpcm_rscale~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -275,7 +274,7 @@ logic (alpb if solvent or dielectric is specified but no model given).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvent~5"></span>
+              <span class="anchor" id="variable-solvent~2"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -290,7 +289,7 @@ logic (alpb if solvent or dielectric is specified but no model given).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvation_model~5"></span>
+              <span class="anchor" id="variable-solvation_model~2"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -572,10 +571,8 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">xtb_configure</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">use_cds</span><span class="p">,</span><span class="w"> </span><span class="n">use_shift</span><span class="p">,</span><span class="w"> </span><span class="n">dielectric</span><span class="p">,</span><span class="w"> </span><span class="n">cpcm_nang</span><span class="p">,</span><span class="w"> </span><span class="n">cpcm_rscale</span><span class="p">,</span><span class="w"> </span><span class="n">solvent</span><span class="p">,</span><span class="w"> </span><span class="n">solvation_model</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Configure XTB solvation settings from driver configuration</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Sets up all XTB-specific parameters and applies default solvation model</span>
-<span class="w">      </span><span class="c">!! logic (alpb if solvent or dielectric is specified but no model given).</span>
+<span class="w">      </span><span class="c">!! Set the XTB solvation parameters, defaulting the model to "alpb" when</span>
+<span class="w">      </span><span class="c">!! a solvent or dielectric was given without one</span>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">xtb_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_cds</span><span class="w">             </span><span class="c">!! Include CDS non-polar terms</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_shift</span><span class="w">           </span><span class="c">!! Include solution state shift</span>
@@ -621,7 +618,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

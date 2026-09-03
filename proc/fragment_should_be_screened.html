@@ -136,14 +136,14 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-cutoff~3">cutoff</a>
-            <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-distance~2">distance</a>
-            <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-has_next~7">has_next</a>
-            <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-indices~7">indices</a>
-            <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-j~23">j</a>
+            <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-cutoff">cutoff</a>
+            <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-distance">distance</a>
+            <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-has_next~2">has_next</a>
+            <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-indices">indices</a>
+            <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-j~2">j</a>
             <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-num_cutoffs">num_cutoffs</a>
-            <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-subset~4">subset</a>
-            <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-subset_size~4">subset_size</a>
+            <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-subset">subset</a>
+            <a class="list-group-item" href="../proc/fragment_should_be_screened.html#variable-subset_size">subset_size</a>
         </div>
       </div>
     </div>
@@ -187,8 +187,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -806,9 +806,8 @@ large graphs.</div>
     </div>
 
 
-    <p>Check if a fragment should be screened out based on distance cutoffs.
-Returns true if the fragment itself OR any of its k-subsets (k &gt;= 2) exceeds
-the corresponding k-mer cutoff. This ensures MBE subset consistency.</p>
+    <p>Whether this fragment or any of its k-subsets, <code>k &gt;= 2</code>, exceeds the
+k-mer cutoff</p>
 
 
     <h3>Arguments</h3>
@@ -824,7 +823,7 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~16"></span>
+              <span class="anchor" id="variable-fragment"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -839,7 +838,7 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~41"></span>
+              <span class="anchor" id="variable-n~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -854,7 +853,7 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~52"></span>
+              <span class="anchor" id="variable-sys_geom~6"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1472,7 +1471,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-cutoff~3"></span>
+              <span class="anchor" id="variable-cutoff"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -1489,7 +1488,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-distance~2"></span>
+              <span class="anchor" id="variable-distance"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -1506,7 +1505,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_next~7"></span>
+              <span class="anchor" id="variable-has_next~2"></span>
               logical,
             </td>
               <td>private</td>
@@ -1523,7 +1522,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~7"></span>
+              <span class="anchor" id="variable-indices"></span>
               integer,
             </td>
               <td>private</td>
@@ -1540,7 +1539,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~23"></span>
+              <span class="anchor" id="variable-j~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1574,7 +1573,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-subset~4"></span>
+              <span class="anchor" id="variable-subset"></span>
               integer,
             </td>
               <td>private</td>
@@ -1591,7 +1590,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-subset_size~4"></span>
+              <span class="anchor" id="variable-subset_size"></span>
               integer,
             </td>
               <td>private</td>
@@ -1623,9 +1622,8 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">fragment_should_be_screened</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">driver_config</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">should_screen</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Check if a fragment should be screened out based on distance cutoffs.</span>
-<span class="w">      </span><span class="c">!! Returns true if the fragment itself OR any of its k-subsets (k &gt;= 2) exceeds</span>
-<span class="w">      </span><span class="c">!! the corresponding k-mer cutoff. This ensures MBE subset consistency.</span>
+<span class="w">      </span><span class="c">!! Whether this fragment or any of its k-subsets, `k &gt;= 2`, exceeds the</span>
+<span class="w">      </span><span class="c">!! k-mer cutoff</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_physical_fragment</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">calculate_monomer_distance</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_config_adapter</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">driver_config_t</span>
 
@@ -1705,7 +1703,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

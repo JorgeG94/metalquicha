@@ -137,13 +137,13 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/populate_config.html#variable-backend_named">backend_named</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-found~6">found</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-found~33">found</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-found_charges">found_charges</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-found_fukui">found_fukui</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-imol~2">imol</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-imol~7">imol</a>
             <a class="list-group-item" href="../proc/populate_config.html#variable-n_mol">n_mol</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-settings">settings</a>
-            <a class="list-group-item" href="../proc/populate_config.html#variable-text~18">text</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-settings~12">settings</a>
+            <a class="list-group-item" href="../proc/populate_config.html#variable-text~33">text</a>
         </div>
       </div>
     </div>
@@ -199,7 +199,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~6"></span>
+              <span class="anchor" id="variable-json~27"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -229,7 +229,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~10"></span>
+              <span class="anchor" id="variable-config~36"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -244,7 +244,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~16"></span>
+              <span class="anchor" id="variable-error~148"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -259,7 +259,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings_only"></span>
+              <span class="anchor" id="variable-settings_only~3"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -1902,7 +1902,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~6"></span>
+              <span class="anchor" id="variable-found~33"></span>
               logical,
             </td>
               <td>private</td>
@@ -1953,7 +1953,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imol~2"></span>
+              <span class="anchor" id="variable-imol~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -1987,7 +1987,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings"></span>
+              <span class="anchor" id="variable-settings~12"></span>
               logical,
             </td>
               <td>private</td>
@@ -2004,7 +2004,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~18"></span>
+              <span class="anchor" id="variable-text~33"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -2065,13 +2065,10 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">require_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"model.method"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      </span><span class="n">config</span><span class="p">%</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parse_method_string</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-<span class="w">      </span><span class="c">! Refused here rather than by the factory, which is the only other place</span>
-<span class="w">      </span><span class="c">! that looks at the number and can do nothing but `ERROR STOP` -- it has</span>
-<span class="w">      </span><span class="c">! no error to set and no caller to hand it to. That is survivable for a</span>
-<span class="w">      </span><span class="c">! deck, where the process was going to end anyway, and not for a driven</span>
-<span class="w">      </span><span class="c">! run: a misspelt method took the caller's interpreter down with it, and</span>
-<span class="w">      </span><span class="c">! on a Python session every other rank with it. The spelling still exists</span>
-<span class="w">      </span><span class="c">! here, so this is also the only place that can quote it back.</span>
+<span class="w">      </span><span class="c">! Refused here rather than by the factory, which can only `ERROR STOP` --</span>
+<span class="w">      </span><span class="c">! survivable for a deck, and not for a driven run, where it takes the</span>
+<span class="w">      </span><span class="c">! caller's interpreter down with it. The spelling still exists here, so</span>
+<span class="w">      </span><span class="c">! this is also the only place that can quote it back.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">check_method_supported</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 <span class="w">      </span><span class="c">! "scs-mp2" and "sos-mp2" parse to the same method type as "mp2", so the</span>
@@ -2082,10 +2079,9 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! from "mp2". A later keyword can still turn it off.</span>
 <span class="w">      </span><span class="n">config</span><span class="p">%</span><span class="n">corr_density_fitting</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method_wants_density_fitting</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
 <span class="w">      </span><span class="c">! And likewise "casci", which the method type cannot distinguish from</span>
-<span class="w">      </span><span class="c">! "casscf" -- both are METHOD_TYPE_MCSCF, because they are the same</span>
-<span class="w">      </span><span class="c">! wavefunction and differ only in whether the orbitals are allowed to</span>
-<span class="w">      </span><span class="c">! move. Read here while the spelling still exists;</span>
-<span class="w">      </span><span class="c">! `keywords.mcscf.optimize_orbitals` below can still override it.</span>
+<span class="w">      </span><span class="c">! "casscf" -- both are METHOD_TYPE_MCSCF, differing only in whether the</span>
+<span class="w">      </span><span class="c">! orbitals are allowed to move. `keywords.mcscf.optimize_orbitals` below</span>
+<span class="w">      </span><span class="c">! can still override it.</span>
 <span class="w">      </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf_optimize_orbitals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">method_is_casci</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"model.basis"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">basis</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"model.ecp"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">ecp</span><span class="p">)</span>
@@ -2096,10 +2092,8 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! ---- properties ------------------------------------------------------</span>
 <span class="w">      </span><span class="c">! The `fukui` OBJECT is what asks for the analysis; `population` only</span>
-<span class="w">      </span><span class="c">! says which charges. Default it here rather than downstream, so that the</span>
-<span class="w">      </span><span class="c">! scheme the run used is a value in the config -- and therefore in the</span>
-<span class="w">      </span><span class="c">! report and the JSON -- rather than a default buried in whichever</span>
-<span class="w">      </span><span class="c">! routine happened to look last.</span>
+<span class="w">      </span><span class="c">! says which charges. Defaulted here so the scheme the run used is a value</span>
+<span class="w">      </span><span class="c">! in the config -- and so in the report and the JSON.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"properties.fukui"</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">found_fukui</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">found_fukui</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_population</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"chelpg"</span>
@@ -2112,9 +2106,7 @@ large graphs.</div>
 <span class="w">         </span><span class="c">! it is read by `read_fukui_scf` below once those values exist.</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="w">      </span><span class="c">! Same shape as `fukui`: the OBJECT is the request, `scheme` only says</span>
-<span class="w">      </span><span class="c">! how. Defaulted here for the same reason -- the scheme a run used should</span>
-<span class="w">      </span><span class="c">! be a value in the config, and so in the report and the JSON, rather</span>
-<span class="w">      </span><span class="c">! than a default resolved wherever the partition happens to be done.</span>
+<span class="w">      </span><span class="c">! how, and it is defaulted here for the same reason.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"properties.charges"</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">found_charges</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">found_charges</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">config</span><span class="p">%</span><span class="n">charges_scheme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"mulliken"</span>
@@ -2146,10 +2138,10 @@ large graphs.</div>
 <span class="k">      end if</span>
 
 <span class="w">      </span><span class="c">! ---- system ----------------------------------------------------------</span>
-<span class="w">      </span><span class="c">! Written straight into the config fields, which already hold the</span>
-<span class="w">      </span><span class="c">! defaults set above. Routing them through a shared local instead would</span>
-<span class="w">      </span><span class="c">! carry the previous key's value forward whenever one is absent, since</span>
-<span class="w">      </span><span class="c">! `optional_string` leaves its target alone rather than clearing it.</span>
+<span class="w">      </span><span class="c">! Written straight into the config fields, which already hold the defaults</span>
+<span class="w">      </span><span class="c">! set above. A shared local would carry the previous key's value forward</span>
+<span class="w">      </span><span class="c">! whenever one is absent, since `optional_string` leaves its target alone</span>
+<span class="w">      </span><span class="c">! rather than clearing it.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"system.logger.level"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">log_level</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_logical_seen</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"system.gpu"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">gpu</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">gpu_set</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"system.skip_json_output"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">skip_json_output</span><span class="p">)</span>
@@ -2180,16 +2172,14 @@ large graphs.</div>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.allow_crap_scf"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">allow_crap_scf</span><span class="p">)</span>
 
-<span class="w">      </span><span class="c">! After `keywords.scf`, and that ordering is the whole design: the ion</span>
-<span class="w">      </span><span class="c">! settings inherit by being *seeded* from the neutral's before the deck</span>
-<span class="w">      </span><span class="c">! is consulted, so "the deck did not say" needs no sentinel -- the field</span>
-<span class="w">      </span><span class="c">! simply still holds what it inherited.</span>
+<span class="w">      </span><span class="c">! After `keywords.scf`: the ion settings are *seeded* from the neutral's</span>
+<span class="w">      </span><span class="c">! before the deck is consulted, so "the deck did not say" needs no</span>
+<span class="w">      </span><span class="c">! sentinel -- the field still holds what it inherited.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">read_fukui_scf</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.density_fitting"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                            </span><span class="n">config</span><span class="p">%</span><span class="n">scf_density_fitting</span><span class="p">)</span>
-<span class="w">      </span><span class="c">! MAKEFP's own group. Nothing here is an SCF setting -- the SCF is already</span>
-<span class="w">      </span><span class="c">! configured by `keywords.scf` and reads it -- these are the response solve</span>
-<span class="w">      </span><span class="c">! and the screening fit, which is where a potential's wall clock goes.</span>
+<span class="w">      </span><span class="c">! MAKEFP's own group: the response solve and the screening fit. Nothing</span>
+<span class="w">      </span><span class="c">! here is an SCF setting -- that is `keywords.scf`, which it reads.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_real</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.efp.dynamic_tolerance"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                         </span><span class="n">config</span><span class="p">%</span><span class="n">efp_dynamic_tolerance</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.efp.dynamic_maxiter"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">efp_dynamic_maxiter</span><span class="p">)</span>
@@ -2207,10 +2197,9 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.correlation.density_fitting"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                            </span><span class="n">config</span><span class="p">%</span><span class="n">corr_density_fitting</span><span class="p">)</span>
 
-<span class="w">      </span><span class="c">! A fitted SCF needs a basis to fit against. There is a default, but it is a</span>
-<span class="w">      </span><span class="c">! JK set that is wrong for some of what asks for fitting, so rather than pick</span>
-<span class="w">      </span><span class="c">! one silently a fitted run must name its own. `aux_basis` is unallocated</span>
-<span class="w">      </span><span class="c">! exactly when `model.aux_basis` was absent, which is the case to refuse.</span>
+<span class="w">      </span><span class="c">! A fitted SCF needs a basis to fit against, and must name its own rather</span>
+<span class="w">      </span><span class="c">! than inherit a JK set that is wrong for some of what asks for fitting.</span>
+<span class="w">      </span><span class="c">! `aux_basis` is unallocated exactly when `model.aux_basis` was absent.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">scf_density_fitting</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">aux_basis</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.scf.density_fitting is on but no "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                        </span><span class="s2">"auxiliary basis was given; set model.aux_basis"</span><span class="p">)</span>
@@ -2225,10 +2214,9 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.cc.diis"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">cc_diis</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.cc.diis_size"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">cc_diis_size</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.cc.spin_adapted"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">cc_spin_adapted</span><span class="p">)</span>
-<span class="w">      </span><span class="c">! Recorded as "was it named" as well as "what was it", because the method</span>
-<span class="w">      </span><span class="c">! name is the usual source of this and only an explicit keyword may</span>
-<span class="w">      </span><span class="c">! override it. `optional_logical` leaves its target alone when the key is</span>
-<span class="w">      </span><span class="c">! absent, which cannot distinguish absent from false on its own.</span>
+<span class="w">      </span><span class="c">! Recorded as "was it named" as well as "what was it": the method name is</span>
+<span class="w">      </span><span class="c">! the usual source of this and only an explicit keyword may override it,</span>
+<span class="w">      </span><span class="c">! which `optional_logical` alone cannot tell from an absent key.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_logical_seen</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.cc.triples"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">cc_triples</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">config</span><span class="p">%</span><span class="n">cc_triples_set</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">read_avas_orbitals</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
@@ -2246,14 +2234,11 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.mcscf.max_macro_iter"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf_max_macro_iter</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_real</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.mcscf.orbital_convergence"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                         </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf_orbital_convergence</span><span class="p">)</span>
-<span class="w">      </span><span class="c">! Read last of the group, and deliberately with plain `optional_logical`</span>
-<span class="w">      </span><span class="c">! rather than the `_seen` variant the triples use. The field already holds</span>
-<span class="w">      </span><span class="c">! what the method spelling implied, and `optional_logical` leaves it there</span>
-<span class="w">      </span><span class="c">! when the key is absent -- so "present wins over the name, absent loses to</span>
-<span class="w">      </span><span class="c">! it" falls out without a second flag. The triples need `_seen` only</span>
-<span class="w">      </span><span class="c">! because their default is settled in the adapter, one hop after the</span>
-<span class="w">      </span><span class="c">! spelling has been discarded; this one is settled here, where it still</span>
-<span class="w">      </span><span class="c">! exists.</span>
+<span class="w">      </span><span class="c">! Plain `optional_logical` rather than the `_seen` variant the triples</span>
+<span class="w">      </span><span class="c">! use: the field already holds what the method spelling implied, so</span>
+<span class="w">      </span><span class="c">! "present wins over the name, absent loses to it" falls out without a</span>
+<span class="w">      </span><span class="c">! second flag. The triples need `_seen` because their default is settled</span>
+<span class="w">      </span><span class="c">! in the adapter, one hop after the spelling has been discarded.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.mcscf.optimize_orbitals"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                            </span><span class="n">config</span><span class="p">%</span><span class="n">mcscf_optimize_orbitals</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.dft.grid_level"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">dft_grid_level</span><span class="p">)</span>
@@ -2262,9 +2247,6 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_real</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.dft.screening_tolerance"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                         </span><span class="n">config</span><span class="p">%</span><span class="n">dft_screening_tolerance</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.dft.block_size"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">dft_block_size</span><span class="p">)</span>
-<span class="w">      </span><span class="c">! The continuum is switched on by the presence of the block rather than by a</span>
-<span class="w">      </span><span class="c">! flag inside it: a deck that names a dielectric wants solvent, and a</span>
-<span class="w">      </span><span class="c">! separate "enabled" would let the two disagree.</span>
 <span class="w">      </span><span class="k">block</span>
 <span class="w">         </span><span class="c">! Read into a deferred-length local, since the config field is fixed</span>
 <span class="w">         </span><span class="c">! width and `optional_string` takes an allocatable.</span>
@@ -2276,7 +2258,10 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! checked against what this build and this method can actually do.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">resolve_gpu_request</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">backend_named</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
-<span class="k">      call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"keywords.pcm"</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">found</span><span class="p">)</span>
+<span class="w">      </span><span class="c">! The continuum is switched on by the presence of the block rather than by</span>
+<span class="w">      </span><span class="c">! a flag inside it: a deck that names a dielectric wants solvent, and a</span>
+<span class="w">      </span><span class="c">! separate "enabled" would let the two disagree.</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"keywords.pcm"</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">found</span><span class="p">)</span>
 <span class="w">      </span><span class="n">config</span><span class="p">%</span><span class="n">pcm_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">found</span>
 <span class="w">      </span><span class="k">block</span>
 <span class="w">         </span><span class="c">! Read into a deferred-length local, since the config field is fixed</span>
@@ -2297,8 +2282,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.dft.radial_points"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">dft_radial_points</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.dft.angular_points"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">dft_angular_points</span><span class="p">)</span>
 
-<span class="w">      </span><span class="c">! Both spellings of the displacement key are accepted, as the JSON</span>
-<span class="w">      </span><span class="c">! generator used to allow.</span>
+<span class="w">      </span><span class="c">! Both spellings of the displacement key are accepted.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_real</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.hessian.finite_difference_displacement"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                         </span><span class="n">config</span><span class="p">%</span><span class="n">hessian_displacement</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_real</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.hessian.displacement"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">hessian_displacement</span><span class="p">)</span>
@@ -2367,10 +2351,6 @@ large graphs.</div>
 
 <span class="k">      call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.xtb.solvent"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">solvent</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_string</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.xtb.solvation_model"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">solvation_model</span><span class="p">)</span>
-<span class="w">      </span><span class="c">! Before 0.2.0 these were reachable only from a hand-written .mqc deck --</span>
-<span class="w">      </span><span class="c">! the JSON generator had no field for either, though both are plumbed</span>
-<span class="w">      </span><span class="c">! through to the xTB method. Retiring .mqc without adding them here</span>
-<span class="w">      </span><span class="c">! would have quietly removed the only way to turn them off.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.xtb.use_cds"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">use_cds</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_logical</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.xtb.use_shift"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">use_shift</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">optional_real</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="s2">"keywords.xtb.dielectric"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">dielectric</span><span class="p">)</span>
@@ -2448,7 +2428,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -137,7 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/aambs_dimensions.html#variable-core~21">core</a>
-            <a class="list-group-item" href="../proc/aambs_dimensions.html#variable-iatom~19">iatom</a>
+            <a class="list-group-item" href="../proc/aambs_dimensions.html#variable-iatom~10">iatom</a>
             <a class="list-group-item" href="../proc/aambs_dimensions.html#variable-valence">valence</a>
         </div>
       </div>
@@ -179,11 +179,9 @@
     
 
     <p>The orbital-space dimensions of a molecule in the minimal basis</p>
-<p><code>n_vvo</code> can come out negative, and that is a real condition rather than
-an arithmetic accident: it means the molecule has more occupied orbitals
-than its minimal basis has room for. Paper I&rsquo;s construction has nothing
-to say about that case, so it is refused here rather than propagated as
-a negative dimension into an allocate.</p>
+<p>A molecule with more occupied orbitals than its minimal basis has room
+for gives a negative <code>n_vvo</code>; that is refused here rather than
+propagated into an allocate.</p>
 
 
     <h3>Arguments</h3>
@@ -199,7 +197,7 @@ a negative dimension into an allocate.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~15"></span>
+              <span class="anchor" id="variable-atomic_numbers~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -214,7 +212,7 @@ a negative dimension into an allocate.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_electrons~9"></span>
+              <span class="anchor" id="variable-n_electrons~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -244,7 +242,7 @@ a negative dimension into an allocate.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~121"></span>
+              <span class="anchor" id="variable-error~104"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -571,7 +569,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~19"></span>
+              <span class="anchor" id="variable-iatom~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -622,11 +620,9 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">aambs_dimensions</span><span class="p">(</span><span class="n">atomic_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">n_electrons</span><span class="p">,</span><span class="w"> </span><span class="n">dims</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The orbital-space dimensions of a molecule in the minimal basis</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! `n_vvo` can come out negative, and that is a real condition rather than</span>
-<span class="w">      </span><span class="c">!! an arithmetic accident: it means the molecule has more occupied orbitals</span>
-<span class="w">      </span><span class="c">!! than its minimal basis has room for. Paper I's construction has nothing</span>
-<span class="w">      </span><span class="c">!! to say about that case, so it is refused here rather than propagated as</span>
-<span class="w">      </span><span class="c">!! a negative dimension into an allocate.</span>
+<span class="w">      </span><span class="c">!! A molecule with more occupied orbitals than its minimal basis has room</span>
+<span class="w">      </span><span class="c">!! for gives a negative `n_vvo`; that is refused here rather than</span>
+<span class="w">      </span><span class="c">!! propagated into an allocate.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atomic_numbers</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_electrons</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">aambs_dimensions_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dims</span>
@@ -696,7 +692,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

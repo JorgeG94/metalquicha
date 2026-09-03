@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/send_final_geometry.html#variable-buffer~2">buffer</a>
-            <a class="list-group-item" href="../proc/send_final_geometry.html#variable-n~9">n</a>
+            <a class="list-group-item" href="../proc/send_final_geometry.html#variable-buffer">buffer</a>
+            <a class="list-group-item" href="../proc/send_final_geometry.html#variable-n~31">n</a>
         </div>
       </div>
     </div>
@@ -179,9 +179,8 @@
 
     <p>Move a geometry to the workers, with the command already sent</p>
 <p>Separate from <code>send_geometry</code> only in that the caller has already
-chosen and broadcast the command &ndash; EVALUATE or FINAL. Splitting the
-two keeps the &ldquo;one broadcast integer then the coordinates&rdquo; order in
-one place, which is the order <code>worker_loop</code> reads them in.</p>
+chosen and broadcast the command. The order &ndash; one integer, then the
+coordinates &ndash; is the order <code>worker_loop</code> reads them in.</p>
 
 
     <h3>Arguments</h3>
@@ -197,7 +196,7 @@ one place, which is the order <code>worker_loop</code> reads them in.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~9"></span>
+              <span class="anchor" id="variable-comm~6"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -212,7 +211,7 @@ one place, which is the order <code>worker_loop</code> reads them in.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~10"></span>
+              <span class="anchor" id="variable-sys_geom~36"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -604,7 +603,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-buffer~2"></span>
+              <span class="anchor" id="variable-buffer"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -621,7 +620,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~9"></span>
+              <span class="anchor" id="variable-n~31"></span>
               integer(kind=int32),
             </td>
               <td>private</td>
@@ -656,9 +655,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Move a geometry to the workers, with the command already sent</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Separate from `send_geometry` only in that the caller has already</span>
-<span class="w">      </span><span class="c">!! chosen and broadcast the command -- EVALUATE or FINAL. Splitting the</span>
-<span class="w">      </span><span class="c">!! two keeps the "one broadcast integer then the coordinates" order in</span>
-<span class="w">      </span><span class="c">!! one place, which is the order `worker_loop` reads them in.</span>
+<span class="w">      </span><span class="c">!! chosen and broadcast the command. The order -- one integer, then the</span>
+<span class="w">      </span><span class="c">!! coordinates -- is the order `worker_loop` reads them in.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">comm</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 
@@ -666,8 +664,7 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span>
 
 <span class="w">      </span><span class="c">! Flat, because pic-mpi broadcasts rank-1 arrays and the coordinates are</span>
-<span class="w">      </span><span class="c">! rank-2. reshape rather than a pointer remap: this is 3N doubles once</span>
-<span class="w">      </span><span class="c">! per step, against an SCF, and the copy is not measurable.</span>
+<span class="w">      </span><span class="c">! rank-2.</span>
 <span class="w">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">int32</span><span class="p">)</span>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">buffer</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
 <span class="w">      </span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">reshape</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="p">])</span>
@@ -698,7 +695,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -1,7 +1,7 @@
 !! Abstract base module for quantum chemistry method implementations
 module mqc_method_base
-   !! Defines the common interface that all quantum chemistry methods must implement,
-   !! providing a unified API for energy and gradient calculations.
+   !! Common interface every quantum chemistry method implements: energy,
+   !! gradient and Hessian for a single fragment.
    use pic_types, only: dp
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
@@ -12,9 +12,6 @@ module mqc_method_base
 
    type, abstract :: qc_method_t
       !! Abstract base type for all quantum chemistry methods
-      !!
-      !! Defines the required interface for energy and gradient calculations
-      !! that must be implemented by all concrete method types (XTB, HF, etc.).
    contains
       procedure(calc_energy_interface), deferred :: calc_energy    !! Energy calculation interface
       procedure(calc_gradient_interface), deferred :: calc_gradient  !! Gradient calculation interface
@@ -23,10 +20,7 @@ module mqc_method_base
 
    abstract interface
       subroutine calc_energy_interface(this, fragment, result)
-         !! Interface for energy-only calculations
-         !!
-         !! Computes the electronic energy for a molecular fragment
-         !! using the specified quantum chemistry method.
+         !! Electronic energy of a molecular fragment
          import :: qc_method_t, calculation_result_t, physical_fragment_t
          implicit none
          class(qc_method_t), intent(in) :: this      !! Method instance
@@ -35,10 +29,7 @@ module mqc_method_base
       end subroutine calc_energy_interface
 
       subroutine calc_gradient_interface(this, fragment, result)
-         !! Interface for energy and gradient calculations
-         !!
-         !! Computes both electronic energy and nuclear gradients for a
-         !! molecular fragment using the specified quantum chemistry method.
+         !! Electronic energy and nuclear gradient of a molecular fragment
          import :: qc_method_t, calculation_result_t, physical_fragment_t
          implicit none
          class(qc_method_t), intent(in) :: this      !! Method instance
@@ -47,10 +38,7 @@ module mqc_method_base
       end subroutine calc_gradient_interface
 
       subroutine calc_hessian_interface(this, fragment, result)
-         !! Interface for energy, gradient, and Hessian calculations
-         !!
-         !! Computes electronic energy, nuclear gradients, and Hessian matrix for a
-         !! molecular fragment using the specified quantum chemistry method.
+         !! Electronic energy, nuclear gradient and Hessian of a molecular fragment
          import :: qc_method_t, calculation_result_t, physical_fragment_t
          implicit none
          class(qc_method_t), intent(in) :: this      !! Method instance

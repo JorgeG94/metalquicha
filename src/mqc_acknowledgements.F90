@@ -2,24 +2,6 @@
 module mqc_acknowledgements
    !! Prints a banner naming the integral backend a calculation is about to run
    !! on, and thanking the people who wrote it.
-   !!
-   !! Metalquicha computes almost no integrals of its own. Every number it
-   !! reports comes out of somebody else's library -- cuEST on the GPU, libfint
-   !! or libcint on the CPU, tblite for the semi-empirical methods -- and a code
-   !! that
-   !! prints its own logo at startup and never names them has its priorities
-   !! backwards. This says which one ran, in the output the user keeps.
-   !!
-   !! Which backend is named is *derived*, never declared: it is resolved by
-   !! `acknowledged_backend` below from the same three facts the dispatch in
-   !! `mqc_method_hf`/`mqc_method_dft` uses -- the method, the requested
-   !! backend, and whether this build has cuEST. Thanking a library that did not
-   !! run would be worse than thanking none.
-   !!
-   !! `ACK_LIBCINT` names the CPU integrals slot rather than a library: which of
-   !! libfint and libcint filled it is a build-time choice, so the banner text
-   !! is the one thing here decided by the preprocessor rather than derived at
-   !! run time. `MQC_WITH_LIBCINT` cannot answer it -- both branches define it.
    use pic_logger, only: logger => global_logger
    use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
    use mqc_cuest_iface, only: parse_backend_name, method_runs_on_cuest, &
@@ -71,23 +53,6 @@ contains
 
    function acknowledged_backend(method_type, backend) result(which)
       !! Which library will actually do the work, as one of ACK_*
-      !!
-      !! This mirrors the dispatch in `mqc_method_hf` and `mqc_method_dft`, and
-      !! has to keep mirroring it: an explicit request is honoured, and `auto`
-      !! resolves to cuEST exactly when this build has cuEST *and* the method is
-      !! one cuEST implements. Anything else is the CPU path.
-      !!
-      !! One known divergence, on a cuEST build only. `hf_run`'s `auto` branch
-      !! is a bare `#ifdef MQC_WITH_CUEST` with no check that cuEST implements
-      !! the method, so an `auto` MP2 or CCSD is handed to `run_cuest_scf` there
-      !! -- while the explicit `cuest` branch right above it refuses exactly
-      !! that combination. This function follows the explicit branch, which is
-      !! the behaviour the refusal describes. When `hf_run` grows the same guard
-      !! on `auto`, the two agree and this note can go.
-      !!
-      !! The semi-empirical methods never reach either -- they are tblite's own
-      !! and take no `backend` -- so they are answered before the request is
-      !! even looked at.
       integer, intent(in) :: method_type
       character(len=*), intent(in) :: backend
       integer :: which

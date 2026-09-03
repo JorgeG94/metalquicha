@@ -151,13 +151,13 @@
             <a class="list-group-item" href="../type/ormas_space_t.html#variable-first_orbital">first_orbital</a>
             <a class="list-group-item" href="../type/ormas_space_t.html#variable-max_electrons">max_electrons</a>
             <a class="list-group-item" href="../type/ormas_space_t.html#variable-min_electrons">min_electrons</a>
-            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_active_orbitals~3">n_active_orbitals</a>
-            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_alpha~2">n_alpha</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_active_orbitals~2">n_active_orbitals</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_alpha">n_alpha</a>
             <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_alpha_classes">n_alpha_classes</a>
-            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_beta~2">n_beta</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_beta">n_beta</a>
             <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_beta_classes">n_beta_classes</a>
             <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_determinants">n_determinants</a>
-            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_orbitals~8">n_orbitals</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_orbitals~10">n_orbitals</a>
             <a class="list-group-item" href="../type/ormas_space_t.html#variable-n_subspaces">n_subspaces</a>
             <a class="list-group-item" href="../type/ormas_space_t.html#variable-row_length">row_length</a>
         </div>
@@ -186,7 +186,7 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/ormas_space_t.html#boundprocedure-destroy~24">destroy</a>
+            <a class="list-group-item" href="../type/ormas_space_t.html#boundprocedure-destroy~7">destroy</a>
         </div>
       </div>
     </div>
@@ -211,8 +211,7 @@
     <p>A partition of the active orbitals, and the addressing it implies</p>
 <p>Built once by <code>build_ormas_space</code> and read-only afterwards. Every
 index is 1-based; <code>alpha_base</code> and <code>block_offset</code> are offsets and so
-count from zero, which is the one place the two conventions meet and
-the one place to look first when an address comes out wrong.</p>
+count from zero.</p>
 <br>      <div class="card">
         <div class="card-header">
           <h3 class="card-title">Inherited by</h3>
@@ -351,11 +350,7 @@ large graphs.</div>
             <td>
                 <p><code>(subspace, class)</code> &ndash; every way that spin&rsquo;s electrons can be spread
 over the subspaces, in enumeration order, whether or not the windows
-leave any use for it. Classes that pair with nothing cost a row of
-<code>compatible</code> and are worth that: the alternative is a per-spin bound
-that is necessary but not sufficient, which means a second, wider
-list of strings the moment anything needs to step outside the space
-&ndash; and stepping outside is what an excitation does.</p>
+leave any use for it.</p>
             </td>
         </tr>
         <tr>
@@ -428,11 +423,7 @@ it is read in the innermost loop of everything downstream.</p>
             <td>
                 <p><code>(subspace, class)</code> &ndash; every way that spin&rsquo;s electrons can be spread
 over the subspaces, in enumeration order, whether or not the windows
-leave any use for it. Classes that pair with nothing cost a row of
-<code>compatible</code> and are worth that: the alternative is a per-spin bound
-that is necessary but not sufficient, which means a second, wider
-list of strings the moment anything needs to step outside the space
-&ndash; and stepping outside is what an excitation does.</p>
+leave any use for it.</p>
             </td>
         </tr>
         <tr>
@@ -539,8 +530,7 @@ left at zero there.</p>
                 <td></td>
                 <td></td>
             <td>
-                <p><code>(beta class, alpha class)</code> &ndash; the entire ORMAS restriction. Beta
-first because that is the order it is consumed in.</p>
+                <p><code>(beta class, alpha class)</code> &ndash; the entire ORMAS restriction</p>
             </td>
         </tr>
         <tr>
@@ -600,7 +590,7 @@ from what the user wrote.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_active_orbitals~3"></span>
+              <span class="anchor" id="variable-n_active_orbitals~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -617,7 +607,7 @@ from what the user wrote.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_alpha~2"></span>
+              <span class="anchor" id="variable-n_alpha"></span>
               integer,
             </td>
               <td>public</td>
@@ -651,7 +641,7 @@ from what the user wrote.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_beta~2"></span>
+              <span class="anchor" id="variable-n_beta"></span>
               integer,
             </td>
               <td>public</td>
@@ -702,7 +692,7 @@ from what the user wrote.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_orbitals~8"></span>
+              <span class="anchor" id="variable-n_orbitals~10"></span>
               integer,
             </td>
               <td>public,</td>
@@ -764,7 +754,7 @@ from what the user wrote.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-destroy~24"></span>
+      <span class="anchor" id="boundprocedure-destroy~7"></span>
       <h3>
           procedure, public ::
   <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/ormas_space_destroy.html'>ormas_space_destroy</a>
@@ -824,8 +814,7 @@ from what the user wrote.</p>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Built once by `build_ormas_space` and read-only afterwards. Every</span>
 <span class="w">      </span><span class="c">!! index is 1-based; `alpha_base` and `block_offset` are offsets and so</span>
-<span class="w">      </span><span class="c">!! count from zero, which is the one place the two conventions meet and</span>
-<span class="w">      </span><span class="c">!! the one place to look first when an address comes out wrong.</span>
+<span class="w">      </span><span class="c">!! count from zero.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_subspaces</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">n_beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_active_orbitals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
@@ -843,11 +832,7 @@ from what the user wrote.</p>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha_class</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">beta_class</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">         </span><span class="c">!! `(subspace, class)` -- every way that spin's electrons can be spread</span>
 <span class="w">         </span><span class="c">!! over the subspaces, in enumeration order, whether or not the windows</span>
-<span class="w">         </span><span class="c">!! leave any use for it. Classes that pair with nothing cost a row of</span>
-<span class="w">         </span><span class="c">!! `compatible` and are worth that: the alternative is a per-spin bound</span>
-<span class="w">         </span><span class="c">!! that is necessary but not sufficient, which means a second, wider</span>
-<span class="w">         </span><span class="c">!! list of strings the moment anything needs to step outside the space</span>
-<span class="w">         </span><span class="c">!! -- and stepping outside is what an excitation does.</span>
+<span class="w">         </span><span class="c">!! leave any use for it.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha_class_size</span><span class="p">(:),</span><span class="w"> </span><span class="n">beta_class_size</span><span class="p">(:)</span>
 <span class="w">         </span><span class="c">!! Strings in each class: the product over subspaces of `C(orbitals,</span>
 <span class="w">         </span><span class="c">!! electrons)`, since within a class the subspaces are independent</span>
@@ -859,8 +844,7 @@ from what the user wrote.</p>
 <span class="w">         </span><span class="c">!! it is read in the innermost loop of everything downstream.</span>
 
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">compatible</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
-<span class="w">         </span><span class="c">!! `(beta class, alpha class)` -- the entire ORMAS restriction. Beta</span>
-<span class="w">         </span><span class="c">!! first because that is the order it is consumed in.</span>
+<span class="w">         </span><span class="c">!! `(beta class, alpha class)` -- the entire ORMAS restriction</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">row_length</span><span class="p">(:)</span>
 <span class="w">         </span><span class="c">!! Determinants carried by one alpha string of each class</span>
@@ -899,7 +883,7 @@ from what the user wrote.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -138,7 +138,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/ensure_valid_json.html#variable-core">core</a>
             <a class="list-group-item" href="../proc/ensure_valid_json.html#variable-root~4">root</a>
-            <a class="list-group-item" href="../proc/ensure_valid_json.html#variable-settings~7">settings</a>
+            <a class="list-group-item" href="../proc/ensure_valid_json.html#variable-settings~3">settings</a>
         </div>
       </div>
     </div>
@@ -179,15 +179,12 @@
     
 
     <p>Validate a loaded deck, setting <code>error</code> on the first problem found</p>
-<p>Reports one problem rather than all of them: the first unknown key is
-usually the whole story, and a reader that stops there gives a
-message short enough to act on.</p>
+<p>Reports one problem rather than all of them.</p>
 <p><code>settings_only</code> validates a document that describes what to compute
 but not what to compute it on &ndash; the form that crosses to the workers
 when the system arrives by another route. It relaxes exactly one
 thing, the requirement that molecules be present; every other key is
-held to the same spelling and the same shape, which is the point of
-sending a document rather than a struct.</p>
+held to the same spelling and the same shape.</p>
 
 
     <h3>Arguments</h3>
@@ -203,7 +200,7 @@ sending a document rather than a struct.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~29"></span>
+              <span class="anchor" id="variable-json~10"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -218,7 +215,7 @@ sending a document rather than a struct.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~66"></span>
+              <span class="anchor" id="variable-error~60"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -233,7 +230,7 @@ sending a document rather than a struct.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings_only~2"></span>
+              <span class="anchor" id="variable-settings_only"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -2247,7 +2244,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~7"></span>
+              <span class="anchor" id="variable-settings~3"></span>
               logical,
             </td>
               <td>private</td>
@@ -2281,16 +2278,13 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">ensure_valid_json</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">settings_only</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Validate a loaded deck, setting `error` on the first problem found</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Reports one problem rather than all of them: the first unknown key is</span>
-<span class="w">      </span><span class="c">!! usually the whole story, and a reader that stops there gives a</span>
-<span class="w">      </span><span class="c">!! message short enough to act on.</span>
+<span class="w">      </span><span class="c">!! Reports one problem rather than all of them.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! `settings_only` validates a document that describes what to compute</span>
 <span class="w">      </span><span class="c">!! but not what to compute it on -- the form that crosses to the workers</span>
 <span class="w">      </span><span class="c">!! when the system arrives by another route. It relaxes exactly one</span>
 <span class="w">      </span><span class="c">!! thing, the requirement that molecules be present; every other key is</span>
-<span class="w">      </span><span class="c">!! held to the same spelling and the same shape, which is the point of</span>
-<span class="w">      </span><span class="c">!! sending a document rather than a struct.</span>
+<span class="w">      </span><span class="c">!! held to the same spelling and the same shape.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">settings_only</span>
@@ -2318,6 +2312,11 @@ large graphs.</div>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      call </span><span class="n">check_child_object</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">"system"</span><span class="p">,</span><span class="w"> </span><span class="n">system_keys</span><span class="p">(),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 
+<span class="w">      </span><span class="c">! TODO(mqc): no `error%has_error()` test between this call and the four</span>
+<span class="w">      </span><span class="c">! that follow, and neither `check_child_object` nor</span>
+<span class="w">      </span><span class="c">! `check_grandchild_object` guards on entry, so a second problem</span>
+<span class="w">      </span><span class="c">! overwrites the first -- against the "first problem found" this routine</span>
+<span class="w">      </span><span class="c">! documents and every other checker here observes.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">check_child_object</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties"</span><span class="p">,</span><span class="w"> </span><span class="n">properties_keys</span><span class="p">(),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">check_grandchild_object</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">"properties"</span><span class="p">,</span><span class="w"> </span><span class="s2">"fukui"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                   </span><span class="n">fukui_keys</span><span class="p">(),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
@@ -2402,7 +2401,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/accumulate_fragment_derivatives.html#variable-error~106">error</a>
-            <a class="list-group-item" href="../proc/accumulate_fragment_derivatives.html#variable-fragment~13">fragment</a>
+            <a class="list-group-item" href="../proc/accumulate_fragment_derivatives.html#variable-error~80">error</a>
+            <a class="list-group-item" href="../proc/accumulate_fragment_derivatives.html#variable-fragment~14">fragment</a>
         </div>
       </div>
     </div>
@@ -569,10 +569,9 @@ large graphs.</div>
 
 
     <p>Fold coeff * (one fragment&rsquo;s derivatives) into the system-sized totals</p>
-<p>The fragment is rebuilt once and shared by all three quantities, and each is
-scatter-accumulated over that fragment&rsquo;s own atoms only &ndash; no system-sized
-temporary is allocated or zeroed anywhere.
-Bond connectivity is accessed via sys_geom%bonds.</p>
+<p>The fragment is rebuilt once and shared by all three quantities, each
+accumulated over that fragment&rsquo;s own atoms alone, with no system-sized
+temporary. Bond connectivity comes from <code>sys_geom%bonds</code>.</p>
 
 
     <h3>Arguments</h3>
@@ -588,7 +587,7 @@ Bond connectivity is accessed via sys_geom%bonds.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag_result~2"></span>
+              <span class="anchor" id="variable-frag_result"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -603,7 +602,7 @@ Bond connectivity is accessed via sys_geom%bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~8"></span>
+              <span class="anchor" id="variable-monomers~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -618,7 +617,7 @@ Bond connectivity is accessed via sys_geom%bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~43"></span>
+              <span class="anchor" id="variable-sys_geom~23"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -648,7 +647,7 @@ Bond connectivity is accessed via sys_geom%bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result"></span>
+              <span class="anchor" id="variable-mbe_result~2"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -708,7 +707,7 @@ Bond connectivity is accessed via sys_geom%bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~15"></span>
+              <span class="anchor" id="variable-world_comm~10"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1515,7 +1514,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~106"></span>
+              <span class="anchor" id="variable-error~80"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -1532,7 +1531,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~13"></span>
+              <span class="anchor" id="variable-fragment~14"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -1567,10 +1566,9 @@ large graphs.</div>
 <span class="w">                                              </span><span class="n">do_grad</span><span class="p">,</span><span class="w"> </span><span class="n">do_hess</span><span class="p">,</span><span class="w"> </span><span class="n">do_dipole_derivs</span><span class="p">,</span><span class="w"> </span><span class="n">world_comm</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Fold coeff * (one fragment's derivatives) into the system-sized totals</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The fragment is rebuilt once and shared by all three quantities, and each is</span>
-<span class="w">      </span><span class="c">!! scatter-accumulated over that fragment's own atoms only -- no system-sized</span>
-<span class="w">      </span><span class="c">!! temporary is allocated or zeroed anywhere.</span>
-<span class="w">      </span><span class="c">!! Bond connectivity is accessed via sys_geom%bonds.</span>
+<span class="w">      </span><span class="c">!! The fragment is rebuilt once and shared by all three quantities, each</span>
+<span class="w">      </span><span class="c">!! accumulated over that fragment's own atoms alone, with no system-sized</span>
+<span class="w">      </span><span class="c">!! temporary. Bond connectivity comes from `sys_geom%bonds`.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_result_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">calculation_result_t</span><span class="p">,</span><span class="w"> </span><span class="n">mbe_result_t</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_physical_fragment</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">build_fragment_from_indices</span><span class="p">,</span><span class="w"> </span><span class="n">redistribute_cap_gradients</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                       </span><span class="n">redistribute_cap_hessian</span><span class="p">,</span><span class="w"> </span><span class="n">redistribute_cap_dipole_derivatives</span>
@@ -1639,7 +1637,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

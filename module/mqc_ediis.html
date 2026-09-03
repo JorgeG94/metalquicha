@@ -194,21 +194,15 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>What DIIS cannot do, and why these exist.</p>
+      <p>Energy-based coefficient solvers for the SCF accelerator.</p>
 <p>DIIS minimises the norm of a combination of <em>error</em> vectors and knows
-nothing about the energy. Its coefficients are unconstrained apart from
-summing to one, so they go negative and large and the extrapolated Fock
-matrix can lie far outside the densities it was built from. Near the
-solution that freedom is exactly what makes it fast. Far from it, the same
-freedom is what lets an SCF oscillate, stall, or settle onto a saddle
-point with a perfectly small residual.</p>
-<p>EDIIS and ADIIS replace the residual with an energy model and constrain
-the coefficients to the simplex &ndash; non-negative and summing to one &ndash; so
-the result is an <em>interpolation</em> between densities already visited. That
-is what makes them descend from a bad starting point, and also what makes
-them slow at the end: the true solution is generally outside the hull of
-what has been seen. So neither replaces DIIS. The pair is the method:
-energy-based while the error is large, DIIS once it is small.</p>
+nothing about the energy; its coefficients are unconstrained apart from
+summing to one. EDIIS and ADIIS replace the residual with an energy model
+and constrain the coefficients to the simplex &ndash; non-negative and summing
+to one &ndash; so the result is an <em>interpolation</em> between densities already
+visited. That makes them descend from a bad starting point and slow at the
+end, so neither replaces DIIS: the pair is the method, energy-based while
+the error is large and DIIS once it is small.</p>
 <p><strong>EDIIS</strong> (Kudin, Scuseria, Cances, JCP 116, 8255 (2002)):</p>
 <div class="codehilite"><pre><span></span><code>E(c) = sum_i c_i E_i - 1/2 sum_ij c_i c_j &lt;D_i - D_j | F_i - F_j&gt;
 </code></pre></div>
@@ -489,8 +483,7 @@ parameter
 <td> =</td>
                 <td>1.0e-10_dp</td>
             <td>
-                <p>Projected-gradient norm below which the minimum is taken as found.
-PySCF asks scipy for <code>tol = 1e-9</code>; this is the same order.</p>
+                <p>Projected-gradient norm below which the minimum is taken as found.</p>
             </td>
         </tr>
         <tr>
@@ -507,11 +500,9 @@ parameter
 <td> =</td>
                 <td>200</td>
             <td>
-                <p>BFGS iterations. PySCF stops at <code>tol = 1e-9</code>; a handful of variables
-reaches that in well under this, and the bound is a runaway guard.
-Iterations of the simplex minimisation. The subspace is a handful of
-vectors, so this is small work beside one Fock build; the bound exists
-to stop a pathological case spinning, not to ration effort.</p>
+                <p>BFGS iterations of the simplex minimisation. A runaway guard rather
+than a ration: the subspace is a handful of vectors, so this is small
+work beside one Fock build.</p>
             </td>
         </tr>
         <tr>
@@ -563,7 +554,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-a~12"></span>
+              <span class="anchor" id="variable-a~9"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -578,7 +569,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-b~9"></span>
+              <span class="anchor" id="variable-b~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -593,7 +584,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-c~8"></span>
+              <span class="anchor" id="variable-c~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -608,7 +599,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~47"></span>
+              <span class="anchor" id="variable-n~18"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -658,7 +649,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-df~3"></span>
+              <span class="anchor" id="variable-df~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -673,7 +664,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~43"></span>
+              <span class="anchor" id="variable-n~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -688,7 +679,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coefficients~10"></span>
+              <span class="anchor" id="variable-coefficients~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -703,7 +694,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~9"></span>
+              <span class="anchor" id="variable-ok~2"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -758,7 +749,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-df~2"></span>
+              <span class="anchor" id="variable-df"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -773,7 +764,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~42"></span>
+              <span class="anchor" id="variable-n~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -788,7 +779,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coefficients~9"></span>
+              <span class="anchor" id="variable-coefficients~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -803,7 +794,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~8"></span>
+              <span class="anchor" id="variable-ok"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -843,7 +834,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-a~10"></span>
+              <span class="anchor" id="variable-a~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -858,7 +849,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-b~7"></span>
+              <span class="anchor" id="variable-b~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -873,7 +864,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~44"></span>
+              <span class="anchor" id="variable-n~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -888,7 +879,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-c~5"></span>
+              <span class="anchor" id="variable-c"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -928,7 +919,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-a~13"></span>
+              <span class="anchor" id="variable-a~10"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -943,7 +934,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-b~10"></span>
+              <span class="anchor" id="variable-b~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -958,7 +949,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-c~9"></span>
+              <span class="anchor" id="variable-c~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -973,7 +964,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~48"></span>
+              <span class="anchor" id="variable-n~19"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1028,7 +1019,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-x~6"></span>
+              <span class="anchor" id="variable-x~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1043,7 +1034,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~46"></span>
+              <span class="anchor" id="variable-n~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1058,7 +1049,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-c~7"></span>
+              <span class="anchor" id="variable-c~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1098,7 +1089,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-a~11"></span>
+              <span class="anchor" id="variable-a~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1113,7 +1104,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-b~8"></span>
+              <span class="anchor" id="variable-b~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1128,7 +1119,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-c~6"></span>
+              <span class="anchor" id="variable-c~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1143,7 +1134,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-x~5"></span>
+              <span class="anchor" id="variable-x~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1158,7 +1149,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~45"></span>
+              <span class="anchor" id="variable-n~16"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1216,7 +1207,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

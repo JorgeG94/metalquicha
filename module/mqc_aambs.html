@@ -195,20 +195,7 @@
 minimal-basis orbitals. This module owns that basis and the counting that
 comes with it: how many minimal-basis orbitals a molecule has, how many of
 them are chemical core, and therefore how many valence-virtual orbitals have
-to be recovered from the virtual space.</p>
-<p>The counting is not a detail. Every space in the construction is defined by
-its dimension rather than by a threshold &ndash; <code>N_VVO = N_mbs - N_occ</code> exactly,
-not &ldquo;however many singular values look large&rdquo; &ndash; so a wrong count is not a
-small error in the answer, it is a different calculation. That is also what
-makes it testable before any integral exists: Paper I tabulates these
-numbers for eight molecules and they can be checked against nothing but the
-basis file.</p>
-<p><code>basis_sets/aambs/aambs.json</code> is Basis Set Exchange schema plus two fields
-per element that BSE has no slot for and this module needs:
-<code>n_core_orbitals</code> and <code>n_valence_orbitals</code>. The core is the <em>chemical</em> core,
-which counts semicore as core &ndash; so gallium has 14, not 10, because its 3d
-shell is chemically inert even though a frozen-core count would leave it
-out. See <code>basis_sets/aambs/PROVENANCE.md</code>.
+to be recovered from the virtual space.
 Locate aambs.json
 Chemical core and valence orbital counts for one Z
 The minimal-basis dimensions of a whole molecule
@@ -220,10 +207,10 @@ Principal and angular numbers, per minimal-basis function</p>
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='mqc_basis_utils.html'>mqc_basis_utils</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">json_module</li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">json_module</li>
+                  <li class="list-inline-item">pic_io</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -425,9 +412,8 @@ parameter
 <td> =</td>
                 <td>54</td>
             <td>
-                <p>The non-relativistic table covers hydrogen to xenon. Beyond that GAMESS
-switches to a relativistic set which is not shipped here, and which needs
-a relativistic Hamiltonian this code does not have.</p>
+                <p>The non-relativistic table covers hydrogen to xenon. The relativistic
+set beyond it is not shipped.</p>
             </td>
         </tr>
     </tbody>
@@ -601,7 +587,7 @@ a relativistic Hamiltonian this code does not have.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~15"></span>
+              <span class="anchor" id="variable-atomic_numbers~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -616,7 +602,7 @@ a relativistic Hamiltonian this code does not have.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_electrons~9"></span>
+              <span class="anchor" id="variable-n_electrons~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -646,7 +632,7 @@ a relativistic Hamiltonian this code does not have.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~121"></span>
+              <span class="anchor" id="variable-error~104"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -686,7 +672,7 @@ a relativistic Hamiltonian this code does not have.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~12"></span>
+              <span class="anchor" id="variable-atomic_number~24"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -731,7 +717,7 @@ a relativistic Hamiltonian this code does not have.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~120"></span>
+              <span class="anchor" id="variable-error~103"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -756,7 +742,7 @@ a relativistic Hamiltonian this code does not have.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Locate <code>aambs/aambs.json</code> on the basis search path</p><a href="../proc/aambs_file.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Locate <code>aambs/aambs.json</code> on the basis search path</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -771,7 +757,7 @@ a relativistic Hamiltonian this code does not have.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~9"></span>
+              <span class="anchor" id="variable-filename~2"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -786,7 +772,7 @@ a relativistic Hamiltonian this code does not have.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~119"></span>
+              <span class="anchor" id="variable-error~102"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -826,7 +812,7 @@ a relativistic Hamiltonian this code does not have.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~14"></span>
+              <span class="anchor" id="variable-atomic_numbers~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -886,7 +872,7 @@ a relativistic Hamiltonian this code does not have.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~117"></span>
+              <span class="anchor" id="variable-error~100"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -926,7 +912,7 @@ a relativistic Hamiltonian this code does not have.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~38"></span>
+              <span class="anchor" id="variable-json~23"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -941,7 +927,7 @@ a relativistic Hamiltonian this code does not have.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~11"></span>
+              <span class="anchor" id="variable-atomic_number~23"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -986,7 +972,7 @@ a relativistic Hamiltonian this code does not have.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~118"></span>
+              <span class="anchor" id="variable-error~101"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1029,7 +1015,7 @@ a relativistic Hamiltonian this code does not have.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

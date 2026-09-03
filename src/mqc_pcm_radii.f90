@@ -2,14 +2,11 @@
 module mqc_pcm_radii
    !! Van der Waals radii, and the scaling that turns them into a solute cavity.
    !!
-   !! **This is our data, which is the whole risk.** A continuum model's answer
-   !! depends on the cavity more strongly than on almost anything else in it -- the
-   !! solvation energy goes roughly as 1/R -- so a radius that is wrong by a few
-   !! percent produces a solvation energy that is wrong by a few percent while
-   !! looking entirely reasonable. There is no internal identity that catches it,
-   !! the way the electron count catches a wrong density. So: one table, in one
-   !! place, with the paper it came from written beside it, and a test that pins
-   !! the values a reader is most likely to recognise.
+   !! **A continuum model's answer depends on the cavity above almost anything
+   !! else in it.** The solvation energy goes roughly as 1/R, so a radius wrong
+   !! by a few percent gives a solvation energy wrong by a few percent, and no
+   !! internal identity catches it the way the electron count catches a wrong
+   !! density.
    !!
    !! The values are Bondi's [J. Phys. Chem. 68, 441 (1964)], filled in for the
    !! elements Bondi did not cover from Mantina et al. [J. Phys. Chem. A 113, 5806
@@ -18,9 +15,8 @@ module mqc_pcm_radii
    !! Bragg-Slater ones in `mqc_dft_radial`: those size an integration grid, are
    !! systematically smaller, and using them here would shrink every cavity.
    !!
-   !! Radii are returned in **Bohr**, like every other length in this program,
-   !! though the table is written in Angstrom because that is how both papers
-   !! tabulate them and a converted table cannot be checked against its source.
+   !! Radii are returned in **Bohr**, though the table is written in Angstrom,
+   !! which is how both papers tabulate them.
    use pic_types, only: dp
    use mqc_physical_constants, only: ANGSTROM_TO_BOHR
    use mqc_atomic_radii, only: vdw_radius_bondi, MAX_Z_BONDI
@@ -33,31 +29,24 @@ module mqc_pcm_radii
    public :: DEFAULT_RADII_SCALE
    public :: MAX_PCM_ELEMENT
 
-   !> Highest atomic number with a radius here.
-   !>
-   !> Argon, matching the range the CPU validation suite covers. A heavier atom
-   !> is refused rather than given a guessed radius: an invented cavity radius is
-   !> exactly the failure this module is arranged to prevent.
    integer, parameter :: MAX_PCM_ELEMENT = MAX_Z_BONDI
+   !! Highest atomic number with a radius here.
 
-   !> Scaling from a van der Waals radius to a cavity radius.
-   !>
-   !> 1.2 is the long-standing convention, from the observation that the solute
-   !> cavity that reproduces experimental solvation energies is somewhat larger
-   !> than the bare van der Waals surface. It is a fitted number, not a derived
-   !> one, and codes differ: Gaussian's UFF cavity and ORCA's default differ from
-   !> this and from each other. So it is a default rather than a constant, and a
-   !> deck can override it.
    real(dp), parameter :: DEFAULT_RADII_SCALE = 1.2_dp
+   !! Scaling from a van der Waals radius to a cavity radius.
+   ! TODO(mqc): the same 1.2 as `DEFAULT_PCM_RSCALE` in
+   ! `mqc_calculation_defaults`, which is what every deck actually gets --
+   ! nothing outside the tests reads this one. That constant's docstring sends
+   ! the reader here "for why 1.2 and not 1.0", and no such reason is here.
 
 contains
 
    subroutine vdw_radius(atomic_number, radius, error)
       !! The van der Waals radius of an element, in Bohr
       !!
-      !! Refused rather than extrapolated outside the table. A continuum model
-      !! given a plausible-looking wrong radius returns a plausible-looking wrong
-      !! solvation energy, and nothing downstream would question it.
+      !! Refused rather than extrapolated outside the table: a plausible wrong
+      !! radius gives a plausible wrong solvation energy that nothing downstream
+      !! would question.
       integer, intent(in) :: atomic_number
       real(dp), intent(out) :: radius
       type(error_t), intent(inout) :: error

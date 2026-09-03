@@ -211,30 +211,14 @@
     <div class="col-md-9" id='text'>
       <p>A short hash of everything that decides a fragment energy, so a stored
 energy can be matched against the calculation asking to reuse it.</p>
-<p><strong>This exists so that restart cannot lie.</strong> Reusing energies is the one
-feature whose failure looks like success: a resume that quietly mixes
-terms from a different geometry, basis or functional finishes early and
-reports a converged total, and there is nothing in the number to see. A
-checkpoint carrying this hash can be refused instead.</p>
-<p>Two rules decide what goes in.</p>
-<ul>
-<li><strong>In, if it changes the number.</strong> Coordinates, elements, charge and
-    multiplicity; the monomer partition, because a term names monomers by
-    index and a repartition silently renames every one of them; the
-    bonds, because they decide where caps go; the method, basis,
-    functional and the thresholds the SCF converges to.</li>
-<li><strong>Out, if it does not.</strong> Log level, output paths, rank counts,
-    verbosity, GPU binding. These change between the run that wrote a
-    checkpoint and the run that resumes it as a matter of course, and a
-    hash that rejected those would be a hash nobody could use.</li>
-</ul>
-<p>When in doubt a field goes in. A false mismatch costs a recomputation; a
-false match costs a wrong answer that nothing will catch.</p>
-<p>Reals are hashed as their IEEE bits rather than as text, so no formatting
-choice can round two different geometries onto one hash. The single
-exception is negative zero, normalised to positive, because it compares
-equal to zero everywhere else in the program and would otherwise make an
-identical geometry hash differently depending on how it was built.</p>
+<p>In, because they change the number: coordinates, elements, charge and
+multiplicity; the monomer partition, since a term names monomers by index;
+the bonds, since they decide where caps go; the method, basis, functional
+and the thresholds the SCF converges to. Out: log level, output paths,
+rank counts, verbosity, GPU binding.</p>
+<p>Reals are hashed as their IEEE bits rather than as text, with negative
+zero normalised to positive so that an identical geometry cannot hash
+differently depending on how it was built.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
@@ -242,9 +226,9 @@ identical geometry hash differently depending on how it was built.</p>
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1111,7 +1095,7 @@ parameter
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/hasher_t.html#boundprocedure-text~35'>text</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hash_text.html'>hash_text</a></td>
+  <strong><a href='../type/hasher_t.html#boundprocedure-text~39'>text</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hash_text.html'>hash_text</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1144,7 +1128,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~54"></span>
+              <span class="anchor" id="variable-sys_geom~91"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1159,7 +1143,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~39"></span>
+              <span class="anchor" id="variable-config~48"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1174,7 +1158,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~5"></span>
+              <span class="anchor" id="variable-calc_type~15"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1219,7 +1203,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~91"></span>
+              <span class="anchor" id="variable-this~146"></span>
               class(<a href='../type/hasher_t.html'>hasher_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1269,7 +1253,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~18"></span>
+              <span class="anchor" id="variable-h~27"></span>
               type(<a href='../type/hasher_t.html'>hasher_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1284,7 +1268,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~40"></span>
+              <span class="anchor" id="variable-config~49"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1324,7 +1308,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~17"></span>
+              <span class="anchor" id="variable-h~26"></span>
               type(<a href='../type/hasher_t.html'>hasher_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1379,7 +1363,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~84"></span>
+              <span class="anchor" id="variable-this~139"></span>
               class(<a href='../type/hasher_t.html'>hasher_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1394,7 +1378,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~17"></span>
+              <span class="anchor" id="variable-value~19"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1434,7 +1418,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~90"></span>
+              <span class="anchor" id="variable-this~145"></span>
               class(<a href='../type/hasher_t.html'>hasher_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1449,7 +1433,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~21"></span>
+              <span class="anchor" id="variable-value~23"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1489,7 +1473,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~85"></span>
+              <span class="anchor" id="variable-this~140"></span>
               class(<a href='../type/hasher_t.html'>hasher_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1504,7 +1488,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~18"></span>
+              <span class="anchor" id="variable-value~20"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1544,7 +1528,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~86"></span>
+              <span class="anchor" id="variable-this~141"></span>
               class(<a href='../type/hasher_t.html'>hasher_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1559,7 +1543,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-values~4"></span>
+              <span class="anchor" id="variable-values~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1599,7 +1583,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~87"></span>
+              <span class="anchor" id="variable-this~142"></span>
               class(<a href='../type/hasher_t.html'>hasher_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1614,7 +1598,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~19"></span>
+              <span class="anchor" id="variable-value~21"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1654,7 +1638,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~88"></span>
+              <span class="anchor" id="variable-this~143"></span>
               class(<a href='../type/hasher_t.html'>hasher_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1669,7 +1653,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-values~5"></span>
+              <span class="anchor" id="variable-values~10"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1709,7 +1693,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~89"></span>
+              <span class="anchor" id="variable-this~144"></span>
               class(<a href='../type/hasher_t.html'>hasher_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1724,7 +1708,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~20"></span>
+              <span class="anchor" id="variable-value~22"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1767,7 +1751,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

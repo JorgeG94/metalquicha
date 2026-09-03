@@ -209,53 +209,27 @@
 
     <div class="col-md-9" id='text'>
       <p>One accumulator per named stage, and one table at the end.</p>
-<p><strong>Why this exists.</strong> A direct-SCF cholesterol run spends 88% of its wall
-clock in Fock builds and 0.4% in diagonalisation. Nothing in the program
-said so until it was measured, and &ldquo;which part is slow&rdquo; is not a question
-that should need a rebuild to answer. Every method that takes long enough
-to notice should be able to answer it for itself.</p>
 <p><strong>Wall, not CPU.</strong> <code>pic_timer</code> reads <code>omp_get_wtime</code> when PIC is built
-threaded and <code>system_clock</code> otherwise &ndash; both are elapsed real time. CPU
-seconds would report thread count multiplied by duration, which is the
-wrong number for every threaded stage here.</p>
+threaded and <code>system_clock</code> otherwise; both are elapsed real time.</p>
 <p><strong>The shape is lap timing.</strong> One clock runs from <code>start</code> to <code>finish</code>, and
-each <code>lap</code> attributes everything since the previous lap to a named stage:</p>
-<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="p">(</span><span class="n">timing_report_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">clk</span>
-<span class="k">call </span><span class="n">clk</span><span class="p">%</span><span class="n">start</span><span class="p">()</span>
-<span class="k">call </span><span class="n">clk</span><span class="p">%</span><span class="n">begin</span><span class="p">(</span><span class="s2">"integrals"</span><span class="p">)</span><span class="w">     </span><span class="c">! says so before it takes the time</span>
-<span class="k">call </span><span class="n">build_integrals</span><span class="p">(...)</span>
-<span class="k">call </span><span class="n">clk</span><span class="p">%</span><span class="n">lap</span><span class="p">()</span><span class="w">                  </span><span class="c">! closes whatever `begin` opened</span>
-<span class="k">do </span><span class="n">iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
-<span class="w">   </span><span class="k">call </span><span class="n">amplitude_equations</span><span class="p">(...)</span>
-<span class="w">   </span><span class="k">call </span><span class="n">clk</span><span class="p">%</span><span class="n">lap</span><span class="p">(</span><span class="s2">"amplitudes"</span><span class="p">)</span><span class="w">     </span><span class="c">! accumulates, one entry not n</span>
-<span class="k">end do</span>
-<span class="k">call </span><span class="n">clk</span><span class="p">%</span><span class="n">finish</span><span class="p">()</span>
-<span class="k">call </span><span class="n">clk</span><span class="p">%</span><span class="n">report</span><span class="p">(</span><span class="s2">"CCSD"</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="p">)</span>
-</code></pre></div>
-
-<p><strong><code>begin</code> is the announcement, <code>lap</code> is the measurement.</strong> A table printed
-at the end says where the time went; it cannot say where the time is
-<em>going</em>, which is the question being asked by anyone watching a terminal
-that has been silent for four minutes. <code>begin</code> names the stage on the way
-in, and the matching <code>lap</code> needs no argument because the name is already
-known &ndash; so the announcement and the row it becomes cannot drift apart.</p>
+each <code>lap</code> attributes everything since the previous lap to a named stage.
+<code>begin</code> is the announcement and <code>lap</code> the measurement: <code>begin</code> names the
+stage on the way in, and the matching <code>lap</code> needs no argument.</p>
 <p>Stages are created on first mention, so a caller adds one by naming it and
 nothing has to be declared up front. Laps accumulate, so a stage inside a
 loop reports its total and its call count rather than the last pass.</p>
-<p><strong>Nothing is silently unaccounted.</strong> <code>report</code> prints the residual between
-the total and the sum of the stages as <code>other</code>. A missing <code>lap</code> shows up
-there rather than vanishing, which is the property that makes the table
-worth believing.</p>
+<p><code>report</code> prints the residual between the total and the sum of the stages
+as <code>other</code>, so a missing <code>lap</code> shows up there rather than vanishing.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item">pic_timer</li>
                   <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -460,8 +434,7 @@ parameter
                 <td>24</td>
             <td>
                 <p>Most stages one method may name. Exceeding it drops the extras into
-<code>other</code> rather than failing: a timer must never be the reason a
-calculation stops.</p>
+<code>other</code> rather than failing.</p>
             </td>
         </tr>
         <tr>
@@ -585,7 +558,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-running"></span>
+              <span class="anchor" id="variable-running~2"></span>
               logical,
             </td>
               <td>private</td>
@@ -687,12 +660,12 @@ parameter
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/timing_report_t.html#boundprocedure-start~2'>start</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/report_start.html'>report_start</a></td>
+  <strong><a href='../type/timing_report_t.html#boundprocedure-start'>start</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/report_start.html'>report_start</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/timing_report_t.html#boundprocedure-total~15'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/report_total.html'>report_total</a></td>
+  <strong><a href='../type/timing_report_t.html#boundprocedure-total~17'>total</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/report_total.html'>report_total</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -742,7 +715,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~37"></span>
+              <span class="anchor" id="variable-name~29"></span>
               character(len=MAX_STAGE_NAME),
             </td>
               <td>public</td>
@@ -793,7 +766,7 @@ parameter
 </h3></div>
     <div class="card-body">
           
-  <p>Small integer to text, so the warning above needs no io module</p>
+  <p>Small integer to text</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -808,7 +781,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~23"></span>
+              <span class="anchor" id="variable-value~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -853,7 +826,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~41"></span>
+              <span class="anchor" id="variable-name~33"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -883,7 +856,7 @@ parameter
 </h3></div>
     <div class="card-body">
           
-  <p>Wall seconds accumulated against one stage, or zero if never lapped</p><a href="../proc/report_seconds_of.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Wall seconds accumulated against one stage, or zero if never lapped</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -913,7 +886,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~40"></span>
+              <span class="anchor" id="variable-name~32"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1023,7 +996,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~38"></span>
+              <span class="anchor" id="variable-name~30"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1078,7 +1051,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-title"></span>
+              <span class="anchor" id="variable-title~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1093,7 +1066,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~11"></span>
+              <span class="anchor" id="variable-verbose~10"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -1188,7 +1161,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~39"></span>
+              <span class="anchor" id="variable-name~31"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -1201,8 +1174,7 @@ parameter
 <p>Omitted closes whatever <code>begin</code> last opened. A lap with neither a
 name nor a pending stage does not divide the timeline at all &ndash; the
 clock keeps running and the time lands in the next stage that is
-named. Attributing it to an invented stage would be worse: the
-table&rsquo;s value is that every row was asked for by someone.</p>
+named.</p>
             </td>
         </tr>
     </tbody>
@@ -1275,7 +1247,7 @@ table&rsquo;s value is that every row was asked for by someone.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

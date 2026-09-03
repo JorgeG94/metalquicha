@@ -136,9 +136,9 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/finite_diff_dipole_derivatives.html#variable-j~57">j</a>
-            <a class="list-group-item" href="../proc/finite_diff_dipole_derivatives.html#variable-k~56">k</a>
-            <a class="list-group-item" href="../proc/finite_diff_dipole_derivatives.html#variable-n_coords~8">n_coords</a>
+            <a class="list-group-item" href="../proc/finite_diff_dipole_derivatives.html#variable-j~49">j</a>
+            <a class="list-group-item" href="../proc/finite_diff_dipole_derivatives.html#variable-k~43">k</a>
+            <a class="list-group-item" href="../proc/finite_diff_dipole_derivatives.html#variable-n_coords~2">n_coords</a>
         </div>
       </div>
     </div>
@@ -179,15 +179,8 @@
     
 
     <p>Compute dipole moment derivatives via central finite differences</p>
-<p>Computes: d_mu_k/d_x_j = (mu_k(+h) - mu_k(-h)) / (2h)</p>
-<p>This is used for IR intensity calculations, where we need the dipole
-moment derivatives with respect to Cartesian nuclear coordinates.</p>
-<p>Args:
-  n_atoms: Number of atoms
-  forward_dipoles: Dipoles at forward-displaced geometries (3<em>n_atoms, 3)
-  backward_dipoles: Dipoles at backward-displaced geometries (3</em>n_atoms, 3)
-  displacement: Step size in Bohr
-  dipole_derivatives: Output derivatives (3, 3*n_atoms) in a.u.</p>
+<p><code>d_mu_k/d_x_j = (mu_k(+h) - mu_k(-h)) / (2h)</code>, with respect to the
+Cartesian nuclear coordinates, which is what IR intensities need.</p>
 
 
     <h3>Arguments</h3>
@@ -203,7 +196,7 @@ moment derivatives with respect to Cartesian nuclear coordinates.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~50"></span>
+              <span class="anchor" id="variable-n_atoms~36"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -258,12 +251,12 @@ moment derivatives with respect to Cartesian nuclear coordinates.</p>
             <td>::</td>
             <td><strong>displacement</strong></td>
             <td>
-                
+                <p>Step size in Bohr</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~6"></span>
+              <span class="anchor" id="variable-dipole_derivatives~4"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -273,7 +266,7 @@ moment derivatives with respect to Cartesian nuclear coordinates.</p>
             <td>::</td>
             <td><strong>dipole_derivatives</strong>(:,:)</td>
             <td>
-                <p>(3, 3*n_atoms)</p>
+                <p>(3, 3*n_atoms), a.u.</p>
             </td>
         </tr>
     </tbody>
@@ -676,7 +669,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~57"></span>
+              <span class="anchor" id="variable-j~49"></span>
               integer,
             </td>
               <td>private</td>
@@ -693,7 +686,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~56"></span>
+              <span class="anchor" id="variable-k~43"></span>
               integer,
             </td>
               <td>private</td>
@@ -710,7 +703,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_coords~8"></span>
+              <span class="anchor" id="variable-n_coords~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -745,22 +738,13 @@ large graphs.</div>
 <span class="w">                                             </span><span class="n">displacement</span><span class="p">,</span><span class="w"> </span><span class="n">dipole_derivatives</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Compute dipole moment derivatives via central finite differences</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Computes: d_mu_k/d_x_j = (mu_k(+h) - mu_k(-h)) / (2h)</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! This is used for IR intensity calculations, where we need the dipole</span>
-<span class="w">      </span><span class="c">!! moment derivatives with respect to Cartesian nuclear coordinates.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Args:</span>
-<span class="w">      </span><span class="c">!!   n_atoms: Number of atoms</span>
-<span class="w">      </span><span class="c">!!   forward_dipoles: Dipoles at forward-displaced geometries (3*n_atoms, 3)</span>
-<span class="w">      </span><span class="c">!!   backward_dipoles: Dipoles at backward-displaced geometries (3*n_atoms, 3)</span>
-<span class="w">      </span><span class="c">!!   displacement: Step size in Bohr</span>
-<span class="w">      </span><span class="c">!!   dipole_derivatives: Output derivatives (3, 3*n_atoms) in a.u.</span>
+<span class="w">      </span><span class="c">!! `d_mu_k/d_x_j = (mu_k(+h) - mu_k(-h)) / (2h)`, with respect to the</span>
+<span class="w">      </span><span class="c">!! Cartesian nuclear coordinates, which is what IR intensities need.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">forward_dipoles</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">   </span><span class="c">!! (3*n_atoms, 3)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">backward_dipoles</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3*n_atoms, 3)</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">displacement</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dipole_derivatives</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, 3*n_atoms)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">displacement</span><span class="w">  </span><span class="c">!! Step size in Bohr</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dipole_derivatives</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, 3*n_atoms), a.u.</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_coords</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">k</span>
 
@@ -799,7 +783,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

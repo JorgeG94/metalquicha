@@ -136,14 +136,14 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/validate_system.html#variable-atom~5">atom</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-atom~6">atom</a>
             <a class="list-group-item" href="../proc/validate_system.html#variable-audit">audit</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-iatom~15">iatom</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-imon~3">imon</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-islot">islot</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-missing_i~2">missing_i</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-missing_j~2">missing_j</a>
-            <a class="list-group-item" href="../proc/validate_system.html#variable-n_missing~2">n_missing</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-iatom~26">iatom</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-imon~6">imon</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-islot~3">islot</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-missing_i~4">missing_i</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-missing_j~4">missing_j</a>
+            <a class="list-group-item" href="../proc/validate_system.html#variable-n_missing~4">n_missing</a>
             <a class="list-group-item" href="../proc/validate_system.html#variable-owner_count">owner_count</a>
             <a class="list-group-item" href="../proc/validate_system.html#variable-total_charge~2">total_charge</a>
         </div>
@@ -186,10 +186,8 @@
     
 
     <p>Check a system before it is fragmented</p>
-<p><code>check_bonds</code> runs the perception audit, which is O(N^2) in the atom
-count and so is asked for rather than assumed &ndash; on a twenty-thousand
-atom cluster it is not free, and for a molecular cluster it has
-nothing to find.</p>
+<p><code>check_bonds</code> runs the perception audit, which is <code>O(N^2)</code> in the atom
+count and so is asked for rather than assumed.</p>
 
 
     <h3>Arguments</h3>
@@ -205,7 +203,7 @@ nothing to find.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~38"></span>
+              <span class="anchor" id="variable-sys_geom~84"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -220,7 +218,7 @@ nothing to find.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-strict"></span>
+              <span class="anchor" id="variable-strict~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -235,7 +233,7 @@ nothing to find.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~96"></span>
+              <span class="anchor" id="variable-error~170"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -988,7 +986,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom~5"></span>
+              <span class="anchor" id="variable-atom~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -1022,7 +1020,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~15"></span>
+              <span class="anchor" id="variable-iatom~26"></span>
               integer,
             </td>
               <td>private</td>
@@ -1039,7 +1037,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imon~3"></span>
+              <span class="anchor" id="variable-imon~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -1056,7 +1054,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-islot"></span>
+              <span class="anchor" id="variable-islot~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1073,7 +1071,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-missing_i~2"></span>
+              <span class="anchor" id="variable-missing_i~4"></span>
               integer,
             </td>
               <td>private,</td>
@@ -1090,7 +1088,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-missing_j~2"></span>
+              <span class="anchor" id="variable-missing_j~4"></span>
               integer,
             </td>
               <td>private,</td>
@@ -1107,7 +1105,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_missing~2"></span>
+              <span class="anchor" id="variable-n_missing~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -1175,10 +1173,13 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">validate_system</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">strict</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">check_bonds</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Check a system before it is fragmented</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! `check_bonds` runs the perception audit, which is O(N^2) in the atom</span>
-<span class="w">      </span><span class="c">!! count and so is asked for rather than assumed -- on a twenty-thousand</span>
-<span class="w">      </span><span class="c">!! atom cluster it is not free, and for a molecular cluster it has</span>
-<span class="w">      </span><span class="c">!! nothing to find.</span>
+<span class="w">      </span><span class="c">!! `check_bonds` runs the perception audit, which is `O(N^2)` in the atom</span>
+<span class="w">      </span><span class="c">!! count and so is asked for rather than assumed.</span>
+<span class="w">      </span><span class="c">! TODO(mqc): reads `fragment_sizes` and `fragment_atoms` without checking</span>
+<span class="w">      </span><span class="c">! that either is allocated, where the rest of the code branches on</span>
+<span class="w">      </span><span class="c">! `allocated(sys_geom%fragment_atoms)`. A fixed-size-monomer geometry --</span>
+<span class="w">      </span><span class="c">! what `initialize_system_geometry` builds -- reaches here from the</span>
+<span class="w">      </span><span class="c">! driver and dereferences both.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">strict</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
@@ -1285,7 +1286,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

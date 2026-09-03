@@ -138,7 +138,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/compute_energy_and_forces.html#variable-need_gradient">need_gradient</a>
             <a class="list-group-item" href="../proc/compute_energy_and_forces.html#variable-need_hessian">need_hessian</a>
-            <a class="list-group-item" href="../proc/compute_energy_and_forces.html#variable-result~55">result</a>
+            <a class="list-group-item" href="../proc/compute_energy_and_forces.html#variable-result~54">result</a>
         </div>
       </div>
     </div>
@@ -182,8 +182,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_driver.html'>mqc_driver</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -2754,16 +2754,9 @@ large graphs.</div>
     </div>
 
 
-    <p>Compute energy and forces for current geometry
-This is the main interface for optimization/dynamics codes</p>
-<p>Master rank provides updated geometry, all ranks compute fragments,
-results are returned on master rank only</p>
-<p>Usage:
-  1. Master rank updates sys_geom%coordinates
-  2. Call this subroutine (all ranks)
-  3. Master rank receives energy/gradient/hessian
-  4. Master rank updates geometry based on forces
-  5. Repeat from step 1</p>
+    <p>Compute energy and forces for the current geometry</p>
+<p>Called on all ranks. The master rank provides the updated geometry and
+is the only one where <code>energy</code>, <code>gradient</code> and <code>hessian</code> are set.</p>
 
 
     <h3>Arguments</h3>
@@ -2779,7 +2772,7 @@ results are returned on master rank only</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~78"></span>
+              <span class="anchor" id="variable-sys_geom~83"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2794,7 +2787,7 @@ results are returned on master rank only</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~10"></span>
+              <span class="anchor" id="variable-driver_config~11"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2809,7 +2802,7 @@ results are returned on master rank only</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~14"></span>
+              <span class="anchor" id="variable-resources~10"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2824,7 +2817,7 @@ results are returned on master rank only</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~19"></span>
+              <span class="anchor" id="variable-energy~23"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2839,7 +2832,7 @@ results are returned on master rank only</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~11"></span>
+              <span class="anchor" id="variable-gradient~14"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2869,7 +2862,7 @@ results are returned on master rank only</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~17"></span>
+              <span class="anchor" id="variable-bonds~21"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2895,10 +2888,8 @@ results are returned on master rank only</p>
             <td><strong>write_output</strong></td>
             <td>
                 <p>Whether the driver writes its JSON output file. Defaults to what
-<code>run_calculation</code> defaults to, which is yes.</p>
-<p>A caller that drives this in a loop wants no: a sampling run asking
-for thousands of energies produced thousands of <code>results.json</code>
-writes, one per call, each immediately overwritten by the next.</p>
+<code>run_calculation</code> defaults to, which is yes. A caller driving this
+in a loop wants no: one write per call, each overwriting the last.</p>
             </td>
         </tr>
     </tbody>
@@ -6050,7 +6041,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~55"></span>
+              <span class="anchor" id="variable-result~54"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private</td>
@@ -6083,18 +6074,10 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">compute_energy_and_forces</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">driver_config</span><span class="p">,</span><span class="w"> </span><span class="n">resources</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                        </span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="n">gradient</span><span class="p">,</span><span class="w"> </span><span class="n">hessian</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">write_output</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Compute energy and forces for current geometry</span>
-<span class="w">      </span><span class="c">!! This is the main interface for optimization/dynamics codes</span>
+<span class="w">      </span><span class="c">!! Compute energy and forces for the current geometry</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Master rank provides updated geometry, all ranks compute fragments,</span>
-<span class="w">      </span><span class="c">!! results are returned on master rank only</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Usage:</span>
-<span class="w">      </span><span class="c">!!   1. Master rank updates sys_geom%coordinates</span>
-<span class="w">      </span><span class="c">!!   2. Call this subroutine (all ranks)</span>
-<span class="w">      </span><span class="c">!!   3. Master rank receives energy/gradient/hessian</span>
-<span class="w">      </span><span class="c">!!   4. Master rank updates geometry based on forces</span>
-<span class="w">      </span><span class="c">!!   5. Repeat from step 1</span>
+<span class="w">      </span><span class="c">!! Called on all ranks. The master rank provides the updated geometry and</span>
+<span class="w">      </span><span class="c">!! is the only one where `energy`, `gradient` and `hessian` are set.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_driver</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">run_calculation</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_config_adapter</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">driver_config_t</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
@@ -6106,11 +6089,8 @@ large graphs.</div>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">write_output</span>
 <span class="w">         </span><span class="c">!! Whether the driver writes its JSON output file. Defaults to what</span>
-<span class="w">         </span><span class="c">!! `run_calculation` defaults to, which is yes.</span>
-<span class="w">         </span><span class="c">!!</span>
-<span class="w">         </span><span class="c">!! A caller that drives this in a loop wants no: a sampling run asking</span>
-<span class="w">         </span><span class="c">!! for thousands of energies produced thousands of `results.json`</span>
-<span class="w">         </span><span class="c">!! writes, one per call, each immediately overwritten by the next.</span>
+<span class="w">         </span><span class="c">!! `run_calculation` defaults to, which is yes. A caller driving this</span>
+<span class="w">         </span><span class="c">!! in a loop wants no: one write per call, each overwriting the last.</span>
 
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
 <span class="k">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">need_gradient</span><span class="p">,</span><span class="w"> </span><span class="n">need_hessian</span>
@@ -6174,7 +6154,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

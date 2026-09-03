@@ -201,9 +201,9 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>Provides configuration types for all quantum chemistry methods.
-Uses composition pattern: method_config_t contains nested config types
-for each method family. The factory reads from the appropriate nested type.
+      <p>Configuration types for every quantum chemistry method.</p>
+<p><code>method_config_t</code> holds one nested config per method family, and the
+factory reads from whichever one the method type names.
 Re-exported from mqc_config_types</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -211,11 +211,11 @@ Re-exported from mqc_config_types</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
                   <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1676,7 +1676,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~3"></span>
+              <span class="anchor" id="variable-diis_size~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1727,7 +1727,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~5"></span>
+              <span class="anchor" id="variable-max_iter~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1744,7 +1744,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~4"></span>
+              <span class="anchor" id="variable-n_roots"></span>
               integer,
             </td>
               <td>public</td>
@@ -1796,7 +1796,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~4"></span>
+              <span class="anchor" id="variable-use_diis~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1862,7 +1862,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-freeze_core~3"></span>
+              <span class="anchor" id="variable-freeze_core~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1896,7 +1896,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen_core~3"></span>
+              <span class="anchor" id="variable-n_frozen_core~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1930,7 +1930,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scs_os~2"></span>
+              <span class="anchor" id="variable-scs_os"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1947,7 +1947,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scs_ss~2"></span>
+              <span class="anchor" id="variable-scs_ss"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2032,8 +2032,7 @@ See mqc_config_types for why this is the default.</p>
       </h3>
     </div>
     <div class="card-body">
-      <p>Configuration for Kohn-Sham DFT method
-Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
+      <p>Configuration for Kohn-Sham DFT. SCF settings come from <code>scf_config_t</code>.</p>
 
         <h4>Components</h4>
           <table class="table table-striped varlist">
@@ -2048,7 +2047,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points~3"></span>
+              <span class="anchor" id="variable-angular_points"></span>
               integer,
             </td>
               <td>public</td>
@@ -2065,7 +2064,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set~3"></span>
+              <span class="anchor" id="variable-aux_basis_set~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -2082,7 +2081,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-block_size~3"></span>
+              <span class="anchor" id="variable-block_size"></span>
               integer,
             </td>
               <td>public</td>
@@ -2094,12 +2093,12 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
 <td> =</td>
                 <td>-1</td>
             <td>
-<p>Standard grid tables, 0 to 9. Three is the usual production default.</p>
+<p>Grid points per block; -1 keeps the backend default.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dispersion_type~2"></span>
+              <span class="anchor" id="variable-dispersion_type"></span>
               character(len=8),
             </td>
               <td>public</td>
@@ -2116,7 +2115,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~4"></span>
+              <span class="anchor" id="variable-functional"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -2133,7 +2132,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid_level~3"></span>
+              <span class="anchor" id="variable-grid_level"></span>
               integer,
             </td>
               <td>public</td>
@@ -2145,12 +2144,12 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
 <td> =</td>
                 <td>3</td>
             <td>
-
+<p>Standard grid tables, 0 to 9. Three is the usual production default.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid_type~2"></span>
+              <span class="anchor" id="variable-grid_type"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -2167,7 +2166,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nlc_grid_level~3"></span>
+              <span class="anchor" id="variable-nlc_grid_level"></span>
               integer,
             </td>
               <td>public</td>
@@ -2181,14 +2180,13 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
             <td>
 <p><code>keywords.dft.nlc_grid_level</code>, the quadrature VV10&rsquo;s double integral
 uses. Separate from <code>grid_level</code> because the non-local term costs
-the <em>product</em> of two grid sizes while everything else costs one, so
-the level that is right for exchange is an order of magnitude too
-expensive here. Negative means the backend&rsquo;s own default.</p>
+the <em>product</em> of two grid sizes while everything else costs one.
+Negative means the backend&rsquo;s own default.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-radial_points~3"></span>
+              <span class="anchor" id="variable-radial_points"></span>
               integer,
             </td>
               <td>public</td>
@@ -2205,7 +2203,7 @@ expensive here. Negative means the backend&rsquo;s own default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-screening_tolerance~3"></span>
+              <span class="anchor" id="variable-screening_tolerance"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2217,7 +2215,7 @@ expensive here. Negative means the backend&rsquo;s own default.</p>
 <td> =</td>
                 <td>1.0e-12_dp</td>
             <td>
-
+<p>AO value below which a shell is dropped from a grid block.</p>
             </td>
         </tr>
         <tr>
@@ -2239,7 +2237,7 @@ expensive here. Negative means the backend&rsquo;s own default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_dispersion~2"></span>
+              <span class="anchor" id="variable-use_dispersion"></span>
               logical,
             </td>
               <td>public</td>
@@ -2288,7 +2286,7 @@ expensive here. Negative means the backend&rsquo;s own default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_response~2"></span>
+              <span class="anchor" id="variable-allow_crap_response"></span>
               logical,
             </td>
               <td>public</td>
@@ -2301,12 +2299,12 @@ expensive here. Negative means the backend&rsquo;s own default.</p>
                 <td>.false.</td>
             <td>
 <p>Take whatever the response solve reached when it runs out of
-iterations, instead of refusing.</p><a href="../type/efp_config_t.html#variable-allow_crap_response~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+iterations, instead of refusing.</p><a href="../type/efp_config_t.html#variable-allow_crap_response" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dynamic_maxiter~2"></span>
+              <span class="anchor" id="variable-dynamic_maxiter"></span>
               integer,
             </td>
               <td>public</td>
@@ -2335,12 +2333,15 @@ iterations, instead of refusing.</p><a href="../type/efp_config_t.html#variable-
 <td> =</td>
                 <td>DEFAULT_DYNAMIC_TOL</td>
             <td>
-<p>Residual target for the frequency-dependent response solve.</p><a href="../type/efp_config_t.html#variable-dynamic_tolerance" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Residual target for the frequency-dependent response solve. The one
+setting in this group that changes the numbers written: the dynamic
+polarizabilities, and every dispersion energy computed from them
+downstream, are converged to this and no further.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-response~2"></span>
+              <span class="anchor" id="variable-response"></span>
               integer,
             </td>
               <td>public</td>
@@ -2357,7 +2358,7 @@ iterations, instead of refusing.</p><a href="../type/efp_config_t.html#variable-
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-response_batch~2"></span>
+              <span class="anchor" id="variable-response_batch"></span>
               integer,
             </td>
               <td>public</td>
@@ -2919,7 +2920,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
       </h3>
     </div>
     <div class="card-body">
-      <p>Master configuration containing all method-specific configs</p><a href="../type/method_config_t.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+      <p>Master configuration containing all method-specific configs</p>
 
         <h4>Components</h4>
           <table class="table table-striped varlist">
@@ -2934,7 +2935,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~4"></span>
+              <span class="anchor" id="variable-backend~2"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -2951,7 +2952,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_set~3"></span>
+              <span class="anchor" id="variable-basis_set~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -2968,7 +2969,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc~2"></span>
+              <span class="anchor" id="variable-cc"></span>
               type(<a href='../type/cc_config_t.html'>cc_config_t</a>),
             </td>
               <td>public</td>
@@ -3002,7 +3003,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-device_rank~3"></span>
+              <span class="anchor" id="variable-device_rank~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -3038,7 +3039,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ecp_set~3"></span>
+              <span class="anchor" id="variable-ecp_set~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -3089,7 +3090,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian_displacement~3"></span>
+              <span class="anchor" id="variable-hessian_displacement~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3106,7 +3107,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mcscf~2"></span>
+              <span class="anchor" id="variable-mcscf"></span>
               type(<a href='../type/mcscf_config_t.html'>mcscf_config_t</a>),
             </td>
               <td>public</td>
@@ -3123,7 +3124,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~3"></span>
+              <span class="anchor" id="variable-method_type"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -3140,7 +3141,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pcm~3"></span>
+              <span class="anchor" id="variable-pcm~2"></span>
               type(<a href='../type/pcm_config_t.html'>pcm_config_t</a>),
             </td>
               <td>public</td>
@@ -3152,12 +3153,12 @@ the real value or every rank binds to device 0.</p>
                 <td></td>
                 <td></td>
             <td>
-
+<p>Continuum solvation</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties~3"></span>
+              <span class="anchor" id="variable-properties~2"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
               <td>public</td>
@@ -3169,12 +3170,12 @@ the real value or every rank binds to device 0.</p>
                 <td></td>
                 <td></td>
             <td>
-<p>Shared SCF settings (used by HF and DFT)</p>
+<p>Analyses to run once the wave function exists</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf~2"></span>
+              <span class="anchor" id="variable-scf"></span>
               type(<a href='../type/scf_config_t.html'>scf_config_t</a>),
             </td>
               <td>public</td>
@@ -3186,7 +3187,7 @@ the real value or every rank binds to device 0.</p>
                 <td></td>
                 <td></td>
             <td>
-
+<p>Shared SCF settings, used by HF, DFT and MCSCF</p>
             </td>
         </tr>
         <tr>
@@ -3208,7 +3209,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~9"></span>
+              <span class="anchor" id="variable-verbose~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -3256,7 +3257,7 @@ the real value or every rank binds to device 0.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/method_config_t.html#boundprocedure-reset~6'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_reset.html'>config_reset</a></td>
+  <strong><a href='../type/method_config_t.html#boundprocedure-reset'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_reset.html'>config_reset</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -3289,7 +3290,7 @@ the real value or every rank binds to device 0.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points~4"></span>
+              <span class="anchor" id="variable-angular_points~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -3306,7 +3307,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~5"></span>
+              <span class="anchor" id="variable-dielectric~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3341,7 +3342,7 @@ see <code>mqc_config_types</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~4"></span>
+              <span class="anchor" id="variable-max_iter~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -3358,7 +3359,7 @@ see <code>mqc_config_types</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~6"></span>
+              <span class="anchor" id="variable-method"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -3373,10 +3374,10 @@ see <code>mqc_config_types</code>.</p>
 <p>Which continuum model the surface charges solve: &ldquo;cpcm&rdquo;
 (conductor-like, scale factor (eps-1)/eps) or &ldquo;iefpcm&rdquo; (the integral
 equation formalism, scale (eps-1)/(eps+1) with the D-matrix terms).
-The two are different models with different energies &ndash; water differs
-by ~1% of the solvation energy &ndash; so the choice is named, not
-defaulted per backend. Only the CPU path reads it; cuEST&rsquo;s solver is
-fixed and refuses &ldquo;iefpcm&rdquo; rather than substituting.</p>
+Two different models with different energies, so the choice is
+named, not defaulted per backend. Only the CPU path reads it;
+cuEST&rsquo;s solver is fixed and refuses &ldquo;iefpcm&rdquo; rather than
+substituting.</p>
             </td>
         </tr>
         <tr>
@@ -3398,7 +3399,7 @@ fixed and refuses &ldquo;iefpcm&rdquo; rather than substituting.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~7"></span>
+              <span class="anchor" id="variable-tolerance"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3465,7 +3466,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_analysis~3"></span>
+              <span class="anchor" id="variable-bonding_analysis"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -3482,7 +3483,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_energy~3"></span>
+              <span class="anchor" id="variable-bonding_energy"></span>
               logical,
             </td>
               <td>public</td>
@@ -3499,7 +3500,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_no_sharing~3"></span>
+              <span class="anchor" id="variable-bonding_no_sharing"></span>
               logical,
             </td>
               <td>public</td>
@@ -3516,7 +3517,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_no_sharing_ci~3"></span>
+              <span class="anchor" id="variable-bonding_no_sharing_ci"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -3533,7 +3534,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_restrict_localization~3"></span>
+              <span class="anchor" id="variable-bonding_restrict_localization"></span>
               logical,
             </td>
               <td>public</td>
@@ -3550,7 +3551,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_threshold~3"></span>
+              <span class="anchor" id="variable-bonding_threshold"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3567,7 +3568,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charges_scheme~3"></span>
+              <span class="anchor" id="variable-charges_scheme"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3587,7 +3588,7 @@ this is allocatable rather than a &ldquo;none&rdquo; sentinel like
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_guess~3"></span>
+              <span class="anchor" id="variable-fukui_guess"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3604,7 +3605,7 @@ this is allocatable rather than a &ldquo;none&rdquo; sentinel like
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_population~3"></span>
+              <span class="anchor" id="variable-fukui_population"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3621,7 +3622,7 @@ this is allocatable rather than a &ldquo;none&rdquo; sentinel like
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_scf~3"></span>
+              <span class="anchor" id="variable-fukui_scf"></span>
               type(<a href='../type/deltascf_options_t.html'>deltascf_options_t</a>),
             </td>
               <td>public</td>
@@ -3633,10 +3634,9 @@ this is allocatable rather than a &ldquo;none&rdquo; sentinel like
                 <td></td>
                 <td></td>
             <td>
-<p>How the ion SCFs converge. Already resolved against
-<code>keywords.scf</code> by the time it reaches here &ndash; the reader seeds it
-and the deck overwrites what it names &ndash; so a consumer reads these
-fields directly and never tests a sentinel.</p>
+<p>How the ion SCFs converge. Already resolved against <code>keywords.scf</code>
+by the time it reaches here, so a consumer reads these fields
+directly and never tests a sentinel.</p>
             </td>
         </tr>
     </tbody>
@@ -3673,7 +3673,7 @@ fields directly and never tests a sentinel.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-accelerator~2"></span>
+              <span class="anchor" id="variable-accelerator"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -3685,12 +3685,15 @@ fields directly and never tests a sentinel.</p>
 <td> =</td>
                 <td>&#34;diis&#34;</td>
             <td>
-
+<p><code>keywords.scf.accelerator</code>: &lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or
+&lsquo;ediis&rsquo;. The energy-based pair runs only while the error is large
+and hands over to DIIS below <code>ACCEL_SWITCH</code>, so naming one chooses a
+different opening, not a different endgame.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~5"></span>
+              <span class="anchor" id="variable-allow_crap_scf"></span>
               logical,
             </td>
               <td>public</td>
@@ -3707,7 +3710,7 @@ fields directly and never tests a sentinel.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_named~2"></span>
+              <span class="anchor" id="variable-aux_basis_named"></span>
               logical,
             </td>
               <td>public</td>
@@ -3720,12 +3723,12 @@ fields directly and never tests a sentinel.</p>
                 <td>.false.</td>
             <td>
 <p>Whether a deck actually asked for the set above, as opposed to
-inheriting the default.</p><a href="../type/scf_config_t.html#variable-aux_basis_named~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+inheriting the default.</p><a href="../type/scf_config_t.html#variable-aux_basis_named" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set~2"></span>
+              <span class="anchor" id="variable-aux_basis_set"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -3737,12 +3740,14 @@ inheriting the default.</p><a href="../type/scf_config_t.html#variable-aux_basis
 <td> =</td>
                 <td>&#34;def2-universal-jkfit&#34;</td>
             <td>
-
+<p>Auxiliary (JKFIT) basis for the density-fitted J and K. Required,
+not optional, for the cuEST backend, which exposes no conventional
+four-index ERI path and so always fits.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~4"></span>
+              <span class="anchor" id="variable-cartesian"></span>
               logical,
             </td>
               <td>public</td>
@@ -3754,14 +3759,12 @@ inheriting the default.</p><a href="../type/scf_config_t.html#variable-aux_basis
 <td> =</td>
                 <td>.false.</td>
             <td>
-<p><code>model.cartesian</code>; see <code>mqc_config_t</code>. Carried here rather than
-beside the basis name because it reaches the backend by the same
-route the rest of the SCF settings do.</p>
+<p><code>model.cartesian</code>; see <code>mqc_config_t</code>.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-convergence_metric~2"></span>
+              <span class="anchor" id="variable-convergence_metric"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -3773,10 +3776,7 @@ route the rest of the SCF settings do.</p>
 <td> =</td>
                 <td>&#34;standard&#34;</td>
             <td>
-<p><code>keywords.scf.accelerator</code>: &lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or
-&lsquo;ediis&rsquo;. The energy-based pair runs only while the error is large
-and hands over to DIIS, so naming one asks for a different opening,
-not a different endgame.</p>
+<p><code>keywords.scf.convergence_metric</code>; see <code>mqc_scf_convergence</code>.</p>
             </td>
         </tr>
         <tr>
@@ -3817,7 +3817,7 @@ default when they are false and honours the deck when they are true.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_fitting~2"></span>
+              <span class="anchor" id="variable-density_fitting"></span>
               logical,
             </td>
               <td>public</td>
@@ -3829,12 +3829,12 @@ default when they are false and honours the deck when they are true.</p>
 <td> =</td>
                 <td>.false.</td>
             <td>
-<p>Fit J and K against <code>aux_basis_set</code> on the CPU backend.</p><a href="../type/scf_config_t.html#variable-density_fitting~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Fit J and K against <code>aux_basis_set</code> on the CPU backend.</p><a href="../type/scf_config_t.html#variable-density_fitting" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~2"></span>
+              <span class="anchor" id="variable-diis_size"></span>
               integer,
             </td>
               <td>public</td>
@@ -3902,7 +3902,7 @@ default when they are false and honours the deck when they are true.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~6"></span>
+              <span class="anchor" id="variable-guess"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -3915,12 +3915,12 @@ default when they are false and honours the deck when they are true.</p>
                 <td>&#34;auto&#34;</td>
             <td>
 <p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;basis_set_projection&rsquo;,
-or &lsquo;auto&rsquo;</p><a href="../type/scf_config_t.html#variable-guess~6" class="pull-right"><emph>Read more&hellip;</emph></a>
+or &lsquo;auto&rsquo;</p><a href="../type/scf_config_t.html#variable-guess" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~3"></span>
+              <span class="anchor" id="variable-guess_steps"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -3939,7 +3939,7 @@ repeated here.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-incremental_fock~2"></span>
+              <span class="anchor" id="variable-incremental_fock"></span>
               logical,
             </td>
               <td>public</td>
@@ -3952,12 +3952,12 @@ repeated here.</p>
                 <td>.true.</td>
             <td>
 <p>Build each iteration&rsquo;s Fock matrix from the density <em>change</em> since
-the last full build, rather than from the density.</p><a href="../type/scf_config_t.html#variable-incremental_fock~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+the last full build, rather than from the density.</p><a href="../type/scf_config_t.html#variable-incremental_fock" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_shift~2"></span>
+              <span class="anchor" id="variable-level_shift"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3979,7 +3979,7 @@ than it looks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-linear_dependence~2"></span>
+              <span class="anchor" id="variable-linear_dependence"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3994,12 +3994,12 @@ than it looks.</p>
 <p><code>keywords.scf.linear_dependence_threshold</code>. Overlap eigenvalues at
 or below this are dropped as linearly dependent. Raise it to shed
 more of a diffuse basis, lower it to keep modes the default would
-discard.</p><a href="../type/scf_config_t.html#variable-linear_dependence~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+discard.</p><a href="../type/scf_config_t.html#variable-linear_dependence" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~3"></span>
+              <span class="anchor" id="variable-max_iter"></span>
               integer,
             </td>
               <td>public</td>
@@ -4028,12 +4028,14 @@ discard.</p><a href="../type/scf_config_t.html#variable-linear_dependence~2" cla
 <td> =</td>
                 <td>.false.</td>
             <td>
-<p>Whether the deck named <code>keywords.scf.maxiter</code>.</p><a href="../type/scf_config_t.html#variable-max_iter_set" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Whether the deck named <code>keywords.scf.maxiter</code>. A path whose own
+default differs from the shared one &ndash; MAKEFP, at 200 iterations &ndash;
+needs to tell &ldquo;the deck asked for 100&rdquo; from &ldquo;the deck said nothing&rdquo;.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unrestricted~3"></span>
+              <span class="anchor" id="variable-unrestricted"></span>
               logical,
             </td>
               <td>public</td>
@@ -4052,7 +4054,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~3"></span>
+              <span class="anchor" id="variable-use_diis"></span>
               logical,
             </td>
               <td>public</td>
@@ -4101,7 +4103,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-accelerator~3"></span>
+              <span class="anchor" id="variable-accelerator~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -4113,12 +4115,14 @@ the unrestricted code reduces to the restricted result.</p>
 <td> =</td>
                 <td>&#34;diis&#34;</td>
             <td>
-
+<p>&lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or &lsquo;ediis&rsquo;. The energy-based pair
+runs only while the error is large and hands over to DIIS, so
+naming one asks for a different opening, not a different endgame.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~6"></span>
+              <span class="anchor" id="variable-allow_crap_scf~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -4135,7 +4139,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_named~3"></span>
+              <span class="anchor" id="variable-aux_basis_named~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -4152,7 +4156,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set~4"></span>
+              <span class="anchor" id="variable-aux_basis_set~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -4169,7 +4173,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~3"></span>
+              <span class="anchor" id="variable-backend"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -4186,7 +4190,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_set~2"></span>
+              <span class="anchor" id="variable-basis_set"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -4203,7 +4207,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~5"></span>
+              <span class="anchor" id="variable-cartesian~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -4220,7 +4224,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-convergence_metric~3"></span>
+              <span class="anchor" id="variable-convergence_metric~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -4234,15 +4238,12 @@ the unrestricted code reduces to the restricted result.</p>
             <td>
 <p>Which measure decides this SCF has stopped. See
 <code>mqc_scf_convergence</code>; the default is the energy-and-commutator
-pair every loop tested before that module existed.
-&lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or &lsquo;ediis&rsquo;. The energy-based pair
-runs only while the error is large and hands over to DIIS, so
-naming one asks for a different opening, not a different endgame.</p>
+pair.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_fitting~3"></span>
+              <span class="anchor" id="variable-density_fitting~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -4259,7 +4260,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~3"></span>
+              <span class="anchor" id="variable-density_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4276,7 +4277,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-device_rank~2"></span>
+              <span class="anchor" id="variable-device_rank"></span>
               integer,
             </td>
               <td>public</td>
@@ -4293,7 +4294,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~4"></span>
+              <span class="anchor" id="variable-diis_size~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -4310,7 +4311,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ecp_set~2"></span>
+              <span class="anchor" id="variable-ecp_set"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -4327,7 +4328,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~3"></span>
+              <span class="anchor" id="variable-energy_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4344,7 +4345,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-freeze_core~2"></span>
+              <span class="anchor" id="variable-freeze_core"></span>
               logical,
             </td>
               <td>public</td>
@@ -4356,16 +4357,15 @@ naming one asks for a different opening, not a different endgame.</p>
 <td> =</td>
                 <td>.true.</td>
             <td>
-<p>Matches <code>correlation_config_t</code>, which is where this is always
-filled from. It read <code>.false.</code> while that read <code>.true.</code> &ndash; harmless
-while the copy happens, and a trap the moment anyone constructs
-this type directly, in a test or a new call path.
-Exclude core orbitals from a post-SCF correlation treatment</p>
+<p>Exclude core orbitals from a post-SCF correlation treatment. Always
+filled from <code>correlation_config_t</code>, whose default this must match:
+a mismatch bites whenever this type is constructed directly, in a
+test or a new call path.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grad_tol~3"></span>
+              <span class="anchor" id="variable-grad_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4382,7 +4382,7 @@ Exclude core orbitals from a post-SCF correlation treatment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~8"></span>
+              <span class="anchor" id="variable-guess~7"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -4395,12 +4395,12 @@ Exclude core orbitals from a post-SCF correlation treatment</p>
                 <td>&#34;auto&#34;</td>
             <td>
 <p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;basis_set_projection&rsquo;
-or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~8" class="pull-right"><emph>Read more&hellip;</emph></a>
+or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~7" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~4"></span>
+              <span class="anchor" id="variable-guess_steps~2"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -4418,7 +4418,7 @@ preliminary SCF in order.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian_displacement~2"></span>
+              <span class="anchor" id="variable-hessian_displacement"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4430,12 +4430,12 @@ preliminary SCF in order.</p>
 <td> =</td>
                 <td>DEFAULT_DISPLACEMENT</td>
             <td>
-<p>Step for a finite-difference Hessian, in Bohr.</p><a href="../type/scf_options_t.html#variable-hessian_displacement~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Step for a finite-difference Hessian, in Bohr.</p><a href="../type/scf_options_t.html#variable-hessian_displacement" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-incremental_fock~3"></span>
+              <span class="anchor" id="variable-incremental_fock~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -4455,7 +4455,7 @@ which is the first thing to rule out when a run stalls.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_shift~3"></span>
+              <span class="anchor" id="variable-level_shift~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4468,13 +4468,12 @@ which is the first thing to rule out when a run stalls.</p>
                 <td>0.0_dp</td>
             <td>
 <p>Hartree added to the virtual block before each diagonalisation.
-Zero is off &ndash; which is why this could never carry a sentinel for
-&ldquo;unset&rdquo;, and why the ions used to spell theirs &ldquo;any negative&rdquo;.</p>
+Zero is off.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-linear_dependence~3"></span>
+              <span class="anchor" id="variable-linear_dependence~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4491,7 +4490,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~6"></span>
+              <span class="anchor" id="variable-max_iter~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -4508,7 +4507,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen_core~2"></span>
+              <span class="anchor" id="variable-n_frozen_core"></span>
               integer,
             </td>
               <td>public</td>
@@ -4525,7 +4524,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pcm~2"></span>
+              <span class="anchor" id="variable-pcm"></span>
               type(<a href='../type/pcm_config_t.html'>pcm_config_t</a>),
             </td>
               <td>public</td>
@@ -4537,16 +4536,13 @@ Zero is off &ndash; which is why this could never carry a sentinel for
                 <td></td>
                 <td></td>
             <td>
-<p>Continuum solvation. A property of the reference rather than of
-the functional, which is why it sits here: Hartree-Fock, DFT, MP2
-and coupled cluster all reach the backend through an extending
-type, and leaving it off one of them meant <code>keywords.pcm</code> was read,
-validated and then silently dropped for that path.</p>
+<p>Continuum solvation. A property of the reference rather than of the
+functional, so every extending type inherits it.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties~2"></span>
+              <span class="anchor" id="variable-properties"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
               <td>public</td>
@@ -4563,7 +4559,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spherical~2"></span>
+              <span class="anchor" id="variable-spherical"></span>
               logical,
             </td>
               <td>public</td>
@@ -4580,7 +4576,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unrestricted~4"></span>
+              <span class="anchor" id="variable-unrestricted~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -4597,7 +4593,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~5"></span>
+              <span class="anchor" id="variable-use_diis~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -4614,7 +4610,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~8"></span>
+              <span class="anchor" id="variable-verbose"></span>
               logical,
             </td>
               <td>public</td>
@@ -4663,7 +4659,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-accuracy~2"></span>
+              <span class="anchor" id="variable-accuracy"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4680,7 +4676,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_nang~4"></span>
+              <span class="anchor" id="variable-cpcm_nang"></span>
               integer,
             </td>
               <td>public</td>
@@ -4697,7 +4693,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_rscale~4"></span>
+              <span class="anchor" id="variable-cpcm_rscale"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4714,7 +4710,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~4"></span>
+              <span class="anchor" id="variable-dielectric"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4748,7 +4744,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvation_model~4"></span>
+              <span class="anchor" id="variable-solvation_model"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -4765,7 +4761,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvent~4"></span>
+              <span class="anchor" id="variable-solvent"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -4782,7 +4778,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_cds~4"></span>
+              <span class="anchor" id="variable-use_cds"></span>
               logical,
             </td>
               <td>public</td>
@@ -4799,7 +4795,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_shift~4"></span>
+              <span class="anchor" id="variable-use_shift"></span>
               logical,
             </td>
               <td>public</td>
@@ -4868,7 +4864,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~48"></span>
+              <span class="anchor" id="variable-this"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4903,7 +4899,7 @@ validated and then silently dropped for that path.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Log method-specific settings based on method type</p><a href="../proc/config_log_settings.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Log method-specific settings, so the driver need not know the details</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -4918,7 +4914,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~52"></span>
+              <span class="anchor" id="variable-this~5"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4943,7 +4939,7 @@ validated and then silently dropped for that path.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Reset all configuration values to defaults</p>
+  <p>Reset configuration values to defaults</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -4958,7 +4954,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~51"></span>
+              <span class="anchor" id="variable-this~4"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4983,7 +4979,8 @@ validated and then silently dropped for that path.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Configure XTB solvation settings from driver configuration</p><a href="../proc/xtb_configure.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Set the XTB solvation parameters, defaulting the model to &ldquo;alpb&rdquo; when
+a solvent or dielectric was given without one</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -4998,7 +4995,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~49"></span>
+              <span class="anchor" id="variable-this~2"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5013,7 +5010,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_cds~5"></span>
+              <span class="anchor" id="variable-use_cds~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -5028,7 +5025,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_shift~5"></span>
+              <span class="anchor" id="variable-use_shift~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -5043,7 +5040,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~6"></span>
+              <span class="anchor" id="variable-dielectric~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -5058,7 +5055,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_nang~5"></span>
+              <span class="anchor" id="variable-cpcm_nang~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -5073,7 +5070,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_rscale~5"></span>
+              <span class="anchor" id="variable-cpcm_rscale~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -5088,7 +5085,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvent~5"></span>
+              <span class="anchor" id="variable-solvent~2"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -5103,7 +5100,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvation_model~5"></span>
+              <span class="anchor" id="variable-solvation_model~2"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -5128,7 +5125,7 @@ validated and then silently dropped for that path.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Get solvation configuration info for logging</p><a href="../proc/xtb_get_solvation_info.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Describe the solvation setup for the log; <code>n_lines</code> is 0 for gas phase</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -5143,7 +5140,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~50"></span>
+              <span class="anchor" id="variable-this~3"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -5216,7 +5213,7 @@ validated and then silently dropped for that path.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

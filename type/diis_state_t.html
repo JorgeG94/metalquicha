@@ -137,7 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/diis_state_t.html#variable-density_history">density_history</a>
-            <a class="list-group-item" href="../type/diis_state_t.html#variable-df">df</a>
+            <a class="list-group-item" href="../type/diis_state_t.html#variable-df~3">df</a>
             <a class="list-group-item" href="../type/diis_state_t.html#variable-energy_based">energy_based</a>
             <a class="list-group-item" href="../type/diis_state_t.html#variable-energy_history">energy_history</a>
             <a class="list-group-item" href="../type/diis_state_t.html#variable-error_history">error_history</a>
@@ -145,9 +145,9 @@
             <a class="list-group-item" href="../type/diis_state_t.html#variable-max_vectors">max_vectors</a>
             <a class="list-group-item" href="../type/diis_state_t.html#variable-n_error">n_error</a>
             <a class="list-group-item" href="../type/diis_state_t.html#variable-n_fock">n_fock</a>
-            <a class="list-group-item" href="../type/diis_state_t.html#variable-n_stored">n_stored</a>
+            <a class="list-group-item" href="../type/diis_state_t.html#variable-n_stored~2">n_stored</a>
             <a class="list-group-item" href="../type/diis_state_t.html#variable-newest">newest</a>
-            <a class="list-group-item" href="../type/diis_state_t.html#variable-overlap">overlap</a>
+            <a class="list-group-item" href="../type/diis_state_t.html#variable-overlap~9">overlap</a>
         </div>
       </div>
     </div>
@@ -174,11 +174,11 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-count">count</a>
-            <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-destroy~3">destroy</a>
+            <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-count~13">count</a>
+            <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-destroy~28">destroy</a>
             <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-extrapolate">extrapolate</a>
             <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-extrapolate_with">extrapolate_with</a>
-            <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-init">init</a>
+            <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-init~7">init</a>
             <a class="list-group-item" href="../type/diis_state_t.html#boundprocedure-push">push</a>
         </div>
       </div>
@@ -235,7 +235,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-df"></span>
+              <span class="anchor" id="variable-df~3"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -249,11 +249,10 @@
             <td>
                 <p>(max_vectors, max_vectors) cached <D_i | F_j> in slot coordinates,
 which is everything EDIIS and ADIIS need from the history.</p>
-<p><strong>Not symmetric.</strong> <code>&lt;D_i|F_j&gt;</code> and <code>&lt;D_j|F_i&gt;</code> are different
-numbers off the diagonal, and both energy models depend on the
-difference, so a new entry updates a full row <em>and</em> a full column
-rather than one triangle &ndash; unlike <code>overlap</code> above, where the two
-are equal and the assignment is mirrored.</p>
+<p><strong>Not symmetric.</strong> <code>&lt;D_i|F_j&gt;</code> and <code>&lt;D_j|F_i&gt;</code> differ off the
+diagonal and both energy models depend on the difference, so a new
+entry updates a full row <em>and</em> a full column rather than one
+triangle &ndash; unlike <code>overlap</code> above, which is mirrored.</p>
             </td>
         </tr>
         <tr>
@@ -272,9 +271,7 @@ are equal and the assignment is mirrored.</p>
             <td>
                 <p>Whether the history below is carried. Off by default and allocated
 only on request: a density is the size of a Fock matrix, so this
-doubles the history&rsquo;s footprint &ndash; 14 MB at 472 basis functions
-across eight slots &ndash; and a run that only ever calls DIIS should not
-pay for it.</p>
+doubles the history&rsquo;s footprint.</p>
             </td>
         </tr>
         <tr>
@@ -381,7 +378,7 @@ pay for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_stored"></span>
+              <span class="anchor" id="variable-n_stored~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -415,7 +412,7 @@ pay for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap"></span>
+              <span class="anchor" id="variable-overlap~9"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -446,7 +443,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-count"></span>
+      <span class="anchor" id="boundprocedure-count~13"></span>
       <h3>
           procedure, public ::
   <strong>count</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_count.html'>diis_count</a>
@@ -505,7 +502,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-destroy~3"></span>
+      <span class="anchor" id="boundprocedure-destroy~28"></span>
       <h3>
           procedure, public ::
   <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_destroy.html'>diis_destroy</a>
@@ -742,7 +739,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-init"></span>
+      <span class="anchor" id="boundprocedure-init~7"></span>
       <h3>
           procedure, public ::
   <strong>init</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_init.html'>diis_init</a>
@@ -1010,9 +1007,7 @@ the trace both energy models want.</p>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy_based</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">         </span><span class="c">!! Whether the history below is carried. Off by default and allocated</span>
 <span class="w">         </span><span class="c">!! only on request: a density is the size of a Fock matrix, so this</span>
-<span class="w">         </span><span class="c">!! doubles the history's footprint -- 14 MB at 472 basis functions</span>
-<span class="w">         </span><span class="c">!! across eight slots -- and a run that only ever calls DIIS should not</span>
-<span class="w">         </span><span class="c">!! pay for it.</span>
+<span class="w">         </span><span class="c">!! doubles the history's footprint.</span>
 
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">density_history</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (n_fock, max_vectors)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy_history</span><span class="p">(:)</span><span class="w">      </span><span class="c">!! (max_vectors)</span>
@@ -1021,11 +1016,10 @@ the trace both energy models want.</p>
 <span class="w">         </span><span class="c">!! (max_vectors, max_vectors) cached &lt;D_i | F_j&gt; in slot coordinates,</span>
 <span class="w">         </span><span class="c">!! which is everything EDIIS and ADIIS need from the history.</span>
 <span class="w">         </span><span class="c">!!</span>
-<span class="w">         </span><span class="c">!! **Not symmetric.** `&lt;D_i|F_j&gt;` and `&lt;D_j|F_i&gt;` are different</span>
-<span class="w">         </span><span class="c">!! numbers off the diagonal, and both energy models depend on the</span>
-<span class="w">         </span><span class="c">!! difference, so a new entry updates a full row *and* a full column</span>
-<span class="w">         </span><span class="c">!! rather than one triangle -- unlike `overlap` above, where the two</span>
-<span class="w">         </span><span class="c">!! are equal and the assignment is mirrored.</span>
+<span class="w">         </span><span class="c">!! **Not symmetric.** `&lt;D_i|F_j&gt;` and `&lt;D_j|F_i&gt;` differ off the</span>
+<span class="w">         </span><span class="c">!! diagonal and both energy models depend on the difference, so a new</span>
+<span class="w">         </span><span class="c">!! entry updates a full row *and* a full column rather than one</span>
+<span class="w">         </span><span class="c">!! triangle -- unlike `overlap` above, which is mirrored.</span>
 <span class="w">   </span><span class="k">contains</span>
 <span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">init</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">diis_init</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">push</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">diis_push</span>
@@ -1056,7 +1050,7 @@ the trace both energy models want.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -138,9 +138,9 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/transform_ci_vector.html#variable-after~2">after</a>
             <a class="list-group-item" href="../proc/transform_ci_vector.html#variable-before~2">before</a>
-            <a class="list-group-item" href="../proc/transform_ci_vector.html#variable-na~13">na</a>
+            <a class="list-group-item" href="../proc/transform_ci_vector.html#variable-na~11">na</a>
             <a class="list-group-item" href="../proc/transform_ci_vector.html#variable-nb~10">nb</a>
-            <a class="list-group-item" href="../proc/transform_ci_vector.html#variable-work~3">work</a>
+            <a class="list-group-item" href="../proc/transform_ci_vector.html#variable-work~4">work</a>
         </div>
       </div>
     </div>
@@ -181,11 +181,10 @@
     
 
     <p>Re-expand a CI vector in the target basis: <code>C' = M_alpha^T C M_beta</code></p>
-<p>The amplitudes change and the wave function does not. What comes back
-is the same state, so its energy against the target-basis Hamiltonian
-must equal the energy it had in the basis it was solved in &ndash; which is
-the check a caller should make, because it tests the whole chain
-rather than this arithmetic alone.</p>
+<p>The amplitudes change and the wave function does not, so the energy of
+the result against the target-basis Hamiltonian must equal the energy
+it had in the basis it was solved in. That is the check a caller should
+make: it tests the whole chain rather than this arithmetic alone.</p>
 
 
     <h3>Arguments</h3>
@@ -231,7 +230,7 @@ rather than this arithmetic alone.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ci~6"></span>
+              <span class="anchor" id="variable-ci~9"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -261,7 +260,7 @@ rather than this arithmetic alone.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~146"></span>
+              <span class="anchor" id="variable-error~41"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -488,7 +487,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-na~13"></span>
+              <span class="anchor" id="variable-na~11"></span>
               integer,
             </td>
               <td>private</td>
@@ -522,7 +521,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-work~3"></span>
+              <span class="anchor" id="variable-work~4"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -556,11 +555,10 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">transform_ci_vector</span><span class="p">(</span><span class="n">m_alpha</span><span class="p">,</span><span class="w"> </span><span class="n">m_beta</span><span class="p">,</span><span class="w"> </span><span class="n">ci</span><span class="p">,</span><span class="w"> </span><span class="n">transformed</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Re-expand a CI vector in the target basis: `C' = M_alpha^T C M_beta`</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The amplitudes change and the wave function does not. What comes back</span>
-<span class="w">      </span><span class="c">!! is the same state, so its energy against the target-basis Hamiltonian</span>
-<span class="w">      </span><span class="c">!! must equal the energy it had in the basis it was solved in -- which is</span>
-<span class="w">      </span><span class="c">!! the check a caller should make, because it tests the whole chain</span>
-<span class="w">      </span><span class="c">!! rather than this arithmetic alone.</span>
+<span class="w">      </span><span class="c">!! The amplitudes change and the wave function does not, so the energy of</span>
+<span class="w">      </span><span class="c">!! the result against the target-basis Hamiltonian must equal the energy</span>
+<span class="w">      </span><span class="c">!! it had in the basis it was solved in. That is the check a caller should</span>
+<span class="w">      </span><span class="c">!! make: it tests the whole chain rather than this arithmetic alone.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">m_alpha</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">   </span><span class="c">!! From `string_rotation_matrix`, alpha</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">m_beta</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">    </span><span class="c">!! The same for beta</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ci</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">        </span><span class="c">!! (n_alpha_strings, n_beta_strings)</span>
@@ -587,9 +585,8 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">pic_gemm</span><span class="p">(</span><span class="n">m_alpha</span><span class="p">,</span><span class="w"> </span><span class="n">ci</span><span class="p">,</span><span class="w"> </span><span class="n">work</span><span class="p">,</span><span class="w"> </span><span class="n">transa</span><span class="o">=</span><span class="s2">"T"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">pic_gemm</span><span class="p">(</span><span class="n">work</span><span class="p">,</span><span class="w"> </span><span class="n">m_beta</span><span class="p">,</span><span class="w"> </span><span class="n">transformed</span><span class="p">)</span>
 
-<span class="w">      </span><span class="c">! Orthogonal in, orthogonal out. This does not prove the convention is</span>
-<span class="w">      </span><span class="c">! right -- a sign error survives it -- but it does catch a transformation</span>
-<span class="w">      </span><span class="c">! built for the wrong space, which is the mistake with no other symptom.</span>
+<span class="w">      </span><span class="c">! Orthogonal in, orthogonal out. A sign error survives this; a</span>
+<span class="w">      </span><span class="c">! transformation built for the wrong space does not.</span>
 <span class="w">      </span><span class="n">before</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">ci</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 <span class="w">      </span><span class="n">after</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">transformed</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">after</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">before</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">TOL_NORM</span><span class="o">*</span><span class="nb">max</span><span class="p">(</span><span class="mf">1.0_dp</span><span class="p">,</span><span class="w"> </span><span class="n">before</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
@@ -624,7 +621,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

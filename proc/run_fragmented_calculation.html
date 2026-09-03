@@ -139,7 +139,7 @@
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-all_node_leader_ranks">all_node_leader_ranks</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-allow_overlapping_fragments">allow_overlapping_fragments</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-checkpoint_error">checkpoint_error</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-expansion">expansion</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-expansion~2">expansion</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-global_groups">global_groups</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-global_node_rank">global_node_rank</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-group_id">group_id</a>
@@ -147,26 +147,26 @@
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-group_leader_ranks">group_leader_ranks</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-group_size">group_size</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-group_start">group_start</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-i~18">i</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-j~6">j</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-i~25">i</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-j~7">j</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-max_intersection_level">max_intersection_level</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-max_level~2">max_level</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-monomers">monomers</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-max_level~9">max_level</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-monomers~2">monomers</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-n_expected_frags">n_expected_frags</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-n_pie_terms">n_pie_terms</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-n_primaries">n_primaries</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-n_primaries_i64">n_primaries_i64</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-n_rows">n_rows</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-n_rows~3">n_rows</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-node_leader_ranks">node_leader_ranks</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-nodes_per_group">nodes_per_group</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-num_nodes">num_nodes</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-pie_atom_sets">pie_atom_sets</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-pie_coefficients">pie_coefficients</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-pie_error">pie_error</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-polymers">polymers</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-polymers~5">polymers</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-supplied_check">supplied_check</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-supplied_width">supplied_width</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-total_fragments">total_fragments</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-total_fragments~5">total_fragments</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-validation_error">validation_error</a>
         </div>
       </div>
@@ -207,10 +207,10 @@
 </h2>
     
 
-    <p>Handle fragmented calculation (nlevel &gt; 0)</p>
-<p>Generates fragments, distributes work across MPI processes organized in nodes,
-and coordinates many-body expansion calculation using hierarchical parallelism.
-If allow_overlapping_fragments=true, uses GMBE with intersection correction.</p>
+    <p>Run a many-body expansion (<code>nlevel &gt; 0</code>)</p>
+<p>Builds the term list, groups the ranks into nodes and groups, and hands
+the work to an expansion context. <code>allow_overlapping_fragments</code> selects
+GMBE with its inclusion-exclusion terms instead of plain MBE.</p>
 
 
     <h3>Arguments</h3>
@@ -226,7 +226,7 @@ If allow_overlapping_fragments=true, uses GMBE with intersection correction.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~2"></span>
+              <span class="anchor" id="variable-resources~3"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in),</td>
@@ -241,7 +241,7 @@ If allow_overlapping_fragments=true, uses GMBE with intersection correction.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~3"></span>
+              <span class="anchor" id="variable-config~7"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -256,7 +256,7 @@ If allow_overlapping_fragments=true, uses GMBE with intersection correction.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~3"></span>
+              <span class="anchor" id="variable-sys_geom~10"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -286,7 +286,7 @@ If allow_overlapping_fragments=true, uses GMBE with intersection correction.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~4"></span>
+              <span class="anchor" id="variable-json_data~8"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2152,7 +2152,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expansion"></span>
+              <span class="anchor" id="variable-expansion~2"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
               <td>private,</td>
@@ -2288,7 +2288,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~18"></span>
+              <span class="anchor" id="variable-i~25"></span>
               integer,
             </td>
               <td>private</td>
@@ -2305,7 +2305,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~6"></span>
+              <span class="anchor" id="variable-j~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -2339,7 +2339,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~2"></span>
+              <span class="anchor" id="variable-max_level~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -2356,7 +2356,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers"></span>
+              <span class="anchor" id="variable-monomers~2"></span>
               integer,
             </td>
               <td>private,</td>
@@ -2385,7 +2385,7 @@ large graphs.</div>
                 <td></td>
                 <td></td>
             <td>
-                <p>Expected number of fragments based on combinatorics (int64 to handle large systems)</p>
+                <p>Fragment count the combinatorics predict</p>
             </td>
         </tr>
         <tr>
@@ -2441,7 +2441,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_rows"></span>
+              <span class="anchor" id="variable-n_rows~3"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -2560,7 +2560,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers"></span>
+              <span class="anchor" id="variable-polymers~5"></span>
               integer,
             </td>
               <td>private,</td>
@@ -2611,7 +2611,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments"></span>
+              <span class="anchor" id="variable-total_fragments~5"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -2661,11 +2661,12 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_fragmented_calculation</span><span class="p">(</span><span class="n">resources</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                         </span><span class="n">supplied_terms</span><span class="p">,</span><span class="w"> </span><span class="n">n_supplied_terms</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Handle fragmented calculation (nlevel &gt; 0)</span>
+<span class="w">      </span><span class="c">!! Run a many-body expansion (`nlevel &gt; 0`)</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Generates fragments, distributes work across MPI processes organized in nodes,</span>
-<span class="w">      </span><span class="c">!! and coordinates many-body expansion calculation using hierarchical parallelism.</span>
-<span class="w">      </span><span class="c">!! If allow_overlapping_fragments=true, uses GMBE with intersection correction.</span>
+<span class="w">      </span><span class="c">!! Builds the term list, groups the ranks into nodes and groups, and hands</span>
+<span class="w">      </span><span class="c">!! the work to an expansion context. `allow_overlapping_fragments` selects</span>
+<span class="w">      </span><span class="c">!! GMBE with its inclusion-exclusion terms instead of plain MBE.</span>
+
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">resources_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">target</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">resources</span><span class="w">  </span><span class="c">!! Resources container (MPI comms, etc.)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span><span class="w">  </span><span class="c">!! Driver configuration (includes method_config, calc_type, etc.)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span><span class="w">  </span><span class="c">!! System geometry and fragment info</span>
@@ -2694,7 +2695,7 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">group_leader_ranks</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Group leader rank for each node leader</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">group_ids</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Group id for each node leader</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomers</span><span class="p">(:)</span><span class="w">     </span><span class="c">!! Temporary monomer list for fragment generation</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_expected_frags</span><span class="w">  </span><span class="c">!! Expected number of fragments based on combinatorics (int64 to handle large systems)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_expected_frags</span><span class="w">  </span><span class="c">!! Fragment count the combinatorics predict</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_rows</span><span class="w">      </span><span class="c">!! Number of rows needed for polymers array (int64 to handle large systems)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">global_node_rank</span><span class="w">  </span><span class="c">!! Global rank if this process leads a node, -1 otherwise</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">all_node_leader_ranks</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Node leader status for all ranks</span>
@@ -2750,9 +2751,7 @@ large graphs.</div>
 <span class="w">            </span><span class="c">! The caller's array is as wide as their highest term, which need</span>
 <span class="w">            </span><span class="c">! not be `max_level`: a screen that keeps no trimers hands over a</span>
 <span class="w">            </span><span class="c">! two-column list for a level-3 expansion, and copying `max_level`</span>
-<span class="w">            </span><span class="c">! columns from it reads off the end. That produced a monomer index</span>
-<span class="w">            </span><span class="c">! of 0 the once, which the validator caught; it is undefined</span>
-<span class="w">            </span><span class="c">! memory and could as easily have been a plausible index.</span>
+<span class="w">            </span><span class="c">! columns from it reads off the end.</span>
 <span class="w">            </span><span class="n">supplied_width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">supplied_terms</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="n">default_int</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">supplied_width</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">max_level</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">               </span><span class="c">! Wider than the expansion allows. Truncating would silently</span>
@@ -2770,10 +2769,9 @@ large graphs.</div>
 <span class="k">               </span><span class="n">polymers</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">supplied_width</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                  </span><span class="n">supplied_terms</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">supplied_width</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
-<span class="w">            </span><span class="c">! A supplied list has had no screening or sorting applied to it and</span>
-<span class="w">            </span><span class="c">! comes from outside, so it is checked before anything is spent on</span>
-<span class="w">            </span><span class="c">! it -- above all for subset closure, which a reasonable-looking</span>
-<span class="w">            </span><span class="c">! screen breaks silently.</span>
+<span class="w">            </span><span class="c">! A supplied list comes from outside unscreened and unsorted, so it</span>
+<span class="w">            </span><span class="c">! is checked before anything is spent on it -- above all for subset</span>
+<span class="w">            </span><span class="c">! closure, which a reasonable-looking screen breaks silently.</span>
 <span class="w">            </span><span class="k">call </span><span class="n">supplied_check</span><span class="p">%</span><span class="n">replace</span><span class="p">(</span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">validation_error</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">validation_error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               call </span><span class="n">validate_terms</span><span class="p">(</span><span class="n">supplied_check</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">unchecked_input</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -2826,7 +2824,10 @@ large graphs.</div>
 <span class="w">               </span><span class="k">end if</span>
 
 <span class="w">               </span><span class="c">! Sort primaries by size (largest first)</span>
-<span class="w">               </span><span class="c">! TODO: Currently disabled - see comment in MBE section above</span>
+<span class="w">               </span><span class="c">! TODO(mqc): with the line below commented out, `total_fragments`</span>
+<span class="w">               </span><span class="c">! is whatever screening left it. That equals `n_primaries` only</span>
+<span class="w">               </span><span class="c">! because screening always runs on this branch, so the sort is</span>
+<span class="w">               </span><span class="c">! correct by accident rather than by construction.</span>
 <span class="w">               </span><span class="c">! total_fragments = int(n_primaries, int64)</span>
 <span class="w">               </span><span class="k">call </span><span class="n">sort_fragments_by_size</span><span class="p">(</span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
@@ -2848,9 +2849,9 @@ large graphs.</div>
 <span class="w">            </span><span class="n">total_fragments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_pie_terms</span>
 <span class="w">         </span><span class="k">else</span>
 <span class="w">            </span><span class="c">! Standard MBE mode. Monomers, then n-mers, then screening, then</span>
-<span class="w">            </span><span class="c">! the size sort -- all of it in `generate_mbe_term_list`, which a</span>
-<span class="w">            </span><span class="c">! geometry optimization also calls so that the list it freezes is</span>
-<span class="w">            </span><span class="c">! the same one this would have built.</span>
+<span class="w">            </span><span class="c">! the size sort, all of it in `generate_mbe_term_list` -- which a</span>
+<span class="w">            </span><span class="c">! geometry optimization also calls, so the list it freezes is the</span>
+<span class="w">            </span><span class="c">! one this would have built.</span>
 <span class="w">            </span><span class="k">call </span><span class="n">generate_mbe_term_list</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">)</span>
 
 <span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Generated fragments:"</span><span class="p">)</span>
@@ -2923,10 +2924,9 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! Build polymorphic expansion context</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">expansion_kind</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"fmo"</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">expansion_kind</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"ee-mbe"</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="w">         </span><span class="c">! FMO or electrostatically embedded MBE. Both are the same machinery</span>
-<span class="w">         </span><span class="c">! and differ only in what a fragment sees of its neighbours and how</span>
-<span class="w">         </span><span class="c">! the pieces are added up, so one context serves both and the deck</span>
-<span class="w">         </span><span class="c">! chooses by name rather than by setting two switches consistently.</span>
+<span class="w">         </span><span class="c">! FMO or electrostatically embedded MBE. Both are the same machinery,</span>
+<span class="w">         </span><span class="c">! differing only in what a fragment sees of its neighbours and how the</span>
+<span class="w">         </span><span class="c">! pieces are added up, so one context serves both.</span>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">fmo_context_t</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">expansion</span><span class="p">)</span>
 <span class="w">         </span><span class="k">select type</span><span class="w"> </span><span class="p">(</span><span class="n">expansion</span><span class="p">)</span>
 <span class="w">         </span><span class="k">type is</span><span class="w"> </span><span class="p">(</span><span class="n">fmo_context_t</span><span class="p">)</span>
@@ -2950,12 +2950,13 @@ large graphs.</div>
 <span class="w">            </span><span class="c">! `embedding` overrides what the expansion implies, which is how a</span>
 <span class="w">            </span><span class="c">! deck reaches the third pairing the backend supports: esp "none"</span>
 <span class="w">            </span><span class="c">! with an mbe expansion, a plain many-body expansion through this</span>
-<span class="w">            </span><span class="c">! module. It was parsed and dropped before this, so a deck asking for</span>
-<span class="w">            </span><span class="c">! it silently got the embedded method instead.</span>
+<span class="w">            </span><span class="c">! module.</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">embedding</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"none"</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               </span><span class="n">expansion</span><span class="p">%</span><span class="n">esp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span>
 <span class="w">            </span><span class="k">end if</span>
-<span class="k">            </span><span class="n">expansion</span><span class="p">%</span><span class="n">far_field</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fmo_far_field</span>
+
+<span class="w">            </span><span class="c">! TODO(mqc): refactor this ugly ass code, in general the expansion assignemtn</span>
+<span class="w">            </span><span class="n">expansion</span><span class="p">%</span><span class="n">far_field</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fmo_far_field</span>
 <span class="w">            </span><span class="c">! The deck's fragmentation level means the same thing here as it</span>
 <span class="w">            </span><span class="c">! does for MBE: how many fragments at a time.</span>
 <span class="w">            </span><span class="n">expansion</span><span class="p">%</span><span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">max_level</span>
@@ -2966,8 +2967,8 @@ large graphs.</div>
 <span class="w">            </span><span class="n">expansion</span><span class="p">%</span><span class="n">scf_energy_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fmo_scf_energy_tol</span>
 <span class="w">            </span><span class="n">expansion</span><span class="p">%</span><span class="n">scf_density_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fmo_scf_density_tol</span>
 <span class="w">            </span><span class="c">! From `keywords.scf`, the same source the unfragmented path reads.</span>
-<span class="w">            </span><span class="c">! The three above stay on `keywords.fragmentation` because they are</span>
-<span class="w">            </span><span class="c">! per-fragment by intent; these are not.</span>
+<span class="w">            </span><span class="c">! The three above stay on `keywords.fragmentation`, being</span>
+<span class="w">            </span><span class="c">! per-fragment by intent.</span>
 <span class="w">            </span><span class="n">expansion</span><span class="p">%</span><span class="n">scf_drive</span><span class="p">%</span><span class="n">level_shift</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">level_shift</span>
 <span class="w">            </span><span class="n">expansion</span><span class="p">%</span><span class="n">scf_drive</span><span class="p">%</span><span class="n">linear_dependence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">linear_dependence</span>
 <span class="w">            </span><span class="n">expansion</span><span class="p">%</span><span class="n">scf_drive</span><span class="p">%</span><span class="n">use_diis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">use_diis</span>
@@ -3000,7 +3001,11 @@ large graphs.</div>
 <span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">expansion</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">expansion</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">)</span>
 <span class="w">               </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">expansion</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">bonds</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end if</span>
-<span class="k">            </span><span class="n">expansion</span><span class="p">%</span><span class="n">n_pie_terms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_pie_terms</span>
+<span class="w">            </span><span class="c">! TODO(mqc): `n_pie_terms` is set inside the rank-0 block above, so</span>
+<span class="w">            </span><span class="c">! every other rank copies an undefined value here. Harmless only</span>
+<span class="w">            </span><span class="c">! because the coordinator is the sole reader; `total_fragments`</span>
+<span class="w">            </span><span class="c">! carries the same number and is the one that gets broadcast.</span>
+<span class="w">            </span><span class="n">expansion</span><span class="p">%</span><span class="n">n_pie_terms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_pie_terms</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               allocate</span><span class="w"> </span><span class="p">(</span><span class="n">expansion</span><span class="p">%</span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">pie_atom_sets</span><span class="p">)</span>
 <span class="w">               </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">expansion</span><span class="p">%</span><span class="n">pie_coefficients</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">pie_coefficients</span><span class="p">)</span>
@@ -3042,13 +3047,12 @@ large graphs.</div>
 <span class="w">         </span><span class="k">end select</span>
 <span class="k">      end if</span>
 
-<span class="w">      </span><span class="c">! Opened on rank 0 only: it is the rank that collects every result, so</span>
-<span class="w">      </span><span class="c">! it is the only one with anything to write, and N ranks appending to one</span>
-<span class="w">      </span><span class="c">! file would interleave.</span>
-<span class="w">      </span><span class="c">! GMBE keys its terms by atom set, not by monomer tuple, so the file</span>
-<span class="w">      </span><span class="c">! this writes would not describe them. Announced rather than opened and</span>
-<span class="w">      </span><span class="c">! left unused -- a checkpoint that silently records nothing is worse</span>
-<span class="w">      </span><span class="c">! than no checkpoint, because it is believed.</span>
+<span class="w">      </span><span class="c">! Opened on rank 0 only: it is the rank that collects every result, and N</span>
+<span class="w">      </span><span class="c">! ranks appending to one file would interleave.</span>
+<span class="w">      </span><span class="c">!</span>
+<span class="w">      </span><span class="c">! GMBE keys its terms by atom set, not by monomer tuple, so the file this</span>
+<span class="w">      </span><span class="c">! writes would not describe them. Announced rather than opened and left</span>
+<span class="w">      </span><span class="c">! unused: a checkpoint that silently records nothing is believed.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">checkpoint_file</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">allow_overlapping_fragments</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">          </span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Checkpointing does not support GMBE; this run will write "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -3066,7 +3070,7 @@ large graphs.</div>
 <span class="w">                                        </span><span class="n">config</span><span class="p">%</span><span class="n">calc_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">CALC_TYPE_ENERGY</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                        </span><span class="n">checkpoint_error</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">checkpoint_error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
-<span class="w">            </span><span class="c">! A checkpoint from another calculation is not a warning. Its</span>
+<span class="w">            </span><span class="c">! A checkpoint from another calculation is not a warning: its</span>
 <span class="w">            </span><span class="c">! energies would be spliced into this one and the total would come</span>
 <span class="w">            </span><span class="c">! out converged and meaningless.</span>
 <span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="n">checkpoint_error</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
@@ -3128,7 +3132,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

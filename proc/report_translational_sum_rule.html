@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-iatom~4">iatom</a>
-            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-k~3">k</a>
+            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-iatom~3">iatom</a>
+            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-k~7">k</a>
             <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-kp">kp</a>
-            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-line~3">line</a>
-            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-n_atoms~8">n_atoms</a>
+            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-line~4">line</a>
+            <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-n_atoms~11">n_atoms</a>
             <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-residual~2">residual</a>
             <a class="list-group-item" href="../proc/report_translational_sum_rule.html#variable-sums">sums</a>
         </div>
@@ -184,11 +184,9 @@
 
     <p>Check the translational sum rule on the dipole derivatives</p>
 <p>sum_A  d(mu_k)/d(R_{A,k&rsquo;})  =  Q * delta_{k,k&rsquo;}</p>
-<p>Rigid translation of the whole molecule shifts every nucleus and the
-whole electron cloud together, so the dipole changes only by Q times
-the shift &ndash; zero for a neutral system. It is a reference-free test of
-the dipole derivatives: a violation means dmu/dR is wrong, and shows up
-as spurious IR intensity on the translational modes.</p>
+<p>A reference-free test of the dipole derivatives: a violation means
+dmu/dR is wrong, and shows up as spurious IR intensity on the
+translational modes.</p>
 
 
     <h3>Arguments</h3>
@@ -204,7 +202,7 @@ as spurious IR intensity on the translational modes.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~3"></span>
+              <span class="anchor" id="variable-dipole_derivatives"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -219,7 +217,7 @@ as spurious IR intensity on the translational modes.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~3"></span>
+              <span class="anchor" id="variable-charge~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -234,7 +232,7 @@ as spurious IR intensity on the translational modes.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~5"></span>
+              <span class="anchor" id="variable-verbose~8"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -547,7 +545,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~4"></span>
+              <span class="anchor" id="variable-iatom~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -564,7 +562,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~3"></span>
+              <span class="anchor" id="variable-k~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -598,7 +596,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~3"></span>
+              <span class="anchor" id="variable-line~4"></span>
               character(len=96),
             </td>
               <td>private</td>
@@ -615,7 +613,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~8"></span>
+              <span class="anchor" id="variable-n_atoms~11"></span>
               integer,
             </td>
               <td>private</td>
@@ -685,11 +683,9 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!!   sum_A  d(mu_k)/d(R_{A,k'})  =  Q * delta_{k,k'}</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Rigid translation of the whole molecule shifts every nucleus and the</span>
-<span class="w">      </span><span class="c">!! whole electron cloud together, so the dipole changes only by Q times</span>
-<span class="w">      </span><span class="c">!! the shift -- zero for a neutral system. It is a reference-free test of</span>
-<span class="w">      </span><span class="c">!! the dipole derivatives: a violation means dmu/dR is wrong, and shows up</span>
-<span class="w">      </span><span class="c">!! as spurious IR intensity on the translational modes.</span>
+<span class="w">      </span><span class="c">!! A reference-free test of the dipole derivatives: a violation means</span>
+<span class="w">      </span><span class="c">!! dmu/dR is wrong, and shows up as spurious IR intensity on the</span>
+<span class="w">      </span><span class="c">!! translational modes.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dipole_derivatives</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, 3*n_atoms)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">charge</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">verbose</span>
@@ -697,6 +693,9 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w">  </span><span class="n">residual</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sums</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">kp</span>
+<span class="w">      </span><span class="c">! TODO(mqc): the warning branch below writes 100 characters into this</span>
+<span class="w">      </span><span class="c">! 96-character buffer, so a sum rule that is actually violated raises an</span>
+<span class="w">      </span><span class="c">! output-overflow runtime error instead of printing the warning.</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">96</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">line</span>
 
 <span class="w">      </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">dipole_derivatives</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="mi">3</span>
@@ -709,9 +708,7 @@ large graphs.</div>
 <span class="k">         end do</span>
 <span class="k">      end do</span>
 
-<span class="w">      </span><span class="c">! Expected: charge on the diagonal, zero off it. Total nuclear charge and</span>
-<span class="w">      </span><span class="c">! electron count balance to `charge` (in atomic units the dipole gradient</span>
-<span class="w">      </span><span class="c">! sum rule uses the total molecular charge).</span>
+<span class="w">      </span><span class="c">! Expected: charge on the diagonal, zero off it.</span>
 <span class="w">      </span><span class="n">residual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 <span class="w">      </span><span class="k">do </span><span class="n">kp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span>
 <span class="w">         </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span>
@@ -757,7 +754,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

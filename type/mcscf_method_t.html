@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/mcscf_method_t.html#variable-options~4">options</a>
+            <a class="list-group-item" href="../type/mcscf_method_t.html#variable-options">options</a>
         </div>
       </div>
     </div>
@@ -163,9 +163,9 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/mcscf_method_t.html#boundprocedure-calc_energy~3">calc_energy</a>
-            <a class="list-group-item" href="../type/mcscf_method_t.html#boundprocedure-calc_gradient~3">calc_gradient</a>
-            <a class="list-group-item" href="../type/mcscf_method_t.html#boundprocedure-calc_hessian~3">calc_hessian</a>
+            <a class="list-group-item" href="../type/mcscf_method_t.html#boundprocedure-calc_energy~2">calc_energy</a>
+            <a class="list-group-item" href="../type/mcscf_method_t.html#boundprocedure-calc_gradient~2">calc_gradient</a>
+            <a class="list-group-item" href="../type/mcscf_method_t.html#boundprocedure-calc_hessian~2">calc_hessian</a>
         </div>
       </div>
     </div>
@@ -187,11 +187,8 @@
     <div class="col-md-9" id='text'>
       <h2 id="type-def-statement">
         type, public, extends(<a href='qc_method_t.html'>qc_method_t</a>) :: mcscf_method_t</h2>
-    <p>MCSCF/CASSCF method implementation</p>
-<p>Complete Active Space SCF. Suitable for:
-- Near-degenerate electronic states
-- Bond breaking/formation
-- Transition metal complexes</p>
+    <p>Complete active space SCF: near-degeneracy, bond breaking, open-shell
+transition metals</p>
 <br>      <div class="card">
         <div class="card-header">
           <h3 class="card-title">Inherits</h3>
@@ -418,7 +415,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-options~4"></span>
+              <span class="anchor" id="variable-options"></span>
               type(<a href='mcscf_options_t.html'>mcscf_options_t</a>),
             </td>
               <td>public</td>
@@ -446,7 +443,7 @@ large graphs.</div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-calc_energy~3"></span>
+      <span class="anchor" id="boundprocedure-calc_energy~2"></span>
       <h3>
           procedure, public ::
   <strong>calc_energy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_energy.html'>mcscf_calc_energy</a>
@@ -530,7 +527,7 @@ large graphs.</div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-calc_gradient~3"></span>
+      <span class="anchor" id="boundprocedure-calc_gradient~2"></span>
       <h3>
           procedure, public ::
   <strong>calc_gradient</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_gradient.html'>mcscf_calc_gradient</a>
@@ -614,7 +611,7 @@ large graphs.</div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-calc_hessian~3"></span>
+      <span class="anchor" id="boundprocedure-calc_hessian~2"></span>
       <h3>
           procedure, public ::
   <strong>calc_hessian</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mcscf_calc_hessian.html'>mcscf_calc_hessian</a>
@@ -700,12 +697,8 @@ large graphs.</div>
     <section>
     <h3><span class="anchor" id="src"></span>Source Code</h3>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="p">,</span><span class="w"> </span><span class="k">extends</span><span class="p">(</span><span class="n">qc_method_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mcscf_method_t</span>
-<span class="w">      </span><span class="c">!! MCSCF/CASSCF method implementation</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Complete Active Space SCF. Suitable for:</span>
-<span class="w">      </span><span class="c">!! - Near-degenerate electronic states</span>
-<span class="w">      </span><span class="c">!! - Bond breaking/formation</span>
-<span class="w">      </span><span class="c">!! - Transition metal complexes</span>
+<span class="w">      </span><span class="c">!! Complete active space SCF: near-degeneracy, bond breaking, open-shell</span>
+<span class="w">      </span><span class="c">!! transition metals</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mcscf_options_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">options</span>
 <span class="k">   contains</span>
 <span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc_energy</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">mcscf_calc_energy</span>
@@ -734,7 +727,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

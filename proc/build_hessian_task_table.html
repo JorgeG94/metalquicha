@@ -136,12 +136,12 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/build_hessian_task_table.html#variable-base~3">base</a>
-            <a class="list-group-item" href="../proc/build_hessian_task_table.html#variable-error~61">error</a>
-            <a class="list-group-item" href="../proc/build_hessian_task_table.html#variable-f~2">f</a>
-            <a class="list-group-item" href="../proc/build_hessian_task_table.html#variable-frag">frag</a>
-            <a class="list-group-item" href="../proc/build_hessian_task_table.html#variable-fragment_size~2">fragment_size</a>
-            <a class="list-group-item" href="../proc/build_hessian_task_table.html#variable-k~14">k</a>
+            <a class="list-group-item" href="../proc/build_hessian_task_table.html#variable-base~6">base</a>
+            <a class="list-group-item" href="../proc/build_hessian_task_table.html#variable-error~142">error</a>
+            <a class="list-group-item" href="../proc/build_hessian_task_table.html#variable-f~4">f</a>
+            <a class="list-group-item" href="../proc/build_hessian_task_table.html#variable-frag~2">frag</a>
+            <a class="list-group-item" href="../proc/build_hessian_task_table.html#variable-fragment_size~9">fragment_size</a>
+            <a class="list-group-item" href="../proc/build_hessian_task_table.html#variable-k~46">k</a>
             <a class="list-group-item" href="../proc/build_hessian_task_table.html#variable-n_cols">n_cols</a>
             <a class="list-group-item" href="../proc/build_hessian_task_table.html#variable-n_disp">n_disp</a>
         </div>
@@ -304,18 +304,13 @@ large graphs.</div>
 
 
     <p>Expand the screened fragment list into the flat list of independent evaluations</p>
-<p>A Hessian needs 6<em>n_atoms + 1 gradient evaluations per fragment and none of
-them depend on each other. Keeping the whole fragment as one work unit puts a
-hard floor of (6</em>n_max + 1) sequential gradients on the wall time and caps
-strong scaling at the fragment count &ndash; which is brutal for a handful of large
-fragments. Making every displacement its own schedulable task removes both.</p>
+<p>A Hessian needs 6*n_atoms + 1 gradient evaluations per fragment, none of
+them dependent on any other, and each becomes its own schedulable task.</p>
 <p>A task row is the fragment&rsquo;s polymer row plus one trailing column holding the
 displacement code:
    0   -&gt; undisplaced reference (supplies the fragment&rsquo;s energy and gradient)
   +k   -&gt; atom (k-1)/3+1 displaced by +h along coordinate mod(k-1,3)+1
   -k   -&gt; the same coordinate displaced by -h</p>
-<p>Packing the code into the row means the existing shard machinery, which ships
-an arbitrary integer matrix, carries tasks with no change.</p>
 <p>Tasks are emitted fragment-major so the digest walks one contiguous block per
 fragment and can release it as soon as that Hessian is assembled.</p>
 
@@ -333,7 +328,7 @@ fragment and can release it as soon as that Hessian is assembled.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~5"></span>
+              <span class="anchor" id="variable-polymers~19"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -348,7 +343,7 @@ fragment and can release it as soon as that Hessian is assembled.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~2"></span>
+              <span class="anchor" id="variable-total_fragments~9"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -363,7 +358,7 @@ fragment and can release it as soon as that Hessian is assembled.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~24"></span>
+              <span class="anchor" id="variable-sys_geom~71"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -453,7 +448,7 @@ fragment and can release it as soon as that Hessian is assembled.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~3"></span>
+              <span class="anchor" id="variable-world_comm~20"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1128,7 +1123,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-base~3"></span>
+              <span class="anchor" id="variable-base~6"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1145,7 +1140,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~61"></span>
+              <span class="anchor" id="variable-error~142"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -1162,7 +1157,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-f~2"></span>
+              <span class="anchor" id="variable-f~4"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1179,7 +1174,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag"></span>
+              <span class="anchor" id="variable-frag~2"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -1196,7 +1191,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~2"></span>
+              <span class="anchor" id="variable-fragment_size~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -1213,7 +1208,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~14"></span>
+              <span class="anchor" id="variable-k~46"></span>
               integer,
             </td>
               <td>private</td>
@@ -1282,20 +1277,14 @@ large graphs.</div>
 <span class="w">                                       </span><span class="n">task_rows</span><span class="p">,</span><span class="w"> </span><span class="n">task_offset</span><span class="p">,</span><span class="w"> </span><span class="n">frag_natoms</span><span class="p">,</span><span class="w"> </span><span class="n">total_tasks</span><span class="p">,</span><span class="w"> </span><span class="n">world_comm</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Expand the screened fragment list into the flat list of independent evaluations</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! A Hessian needs 6*n_atoms + 1 gradient evaluations per fragment and none of</span>
-<span class="w">      </span><span class="c">!! them depend on each other. Keeping the whole fragment as one work unit puts a</span>
-<span class="w">      </span><span class="c">!! hard floor of (6*n_max + 1) sequential gradients on the wall time and caps</span>
-<span class="w">      </span><span class="c">!! strong scaling at the fragment count -- which is brutal for a handful of large</span>
-<span class="w">      </span><span class="c">!! fragments. Making every displacement its own schedulable task removes both.</span>
+<span class="w">      </span><span class="c">!! A Hessian needs 6*n_atoms + 1 gradient evaluations per fragment, none of</span>
+<span class="w">      </span><span class="c">!! them dependent on any other, and each becomes its own schedulable task.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! A task row is the fragment's polymer row plus one trailing column holding the</span>
 <span class="w">      </span><span class="c">!! displacement code:</span>
 <span class="w">      </span><span class="c">!!    0   -&gt; undisplaced reference (supplies the fragment's energy and gradient)</span>
 <span class="w">      </span><span class="c">!!   +k   -&gt; atom (k-1)/3+1 displaced by +h along coordinate mod(k-1,3)+1</span>
 <span class="w">      </span><span class="c">!!   -k   -&gt; the same coordinate displaced by -h</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Packing the code into the row means the existing shard machinery, which ships</span>
-<span class="w">      </span><span class="c">!! an arbitrary integer matrix, carries tasks with no change.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Tasks are emitted fragment-major so the digest walks one contiguous block per</span>
 <span class="w">      </span><span class="c">!! fragment and can release it as soon as that Hessian is assembled.</span>
@@ -1389,7 +1378,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

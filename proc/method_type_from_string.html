@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/method_type_from_string.html#variable-i~149">i</a>
+            <a class="list-group-item" href="../proc/method_type_from_string.html#variable-i~105">i</a>
             <a class="list-group-item" href="../proc/method_type_from_string.html#variable-lower_str">lower_str</a>
         </div>
       </div>
@@ -177,9 +177,8 @@
 </h2>
     
 
-    <p>Convert method type string to integer constant</p>
-<p>Performs case-insensitive comparison and returns appropriate constant.
-Returns METHOD_TYPE_UNKNOWN for unrecognized strings.</p>
+    <p>Method type for an input-file spelling</p>
+<p>Case-insensitive. <code>METHOD_TYPE_UNKNOWN</code> for anything unrecognized.</p>
 
 
     <h3>Arguments</h3>
@@ -213,7 +212,7 @@ Returns METHOD_TYPE_UNKNOWN for unrecognized strings.</p>
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-method_type~8"></span>
+          <span class="anchor" id="variable-method_type~6"></span>
           integer(kind=int32)
         </small>
       </h3>
@@ -480,7 +479,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~149"></span>
+              <span class="anchor" id="variable-i~105"></span>
               integer,
             </td>
               <td>private</td>
@@ -529,12 +528,13 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">method_type_from_string</span><span class="p">(</span><span class="n">method_str</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">method_type</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Convert method type string to integer constant</span>
+<span class="w">      </span><span class="c">!! Method type for an input-file spelling</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Performs case-insensitive comparison and returns appropriate constant.</span>
-<span class="w">      </span><span class="c">!! Returns METHOD_TYPE_UNKNOWN for unrecognized strings.</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method_str</span><span class="w">  </span><span class="c">!! Input string (e.g., "gfn1", "gfn2", "hf")</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method_type</span><span class="w">                </span><span class="c">!! Output integer constant</span>
+<span class="w">      </span><span class="c">!! Case-insensitive. `METHOD_TYPE_UNKNOWN` for anything unrecognized.</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method_str</span>
+<span class="w">      </span><span class="c">!! Input string (e.g., "gfn1", "gfn2", "hf")</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method_type</span>
+<span class="w">      </span><span class="c">!! Output integer constant</span>
 
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">method_str</span><span class="p">))</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">lower_str</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span>
@@ -565,13 +565,10 @@ large graphs.</div>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"mcscf"</span><span class="p">,</span><span class="w"> </span><span class="s2">"casscf"</span><span class="p">,</span><span class="w"> </span><span class="s2">"casci"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">method_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">METHOD_TYPE_MCSCF</span>
 
-<span class="w">         </span><span class="c">! Effective fragment potentials. "efp" alone means EFP2: there is no EFP1</span>
-<span class="w">         </span><span class="c">! here, and spelling it out is what a deck written for another program does.</span>
+<span class="w">         </span><span class="c">! Effective fragment potentials. "efp" alone means EFP2</span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"efp2"</span><span class="p">,</span><span class="w"> </span><span class="s2">"efp"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">method_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">METHOD_TYPE_EFP2</span>
-<span class="w">         </span><span class="c">! Interaction energies. "sapt" alone means SAPT0: the bare name has</span>
-<span class="w">         </span><span class="c">! always meant the base order here, and changing what an old deck</span>
-<span class="w">         </span><span class="c">! computes would be worse than asking for the 2.</span>
+<span class="w">         </span><span class="c">! Interaction energies. "sapt" alone means SAPT0.</span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"sapt0"</span><span class="p">,</span><span class="w"> </span><span class="s2">"sapt"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">method_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">METHOD_TYPE_SAPT0</span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"sapt2"</span><span class="p">)</span>
@@ -621,7 +618,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

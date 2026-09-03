@@ -138,13 +138,13 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/finite_diff_hessian_from_gradients.html#variable-disp_idx~3">disp_idx</a>
             <a class="list-group-item" href="../proc/finite_diff_hessian_from_gradients.html#variable-i_global">i_global</a>
-            <a class="list-group-item" href="../proc/finite_diff_hessian_from_gradients.html#variable-iatom~36">iatom</a>
-            <a class="list-group-item" href="../proc/finite_diff_hessian_from_gradients.html#variable-icoord~6">icoord</a>
+            <a class="list-group-item" href="../proc/finite_diff_hessian_from_gradients.html#variable-iatom~19">iatom</a>
+            <a class="list-group-item" href="../proc/finite_diff_hessian_from_gradients.html#variable-icoord~2">icoord</a>
             <a class="list-group-item" href="../proc/finite_diff_hessian_from_gradients.html#variable-j_global">j_global</a>
-            <a class="list-group-item" href="../proc/finite_diff_hessian_from_gradients.html#variable-jatom~6">jatom</a>
+            <a class="list-group-item" href="../proc/finite_diff_hessian_from_gradients.html#variable-jatom~3">jatom</a>
             <a class="list-group-item" href="../proc/finite_diff_hessian_from_gradients.html#variable-jcoord">jcoord</a>
-            <a class="list-group-item" href="../proc/finite_diff_hessian_from_gradients.html#variable-n_atoms~49">n_atoms</a>
-            <a class="list-group-item" href="../proc/finite_diff_hessian_from_gradients.html#variable-n_coords~7">n_coords</a>
+            <a class="list-group-item" href="../proc/finite_diff_hessian_from_gradients.html#variable-n_atoms~35">n_atoms</a>
+            <a class="list-group-item" href="../proc/finite_diff_hessian_from_gradients.html#variable-n_coords">n_coords</a>
         </div>
       </div>
     </div>
@@ -185,13 +185,8 @@
     
 
     <p>Compute Hessian matrix from finite differences of gradients</p>
-<p>Uses central finite differences: H_ij = (grad_i(+h) - grad_i(-h)) / (2h)</p>
-<p>Args:
-  reference_geom: Reference geometry (for dimensioning)
-  forward_gradients: Gradients at forward-displaced geometries (3<em>n_atoms, 3, n_atoms)
-  backward_gradients: Gradients at backward-displaced geometries (3</em>n_atoms, 3, n_atoms)
-  displacement: Step size used in Bohr
-  hessian: Output Hessian matrix (3<em>n_atoms, 3</em>n_atoms)</p>
+<p>Central differences, <code>H_ij = (grad_i(+h) - grad_i(-h)) / (2h)</code>, then
+symmetrized.</p>
 
 
     <h3>Arguments</h3>
@@ -217,7 +212,7 @@
             <td>::</td>
             <td><strong>reference_geom</strong></td>
             <td>
-                
+                <p>For dimensioning</p>
             </td>
         </tr>
         <tr>
@@ -262,12 +257,12 @@
             <td>::</td>
             <td><strong>displacement</strong></td>
             <td>
-                
+                <p>Step size in Bohr</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~16"></span>
+              <span class="anchor" id="variable-hessian~13"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -714,7 +709,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~36"></span>
+              <span class="anchor" id="variable-iatom~19"></span>
               integer,
             </td>
               <td>private</td>
@@ -731,7 +726,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-icoord~6"></span>
+              <span class="anchor" id="variable-icoord~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -765,7 +760,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-jatom~6"></span>
+              <span class="anchor" id="variable-jatom~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -799,7 +794,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~49"></span>
+              <span class="anchor" id="variable-n_atoms~35"></span>
               integer,
             </td>
               <td>private</td>
@@ -816,7 +811,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_coords~7"></span>
+              <span class="anchor" id="variable-n_coords"></span>
               integer,
             </td>
               <td>private</td>
@@ -851,18 +846,12 @@ large graphs.</div>
 <span class="w">                                                 </span><span class="n">displacement</span><span class="p">,</span><span class="w"> </span><span class="n">hessian</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Compute Hessian matrix from finite differences of gradients</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Uses central finite differences: H_ij = (grad_i(+h) - grad_i(-h)) / (2h)</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Args:</span>
-<span class="w">      </span><span class="c">!!   reference_geom: Reference geometry (for dimensioning)</span>
-<span class="w">      </span><span class="c">!!   forward_gradients: Gradients at forward-displaced geometries (3*n_atoms, 3, n_atoms)</span>
-<span class="w">      </span><span class="c">!!   backward_gradients: Gradients at backward-displaced geometries (3*n_atoms, 3, n_atoms)</span>
-<span class="w">      </span><span class="c">!!   displacement: Step size used in Bohr</span>
-<span class="w">      </span><span class="c">!!   hessian: Output Hessian matrix (3*n_atoms, 3*n_atoms)</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">reference_geom</span>
+<span class="w">      </span><span class="c">!! Central differences, `H_ij = (grad_i(+h) - grad_i(-h)) / (2h)`, then</span>
+<span class="w">      </span><span class="c">!! symmetrized.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">reference_geom</span><span class="w">  </span><span class="c">!! For dimensioning</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">forward_gradients</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:)</span><span class="w">   </span><span class="c">!! (n_displacements, 3, n_atoms)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">backward_gradients</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (n_displacements, 3, n_atoms)</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">displacement</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">displacement</span><span class="w">  </span><span class="c">!! Step size in Bohr</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hessian</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3*n_atoms, 3*n_atoms)</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">n_coords</span>
@@ -876,9 +865,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">hessian</span><span class="p">(</span><span class="n">n_coords</span><span class="p">,</span><span class="w"> </span><span class="n">n_coords</span><span class="p">))</span>
 <span class="w">      </span><span class="n">hessian</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 
-<span class="w">      </span><span class="c">! Build Hessian using central differences</span>
-<span class="w">      </span><span class="c">! H[i,j] = d²E/(dx_i dx_j) = (dE/dx_j at x_i+h - dE/dx_j at x_i-h) / (2h)</span>
-
+<span class="w">      </span><span class="c">! H[i,j] = d2E/(dx_i dx_j) = (dE/dx_j at x_i+h - dE/dx_j at x_i-h) / (2h)</span>
 <span class="w">      </span><span class="n">disp_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">      </span><span class="k">do </span><span class="n">iatom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span>
 <span class="w">         </span><span class="k">do </span><span class="n">icoord</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span>
@@ -899,8 +886,7 @@ large graphs.</div>
 <span class="k">         end do</span>
 <span class="k">      end do</span>
 
-<span class="w">      </span><span class="c">! Symmetrize the Hessian: H = (H + H^T) / 2</span>
-<span class="w">      </span><span class="c">! This reduces numerical noise from finite differences</span>
+<span class="w">      </span><span class="c">! Symmetrize, H = (H + H^T) / 2, which cancels some of the difference noise</span>
 <span class="w">      </span><span class="k">do </span><span class="n">i_global</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_coords</span>
 <span class="w">         </span><span class="k">do </span><span class="n">j_global</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i_global</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_coords</span>
 <span class="w">            </span><span class="n">hessian</span><span class="p">(</span><span class="n">i_global</span><span class="p">,</span><span class="w"> </span><span class="n">j_global</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.5_dp</span><span class="o">*</span><span class="p">(</span><span class="n">hessian</span><span class="p">(</span><span class="n">i_global</span><span class="p">,</span><span class="w"> </span><span class="n">j_global</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hessian</span><span class="p">(</span><span class="n">j_global</span><span class="p">,</span><span class="w"> </span><span class="n">i_global</span><span class="p">))</span>
@@ -932,7 +918,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

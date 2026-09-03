@@ -137,11 +137,11 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-calc">calc</a>
-            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-ctx">ctx</a>
+            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-ctx~4">ctx</a>
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-dipole_wp">dipole_wp</a>
-            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-energy~6">energy</a>
-            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-error~42">error</a>
-            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-mol">mol</a>
+            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-energy~19">energy</a>
+            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-error~134">error</a>
+            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-mol~2">mol</a>
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-num">num</a>
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-pproc">pproc</a>
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-verbosity">verbosity</a>
@@ -187,7 +187,7 @@
 </h2>
     
 
-    <p>Calculate electronic energy using Extended Tight-Binding (xTB) method</p>
+    <p>Electronic energy of a fragment</p>
 
     <h3>Type Bound</h3>
     <p><a href='../type/xtb_method_t.html'>xtb_method_t</a></p>
@@ -205,7 +205,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~28"></span>
+              <span class="anchor" id="variable-this~127"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -220,7 +220,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~4"></span>
+              <span class="anchor" id="variable-fragment~36"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -235,7 +235,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~14"></span>
+              <span class="anchor" id="variable-result~44"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -904,7 +904,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx"></span>
+              <span class="anchor" id="variable-ctx~4"></span>
               type(context_type),
             </td>
               <td>private</td>
@@ -938,7 +938,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~6"></span>
+              <span class="anchor" id="variable-energy~19"></span>
               real(kind=wp),
             </td>
               <td>private</td>
@@ -955,7 +955,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~42"></span>
+              <span class="anchor" id="variable-error~134"></span>
               type(error_type),
             </td>
               <td>private,</td>
@@ -972,7 +972,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mol"></span>
+              <span class="anchor" id="variable-mol~2"></span>
               type(structure_type),
             </td>
               <td>private</td>
@@ -1106,7 +1106,7 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">xtb_calc_energy</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Calculate electronic energy using Extended Tight-Binding (xTB) method</span>
+<span class="w">      </span><span class="c">!! Electronic energy of a fragment</span>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">xtb_method_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
@@ -1171,10 +1171,7 @@ large graphs.</div>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="w">      </span><span class="c">! keywords.scf.maxiter had a home on this type and never reached the</span>
-<span class="w">      </span><span class="c">! calculator, so it silently did nothing for xTB -- a deck asking for a</span>
-<span class="w">      </span><span class="c">! tighter or looser iteration budget got tblite's default either way.</span>
-<span class="w">      </span><span class="n">calc</span><span class="p">%</span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">max_iter</span>
+<span class="k">      </span><span class="n">calc</span><span class="p">%</span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">max_iter</span>
 
 <span class="w">      </span><span class="c">! Add solvation if configured (either solvent name or direct dielectric)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvent</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dielectric</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_wp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -1209,9 +1206,8 @@ large graphs.</div>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! tblite reports a failed SCF by setting an error on the context and</span>
-<span class="w">      </span><span class="c">! returning anyway -- "SCF not converged in N cycles" among them. Not</span>
-<span class="w">      </span><span class="c">! asking meant taking an energy tblite had just disowned and adding it</span>
-<span class="w">      </span><span class="c">! to the expansion as though it were fine.</span>
+<span class="w">      </span><span class="c">! returning anyway, so the energy has to be checked against the context</span>
+<span class="w">      </span><span class="c">! rather than taken at face value.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">failed</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">record_context_failure</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">allow_crap_scf</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
@@ -1276,7 +1272,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

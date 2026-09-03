@@ -205,24 +205,10 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p><strong>What stops an SCF, decided in one place instead of at each loop.</strong></p>
-<p>The test used to be written out at every SCF loop, as
-<code>de &lt; energy_tol .and. gnorm &lt; gtol</code>, with <code>gtol</code> derived from
-<code>sqrt(energy_tol)</code> a few dozen lines earlier and overridden by an
-optional argument. Written twice in <code>mqc_libcint_rhf</code> alone, once more
-for each cuEST loop, and with a fifth variant inside the fragment
-potential builder that quietly replaced the derived threshold with the
-density one. Changing the rule meant finding all of them, and the last
-attempt did not: the CPU and GPU paths ended up stopping on different
-criteria.</p>
-<p>It also made a deck unpredictable. A deck asking for <code>tolerance: 1e-6</code>
-got an energy gate at 1e-6 and a commutator gate at 1e-3, and where the
-second was the binding one the run stopped against a number the deck
-never wrote and the iteration table never printed.</p>
-<p>So the rule is a value now. <code>scf_convergence_t</code> carries which metric
-decides and the threshold it is measured against, <code>is_converged</code> is the
-only place the comparison happens, and <code>describe</code> is what the iteration
-table prints so the active rule is never invisible again.</p>
+      <p>What stops an SCF, as a value rather than a test spelled out at each
+loop. <code>scf_convergence_t</code> carries which metric decides and the threshold
+it is measured against, <code>is_converged</code> is the only place the comparison
+happens, and <code>describe</code> is what the iteration table prints.</p>
 <h3 id="the-metrics-are-not-interchangeable">The metrics are not interchangeable</h3>
 <p>Near convergence the energy is variational, so its error falls as the
 <em>square</em> of the commutator while the density&rsquo;s falls linearly. That makes
@@ -231,23 +217,12 @@ the commutator the strictly stronger measure and the energy the weakest:</p>
 <li><code>CONV_METRIC_COMMUTATOR</code> is what anything reading the density wants &ndash;
   multipoles, atomic charges, a fragment potential, any finite difference
   of one of those.</li>
-<li><code>CONV_METRIC_ENERGY</code> is the weakest, and unsafe with an <em>interpolating</em>
-  accelerator. EDIIS on water/6-31G holds <code>dE</code> at 1e-13 while the
-  commutator sits at 1.1e-2, and an energy-only test stops there &ndash;
-  5.8e-5 hartree from the answer, measured. Selecting it is a deliberate
-  choice and warned about; it is not a default.</li>
-<li><code>CONV_METRIC_STANDARD</code> is both, and is today&rsquo;s behaviour exactly. It is
-  the default here so that introducing this type changes no result.</li>
+<li><code>CONV_METRIC_ENERGY</code> is unsafe with an <em>interpolating</em> accelerator:
+  EDIIS on water/6-31G holds <code>dE</code> at 1e-13 while the commutator sits at
+  1.1e-2, and an energy-only test stops there. Selecting it is warned
+  about.</li>
+<li><code>CONV_METRIC_STANDARD</code> is both, and the default.</li>
 </ul>
-<h3 id="the-transitional-default">The transitional default</h3>
-<p><code>CONV_METRIC_STANDARD</code> derives its commutator bound as <code>sqrt(tolerance)</code>,
-which is the derivation this type exists to remove. It is kept for one
-release so the machinery can land without moving any number, and because
-344 of the 355 validation decks name <code>tolerance</code> explicitly &ndash; 288 of them
-at 1e-12, which read as a commutator bound would be below the OpenMP
-reduction noise floor and unreachable. Retiring it means migrating those
-decks by <code>sqrt</code>, which is exact rather than approximate, and belongs in
-its own change.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
@@ -450,7 +425,7 @@ parameter
                 <td>1</td>
             <td>
                 <p>Energy and commutator together, the commutator bound derived as
-<code>sqrt(tolerance)</code>. Today&rsquo;s behaviour, and the default.</p>
+<code>sqrt(tolerance)</code>. The default.</p>
             </td>
         </tr>
         <tr>
@@ -506,7 +481,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient_tolerance~3"></span>
+              <span class="anchor" id="variable-gradient_tolerance"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -519,9 +494,8 @@ parameter
                 <td>0.0_dp</td>
             <td>
 <p><code>keywords.scf.gradient_tolerance</code>. Zero means derive it. Only
-consulted under <code>CONV_METRIC_STANDARD</code>: naming a metric already
-states which quantity is being bounded, so a second threshold for a
-different one would be two rules again.</p>
+consulted under <code>CONV_METRIC_STANDARD</code> &ndash; naming any other metric
+already states which quantity is being bounded.</p>
             </td>
         </tr>
         <tr>
@@ -543,7 +517,7 @@ different one would be two rules again.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~8"></span>
+              <span class="anchor" id="variable-tolerance~5"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -658,7 +632,7 @@ energy, and the commutator bound comes from it by <code>sqrt</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~92"></span>
+              <span class="anchor" id="variable-this~44"></span>
               class(<a href='../type/scf_convergence_t.html'>scf_convergence_t</a>),
             </td>
 <td>intent(in)</td>
@@ -703,7 +677,7 @@ energy, and the commutator bound comes from it by <code>sqrt</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~94"></span>
+              <span class="anchor" id="variable-this~46"></span>
               class(<a href='../type/scf_convergence_t.html'>scf_convergence_t</a>),
             </td>
 <td>intent(in)</td>
@@ -748,7 +722,7 @@ energy, and the commutator bound comes from it by <code>sqrt</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~93"></span>
+              <span class="anchor" id="variable-this~45"></span>
               class(<a href='../type/scf_convergence_t.html'>scf_convergence_t</a>),
             </td>
 <td>intent(in)</td>
@@ -843,7 +817,7 @@ energy, and the commutator bound comes from it by <code>sqrt</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~29"></span>
+              <span class="anchor" id="variable-name~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -873,7 +847,7 @@ energy, and the commutator bound comes from it by <code>sqrt</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~10"></span>
+              <span class="anchor" id="variable-ok~4"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -916,7 +890,7 @@ energy, and the commutator bound comes from it by <code>sqrt</code>.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

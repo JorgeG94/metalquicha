@@ -206,17 +206,13 @@ the projector <code>P_l</code>. Each channel is a sum of primitives</p>
 <div class="codehilite"><pre><span></span><code>U_l(r) = sum_k d_k r^(n_k - 2) exp(-z_k r^2)
 </code></pre></div>
 
-<p>so a channel is three parallel arrays: radial powers, coefficients and
-exponents. The <code>-2</code> in the exponent is a convention difference between
-tabulations; the powers here are stored exactly as the source file gives
-them, and it is the consumer&rsquo;s business to know which convention its
-library wants.</p>
-<p>The number an ECP is really defined by is <code>core_electrons</code> &ndash; how many
-electrons it stands in for. Everything downstream has to agree on it: the
-atom contributes <code>Z - core_electrons</code> electrons to the SCF, screens the
-nucleus to the same effective charge, and repels other nuclei with it.
-Those three are separate pieces of code and none of them will complain if
-one is missed.
+<p>Radial powers are stored exactly as the source file gives them; the <code>-2</code>
+is a convention difference between tabulations, and the consumer has to
+know which one its library wants.</p>
+<p><code>core_electrons</code> is how many electrons the potential stands in for.
+Everything downstream has to agree on it: the atom contributes
+<code>Z - core_electrons</code> electrons to the SCF, screens the nucleus to the
+same effective charge, and repels other nuclei with it.
 One angular-momentum channel
 The whole potential for one atom
 One entry per atom in a molecule</p>
@@ -506,7 +502,7 @@ a light atom carrying no ECP.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element~4"></span>
+              <span class="anchor" id="variable-element~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -605,7 +601,7 @@ a light atom carrying no ECP.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/atomic_ecp_type.html#boundprocedure-destroy~15'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/atomic_ecp_destroy.html'>atomic_ecp_destroy</a></td>
+  <strong><a href='../type/atomic_ecp_type.html#boundprocedure-destroy~10'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/atomic_ecp_destroy.html'>atomic_ecp_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -656,7 +652,7 @@ highest l in the potential and is not projected at all</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coefficients~8"></span>
+              <span class="anchor" id="variable-coefficients~4"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -738,7 +734,7 @@ highest l in the potential and is not projected at all</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/ecp_shell_type.html#boundprocedure-destroy~14'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/ecp_shell_destroy.html'>ecp_shell_destroy</a></td>
+  <strong><a href='../type/ecp_shell_type.html#boundprocedure-destroy~9'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/ecp_shell_destroy.html'>ecp_shell_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -771,7 +767,7 @@ highest l in the potential and is not projected at all</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atoms~3"></span>
+              <span class="anchor" id="variable-atoms"></span>
               type(<a href='../type/atomic_ecp_type.html'>atomic_ecp_type</a>),
             </td>
               <td>public,</td>
@@ -805,7 +801,7 @@ highest l in the potential and is not projected at all</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-natoms~5"></span>
+              <span class="anchor" id="variable-natoms~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -846,7 +842,7 @@ highest l in the potential and is not projected at all</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/molecular_ecp_type.html#boundprocedure-destroy~16'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecular_ecp_destroy.html'>molecular_ecp_destroy</a></td>
+  <strong><a href='../type/molecular_ecp_type.html#boundprocedure-destroy~11'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecular_ecp_destroy.html'>molecular_ecp_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -879,7 +875,7 @@ highest l in the potential and is not projected at all</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~83"></span>
+              <span class="anchor" id="variable-this~38"></span>
               class(<a href='../type/molecular_ecp_type.html'>molecular_ecp_type</a>),
             </td>
 <td>intent(in)</td>
@@ -924,7 +920,7 @@ highest l in the potential and is not projected at all</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~82"></span>
+              <span class="anchor" id="variable-this~37"></span>
               class(<a href='../type/molecular_ecp_type.html'>molecular_ecp_type</a>),
             </td>
 <td>intent(in)</td>
@@ -974,7 +970,7 @@ highest l in the potential and is not projected at all</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~78"></span>
+              <span class="anchor" id="variable-this~33"></span>
               class(<a href='../type/atomic_ecp_type.html'>atomic_ecp_type</a>),
             </td>
 <td>intent(inout)</td>
@@ -1029,7 +1025,7 @@ highest l in the potential and is not projected at all</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~79"></span>
+              <span class="anchor" id="variable-this~34"></span>
               class(<a href='../type/atomic_ecp_type.html'>atomic_ecp_type</a>),
             </td>
 <td>intent(inout)</td>
@@ -1069,7 +1065,7 @@ highest l in the potential and is not projected at all</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~76"></span>
+              <span class="anchor" id="variable-this~31"></span>
               class(<a href='../type/ecp_shell_type.html'>ecp_shell_type</a>),
             </td>
 <td>intent(inout)</td>
@@ -1124,7 +1120,7 @@ highest l in the potential and is not projected at all</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~77"></span>
+              <span class="anchor" id="variable-this~32"></span>
               class(<a href='../type/ecp_shell_type.html'>ecp_shell_type</a>),
             </td>
 <td>intent(inout)</td>
@@ -1164,7 +1160,7 @@ highest l in the potential and is not projected at all</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~80"></span>
+              <span class="anchor" id="variable-this~35"></span>
               class(<a href='../type/molecular_ecp_type.html'>molecular_ecp_type</a>),
             </td>
 <td>intent(inout)</td>
@@ -1179,7 +1175,7 @@ highest l in the potential and is not projected at all</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-natoms~6"></span>
+              <span class="anchor" id="variable-natoms~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1219,7 +1215,7 @@ highest l in the potential and is not projected at all</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~81"></span>
+              <span class="anchor" id="variable-this~36"></span>
               class(<a href='../type/molecular_ecp_type.html'>molecular_ecp_type</a>),
             </td>
 <td>intent(inout)</td>
@@ -1262,7 +1258,7 @@ highest l in the potential and is not projected at all</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

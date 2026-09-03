@@ -137,9 +137,9 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/run_efp.html#variable-err~2">err</a>
-            <a class="list-group-item" href="../proc/run_efp.html#variable-json_data~6">json_data</a>
+            <a class="list-group-item" href="../proc/run_efp.html#variable-json_data~10">json_data</a>
             <a class="list-group-item" href="../proc/run_efp.html#variable-n~8">n</a>
-            <a class="list-group-item" href="../proc/run_efp.html#variable-terms~2">terms</a>
+            <a class="list-group-item" href="../proc/run_efp.html#variable-terms~6">terms</a>
         </div>
       </div>
     </div>
@@ -183,9 +183,9 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -805,16 +805,13 @@ large graphs.</div>
 
 
     <p>The interaction energy of a set of effective fragments</p>
-<p>Each fragment of the deck names a potential; the backend loads them, places
-each on the atoms the deck gave it, turns it into that orientation and
-evaluates the five EFP2 terms. There is no SCF here: the wavefunctions were
-solved when the potentials were made.</p>
-<p>The work itself is in <code>run_libcint_efp</code> rather than here, because all of it
-lives behind <code>MQC_ENABLE_LIBCINT</code> and this file compiles either way. The stub
-declines with the same signature and names the build option.</p>
-<p>Rank zero only, for now. The pair loop is the obvious thing to distribute and
-is already flat, but the terms are milliseconds on a dimer and shaping that
-before there is a cluster to shape it around would be guessing.</p>
+<p>Each fragment of the deck names a potential; the backend loads them,
+places each on the atoms the deck gave it, turns it into that
+orientation and evaluates the five EFP2 terms. There is no SCF here:
+the wavefunctions were solved when the potentials were made.</p>
+<p>Rank zero only. The work is in <code>run_libcint_efp</code>, which lives behind
+<code>MQC_ENABLE_LIBCINT</code>; the stub declines with the same signature and
+names the build option.</p>
 
 
     <h3>Arguments</h3>
@@ -830,7 +827,7 @@ before there is a cluster to shape it around would be guessing.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~6"></span>
+              <span class="anchor" id="variable-config~10"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -845,7 +842,7 @@ before there is a cluster to shape it around would be guessing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~7"></span>
+              <span class="anchor" id="variable-sys_geom~14"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2323,7 +2320,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~6"></span>
+              <span class="anchor" id="variable-json_data~10"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
               <td>private</td>
@@ -2357,7 +2354,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~2"></span>
+              <span class="anchor" id="variable-terms~6"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -2391,18 +2388,14 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_efp</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">rank</span><span class="p">,</span><span class="w"> </span><span class="n">write_output</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The interaction energy of a set of effective fragments</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Each fragment of the deck names a potential; the backend loads them, places</span>
-<span class="w">      </span><span class="c">!! each on the atoms the deck gave it, turns it into that orientation and</span>
-<span class="w">      </span><span class="c">!! evaluates the five EFP2 terms. There is no SCF here: the wavefunctions were</span>
-<span class="w">      </span><span class="c">!! solved when the potentials were made.</span>
+<span class="w">      </span><span class="c">!! Each fragment of the deck names a potential; the backend loads them,</span>
+<span class="w">      </span><span class="c">!! places each on the atoms the deck gave it, turns it into that</span>
+<span class="w">      </span><span class="c">!! orientation and evaluates the five EFP2 terms. There is no SCF here:</span>
+<span class="w">      </span><span class="c">!! the wavefunctions were solved when the potentials were made.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The work itself is in `run_libcint_efp` rather than here, because all of it</span>
-<span class="w">      </span><span class="c">!! lives behind `MQC_ENABLE_LIBCINT` and this file compiles either way. The stub</span>
-<span class="w">      </span><span class="c">!! declines with the same signature and names the build option.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Rank zero only, for now. The pair loop is the obvious thing to distribute and</span>
-<span class="w">      </span><span class="c">!! is already flat, but the terms are milliseconds on a dimer and shaping that</span>
-<span class="w">      </span><span class="c">!! before there is a cluster to shape it around would be guessing.</span>
+<span class="w">      </span><span class="c">!! Rank zero only. The work is in `run_libcint_efp`, which lives behind</span>
+<span class="w">      </span><span class="c">!! `MQC_ENABLE_LIBCINT`; the stub declines with the same signature and</span>
+<span class="w">      </span><span class="c">!! names the build option.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_libcint_bridge</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">run_libcint_efp</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_program_limits</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">N_EFP_TERMS</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_json_output_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">OUTPUT_MODE_UNFRAGMENTED</span>
@@ -2451,18 +2444,15 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">result_out</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="w">         </span><span class="c">! In the `scf` slot because that is the one `energy_t%total()` sums as the</span>
-<span class="w">         </span><span class="c">! reference, and an EFP interaction energy has no correlation correction</span>
-<span class="w">         </span><span class="c">! sitting on top of it. It is not an SCF energy and nothing here pretends</span>
-<span class="w">         </span><span class="c">! otherwise -- there is no wavefunction solved in this routine at all.</span>
+<span class="w">         </span><span class="c">! In the `scf` slot because that is the one `energy_t%total()` sums as</span>
+<span class="w">         </span><span class="c">! the reference. It is not an SCF energy: no wavefunction is solved</span>
+<span class="w">         </span><span class="c">! here at all.</span>
 <span class="w">         </span><span class="n">result_out</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">terms</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
 <span class="w">         </span><span class="n">result_out</span><span class="p">%</span><span class="n">has_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">      </span><span class="k">end if</span>
 
-<span class="w">      </span><span class="c">! The same summary every other run leaves behind, so a driven run or the</span>
-<span class="w">      </span><span class="c">! validation harness can read the number back rather than scrape the log.</span>
-<span class="w">      </span><span class="c">! `UNFRAGMENTED` because that is the shape of what is written -- one energy for</span>
-<span class="w">      </span><span class="c">! one system -- not a claim that the system has no fragments.</span>
+<span class="w">      </span><span class="c">! `UNFRAGMENTED` because that is the shape of what is written -- one</span>
+<span class="w">      </span><span class="c">! energy for one system -- not a claim that the system has no fragments.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">write_output</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">skip_json_output</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">json_data</span><span class="p">%</span><span class="n">output_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OUTPUT_MODE_UNFRAGMENTED</span>
 <span class="w">         </span><span class="n">json_data</span><span class="p">%</span><span class="n">total_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">terms</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
@@ -2495,7 +2485,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

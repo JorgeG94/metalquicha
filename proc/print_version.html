@@ -169,11 +169,11 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/mqc_method_factory.html'>mqc_method_factory</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_method_types.html'>mqc_method_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_dlfind_bridge.html'>mqc_dlfind_bridge</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_method_factory.html'>mqc_method_factory</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1421,15 +1421,13 @@ large graphs.</div>
 
 
     <p>Version, and which optional backends this binary actually has</p>
-<p>The feature list is here so that something outside the program can
-find out what this build can do without trying it and reading the
-failure. <code>run_validation.py</code> gates on it: a deck needing an optional
-backend is skipped rather than failed on a build configured without
-one, which is the difference between &ldquo;not tested here&rdquo; and &ldquo;broken&rdquo;.</p>
-<p>Asked of the backends themselves rather than of preprocessor symbols.
-Each of these resolves to a real module or to its stub at link time,
-so the answer is a property of the binary that exists rather than of
-the flags somebody believes they configured with.</p>
+<p>The feature list lets something outside the program find out what this
+build can do without trying it and reading the failure;
+<code>run_validation.py</code> gates on it to skip rather than fail a deck whose
+backend was not configured in.</p>
+<p>Asked of the backends rather than of preprocessor symbols: each call
+resolves to a real module or to its stub at link time, so the answer
+describes the binary that exists.</p>
 
 
     <h3>Arguments</h3>
@@ -1795,16 +1793,14 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">print_version</span><span class="p">()</span>
 <span class="w">      </span><span class="c">!! Version, and which optional backends this binary actually has</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The feature list is here so that something outside the program can</span>
-<span class="w">      </span><span class="c">!! find out what this build can do without trying it and reading the</span>
-<span class="w">      </span><span class="c">!! failure. `run_validation.py` gates on it: a deck needing an optional</span>
-<span class="w">      </span><span class="c">!! backend is skipped rather than failed on a build configured without</span>
-<span class="w">      </span><span class="c">!! one, which is the difference between "not tested here" and "broken".</span>
+<span class="w">      </span><span class="c">!! The feature list lets something outside the program find out what this</span>
+<span class="w">      </span><span class="c">!! build can do without trying it and reading the failure;</span>
+<span class="w">      </span><span class="c">!! `run_validation.py` gates on it to skip rather than fail a deck whose</span>
+<span class="w">      </span><span class="c">!! backend was not configured in.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Asked of the backends themselves rather than of preprocessor symbols.</span>
-<span class="w">      </span><span class="c">!! Each of these resolves to a real module or to its stub at link time,</span>
-<span class="w">      </span><span class="c">!! so the answer is a property of the binary that exists rather than of</span>
-<span class="w">      </span><span class="c">!! the flags somebody believes they configured with.</span>
+<span class="w">      </span><span class="c">!! Asked of the backends rather than of preprocessor symbols: each call</span>
+<span class="w">      </span><span class="c">!! resolves to a real module or to its stub at link time, so the answer</span>
+<span class="w">      </span><span class="c">!! describes the binary that exists.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_libcint_bridge</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">libcint_backend_available</span><span class="p">,</span><span class="w"> </span><span class="n">xc_available</span><span class="p">,</span><span class="w"> </span><span class="n">ecp_backend_available</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_method_factory</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">method_backend_built</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_method_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">METHOD_TYPE_GFN2</span>
@@ -1845,7 +1841,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

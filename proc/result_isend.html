@@ -182,7 +182,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~4"></span>
+              <span class="anchor" id="variable-result~34"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -197,7 +197,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~4"></span>
+              <span class="anchor" id="variable-comm~13"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -212,7 +212,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest~3"></span>
+              <span class="anchor" id="variable-dest~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -242,7 +242,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req"></span>
+              <span class="anchor" id="variable-req~3"></span>
               type(request_t),
             </td>
 <td>intent(out)</td>
@@ -838,12 +838,9 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">doubles</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">triples</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
 
-<span class="w">      </span><span class="c">! Send fragment metadata</span>
+<span class="w">      </span><span class="c">! Send fragment metadata. A field added to the type and not to these</span>
+<span class="w">      </span><span class="c">! four routines leaves every parallel run reporting the default.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">distance</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
-<span class="w">      </span><span class="c">! Convergence travels with the energy or it is not knowable at</span>
-<span class="w">      </span><span class="c">! the coordinator, which is the only rank that writes anything.</span>
-<span class="w">      </span><span class="c">! A field added to the type and not to these four routines</span>
-<span class="w">      </span><span class="c">! leaves every parallel run reporting the default.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">scf_status</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">scf_iterations</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">has_orbitals</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
@@ -901,7 +898,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

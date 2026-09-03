@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/shell_contractions.html#variable-found~47">found</a>
-            <a class="list-group-item" href="../proc/shell_contractions.html#variable-n_children~3">n_children</a>
+            <a class="list-group-item" href="../proc/shell_contractions.html#variable-found~6">found</a>
+            <a class="list-group-item" href="../proc/shell_contractions.html#variable-n_children">n_children</a>
         </div>
       </div>
     </div>
@@ -180,9 +180,8 @@
     <p>How many contracted functions one shell entry defines</p>
 <p>The length of the <code>coefficients</code> array, which is the number of
 columns &ndash; one per contracted function sharing this shell&rsquo;s
-exponents. Falls back to the angular momentum count if the key
-cannot be read, which keeps a malformed file behaving as it did
-rather than silently producing no shells at all.</p>
+exponents. Falls back to the angular momentum count if the key cannot
+be read.</p>
 
 
     <h3>Arguments</h3>
@@ -198,7 +197,7 @@ rather than silently producing no shells at all.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~35"></span>
+              <span class="anchor" id="variable-json~6"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -213,7 +212,7 @@ rather than silently producing no shells at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_key~5"></span>
+              <span class="anchor" id="variable-element_key~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -243,7 +242,7 @@ rather than silently producing no shells at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_angular~4"></span>
+              <span class="anchor" id="variable-n_angular~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -261,7 +260,7 @@ rather than silently producing no shells at all.</p>
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-n~37"></span>
+          <span class="anchor" id="variable-n~10"></span>
           integer
         </small>
       </h3>
@@ -551,7 +550,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~47"></span>
+              <span class="anchor" id="variable-found~6"></span>
               logical,
             </td>
               <td>private</td>
@@ -568,7 +567,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_children~3"></span>
+              <span class="anchor" id="variable-n_children"></span>
               integer,
             </td>
               <td>private</td>
@@ -604,9 +603,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! The length of the `coefficients` array, which is the number of</span>
 <span class="w">      </span><span class="c">!! columns -- one per contracted function sharing this shell's</span>
-<span class="w">      </span><span class="c">!! exponents. Falls back to the angular momentum count if the key</span>
-<span class="w">      </span><span class="c">!! cannot be read, which keeps a malformed file behaving as it did</span>
-<span class="w">      </span><span class="c">!! rather than silently producing no shells at all.</span>
+<span class="w">      </span><span class="c">!! exponents. Falls back to the angular momentum count if the key cannot</span>
+<span class="w">      </span><span class="c">!! be read.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">element_key</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ishell</span><span class="p">,</span><span class="w"> </span><span class="n">n_angular</span>
@@ -647,7 +645,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

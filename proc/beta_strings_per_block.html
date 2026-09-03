@@ -177,22 +177,14 @@
     
 
     <p>How many beta strings one working block may cover</p>
-<p>The intermediate is <code>(n_orbitals^2, n_determinants)</code> and the
-determinant count is the product of the two string counts, so building
-it whole costs <code>norb^2 * na * nb * 8</code> bytes &ndash; which is nothing for a
-small active space and ruinous for a large one. Ethane&rsquo;s full valence
-CAS(14,14) is 196 by 11,778,624, or <strong>18.5 GB</strong>, and the sigma build
-needs two of them. Water&rsquo;s CAS(8,6) is 350 kB.</p>
-<p>So the determinant axis is blocked, and this says how finely.
-Determinants are laid out alpha-major within a beta string, which makes
-a range of beta strings a contiguous range of columns and the beta
-string the natural unit to block on.</p>
-<p>Deliberately a memory budget rather than a fixed count: a fixed count
-would be far too small for a tiny space &ndash; where the whole intermediate
-is cheaper than the bookkeeping &ndash; and still too large for a big one,
-since the cost per beta string grows with both the orbital count and
-the alpha string count. Below the budget nothing blocks at all, so
-small spaces are untouched and take the same path they always did.</p>
+<p>The intermediate is <code>(n_orbitals^2, n_determinants)</code>, or
+<code>norb^2 * na * nb * 8</code> bytes whole, and the sigma build needs two of
+them. Determinants are alpha-major within a beta string, so a range of
+beta strings is a contiguous range of columns and the beta string is
+the unit blocked on.</p>
+<p>A memory budget, not a fixed count: the cost per beta string grows with
+both the orbital count and the alpha string count. A space whose whole
+intermediate fits in <code>BLOCK_BYTES</code> is not blocked at all.</p>
 
 
     <h3>Arguments</h3>
@@ -208,7 +200,7 @@ small spaces are untouched and take the same path they always did.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-npair"></span>
+              <span class="anchor" id="variable-npair~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -223,7 +215,7 @@ small spaces are untouched and take the same path they always did.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-na~6"></span>
+              <span class="anchor" id="variable-na~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -238,7 +230,7 @@ small spaces are untouched and take the same path they always did.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nb~4"></span>
+              <span class="anchor" id="variable-nb~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -508,24 +500,15 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">beta_strings_per_block</span><span class="p">(</span><span class="n">npair</span><span class="p">,</span><span class="w"> </span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">width</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! How many beta strings one working block may cover</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The intermediate is `(n_orbitals^2, n_determinants)` and the</span>
-<span class="w">      </span><span class="c">!! determinant count is the product of the two string counts, so building</span>
-<span class="w">      </span><span class="c">!! it whole costs `norb^2 * na * nb * 8` bytes -- which is nothing for a</span>
-<span class="w">      </span><span class="c">!! small active space and ruinous for a large one. Ethane's full valence</span>
-<span class="w">      </span><span class="c">!! CAS(14,14) is 196 by 11,778,624, or **18.5 GB**, and the sigma build</span>
-<span class="w">      </span><span class="c">!! needs two of them. Water's CAS(8,6) is 350 kB.</span>
+<span class="w">      </span><span class="c">!! The intermediate is `(n_orbitals^2, n_determinants)`, or</span>
+<span class="w">      </span><span class="c">!! `norb^2 * na * nb * 8` bytes whole, and the sigma build needs two of</span>
+<span class="w">      </span><span class="c">!! them. Determinants are alpha-major within a beta string, so a range of</span>
+<span class="w">      </span><span class="c">!! beta strings is a contiguous range of columns and the beta string is</span>
+<span class="w">      </span><span class="c">!! the unit blocked on.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! So the determinant axis is blocked, and this says how finely.</span>
-<span class="w">      </span><span class="c">!! Determinants are laid out alpha-major within a beta string, which makes</span>
-<span class="w">      </span><span class="c">!! a range of beta strings a contiguous range of columns and the beta</span>
-<span class="w">      </span><span class="c">!! string the natural unit to block on.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Deliberately a memory budget rather than a fixed count: a fixed count</span>
-<span class="w">      </span><span class="c">!! would be far too small for a tiny space -- where the whole intermediate</span>
-<span class="w">      </span><span class="c">!! is cheaper than the bookkeeping -- and still too large for a big one,</span>
-<span class="w">      </span><span class="c">!! since the cost per beta string grows with both the orbital count and</span>
-<span class="w">      </span><span class="c">!! the alpha string count. Below the budget nothing blocks at all, so</span>
-<span class="w">      </span><span class="c">!! small spaces are untouched and take the same path they always did.</span>
+<span class="w">      </span><span class="c">!! A memory budget, not a fixed count: the cost per beta string grows with</span>
+<span class="w">      </span><span class="c">!! both the orbital count and the alpha string count. A space whose whole</span>
+<span class="w">      </span><span class="c">!! intermediate fits in `BLOCK_BYTES` is not blocked at all.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">npair</span><span class="p">,</span><span class="w"> </span><span class="n">na</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">width</span>
 
@@ -559,7 +542,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

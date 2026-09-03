@@ -136,9 +136,9 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/parse_convergence_metric.html#variable-c~10">c</a>
-            <a class="list-group-item" href="../proc/parse_convergence_metric.html#variable-i~131">i</a>
-            <a class="list-group-item" href="../proc/parse_convergence_metric.html#variable-lower~4">lower</a>
+            <a class="list-group-item" href="../proc/parse_convergence_metric.html#variable-c~7">c</a>
+            <a class="list-group-item" href="../proc/parse_convergence_metric.html#variable-i~51">i</a>
+            <a class="list-group-item" href="../proc/parse_convergence_metric.html#variable-lower~2">lower</a>
         </div>
       </div>
     </div>
@@ -179,11 +179,9 @@
     
 
     <p><code>keywords.scf.convergence_metric</code> to a <code>CONV_METRIC_*</code> kind</p>
-<p><code>diis</code> and <code>gradient</code> are accepted for the commutator because all
-three name the same quantity &ndash; <code>FDS - SDF</code> in the orthogonal basis is
-both what DIIS extrapolates against and the orbital gradient. A user
-reaching for any of the three means the same thing, and refusing two
-of them would be pedantry rather than precision.</p>
+<p><code>diis</code> and <code>gradient</code> are accepted for the commutator: <code>FDS - SDF</code> in
+the orthogonal basis is both what DIIS extrapolates against and the
+orbital gradient.</p>
 
 
     <h3>Arguments</h3>
@@ -199,7 +197,7 @@ of them would be pedantry rather than precision.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~29"></span>
+              <span class="anchor" id="variable-name~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -229,7 +227,7 @@ of them would be pedantry rather than precision.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~10"></span>
+              <span class="anchor" id="variable-ok~4"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -262,7 +260,7 @@ of them would be pedantry rather than precision.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-c~10"></span>
+              <span class="anchor" id="variable-c~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -279,7 +277,7 @@ of them would be pedantry rather than precision.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~131"></span>
+              <span class="anchor" id="variable-i~51"></span>
               integer,
             </td>
               <td>private</td>
@@ -296,7 +294,7 @@ of them would be pedantry rather than precision.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lower~4"></span>
+              <span class="anchor" id="variable-lower~2"></span>
               character(len=len),
             </td>
               <td>private</td>
@@ -330,11 +328,9 @@ of them would be pedantry rather than precision.</p>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure subroutine </span><span class="n">parse_convergence_metric</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">metric</span><span class="p">,</span><span class="w"> </span><span class="n">ok</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! `keywords.scf.convergence_metric` to a `CONV_METRIC_*` kind</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! `diis` and `gradient` are accepted for the commutator because all</span>
-<span class="w">      </span><span class="c">!! three name the same quantity -- `FDS - SDF` in the orthogonal basis is</span>
-<span class="w">      </span><span class="c">!! both what DIIS extrapolates against and the orbital gradient. A user</span>
-<span class="w">      </span><span class="c">!! reaching for any of the three means the same thing, and refusing two</span>
-<span class="w">      </span><span class="c">!! of them would be pedantry rather than precision.</span>
+<span class="w">      </span><span class="c">!! `diis` and `gradient` are accepted for the commutator: `FDS - SDF` in</span>
+<span class="w">      </span><span class="c">!! the orthogonal basis is both what DIIS extrapolates against and the</span>
+<span class="w">      </span><span class="c">!! orbital gradient.</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">name</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">metric</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ok</span>
@@ -386,7 +382,7 @@ of them would be pedantry rather than precision.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

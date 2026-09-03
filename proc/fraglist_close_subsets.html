@@ -139,9 +139,9 @@
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-capacity~9">capacity</a>
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-closed">closed</a>
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-has_next~8">has_next</a>
-            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-i~197">i</a>
-            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-iterm~9">iterm</a>
-            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-level~21">level</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-i~130">i</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-iterm~2">iterm</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-level~12">level</a>
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-n_closed">n_closed</a>
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-pick~2">pick</a>
             <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-size_wanted">size_wanted</a>
@@ -194,9 +194,8 @@ approximate anything &ndash; the assembly looks the subsets up and fails.
 Screening therefore selects which <em>high-order</em> terms to keep, and this
 restores what computing them requires.</p>
 <p>That is also why an energy screen saves less than it first appears: a
-trimer kept for its own sake drags in three dimers and three monomers,
-most of which the screen had already rejected on their own account.
-The saving is real but it is in the tail, not the whole list.</p>
+kept trimer drags in three dimers and three monomers, most of which
+the screen had already rejected.</p>
 
     <h3>Type Bound</h3>
     <p><a href='../type/fraglist_t.html'>fraglist_t</a></p>
@@ -214,7 +213,7 @@ The saving is real but it is in the tail, not the whole list.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~152"></span>
+              <span class="anchor" id="variable-this~121"></span>
               class(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -229,7 +228,7 @@ The saving is real but it is in the tail, not the whole list.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~187"></span>
+              <span class="anchor" id="variable-error~127"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -614,7 +613,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~197"></span>
+              <span class="anchor" id="variable-i~130"></span>
               integer(kind=default_int),
             </td>
               <td>private</td>
@@ -631,7 +630,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterm~9"></span>
+              <span class="anchor" id="variable-iterm~2"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -648,7 +647,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~21"></span>
+              <span class="anchor" id="variable-level~12"></span>
               integer(kind=default_int),
             </td>
               <td>private</td>
@@ -775,9 +774,13 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! restores what computing them requires.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! That is also why an energy screen saves less than it first appears: a</span>
-<span class="w">      </span><span class="c">!! trimer kept for its own sake drags in three dimers and three monomers,</span>
-<span class="w">      </span><span class="c">!! most of which the screen had already rejected on their own account.</span>
-<span class="w">      </span><span class="c">!! The saving is real but it is in the tail, not the whole list.</span>
+<span class="w">      </span><span class="c">!! kept trimer drags in three dimers and three monomers, most of which</span>
+<span class="w">      </span><span class="c">!! the screen had already rejected.</span>
+<span class="w">      </span><span class="c">! TODO(mqc): quadratic, and on the path every screened run has to take.</span>
+<span class="w">      </span><span class="c">! `add_unique` scans everything already stored for each of the 2^level</span>
+<span class="w">      </span><span class="c">! subsets of every term, so the cost grows with the square of the closed</span>
+<span class="w">      </span><span class="c">! list. The store is also preallocated at `n_terms * 2**max_level` rows,</span>
+<span class="w">      </span><span class="c">! eight times the term count at level 3, before any of it is filled.</span>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">fraglist_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 
@@ -809,26 +812,13 @@ large graphs.</div>
 <span class="w">         </span><span class="k">do </span><span class="n">size_wanted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">level</span>
 <span class="w">            </span><span class="k">call </span><span class="n">first_combination</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span><span class="w"> </span><span class="n">size_wanted</span><span class="p">)</span>
 <span class="w">            </span><span class="k">do</span>
-<span class="w">               </span><span class="c">!</span>
 <span class="w">               </span><span class="c">! Gathered into a local rather than passed as</span>
-<span class="w">               </span><span class="c">! `[(term(subset(i)), i=1, size_wanted)]`.</span>
-<span class="w">               </span><span class="c">!</span>
-<span class="w">               </span><span class="c">! An array constructor as an actual argument builds a temporary,</span>
-<span class="w">               </span><span class="c">! and nvfortran sizes that temporary WRONG under `-Mvect=simd`</span>
-<span class="w">               </span><span class="c">! -- which `-fast` implies, so every optimised NVHPC build was</span>
-<span class="w">               </span><span class="c">! affected. The symptom is a runtime abort asking for a garbage</span>
-<span class="w">               </span><span class="c">! allocation, e.g.</span>
-<span class="w">               </span><span class="c">!</span>
-<span class="w">               </span><span class="c">!     0: ALLOCATE: 562935672259264 bytes requested</span>
-<span class="w">               </span><span class="c">!</span>
-<span class="w">               </span><span class="c">! the size varying run to run because the value comes from</span>
-<span class="w">               </span><span class="c">! uninitialised stack. `-O2` alone is fine, `-fast -Mnovect` is</span>
-<span class="w">               </span><span class="c">! fine, and adding a print anywhere nearby makes it vanish.</span>
-<span class="w">               </span><span class="c">!</span>
-<span class="w">               </span><span class="c">! Gathering explicitly removes the temporary, so there is</span>
-<span class="w">               </span><span class="c">! nothing to size wrongly. It also stops allocating one per</span>
-<span class="w">               </span><span class="c">! iteration of the innermost loop, which this did not need.</span>
-<span class="w">               </span><span class="c">!</span>
+<span class="w">               </span><span class="c">! `[(term(subset(i)), i=1, size_wanted)]`. An array constructor</span>
+<span class="w">               </span><span class="c">! as an actual argument builds a temporary, and nvfortran sizes</span>
+<span class="w">               </span><span class="c">! that temporary wrongly under `-Mvect=simd`, which `-fast`</span>
+<span class="w">               </span><span class="c">! implies: the run aborts asking for a garbage allocation whose</span>
+<span class="w">               </span><span class="c">! size varies run to run. `-O2` alone and `-fast -Mnovect` are</span>
+<span class="w">               </span><span class="c">! both fine.</span>
 <span class="w">               </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size_wanted</span>
 <span class="w">                  </span><span class="n">pick</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">term</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
 <span class="w">               </span><span class="k">end do</span>
@@ -868,7 +858,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

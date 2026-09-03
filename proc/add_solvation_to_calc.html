@@ -180,9 +180,9 @@
 </h2>
     
 
-    <p>Add implicit solvation model to XTB calculator</p>
-<p>Adds ALPB, GBSA, or CPCM solvation. For ALPB/GBSA, optionally adds CDS and shift corrections.
-CPCM does not support CDS or shift corrections.</p>
+    <p>Add ALPB, GBSA or CPCM solvation to an XTB calculator</p>
+<p>ALPB and GBSA optionally take the CDS and shift corrections; CPCM
+supports neither and ignores both flags.</p>
 
 
     <h3>Arguments</h3>
@@ -213,7 +213,7 @@ CPCM does not support CDS or shift corrections.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mol~3"></span>
+              <span class="anchor" id="variable-mol~4"></span>
               type(structure_type),
             </td>
 <td>intent(in)</td>
@@ -228,7 +228,7 @@ CPCM does not support CDS or shift corrections.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvent~2"></span>
+              <span class="anchor" id="variable-solvent~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -243,7 +243,7 @@ CPCM does not support CDS or shift corrections.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvation_model~2"></span>
+              <span class="anchor" id="variable-solvation_model~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -258,7 +258,7 @@ CPCM does not support CDS or shift corrections.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~4"></span>
+              <span class="anchor" id="variable-method~15"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -273,7 +273,7 @@ CPCM does not support CDS or shift corrections.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_cds~2"></span>
+              <span class="anchor" id="variable-use_cds~5"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -288,7 +288,7 @@ CPCM does not support CDS or shift corrections.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_shift~2"></span>
+              <span class="anchor" id="variable-use_shift~5"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -303,7 +303,7 @@ CPCM does not support CDS or shift corrections.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~2"></span>
+              <span class="anchor" id="variable-dielectric~6"></span>
               real(kind=wp),
             </td>
 <td>intent(in)</td>
@@ -318,7 +318,7 @@ CPCM does not support CDS or shift corrections.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_nang~2"></span>
+              <span class="anchor" id="variable-cpcm_nang~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -333,7 +333,7 @@ CPCM does not support CDS or shift corrections.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_rscale~2"></span>
+              <span class="anchor" id="variable-cpcm_rscale~5"></span>
               real(kind=wp),
             </td>
 <td>intent(in)</td>
@@ -348,7 +348,7 @@ CPCM does not support CDS or shift corrections.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~44"></span>
+              <span class="anchor" id="variable-error~136"></span>
               type(error_type),
             </td>
 <td>intent(out),</td>
@@ -816,10 +816,10 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">add_solvation_to_calc</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">,</span><span class="w"> </span><span class="n">solvent</span><span class="p">,</span><span class="w"> </span><span class="n">solvation_model</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">use_cds</span><span class="p">,</span><span class="w"> </span><span class="n">use_shift</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                    </span><span class="n">dielectric</span><span class="p">,</span><span class="w"> </span><span class="n">cpcm_nang</span><span class="p">,</span><span class="w"> </span><span class="n">cpcm_rscale</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Add implicit solvation model to XTB calculator</span>
+<span class="w">      </span><span class="c">!! Add ALPB, GBSA or CPCM solvation to an XTB calculator</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Adds ALPB, GBSA, or CPCM solvation. For ALPB/GBSA, optionally adds CDS and shift corrections.</span>
-<span class="w">      </span><span class="c">!! CPCM does not support CDS or shift corrections.</span>
+<span class="w">      </span><span class="c">!! ALPB and GBSA optionally take the CDS and shift corrections; CPCM</span>
+<span class="w">      </span><span class="c">!! supports neither and ignores both flags.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">xtb_calculator</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">structure_type</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mol</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">solvent</span><span class="w">           </span><span class="c">!! Solvent name (can be empty if dielectric &gt; 0)</span>
@@ -944,7 +944,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -11,9 +11,7 @@ module mqc_cgto
    ! Which angular form the basis is written in. Cartesian and spherical are
    ! the same thing for s and p -- one function and three, either way -- so a
    ! set that never goes above p says nothing about the convention, and that is
-   ! a third state rather than a default. Collapsing it onto "spherical" too
-   ! early is what would make hydrogen look like it disagreed with the oxygen
-   ! it is bonded to in 6-31G*, where only the d shell is marked Cartesian.
+   ! a third state rather than a default.
    integer, parameter :: ANGULAR_FORM_UNSET = 0
       !! No shell above p, so the file says nothing either way
    integer, parameter :: ANGULAR_FORM_SPHERICAL = 1
@@ -27,6 +25,8 @@ module mqc_cgto
         !! Angular momentum quantum number (0=s, 1=p, 2=d, etc.)
       integer :: nfunc
         !! Number of primitive Gaussians in the contraction
+      ! TODO(mqc): neither has a default initialiser, unlike every other
+      ! component in this module, so an unfilled `cgto_type` reads undefined.
       real(dp), allocatable :: exponents(:)
         !! Exponents (alpha values)
       real(dp), allocatable :: coefficients(:)
@@ -44,9 +44,7 @@ module mqc_cgto
       type(cgto_type), allocatable :: shells(:)
       !! array of contracted shells
       integer :: nshells = 0
-      !! number of shells in type. Zero until `allocate_shells` runs, so an
-      !! atom the basis file never covered reads as empty rather than as
-      !! whatever was on the stack.
+      !! number of shells in type; zero until `allocate_shells` runs
       integer :: angular_form = ANGULAR_FORM_UNSET
       !! Cartesian or spherical, from this element's `function_type` entries
    contains
@@ -62,10 +60,9 @@ module mqc_cgto
       integer :: nelements = 0
       !! total number of atoms/elements in a molecule
       integer :: angular_form = ANGULAR_FORM_UNSET
-      !! Cartesian or spherical, agreed across every atom in the molecule.
-      !! The integral layer picks one set of entry points from this, so it has
-      !! to be one answer for the whole basis; the reader refuses a basis whose
-      !! atoms disagree rather than choosing for them.
+      !! Cartesian or spherical, agreed across every atom in the molecule. The
+      !! reader refuses a basis whose atoms disagree rather than choosing for
+      !! them.
    contains
       procedure :: allocate_elements => basis_set_allocate_elements
       procedure :: destroy => basis_set_destroy
@@ -77,6 +74,9 @@ contains
 
    pure subroutine cgto_allocate_arrays(self, nfunc)
       !! Allocate arrays for exponents and coefficients in a CGTO
+      ! TODO(mqc): allocates unconditionally, where the sibling
+      ! `ecp_shell_allocate` destroys first, so a second call on the same shell
+      ! aborts on an already-allocated array.
       class(cgto_type), intent(inout) :: self
       integer, intent(in) :: nfunc
 
@@ -149,10 +149,8 @@ contains
    pure function molecular_basis_is_cartesian(self) result(cartesian)
       !! Whether the integrals over this basis must be built in the Cartesian form
       !!
-      !! `ANGULAR_FORM_UNSET` answers false, and correctly: a basis with no
-      !! shell above p has the same integrals either way, so the spherical
-      !! entry points are as right as the Cartesian ones and are what everything
-      !! else already uses.
+      !! `ANGULAR_FORM_UNSET` answers false: with no shell above p the
+      !! integrals are the same either way.
       class(molecular_basis_type), intent(in) :: self
       logical :: cartesian
 

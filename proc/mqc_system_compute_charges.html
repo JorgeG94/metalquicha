@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-basis_name~9">basis_name</a>
-            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-error~174">error</a>
-            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-h~23">h</a>
-            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-i~190">i</a>
-            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-n~60">n</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-basis_name~6">basis_name</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-error~109">error</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-h~18">h</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-i~114">i</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-n~47">n</a>
             <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-q~10">q</a>
             <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-symbols~4">symbols</a>
             <a class="list-group-item" href="../proc/mqc_system_compute_charges.html#variable-which~5">which</a>
@@ -185,13 +185,10 @@
 
     <p>Run one RHF over the whole system and keep its atomic charges</p>
 <p><code>scheme</code> is &ldquo;chelpg&rdquo; or &ldquo;mulliken&rdquo;; an empty string takes chelpg, for
-the reason in the module header. <code>basis</code> is any basis the build carries;
-an empty string takes 6-31g, which is small enough to be affordable on
-the systems this gets pointed at and large enough that the charges mean
-something.</p>
-<p>Closed shell only. An odd electron count is refused rather than
-silently paired up, because a caller fragmenting a radical needs to
-know that this cannot answer for it.</p>
+the reason in the module header. <code>basis</code> is any basis the build
+carries; an empty string takes 6-31g.</p>
+<p>Closed shell only: an odd electron count is refused rather than
+silently paired up.</p>
 
 
     <h3>Arguments</h3>
@@ -237,7 +234,7 @@ know that this cannot answer for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~14"></span>
+              <span class="anchor" id="variable-scheme~8"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(in)</td>
@@ -267,7 +264,7 @@ know that this cannot answer for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~11"></span>
+              <span class="anchor" id="variable-basis~9"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(in)</td>
@@ -285,7 +282,7 @@ know that this cannot answer for it.</p>
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-status~36"></span>
+          <span class="anchor" id="variable-status~22"></span>
           integer(kind=c_int)
         </small>
       </h3>
@@ -518,7 +515,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~9"></span>
+              <span class="anchor" id="variable-basis_name~6"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -535,7 +532,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~174"></span>
+              <span class="anchor" id="variable-error~109"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -552,7 +549,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~23"></span>
+              <span class="anchor" id="variable-h~18"></span>
               type(<a href='../type/system_handle_t.html'>system_handle_t</a>),
             </td>
               <td>private,</td>
@@ -569,7 +566,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~190"></span>
+              <span class="anchor" id="variable-i~114"></span>
               integer,
             </td>
               <td>private</td>
@@ -586,7 +583,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~60"></span>
+              <span class="anchor" id="variable-n~47"></span>
               integer,
             </td>
               <td>private</td>
@@ -673,14 +670,11 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Run one RHF over the whole system and keep its atomic charges</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! `scheme` is "chelpg" or "mulliken"; an empty string takes chelpg, for</span>
-<span class="w">      </span><span class="c">!! the reason in the module header. `basis` is any basis the build carries;</span>
-<span class="w">      </span><span class="c">!! an empty string takes 6-31g, which is small enough to be affordable on</span>
-<span class="w">      </span><span class="c">!! the systems this gets pointed at and large enough that the charges mean</span>
-<span class="w">      </span><span class="c">!! something.</span>
+<span class="w">      </span><span class="c">!! the reason in the module header. `basis` is any basis the build</span>
+<span class="w">      </span><span class="c">!! carries; an empty string takes 6-31g.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Closed shell only. An odd electron count is refused rather than</span>
-<span class="w">      </span><span class="c">!! silently paired up, because a caller fragmenting a radical needs to</span>
-<span class="w">      </span><span class="c">!! know that this cannot answer for it.</span>
+<span class="w">      </span><span class="c">!! Closed shell only: an odd electron count is refused rather than</span>
+<span class="w">      </span><span class="c">!! silently paired up.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handle</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scheme_len</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="kt">c_char</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scheme</span><span class="p">(</span><span class="n">scheme_len</span><span class="p">)</span>
@@ -726,8 +720,8 @@ large graphs.</div>
 <span class="w">         </span><span class="n">symbols</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_number_to_symbol</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
 <span class="w">      </span><span class="k">end do</span>
 
-<span class="w">      </span><span class="c">! Through the bridge, not into the backend. The odd-electron refusal and</span>
-<span class="w">      </span><span class="c">! the SCF live on the other side of it now, so this reports rather than</span>
+<span class="w">      </span><span class="c">! Through the bridge, not into the backend: the odd-electron refusal and</span>
+<span class="w">      </span><span class="c">! the SCF are both on the other side of it, so this reports rather than</span>
 <span class="w">      </span><span class="c">! decides.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">run_libcint_charges</span><span class="p">(</span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">symbols</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                               </span><span class="n">basis_name</span><span class="p">,</span><span class="w"> </span><span class="n">which</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">%</span><span class="n">geom</span><span class="p">%</span><span class="n">charge</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
@@ -761,7 +755,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

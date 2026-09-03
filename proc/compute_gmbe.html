@@ -138,19 +138,19 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-compute_grad~2">compute_grad</a>
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-compute_hess~2">compute_hess</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-current_log_level~6">current_log_level</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-error~108">error</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-fragment~15">fragment</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-has_intersections~2">has_intersections</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-hess_dim~5">hess_dim</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-i~103">i</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-k~28">k</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-level_counts~2">level_counts</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-level_energies~2">level_energies</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-max_level~12">max_level</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-monomer_energy~2">monomer_energy</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-current_log_level~5">current_log_level</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-error~82">error</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-fragment~16">fragment</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-has_intersections">has_intersections</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-hess_dim~2">hess_dim</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-i~78">i</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-k~21">k</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-level_counts">level_counts</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-level_energies">level_energies</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-max_level~17">max_level</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-monomer_energy">monomer_energy</a>
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-monomer_idx">monomer_idx</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-sign_factor~3">sign_factor</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-sign_factor">sign_factor</a>
         </div>
       </div>
     </div>
@@ -194,11 +194,11 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_config_types.html'>mqc_config_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -825,11 +825,9 @@ large graphs.</div>
 
 
     <p>Compute generalized many-body expansion (GMBE) energy with optional gradient and/or hessian</p>
-<p>This is the core routine that handles all GMBE computations using
-the inclusion-exclusion principle for overlapping fragments.
-Optional arguments control what derivatives are computed:
-  - If sys_geom and total_gradient are present: compute gradient
-  - If total_hessian is also present: compute hessian</p>
+<p>Inclusion-exclusion over overlapping fragments. The optional arguments
+decide what is computed: <code>sys_geom</code> with <code>total_gradient</code> gives the
+gradient, and <code>total_hessian</code> alongside them gives the Hessian.</p>
 
 
     <h3>Arguments</h3>
@@ -845,7 +843,7 @@ Optional arguments control what derivatives are computed:
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~12"></span>
+              <span class="anchor" id="variable-monomers~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -860,7 +858,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~8"></span>
+              <span class="anchor" id="variable-n_monomers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -890,7 +888,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections~5"></span>
+              <span class="anchor" id="variable-n_intersections"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -905,7 +903,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_results~2"></span>
+              <span class="anchor" id="variable-intersection_results"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in),</td>
@@ -920,7 +918,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~5"></span>
+              <span class="anchor" id="variable-intersection_sets"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -935,7 +933,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels~5"></span>
+              <span class="anchor" id="variable-intersection_levels"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -950,7 +948,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~7"></span>
+              <span class="anchor" id="variable-total_energy~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -965,7 +963,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~47"></span>
+              <span class="anchor" id="variable-sys_geom~27"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -980,7 +978,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~5"></span>
+              <span class="anchor" id="variable-total_gradient~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -995,7 +993,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian~3"></span>
+              <span class="anchor" id="variable-total_hessian"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1010,7 +1008,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~9"></span>
+              <span class="anchor" id="variable-bonds~5"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1025,7 +1023,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~18"></span>
+              <span class="anchor" id="variable-world_comm~13"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2372,7 +2370,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~6"></span>
+              <span class="anchor" id="variable-current_log_level~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -2389,7 +2387,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~108"></span>
+              <span class="anchor" id="variable-error~82"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -2406,7 +2404,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~15"></span>
+              <span class="anchor" id="variable-fragment~16"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -2423,7 +2421,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_intersections~2"></span>
+              <span class="anchor" id="variable-has_intersections"></span>
               logical,
             </td>
               <td>private</td>
@@ -2440,7 +2438,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hess_dim~5"></span>
+              <span class="anchor" id="variable-hess_dim~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -2457,7 +2455,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~103"></span>
+              <span class="anchor" id="variable-i~78"></span>
               integer,
             </td>
               <td>private</td>
@@ -2474,7 +2472,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~28"></span>
+              <span class="anchor" id="variable-k~21"></span>
               integer,
             </td>
               <td>private</td>
@@ -2491,7 +2489,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_counts~2"></span>
+              <span class="anchor" id="variable-level_counts"></span>
               integer,
             </td>
               <td>private,</td>
@@ -2508,7 +2506,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_energies~2"></span>
+              <span class="anchor" id="variable-level_energies"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2525,7 +2523,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~12"></span>
+              <span class="anchor" id="variable-max_level~17"></span>
               integer,
             </td>
               <td>private</td>
@@ -2542,7 +2540,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_energy~2"></span>
+              <span class="anchor" id="variable-monomer_energy"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -2576,7 +2574,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sign_factor~3"></span>
+              <span class="anchor" id="variable-sign_factor"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -2614,11 +2612,9 @@ large graphs.</div>
 <span class="w">                           </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">total_gradient</span><span class="p">,</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">world_comm</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Compute generalized many-body expansion (GMBE) energy with optional gradient and/or hessian</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! This is the core routine that handles all GMBE computations using</span>
-<span class="w">      </span><span class="c">!! the inclusion-exclusion principle for overlapping fragments.</span>
-<span class="w">      </span><span class="c">!! Optional arguments control what derivatives are computed:</span>
-<span class="w">      </span><span class="c">!!   - If sys_geom and total_gradient are present: compute gradient</span>
-<span class="w">      </span><span class="c">!!   - If total_hessian is also present: compute hessian</span>
+<span class="w">      </span><span class="c">!! Inclusion-exclusion over overlapping fragments. The optional arguments</span>
+<span class="w">      </span><span class="c">!! decide what is computed: `sys_geom` with `total_gradient` gives the</span>
+<span class="w">      </span><span class="c">!! gradient, and `total_hessian` alongside them gives the Hessian.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_result_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">calculation_result_t</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_physical_fragment</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">build_fragment_from_indices</span><span class="p">,</span><span class="w"> </span><span class="n">build_fragment_from_atom_list</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                       </span><span class="n">redistribute_cap_gradients</span><span class="p">,</span><span class="w"> </span><span class="n">redistribute_cap_hessian</span>
@@ -2809,7 +2805,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

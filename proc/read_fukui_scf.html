@@ -172,15 +172,8 @@ converged the neutral, and <code>optional_*</code> leaves it alone when the deck
 does not name the key. That is why nothing below tests for &ldquo;absent&rdquo;
 and why no field carries a sentinel &ndash; the state &ldquo;unset&rdquo; is spelled by
 the field still holding the inherited value.</p>
-<p>The three fields this replaced each needed a sentinel, and one of them
-could not have a clean one: zero is a real level shift meaning &ldquo;off&rdquo;,
-so &ldquo;unset&rdquo; had to be spelled &ldquo;any negative&rdquo; and the meaning of a
-negative shift was quietly spent on bookkeeping.</p>
 <p><code>inherit_scf: false</code> skips the seed, leaving the type defaults for
-anything the object does not name. It is for the case where the
-neutral was converged tightly, or with an accelerator picked for it,
-and carrying that onto a charged species is the wrong start rather
-than a careful one.</p>
+anything the object does not name.</p>
 
 
     <h3>Arguments</h3>
@@ -196,7 +189,7 @@ than a careful one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~12"></span>
+              <span class="anchor" id="variable-json~33"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -211,7 +204,7 @@ than a careful one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~16"></span>
+              <span class="anchor" id="variable-config~42"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -706,16 +699,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! and why no field carries a sentinel -- the state "unset" is spelled by</span>
 <span class="w">      </span><span class="c">!! the field still holding the inherited value.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The three fields this replaced each needed a sentinel, and one of them</span>
-<span class="w">      </span><span class="c">!! could not have a clean one: zero is a real level shift meaning "off",</span>
-<span class="w">      </span><span class="c">!! so "unset" had to be spelled "any negative" and the meaning of a</span>
-<span class="w">      </span><span class="c">!! negative shift was quietly spent on bookkeeping.</span>
-<span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! `inherit_scf: false` skips the seed, leaving the type defaults for</span>
-<span class="w">      </span><span class="c">!! anything the object does not name. It is for the case where the</span>
-<span class="w">      </span><span class="c">!! neutral was converged tightly, or with an accelerator picked for it,</span>
-<span class="w">      </span><span class="c">!! and carrying that onto a charged species is the wrong start rather</span>
-<span class="w">      </span><span class="c">!! than a careful one.</span>
+<span class="w">      </span><span class="c">!! anything the object does not name.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mqc_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
 
@@ -739,10 +724,7 @@ large graphs.</div>
 <span class="w">         </span><span class="c">! Both spellings, in the order `config_to_driver` resolves them for the</span>
 <span class="w">         </span><span class="c">! neutral: `keywords.scf.guess` is the superseded one and</span>
 <span class="w">         </span><span class="c">! `keywords.guess.type` the current one, so the latter wins where a</span>
-<span class="w">         </span><span class="c">! deck somehow carries both. Copying only the superseded field left a</span>
-<span class="w">         </span><span class="c">! deck written the current way inheriting the ladder below while its</span>
-<span class="w">         </span><span class="c">! ions kept `auto` -- inheritance that worked for twelve keys and</span>
-<span class="w">         </span><span class="c">! quietly did not for the thirteenth.</span>
+<span class="w">         </span><span class="c">! deck somehow carries both.</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">scf_guess</span><span class="p">))</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">guess</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_guess</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">scf_convergence_metric</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            </span><span class="n">config</span><span class="p">%</span><span class="n">fukui_scf</span><span class="p">%</span><span class="n">convergence_metric</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">scf_convergence_metric</span>
@@ -800,7 +782,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/checkpoint_open.html#variable-exists~3">exists</a>
-            <a class="list-group-item" href="../proc/checkpoint_open.html#variable-ios~2">ios</a>
+            <a class="list-group-item" href="../proc/checkpoint_open.html#variable-exists">exists</a>
+            <a class="list-group-item" href="../proc/checkpoint_open.html#variable-ios">ios</a>
         </div>
       </div>
     </div>
@@ -181,7 +181,7 @@
 <p>Refuses rather than starting fresh when the fingerprint disagrees.
 Overwriting would throw away hours of a run whose file was merely
 misnamed; ignoring it would splice its energies into a different
-calculation. Neither is the caller&rsquo;s intent, so neither is guessed at.</p>
+calculation.</p>
 
     <h3>Type Bound</h3>
     <p><a href='../type/checkpoint_t.html'>checkpoint_t</a></p>
@@ -199,7 +199,7 @@ calculation. Neither is the caller&rsquo;s intent, so neither is guessed at.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~141"></span>
+              <span class="anchor" id="variable-this~14"></span>
               class(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -214,7 +214,7 @@ calculation. Neither is the caller&rsquo;s intent, so neither is guessed at.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~29"></span>
+              <span class="anchor" id="variable-path~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -229,7 +229,7 @@ calculation. Neither is the caller&rsquo;s intent, so neither is guessed at.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fingerprint~4"></span>
+              <span class="anchor" id="variable-fingerprint~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -244,7 +244,7 @@ calculation. Neither is the caller&rsquo;s intent, so neither is guessed at.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~23"></span>
+              <span class="anchor" id="variable-max_level~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -274,7 +274,7 @@ calculation. Neither is the caller&rsquo;s intent, so neither is guessed at.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~176"></span>
+              <span class="anchor" id="variable-error~17"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -611,7 +611,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-exists~3"></span>
+              <span class="anchor" id="variable-exists"></span>
               logical,
             </td>
               <td>private</td>
@@ -628,7 +628,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ios~2"></span>
+              <span class="anchor" id="variable-ios"></span>
               integer,
             </td>
               <td>private</td>
@@ -665,7 +665,7 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Refuses rather than starting fresh when the fingerprint disagrees.</span>
 <span class="w">      </span><span class="c">!! Overwriting would throw away hours of a run whose file was merely</span>
 <span class="w">      </span><span class="c">!! misnamed; ignoring it would splice its energies into a different</span>
-<span class="w">      </span><span class="c">!! calculation. Neither is the caller's intent, so neither is guessed at.</span>
+<span class="w">      </span><span class="c">!! calculation.</span>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">checkpoint_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">path</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fingerprint</span>
@@ -681,16 +681,10 @@ large graphs.</div>
 <span class="w">      </span><span class="n">this</span><span class="p">%</span><span class="n">max_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">max_level</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 
-<span class="w">      </span><span class="c">! A line holds one energy and nothing else, so a reused fragment comes</span>
-<span class="w">      </span><span class="c">! back without its gradient and the run dies assembling one. Refused</span>
-<span class="w">      </span><span class="c">! rather than half-supported: extending the format to carry gradients</span>
-<span class="w">      </span><span class="c">! and displacement sets is a real piece of work, and pretending to</span>
-<span class="w">      </span><span class="c">! support them meanwhile costs a job that thought it was resumable.</span>
-<span class="w">      </span><span class="c">! The backend is chosen, not configured. A run needing derivatives has</span>
-<span class="w">      </span><span class="c">! to have HDF5 because the text format holds one energy per record; an</span>
-<span class="w">      </span><span class="c">! energy-only run gets text because it is crash-proof line by line and</span>
-<span class="w">      </span><span class="c">! costs no dependency. A caller can still ask for HDF5 by naming the</span>
-<span class="w">      </span><span class="c">! file .h5, which is what a screening pass wants when it is large.</span>
+<span class="w">      </span><span class="c">! The backend is chosen, not configured. A run needing derivatives has to</span>
+<span class="w">      </span><span class="c">! have HDF5, because a text line holds one energy and nothing else; an</span>
+<span class="w">      </span><span class="c">! energy-only run gets text, which is crash-proof line by line and costs</span>
+<span class="w">      </span><span class="c">! no dependency. A caller can still ask for HDF5 by naming the file .h5.</span>
 <span class="w">      </span><span class="n">this</span><span class="p">%</span><span class="n">use_hdf5</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">energy_only</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">ends_with</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="s2">".h5"</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                      </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">ends_with</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="s2">".hdf5"</span><span class="p">)</span>
 
@@ -757,7 +751,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

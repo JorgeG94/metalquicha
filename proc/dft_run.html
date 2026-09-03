@@ -137,7 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/dft_run.html#variable-backend_error">backend_error</a>
-            <a class="list-group-item" href="../proc/dft_run.html#variable-settings~6">settings</a>
+            <a class="list-group-item" href="../proc/dft_run.html#variable-settings~7">settings</a>
         </div>
       </div>
     </div>
@@ -177,7 +177,7 @@
 </h2>
     
 
-    <p>Run a density-fitted Kohn-Sham calculation through cuEST</p>
+    <p>Run the SCF through whichever backend <code>options%backend</code> resolves to</p>
 
 
     <h3>Arguments</h3>
@@ -193,7 +193,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~45"></span>
+              <span class="anchor" id="variable-this~83"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -208,7 +208,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~9"></span>
+              <span class="anchor" id="variable-fragment~19"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -223,7 +223,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~30"></span>
+              <span class="anchor" id="variable-result~28"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -238,7 +238,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~3"></span>
+              <span class="anchor" id="variable-want_gradient~4"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -264,8 +264,7 @@
             <td><strong>want_hessian</strong></td>
             <td>
                 <p>Only the CPU backend has an analytic Hessian, and only for some of
-what reaches it. Passed along rather than decided here: which cases
-qualify is a fact about that backend.</p>
+what reaches it; the backend decides, not this routine.</p>
             </td>
         </tr>
     </tbody>
@@ -699,7 +698,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~6"></span>
+              <span class="anchor" id="variable-settings~7"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
               <td>private</td>
@@ -731,23 +730,21 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">dft_run</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">want_gradient</span><span class="p">,</span><span class="w"> </span><span class="n">want_hessian</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Run a density-fitted Kohn-Sham calculation through cuEST</span>
+<span class="w">      </span><span class="c">!! Run the SCF through whichever backend `options%backend` resolves to</span>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">dft_method_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
 <span class="k">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">want_gradient</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">want_hessian</span>
 <span class="w">         </span><span class="c">!! Only the CPU backend has an analytic Hessian, and only for some of</span>
-<span class="w">         </span><span class="c">!! what reaches it. Passed along rather than decided here: which cases</span>
-<span class="w">         </span><span class="c">!! qualify is a fact about that backend.</span>
+<span class="w">         </span><span class="c">!! what reaches it; the backend decides, not this routine.</span>
 
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">cuest_scf_settings_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">settings</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">backend_error</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">use_dispersion</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="w">         </span><span class="c">! Silently dropping a dispersion correction would bias every fragment</span>
-<span class="w">         </span><span class="c">! energy the same way, which is exactly the kind of error a many-body</span>
-<span class="w">         </span><span class="c">! expansion amplifies rather than cancels.</span>
+<span class="w">         </span><span class="c">! Refused rather than dropped: a missing dispersion correction biases</span>
+<span class="w">         </span><span class="c">! every fragment energy the same way.</span>
 <span class="w">         </span><span class="k">call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                               </span><span class="s2">"Empirical dispersion ("</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">dispersion_type</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                               </span><span class="s2">") is not implemented"</span><span class="p">)</span>
@@ -757,8 +754,6 @@ large graphs.</div>
 
 <span class="k">      call </span><span class="n">apply_scf_settings</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">)</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">functional</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">functional</span>
-<span class="w">      </span><span class="c">! Resolved here rather than carried as a string, so an unknown name fails</span>
-<span class="w">      </span><span class="c">! once, before any integrals, instead of at each dispatch.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">parse_backend_name</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">backend</span><span class="p">,</span><span class="w"> </span><span class="n">settings</span><span class="p">%</span><span class="n">backend</span><span class="p">,</span><span class="w"> </span><span class="n">backend_error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">backend_error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">backend_error</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
@@ -771,27 +766,15 @@ large graphs.</div>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">nlc_grid_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">nlc_grid_level</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">screening_tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">screening_tolerance</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">block_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">block_size</span>
-<span class="w">      </span><span class="c">! Where the molecule reacts. Absent here until now, so a DFT deck asking</span>
-<span class="w">      </span><span class="c">! for `properties.fukui` got a normal DFT run and no analysis, with no</span>
-<span class="w">      </span><span class="c">! error to say why: the bridge gates on this being allocated.</span>
-<span class="w">      </span><span class="c">! Refused rather than run. The quasi-atomic bonding analysis is not</span>
-<span class="w">      </span><span class="c">! defined against a Kohn-Sham reference, and nothing in the backend stops</span>
-<span class="w">      </span><span class="c">! it: `run_libcint_hf` serves both references and its dispatch is gated</span>
-<span class="w">      </span><span class="c">! only on the deck naming an analysis, so handing this over would run a</span>
-<span class="w">      </span><span class="c">! decomposition on Kohn-Sham orbitals and report numbers for it. Before</span>
-<span class="w">      </span><span class="c">! this refactor such a deck was silently ignored, which is the failure</span>
-<span class="w">      </span><span class="c">! this work exists to end -- but the fix is to say no, not to start</span>
-<span class="w">      </span><span class="c">! obeying a request the method was never meant to serve.</span>
-<span class="w">      </span><span class="c">!</span>
-<span class="w">      </span><span class="c">! The analysis itself is refused, not merely its sub-options. Naming</span>
-<span class="w">      </span><span class="c">! `quao` with none of them set still runs it, so a check on</span>
-<span class="w">      </span><span class="c">! `bonding_energy` and friends alone would leave the plainest spelling of</span>
-<span class="w">      </span><span class="c">! the request working.</span>
-<span class="w">      </span><span class="c">! Tested on the name rather than through `bonding_analysis_kind`, which</span>
-<span class="w">      </span><span class="c">! lives in `mqc_libcint_bonding` -- a backend module this one must not</span>
-<span class="w">      </span><span class="c">! depend on, or the build without libcint stops compiling. "none" and</span>
-<span class="w">      </span><span class="c">! empty are that function's own spellings for off; any other name selects</span>
-<span class="w">      </span><span class="c">! an analysis, and QUAO is the only one there is.</span>
+<span class="w">      </span><span class="c">! TODO(mqc): `grid_type` is not copied here, and is read nowhere in the</span>
+<span class="w">      </span><span class="c">! tree, although the factory fills it from `dft.grid_type`. A deck naming</span>
+<span class="w">      </span><span class="c">! it silently gets whatever `grid_level` and the point counts above chose.</span>
+<span class="w">      </span><span class="c">! The quasi-atomic bonding analysis is refused, not ignored: it is defined</span>
+<span class="w">      </span><span class="c">! against a Hartree-Fock or MCSCF wavefunction, and `run_libcint_hf`</span>
+<span class="w">      </span><span class="c">! dispatches on the deck naming an analysis alone, so passing it on would</span>
+<span class="w">      </span><span class="c">! decompose Kohn-Sham orbitals and report numbers for it. Tested on the</span>
+<span class="w">      </span><span class="c">! name rather than through `bonding_analysis_kind`, which lives in a</span>
+<span class="w">      </span><span class="c">! backend module this one must not depend on.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_analysis</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">          </span><span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">bonding_analysis</span><span class="p">))</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="s2">"none"</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"the quasi-atomic bonding analysis is "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -802,34 +785,12 @@ large graphs.</div>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 <span class="k">      call </span><span class="n">apply_properties_settings</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">)</span>
-<span class="w">      </span><span class="c">! Set unconditionally, and deliberately not guarded on the backend. cuEST</span>
-<span class="w">      </span><span class="c">! has no four-index path so it fits regardless and ignores this, per the</span>
-<span class="w">      </span><span class="c">! note at the top of this module; on the libcint side it is a real choice.</span>
-<span class="w">      </span><span class="c">! Guarding on `BACKEND_LIBCINT` was tried and was wrong: an unspecified</span>
-<span class="w">      </span><span class="c">! backend parses to `BACKEND_AUTO` and is only resolved further down, so</span>
-<span class="w">      </span><span class="c">! the guard was false for every ordinary deck and the flag never arrived.</span>
-<span class="w">      </span><span class="c">!</span>
-<span class="w">      </span><span class="c">! Until this line existed a Kohn-Sham deck could not turn fitting on</span>
-<span class="w">      </span><span class="c">! however it asked. That made the fitted path unreachable rather than</span>
-<span class="w">      </span><span class="c">! wrong, which is the better of the two failures but still a gap.</span>
 
-<span class="w">      </span><span class="c">! The same choice Hartree-Fock makes, and made the same way rather than a</span>
-<span class="w">      </span><span class="c">! second time: cuEST when this build has it, because that is the production</span>
-<span class="w">      </span><span class="c">! path and the only one with gradients, and the CPU backend otherwise --</span>
-<span class="w">      </span><span class="c">! which is how a fragmented Kohn-Sham calculation runs on a laptop, and what</span>
-<span class="w">      </span><span class="c">! gives the GPU path a second implementation to disagree with.</span>
-<span class="w">      </span><span class="c">!</span>
-<span class="w">      </span><span class="c">! Kohn-Sham reaches the CPU backend through `run_libcint_hf` rather than a</span>
-<span class="w">      </span><span class="c">! routine of its own. That is deliberate: on that side a functional is one</span>
-<span class="w">      </span><span class="c">! optional argument to the same SCF, so a separate entry point would be two</span>
-<span class="w">      </span><span class="c">! names for one code path and two places to keep the settings in step.</span>
-<span class="w">      </span><span class="c">! Which backend, and refuse a request that cannot be honoured.</span>
-<span class="w">      </span><span class="c">!</span>
-<span class="w">      </span><span class="c">! `run_cuest_scf` exists either way -- the stub compiled without the</span>
-<span class="w">      </span><span class="c">! backend reports the missing build and computes nothing -- so asking for</span>
-<span class="w">      </span><span class="c">! cuEST on a CPU-only build produces that message rather than silently</span>
-<span class="w">      </span><span class="c">! running on the CPU. That is the point of naming a backend: a deck that</span>
-<span class="w">      </span><span class="c">! said `cuest` and got libcint would report a provenance that was not true.</span>
+<span class="w">      </span><span class="c">! Which backend, and refuse a request that cannot be honoured. Asking for</span>
+<span class="w">      </span><span class="c">! cuEST on a CPU-only build reaches the stub `run_cuest_scf`, which</span>
+<span class="w">      </span><span class="c">! reports the missing build rather than falling through to libcint.</span>
+<span class="w">      </span><span class="c">! TODO(mqc): the MP2/CC refusal below is copied from `hf_run` and is dead</span>
+<span class="w">      </span><span class="c">! here -- nothing on this path ever sets `run_mp2` or `run_cc`.</span>
 <span class="w">      </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">settings</span><span class="p">%</span><span class="n">backend</span><span class="p">)</span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">BACKEND_CUEST</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">settings</span><span class="p">%</span><span class="n">cartesian</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -893,7 +854,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

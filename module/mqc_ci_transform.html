@@ -197,8 +197,7 @@
 orbitals: the same wave function, expanded in a different set of
 determinants. This module performs that re-expansion, so that a CI which
 has been solved in one basis need not be solved again in the other.</p>
-<p>The identity is the one every textbook derives and nobody writes down.
-With orbitals related by an orthogonal <code>T</code>,</p>
+<p>With orbitals related by an orthogonal <code>T</code>,</p>
 <div class="codehilite"><pre><span></span><code>|q&gt; = sum_p |p&gt; T(p,q)
 </code></pre></div>
 
@@ -214,35 +213,25 @@ transformation of a rectangular CI vector is two matrix products:</p>
 </code></pre></div>
 
 <p><strong><code>M</code> is exactly the size of the CI vector, and the transformation costs
-one dimension more.</strong> For a CAS(14,14) the vector is 3432 x 3432 and the
-products are 3432^3, which is dense BLAS and a few seconds. Compare that
-with re-solving: a Davidson in a basis with no dominant determinant starts
-from a guess with negligible overlap and preconditions on a diagonal that
-no longer approximates the spectrum, and may take hundreds of iterations
-or none that converge.</p>
-<p><strong><code>M</code> inherits <code>T</code>&rsquo;s orthogonality</strong>, which is the check worth making and
-<code>rotation_is_orthogonal</code> makes it. If <code>T</code> is orthogonal then so is <code>M</code>,
-for every electron count at once, and a violation means the rotation
-handed in was not what it claimed to be rather than that this arithmetic
-is wrong.</p>
-<p>The asymptotically better route is Malmqvist&rsquo;s: factorize <code>T</code> into
-elementary one-orbital operations and apply each straight to the vector,
-<code>O(n_str^2 n_orb^2)</code> and no <code>M</code> stored. It is considerably more code, and
-the active spaces a full CI can be solved in at all are small enough that
-the matrix form is not the constraint.</p>
+one dimension more.</strong> For a CAS(14,14) the products are 3432 cubed, which
+is dense BLAS.</p>
+<p><strong><code>M</code> inherits <code>T</code>&rsquo;s orthogonality</strong>, for every electron count at once, so
+a violation means the rotation handed in was not what it claimed to be
+rather than that this arithmetic is wrong. <code>rotation_is_orthogonal</code> is the
+check.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_ormas_space.html'>mqc_ormas_space</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_determinants.html'>mqc_determinants</a></li>
-                  <li class="list-inline-item"><a href='mqc_ormas_space.html'>mqc_ormas_space</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
                   <li class="list-inline-item">pic_blas_interfaces</li>
                   <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -544,14 +533,9 @@ parameter
 <td> =</td>
                 <td>2_int64**28</td>
             <td>
-                <p>Determinants, about 2.1 GB of coefficients. The ceiling on
-<code>scatter_restricted_ci</code>, and it is a real one: a restricted space is
-chosen precisely because the complete space is unaffordable, and this
-routine spends the complete space anyway. Ethane&rsquo;s full valence
-CAS(14,14) is 11,778,624 determinants &ndash; ninety-four megabytes, and
-twenty times inside this &ndash; so the molecules the analysis can reach at
-all are reachable. Benzene&rsquo;s is 2.4e16 and is not, by this route or any
-other.</p>
+                <p>Determinants, about 2.1 GB of coefficients: the ceiling on
+<code>scatter_restricted_ci</code>, which spends the complete space even where the
+space being written out is a restricted one.</p>
             </td>
         </tr>
         <tr>
@@ -587,10 +571,7 @@ parameter
 <td> =</td>
                 <td>1.0e-10_dp</td>
             <td>
-                <p>How far <code>T^T T</code> may sit from the identity, per element. The
-transformations this is fed are built from a symmetric
-orthogonalization followed by Jacobi rotations, so they are orthogonal
-to rounding and nothing else is expected to reach here.</p>
+                <p>How far <code>T^T T</code> may sit from the identity, per element</p>
             </td>
         </tr>
     </tbody>
@@ -715,7 +696,7 @@ to rounding and nothing else is expected to reach here.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-a~16"></span>
+              <span class="anchor" id="variable-a~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -765,7 +746,7 @@ to rounding and nothing else is expected to reach here.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space"></span>
+              <span class="anchor" id="variable-space~14"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -780,7 +761,7 @@ to rounding and nothing else is expected to reach here.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-flat~3"></span>
+              <span class="anchor" id="variable-flat"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -795,7 +776,7 @@ to rounding and nothing else is expected to reach here.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ci~5"></span>
+              <span class="anchor" id="variable-ci~8"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -810,7 +791,7 @@ to rounding and nothing else is expected to reach here.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~145"></span>
+              <span class="anchor" id="variable-error~40"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -883,7 +864,7 @@ their counts agree, in which case one matrix serves both.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-matrix~4"></span>
+              <span class="anchor" id="variable-matrix~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -898,7 +879,7 @@ their counts agree, in which case one matrix serves both.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~144"></span>
+              <span class="anchor" id="variable-error~39"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -968,7 +949,7 @@ their counts agree, in which case one matrix serves both.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ci~6"></span>
+              <span class="anchor" id="variable-ci~9"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -998,7 +979,7 @@ their counts agree, in which case one matrix serves both.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~146"></span>
+              <span class="anchor" id="variable-error~41"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1041,7 +1022,7 @@ their counts agree, in which case one matrix serves both.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

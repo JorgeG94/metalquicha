@@ -225,48 +225,31 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>A CAS says how many electrons go into how many orbitals and stops there.
-ORMAS cuts the active orbitals into consecutive subspaces and puts a
-window on the electron count of each, which is enough to express RAS, a
-truncated CI, several non-communicating active spaces, or a fragment
-model with limited charge transfer &ndash; all as the same object.</p>
-<p>The whole restriction turns out to be one bitmap. Enumerate, per spin, the
-<em>occupation classes</em> &ndash; the ways the electrons of that spin can be spread
-over the subspaces &ndash; and then a determinant is allowed exactly when the
-two classes its strings belong to sum, subspace by subspace, into every
-window. Nothing depends on which string within a class, so the test is
-made once per pair of classes and never again. That is <code>compatible</code> below,
-and everything else in this module is bookkeeping around it.</p>
-<p>The consequence worth stating plainly: the CI vector stops being a matrix.
-Some class pairs are allowed and some are not, so the alpha-by-beta
-rectangle acquires holes. What is left is a <em>list of dense rectangles</em> &ndash;
-one per allowed class pair &ndash; laid out alpha-major, and the address of a
-determinant is a base for its alpha string plus an offset for its beta
-class plus its beta string&rsquo;s rank. A CAS is the case where there is one
-class of each spin and the list is a single rectangle, which is why the
-formula here reduces to the obvious one and must be checked that it does.</p>
-<p>No point-group symmetry. It is what makes this layout ragged rather than
-blocked &ndash; with irreps, the row belonging to an alpha string depends on
-that string and not merely on its class &ndash; and this code has no orbital
-symmetry anywhere to draw on. The seam for adding it later is narrow and
-deliberate: <code>alpha_base</code> is stored per string, not recomputed from its
-class, and <code>block_offset</code> is a table rather than an expression. Both keep
-their shape and their consumers when an irrep index appears.</p>
-<p>Like <code>mqc_determinants</code>, everything here is checkable without physics.
-The class lists are integer compositions, the counts are products of
-binomial coefficients, and the address is a bijection onto <code>1 ..
-n_determinants</code> that has to be dense and has to round trip.</p>
+      <p>ORMAS cuts the active orbitals into consecutive subspaces and puts a
+window on the electron count of each, which expresses RAS, a truncated CI,
+several non-communicating active spaces, or a fragment model with limited
+charge transfer as one object.</p>
+<p>The whole restriction is one bitmap. Per spin, the <em>occupation classes</em>
+are the ways that spin&rsquo;s electrons can be spread over the subspaces; a
+determinant is allowed exactly when the two classes its strings belong to
+sum, subspace by subspace, into every window. That is <code>compatible</code> below.</p>
+<p>So the CI vector is not a matrix but a <em>list of dense rectangles</em>, one per
+allowed class pair, laid out alpha-major: the address of a determinant is
+a base for its alpha string, plus an offset for its beta class, plus its
+beta string&rsquo;s rank. A CAS is the single-rectangle case.</p>
+<p>No point-group symmetry: nothing here is blocked by irrep, and
+<code>alpha_base</code> is stored per string rather than recomputed from its class.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_determinants.html'>mqc_determinants</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_math_utils.html'>mqc_math_utils</a></li>
                   <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -627,11 +610,8 @@ parameter
 <td> =</td>
                 <td>16</td>
             <td>
-                <p>Far above anything meaningful &ndash; the cost of a subspace is another
-factor in the class count, and partitions past a handful stop being
-interpretable long before they stop being computable. GAMESS allows 50
-and checks nothing; a partition that needs more than sixteen is a
-mistake worth catching rather than a calculation worth running.</p>
+                <p>Each subspace is another factor in the class count, so a partition
+needing more than this is a mistake rather than a calculation.</p>
             </td>
         </tr>
     </tbody>
@@ -782,7 +762,7 @@ the space already</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/ormas_closure_t.html#boundprocedure-destroy~25'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/ormas_closure_destroy.html'>ormas_closure_destroy</a></td>
+  <strong><a href='../type/ormas_closure_t.html#boundprocedure-destroy~8'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/ormas_closure_destroy.html'>ormas_closure_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -846,11 +826,7 @@ the space already</p>
             <td>
 <p><code>(subspace, class)</code> &ndash; every way that spin&rsquo;s electrons can be spread
 over the subspaces, in enumeration order, whether or not the windows
-leave any use for it. Classes that pair with nothing cost a row of
-<code>compatible</code> and are worth that: the alternative is a per-spin bound
-that is necessary but not sufficient, which means a second, wider
-list of strings the moment anything needs to step outside the space
-&ndash; and stepping outside is what an excitation does.</p>
+leave any use for it.</p>
             </td>
         </tr>
         <tr>
@@ -923,11 +899,7 @@ it is read in the innermost loop of everything downstream.</p>
             <td>
 <p><code>(subspace, class)</code> &ndash; every way that spin&rsquo;s electrons can be spread
 over the subspaces, in enumeration order, whether or not the windows
-leave any use for it. Classes that pair with nothing cost a row of
-<code>compatible</code> and are worth that: the alternative is a per-spin bound
-that is necessary but not sufficient, which means a second, wider
-list of strings the moment anything needs to step outside the space
-&ndash; and stepping outside is what an excitation does.</p>
+leave any use for it.</p>
             </td>
         </tr>
         <tr>
@@ -1034,8 +1006,7 @@ left at zero there.</p>
                 <td></td>
                 <td></td>
             <td>
-<p><code>(beta class, alpha class)</code> &ndash; the entire ORMAS restriction. Beta
-first because that is the order it is consumed in.</p>
+<p><code>(beta class, alpha class)</code> &ndash; the entire ORMAS restriction</p>
             </td>
         </tr>
         <tr>
@@ -1095,7 +1066,7 @@ from what the user wrote.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_active_orbitals~3"></span>
+              <span class="anchor" id="variable-n_active_orbitals~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1112,7 +1083,7 @@ from what the user wrote.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_alpha~2"></span>
+              <span class="anchor" id="variable-n_alpha"></span>
               integer,
             </td>
               <td>public</td>
@@ -1146,7 +1117,7 @@ from what the user wrote.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_beta~2"></span>
+              <span class="anchor" id="variable-n_beta"></span>
               integer,
             </td>
               <td>public</td>
@@ -1197,7 +1168,7 @@ from what the user wrote.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_orbitals~8"></span>
+              <span class="anchor" id="variable-n_orbitals~10"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1257,7 +1228,7 @@ from what the user wrote.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/ormas_space_t.html#boundprocedure-destroy~24'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/ormas_space_destroy.html'>ormas_space_destroy</a></td>
+  <strong><a href='../type/ormas_space_t.html#boundprocedure-destroy~7'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/ormas_space_destroy.html'>ormas_space_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1290,7 +1261,7 @@ from what the user wrote.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-closure~2"></span>
+              <span class="anchor" id="variable-closure~9"></span>
               type(<a href='../type/ormas_closure_t.html'>ormas_closure_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1305,7 +1276,7 @@ from what the user wrote.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~17"></span>
+              <span class="anchor" id="variable-space~30"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1380,7 +1351,7 @@ from what the user wrote.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~9"></span>
+              <span class="anchor" id="variable-space~22"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1425,7 +1396,7 @@ from what the user wrote.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~8"></span>
+              <span class="anchor" id="variable-space~21"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1501,7 +1472,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~15"></span>
+              <span class="anchor" id="variable-space~28"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1516,7 +1487,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-string~8"></span>
+              <span class="anchor" id="variable-string~9"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1531,7 +1502,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha_spin"></span>
+              <span class="anchor" id="variable-alpha_spin~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1561,7 +1532,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
 </h3></div>
     <div class="card-body">
           
-  <p>Which class an occupation vector is, or zero if the bounds exclude it</p><a href="../proc/class_holding.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Which class an occupation vector is, or zero if the bounds exclude it</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1636,7 +1607,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_orbitals~9"></span>
+              <span class="anchor" id="variable-n_orbitals~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1696,7 +1667,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~11"></span>
+              <span class="anchor" id="variable-space~24"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1711,7 +1682,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-string~6"></span>
+              <span class="anchor" id="variable-string~7"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1816,7 +1787,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~10"></span>
+              <span class="anchor" id="variable-space~23"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1846,7 +1817,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-string~5"></span>
+              <span class="anchor" id="variable-string~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1891,7 +1862,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~13"></span>
+              <span class="anchor" id="variable-space~26"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1936,7 +1907,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-string~7"></span>
+              <span class="anchor" id="variable-string~8"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1986,7 +1957,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~16"></span>
+              <span class="anchor" id="variable-space~29"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2001,7 +1972,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-closure"></span>
+              <span class="anchor" id="variable-closure~8"></span>
               type(<a href='../type/ormas_closure_t.html'>ormas_closure_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2016,7 +1987,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~165"></span>
+              <span class="anchor" id="variable-error~51"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2071,7 +2042,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_active_orbitals~4"></span>
+              <span class="anchor" id="variable-n_active_orbitals~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2086,7 +2057,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_alpha~3"></span>
+              <span class="anchor" id="variable-n_alpha~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2101,7 +2072,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_beta~3"></span>
+              <span class="anchor" id="variable-n_beta~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2146,7 +2117,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~7"></span>
+              <span class="anchor" id="variable-space~20"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2161,7 +2132,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~162"></span>
+              <span class="anchor" id="variable-error~48"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2201,7 +2172,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~14"></span>
+              <span class="anchor" id="variable-space~27"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2216,7 +2187,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~10"></span>
+              <span class="anchor" id="variable-alpha~13"></span>
               integer(kind=int64),
             </td>
 <td>intent(out),</td>
@@ -2231,7 +2202,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~10"></span>
+              <span class="anchor" id="variable-beta~13"></span>
               integer(kind=int64),
             </td>
 <td>intent(out),</td>
@@ -2246,7 +2217,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~164"></span>
+              <span class="anchor" id="variable-error~50"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2286,7 +2257,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~6"></span>
+              <span class="anchor" id="variable-space~19"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2301,7 +2272,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~161"></span>
+              <span class="anchor" id="variable-error~47"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2341,7 +2312,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~4"></span>
+              <span class="anchor" id="variable-space~17"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2396,7 +2367,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_orbitals~10"></span>
+              <span class="anchor" id="variable-n_orbitals~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2411,7 +2382,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sizes~3"></span>
+              <span class="anchor" id="variable-sizes"></span>
               integer(kind=int64),
             </td>
 <td>intent(out),</td>
@@ -2481,7 +2452,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~5"></span>
+              <span class="anchor" id="variable-space~18"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2506,7 +2477,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
 </h3></div>
     <div class="card-body">
           
-  <p>Every occupation vector allowed by the per-spin bounds</p><a href="../proc/enumerate_classes.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Every occupation vector allowed by the per-spin bounds</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2521,7 +2492,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-capacity~5"></span>
+              <span class="anchor" id="variable-capacity~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2551,7 +2522,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total~18"></span>
+              <span class="anchor" id="variable-total~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2621,7 +2592,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-capacity~3"></span>
+              <span class="anchor" id="variable-capacity~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2651,7 +2622,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total~16"></span>
+              <span class="anchor" id="variable-total"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2776,7 +2747,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid~3"></span>
+              <span class="anchor" id="variable-grid"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2926,7 +2897,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~160"></span>
+              <span class="anchor" id="variable-error~46"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2966,7 +2937,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-capacity~4"></span>
+              <span class="anchor" id="variable-capacity~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2996,7 +2967,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total~17"></span>
+              <span class="anchor" id="variable-total~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3066,7 +3037,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~135"></span>
+              <span class="anchor" id="variable-this~26"></span>
               class(<a href='../type/ormas_closure_t.html'>ormas_closure_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3106,7 +3077,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~136"></span>
+              <span class="anchor" id="variable-this~27"></span>
               class(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3146,7 +3117,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~12"></span>
+              <span class="anchor" id="variable-space~25"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3191,7 +3162,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-strings~4"></span>
+              <span class="anchor" id="variable-strings~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(out),</td>
@@ -3206,7 +3177,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~163"></span>
+              <span class="anchor" id="variable-error~49"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3246,7 +3217,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~3"></span>
+              <span class="anchor" id="variable-space~16"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3301,7 +3272,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~2"></span>
+              <span class="anchor" id="variable-space~15"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3331,7 +3302,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~159"></span>
+              <span class="anchor" id="variable-error~45"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3429,7 +3400,7 @@ in the space at all</p><a href="../proc/ormas_string_address.html" class="pull-r
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

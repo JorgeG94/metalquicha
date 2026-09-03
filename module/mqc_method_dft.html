@@ -180,17 +180,16 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>Closed-shell Kohn-Sham DFT.</p>
-<p>With the cuEST backend (CMake, MQC_ENABLE_CUEST=ON) the Coulomb and exact-exchange matrices come from
-cuEST&rsquo;s density-fitted engine and the exchange-correlation energy and
-potential from its grid engine; the SCF itself runs in <code>mqc_cuest_scf</code>.</p>
-<p>Density fitting is not optional here. cuEST has no conventional
+      <p>Kohn-Sham density functional theory.</p>
+<p>Dispatches to whichever backend <code>model.backend</code> names, exactly as
+<code>mqc_method_hf</code> does; the CPU path is <code>run_libcint_hf</code>, which takes the
+functional as one more setting on the same SCF.</p>
+<p>Density fitting is not optional on cuEST: it has no conventional
 four-index ERI path, so J (and K for hybrids) are always fitted and an
-auxiliary JKFIT basis is required. <code>use_density_fitting</code> is therefore
-ignored by this backend rather than switchable.</p>
-<p>The amount of exact exchange is never assumed from the functional name:
-it is queried from cuEST&rsquo;s XC plan and handed to the DF plan, so a hybrid
-cannot end up with mismatched Coulomb and XC definitions.</p>
+auxiliary JKFIT basis is required. <code>density_fitting</code> is ignored by that
+backend rather than switchable. The amount of exact exchange is queried
+from cuEST&rsquo;s XC plan rather than assumed from the functional name, so a
+hybrid cannot end up with mismatched Coulomb and XC definitions.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
@@ -198,16 +197,16 @@ cannot end up with mismatched Coulomb and XC definitions.</p>
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
                   <li class="list-inline-item"><a href='mqc_libcint_bridge.html'>mqc_libcint_bridge</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
-                  <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1442,7 +1441,7 @@ large graphs.</div>
       </h3>
     </div>
     <div class="card-body">
-      <p>DFT method implementation</p><a href="../type/dft_method_t.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+      <p>Kohn-Sham DFT with a configurable functional and integration grid</p>
 
         <h4>Components</h4>
           <table class="table table-striped varlist">
@@ -1457,7 +1456,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-options~2"></span>
+              <span class="anchor" id="variable-options~3"></span>
               type(<a href='../type/dft_options_t.html'>dft_options_t</a>),
             </td>
               <td>public</td>
@@ -1483,17 +1482,17 @@ large graphs.</div>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_energy~2'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_energy.html'>dft_calc_energy</a></td>
+  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_energy~3'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_energy.html'>dft_calc_energy</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_gradient~2'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_gradient.html'>dft_calc_gradient</a></td>
+  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_gradient~3'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_gradient.html'>dft_calc_gradient</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_hessian~2'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_hessian.html'>dft_calc_hessian</a></td>
+  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_hessian~3'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_hessian.html'>dft_calc_hessian</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1526,7 +1525,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-accelerator~3"></span>
+              <span class="anchor" id="variable-accelerator~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1538,12 +1537,14 @@ large graphs.</div>
 <td> =</td>
                 <td>&#34;diis&#34;</td>
             <td>
-
+<p>&lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or &lsquo;ediis&rsquo;. The energy-based pair
+runs only while the error is large and hands over to DIIS, so
+naming one asks for a different opening, not a different endgame.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~6"></span>
+              <span class="anchor" id="variable-allow_crap_scf~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1560,7 +1561,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points~2"></span>
+              <span class="anchor" id="variable-angular_points~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -1572,12 +1573,12 @@ large graphs.</div>
 <td> =</td>
                 <td>302</td>
             <td>
-
+<p>Number of angular grid points (Lebedev order)</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_named~3"></span>
+              <span class="anchor" id="variable-aux_basis_named~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1594,7 +1595,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set~4"></span>
+              <span class="anchor" id="variable-aux_basis_set~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1611,7 +1612,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~3"></span>
+              <span class="anchor" id="variable-backend"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1628,7 +1629,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_set~2"></span>
+              <span class="anchor" id="variable-basis_set"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1645,7 +1646,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-block_size~2"></span>
+              <span class="anchor" id="variable-block_size~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1657,13 +1658,12 @@ large graphs.</div>
 <td> =</td>
                 <td>-1</td>
             <td>
-<p>Grid points per block; -1 keeps the backend default.
-Number of angular grid points (Lebedev)</p>
+<p>Grid points per block; -1 keeps the backend default.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~5"></span>
+              <span class="anchor" id="variable-cartesian~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1680,7 +1680,7 @@ Number of angular grid points (Lebedev)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-convergence_metric~3"></span>
+              <span class="anchor" id="variable-convergence_metric~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1694,15 +1694,12 @@ Number of angular grid points (Lebedev)</p>
             <td>
 <p>Which measure decides this SCF has stopped. See
 <code>mqc_scf_convergence</code>; the default is the energy-and-commutator
-pair every loop tested before that module existed.
-&lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or &lsquo;ediis&rsquo;. The energy-based pair
-runs only while the error is large and hands over to DIIS, so
-naming one asks for a different opening, not a different endgame.</p>
+pair.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_fitting~3"></span>
+              <span class="anchor" id="variable-density_fitting~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1719,7 +1716,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~3"></span>
+              <span class="anchor" id="variable-density_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1736,7 +1733,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-device_rank~2"></span>
+              <span class="anchor" id="variable-device_rank"></span>
               integer,
             </td>
               <td>public</td>
@@ -1753,7 +1750,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~4"></span>
+              <span class="anchor" id="variable-diis_size~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1770,7 +1767,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dispersion_type"></span>
+              <span class="anchor" id="variable-dispersion_type~2"></span>
               character(len=8),
             </td>
               <td>public</td>
@@ -1787,7 +1784,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ecp_set~2"></span>
+              <span class="anchor" id="variable-ecp_set"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1804,7 +1801,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~3"></span>
+              <span class="anchor" id="variable-energy_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1821,7 +1818,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-freeze_core~2"></span>
+              <span class="anchor" id="variable-freeze_core"></span>
               logical,
             </td>
               <td>public</td>
@@ -1833,16 +1830,15 @@ naming one asks for a different opening, not a different endgame.</p>
 <td> =</td>
                 <td>.true.</td>
             <td>
-<p>Matches <code>correlation_config_t</code>, which is where this is always
-filled from. It read <code>.false.</code> while that read <code>.true.</code> &ndash; harmless
-while the copy happens, and a trap the moment anyone constructs
-this type directly, in a test or a new call path.
-Exclude core orbitals from a post-SCF correlation treatment</p>
+<p>Exclude core orbitals from a post-SCF correlation treatment. Always
+filled from <code>correlation_config_t</code>, whose default this must match:
+a mismatch bites whenever this type is constructed directly, in a
+test or a new call path.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~3"></span>
+              <span class="anchor" id="variable-functional~4"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1859,7 +1855,7 @@ Exclude core orbitals from a post-SCF correlation treatment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grad_tol~3"></span>
+              <span class="anchor" id="variable-grad_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1876,7 +1872,7 @@ Exclude core orbitals from a post-SCF correlation treatment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid_level~2"></span>
+              <span class="anchor" id="variable-grid_level~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1888,12 +1884,12 @@ Exclude core orbitals from a post-SCF correlation treatment</p>
 <td> =</td>
                 <td>3</td>
             <td>
-
+<p>0 to 9, the standard tables. Three is the usual default.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid_type"></span>
+              <span class="anchor" id="variable-grid_type~2"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1910,7 +1906,7 @@ Exclude core orbitals from a post-SCF correlation treatment</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~8"></span>
+              <span class="anchor" id="variable-guess~7"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1923,12 +1919,12 @@ Exclude core orbitals from a post-SCF correlation treatment</p>
                 <td>&#34;auto&#34;</td>
             <td>
 <p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;basis_set_projection&rsquo;
-or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~8" class="pull-right"><emph>Read more&hellip;</emph></a>
+or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~7" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~4"></span>
+              <span class="anchor" id="variable-guess_steps~2"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -1946,7 +1942,7 @@ preliminary SCF in order.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian_displacement~2"></span>
+              <span class="anchor" id="variable-hessian_displacement"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1958,12 +1954,12 @@ preliminary SCF in order.</p>
 <td> =</td>
                 <td>DEFAULT_DISPLACEMENT</td>
             <td>
-<p>Step for a finite-difference Hessian, in Bohr.</p><a href="../type/scf_options_t.html#variable-hessian_displacement~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Step for a finite-difference Hessian, in Bohr.</p><a href="../type/scf_options_t.html#variable-hessian_displacement" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-incremental_fock~3"></span>
+              <span class="anchor" id="variable-incremental_fock~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1983,7 +1979,7 @@ which is the first thing to rule out when a run stalls.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_shift~3"></span>
+              <span class="anchor" id="variable-level_shift~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1996,13 +1992,12 @@ which is the first thing to rule out when a run stalls.</p>
                 <td>0.0_dp</td>
             <td>
 <p>Hartree added to the virtual block before each diagonalisation.
-Zero is off &ndash; which is why this could never carry a sentinel for
-&ldquo;unset&rdquo;, and why the ions used to spell theirs &ldquo;any negative&rdquo;.</p>
+Zero is off.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-linear_dependence~3"></span>
+              <span class="anchor" id="variable-linear_dependence~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2019,7 +2014,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~6"></span>
+              <span class="anchor" id="variable-max_iter~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2036,7 +2031,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen_core~2"></span>
+              <span class="anchor" id="variable-n_frozen_core"></span>
               integer,
             </td>
               <td>public</td>
@@ -2053,7 +2048,7 @@ Zero is off &ndash; which is why this could never carry a sentinel for
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nlc_grid_level~2"></span>
+              <span class="anchor" id="variable-nlc_grid_level~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2065,14 +2060,12 @@ Zero is off &ndash; which is why this could never carry a sentinel for
 <td> =</td>
                 <td>-1</td>
             <td>
-<p>VV10&rsquo;s quadrature level; negative means the backend default.
-0 to 9, the standard tables. Three is the usual default and what a
-production calculation should start from.</p>
+<p>VV10&rsquo;s quadrature level; negative means the backend default.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pcm~2"></span>
+              <span class="anchor" id="variable-pcm"></span>
               type(<a href='../type/pcm_config_t.html'>pcm_config_t</a>),
             </td>
               <td>public</td>
@@ -2084,16 +2077,13 @@ production calculation should start from.</p>
                 <td></td>
                 <td></td>
             <td>
-<p>Continuum solvation. A property of the reference rather than of
-the functional, which is why it sits here: Hartree-Fock, DFT, MP2
-and coupled cluster all reach the backend through an extending
-type, and leaving it off one of them meant <code>keywords.pcm</code> was read,
-validated and then silently dropped for that path.</p>
+<p>Continuum solvation. A property of the reference rather than of the
+functional, so every extending type inherits it.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties~2"></span>
+              <span class="anchor" id="variable-properties"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
               <td>public</td>
@@ -2110,7 +2100,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-radial_points~2"></span>
+              <span class="anchor" id="variable-radial_points~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2127,7 +2117,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-screening_tolerance~2"></span>
+              <span class="anchor" id="variable-screening_tolerance~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2144,7 +2134,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spherical~2"></span>
+              <span class="anchor" id="variable-spherical"></span>
               logical,
             </td>
               <td>public</td>
@@ -2161,7 +2151,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unrestricted~4"></span>
+              <span class="anchor" id="variable-unrestricted~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2178,7 +2168,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~5"></span>
+              <span class="anchor" id="variable-use_diis~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -2195,7 +2185,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_dispersion"></span>
+              <span class="anchor" id="variable-use_dispersion~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2212,7 +2202,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~8"></span>
+              <span class="anchor" id="variable-verbose"></span>
               logical,
             </td>
               <td>public</td>
@@ -2247,7 +2237,7 @@ validated and then silently dropped for that path.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Calculate electronic energy using Kohn-Sham DFT</p>
+  <p>Electronic energy of a fragment</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2262,7 +2252,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~44"></span>
+              <span class="anchor" id="variable-this~82"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2277,7 +2267,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~8"></span>
+              <span class="anchor" id="variable-fragment~18"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2292,7 +2282,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~29"></span>
+              <span class="anchor" id="variable-result~27"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2317,7 +2307,7 @@ validated and then silently dropped for that path.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Calculate energy gradient using Kohn-Sham DFT</p>
+  <p>Energy and nuclear gradient of a fragment</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2332,7 +2322,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~46"></span>
+              <span class="anchor" id="variable-this~84"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2347,7 +2337,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~10"></span>
+              <span class="anchor" id="variable-fragment~20"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2362,7 +2352,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~31"></span>
+              <span class="anchor" id="variable-result~29"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2402,7 +2392,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~47"></span>
+              <span class="anchor" id="variable-this~85"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2417,7 +2407,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~11"></span>
+              <span class="anchor" id="variable-fragment~21"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2432,7 +2422,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~32"></span>
+              <span class="anchor" id="variable-result~30"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2457,7 +2447,7 @@ validated and then silently dropped for that path.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Run a density-fitted Kohn-Sham calculation through cuEST</p>
+  <p>Run the SCF through whichever backend <code>options%backend</code> resolves to</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2472,7 +2462,7 @@ validated and then silently dropped for that path.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~45"></span>
+              <span class="anchor" id="variable-this~83"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2487,7 +2477,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~9"></span>
+              <span class="anchor" id="variable-fragment~19"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2502,7 +2492,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~30"></span>
+              <span class="anchor" id="variable-result~28"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2517,7 +2507,7 @@ validated and then silently dropped for that path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~3"></span>
+              <span class="anchor" id="variable-want_gradient~4"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2543,8 +2533,7 @@ validated and then silently dropped for that path.</p>
             <td><strong>want_hessian</strong></td>
             <td>
 <p>Only the CPU backend has an analytic Hessian, and only for some of
-what reaches it. Passed along rather than decided here: which cases
-qualify is a fact about that backend.</p>
+what reaches it; the backend decides, not this routine.</p>
             </td>
         </tr>
     </tbody>
@@ -2577,7 +2566,7 @@ qualify is a fact about that backend.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

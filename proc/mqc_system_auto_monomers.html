@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mqc_system_auto_monomers.html#variable-error~50">error</a>
-            <a class="list-group-item" href="../proc/mqc_system_auto_monomers.html#variable-h~8">h</a>
+            <a class="list-group-item" href="../proc/mqc_system_auto_monomers.html#variable-error~108">error</a>
+            <a class="list-group-item" href="../proc/mqc_system_auto_monomers.html#variable-h~12">h</a>
             <a class="list-group-item" href="../proc/mqc_system_auto_monomers.html#variable-tol~2">tol</a>
         </div>
       </div>
@@ -179,13 +179,10 @@
     
 
     <p>Make each covalently connected molecule a monomer</p>
-<p>The right default for a cluster and refused for anything else. A
-single connected molecule has no automatic partition &ndash; where to cut
-it is a chemical choice, and a bond graph has no opinion between per
-residue, per functional group, or something else. It fails rather than
-returning one monomer and quietly making fragmentation a no-op.</p>
-<p>So for a covalent system the monomers are mandatory, which is the
-contract this enforces rather than documents.</p>
+<p>The right default for a cluster and refused for anything else: a
+single connected molecule has no automatic partition, so this fails
+rather than returning one monomer and making fragmentation a no-op.
+For a covalent system the monomers are mandatory.</p>
 
 
     <h3>Arguments</h3>
@@ -201,7 +198,7 @@ contract this enforces rather than documents.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~8"></span>
+              <span class="anchor" id="variable-handle~12"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -216,7 +213,7 @@ contract this enforces rather than documents.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~4"></span>
+              <span class="anchor" id="variable-tolerance~8"></span>
               real(kind=c_double),
             </td>
 <td></td>
@@ -234,7 +231,7 @@ contract this enforces rather than documents.</p>
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-status~14"></span>
+          <span class="anchor" id="variable-status~20"></span>
           integer(kind=c_int)
         </small>
       </h3>
@@ -537,7 +534,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~50"></span>
+              <span class="anchor" id="variable-error~108"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -554,7 +551,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~8"></span>
+              <span class="anchor" id="variable-h~12"></span>
               type(<a href='../type/system_handle_t.html'>system_handle_t</a>),
             </td>
               <td>private,</td>
@@ -606,14 +603,10 @@ large graphs.</div>
 <span class="w">      </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">"mqc_system_auto_monomers"</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Make each covalently connected molecule a monomer</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The right default for a cluster and refused for anything else. A</span>
-<span class="w">      </span><span class="c">!! single connected molecule has no automatic partition -- where to cut</span>
-<span class="w">      </span><span class="c">!! it is a chemical choice, and a bond graph has no opinion between per</span>
-<span class="w">      </span><span class="c">!! residue, per functional group, or something else. It fails rather than</span>
-<span class="w">      </span><span class="c">!! returning one monomer and quietly making fragmentation a no-op.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! So for a covalent system the monomers are mandatory, which is the</span>
-<span class="w">      </span><span class="c">!! contract this enforces rather than documents.</span>
+<span class="w">      </span><span class="c">!! The right default for a cluster and refused for anything else: a</span>
+<span class="w">      </span><span class="c">!! single connected molecule has no automatic partition, so this fails</span>
+<span class="w">      </span><span class="c">!! rather than returning one monomer and making fragmentation a no-op.</span>
+<span class="w">      </span><span class="c">!! For a covalent system the monomers are mandatory.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handle</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="kt">c_double</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tolerance</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">status</span>
@@ -669,7 +662,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

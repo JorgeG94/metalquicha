@@ -136,18 +136,18 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-calc_type~12">calc_type</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-calc_type~5">calc_type</a>
             <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-checkpoint~3">checkpoint</a>
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-driver_config~11">driver_config</a>
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-global_groups~5">global_groups</a>
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-group_ids~4">group_ids</a>
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-group_leader_ranks~3">group_leader_ranks</a>
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-method_config~8">method_config</a>
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-node_leader_ranks~4">node_leader_ranks</a>
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-nodes_per_group~4">nodes_per_group</a>
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-num_nodes~3">num_nodes</a>
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-resources~15">resources</a>
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-sys_geom~80">sys_geom</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-driver_config~4">driver_config</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-global_groups~3">global_groups</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-group_ids~2">group_ids</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-group_leader_ranks~2">group_leader_ranks</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-method_config~4">method_config</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-node_leader_ranks~2">node_leader_ranks</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-nodes_per_group~3">nodes_per_group</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-num_nodes~2">num_nodes</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-resources~5">resources</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-sys_geom~22">sys_geom</a>
         </div>
       </div>
     </div>
@@ -201,9 +201,8 @@
       <h2 id="type-def-statement">
         type, public, abstract :: many_body_expansion_t</h2>
     <p>Abstract base for all many-body expansion methods</p>
-<p>Encapsulates shared configuration for MBE and GMBE calculations.
-Concrete implementations provide specific fragment representations
-and expansion computation logic.</p>
+<p>Holds the configuration every expansion shares. A concrete type adds
+its own fragment representation and how it evaluates the expansion.</p>
 <br>      <div class="card">
         <div class="card-header">
           <h3 class="card-title">Inherits</h3>
@@ -757,7 +756,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~fmo_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~many_body_expansion_t~~InheritedByGraph_edge1" class="edge">
+<g id="type~~many_body_expansion_t~~InheritedByGraph_edge3" class="edge">
 <title>type~fmo_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#ff0000" d="M182.74,-84.3C165.07,-79.47 144.39,-73.81 125.71,-68.7"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="126.43,-65.27 115.86,-66 124.59,-72.02 126.43,-65.27"/>
@@ -787,7 +786,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- type~mbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~many_body_expansion_t~~InheritedByGraph_edge3" class="edge">
+<g id="type~~many_body_expansion_t~~InheritedByGraph_edge1" class="edge">
 <title>type~mbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#ff0000" d="M181.51,-24.04C164.17,-28.78 144.08,-34.28 125.88,-39.26"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="124.72,-35.95 115.99,-41.96 126.56,-42.7 124.72,-35.95"/>
@@ -861,7 +860,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~12"></span>
+              <span class="anchor" id="variable-calc_type~5"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -892,13 +891,12 @@ large graphs.</div>
             <td>
                 <p>Fragments already computed by an earlier run, and where the ones
 computed by this run are appended. Inactive unless a path was
-configured, in which case everything below behaves as before.
-System geometry (coordinates, elements, fragments, bonds)</p>
+configured.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~11"></span>
+              <span class="anchor" id="variable-driver_config~4"></span>
               type(<a href='driver_config_t.html'>driver_config_t</a>),
             </td>
               <td>public,</td>
@@ -915,7 +913,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~5"></span>
+              <span class="anchor" id="variable-global_groups~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -932,7 +930,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_ids~4"></span>
+              <span class="anchor" id="variable-group_ids~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -949,7 +947,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_leader_ranks~3"></span>
+              <span class="anchor" id="variable-group_leader_ranks~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -966,7 +964,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~8"></span>
+              <span class="anchor" id="variable-method_config~4"></span>
               type(<a href='method_config_t.html'>method_config_t</a>),
             </td>
               <td>public</td>
@@ -983,7 +981,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks~4"></span>
+              <span class="anchor" id="variable-node_leader_ranks~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1000,7 +998,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~4"></span>
+              <span class="anchor" id="variable-nodes_per_group~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1017,7 +1015,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes~3"></span>
+              <span class="anchor" id="variable-num_nodes~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1034,7 +1032,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~15"></span>
+              <span class="anchor" id="variable-resources~5"></span>
               type(<a href='resources_t.html'>resources_t</a>),
             </td>
               <td>public,</td>
@@ -1051,7 +1049,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~80"></span>
+              <span class="anchor" id="variable-sys_geom~22"></span>
               type(<a href='system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public,</td>
@@ -1063,7 +1061,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
                 <td></td>
                 <td></td>
             <td>
-                
+                <p>Coordinates, elements, fragments and bonds</p>
             </td>
         </tr>
     </tbody>
@@ -1391,9 +1389,8 @@ System geometry (coordinates, elements, fragments, bonds)</p>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="p">,</span><span class="w"> </span><span class="k">abstract</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">many_body_expansion_t</span>
 <span class="w">      </span><span class="c">!! Abstract base for all many-body expansion methods</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Encapsulates shared configuration for MBE and GMBE calculations.</span>
-<span class="w">      </span><span class="c">!! Concrete implementations provide specific fragment representations</span>
-<span class="w">      </span><span class="c">!! and expansion computation logic.</span>
+<span class="w">      </span><span class="c">!! Holds the configuration every expansion shares. A concrete type adds</span>
+<span class="w">      </span><span class="c">!! its own fragment representation and how it evaluates the expansion.</span>
 
 <span class="w">      </span><span class="c">! Required configuration</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">method_config_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method_config</span>
@@ -1403,11 +1400,11 @@ System geometry (coordinates, elements, fragments, bonds)</p>
 
 <span class="w">      </span><span class="c">! System geometry (includes connectivity via sys_geom%bonds)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">         </span><span class="c">!! Coordinates, elements, fragments and bonds</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">checkpoint_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">checkpoint</span>
 <span class="w">         </span><span class="c">!! Fragments already computed by an earlier run, and where the ones</span>
 <span class="w">         </span><span class="c">!! computed by this run are appended. Inactive unless a path was</span>
-<span class="w">         </span><span class="c">!! configured, in which case everything below behaves as before.</span>
-<span class="w">         </span><span class="c">!! System geometry (coordinates, elements, fragments, bonds)</span>
+<span class="w">         </span><span class="c">!! configured.</span>
 
 <span class="w">      </span><span class="c">! MPI configuration (optional - for distributed calculations)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">resources_t</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">resources</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">null</span><span class="p">()</span>
@@ -1461,7 +1458,7 @@ System geometry (coordinates, elements, fragments, bonds)</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

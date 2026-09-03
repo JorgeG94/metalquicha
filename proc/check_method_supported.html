@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/check_method_supported.html#variable-known">known</a>
+            <a class="list-group-item" href="../proc/check_method_supported.html#variable-known~2">known</a>
         </div>
       </div>
     </div>
@@ -180,9 +180,8 @@
 <p>Two failures, and they read the same to whoever typed the name. A
 spelling the parser does not know at all comes back UNKNOWN; a
 spelling it knows and no backend implements &ndash; the F12 family, which
-has a method type and no code behind it &ndash; parses cleanly and then
-stops in the factory. Both used to end in <code>ERROR STOP</code> from a routine
-with no error to set, which takes a driven run&rsquo;s caller down with it.</p>
+has a method type and no code behind it &ndash; parses cleanly and would
+otherwise stop in the factory, which can only <code>ERROR STOP</code>.</p>
 
 
     <h3>Arguments</h3>
@@ -213,7 +212,7 @@ with no error to set, which takes a driven run&rsquo;s caller down with it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type"></span>
+              <span class="anchor" id="variable-method_type~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -228,7 +227,7 @@ with no error to set, which takes a driven run&rsquo;s caller down with it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~19"></span>
+              <span class="anchor" id="variable-error~151"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -626,7 +625,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-known"></span>
+              <span class="anchor" id="variable-known~2"></span>
               character(len=*),
             </td>
               <td>private,</td>
@@ -663,9 +662,8 @@ parameter
 <span class="w">      </span><span class="c">!! Two failures, and they read the same to whoever typed the name. A</span>
 <span class="w">      </span><span class="c">!! spelling the parser does not know at all comes back UNKNOWN; a</span>
 <span class="w">      </span><span class="c">!! spelling it knows and no backend implements -- the F12 family, which</span>
-<span class="w">      </span><span class="c">!! has a method type and no code behind it -- parses cleanly and then</span>
-<span class="w">      </span><span class="c">!! stops in the factory. Both used to end in `ERROR STOP` from a routine</span>
-<span class="w">      </span><span class="c">!! with no error to set, which takes a driven run's caller down with it.</span>
+<span class="w">      </span><span class="c">!! has a method type and no code behind it -- parses cleanly and would</span>
+<span class="w">      </span><span class="c">!! otherwise stop in the factory, which can only `ERROR STOP`.</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">spelling</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method_type</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
@@ -688,11 +686,9 @@ parameter
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      case </span><span class="n">default</span>
 <span class="w">         </span><span class="c">! Every other type is implemented somewhere. Whether *this build* has</span>
-<span class="w">         </span><span class="c">! the backend for it is a different question and deliberately not</span>
-<span class="w">         </span><span class="c">! asked here: reading a deck must mean the same thing whatever was</span>
-<span class="w">         </span><span class="c">! linked, or a parse test starts depending on the CMake options. The</span>
-<span class="w">         </span><span class="c">! entry points that are about to run something ask it instead --</span>
-<span class="w">         </span><span class="c">! `mqc_session`, for the callers that cannot survive an `ERROR STOP`.</span>
+<span class="w">         </span><span class="c">! the backend for it is deliberately not asked here: reading a deck</span>
+<span class="w">         </span><span class="c">! must mean the same thing whatever was linked. `mqc_session` asks it</span>
+<span class="w">         </span><span class="c">! instead, for the callers that cannot survive an `ERROR STOP`.</span>
 <span class="w">      </span><span class="k">end select</span>
 <span class="k">   end subroutine </span><span class="n">check_method_supported</span>
 </pre></div>
@@ -718,7 +714,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

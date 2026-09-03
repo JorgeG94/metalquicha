@@ -138,12 +138,12 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/run_final_hessian.html#variable-cart_disp">cart_disp</a>
             <a class="list-group-item" href="../proc/run_final_hessian.html#variable-command~6">command</a>
-            <a class="list-group-item" href="../proc/run_final_hessian.html#variable-force_constants">force_constants</a>
-            <a class="list-group-item" href="../proc/run_final_hessian.html#variable-frequencies~5">frequencies</a>
+            <a class="list-group-item" href="../proc/run_final_hessian.html#variable-force_constants~2">force_constants</a>
+            <a class="list-group-item" href="../proc/run_final_hessian.html#variable-frequencies~7">frequencies</a>
             <a class="list-group-item" href="../proc/run_final_hessian.html#variable-hess_config~2">hess_config</a>
-            <a class="list-group-item" href="../proc/run_final_hessian.html#variable-k~4">k</a>
+            <a class="list-group-item" href="../proc/run_final_hessian.html#variable-k~27">k</a>
             <a class="list-group-item" href="../proc/run_final_hessian.html#variable-n_imag~2">n_imag</a>
-            <a class="list-group-item" href="../proc/run_final_hessian.html#variable-reduced_masses">reduced_masses</a>
+            <a class="list-group-item" href="../proc/run_final_hessian.html#variable-reduced_masses~2">reduced_masses</a>
             <a class="list-group-item" href="../proc/run_final_hessian.html#variable-result~24">result</a>
             <a class="list-group-item" href="../proc/run_final_hessian.html#variable-softest">softest</a>
             <a class="list-group-item" href="../proc/run_final_hessian.html#variable-worst">worst</a>
@@ -190,8 +190,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -530,18 +530,13 @@ large graphs.</div>
 
 
     <p>A Hessian at the converged geometry, and the verdict it settles</p>
-<p><strong>What this is for.</strong> A minimiser stops on the gradient, and a
-vanishing gradient is a stationary point &ndash; a saddle satisfies it just
-as exactly as a minimum does. So &ldquo;converged&rdquo; names the condition that
-was met and not the thing that was found, and the second derivatives
-are the only way to tell which one it is.</p>
-<p>The frequency table, thermochemistry and warnings are already printed
-by the Hessian workflow itself. What is added here is the one line
-that answers the question the keyword was set to ask, because in a
-table of 3N modes a single negative entry is easy to walk past.</p>
-<p><code>write_output</code> is false: the energy at this geometry has already
-written <code>output_&lt;name&gt;.json</code> and rewriting it here would replace that
-document with a different one after the fact.</p>
+<p>&ldquo;Converged&rdquo; names the condition a minimiser met &ndash; a vanishing
+gradient &ndash; and not the thing it found, which a saddle satisfies just
+as exactly. The second derivatives are what tell the two apart.</p>
+<p>The frequency table, thermochemistry and warnings are printed by the
+Hessian workflow itself; what is added here is the one line saying
+which stationary point this is. <code>write_output</code> is false, so the
+<code>output_&lt;name&gt;.json</code> the final energy wrote is left alone.</p>
 
 
     <h3>Arguments</h3>
@@ -557,7 +552,7 @@ document with a different one after the fact.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~15"></span>
+              <span class="anchor" id="variable-sys_geom~41"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -572,7 +567,7 @@ document with a different one after the fact.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want~3"></span>
+              <span class="anchor" id="variable-want~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -582,11 +577,8 @@ document with a different one after the fact.</p>
             <td>::</td>
             <td><strong>want</strong></td>
             <td>
-                <p>What was being looked for. The curvature test is the same either
-way; which count is the pass is not. Named <code>want</code> rather than
-<code>target</code> so that it does not shadow the Fortran attribute of that
-name; the config component it comes from keeps the keyword&rsquo;s own
-spelling.</p>
+                <p><code>OPT_TARGET_MINIMUM</code> or <code>OPT_TARGET_SADDLE</code>. The curvature test is
+the same either way; which count is the pass is not.</p>
             </td>
         </tr>
     </tbody>
@@ -3348,7 +3340,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-force_constants"></span>
+              <span class="anchor" id="variable-force_constants~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -3365,7 +3357,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~5"></span>
+              <span class="anchor" id="variable-frequencies~7"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -3399,7 +3391,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~4"></span>
+              <span class="anchor" id="variable-k~27"></span>
               integer,
             </td>
               <td>private</td>
@@ -3433,7 +3425,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reduced_masses"></span>
+              <span class="anchor" id="variable-reduced_masses~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -3518,29 +3510,20 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_final_hessian</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">want</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! A Hessian at the converged geometry, and the verdict it settles</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! **What this is for.** A minimiser stops on the gradient, and a</span>
-<span class="w">      </span><span class="c">!! vanishing gradient is a stationary point -- a saddle satisfies it just</span>
-<span class="w">      </span><span class="c">!! as exactly as a minimum does. So "converged" names the condition that</span>
-<span class="w">      </span><span class="c">!! was met and not the thing that was found, and the second derivatives</span>
-<span class="w">      </span><span class="c">!! are the only way to tell which one it is.</span>
+<span class="w">      </span><span class="c">!! "Converged" names the condition a minimiser met -- a vanishing</span>
+<span class="w">      </span><span class="c">!! gradient -- and not the thing it found, which a saddle satisfies just</span>
+<span class="w">      </span><span class="c">!! as exactly. The second derivatives are what tell the two apart.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The frequency table, thermochemistry and warnings are already printed</span>
-<span class="w">      </span><span class="c">!! by the Hessian workflow itself. What is added here is the one line</span>
-<span class="w">      </span><span class="c">!! that answers the question the keyword was set to ask, because in a</span>
-<span class="w">      </span><span class="c">!! table of 3N modes a single negative entry is easy to walk past.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! `write_output` is false: the energy at this geometry has already</span>
-<span class="w">      </span><span class="c">!! written `output_&lt;name&gt;.json` and rewriting it here would replace that</span>
-<span class="w">      </span><span class="c">!! document with a different one after the fact.</span>
+<span class="w">      </span><span class="c">!! The frequency table, thermochemistry and warnings are printed by the</span>
+<span class="w">      </span><span class="c">!! Hessian workflow itself; what is added here is the one line saying</span>
+<span class="w">      </span><span class="c">!! which stationary point this is. `write_output` is false, so the</span>
+<span class="w">      </span><span class="c">!! `output_&lt;name&gt;.json` the final energy wrote is left alone.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_vibrational_analysis</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">compute_vibrational_analysis</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_optimizer_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">OPT_TARGET_SADDLE</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">want</span>
-<span class="w">         </span><span class="c">!! What was being looked for. The curvature test is the same either</span>
-<span class="w">         </span><span class="c">!! way; which count is the pass is not. Named `want` rather than</span>
-<span class="w">         </span><span class="c">!! `target` so that it does not shadow the Fortran attribute of that</span>
-<span class="w">         </span><span class="c">!! name; the config component it comes from keeps the keyword's own</span>
-<span class="w">         </span><span class="c">!! spelling.</span>
+<span class="w">         </span><span class="c">!! `OPT_TARGET_MINIMUM` or `OPT_TARGET_SADDLE`. The curvature test is</span>
+<span class="w">         </span><span class="c">!! the same either way; which count is the pass is not.</span>
 
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
 <span class="k">      type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hess_config</span>
@@ -3565,9 +3548,8 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">run_step</span><span class="p">(</span><span class="n">hess_config</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">write_output</span><span class="o">=</span><span class="p">.</span><span class="n">false</span><span class="p">.)</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">has_hessian</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="w">         </span><span class="c">! Not fatal. The optimization converged and its geometry is written;</span>
-<span class="w">         </span><span class="c">! what failed is the check on it, and turning that into a failed run</span>
-<span class="w">         </span><span class="c">! would throw away the result that did succeed.</span>
+<span class="w">         </span><span class="c">! Not fatal: the optimization converged and its geometry is written.</span>
+<span class="w">         </span><span class="c">! What failed is the check on it.</span>
 <span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">"  the final Hessian could not be computed; the optimized "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                             </span><span class="s2">"geometry stands, unverified"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
@@ -3595,15 +3577,14 @@ large graphs.</div>
 <span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">frequencies</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="o">-</span><span class="n">NOISE_FREQ_CM</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">            </span><span class="c">! Negative, but under the floor that separates a vibration from a</span>
 <span class="w">            </span><span class="c">! projected translation. Kept because a very flat saddle looks</span>
-<span class="w">            </span><span class="c">! exactly like this, and reporting it as a minimum without saying</span>
-<span class="w">            </span><span class="c">! so is the one way this check can mislead.</span>
+<span class="w">            </span><span class="c">! exactly like this.</span>
 <span class="w">            </span><span class="n">softest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="n">softest</span><span class="p">,</span><span class="w"> </span><span class="n">frequencies</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">      end do</span>
 
-<span class="w">      </span><span class="c">! The same three cases, read against what was asked for. A first-order</span>
+<span class="w">      </span><span class="c">! The same three cases, read against what was asked for: a first-order</span>
 <span class="w">      </span><span class="c">! saddle is the failure when a minimum was wanted and the success when it</span>
-<span class="w">      </span><span class="c">! was not, so the branch that changes is which one is logged as a warning.</span>
+<span class="w">      </span><span class="c">! was not.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">want</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">OPT_TARGET_SADDLE</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">n_imag</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  one imaginary frequency, "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">worst</span><span class="p">))</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -3662,7 +3643,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

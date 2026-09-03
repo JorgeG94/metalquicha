@@ -10,19 +10,9 @@ module mqc_determinants
    !! overloaded and this is the other sense: a bit pattern over active orbitals,
    !! bit `k` set meaning orbital `k + 1` is occupied.
    !!
-   !! Everything here is exactly checkable without any physics -- the counts are
-   !! binomial coefficients, the addressing is a bijection that has to round
-   !! trip, and the excitation phases follow from anticommutation alone. That is
-   !! the reason to build it first and on its own. A wrong phase in the table
-   !! below does not announce itself later; it produces a CI energy that is
-   !! merely wrong, with nothing obviously out of place, and by then there are
-   !! three other stages to suspect.
-   !!
    !! The conventions -- string order, address order, and the layout of the
-   !! excitation table -- follow PySCF's `pyscf/fci/cistring.py`, deliberately.
-   !! They are as good as any other choice and they are the ones the reference
-   !! this will be validated against uses, which means intermediate quantities
-   !! can be compared and not just final energies.
+   !! excitation table -- follow PySCF's `pyscf/fci/cistring.py`, so that
+   !! intermediate quantities and not only energies can be compared against it.
    !!
    !! Orbital indices and addresses are 1-based here, as everywhere else in this
    !! code, where PySCF's are 0-based. Bit `k` of a string is orbital `k + 1`.
@@ -44,9 +34,7 @@ module mqc_determinants
 
    integer, parameter :: MAX_ACTIVE_ORBITALS = 63
       !! A string is one `int64`, so this is where the representation stops.
-      !! Nothing comes close: the determinant count at CAS(63,31) exceeds the
-      !! number of atoms in the observable universe, and `build_link_table`
-      !! refuses far below it.
+      !! `build_link_table` refuses far below it.
 
    type :: link_table_t
       !! Every single excitation out of every string
@@ -60,9 +48,8 @@ module mqc_determinants
       !!
       !! The first `n_electrons` rows are the diagonal ones, `cre == des` over
       !! the occupied orbitals, which map a string to itself with phase `+1`.
-      !! They are in the table rather than special-cased because the number
-      !! operator terms of the Hamiltonian need them and a caller that had to
-      !! remember to add them separately would eventually not.
+      !! They are in the table rather than special-cased, since the number
+      !! operator terms of the Hamiltonian need them.
       !!
       !! Stored with the row index first so one string's excitations are
       !! contiguous, which is the order a sigma build walks them in.
@@ -129,9 +116,7 @@ contains
       !!
       !! Address order is ascending numerical order of the bit pattern, so the
       !! generator is Gosper's: given one integer, produce the next larger with
-      !! the same number of bits set. That the two orders coincide is not a
-      !! coincidence to rely on silently -- `address_round_trip` in the tests
-      !! asserts it for every string of several spaces.
+      !! the same number of bits set.
       integer, intent(in) :: n_orbitals, n_electrons
       integer(int64), allocatable, intent(out) :: strings(:)
       type(error_t), intent(inout) :: error
@@ -168,10 +153,10 @@ contains
       !! of strings that agree with this one above `k` and put a lower orbital
       !! there instead, all of which sort first.
       !!
-      !! No error argument, deliberately: this is called once per row of the
-      !! excitation table and the caller has already established the space is
-      !! valid. A string with the wrong number of bits set returns a meaningless
-      !! address rather than complaining.
+      !! No error argument: this is called once per row of the excitation table,
+      !! after the caller has established the space is valid. A string with the
+      !! wrong number of bits set gets a meaningless address rather than a
+      !! complaint.
       integer, intent(in) :: n_orbitals, n_electrons
       integer(int64), intent(in) :: string
       integer :: address
@@ -235,10 +220,8 @@ contains
       !! the operator into place.
       !!
       !! Orbitals are 1-based. `create == destroy` is the number operator, which
-      !! is `+1` on an occupied orbital and zero on an empty one -- PySCF's
-      !! `cre_des_sign` returns `1` unconditionally there because it is only
-      !! ever asked about occupied orbitals, and this returns the answer for the
-      !! question as asked instead.
+      !! is `+1` on an occupied orbital and zero on an empty one, where PySCF's
+      !! `cre_des_sign` returns `1` unconditionally.
       integer, intent(in) :: create, destroy
       integer(int64), intent(in) :: string
       integer :: phase
@@ -268,10 +251,8 @@ contains
       !!
       !! Row order follows PySCF: the diagonal entries first, then one block per
       !! occupied orbital in ascending order, each listing the virtual orbitals
-      !! in ascending order. The order carries no meaning -- a contraction sums
-      !! over rows -- but matching it makes the table directly comparable
-      !! against the reference implementation, which is worth more than the
-      !! freedom to choose.
+      !! in ascending order. A contraction sums over rows, so the order carries
+      !! no meaning beyond being comparable against the reference.
       integer, intent(in) :: n_orbitals, n_electrons
       type(link_table_t), intent(out) :: table
       type(error_t), intent(inout) :: error

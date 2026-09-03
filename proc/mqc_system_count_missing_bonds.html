@@ -136,9 +136,9 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mqc_system_count_missing_bonds.html#variable-count~2">count</a>
+            <a class="list-group-item" href="../proc/mqc_system_count_missing_bonds.html#variable-count~11">count</a>
             <a class="list-group-item" href="../proc/mqc_system_count_missing_bonds.html#variable-declared~2">declared</a>
-            <a class="list-group-item" href="../proc/mqc_system_count_missing_bonds.html#variable-h~10">h</a>
+            <a class="list-group-item" href="../proc/mqc_system_count_missing_bonds.html#variable-h~14">h</a>
             <a class="list-group-item" href="../proc/mqc_system_count_missing_bonds.html#variable-missing_i">missing_i</a>
             <a class="list-group-item" href="../proc/mqc_system_count_missing_bonds.html#variable-missing_j">missing_j</a>
             <a class="list-group-item" href="../proc/mqc_system_count_missing_bonds.html#variable-tol~4">tol</a>
@@ -187,11 +187,9 @@ marked broken catches a mislabelled one; it cannot catch one left out
 entirely, because nothing in the list refers to it.</p>
 <p>Counted rather than enforced: perception is a heuristic and a caller
 may have a reason. Non-zero means look, not stop.</p>
-<p>A system with no declared bonds is answered rather than refused, and
-is the case most worth answering &ndash; it is the caller who has not
-thought about bonds at all, so every cut the geometry implies is one
-they do not know about. <code>-1</code> therefore means only that the question
-could not be asked: a bad handle, no atoms, or no partition.</p>
+<p>A system with no declared bonds is answered rather than refused. <code>-1</code>
+means only that the question could not be asked: a bad handle, no
+atoms, or no partition.</p>
 
 
     <h3>Arguments</h3>
@@ -207,7 +205,7 @@ could not be asked: a bad handle, no atoms, or no partition.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~10"></span>
+              <span class="anchor" id="variable-handle~14"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -222,7 +220,7 @@ could not be asked: a bad handle, no atoms, or no partition.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~6"></span>
+              <span class="anchor" id="variable-tolerance~10"></span>
               real(kind=c_double),
             </td>
 <td></td>
@@ -492,7 +490,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~2"></span>
+              <span class="anchor" id="variable-count~11"></span>
               integer,
             </td>
               <td>private</td>
@@ -526,7 +524,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~10"></span>
+              <span class="anchor" id="variable-h~14"></span>
               type(<a href='../type/system_handle_t.html'>system_handle_t</a>),
             </td>
               <td>private,</td>
@@ -619,11 +617,9 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Counted rather than enforced: perception is a heuristic and a caller</span>
 <span class="w">      </span><span class="c">!! may have a reason. Non-zero means look, not stop.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! A system with no declared bonds is answered rather than refused, and</span>
-<span class="w">      </span><span class="c">!! is the case most worth answering -- it is the caller who has not</span>
-<span class="w">      </span><span class="c">!! thought about bonds at all, so every cut the geometry implies is one</span>
-<span class="w">      </span><span class="c">!! they do not know about. `-1` therefore means only that the question</span>
-<span class="w">      </span><span class="c">!! could not be asked: a bad handle, no atoms, or no partition.</span>
+<span class="w">      </span><span class="c">!! A system with no declared bonds is answered rather than refused. `-1`</span>
+<span class="w">      </span><span class="c">!! means only that the question could not be asked: a bad handle, no</span>
+<span class="w">      </span><span class="c">!! atoms, or no partition.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handle</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="kt">c_double</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tolerance</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_missing</span>
@@ -674,7 +670,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -136,9 +136,9 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/molecular_ecp_type.html#variable-atoms~3">atoms</a>
+            <a class="list-group-item" href="../type/molecular_ecp_type.html#variable-atoms">atoms</a>
             <a class="list-group-item" href="../type/molecular_ecp_type.html#variable-n_ecp_atoms">n_ecp_atoms</a>
-            <a class="list-group-item" href="../type/molecular_ecp_type.html#variable-natoms~5">natoms</a>
+            <a class="list-group-item" href="../type/molecular_ecp_type.html#variable-natoms~2">natoms</a>
         </div>
       </div>
     </div>
@@ -168,7 +168,7 @@
             <a class="list-group-item" href="../type/molecular_ecp_type.html#boundprocedure-allocate_atoms">allocate_atoms</a>
             <a class="list-group-item" href="../type/molecular_ecp_type.html#boundprocedure-any_ecp">any_ecp</a>
             <a class="list-group-item" href="../type/molecular_ecp_type.html#boundprocedure-core_electrons~2">core_electrons</a>
-            <a class="list-group-item" href="../type/molecular_ecp_type.html#boundprocedure-destroy~16">destroy</a>
+            <a class="list-group-item" href="../type/molecular_ecp_type.html#boundprocedure-destroy~11">destroy</a>
         </div>
       </div>
     </div>
@@ -191,11 +191,9 @@
       <h2 id="type-def-statement">
         type, public :: molecular_ecp_type</h2>
     <p>One entry per atom, parallel to <code>molecular_basis_type%elements</code></p>
-<p>Indexed by atom rather than by element so an entry lines up with the
-atom index everything else uses &ndash; coordinates, nuclear charges, and
-the active-atom list an ECP integral plan is built from. Atoms without
-an ECP get an entry with <code>has_ecp</code> false rather than being skipped, so
-the indexing never has to be translated.</p>
+<p>Indexed by atom, not by element, so an entry lines up with the atom
+index everything else uses. Atoms without an ECP get an entry with
+<code>has_ecp</code> false rather than being skipped.</p>
 <br>      <div class="card">
         <div class="card-header">
           <h3 class="card-title">Inherits</h3>
@@ -319,7 +317,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atoms~3"></span>
+              <span class="anchor" id="variable-atoms"></span>
               type(<a href='atomic_ecp_type.html'>atomic_ecp_type</a>),
             </td>
               <td>public,</td>
@@ -353,7 +351,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-natoms~5"></span>
+              <span class="anchor" id="variable-natoms~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -568,7 +566,7 @@ large graphs.</div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-destroy~16"></span>
+      <span class="anchor" id="boundprocedure-destroy~11"></span>
       <h3>
           procedure, public ::
   <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecular_ecp_destroy.html'>molecular_ecp_destroy</a>
@@ -626,15 +624,17 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">molecular_ecp_type</span>
 <span class="w">      </span><span class="c">!! One entry per atom, parallel to `molecular_basis_type%elements`</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Indexed by atom rather than by element so an entry lines up with the</span>
-<span class="w">      </span><span class="c">!! atom index everything else uses -- coordinates, nuclear charges, and</span>
-<span class="w">      </span><span class="c">!! the active-atom list an ECP integral plan is built from. Atoms without</span>
-<span class="w">      </span><span class="c">!! an ECP get an entry with `has_ecp` false rather than being skipped, so</span>
-<span class="w">      </span><span class="c">!! the indexing never has to be translated.</span>
+<span class="w">      </span><span class="c">!! Indexed by atom, not by element, so an entry lines up with the atom</span>
+<span class="w">      </span><span class="c">!! index everything else uses. Atoms without an ECP get an entry with</span>
+<span class="w">      </span><span class="c">!! `has_ecp` false rather than being skipped.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">atomic_ecp_type</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atoms</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">natoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_ecp_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">         </span><span class="c">!! How many of them actually carry a potential</span>
+<span class="w">      </span><span class="c">! TODO(mqc): maintained only by `build_molecular_ecp_json`, and `any_ecp`</span>
+<span class="w">      </span><span class="c">! reads nothing else. A `molecular_ecp_type` filled any other way reports</span>
+<span class="w">      </span><span class="c">! no ECPs from `any_ecp` while `core_electrons`, which scans `atoms`,</span>
+<span class="w">      </span><span class="c">! reports them.</span>
 <span class="w">   </span><span class="k">contains</span>
 <span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">allocate_atoms</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">molecular_ecp_allocate</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">destroy</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">molecular_ecp_destroy</span>
@@ -663,7 +663,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

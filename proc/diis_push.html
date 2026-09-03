@@ -137,8 +137,8 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/diis_push.html#variable-age~3">age</a>
-            <a class="list-group-item" href="../proc/diis_push.html#variable-other">other</a>
-            <a class="list-group-item" href="../proc/diis_push.html#variable-slot~3">slot</a>
+            <a class="list-group-item" href="../proc/diis_push.html#variable-other~2">other</a>
+            <a class="list-group-item" href="../proc/diis_push.html#variable-slot~5">slot</a>
         </div>
       </div>
     </div>
@@ -196,7 +196,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~22"></span>
+              <span class="anchor" id="variable-this~135"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -211,7 +211,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fock"></span>
+              <span class="anchor" id="variable-fock~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -241,7 +241,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density"></span>
+              <span class="anchor" id="variable-density~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -259,7 +259,7 @@ the trace both energy models want.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~4"></span>
+              <span class="anchor" id="variable-energy~21"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -274,7 +274,7 @@ the trace both energy models want.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~5"></span>
+              <span class="anchor" id="variable-error~145"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -475,7 +475,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-other"></span>
+              <span class="anchor" id="variable-other~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -492,7 +492,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-slot~3"></span>
+              <span class="anchor" id="variable-slot~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -574,10 +574,8 @@ large graphs.</div>
 
 <span class="w">         </span><span class="c">! A full row *and* a full column, because `df` is not symmetric: the</span>
 <span class="w">         </span><span class="c">! new density against every stored Fock, and every stored density</span>
-<span class="w">         </span><span class="c">! against the new Fock. Mirroring one onto the other -- which is what</span>
-<span class="w">         </span><span class="c">! `overlap` above does, correctly, since it is symmetric -- would put</span>
-<span class="w">         </span><span class="c">! `&lt;D_j|F_i&gt;` where `&lt;D_i|F_j&gt;` belongs and quietly symmetrise both</span>
-<span class="w">         </span><span class="c">! energy models.</span>
+<span class="w">         </span><span class="c">! against the new Fock. Mirroring one onto the other, as `overlap`</span>
+<span class="w">         </span><span class="c">! above correctly does, would quietly symmetrise both energy models.</span>
 <span class="w">         </span><span class="k">do </span><span class="n">age</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">n_stored</span>
 <span class="w">            </span><span class="n">other</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">slot_of_age</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="p">)</span>
 <span class="w">            </span><span class="n">this</span><span class="p">%</span><span class="n">df</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">density_history</span><span class="p">(:,</span><span class="w"> </span><span class="n">slot</span><span class="p">)</span><span class="o">*</span><span class="w"> </span><span class="p">&amp;</span>
@@ -610,7 +608,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

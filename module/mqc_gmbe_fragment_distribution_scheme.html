@@ -186,9 +186,8 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>Implements fragment distribution schemes for GMBE calculations with overlapping fragments
-Handles both serial and MPI-parallelized distribution of monomers and intersection fragments
-term index, fragment type, atom count, atom list, displacement code
+      <p>Serial and MPI-parallel evaluation of a GMBE PIE term list, and the
+accumulation of the results back into one energy, gradient or Hessian.
 PIE-based serial processor
 PIE-based MPI coordinator</p>
 <br>          <div class="card mb-4">
@@ -197,24 +196,24 @@ PIE-based MPI coordinator</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
-                  <li class="list-inline-item"><a href='mqc_work_queue.html'>mqc_work_queue</a></li>
                   <li class="list-inline-item"><a href='mqc_group_shard_io.html'>mqc_group_shard_io</a></li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item">pic_timer</li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
-                  <li class="list-inline-item"><a href='mqc_group_batching.html'>mqc_group_batching</a></li>
-                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
-                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
+                  <li class="list-inline-item"><a href='mqc_group_batching.html'>mqc_group_batching</a></li>
+                  <li class="list-inline-item"><a href='mqc_work_queue.html'>mqc_work_queue</a></li>
+                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item"><a href='mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
               </ul>
             </li>
@@ -2581,7 +2580,8 @@ parameter
 <td> =</td>
                 <td>5</td>
             <td>
-                
+                <p>Messages in one term payload: term index, fragment type, atom count,
+atom list, displacement code.</p>
             </td>
         </tr>
     </tbody>
@@ -2617,7 +2617,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~11"></span>
+              <span class="anchor" id="variable-resources~16"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2632,7 +2632,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks~3"></span>
+              <span class="anchor" id="variable-node_leader_ranks~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2647,7 +2647,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_ids~3"></span>
+              <span class="anchor" id="variable-group_ids~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2672,10 +2672,7 @@ parameter
 </h3></div>
     <div class="card-body">
           
-  <p>MPI coordinator for PIE-based GMBE calculations
-Distributes PIE terms across MPI ranks and accumulates results
-If json_data is present, populates it for centralized JSON output
-Bond connectivity is accessed via sys_geom%bonds</p>
+  <p>Distribute the PIE terms across the ranks and accumulate the results</p><a href="../proc/gmbe_pie_coordinator.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2690,7 +2687,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~6"></span>
+              <span class="anchor" id="variable-resources~11"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2705,7 +2702,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~7"></span>
+              <span class="anchor" id="variable-pie_atom_sets~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2720,7 +2717,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~4"></span>
+              <span class="anchor" id="variable-pie_coefficients~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2735,7 +2732,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~6"></span>
+              <span class="anchor" id="variable-n_pie_terms~8"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2750,7 +2747,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks~2"></span>
+              <span class="anchor" id="variable-node_leader_ranks~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2765,7 +2762,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes~2"></span>
+              <span class="anchor" id="variable-num_nodes~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2780,7 +2777,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_leader_ranks~2"></span>
+              <span class="anchor" id="variable-group_leader_ranks~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2795,7 +2792,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_ids~2"></span>
+              <span class="anchor" id="variable-group_ids~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2810,7 +2807,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~3"></span>
+              <span class="anchor" id="variable-global_groups~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2825,7 +2822,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~37"></span>
+              <span class="anchor" id="variable-sys_geom~90"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2840,7 +2837,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~3"></span>
+              <span class="anchor" id="variable-method_config~11"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2855,7 +2852,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~4"></span>
+              <span class="anchor" id="variable-calc_type~14"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -2870,7 +2867,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~10"></span>
+              <span class="anchor" id="variable-json_data~31"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2895,11 +2892,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Serial GMBE processor using PIE coefficients
-Evaluates each unique atom set once and sums with PIE coefficients
-Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations
-If json_data is present, populates it for centralized JSON output
-Bond connectivity is accessed via sys_geom%bonds</p>
+  <p>Evaluate every PIE term on one rank and sum them with their coefficients</p><a href="../proc/serial_gmbe_pie_processor.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2914,7 +2907,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~3"></span>
+              <span class="anchor" id="variable-pie_atom_sets~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2929,7 +2922,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~3"></span>
+              <span class="anchor" id="variable-pie_coefficients~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2944,7 +2937,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~3"></span>
+              <span class="anchor" id="variable-n_pie_terms~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2959,7 +2952,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~33"></span>
+              <span class="anchor" id="variable-sys_geom~86"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2974,7 +2967,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~2"></span>
+              <span class="anchor" id="variable-method_config~10"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2989,7 +2982,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~3"></span>
+              <span class="anchor" id="variable-calc_type~13"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -3004,7 +2997,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~9"></span>
+              <span class="anchor" id="variable-json_data~30"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3044,7 +3037,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-t~2"></span>
+              <span class="anchor" id="variable-t~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3059,7 +3052,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~5"></span>
+              <span class="anchor" id="variable-pie_atom_sets~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3074,7 +3067,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~35"></span>
+              <span class="anchor" id="variable-sys_geom~88"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3149,7 +3142,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~8"></span>
+              <span class="anchor" id="variable-world_comm~27"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3189,7 +3182,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~4"></span>
+              <span class="anchor" id="variable-pie_atom_sets~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3204,7 +3197,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~4"></span>
+              <span class="anchor" id="variable-n_pie_terms~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3219,7 +3212,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~34"></span>
+              <span class="anchor" id="variable-sys_geom~87"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3309,7 +3302,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~7"></span>
+              <span class="anchor" id="variable-world_comm~26"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3349,7 +3342,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~6"></span>
+              <span class="anchor" id="variable-pie_atom_sets~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3364,7 +3357,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~5"></span>
+              <span class="anchor" id="variable-n_pie_terms~7"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3379,7 +3372,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~36"></span>
+              <span class="anchor" id="variable-sys_geom~89"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3484,7 +3477,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~9"></span>
+              <span class="anchor" id="variable-world_comm~28"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3524,7 +3517,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~9"></span>
+              <span class="anchor" id="variable-resources~14"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3624,7 +3617,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~10"></span>
+              <span class="anchor" id="variable-resources~15"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3739,7 +3732,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~7"></span>
+              <span class="anchor" id="variable-resources~12"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3769,7 +3762,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~6"></span>
+              <span class="anchor" id="variable-results~10"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3784,7 +3777,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results_received~6"></span>
+              <span class="anchor" id="variable-results_received~9"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -3799,7 +3792,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~5"></span>
+              <span class="anchor" id="variable-coord_timer~8"></span>
               type(timer_type),
             </td>
 <td>intent(in)</td>
@@ -3814,7 +3807,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~7"></span>
+              <span class="anchor" id="variable-n_pie_terms~9"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3854,7 +3847,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~8"></span>
+              <span class="anchor" id="variable-resources~13"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3869,7 +3862,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~7"></span>
+              <span class="anchor" id="variable-results~11"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3884,7 +3877,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results_received~7"></span>
+              <span class="anchor" id="variable-results_received~10"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -3899,7 +3892,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~6"></span>
+              <span class="anchor" id="variable-coord_timer~9"></span>
               type(timer_type),
             </td>
 <td>intent(in)</td>
@@ -3914,7 +3907,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~8"></span>
+              <span class="anchor" id="variable-n_pie_terms~10"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3954,7 +3947,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~17"></span>
+              <span class="anchor" id="variable-comm~23"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -4014,7 +4007,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest_rank~2"></span>
+              <span class="anchor" id="variable-dest_rank~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -4057,7 +4050,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

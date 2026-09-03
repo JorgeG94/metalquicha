@@ -137,9 +137,9 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/record_context_failure.html#variable-ctx_error">ctx_error</a>
-            <a class="list-group-item" href="../proc/record_context_failure.html#variable-first">first</a>
+            <a class="list-group-item" href="../proc/record_context_failure.html#variable-first~5">first</a>
             <a class="list-group-item" href="../proc/record_context_failure.html#variable-only_convergence">only_convergence</a>
-            <a class="list-group-item" href="../proc/record_context_failure.html#variable-text~23">text</a>
+            <a class="list-group-item" href="../proc/record_context_failure.html#variable-text~30">text</a>
         </div>
       </div>
     </div>
@@ -180,16 +180,11 @@
     
 
     <p>Turn a tblite context error into a failed &ndash; or merely flagged &ndash; result</p>
-<p><strong>Every error is drained, not just the first.</strong> tblite logs each one
-and pops them in order, and a failed eigensolve has been seen to leave
-both &ldquo;(sygvd) failed to solve eigenvalue problem&rdquo; and an
-&ldquo;SCF not converged&rdquo; behind it. Reading one and stopping would let the
-wrong message decide: a run allowed to tolerate non-convergence would
-then also tolerate a corrupted eigensolve, whose energy is not a poor
-answer but a meaningless one.</p>
-<p>So the concession applies only when <em>nothing else</em> went wrong. Not
-converging is a number that has not settled; anything else is a number
-that means nothing, and <code>allow_crap_scf</code> is not a licence for that.</p>
+<p><strong>Every error is drained, not just the first.</strong> A failed eigensolve
+leaves both &ldquo;(sygvd) failed to solve eigenvalue problem&rdquo; and an &ldquo;SCF
+not converged&rdquo; behind it, so reading one and stopping would let the
+wrong message decide.</p>
+<p><code>allow_crap_scf</code> therefore applies only when <em>nothing else</em> went wrong.</p>
 
 
     <h3>Arguments</h3>
@@ -205,7 +200,7 @@ that means nothing, and <code>allow_crap_scf</code> is not a licence for that.</
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~3"></span>
+              <span class="anchor" id="variable-ctx~6"></span>
               type(context_type),
             </td>
 <td>intent(inout)</td>
@@ -220,7 +215,7 @@ that means nothing, and <code>allow_crap_scf</code> is not a licence for that.</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~17"></span>
+              <span class="anchor" id="variable-result~47"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -235,7 +230,7 @@ that means nothing, and <code>allow_crap_scf</code> is not a licence for that.</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~3"></span>
+              <span class="anchor" id="variable-allow_crap_scf~6"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -595,7 +590,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-first"></span>
+              <span class="anchor" id="variable-first~5"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -629,7 +624,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~23"></span>
+              <span class="anchor" id="variable-text~30"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -663,17 +658,12 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">record_context_failure</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">allow_crap_scf</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Turn a tblite context error into a failed -- or merely flagged -- result</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! **Every error is drained, not just the first.** tblite logs each one</span>
-<span class="w">      </span><span class="c">!! and pops them in order, and a failed eigensolve has been seen to leave</span>
-<span class="w">      </span><span class="c">!! both "(sygvd) failed to solve eigenvalue problem" and an</span>
-<span class="w">      </span><span class="c">!! "SCF not converged" behind it. Reading one and stopping would let the</span>
-<span class="w">      </span><span class="c">!! wrong message decide: a run allowed to tolerate non-convergence would</span>
-<span class="w">      </span><span class="c">!! then also tolerate a corrupted eigensolve, whose energy is not a poor</span>
-<span class="w">      </span><span class="c">!! answer but a meaningless one.</span>
+<span class="w">      </span><span class="c">!! **Every error is drained, not just the first.** A failed eigensolve</span>
+<span class="w">      </span><span class="c">!! leaves both "(sygvd) failed to solve eigenvalue problem" and an "SCF</span>
+<span class="w">      </span><span class="c">!! not converged" behind it, so reading one and stopping would let the</span>
+<span class="w">      </span><span class="c">!! wrong message decide.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! So the concession applies only when *nothing else* went wrong. Not</span>
-<span class="w">      </span><span class="c">!! converging is a number that has not settled; anything else is a number</span>
-<span class="w">      </span><span class="c">!! that means nothing, and `allow_crap_scf` is not a licence for that.</span>
+<span class="w">      </span><span class="c">!! `allow_crap_scf` therefore applies only when *nothing else* went wrong.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">context_type</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ctx</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
 <span class="k">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">allow_crap_scf</span>
@@ -725,7 +715,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

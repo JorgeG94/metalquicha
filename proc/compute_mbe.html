@@ -142,17 +142,17 @@
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-compute_dipole_derivs~2">compute_dipole_derivs</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-compute_grad">compute_grad</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-compute_hess">compute_hess</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-current_log_level~5">current_log_level</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-current_log_level~4">current_log_level</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_e~2">delta_E</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_dipoles~2">delta_dipoles</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_energies~3">delta_energies</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-do_detailed_print">do_detailed_print</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-energies~3">energies</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-fragment_size~10">fragment_size</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-hess_dim~4">hess_dim</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-i~102">i</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-ir_intensities~3">ir_intensities</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-lookup~6">lookup</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-energies~6">energies</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-fragment_size~7">fragment_size</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-hess_dim">hess_dim</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-i~77">i</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-ir_intensities~2">ir_intensities</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-lookup~7">lookup</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-nlevel~3">nlevel</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-row_width">row_width</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-sum_by_level~2">sum_by_level</a>
@@ -363,13 +363,12 @@ large graphs.</div>
 
 
     <p>Compute many-body expansion (MBE) energy with optional gradient, hessian, and dipole</p>
-<p>This is the core routine that handles all MBE computations.
-The caller pre-allocates desired components in mbe_result before calling:
-  - mbe_result%gradient allocated: compute gradient (requires sys_geom)
-  - mbe_result%hessian allocated: compute hessian (requires sys_geom)
-  - mbe_result%dipole allocated: compute total dipole moment
-If json_data is present, populates it for centralized JSON output
-Bond connectivity is accessed via sys_geom%bonds</p>
+<p>What is computed follows what the caller pre-allocated in <code>mbe_result</code>:
+  - <code>gradient</code> allocated: compute gradient (requires <code>sys_geom</code>)
+  - <code>hessian</code> allocated: compute hessian (requires <code>sys_geom</code>)
+  - <code>dipole</code> allocated: compute the total dipole moment</p>
+<p>Bond connectivity comes from <code>sys_geom%bonds</code>, and <code>json_data</code>, when
+present, is filled for the JSON writer.</p>
 
 
     <h3>Arguments</h3>
@@ -385,7 +384,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~13"></span>
+              <span class="anchor" id="variable-polymers~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -400,7 +399,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~6"></span>
+              <span class="anchor" id="variable-fragment_count~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -415,7 +414,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~11"></span>
+              <span class="anchor" id="variable-max_level~16"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -430,7 +429,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~10"></span>
+              <span class="anchor" id="variable-results~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -445,7 +444,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result~3"></span>
+              <span class="anchor" id="variable-mbe_result~4"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -460,7 +459,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~46"></span>
+              <span class="anchor" id="variable-sys_geom~26"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -475,7 +474,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~17"></span>
+              <span class="anchor" id="variable-world_comm~12"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -490,7 +489,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~11"></span>
+              <span class="anchor" id="variable-json_data~26"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2593,7 +2592,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~5"></span>
+              <span class="anchor" id="variable-current_log_level~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -2678,7 +2677,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~3"></span>
+              <span class="anchor" id="variable-energies~6"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2695,7 +2694,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~10"></span>
+              <span class="anchor" id="variable-fragment_size~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -2712,7 +2711,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hess_dim~4"></span>
+              <span class="anchor" id="variable-hess_dim"></span>
               integer,
             </td>
               <td>private</td>
@@ -2729,7 +2728,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~102"></span>
+              <span class="anchor" id="variable-i~77"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -2746,7 +2745,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ir_intensities~3"></span>
+              <span class="anchor" id="variable-ir_intensities~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2763,7 +2762,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~6"></span>
+              <span class="anchor" id="variable-lookup~7"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
               <td>private</td>
@@ -2866,13 +2865,13 @@ large graphs.</div>
 <span class="w">                          </span><span class="n">mbe_result</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Compute many-body expansion (MBE) energy with optional gradient, hessian, and dipole</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! This is the core routine that handles all MBE computations.</span>
-<span class="w">      </span><span class="c">!! The caller pre-allocates desired components in mbe_result before calling:</span>
-<span class="w">      </span><span class="c">!!   - mbe_result%gradient allocated: compute gradient (requires sys_geom)</span>
-<span class="w">      </span><span class="c">!!   - mbe_result%hessian allocated: compute hessian (requires sys_geom)</span>
-<span class="w">      </span><span class="c">!!   - mbe_result%dipole allocated: compute total dipole moment</span>
-<span class="w">      </span><span class="c">!! If json_data is present, populates it for centralized JSON output</span>
-<span class="w">      </span><span class="c">!! Bond connectivity is accessed via sys_geom%bonds</span>
+<span class="w">      </span><span class="c">!! What is computed follows what the caller pre-allocated in `mbe_result`:</span>
+<span class="w">      </span><span class="c">!!   - `gradient` allocated: compute gradient (requires `sys_geom`)</span>
+<span class="w">      </span><span class="c">!!   - `hessian` allocated: compute hessian (requires `sys_geom`)</span>
+<span class="w">      </span><span class="c">!!   - `dipole` allocated: compute the total dipole moment</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Bond connectivity comes from `sys_geom%bonds`, and `json_data`, when</span>
+<span class="w">      </span><span class="c">!! present, is filled for the JSON writer.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_result_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">calculation_result_t</span><span class="p">,</span><span class="w"> </span><span class="n">mbe_result_t</span>
 
 <span class="w">      </span><span class="c">! Required arguments</span>
@@ -3006,9 +3005,8 @@ large graphs.</div>
 <span class="k">      end block</span>
 
 <span class="w">      </span><span class="c">! Counterpoise is read off the term list rather than passed in: the rows</span>
-<span class="w">      </span><span class="c">! are what a ghosted expansion actually differs by, so a flag could</span>
-<span class="w">      </span><span class="c">! disagree with them and this cannot. An all-positive table is the</span>
-<span class="w">      </span><span class="c">! ordinary expansion, which is every table built before this existed.</span>
+<span class="w">      </span><span class="c">! are what a ghosted expansion differs by, so a flag could disagree with</span>
+<span class="w">      </span><span class="c">! them and this cannot. An all-positive table is the ordinary expansion.</span>
 <span class="w">      </span><span class="n">use_vmfc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_count</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">is_auxiliary_row</span><span class="p">(</span><span class="n">polymers</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">:)))</span><span class="w"> </span><span class="k">then</span>
@@ -3017,9 +3015,8 @@ large graphs.</div>
 <span class="k">         end if</span>
 <span class="k">      end do</span>
 
-<span class="w">      </span><span class="c">! Bottom-up computation: process fragments by size (1-body, then 2-body, etc.)</span>
-<span class="w">      </span><span class="c">! This makes the algorithm independent of input fragment order</span>
-<span class="w">      </span><span class="c">! We process by n-mer level to ensure all subsets are computed before they're needed</span>
+<span class="w">      </span><span class="c">! By n-mer level, so every subset is computed before it is needed and the</span>
+<span class="w">      </span><span class="c">! result does not depend on the order the fragments arrived in.</span>
 <span class="w">      </span><span class="k">do </span><span class="n">nlevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span>
 <span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_count</span>
 <span class="w">            </span><span class="c">! The *real* monomers set the level, so a counterpoise row like</span>
@@ -3075,13 +3072,11 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! table is still alive. Only needed for the quantities that are mapped into</span>
 <span class="w">      </span><span class="c">! system coordinates; energy and dipole stay on the O(fragment_count) path.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">use_vmfc</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">(</span><span class="n">compute_grad</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">compute_hess</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">compute_dipole_derivs</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="w">         </span><span class="c">! `compute_mbe_coefficients` collapses the delta recursion into one</span>
-<span class="w">         </span><span class="c">! weight per fragment, and it does so with unghosted subset keys -- it</span>
-<span class="w">         </span><span class="c">! predates counterpoise and does not know a ghosted row from an</span>
-<span class="w">         </span><span class="c">! ordinary one. Under VMFC the weights would be assembled from the</span>
-<span class="w">         </span><span class="c">! wrong terms and the derivative would be wrong without being</span>
-<span class="w">         </span><span class="c">! obviously wrong, which is worse than not having it. Refused until</span>
-<span class="w">         </span><span class="c">! that routine learns the same key rule `compute_mbe_delta` now uses.</span>
+<span class="w">         </span><span class="c">! `compute_mbe_coefficients` collapses the delta recursion with</span>
+<span class="w">         </span><span class="c">! unghosted subset keys and cannot tell a ghosted row from an ordinary</span>
+<span class="w">         </span><span class="c">! one, so under VMFC it would assemble the weights from the wrong</span>
+<span class="w">         </span><span class="c">! terms and return a derivative that was wrong without looking wrong.</span>
+<span class="w">         </span><span class="c">! Refused until it learns the key rule `compute_mbe_delta` uses.</span>
 <span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"counterpoise: energies only for now. The gradient, "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="s2">"Hessian and dipole-derivative path collapses the "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="s2">"expansion with uncorrected subset weights, so it "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -3318,14 +3313,9 @@ large graphs.</div>
 <span class="w">            </span><span class="k">end if</span>
 <span class="k">         end do</span>
 
-<span class="w">         </span><span class="c">! Said once, at the end, where it cannot be scrolled past. A warning</span>
-<span class="w">         </span><span class="c">! per fragment is invisible in a run with a million of them, and a</span>
-<span class="w">         </span><span class="c">! total assembled from unconverged pieces is otherwise indistinguishable</span>
-<span class="w">         </span><span class="c">! from a good one.</span>
-<span class="w">         </span><span class="c">! The same fragments, in a form something other than a human can act</span>
-<span class="w">         </span><span class="c">! on. `report_unconverged` names the first ten in the log, which is the</span>
-<span class="w">         </span><span class="c">! right thing for a reader and useless to a script; this is the list a</span>
-<span class="w">         </span><span class="c">! follow-up job is built from.</span>
+<span class="w">         </span><span class="c">! The failures in a form a script can act on. `report_unconverged`</span>
+<span class="w">         </span><span class="c">! names the first ten in the log, which is right for a reader and</span>
+<span class="w">         </span><span class="c">! useless to a follow-up job; this is the list one is built from.</span>
 <span class="w">         </span><span class="k">call </span><span class="n">collect_unconverged</span><span class="p">(</span><span class="n">json_data</span><span class="p">%</span><span class="n">fragment_scf_status</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                  </span><span class="n">polymers</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">fragment_count</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">max_level</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                  </span><span class="n">fragment_count</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="p">%</span><span class="n">unconverged_ids</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -3385,7 +3375,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

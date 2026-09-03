@@ -193,9 +193,7 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>Provides centralized creation of quantum chemistry method instances.
-The factory pattern encapsulates method instantiation and configuration,
-making it easy to add new methods without modifying calling code.
+      <p>One place that turns a <code>method_config_t</code> into an allocated <code>qc_method_t</code>.
 Convenience function
 Whether this build can run a method at all</p>
 <br>          <div class="card mb-4">
@@ -205,14 +203,14 @@ Whether this build can run a method at all</p>
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
                   <li class="list-inline-item"><a href='mqc_method_xtb.html'>mqc_method_xtb</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_mcscf.html'>mqc_method_mcscf</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_hf.html'>mqc_method_hf</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item">mctc_env</li>
                   <li class="list-inline-item"><a href='mqc_method_dft.html'>mqc_method_dft</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_hf.html'>mqc_method_hf</a></li>
+                  <li class="list-inline-item">mctc_env</li>
+                  <li class="list-inline-item"><a href='mqc_method_mcscf.html'>mqc_method_mcscf</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1854,7 +1852,7 @@ large graphs.</div>
       </h3>
     </div>
     <div class="card-body">
-      <p>Factory for creating quantum chemistry method instances</p><a href="../type/method_factory_t.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+      <p>Factory for creating quantum chemistry method instances</p>
 
 
 
@@ -1864,7 +1862,7 @@ large graphs.</div>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/method_factory_t.html#boundprocedure-create~2'>create</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/factory_create.html'>factory_create</a></td>
+  <strong><a href='../type/method_factory_t.html#boundprocedure-create~3'>create</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/factory_create.html'>factory_create</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1882,7 +1880,7 @@ large graphs.</div>
 </h3></div>
     <div class="card-body">
           
-  <p>Convenience function to create a method without instantiating factory</p><a href="../proc/create_method.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Create a method without instantiating a factory first</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1897,7 +1895,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~34"></span>
+              <span class="anchor" id="variable-config~33"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1942,7 +1940,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~4"></span>
+              <span class="anchor" id="variable-method_type~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1972,7 +1970,7 @@ large graphs.</div>
 </h3></div>
     <div class="card-body">
           
-  <p>Create a quantum chemistry method instance from configuration</p><a href="../proc/factory_create.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Create a quantum chemistry method instance from configuration</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1987,7 +1985,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~53"></span>
+              <span class="anchor" id="variable-this~131"></span>
               class(<a href='../type/method_factory_t.html'>method_factory_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2002,7 +2000,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~28"></span>
+              <span class="anchor" id="variable-config~27"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2052,7 +2050,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~4"></span>
+              <span class="anchor" id="variable-m~6"></span>
               type(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2067,7 +2065,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~32"></span>
+              <span class="anchor" id="variable-config~31"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2107,7 +2105,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~3"></span>
+              <span class="anchor" id="variable-m~5"></span>
               type(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2122,7 +2120,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~31"></span>
+              <span class="anchor" id="variable-config~30"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2147,11 +2145,10 @@ large graphs.</div>
             <td>::</td>
             <td><strong>with_mp2</strong></td>
             <td>
-<p>Follow the reference with MP2. MP2 is dispatched onto the same
-method object rather than a class of its own, because that is what
-it is: a Hartree-Fock calculation and a correction built from its
-orbitals. A separate class would duplicate every SCF setting to
-reach the same code.</p>
+<p>Follow the reference with MP2. MP2 and coupled cluster are
+dispatched onto this same method object rather than classes of
+their own: each is a Hartree-Fock calculation plus a correction
+built from its orbitals.</p>
             </td>
         </tr>
         <tr>
@@ -2166,8 +2163,7 @@ reach the same code.</p>
             <td>::</td>
             <td><strong>with_cc</strong></td>
             <td>
-<p>Follow the reference with coupled cluster. Same argument as
-<code>with_mp2</code>: a method, not an option.</p>
+<p>Follow the reference with coupled cluster.</p>
             </td>
         </tr>
     </tbody>
@@ -2197,7 +2193,7 @@ reach the same code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~5"></span>
+              <span class="anchor" id="variable-m~7"></span>
               type(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2212,7 +2208,7 @@ reach the same code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~33"></span>
+              <span class="anchor" id="variable-config~32"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2252,7 +2248,7 @@ reach the same code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-options~3"></span>
+              <span class="anchor" id="variable-options~5"></span>
               class(<a href='../type/scf_options_t.html'>scf_options_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2267,7 +2263,7 @@ reach the same code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~30"></span>
+              <span class="anchor" id="variable-config~29"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2307,7 +2303,7 @@ reach the same code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~2"></span>
+              <span class="anchor" id="variable-m~4"></span>
               type(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2322,7 +2318,7 @@ reach the same code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~29"></span>
+              <span class="anchor" id="variable-config~28"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2365,7 +2361,7 @@ reach the same code.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

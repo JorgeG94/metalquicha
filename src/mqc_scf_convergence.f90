@@ -1,26 +1,9 @@
 !! One place that decides whether an SCF has converged
 module mqc_scf_convergence
-   !! **What stops an SCF, decided in one place instead of at each loop.**
-   !!
-   !! The test used to be written out at every SCF loop, as
-   !! `de < energy_tol .and. gnorm < gtol`, with `gtol` derived from
-   !! `sqrt(energy_tol)` a few dozen lines earlier and overridden by an
-   !! optional argument. Written twice in `mqc_libcint_rhf` alone, once more
-   !! for each cuEST loop, and with a fifth variant inside the fragment
-   !! potential builder that quietly replaced the derived threshold with the
-   !! density one. Changing the rule meant finding all of them, and the last
-   !! attempt did not: the CPU and GPU paths ended up stopping on different
-   !! criteria.
-   !!
-   !! It also made a deck unpredictable. A deck asking for `tolerance: 1e-6`
-   !! got an energy gate at 1e-6 and a commutator gate at 1e-3, and where the
-   !! second was the binding one the run stopped against a number the deck
-   !! never wrote and the iteration table never printed.
-   !!
-   !! So the rule is a value now. `scf_convergence_t` carries which metric
-   !! decides and the threshold it is measured against, `is_converged` is the
-   !! only place the comparison happens, and `describe` is what the iteration
-   !! table prints so the active rule is never invisible again.
+   !! What stops an SCF, as a value rather than a test spelled out at each
+   !! loop. `scf_convergence_t` carries which metric decides and the threshold
+   !! it is measured against, `is_converged` is the only place the comparison
+   !! happens, and `describe` is what the iteration table prints.
    !!
    !! ### The metrics are not interchangeable
    !!
@@ -31,24 +14,11 @@ module mqc_scf_convergence
    !! * `CONV_METRIC_COMMUTATOR` is what anything reading the density wants --
    !!   multipoles, atomic charges, a fragment potential, any finite difference
    !!   of one of those.
-   !! * `CONV_METRIC_ENERGY` is the weakest, and unsafe with an *interpolating*
-   !!   accelerator. EDIIS on water/6-31G holds `dE` at 1e-13 while the
-   !!   commutator sits at 1.1e-2, and an energy-only test stops there --
-   !!   5.8e-5 hartree from the answer, measured. Selecting it is a deliberate
-   !!   choice and warned about; it is not a default.
-   !! * `CONV_METRIC_STANDARD` is both, and is today's behaviour exactly. It is
-   !!   the default here so that introducing this type changes no result.
-   !!
-   !! ### The transitional default
-   !!
-   !! `CONV_METRIC_STANDARD` derives its commutator bound as `sqrt(tolerance)`,
-   !! which is the derivation this type exists to remove. It is kept for one
-   !! release so the machinery can land without moving any number, and because
-   !! 344 of the 355 validation decks name `tolerance` explicitly -- 288 of them
-   !! at 1e-12, which read as a commutator bound would be below the OpenMP
-   !! reduction noise floor and unreachable. Retiring it means migrating those
-   !! decks by `sqrt`, which is exact rather than approximate, and belongs in
-   !! its own change.
+   !! * `CONV_METRIC_ENERGY` is unsafe with an *interpolating* accelerator:
+   !!   EDIIS on water/6-31G holds `dE` at 1e-13 while the commutator sits at
+   !!   1.1e-2, and an energy-only test stops there. Selecting it is warned
+   !!   about.
+   !! * `CONV_METRIC_STANDARD` is both, and the default.
    use pic_types, only: dp
    implicit none
    private
@@ -60,9 +30,14 @@ module mqc_scf_convergence
 
    integer, parameter :: CONV_METRIC_UNKNOWN = 0
       !! Returned by `parse_convergence_metric` for a spelling it does not know.
+   ! TODO(mqc): the default still derives its commutator bound as
+   ! `sqrt(tolerance)`, which is the derivation this type exists to remove. A
+   ! deck asking for `tolerance: 1e-6` is stopped by a commutator gate at 1e-3
+   ! that it never wrote. Retiring it means migrating the validation decks'
+   ! `tolerance` by `sqrt`.
    integer, parameter :: CONV_METRIC_STANDARD = 1
       !! Energy and commutator together, the commutator bound derived as
-      !! `sqrt(tolerance)`. Today's behaviour, and the default.
+      !! `sqrt(tolerance)`. The default.
    integer, parameter :: CONV_METRIC_ENERGY = 2
       !! The change in energy between iterations, alone.
    integer, parameter :: CONV_METRIC_COMMUTATOR = 3
@@ -80,9 +55,8 @@ module mqc_scf_convergence
          !! energy, and the commutator bound comes from it by `sqrt`.
       real(dp) :: gradient_tolerance = 0.0_dp
          !! `keywords.scf.gradient_tolerance`. Zero means derive it. Only
-         !! consulted under `CONV_METRIC_STANDARD`: naming a metric already
-         !! states which quantity is being bounded, so a second threshold for a
-         !! different one would be two rules again.
+         !! consulted under `CONV_METRIC_STANDARD` -- naming any other metric
+         !! already states which quantity is being bounded.
    contains
       procedure :: is_converged
       procedure :: describe
@@ -108,10 +82,8 @@ contains
    pure function is_converged(this, de, drms, gnorm) result(done)
       !! The one comparison
       !!
-      !! Every SCF loop calls this and none of them decides anything. All three
-      !! quantities are passed whether the metric reads them or not: an
-      !! argument list that changed with the metric would put a branch back in
-      !! the caller, which is the thing being removed.
+      !! All three quantities are passed whether the metric reads them or not,
+      !! so no caller has to branch on the metric.
       class(scf_convergence_t), intent(in) :: this
       real(dp), intent(in) :: de
          !! |E(iter) - E(iter-1)|
@@ -129,8 +101,7 @@ contains
       case (CONV_METRIC_DENSITY)
          done = drms < this%tolerance
       case default
-         ! CONV_METRIC_STANDARD, and anything unset -- both gates, which is
-         ! what every loop in this program tested before this type existed.
+         ! CONV_METRIC_STANDARD, and anything unset -- both gates.
          done = de < this%tolerance .and. gnorm < this%commutator_bound()
       end select
    end function is_converged
@@ -138,10 +109,8 @@ contains
    pure function describe(this) result(text)
       !! One line naming the rule in force, for the iteration table
       !!
-      !! The complaint that produced this type was not that the threshold was
-      !! wrong but that it was invisible: the run stopped against a number the
-      !! deck never wrote. Printing it costs one line and removes the whole
-      !! class of confusion.
+      !! Under `CONV_METRIC_STANDARD` it names both gates, including the
+      !! derived commutator bound the deck never wrote.
       class(scf_convergence_t), intent(in) :: this
       character(len=:), allocatable :: text
 
@@ -164,11 +133,9 @@ contains
    pure subroutine parse_convergence_metric(name, metric, ok)
       !! `keywords.scf.convergence_metric` to a `CONV_METRIC_*` kind
       !!
-      !! `diis` and `gradient` are accepted for the commutator because all
-      !! three name the same quantity -- `FDS - SDF` in the orthogonal basis is
-      !! both what DIIS extrapolates against and the orbital gradient. A user
-      !! reaching for any of the three means the same thing, and refusing two
-      !! of them would be pedantry rather than precision.
+      !! `diis` and `gradient` are accepted for the commutator: `FDS - SDF` in
+      !! the orthogonal basis is both what DIIS extrapolates against and the
+      !! orbital gradient.
       character(len=*), intent(in) :: name
       integer, intent(out) :: metric
       logical, intent(out) :: ok

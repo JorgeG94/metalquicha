@@ -211,23 +211,20 @@
     <div class="col-md-9" id='text'>
       <p>The parts of an SCF that do not depend on how the integrals were made.</p>
 <p>Orthogonalising the overlap, forming a density from occupied orbitals and
-measuring spin contamination are all pure linear algebra: the libcint and
-cuEST paths had line-for-line copies of each, down to the same tolerance
-declared under two different names. They live here so the two backends
-cannot drift apart on the numerics while agreeing on the physics.</p>
-<p>What is <em>not</em> here is anything that touches integrals, DIIS or the
-iteration itself &ndash; those differ between the backends for real reasons.</p>
+measuring spin contamination are pure linear algebra, and live here so
+the libcint and cuEST paths cannot drift apart on the numerics.</p>
+<p>Nothing here touches integrals, DIIS or the iteration itself.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item">pic_blas_interfaces</li>
                   <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">pic_lapack_interfaces</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -695,10 +692,8 @@ parameter
 <td> =</td>
                 <td>1.75_dp</td>
             <td>
-                <p>The empirical scale on the GWH off-diagonal. 1.75 is the value in
-universal use, and both backends have to start from the same matrix or
-comparing their iteration counts means nothing &ndash; which is exactly why it
-is one constant here rather than one in each of them.</p>
+                <p>The empirical scale on the GWH off-diagonal, 1.75 in universal use.
+One constant, so both backends start from the same matrix.</p>
             </td>
         </tr>
         <tr>
@@ -715,10 +710,8 @@ parameter
 <td> =</td>
                 <td>1.0e-7_dp</td>
             <td>
-                <p>Overlap eigenvalues at or below this are dropped as linearly dependent.</p>
-<p>One number for both backends. It used to be <code>NULL_THRESHOLD</code> on the
-libcint side and <code>LINEAR_DEPENDENCE_TOL</code> on the cuEST side, both 1.0e-7,
-which meant the two paths agreed only by coincidence.</p>
+                <p>Overlap eigenvalues at or below this are dropped as linearly
+dependent. One number for both backends.</p>
             </td>
         </tr>
         <tr>
@@ -735,17 +728,14 @@ parameter
 <td> =</td>
                 <td>1.0e-5_dp</td>
             <td>
-                <p>Overlap eigenvalues above the drop threshold but below this one are kept
-and said out loud.</p>
-<p>The zone between the two is the one that hurts. A mode below
-<code>LINEAR_DEPENDENCE_TOL</code> is discarded and the basis is smaller, which is
-a decision with a number attached; a mode just above it is <em>retained</em>,
-and X carries a 1/sqrt(s) of ten thousand or more into every iteration.
-Nothing fails. DIIS extrapolates along a direction that is mostly noise,
-convergence slows or stalls, and two runs of the same molecule in
-slightly different orientations can settle on different solutions.
-Diffuse functions on a large or compact system are how a basis gets
-here, which is precisely when nobody is watching for it.</p>
+                <p>Overlap eigenvalues above the drop threshold but below this one are
+kept and said out loud.</p>
+<p>The zone between the two is the one that hurts: a mode just above
+<code>LINEAR_DEPENDENCE_TOL</code> is <em>retained</em>, and X carries a <code>1/sqrt(s)</code> of
+ten thousand or more into every iteration. Nothing fails. DIIS
+extrapolates along a direction that is mostly noise, convergence slows
+or stalls, and two runs of the same molecule in slightly different
+orientations can settle on different solutions.</p>
             </td>
         </tr>
         <tr>
@@ -762,16 +752,10 @@ here, which is precisely when nobody is watching for it.</p>
 <td> =</td>
                 <td>.false.</td>
             <td>
-                <p>Set while a caller is running many SCFs and wants one report, not many.</p>
-<p><strong>Why this is module state rather than an argument.</strong> The report is
-raised deep inside <code>run_libcint_rhf</code>, which is reached from the fragment
-bridge, SAPT, AFO, Fukui and the atomic guess. Threading a collector
-through all of them would change eight signatures across six files to
-carry something only one caller sets, and every future call site would
-have to remember it. Fragments are distributed over MPI and pinned to
-one thread apiece &ndash; <code>omp_set_num_threads(1)</code> on that path &ndash; so this is
-written and read by one thread per rank, which is what makes it safe
-here and would not be if fragments were threaded.</p>
+                <p>Set while a caller is running many SCFs and wants one report, not
+many. Module state because the report is raised deep inside
+<code>run_libcint_rhf</code>, which is reached from the fragment bridge, SAPT,
+AFO, Fukui and the atomic guess.</p>
             </td>
         </tr>
         <tr>
@@ -991,7 +975,7 @@ here and would not be if fragments were threaded.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~8"></span>
+              <span class="anchor" id="variable-overlap~12"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1006,7 +990,7 @@ here and would not be if fragments were threaded.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_alpha"></span>
+              <span class="anchor" id="variable-n_alpha~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1021,7 +1005,7 @@ here and would not be if fragments were threaded.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_beta"></span>
+              <span class="anchor" id="variable-n_beta~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1066,7 +1050,7 @@ here and would not be if fragments were threaded.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~15"></span>
+              <span class="anchor" id="variable-value~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1256,7 +1240,7 @@ here and would not be if fragments were threaded.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~7"></span>
+              <span class="anchor" id="variable-overlap~11"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1286,7 +1270,7 @@ here and would not be if fragments were threaded.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_mo"></span>
+              <span class="anchor" id="variable-n_mo~4"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1301,7 +1285,7 @@ here and would not be if fragments were threaded.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~113"></span>
+              <span class="anchor" id="variable-error~169"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1359,10 +1343,9 @@ divides by and therefore what the SCF has to live with.</p>
             <td><strong>threshold</strong></td>
             <td>
 <p>Overlap eigenvalues at or below this are dropped. Defaults to
-<code>LINEAR_DEPENDENCE_TOL</code>, and <code>keywords.scf.linear_dependence_threshold</code>
-is how a deck overrides it. A non-positive value is ignored rather
-than obeyed: zero would keep every mode including the numerically
-null ones, which is not a basis anyone means to ask for.</p><a href="../proc/build_orthogonalizer.html#variable-threshold" class="pull-right"><emph>Read more&hellip;</emph></a>
+<code>LINEAR_DEPENDENCE_TOL</code>, and
+<code>keywords.scf.linear_dependence_threshold</code> is how a deck overrides
+it. A non-positive value is ignored rather than obeyed.</p>
             </td>
         </tr>
     </tbody>
@@ -1405,7 +1388,7 @@ null ones, which is not a basis anyone means to ask for.</p><a href="../proc/bui
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~43"></span>
+              <span class="anchor" id="variable-result~55"></span>
               type(<a href='../type/lindep_tally_t.html'>lindep_tally_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1445,7 +1428,7 @@ null ones, which is not a basis anyone means to ask for.</p><a href="../proc/bui
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_ao~2"></span>
+              <span class="anchor" id="variable-n_ao~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1460,7 +1443,7 @@ null ones, which is not a basis anyone means to ask for.</p><a href="../proc/bui
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_mo~2"></span>
+              <span class="anchor" id="variable-n_mo~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1505,7 +1488,7 @@ null ones, which is not a basis anyone means to ask for.</p><a href="../proc/bui
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~10"></span>
+              <span class="anchor" id="variable-verbose~12"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1531,9 +1514,7 @@ null ones, which is not a basis anyone means to ask for.</p><a href="../proc/bui
             <td><strong>threshold</strong></td>
             <td>
 <p>The cutoff actually applied, which the message quotes. Passed
-rather than read from the parameter because a deck can move it,
-and a warning naming a cutoff the run did not use is worse than
-one that names none.</p>
+rather than read from the parameter because a deck can move it.</p>
             </td>
         </tr>
     </tbody>
@@ -1563,7 +1544,7 @@ one that names none.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~44"></span>
+              <span class="anchor" id="variable-result~56"></span>
               type(<a href='../type/lindep_tally_t.html'>lindep_tally_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1621,7 +1602,7 @@ one that names none.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

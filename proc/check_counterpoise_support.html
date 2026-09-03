@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/check_counterpoise_support.html#variable-scheme~13">scheme</a>
+            <a class="list-group-item" href="../proc/check_counterpoise_support.html#variable-scheme~7">scheme</a>
         </div>
       </div>
     </div>
@@ -182,18 +182,17 @@ the <code>is_ghost</code> mask on the fragments those rows build. Three things
 read neither, and each fails differently:</p>
 <ul>
 <li><strong>GMBE</strong> and <strong>FMO/EE-MBE</strong> build their own term lists and never
-    call <code>generate_mbe_term_list</code>, so the setting is simply not seen.
-    The answer that comes back is a valid uncorrected one, which is
-    the worst kind of wrong &ndash; it is the number the deck asked this
-    program <em>not</em> to produce, and nothing about it says so.</li>
+    call <code>generate_mbe_term_list</code>, so the setting is not seen and the
+    answer is a valid uncorrected one &ndash; the number the deck asked
+    this program <em>not</em> to produce, with nothing about it saying so.</li>
 <li>the <strong>xTB and EFP</strong> paths take <code>element_numbers</code> as the atom list
     and never consult <code>is_ghost</code>, so a ghosted monomer is computed as
     though its ghost centres were nuclei, against an electron count
-    derived without them. That is not an approximation, it is a
-    different molecule with the wrong charge.</li>
+    derived without them. That is a different molecule with the wrong
+    charge, not an approximation.</li>
 </ul>
-<p>An unrecognised spelling is refused for the same reason <code>none</code> cannot
-be told from a typo once it reaches the term list.</p>
+<p>An unrecognised spelling is refused too: once it reaches the term list
+it cannot be told from <code>none</code>.</p>
 
 
     <h3>Arguments</h3>
@@ -209,7 +208,7 @@ be told from a typo once it reaches the term list.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~7"></span>
+              <span class="anchor" id="variable-driver_config~8"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -224,7 +223,7 @@ be told from a typo once it reaches the term list.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~131"></span>
+              <span class="anchor" id="variable-error~85"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -775,7 +774,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~13"></span>
+              <span class="anchor" id="variable-scheme~7"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -814,18 +813,17 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! read neither, and each fails differently:</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!!   * **GMBE** and **FMO/EE-MBE** build their own term lists and never</span>
-<span class="w">      </span><span class="c">!!     call `generate_mbe_term_list`, so the setting is simply not seen.</span>
-<span class="w">      </span><span class="c">!!     The answer that comes back is a valid uncorrected one, which is</span>
-<span class="w">      </span><span class="c">!!     the worst kind of wrong -- it is the number the deck asked this</span>
-<span class="w">      </span><span class="c">!!     program *not* to produce, and nothing about it says so.</span>
+<span class="w">      </span><span class="c">!!     call `generate_mbe_term_list`, so the setting is not seen and the</span>
+<span class="w">      </span><span class="c">!!     answer is a valid uncorrected one -- the number the deck asked</span>
+<span class="w">      </span><span class="c">!!     this program *not* to produce, with nothing about it saying so.</span>
 <span class="w">      </span><span class="c">!!   * the **xTB and EFP** paths take `element_numbers` as the atom list</span>
 <span class="w">      </span><span class="c">!!     and never consult `is_ghost`, so a ghosted monomer is computed as</span>
 <span class="w">      </span><span class="c">!!     though its ghost centres were nuclei, against an electron count</span>
-<span class="w">      </span><span class="c">!!     derived without them. That is not an approximation, it is a</span>
-<span class="w">      </span><span class="c">!!     different molecule with the wrong charge.</span>
+<span class="w">      </span><span class="c">!!     derived without them. That is a different molecule with the wrong</span>
+<span class="w">      </span><span class="c">!!     charge, not an approximation.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! An unrecognised spelling is refused for the same reason `none` cannot</span>
-<span class="w">      </span><span class="c">!! be told from a typo once it reaches the term list.</span>
+<span class="w">      </span><span class="c">!! An unrecognised spelling is refused too: once it reaches the term list</span>
+<span class="w">      </span><span class="c">!! it cannot be told from `none`.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">driver_config</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 
@@ -896,7 +894,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

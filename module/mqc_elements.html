@@ -136,7 +136,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/mqc_elements.html#variable-element_masses">element_masses</a>
-            <a class="list-group-item" href="../module/mqc_elements.html#variable-element_symbols~6">element_symbols</a>
+            <a class="list-group-item" href="../module/mqc_elements.html#variable-element_symbols">element_symbols</a>
             <a class="list-group-item" href="../module/mqc_elements.html#variable-n_elements">n_elements</a>
             <a class="list-group-item" href="../module/mqc_elements.html#variable-n_vdw">n_vdw</a>
             <a class="list-group-item" href="../module/mqc_elements.html#variable-vdw_radii">vdw_radii</a>
@@ -184,8 +184,8 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>Provides atomic numbers, element symbols, and atomic masses for the complete
-periodic table (elements 1-118) with conversion functions between representations.
+      <p>Atomic numbers, element symbols, masses and radii for the complete
+periodic table (elements 1-118), and the conversions between them.
 Convert element symbol to atomic number
 Convert atomic number to element symbol
 Get atomic mass by atomic number
@@ -197,9 +197,9 @@ Get van der Waals radius by atomic number</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item">pic_ascii</li>
                   <li class="list-inline-item"><a href='mqc_atomic_radii.html'>mqc_atomic_radii</a></li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item">pic_ascii</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -2863,7 +2863,7 @@ Based on IUPAC standard atomic weights, ordered by atomic number</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~6"></span>
+              <span class="anchor" id="variable-element_symbols"></span>
               character(len=2),
             </td>
               <td>private,</td>
@@ -2910,8 +2910,7 @@ parameter
 <td> =</td>
                 <td>96</td>
             <td>
-                <p>Van der Waals radii in Angstrom, Bondi (1964) with Rowland and Taylor&rsquo;s
-hydrogen. Zero where Bondi tabulates none &ndash; see <code>element_vdw_radius</code>.</p>
+                
             </td>
         </tr>
         <tr>
@@ -2928,7 +2927,8 @@ parameter
 <td> =</td>
                 <td>[1.10_dp, 1.40_dp, 1.81_dp, 1.53_dp, 1.92_dp, 1.70_dp, 1.55_dp, 1.52_dp, 1.47_dp, 1.54_dp, 2.27_dp, 1.73_dp, 1.84_dp, 2.10_dp, 1.80_dp, 1.80_dp, 1.75_dp, 1.88_dp, 2.75_dp, 2.31_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 1.63_dp, 1.40_dp, 1.39_dp, 1.87_dp, 2.11_dp, 1.85_dp, 1.90_dp, 1.85_dp, 2.02_dp, 3.03_dp, 2.49_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 1.63_dp, 1.72_dp, 1.58_dp, 1.93_dp, 2.17_dp, 2.06_dp, 2.06_dp, 1.98_dp, 2.16_dp, 3.43_dp, 2.68_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp, 1.75_dp, 1.66_dp, 1.55_dp, 1.96_dp, 2.02_dp, 2.07_dp, 1.97_dp, 2.02_dp, 2.20_dp, 3.48_dp, 2.83_dp, 0.00_dp, 0.00_dp, 0.00_dp, 1.86_dp, 0.00_dp, 0.00_dp, 0.00_dp, 0.00_dp]</td>
             <td>
-                
+                <p>Van der Waals radii in Angstrom, Bondi (1964) with Rowland and Taylor&rsquo;s
+hydrogen. Zero where Bondi tabulates none &ndash; see <code>element_vdw_radius</code>.</p>
             </td>
         </tr>
     </tbody>
@@ -2963,7 +2963,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~18"></span>
+              <span class="anchor" id="variable-atomic_number~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3009,7 +3009,7 @@ Uses standard atomic weights from IUPAC</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~16"></span>
+              <span class="anchor" id="variable-atomic_number~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3055,7 +3055,7 @@ Covers the complete periodic table (elements 1-118)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~15"></span>
+              <span class="anchor" id="variable-atomic_number~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3101,7 +3101,7 @@ Covers the complete periodic table (elements 1-118)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-symbol~2"></span>
+              <span class="anchor" id="variable-symbol"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3146,7 +3146,7 @@ Covers the complete periodic table (elements 1-118)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_number~17"></span>
+              <span class="anchor" id="variable-atomic_number~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3195,7 +3195,7 @@ Covers the complete periodic table (elements 1-118)</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

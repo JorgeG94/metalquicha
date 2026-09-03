@@ -136,13 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-eigenvalues">eigenvalues</a>
+            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-eigenvalues~2">eigenvalues</a>
             <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-eigenvectors">eigenvectors</a>
-            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-i~118">i</a>
-            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-info~3">info</a>
-            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-kept~2">kept</a>
-            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-n_ao">n_ao</a>
-            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-tol~5">tol</a>
+            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-i~179">i</a>
+            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-info~5">info</a>
+            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-kept~5">kept</a>
+            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-n_ao~5">n_ao</a>
+            <a class="list-group-item" href="../proc/build_orthogonalizer.html#variable-tol~8">tol</a>
         </div>
       </div>
     </div>
@@ -201,7 +201,7 @@ offending combinations instead of amplifying them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~7"></span>
+              <span class="anchor" id="variable-overlap~11"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -231,7 +231,7 @@ offending combinations instead of amplifying them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_mo"></span>
+              <span class="anchor" id="variable-n_mo~4"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -246,7 +246,7 @@ offending combinations instead of amplifying them.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~113"></span>
+              <span class="anchor" id="variable-error~169"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -304,13 +304,9 @@ divides by and therefore what the SCF has to live with.</p>
             <td><strong>threshold</strong></td>
             <td>
                 <p>Overlap eigenvalues at or below this are dropped. Defaults to
-<code>LINEAR_DEPENDENCE_TOL</code>, and <code>keywords.scf.linear_dependence_threshold</code>
-is how a deck overrides it. A non-positive value is ignored rather
-than obeyed: zero would keep every mode including the numerically
-null ones, which is not a basis anyone means to ask for.</p>
-<p>Optional, all of them, so the call sites that only want X are
-unchanged &ndash; there are five across two backends and only the ones
-that report need the numbers.</p>
+<code>LINEAR_DEPENDENCE_TOL</code>, and
+<code>keywords.scf.linear_dependence_threshold</code> is how a deck overrides
+it. A non-positive value is ignored rather than obeyed.</p>
             </td>
         </tr>
     </tbody>
@@ -586,7 +582,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-eigenvalues"></span>
+              <span class="anchor" id="variable-eigenvalues~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -620,7 +616,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~118"></span>
+              <span class="anchor" id="variable-i~179"></span>
               integer,
             </td>
               <td>private</td>
@@ -637,7 +633,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-info~3"></span>
+              <span class="anchor" id="variable-info~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -654,7 +650,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-kept~2"></span>
+              <span class="anchor" id="variable-kept~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -671,7 +667,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_ao"></span>
+              <span class="anchor" id="variable-n_ao~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -688,7 +684,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tol~5"></span>
+              <span class="anchor" id="variable-tol~8"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -738,14 +734,9 @@ large graphs.</div>
 <span class="w">         </span><span class="c">!! divides by and therefore what the SCF has to live with.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">threshold</span>
 <span class="w">         </span><span class="c">!! Overlap eigenvalues at or below this are dropped. Defaults to</span>
-<span class="w">         </span><span class="c">!! `LINEAR_DEPENDENCE_TOL`, and `keywords.scf.linear_dependence_threshold`</span>
-<span class="w">         </span><span class="c">!! is how a deck overrides it. A non-positive value is ignored rather</span>
-<span class="w">         </span><span class="c">!! than obeyed: zero would keep every mode including the numerically</span>
-<span class="w">         </span><span class="c">!! null ones, which is not a basis anyone means to ask for.</span>
-<span class="w">         </span><span class="c">!!</span>
-<span class="w">         </span><span class="c">!! Optional, all of them, so the call sites that only want X are</span>
-<span class="w">         </span><span class="c">!! unchanged -- there are five across two backends and only the ones</span>
-<span class="w">         </span><span class="c">!! that report need the numbers.</span>
+<span class="w">         </span><span class="c">!! `LINEAR_DEPENDENCE_TOL`, and</span>
+<span class="w">         </span><span class="c">!! `keywords.scf.linear_dependence_threshold` is how a deck overrides</span>
+<span class="w">         </span><span class="c">!! it. A non-positive value is ignored rather than obeyed.</span>
 
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">eigenvectors</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">eigenvalues</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_ao</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">kept</span><span class="p">,</span><span class="w"> </span><span class="n">info</span>
@@ -811,7 +802,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

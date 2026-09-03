@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/session_run.html#variable-config~36">config</a>
+            <a class="list-group-item" href="../proc/session_run.html#variable-config~24">config</a>
             <a class="list-group-item" href="../proc/session_run.html#variable-driver~2">driver</a>
             <a class="list-group-item" href="../proc/session_run.html#variable-payload">payload</a>
         </div>
@@ -179,12 +179,10 @@
     
 
     <p>Drive a calculation across the job. Rank 0 only.</p>
-<p>The order here is load-bearing. Everything that can fail on rank 0 &ndash;
-parsing the settings, rejecting a bad document &ndash; happens <em>before</em>
-<code>MQC_CMD_RUN</code> goes out. Once that command is sent the workers are
-committed to a set of broadcasts, and a rank 0 that discovered a
-problem afterwards could only return an error to its caller while N-1
-ranks sat waiting for a geometry that would never arrive.</p>
+<p><strong>The order here is load-bearing.</strong> Everything that can fail on rank 0
+happens <em>before</em> <code>MQC_CMD_RUN</code> goes out, because once that command is
+sent the workers are committed to a set of broadcasts and a failure
+afterwards leaves N-1 ranks waiting for a geometry that never arrives.</p>
 
     <h3>Type Bound</h3>
     <p><a href='../type/mqc_session_t.html'>mqc_session_t</a></p>
@@ -202,7 +200,7 @@ ranks sat waiting for a geometry that would never arrive.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~65"></span>
+              <span class="anchor" id="variable-this~113"></span>
               class(<a href='../type/mqc_session_t.html'>mqc_session_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -217,7 +215,7 @@ ranks sat waiting for a geometry that would never arrive.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~9"></span>
+              <span class="anchor" id="variable-settings~11"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -232,7 +230,7 @@ ranks sat waiting for a geometry that would never arrive.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~41"></span>
+              <span class="anchor" id="variable-sys_geom~60"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -248,7 +246,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~10"></span>
+              <span class="anchor" id="variable-terms~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -263,7 +261,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_terms~2"></span>
+              <span class="anchor" id="variable-n_terms"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -278,7 +276,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-label~3"></span>
+              <span class="anchor" id="variable-label~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -308,7 +306,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~34"></span>
+              <span class="anchor" id="variable-result~42"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -323,7 +321,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~102"></span>
+              <span class="anchor" id="variable-error~119"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3733,7 +3731,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~36"></span>
+              <span class="anchor" id="variable-config~24"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
               <td>private</td>
@@ -3802,12 +3800,10 @@ large graphs.</div>
 <span class="w">                          </span><span class="n">write_output</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Drive a calculation across the job. Rank 0 only.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The order here is load-bearing. Everything that can fail on rank 0 --</span>
-<span class="w">      </span><span class="c">!! parsing the settings, rejecting a bad document -- happens *before*</span>
-<span class="w">      </span><span class="c">!! `MQC_CMD_RUN` goes out. Once that command is sent the workers are</span>
-<span class="w">      </span><span class="c">!! committed to a set of broadcasts, and a rank 0 that discovered a</span>
-<span class="w">      </span><span class="c">!! problem afterwards could only return an error to its caller while N-1</span>
-<span class="w">      </span><span class="c">!! ranks sat waiting for a geometry that would never arrive.</span>
+<span class="w">      </span><span class="c">!! **The order here is load-bearing.** Everything that can fail on rank 0</span>
+<span class="w">      </span><span class="c">!! happens *before* `MQC_CMD_RUN` goes out, because once that command is</span>
+<span class="w">      </span><span class="c">!! sent the workers are committed to a set of broadcasts and a failure</span>
+<span class="w">      </span><span class="c">!! afterwards leaves N-1 ranks waiting for a geometry that never arrives.</span>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">mqc_session_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">settings</span>
 <span class="w">         </span><span class="c">!! A JSON document of everything but the molecules</span>
@@ -3839,40 +3835,31 @@ large graphs.</div>
 
 <span class="k">      call </span><span class="n">read_json_config_text</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
-<span class="w">      </span><span class="c">! The fragment count comes from the system, not the document. Without it</span>
-<span class="w">      </span><span class="c">! a settings-only config reports zero fragments and the driver computes</span>
-<span class="w">      </span><span class="c">! the whole thing unfragmented -- converged, plausible, and not what was</span>
-<span class="w">      </span><span class="c">! asked for. Both sides must pass the same count, and they do because</span>
-<span class="w">      </span><span class="c">! both take it from the geometry they hold.</span>
+<span class="w">      </span><span class="c">! The fragment count comes from the system, not the document: a</span>
+<span class="w">      </span><span class="c">! settings-only config reports zero fragments and the driver would</span>
+<span class="w">      </span><span class="c">! compute the whole thing unfragmented. Both sides pass the same count</span>
+<span class="w">      </span><span class="c">! because both take it from the geometry they hold.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">config_to_driver</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">driver</span><span class="p">,</span><span class="w"> </span><span class="n">n_fragments</span><span class="o">=</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">n_monomers</span><span class="p">)</span>
-<span class="w">      </span><span class="c">! Effective fragment potentials ride with the geometry rather than with</span>
-<span class="w">      </span><span class="c">! the settings, because the settings document has no molecules block for</span>
-<span class="w">      </span><span class="c">! them to live in -- see `system_geometry_t%fragment_potentials`. Copied</span>
-<span class="w">      </span><span class="c">! after `config_to_driver`, which fills that field from a deck's</span>
-<span class="w">      </span><span class="c">! molecules and leaves it unallocated when, as here, there are none.</span>
+<span class="w">      </span><span class="c">! Effective fragment potentials ride with the geometry, the settings</span>
+<span class="w">      </span><span class="c">! document having no molecules block for them to live in. Copied after</span>
+<span class="w">      </span><span class="c">! `config_to_driver`, which fills that field from a deck's molecules and</span>
+<span class="w">      </span><span class="c">! leaves it unallocated when, as here, there are none.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_potentials</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">driver</span><span class="p">%</span><span class="n">fragment_potentials</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_potentials</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="w">      </span><span class="c">! `main` sets the verbosity and a session never runs `main`, so without</span>
-<span class="w">      </span><span class="c">! this the level in the settings is read, validated, and ignored -- and</span>
-<span class="w">      </span><span class="c">! the default is loud enough that a script running a few thousand</span>
-<span class="w">      </span><span class="c">! fragments gets a few thousand lines it did not ask for.</span>
+<span class="w">      </span><span class="c">! this the level in the settings is read, validated, and ignored.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">apply_log_level</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 
-<span class="w">      </span><span class="c">! Checked here as well as in the driver, and the difference is what</span>
-<span class="w">      </span><span class="c">! happens on failure. The driver aborts the job, which is right for</span>
-<span class="w">      </span><span class="c">! `main` -- there is no one to tell -- and wrong for a driven run, where</span>
-<span class="w">      </span><span class="c">! it would take down the caller's interpreter and everything it had</span>
-<span class="w">      </span><span class="c">! built. Checking before the command goes out means a bad system or a</span>
-<span class="w">      </span><span class="c">! bad list comes back as an error the caller can act on, and the workers</span>
-<span class="w">      </span><span class="c">! never learn anything was attempted. The driver's copy stays as the</span>
-<span class="w">      </span><span class="c">! backstop for every other entry path.</span>
-<span class="w">      </span><span class="c">! A method whose backend this build does not carry. The semi-empirical</span>
-<span class="w">      </span><span class="c">! ones are the case: without tblite their method type reaches a factory</span>
-<span class="w">      </span><span class="c">! that has no branch for it and stops the process -- which from a deck is</span>
-<span class="w">      </span><span class="c">! an exit with a clear message, and from here would kill the caller's</span>
-<span class="w">      </span><span class="c">! interpreter and every rank with it. Asked here rather than in the</span>
-<span class="w">      </span><span class="c">! reader so that parsing a deck means the same thing on every build.</span>
+<span class="w">      </span><span class="c">! Everything from here to the command below is checked in the driver too,</span>
+<span class="w">      </span><span class="c">! and the difference is what happens on failure: the driver aborts the</span>
+<span class="w">      </span><span class="c">! job, which is right for `main` and would take down a caller's</span>
+<span class="w">      </span><span class="c">! interpreter here. Refused before the command goes out, so the workers</span>
+<span class="w">      </span><span class="c">! never learn anything was attempted.</span>
+<span class="w">      </span><span class="c">!</span>
+<span class="w">      </span><span class="c">! A method whose backend this build does not carry reaches a factory with</span>
+<span class="w">      </span><span class="c">! no branch for it and stops the process. Asked here rather than in the</span>
+<span class="w">      </span><span class="c">! reader, so that parsing a deck means the same thing on every build.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">method_backend_built</span><span class="p">(</span><span class="n">driver</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">method_type</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"method '"</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                        </span><span class="n">method_type_to_string</span><span class="p">(</span><span class="n">driver</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">method_type</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -3881,12 +3868,7 @@ large graphs.</div>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="w">      </span><span class="c">! Refused here, where there is still a caller to tell. `run_calculation`</span>
-<span class="w">      </span><span class="c">! also refuses it, but by aborting the communicator -- right for `main`,</span>
-<span class="w">      </span><span class="c">! which has nobody to return to, and fatal for a driven run: it takes the</span>
-<span class="w">      </span><span class="c">! interpreter and every rank with it instead of raising something a script</span>
-<span class="w">      </span><span class="c">! can catch.</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">driver</span><span class="p">%</span><span class="n">calc_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">CALC_TYPE_CONFORMERS</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">driver</span><span class="p">%</span><span class="n">calc_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">CALC_TYPE_CONFORMERS</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"driver 'conformers' is not available "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                        </span><span class="s2">"through a session or the C API. The sampling drives "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                        </span><span class="s2">"run_calculation rather than being driven by it, so it "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -3955,7 +3937,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

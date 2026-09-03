@@ -152,9 +152,9 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/qc_method_t.html#boundprocedure-calc_energy~4">calc_energy</a>
-            <a class="list-group-item" href="../type/qc_method_t.html#boundprocedure-calc_gradient~4">calc_gradient</a>
-            <a class="list-group-item" href="../type/qc_method_t.html#boundprocedure-calc_hessian~4">calc_hessian</a>
+            <a class="list-group-item" href="../type/qc_method_t.html#boundprocedure-calc_energy">calc_energy</a>
+            <a class="list-group-item" href="../type/qc_method_t.html#boundprocedure-calc_gradient">calc_gradient</a>
+            <a class="list-group-item" href="../type/qc_method_t.html#boundprocedure-calc_hessian">calc_hessian</a>
         </div>
       </div>
     </div>
@@ -177,8 +177,6 @@
       <h2 id="type-def-statement">
         type, public, abstract :: qc_method_t</h2>
     <p>Abstract base type for all quantum chemistry methods</p>
-<p>Defines the required interface for energy and gradient calculations
-that must be implemented by all concrete method types (XTB, HF, etc.).</p>
 <br>      <div class="card">
         <div class="card-header">
           <h3 class="card-title">Inherited by</h3>
@@ -211,7 +209,7 @@ that must be implemented by all concrete method types (XTB, HF, etc.).</p>
 </g>
 </g>
 <!-- type~dft_method_t&#45;&gt;type~qc_method_t -->
-<g id="type~~qc_method_t~~InheritedByGraph_edge4" class="edge">
+<g id="type~~qc_method_t~~InheritedByGraph_edge2" class="edge">
 <title>type~dft_method_t&#45;&gt;type~qc_method_t</title>
 <path fill="none" stroke="#ff0000" d="M136.5,-125.94C130.02,-123.13 123.23,-120.06 117,-117 101.57,-109.43 84.83,-100.22 71.05,-92.36"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="72.44,-89.12 62.03,-87.17 68.95,-95.19 72.44,-89.12"/>
@@ -226,7 +224,7 @@ that must be implemented by all concrete method types (XTB, HF, etc.).</p>
 </g>
 </g>
 <!-- type~hf_method_t&#45;&gt;type~qc_method_t -->
-<g id="type~~qc_method_t~~InheritedByGraph_edge1" class="edge">
+<g id="type~~qc_method_t~~InheritedByGraph_edge3" class="edge">
 <title>type~hf_method_t&#45;&gt;type~qc_method_t</title>
 <path fill="none" stroke="#ff0000" d="M127.29,-89.47C115.8,-87.53 103.06,-85.38 90.99,-83.35"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="91.49,-79.88 81.04,-81.67 90.32,-86.78 91.49,-79.88"/>
@@ -241,7 +239,7 @@ that must be implemented by all concrete method types (XTB, HF, etc.).</p>
 </g>
 </g>
 <!-- type~mcscf_method_t&#45;&gt;type~qc_method_t -->
-<g id="type~~qc_method_t~~InheritedByGraph_edge3" class="edge">
+<g id="type~~qc_method_t~~InheritedByGraph_edge4" class="edge">
 <title>type~mcscf_method_t&#45;&gt;type~qc_method_t</title>
 <path fill="none" stroke="#ff0000" d="M116.79,-62.3C108.39,-63.72 99.65,-65.19 91.22,-66.61"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="90.43,-63.2 81.15,-68.31 91.6,-70.1 90.43,-63.2"/>
@@ -256,7 +254,7 @@ that must be implemented by all concrete method types (XTB, HF, etc.).</p>
 </g>
 </g>
 <!-- type~xtb_method_t&#45;&gt;type~qc_method_t -->
-<g id="type~~qc_method_t~~InheritedByGraph_edge2" class="edge">
+<g id="type~~qc_method_t~~InheritedByGraph_edge1" class="edge">
 <title>type~xtb_method_t&#45;&gt;type~qc_method_t</title>
 <path fill="none" stroke="#ff0000" d="M136.5,-24.06C130.02,-26.87 123.23,-29.94 117,-33 101.57,-40.57 84.83,-49.78 71.05,-57.64"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="68.95,-54.81 62.03,-62.83 72.44,-60.88 68.95,-54.81"/>
@@ -324,7 +322,7 @@ large graphs.</div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-calc_energy~4"></span>
+      <span class="anchor" id="boundprocedure-calc_energy"></span>
       <h3>
           procedure(<a href='../interface/calc_energy_interface.html'>calc_energy_interface</a>), public, deferred ::
   <strong>calc_energy</strong>
@@ -341,9 +339,7 @@ large graphs.</div>
      subroutine calc_energy_interface(this, fragment, result)  
 <small>Prototype</small></h3>
 
-  <p>Interface for energy-only calculations</p>
-<p>Computes the electronic energy for a molecular fragment
-using the specified quantum chemistry method.</p>
+  <p>Electronic energy of a molecular fragment</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -413,7 +409,7 @@ using the specified quantum chemistry method.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-calc_gradient~4"></span>
+      <span class="anchor" id="boundprocedure-calc_gradient"></span>
       <h3>
           procedure(<a href='../interface/calc_gradient_interface.html'>calc_gradient_interface</a>), public, deferred ::
   <strong>calc_gradient</strong>
@@ -430,9 +426,7 @@ using the specified quantum chemistry method.</p>
      subroutine calc_gradient_interface(this, fragment, result)  
 <small>Prototype</small></h3>
 
-  <p>Interface for energy and gradient calculations</p>
-<p>Computes both electronic energy and nuclear gradients for a
-molecular fragment using the specified quantum chemistry method.</p>
+  <p>Electronic energy and nuclear gradient of a molecular fragment</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -502,7 +496,7 @@ molecular fragment using the specified quantum chemistry method.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-calc_hessian~4"></span>
+      <span class="anchor" id="boundprocedure-calc_hessian"></span>
       <h3>
           procedure(<a href='../interface/calc_hessian_interface.html'>calc_hessian_interface</a>), public, deferred ::
   <strong>calc_hessian</strong>
@@ -519,9 +513,7 @@ molecular fragment using the specified quantum chemistry method.</p>
      subroutine calc_hessian_interface(this, fragment, result)  
 <small>Prototype</small></h3>
 
-  <p>Interface for energy, gradient, and Hessian calculations</p>
-<p>Computes electronic energy, nuclear gradients, and Hessian matrix for a
-molecular fragment using the specified quantum chemistry method.</p>
+  <p>Electronic energy, nuclear gradient and Hessian of a molecular fragment</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -594,9 +586,6 @@ molecular fragment using the specified quantum chemistry method.</p>
     <h3><span class="anchor" id="src"></span>Source Code</h3>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="p">,</span><span class="w"> </span><span class="k">abstract</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">qc_method_t</span>
 <span class="w">      </span><span class="c">!! Abstract base type for all quantum chemistry methods</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Defines the required interface for energy and gradient calculations</span>
-<span class="w">      </span><span class="c">!! that must be implemented by all concrete method types (XTB, HF, etc.).</span>
 <span class="w">   </span><span class="k">contains</span>
 <span class="k">      procedure</span><span class="p">(</span><span class="n">calc_energy_interface</span><span class="p">),</span><span class="w"> </span><span class="k">deferred</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc_energy</span><span class="w">    </span><span class="c">!! Energy calculation interface</span>
 <span class="w">      </span><span class="k">procedure</span><span class="p">(</span><span class="n">calc_gradient_interface</span><span class="p">),</span><span class="w"> </span><span class="k">deferred</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc_gradient</span><span class="w">  </span><span class="c">!! Gradient calculation interface</span>
@@ -624,7 +613,7 @@ molecular fragment using the specified quantum chemistry method.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

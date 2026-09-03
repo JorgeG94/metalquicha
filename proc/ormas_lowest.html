@@ -136,13 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/ormas_lowest.html#variable-column~3">column</a>
+            <a class="list-group-item" href="../proc/ormas_lowest.html#variable-column">column</a>
             <a class="list-group-item" href="../proc/ormas_lowest.html#variable-d">d</a>
-            <a class="list-group-item" href="../proc/ormas_lowest.html#variable-info~7">info</a>
-            <a class="list-group-item" href="../proc/ormas_lowest.html#variable-matrix~6">matrix</a>
-            <a class="list-group-item" href="../proc/ormas_lowest.html#variable-ndet~8">ndet</a>
-            <a class="list-group-item" href="../proc/ormas_lowest.html#variable-unit~9">unit</a>
-            <a class="list-group-item" href="../proc/ormas_lowest.html#variable-values~10">values</a>
+            <a class="list-group-item" href="../proc/ormas_lowest.html#variable-info~2">info</a>
+            <a class="list-group-item" href="../proc/ormas_lowest.html#variable-matrix">matrix</a>
+            <a class="list-group-item" href="../proc/ormas_lowest.html#variable-ndet">ndet</a>
+            <a class="list-group-item" href="../proc/ormas_lowest.html#variable-unit~2">unit</a>
+            <a class="list-group-item" href="../proc/ormas_lowest.html#variable-values">values</a>
         </div>
       </div>
     </div>
@@ -184,11 +184,8 @@
 
     <p>The lowest eigenvalues of the restricted Hamiltonian, densely</p>
 <p>Builds the matrix a column at a time by applying <code>ormas_sigma</code> to each
-unit vector, then diagonalises it. That costs a determinant&rsquo;s worth of
-sigma per determinant and is only sane while the space is small &ndash; but
-it introduces no matrix elements of its own, so the energies it
-returns are exactly what the sigma says they are and nothing has been
-written twice.</p>
+unit vector, then diagonalises it: one sigma per determinant, so only
+sane while the space is small.</p>
 
 
     <h3>Arguments</h3>
@@ -204,7 +201,7 @@ written twice.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~23"></span>
+              <span class="anchor" id="variable-space~6"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in)</td>
@@ -219,7 +216,7 @@ written twice.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~8"></span>
+              <span class="anchor" id="variable-folded~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -294,7 +291,7 @@ written twice.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~5"></span>
+              <span class="anchor" id="variable-n_roots~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -309,7 +306,7 @@ written twice.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~6"></span>
+              <span class="anchor" id="variable-energies"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -324,7 +321,7 @@ written twice.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~168"></span>
+              <span class="anchor" id="variable-error~6"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -628,7 +625,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-column~3"></span>
+              <span class="anchor" id="variable-column"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -662,7 +659,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-info~7"></span>
+              <span class="anchor" id="variable-info~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -679,7 +676,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-matrix~6"></span>
+              <span class="anchor" id="variable-matrix"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -696,7 +693,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndet~8"></span>
+              <span class="anchor" id="variable-ndet"></span>
               integer,
             </td>
               <td>private</td>
@@ -713,7 +710,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~9"></span>
+              <span class="anchor" id="variable-unit~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -730,7 +727,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-values~10"></span>
+              <span class="anchor" id="variable-values"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -766,11 +763,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! The lowest eigenvalues of the restricted Hamiltonian, densely</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Builds the matrix a column at a time by applying `ormas_sigma` to each</span>
-<span class="w">      </span><span class="c">!! unit vector, then diagonalises it. That costs a determinant's worth of</span>
-<span class="w">      </span><span class="c">!! sigma per determinant and is only sane while the space is small -- but</span>
-<span class="w">      </span><span class="c">!! it introduces no matrix elements of its own, so the energies it</span>
-<span class="w">      </span><span class="c">!! returns are exactly what the sigma says they are and nothing has been</span>
-<span class="w">      </span><span class="c">!! written twice.</span>
+<span class="w">      </span><span class="c">!! unit vector, then diagonalises it: one sigma per determinant, so only</span>
+<span class="w">      </span><span class="c">!! sane while the space is small.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_space_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">space</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">folded</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">link_table_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha_table</span><span class="p">,</span><span class="w"> </span><span class="n">beta_table</span>
@@ -835,7 +829,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

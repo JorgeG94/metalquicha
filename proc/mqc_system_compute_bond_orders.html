@@ -136,9 +136,9 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-h~19">h</a>
-            <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-i~186">i</a>
-            <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-name~42">name</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-h">h</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-i~86">i</a>
+            <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-name~26">name</a>
             <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-res">res</a>
             <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-whole">whole</a>
             <a class="list-group-item" href="../proc/mqc_system_compute_bond_orders.html#variable-xtb~2">xtb</a>
@@ -182,12 +182,6 @@
     
 
     <p>Run one xTB single point over the whole system and keep its bond orders</p>
-<p>The whole system, not the monomers: the point of these is to decide
-where the monomers should be, so a partition cannot be an input. A
-caller wanting fragment-local orders builds a handle per fragment.</p>
-<p><code>variant</code> is &ldquo;gfn2&rdquo; or &ldquo;gfn1&rdquo;; an empty string takes gfn2, which is the
-one whose bond orders were checked. <code>accuracy</code> &lt;= 0 takes tblite&rsquo;s
-default.</p>
 
 
     <h3>Arguments</h3>
@@ -203,7 +197,7 @@ default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~14"></span>
+              <span class="anchor" id="variable-handle"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -233,7 +227,7 @@ default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-variant~2"></span>
+              <span class="anchor" id="variable-variant"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(in)</td>
@@ -248,7 +242,7 @@ default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-accuracy~3"></span>
+              <span class="anchor" id="variable-accuracy~2"></span>
               real(kind=c_double),
             </td>
 <td></td>
@@ -266,7 +260,7 @@ default.</p>
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-status~34"></span>
+          <span class="anchor" id="variable-status~5"></span>
           integer(kind=c_int)
         </small>
       </h3>
@@ -821,7 +815,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~19"></span>
+              <span class="anchor" id="variable-h"></span>
               type(<a href='../type/system_handle_t.html'>system_handle_t</a>),
             </td>
               <td>private,</td>
@@ -838,7 +832,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~186"></span>
+              <span class="anchor" id="variable-i~86"></span>
               integer,
             </td>
               <td>private</td>
@@ -855,7 +849,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~42"></span>
+              <span class="anchor" id="variable-name~26"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -940,14 +934,6 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">mqc_system_compute_bond_orders</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">variant_len</span><span class="p">,</span><span class="w"> </span><span class="n">variant</span><span class="p">,</span><span class="w"> </span><span class="n">accuracy</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">      </span><span class="k">result</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">"mqc_system_compute_bond_orders"</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Run one xTB single point over the whole system and keep its bond orders</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The whole system, not the monomers: the point of these is to decide</span>
-<span class="w">      </span><span class="c">!! where the monomers should be, so a partition cannot be an input. A</span>
-<span class="w">      </span><span class="c">!! caller wanting fragment-local orders builds a handle per fragment.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! `variant` is "gfn2" or "gfn1"; an empty string takes gfn2, which is the</span>
-<span class="w">      </span><span class="c">!! one whose bond orders were checked. `accuracy` &lt;= 0 takes tblite's</span>
-<span class="w">      </span><span class="c">!! default.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handle</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">variant_len</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="kt">c_char</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">variant</span><span class="p">(</span><span class="n">variant_len</span><span class="p">)</span>
@@ -1045,7 +1031,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

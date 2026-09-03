@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/config_log_settings.html#variable-i~67">i</a>
+            <a class="list-group-item" href="../proc/config_log_settings.html#variable-i">i</a>
             <a class="list-group-item" href="../proc/config_log_settings.html#variable-info_lines~2">info_lines</a>
             <a class="list-group-item" href="../proc/config_log_settings.html#variable-n_lines~2">n_lines</a>
         </div>
@@ -323,9 +323,7 @@ large graphs.</div>
     </div>
 
 
-    <p>Log method-specific settings based on method type</p>
-<p>Dispatches to appropriate logging based on the configured method.
-This allows the driver to log settings without knowing method details.</p>
+    <p>Log method-specific settings, so the driver need not know the details</p>
 
     <h3>Type Bound</h3>
     <p><a href='../type/method_config_t.html'>method_config_t</a></p>
@@ -343,7 +341,7 @@ This allows the driver to log settings without knowing method details.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~52"></span>
+              <span class="anchor" id="variable-this~5"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -964,7 +962,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~67"></span>
+              <span class="anchor" id="variable-i"></span>
               integer,
             </td>
               <td>private</td>
@@ -1030,10 +1028,7 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">config_log_settings</span><span class="p">(</span><span class="n">this</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Log method-specific settings based on method type</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Dispatches to appropriate logging based on the configured method.</span>
-<span class="w">      </span><span class="c">!! This allows the driver to log settings without knowing method details.</span>
+<span class="w">      </span><span class="c">!! Log method-specific settings, so the driver need not know the details</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_method_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">METHOD_TYPE_GFN1</span><span class="p">,</span><span class="w"> </span><span class="n">METHOD_TYPE_GFN2</span><span class="p">,</span><span class="w"> </span><span class="n">METHOD_TYPE_HF</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                  </span><span class="n">METHOD_TYPE_DFT</span><span class="p">,</span><span class="w"> </span><span class="n">METHOD_TYPE_MCSCF</span><span class="p">,</span><span class="w"> </span><span class="n">method_type_to_string</span>
 <span class="w">      </span><span class="k">use </span><span class="n">pic_logger</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">logger</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">global_logger</span>
@@ -1059,29 +1054,24 @@ large graphs.</div>
 <span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Functional:      "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">functional</span><span class="p">))</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Basis set:       "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">basis_set</span><span class="p">))</span>
-<span class="w">         </span><span class="c">! Only when it is actually fitting something. The aux basis has a</span>
-<span class="w">         </span><span class="c">! non-empty default, so printing it unconditionally told every exact run</span>
-<span class="w">         </span><span class="c">! it had an auxiliary basis it was not using -- which read as "this is</span>
-<span class="w">         </span><span class="c">! density-fitted" when it was not.</span>
+<span class="w">         </span><span class="c">! Only when it is actually fitting something: the aux basis has a</span>
+<span class="w">         </span><span class="c">! non-empty default, so printing it unconditionally reads as "this is</span>
+<span class="w">         </span><span class="c">! density-fitted" on a run that is not.</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">density_fitting</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Density fitting: "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">aux_basis_set</span><span class="p">))</span>
 <span class="w">         </span><span class="k">end if</span>
-<span class="w">         </span><span class="c">! The angular form is not reported here any more, and deliberately.</span>
-<span class="w">         </span><span class="c">! `use_spherical` is the flag cuEST builds its AO shells with, not a</span>
-<span class="w">         </span><span class="c">! statement about the basis: the basis file decides, through its</span>
-<span class="w">         </span><span class="c">! `function_type` entries, and 6-31G* is Cartesian whatever this says.</span>
-<span class="w">         </span><span class="c">! Printing this line beside a Cartesian basis claimed "spherical</span>
-<span class="w">         </span><span class="c">! (pure)" for a run that was not, which is the reporting half of the</span>
-<span class="w">         </span><span class="c">! bug it sat next to. The SCF prints the form it actually used, along</span>
-<span class="w">         </span><span class="c">! with the function count that distinguishes the two.</span>
+<span class="w">         </span><span class="c">! The angular form is deliberately not reported here. `use_spherical`</span>
+<span class="w">         </span><span class="c">! is the flag cuEST builds its AO shells with, not a statement about</span>
+<span class="w">         </span><span class="c">! the basis: the basis file decides through its `function_type`</span>
+<span class="w">         </span><span class="c">! entries, and 6-31G* is Cartesian whatever this says. The SCF prints</span>
+<span class="w">         </span><span class="c">! the form it actually used, with the function count that</span>
+<span class="w">         </span><span class="c">! distinguishes the two.</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">method_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">METHOD_TYPE_DFT</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            block</span>
 <span class="k">               </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">80</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">grid_line</span>
-<span class="w">               </span><span class="c">! Reported as the level unless a deck overrode it with explicit</span>
-<span class="w">               </span><span class="c">! counts, because the level is what the CPU path actually uses --</span>
-<span class="w">               </span><span class="c">! printing "75 radial x 302" for a level-3 run was true of neither</span>
-<span class="w">               </span><span class="c">! backend and is the reporting half of a bug rather than a bug's</span>
-<span class="w">               </span><span class="c">! symptom. The counts still appear when they are the thing in force.</span>
+<span class="w">               </span><span class="c">! The level unless a deck overrode it with explicit counts,</span>
+<span class="w">               </span><span class="c">! because the level is what the CPU path actually uses. The</span>
+<span class="w">               </span><span class="c">! counts appear only when they are the thing in force.</span>
 <span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">radial_points</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">angular_points</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                   </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">grid_level</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">                  write</span><span class="w"> </span><span class="p">(</span><span class="n">grid_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,i0,a,i0)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  XC grid:         "</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1122,7 +1112,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

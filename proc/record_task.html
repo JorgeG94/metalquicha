@@ -1072,16 +1072,12 @@ large graphs.</div>
 
     <p>Append one finished task to the checkpoint, if there is one</p>
 <p><strong>Keyed on the task row, not on the fragment.</strong> A Hessian run expands
-each fragment into 1 + 6N schedulable tasks &ndash; a reference point and a
-forward/backward gradient per Cartesian coordinate &ndash; so <code>task_idx</code> is
-not a fragment index, and <code>polymers(task_idx, :)</code> is somebody else&rsquo;s
-monomers. It was, briefly, and the checkpoint it wrote carried a
-plausible tuple on every record with the wrong data underneath.</p>
-<p>The task row already holds what tells them apart: the monomers, plus
-the displacement code in the last column (DISP_WHOLE_FRAGMENT when
+each fragment into 1 + 6N tasks, so <code>task_idx</code> is not a fragment index
+and <code>polymers(task_idx, :)</code> is somebody else&rsquo;s monomers.</p>
+<p>The row holds what tells them apart: the monomers, plus the
+displacement code in the last column (<code>DISP_WHOLE_FRAGMENT</code> when
 nothing is displaced). Keying on the whole row makes each displaced
-gradient its own resumable unit, which is the granularity a
-finite-difference Hessian wants &ndash; a killed job keeps the
+gradient its own resumable unit, so a killed job keeps the
 displacements it finished instead of losing the fragment.</p>
 
 
@@ -1098,7 +1094,7 @@ displacements it finished instead of losing the fragment.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~8"></span>
+              <span class="anchor" id="variable-ctx~11"></span>
               type(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1143,7 +1139,7 @@ displacements it finished instead of losing the fragment.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~27"></span>
+              <span class="anchor" id="variable-result~51"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1548,17 +1544,13 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Append one finished task to the checkpoint, if there is one</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! **Keyed on the task row, not on the fragment.** A Hessian run expands</span>
-<span class="w">      </span><span class="c">!! each fragment into 1 + 6N schedulable tasks -- a reference point and a</span>
-<span class="w">      </span><span class="c">!! forward/backward gradient per Cartesian coordinate -- so `task_idx` is</span>
-<span class="w">      </span><span class="c">!! not a fragment index, and `polymers(task_idx, :)` is somebody else's</span>
-<span class="w">      </span><span class="c">!! monomers. It was, briefly, and the checkpoint it wrote carried a</span>
-<span class="w">      </span><span class="c">!! plausible tuple on every record with the wrong data underneath.</span>
+<span class="w">      </span><span class="c">!! each fragment into 1 + 6N tasks, so `task_idx` is not a fragment index</span>
+<span class="w">      </span><span class="c">!! and `polymers(task_idx, :)` is somebody else's monomers.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The task row already holds what tells them apart: the monomers, plus</span>
-<span class="w">      </span><span class="c">!! the displacement code in the last column (DISP_WHOLE_FRAGMENT when</span>
+<span class="w">      </span><span class="c">!! The row holds what tells them apart: the monomers, plus the</span>
+<span class="w">      </span><span class="c">!! displacement code in the last column (`DISP_WHOLE_FRAGMENT` when</span>
 <span class="w">      </span><span class="c">!! nothing is displaced). Keying on the whole row makes each displaced</span>
-<span class="w">      </span><span class="c">!! gradient its own resumable unit, which is the granularity a</span>
-<span class="w">      </span><span class="c">!! finite-difference Hessian wants -- a killed job keeps the</span>
+<span class="w">      </span><span class="c">!! gradient its own resumable unit, so a killed job keeps the</span>
 <span class="w">      </span><span class="c">!! displacements it finished instead of losing the fragment.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_many_body_expansion</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">mbe_context_t</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mbe_context_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ctx</span>
@@ -1610,7 +1602,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

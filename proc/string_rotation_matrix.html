@@ -137,16 +137,16 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-filled">filled</a>
-            <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-i~170">i</a>
-            <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-j~52">j</a>
-            <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-k~44">k</a>
+            <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-i~32">i</a>
+            <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-j~9">j</a>
+            <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-k~5">k</a>
             <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-n_orb">n_orb</a>
             <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-n_str~2">n_str</a>
             <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-occupancy">occupancy</a>
-            <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-p~8">p</a>
+            <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-p~9">p</a>
             <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-rows">rows</a>
-            <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-strings~3">strings</a>
-            <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-work~2">work</a>
+            <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-strings~5">strings</a>
+            <a class="list-group-item" href="../proc/string_rotation_matrix.html#variable-work~3">work</a>
         </div>
       </div>
     </div>
@@ -242,7 +242,7 @@ their counts agree, in which case one matrix serves both.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-matrix~4"></span>
+              <span class="anchor" id="variable-matrix~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -257,7 +257,7 @@ their counts agree, in which case one matrix serves both.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~144"></span>
+              <span class="anchor" id="variable-error~39"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -609,7 +609,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~170"></span>
+              <span class="anchor" id="variable-i~32"></span>
               integer,
             </td>
               <td>private</td>
@@ -626,7 +626,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~52"></span>
+              <span class="anchor" id="variable-j~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -643,7 +643,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~44"></span>
+              <span class="anchor" id="variable-k~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -711,7 +711,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-p~8"></span>
+              <span class="anchor" id="variable-p~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -745,7 +745,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-strings~3"></span>
+              <span class="anchor" id="variable-strings~5"></span>
               integer(kind=int64),
             </td>
               <td>private,</td>
@@ -762,7 +762,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-work~2"></span>
+              <span class="anchor" id="variable-work~3"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -850,8 +850,7 @@ large graphs.</div>
 <span class="k">      end if</span>
 
 <span class="w">      </span><span class="c">! Which orbitals each string occupies, ascending, once rather than once</span>
-<span class="w">      </span><span class="c">! per pair: the pair count is the square of the string count, so scanning</span>
-<span class="w">      </span><span class="c">! bits inside the double loop would repeat every scan `n_str` times.</span>
+<span class="w">      </span><span class="c">! per pair.</span>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">occupancy</span><span class="p">(</span><span class="n">n_electrons</span><span class="p">,</span><span class="w"> </span><span class="n">n_str</span><span class="p">))</span>
 <span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_str</span>
 <span class="w">         </span><span class="n">filled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
@@ -863,9 +862,8 @@ large graphs.</div>
 <span class="k">         end do</span>
 <span class="k">      end do</span>
 
-<span class="w">      </span><span class="c">! `rows` is hoisted out of the inner loop: for a fixed source string the</span>
-<span class="w">      </span><span class="c">! rows of the submatrix are the same for every target string, and only</span>
-<span class="w">      </span><span class="c">! the columns gathered from them change.</span>
+<span class="w">      </span><span class="c">! For a fixed source string the rows of the submatrix are the same for</span>
+<span class="w">      </span><span class="c">! every target string, so only the columns gathered from them change.</span>
 <span class="w">      </span><span class="c">!$omp parallel default(shared) private(i, j, k, rows, work)</span>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">rows</span><span class="p">(</span><span class="n">n_electrons</span><span class="p">,</span><span class="w"> </span><span class="n">n_orb</span><span class="p">),</span><span class="w"> </span><span class="n">work</span><span class="p">(</span><span class="n">n_electrons</span><span class="p">,</span><span class="w"> </span><span class="n">n_electrons</span><span class="p">))</span>
 <span class="w">      </span><span class="c">!$omp do schedule(static)</span>
@@ -909,7 +907,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

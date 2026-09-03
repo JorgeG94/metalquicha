@@ -136,18 +136,18 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/ormas_solve.html#variable-alpha~14">alpha</a>
+            <a class="list-group-item" href="../proc/ormas_solve.html#variable-alpha~4">alpha</a>
             <a class="list-group-item" href="../proc/ormas_solve.html#variable-alpha_table~7">alpha_table</a>
-            <a class="list-group-item" href="../proc/ormas_solve.html#variable-beta~14">beta</a>
+            <a class="list-group-item" href="../proc/ormas_solve.html#variable-beta~4">beta</a>
             <a class="list-group-item" href="../proc/ormas_solve.html#variable-beta_table~7">beta_table</a>
-            <a class="list-group-item" href="../proc/ormas_solve.html#variable-closure~9">closure</a>
-            <a class="list-group-item" href="../proc/ormas_solve.html#variable-converged~8">converged</a>
-            <a class="list-group-item" href="../proc/ormas_solve.html#variable-diagonal~6">diagonal</a>
-            <a class="list-group-item" href="../proc/ormas_solve.html#variable-folded~10">folded</a>
-            <a class="list-group-item" href="../proc/ormas_solve.html#variable-iterations_taken~2">iterations_taken</a>
-            <a class="list-group-item" href="../proc/ormas_solve.html#variable-operator~3">operator</a>
-            <a class="list-group-item" href="../proc/ormas_solve.html#variable-residuals~3">residuals</a>
-            <a class="list-group-item" href="../proc/ormas_solve.html#variable-sigma_products~3">sigma_products</a>
+            <a class="list-group-item" href="../proc/ormas_solve.html#variable-closure~7">closure</a>
+            <a class="list-group-item" href="../proc/ormas_solve.html#variable-converged">converged</a>
+            <a class="list-group-item" href="../proc/ormas_solve.html#variable-diagonal~2">diagonal</a>
+            <a class="list-group-item" href="../proc/ormas_solve.html#variable-folded~5">folded</a>
+            <a class="list-group-item" href="../proc/ormas_solve.html#variable-iterations_taken">iterations_taken</a>
+            <a class="list-group-item" href="../proc/ormas_solve.html#variable-operator">operator</a>
+            <a class="list-group-item" href="../proc/ormas_solve.html#variable-residuals">residuals</a>
+            <a class="list-group-item" href="../proc/ormas_solve.html#variable-sigma_products">sigma_products</a>
         </div>
       </div>
     </div>
@@ -190,11 +190,8 @@
     <p>The lowest states of a restricted active space, iteratively</p>
 <p>Everything from the partition and the integrals: the strings, the
 closure the sigma needs, the excitation tables, the folded Hamiltonian,
-the diagonal to precondition with, and then Davidson.</p>
-<p>This is the route that scales. The dense solve alongside it costs a
-sigma per determinant and exists to be compared against; this one costs
-a sigma per expansion vector, which is tens rather than thousands, and
-never forms a matrix.</p>
+the diagonal to precondition with, and then Davidson. One sigma per
+expansion vector, and no matrix is ever formed.</p>
 
 
     <h3>Arguments</h3>
@@ -210,7 +207,7 @@ never forms a matrix.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-space~30"></span>
+              <span class="anchor" id="variable-space~13"></span>
               type(<a href='../type/ormas_space_t.html'>ormas_space_t</a>),
             </td>
 <td>intent(in),</td>
@@ -225,7 +222,7 @@ never forms a matrix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-h1e~7"></span>
+              <span class="anchor" id="variable-h1e~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -240,7 +237,7 @@ never forms a matrix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-eri~5"></span>
+              <span class="anchor" id="variable-eri~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -255,7 +252,7 @@ never forms a matrix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~6"></span>
+              <span class="anchor" id="variable-n_roots~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -270,7 +267,7 @@ never forms a matrix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~7"></span>
+              <span class="anchor" id="variable-energies~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -285,7 +282,7 @@ never forms a matrix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-vectors~4"></span>
+              <span class="anchor" id="variable-vectors"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -300,7 +297,7 @@ never forms a matrix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~173"></span>
+              <span class="anchor" id="variable-error~11"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -315,7 +312,7 @@ never forms a matrix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~16"></span>
+              <span class="anchor" id="variable-tolerance~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -330,7 +327,7 @@ never forms a matrix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iterations~4"></span>
+              <span class="anchor" id="variable-max_iterations"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -345,7 +342,7 @@ never forms a matrix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~9"></span>
+              <span class="anchor" id="variable-guess~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -355,12 +352,13 @@ never forms a matrix.</p>
             <td>::</td>
             <td><strong>guess</strong>(:,:)</td>
             <td>
-                
+                <p>(n_determinants, n_roots) starting vectors, as an orbital optimiser
+has from the previous macro-iteration</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~12"></span>
+              <span class="anchor" id="variable-verbose~3"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -370,14 +368,12 @@ never forms a matrix.</p>
             <td>::</td>
             <td><strong>verbose</strong></td>
             <td>
-                <p>Print a line per iteration, as the complete-space solver does. A
-restricted space is smaller but not necessarily quick, and it was
-the one path still finishing without ever having said it started.</p>
+                <p>Print a line per iteration, as the complete-space solver does</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_offset~3"></span>
+              <span class="anchor" id="variable-energy_offset"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -388,10 +384,7 @@ the one path still finishing without ever having said it started.</p>
             <td><strong>energy_offset</strong></td>
             <td>
                 <p>Added to the eigenvalue before printing, so the table shows the
-total rather than the active-space energy alone.
-(n_determinants, n_roots) starting vectors. An orbital optimiser
-hands back the previous macro-iteration&rsquo;s answer, which after the
-first few is nearly this one already.</p>
+total rather than the active-space energy alone</p>
             </td>
         </tr>
     </tbody>
@@ -786,18 +779,18 @@ first few is nearly this one already.</p>
 <path fill="none" stroke="#3200ff" d="M779.06,-557.16C797.32,-573.87 831.88,-604.42 864,-627 875.56,-635.12 888.85,-643.16 900.63,-649.87"/>
 <polygon fill="#3200ff" stroke="#3200ff" points="899.26,-653.12 909.7,-654.95 902.68,-647.01 899.26,-653.12"/>
 </g>
-<!-- proc~string_terms~2 -->
+<!-- proc~string_terms -->
 <g id="proc~~ormas_solve~~CallsGraph_node23" class="node">
-<title>proc~string_terms~2</title>
-<g id="a_proc~~ormas_solve~~CallsGraph_node23"><a xlink:href="../proc/string_terms~2.html" xlink:title="string_terms">
+<title>proc~string_terms</title>
+<g id="a_proc~~ormas_solve~~CallsGraph_node23"><a xlink:href="../proc/string_terms.html" xlink:title="string_terms">
 <polygon fill="#d9534f" stroke="#d9534f" points="973,-557 894,-557 894,-533 973,-533 973,-557"/>
 <text text-anchor="middle" x="933.5" y="-542.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">string_terms</text>
 </a>
 </g>
 </g>
-<!-- proc~ormas_diagonal&#45;&gt;proc~string_terms~2 -->
+<!-- proc~ormas_diagonal&#45;&gt;proc~string_terms -->
 <g id="proc~~ormas_solve~~CallsGraph_edge32" class="edge">
-<title>proc~ormas_diagonal&#45;&gt;proc~string_terms~2</title>
+<title>proc~ormas_diagonal&#45;&gt;proc~string_terms</title>
 <path fill="none" stroke="#3200ff" d="M814.16,-545C836.05,-545 861.9,-545 883.85,-545"/>
 <polygon fill="#3200ff" stroke="#3200ff" points="883.95,-548.5 893.95,-545 883.95,-541.5 883.95,-548.5"/>
 </g>
@@ -906,9 +899,9 @@ first few is nearly this one already.</p>
 </a>
 </g>
 </g>
-<!-- proc~string_terms~2&#45;&gt;proc~occupied_orbitals -->
+<!-- proc~string_terms&#45;&gt;proc~occupied_orbitals -->
 <g id="proc~~ormas_solve~~CallsGraph_edge44" class="edge">
-<title>proc~string_terms~2&#45;&gt;proc~occupied_orbitals</title>
+<title>proc~string_terms&#45;&gt;proc~occupied_orbitals</title>
 <path fill="none" stroke="#ff00eb" d="M973.19,-545C989.91,-545 1009.91,-545 1028.64,-545"/>
 <polygon fill="#ff00eb" stroke="#ff00eb" points="1028.89,-548.5 1038.89,-545 1028.89,-541.5 1028.89,-548.5"/>
 </g>
@@ -1181,7 +1174,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~14"></span>
+              <span class="anchor" id="variable-alpha~4"></span>
               integer(kind=int64),
             </td>
               <td>private,</td>
@@ -1215,7 +1208,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~14"></span>
+              <span class="anchor" id="variable-beta~4"></span>
               integer(kind=int64),
             </td>
               <td>private,</td>
@@ -1249,7 +1242,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-closure~9"></span>
+              <span class="anchor" id="variable-closure~7"></span>
               type(<a href='../type/ormas_closure_t.html'>ormas_closure_t</a>),
             </td>
               <td>private,</td>
@@ -1266,7 +1259,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~8"></span>
+              <span class="anchor" id="variable-converged"></span>
               logical,
             </td>
               <td>private</td>
@@ -1283,7 +1276,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diagonal~6"></span>
+              <span class="anchor" id="variable-diagonal~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1300,7 +1293,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~10"></span>
+              <span class="anchor" id="variable-folded~5"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1317,7 +1310,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterations_taken~2"></span>
+              <span class="anchor" id="variable-iterations_taken"></span>
               integer,
             </td>
               <td>private</td>
@@ -1334,7 +1327,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-operator~3"></span>
+              <span class="anchor" id="variable-operator"></span>
               type(<a href='../type/ormas_operator_t.html'>ormas_operator_t</a>),
             </td>
               <td>private</td>
@@ -1351,7 +1344,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-residuals~3"></span>
+              <span class="anchor" id="variable-residuals"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1368,7 +1361,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma_products~3"></span>
+              <span class="anchor" id="variable-sigma_products"></span>
               integer,
             </td>
               <td>private</td>
@@ -1405,12 +1398,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Everything from the partition and the integrals: the strings, the</span>
 <span class="w">      </span><span class="c">!! closure the sigma needs, the excitation tables, the folded Hamiltonian,</span>
-<span class="w">      </span><span class="c">!! the diagonal to precondition with, and then Davidson.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! This is the route that scales. The dense solve alongside it costs a</span>
-<span class="w">      </span><span class="c">!! sigma per determinant and exists to be compared against; this one costs</span>
-<span class="w">      </span><span class="c">!! a sigma per expansion vector, which is tens rather than thousands, and</span>
-<span class="w">      </span><span class="c">!! never forms a matrix.</span>
+<span class="w">      </span><span class="c">!! the diagonal to precondition with, and then Davidson. One sigma per</span>
+<span class="w">      </span><span class="c">!! expansion vector, and no matrix is ever formed.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_space_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">target</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">space</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">h1e</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">eri</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_roots</span>
@@ -1420,16 +1409,13 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tolerance</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_iterations</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">guess</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! (n_determinants, n_roots) starting vectors, as an orbital optimiser</span>
+<span class="w">         </span><span class="c">!! has from the previous macro-iteration</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">verbose</span>
-<span class="w">         </span><span class="c">!! Print a line per iteration, as the complete-space solver does. A</span>
-<span class="w">         </span><span class="c">!! restricted space is smaller but not necessarily quick, and it was</span>
-<span class="w">         </span><span class="c">!! the one path still finishing without ever having said it started.</span>
+<span class="w">         </span><span class="c">!! Print a line per iteration, as the complete-space solver does</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy_offset</span>
 <span class="w">         </span><span class="c">!! Added to the eigenvalue before printing, so the table shows the</span>
-<span class="w">         </span><span class="c">!! total rather than the active-space energy alone.</span>
-<span class="w">         </span><span class="c">!! (n_determinants, n_roots) starting vectors. An orbital optimiser</span>
-<span class="w">         </span><span class="c">!! hands back the previous macro-iteration's answer, which after the</span>
-<span class="w">         </span><span class="c">!! first few is nearly this one already.</span>
+<span class="w">         </span><span class="c">!! total rather than the active-space energy alone</span>
 
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_operator_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">operator</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">ormas_closure_t</span><span class="p">),</span><span class="w"> </span><span class="k">target</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">closure</span>
@@ -1502,7 +1488,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -137,14 +137,14 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-calc~2">calc</a>
-            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-ctx~2">ctx</a>
+            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-ctx~5">ctx</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-dipole_wp~2">dipole_wp</a>
-            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-energy~7">energy</a>
-            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-error~43">error</a>
-            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-gradient~4">gradient</a>
-            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-mol~2">mol</a>
+            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-energy~20">energy</a>
+            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-error~135">error</a>
+            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-gradient~13">gradient</a>
+            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-mol~3">mol</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-num~2">num</a>
-            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-sigma~6">sigma</a>
+            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-sigma~9">sigma</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-verbosity~2">verbosity</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-wfn~2">wfn</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-xyz~2">xyz</a>
@@ -187,7 +187,7 @@
 </h2>
     
 
-    <p>Calculate energy gradient using Extended Tight-Binding (xTB) method</p>
+    <p>Energy and nuclear gradient of a fragment</p>
 
     <h3>Type Bound</h3>
     <p><a href='../type/xtb_method_t.html'>xtb_method_t</a></p>
@@ -205,7 +205,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~29"></span>
+              <span class="anchor" id="variable-this~128"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -220,7 +220,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~5"></span>
+              <span class="anchor" id="variable-fragment~37"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -235,7 +235,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~15"></span>
+              <span class="anchor" id="variable-result~45"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -832,7 +832,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~2"></span>
+              <span class="anchor" id="variable-ctx~5"></span>
               type(context_type),
             </td>
               <td>private</td>
@@ -866,7 +866,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~7"></span>
+              <span class="anchor" id="variable-energy~20"></span>
               real(kind=wp),
             </td>
               <td>private</td>
@@ -883,7 +883,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~43"></span>
+              <span class="anchor" id="variable-error~135"></span>
               type(error_type),
             </td>
               <td>private,</td>
@@ -900,7 +900,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~4"></span>
+              <span class="anchor" id="variable-gradient~13"></span>
               real(kind=wp),
             </td>
               <td>private,</td>
@@ -917,7 +917,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mol~2"></span>
+              <span class="anchor" id="variable-mol~3"></span>
               type(structure_type),
             </td>
               <td>private</td>
@@ -951,7 +951,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma~6"></span>
+              <span class="anchor" id="variable-sigma~9"></span>
               real(kind=wp),
             </td>
               <td>private,</td>
@@ -1034,7 +1034,7 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">xtb_calc_gradient</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Calculate energy gradient using Extended Tight-Binding (xTB) method</span>
+<span class="w">      </span><span class="c">!! Energy and nuclear gradient of a fragment</span>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">xtb_method_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
@@ -1098,10 +1098,7 @@ large graphs.</div>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="w">      </span><span class="c">! keywords.scf.maxiter had a home on this type and never reached the</span>
-<span class="w">      </span><span class="c">! calculator, so it silently did nothing for xTB -- a deck asking for a</span>
-<span class="w">      </span><span class="c">! tighter or looser iteration budget got tblite's default either way.</span>
-<span class="w">      </span><span class="n">calc</span><span class="p">%</span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">max_iter</span>
+<span class="k">      </span><span class="n">calc</span><span class="p">%</span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">max_iter</span>
 
 <span class="w">      </span><span class="c">! Add solvation if configured (either solvent name or direct dielectric)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvent</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dielectric</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_wp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -1210,7 +1207,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -200,23 +200,23 @@ The fragments that failed, with what they were built from</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
                   <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
-                  <li class="list-inline-item"><a href='mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
-                  <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
                   <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
                   <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
+                  <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item"><a href='mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1564,7 +1564,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~8"></span>
+              <span class="anchor" id="variable-fragment_idx~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1579,7 +1579,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~12"></span>
+              <span class="anchor" id="variable-fragment~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1594,7 +1594,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~2"></span>
+              <span class="anchor" id="variable-lookup~3"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1609,7 +1609,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~2"></span>
+              <span class="anchor" id="variable-energies~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1639,7 +1639,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~38"></span>
+              <span class="anchor" id="variable-n~26"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1654,7 +1654,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~14"></span>
+              <span class="anchor" id="variable-world_comm~9"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1681,7 +1681,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
             <td>
 <p>Subtract each subset <em>in this fragment&rsquo;s basis</em> rather than in its
 own &ndash; the counterpoise correction. Absent means the ordinary
-expansion, which is every caller that predates it.</p>
+expansion.</p>
             </td>
         </tr>
     </tbody>
@@ -1721,7 +1721,7 @@ expansion, which is every caller that predates it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_status~4"></span>
+              <span class="anchor" id="variable-scf_status~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1736,7 +1736,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~12"></span>
+              <span class="anchor" id="variable-polymers~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1751,7 +1751,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~4"></span>
+              <span class="anchor" id="variable-fragment_count~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1781,7 +1781,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~10"></span>
+              <span class="anchor" id="variable-monomers~7"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1821,7 +1821,7 @@ expansion, which is every caller that predates it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~12"></span>
+              <span class="anchor" id="variable-monomers~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1836,7 +1836,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~8"></span>
+              <span class="anchor" id="variable-n_monomers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1866,7 +1866,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections~5"></span>
+              <span class="anchor" id="variable-n_intersections"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1881,7 +1881,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_results~2"></span>
+              <span class="anchor" id="variable-intersection_results"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1896,7 +1896,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~5"></span>
+              <span class="anchor" id="variable-intersection_sets"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1911,7 +1911,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels~5"></span>
+              <span class="anchor" id="variable-intersection_levels"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1926,7 +1926,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~7"></span>
+              <span class="anchor" id="variable-total_energy~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1941,7 +1941,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~47"></span>
+              <span class="anchor" id="variable-sys_geom~27"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1956,7 +1956,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~5"></span>
+              <span class="anchor" id="variable-total_gradient~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1971,7 +1971,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian~3"></span>
+              <span class="anchor" id="variable-total_hessian"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1986,7 +1986,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~9"></span>
+              <span class="anchor" id="variable-bonds~5"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2001,7 +2001,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~18"></span>
+              <span class="anchor" id="variable-world_comm~13"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2041,7 +2041,7 @@ expansion, which is every caller that predates it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~13"></span>
+              <span class="anchor" id="variable-polymers~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2056,7 +2056,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~6"></span>
+              <span class="anchor" id="variable-fragment_count~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2071,7 +2071,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~11"></span>
+              <span class="anchor" id="variable-max_level~16"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2086,7 +2086,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~10"></span>
+              <span class="anchor" id="variable-results~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2101,7 +2101,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result~3"></span>
+              <span class="anchor" id="variable-mbe_result~4"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2116,7 +2116,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~46"></span>
+              <span class="anchor" id="variable-sys_geom~26"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2131,7 +2131,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~17"></span>
+              <span class="anchor" id="variable-world_comm~12"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2146,7 +2146,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~11"></span>
+              <span class="anchor" id="variable-json_data~26"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2201,7 +2201,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~11"></span>
+              <span class="anchor" id="variable-monomers~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2261,7 +2261,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-counts~2"></span>
+              <span class="anchor" id="variable-counts"></span>
               integer(kind=int64),
             </td>
 <td>intent(out),</td>
@@ -2301,7 +2301,7 @@ expansion, which is every caller that predates it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag_result~2"></span>
+              <span class="anchor" id="variable-frag_result"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2316,7 +2316,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~8"></span>
+              <span class="anchor" id="variable-monomers~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2331,7 +2331,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~43"></span>
+              <span class="anchor" id="variable-sys_geom~23"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2361,7 +2361,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result"></span>
+              <span class="anchor" id="variable-mbe_result~2"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2421,7 +2421,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~15"></span>
+              <span class="anchor" id="variable-world_comm~10"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2461,7 +2461,7 @@ expansion, which is every caller that predates it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag_result~3"></span>
+              <span class="anchor" id="variable-frag_result~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2476,7 +2476,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~9"></span>
+              <span class="anchor" id="variable-monomers~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2491,7 +2491,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~44"></span>
+              <span class="anchor" id="variable-sys_geom~24"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2521,7 +2521,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result~2"></span>
+              <span class="anchor" id="variable-mbe_result~3"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2606,7 +2606,7 @@ expansion, which is every caller that predates it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~11"></span>
+              <span class="anchor" id="variable-polymers~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2621,7 +2621,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~3"></span>
+              <span class="anchor" id="variable-fragment_count~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2636,7 +2636,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~9"></span>
+              <span class="anchor" id="variable-max_level~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2651,7 +2651,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~5"></span>
+              <span class="anchor" id="variable-lookup~6"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2666,7 +2666,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~107"></span>
+              <span class="anchor" id="variable-error~81"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2706,7 +2706,7 @@ expansion, which is every caller that predates it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~10"></span>
+              <span class="anchor" id="variable-polymers~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2721,7 +2721,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~2"></span>
+              <span class="anchor" id="variable-fragment_count"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2736,7 +2736,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~8"></span>
+              <span class="anchor" id="variable-max_level~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2751,7 +2751,7 @@ expansion, which is every caller that predates it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~3"></span>
+              <span class="anchor" id="variable-lookup~4"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2791,9 +2791,7 @@ expansion, which is every caller that predates it.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Bottom-up computation of n-body dipole correction
-Exactly mirrors the energy MBE logic: deltaDipole = Dipole - sum(all subset deltaDipoles)
-Dipoles are additive vectors in the system frame, no coordinate mapping needed</p>
+  <p>Bottom-up computation of n-body dipole correction</p><a href="../proc/compute_mbe_dipole.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2808,7 +2806,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~9"></span>
+              <span class="anchor" id="variable-fragment_idx~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2823,7 +2821,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~14"></span>
+              <span class="anchor" id="variable-fragment~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2838,7 +2836,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~4"></span>
+              <span class="anchor" id="variable-lookup~5"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2853,7 +2851,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~9"></span>
+              <span class="anchor" id="variable-results~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2883,7 +2881,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~39"></span>
+              <span class="anchor" id="variable-n~27"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2898,7 +2896,7 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~16"></span>
+              <span class="anchor" id="variable-world_comm~11"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2954,7 +2952,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~49"></span>
+              <span class="anchor" id="variable-sys_geom~29"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2984,7 +2982,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_list~6"></span>
+              <span class="anchor" id="variable-atom_list"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -2999,7 +2997,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~32"></span>
+              <span class="anchor" id="variable-n_atoms~15"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -3054,7 +3052,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~10"></span>
+              <span class="anchor" id="variable-max_level~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3069,7 +3067,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~6"></span>
+              <span class="anchor" id="variable-total_energy~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3109,7 +3107,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~4"></span>
+              <span class="anchor" id="variable-total_gradient"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3124,7 +3122,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~45"></span>
+              <span class="anchor" id="variable-sys_geom~25"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3139,7 +3137,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~4"></span>
+              <span class="anchor" id="variable-current_log_level~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3194,7 +3192,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~29"></span>
+              <span class="anchor" id="variable-k~22"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3209,7 +3207,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sign_factor~4"></span>
+              <span class="anchor" id="variable-sign_factor~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3224,7 +3222,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_results~3"></span>
+              <span class="anchor" id="variable-intersection_results~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3239,7 +3237,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~6"></span>
+              <span class="anchor" id="variable-intersection_sets~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3254,7 +3252,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~48"></span>
+              <span class="anchor" id="variable-sys_geom~28"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3269,7 +3267,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~6"></span>
+              <span class="anchor" id="variable-total_gradient~3"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -3284,7 +3282,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian~4"></span>
+              <span class="anchor" id="variable-total_hessian~2"></span>
               real(kind=dp),
             </td>
 <td>intent(inout),</td>
@@ -3299,7 +3297,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~10"></span>
+              <span class="anchor" id="variable-bonds~6"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -3344,7 +3342,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hess_dim~6"></span>
+              <span class="anchor" id="variable-hess_dim~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3359,7 +3357,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~19"></span>
+              <span class="anchor" id="variable-world_comm~14"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -3399,7 +3397,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_status~5"></span>
+              <span class="anchor" id="variable-scf_status~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3414,7 +3412,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~5"></span>
+              <span class="anchor" id="variable-fragment_count~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3457,7 +3455,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

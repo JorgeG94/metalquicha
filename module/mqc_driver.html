@@ -174,8 +174,9 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>Handles both fragmented (many-body expansion) and unfragmented calculations
-with MPI parallelization and node-based work distribution.
+      <p>Routes a configured system to the fragmented (many-body expansion) or
+unfragmented path, and holds the run types that take neither: MAKEFP, EFP
+and SAPT.
 Main entry point for all calculations
 Multi-molecule calculation dispatcher</p>
 <br>          <div class="card mb-4">
@@ -184,34 +185,34 @@ Multi-molecule calculation dispatcher</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_checkpoint.html'>mqc_checkpoint</a></li>
-                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_resources.html'>mqc_resources</a></li>
-                  <li class="list-inline-item"><a href='mqc_fingerprint.html'>mqc_fingerprint</a></li>
-                  <li class="list-inline-item"><a href='https://www.openmp.org/spec-html/5.1/openmpch3.html#x156-1890003'>omp_lib</a></li>
-                  <li class="list-inline-item"><a href='mqc_validate.html'>mqc_validate</a></li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_json.html'>mqc_json</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_adapter.html'>mqc_config_adapter</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_io_helpers.html'>mqc_io_helpers</a></li>
-                  <li class="list-inline-item"><a href='mqc_json_writer.html'>mqc_json_writer</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_fraglist.html'>mqc_fraglist</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
-                  <li class="list-inline-item"><a href='mqc_scf_common.html'>mqc_scf_common</a></li>
                   <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item"><a href='mqc_many_body_expansion.html'>mqc_many_body_expansion</a></li>
-                  <li class="list-inline-item"><a href='mqc_mbe.html'>mqc_mbe</a></li>
-                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_checkpoint.html'>mqc_checkpoint</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_adapter.html'>mqc_config_adapter</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_json.html'>mqc_json</a></li>
                   <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_mbe.html'>mqc_mbe</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
+                  <li class="list-inline-item"><a href='mqc_many_body_expansion.html'>mqc_many_body_expansion</a></li>
+                  <li class="list-inline-item"><a href='mqc_fraglist.html'>mqc_fraglist</a></li>
+                  <li class="list-inline-item"><a href='https://www.openmp.org/spec-html/5.1/openmpch3.html#x156-1890003'>omp_lib</a></li>
                   <li class="list-inline-item"><a href='mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></li>
+                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_validate.html'>mqc_validate</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_scf_common.html'>mqc_scf_common</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_json_writer.html'>mqc_json_writer</a></li>
+                  <li class="list-inline-item"><a href='mqc_fingerprint.html'>mqc_fingerprint</a></li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_io_helpers.html'>mqc_io_helpers</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_resources.html'>mqc_resources</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -3149,7 +3150,7 @@ large graphs.</div>
 </h3></div>
     <div class="card-body">
           
-  <p>Main calculation dispatcher - routes to fragmented or unfragmented calculation</p><a href="../proc/run_calculation.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Dispatch a configured system to the calculation it asks for</p><a href="../proc/run_calculation.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -3164,7 +3165,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources"></span>
+              <span class="anchor" id="variable-resources~2"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3179,7 +3180,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config"></span>
+              <span class="anchor" id="variable-config~5"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3194,7 +3195,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom"></span>
+              <span class="anchor" id="variable-sys_geom~8"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3326,7 +3327,7 @@ Each molecule is independent, so assign one molecule per rank</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~3"></span>
+              <span class="anchor" id="variable-resources~4"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3381,7 +3382,7 @@ Each molecule is independent, so assign one molecule per rank</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~4"></span>
+              <span class="anchor" id="variable-sys_geom~11"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3396,7 +3397,7 @@ Each molecule is independent, so assign one molecule per rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner"></span>
+              <span class="anchor" id="variable-owner~2"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -3506,7 +3507,7 @@ Each molecule is independent, so assign one molecule per rank</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~2"></span>
+              <span class="anchor" id="variable-json_data~6"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3561,7 +3562,7 @@ Each molecule is independent, so assign one molecule per rank</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~6"></span>
+              <span class="anchor" id="variable-config~10"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3576,7 +3577,7 @@ Each molecule is independent, so assign one molecule per rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~7"></span>
+              <span class="anchor" id="variable-sys_geom~14"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3646,7 +3647,7 @@ Each molecule is independent, so assign one molecule per rank</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Handle fragmented calculation (nlevel &gt; 0)</p><a href="../proc/run_fragmented_calculation.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Run a many-body expansion (<code>nlevel &gt; 0</code>)</p><a href="../proc/run_fragmented_calculation.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -3661,7 +3662,7 @@ Each molecule is independent, so assign one molecule per rank</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~2"></span>
+              <span class="anchor" id="variable-resources~3"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in),</td>
@@ -3676,7 +3677,7 @@ Each molecule is independent, so assign one molecule per rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~3"></span>
+              <span class="anchor" id="variable-config~7"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3691,7 +3692,7 @@ Each molecule is independent, so assign one molecule per rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~3"></span>
+              <span class="anchor" id="variable-sys_geom~10"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3721,7 +3722,7 @@ Each molecule is independent, so assign one molecule per rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~4"></span>
+              <span class="anchor" id="variable-json_data~8"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3791,7 +3792,7 @@ Each molecule is independent, so assign one molecule per rank</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~7"></span>
+              <span class="anchor" id="variable-config~11"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3806,7 +3807,7 @@ Each molecule is independent, so assign one molecule per rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~8"></span>
+              <span class="anchor" id="variable-sys_geom~15"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3879,7 +3880,7 @@ backend that declined.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~5"></span>
+              <span class="anchor" id="variable-config~9"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3894,7 +3895,7 @@ backend that declined.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~6"></span>
+              <span class="anchor" id="variable-sys_geom~13"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3964,7 +3965,7 @@ backend that declined.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Handle unfragmented calculation (nlevel=0)</p><a href="../proc/run_unfragmented_calculation.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Run the whole system as one calculation (<code>nlevel = 0</code>)</p><a href="../proc/run_unfragmented_calculation.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -3979,7 +3980,7 @@ backend that declined.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm"></span>
+              <span class="anchor" id="variable-world_comm~4"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3994,7 +3995,7 @@ backend that declined.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~2"></span>
+              <span class="anchor" id="variable-sys_geom~9"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4009,7 +4010,7 @@ backend that declined.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~2"></span>
+              <span class="anchor" id="variable-config~6"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4039,7 +4040,7 @@ backend that declined.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~3"></span>
+              <span class="anchor" id="variable-json_data~7"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -4082,7 +4083,7 @@ backend that declined.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

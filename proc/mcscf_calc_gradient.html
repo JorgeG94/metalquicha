@@ -166,17 +166,13 @@
     
 
     <p>The analytic gradient of an optimised CASSCF</p>
-<p>Analytic rather than by differences, and that remains a deliberate
-choice: a numerical MCSCF gradient is 6N converged orbital
-optimisations, each of which can land on a <em>different</em> active space &ndash;
-the orbitals that make up a CAS are identified by their character, and
-a displaced geometry can reorder them. The result has discontinuities
-that look like noise and nothing in the output says which displacement
-wandered.</p>
-<p>A CASCI is still refused, and the backend says so: its orbitals came
-from the SCF and were never optimised for the active space, so the
-energy is not stationary with respect to them and the response terms
-this omits are not zero.</p>
+<p>Analytic rather than by differences: a displaced geometry can reorder
+the orbitals a CAS is built from, so 6N re-optimisations can each land
+on a different active space and the result has discontinuities that
+look like noise.</p>
+<p>A CASCI is refused by the backend. Its orbitals were never optimised
+for the active space, so the energy is not stationary with respect to
+them and the response terms this omits are not zero.</p>
 
     <h3>Type Bound</h3>
     <p><a href='../type/mcscf_method_t.html'>mcscf_method_t</a></p>
@@ -194,7 +190,7 @@ this omits are not zero.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~71"></span>
+              <span class="anchor" id="variable-this~78"></span>
               class(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -209,7 +205,7 @@ this omits are not zero.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~19"></span>
+              <span class="anchor" id="variable-fragment~10"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -224,7 +220,7 @@ this omits are not zero.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~37"></span>
+              <span class="anchor" id="variable-result~17"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -448,18 +444,14 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">mcscf_calc_gradient</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The analytic gradient of an optimised CASSCF</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Analytic rather than by differences, and that remains a deliberate</span>
-<span class="w">      </span><span class="c">!! choice: a numerical MCSCF gradient is 6N converged orbital</span>
-<span class="w">      </span><span class="c">!! optimisations, each of which can land on a *different* active space --</span>
-<span class="w">      </span><span class="c">!! the orbitals that make up a CAS are identified by their character, and</span>
-<span class="w">      </span><span class="c">!! a displaced geometry can reorder them. The result has discontinuities</span>
-<span class="w">      </span><span class="c">!! that look like noise and nothing in the output says which displacement</span>
-<span class="w">      </span><span class="c">!! wandered.</span>
+<span class="w">      </span><span class="c">!! Analytic rather than by differences: a displaced geometry can reorder</span>
+<span class="w">      </span><span class="c">!! the orbitals a CAS is built from, so 6N re-optimisations can each land</span>
+<span class="w">      </span><span class="c">!! on a different active space and the result has discontinuities that</span>
+<span class="w">      </span><span class="c">!! look like noise.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! A CASCI is still refused, and the backend says so: its orbitals came</span>
-<span class="w">      </span><span class="c">!! from the SCF and were never optimised for the active space, so the</span>
-<span class="w">      </span><span class="c">!! energy is not stationary with respect to them and the response terms</span>
-<span class="w">      </span><span class="c">!! this omits are not zero.</span>
+<span class="w">      </span><span class="c">!! A CASCI is refused by the backend. Its orbitals were never optimised</span>
+<span class="w">      </span><span class="c">!! for the active space, so the energy is not stationary with respect to</span>
+<span class="w">      </span><span class="c">!! them and the response terms this omits are not zero.</span>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">mcscf_method_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
@@ -489,7 +481,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

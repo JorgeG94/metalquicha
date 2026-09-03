@@ -1,19 +1,17 @@
 !! Density Functional Theory (DFT) method implementation for metalquicha
 module mqc_method_dft
-   !! Closed-shell Kohn-Sham DFT.
+   !! Kohn-Sham density functional theory.
    !!
-   !! With the cuEST backend (CMake, MQC_ENABLE_CUEST=ON) the Coulomb and exact-exchange matrices come from
-   !! cuEST's density-fitted engine and the exchange-correlation energy and
-   !! potential from its grid engine; the SCF itself runs in `mqc_cuest_scf`.
+   !! Dispatches to whichever backend `model.backend` names, exactly as
+   !! `mqc_method_hf` does; the CPU path is `run_libcint_hf`, which takes the
+   !! functional as one more setting on the same SCF.
    !!
-   !! Density fitting is not optional here. cuEST has no conventional
+   !! Density fitting is not optional on cuEST: it has no conventional
    !! four-index ERI path, so J (and K for hybrids) are always fitted and an
-   !! auxiliary JKFIT basis is required. `use_density_fitting` is therefore
-   !! ignored by this backend rather than switchable.
-   !!
-   !! The amount of exact exchange is never assumed from the functional name:
-   !! it is queried from cuEST's XC plan and handed to the DF plan, so a hybrid
-   !! cannot end up with mismatched Coulomb and XC definitions.
+   !! auxiliary JKFIT basis is required. `density_fitting` is ignored by that
+   !! backend rather than switchable. The amount of exact exchange is queried
+   !! from cuEST's XC plan rather than assumed from the functional name, so a
+   !! hybrid cannot end up with mismatched Coulomb and XC definitions.
    use pic_types, only: dp
    use mqc_scf_types, only: guess_step_t
    use mqc_method_config, only: scf_options_t, pcm_config_t, properties_config_t
@@ -40,31 +38,23 @@ module mqc_method_dft
       integer :: radial_points = 75
          !! Number of radial grid points per atom
       integer :: angular_points = 302
+         !! Number of angular grid points (Lebedev order)
       integer :: grid_level = 3
+         !! 0 to 9, the standard tables. Three is the usual default.
       integer :: nlc_grid_level = -1
          !! VV10's quadrature level; negative means the backend default.
-         !! 0 to 9, the standard tables. Three is the usual default and what a
-         !! production calculation should start from.
       real(dp) :: screening_tolerance = 1.0e-12_dp
          !! AO value below which a shell is dropped from a grid block.
       integer :: block_size = -1
          !! Grid points per block; -1 keeps the backend default.
-         !! Number of angular grid points (Lebedev)
-
-      ! Density fitting
       logical :: use_dispersion = .false.
          !! Add empirical dispersion correction
       character(len=8) :: dispersion_type = "d3bj"
          !! Dispersion type: "d3", "d3bj", "d4"
-
-      ! DIIS acceleration
    end type dft_options_t
 
    type, extends(qc_method_t) :: dft_method_t
-      !! DFT method implementation
-      !!
-      !! Kohn-Sham DFT with configurable exchange-correlation functional,
-      !! integration grid, and optional density fitting.
+      !! Kohn-Sham DFT with a configurable functional and integration grid
       type(dft_options_t) :: options
    contains
       procedure :: calc_energy => dft_calc_energy
@@ -75,7 +65,7 @@ module mqc_method_dft
 contains
 
    subroutine dft_calc_energy(this, fragment, result)
-      !! Calculate electronic energy using Kohn-Sham DFT
+      !! Electronic energy of a fragment
       class(dft_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
@@ -84,23 +74,21 @@ contains
    end subroutine dft_calc_energy
 
    subroutine dft_run(this, fragment, result, want_gradient, want_hessian)
-      !! Run a density-fitted Kohn-Sham calculation through cuEST
+      !! Run the SCF through whichever backend `options%backend` resolves to
       class(dft_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
       logical, intent(in) :: want_gradient
       logical, intent(in), optional :: want_hessian
          !! Only the CPU backend has an analytic Hessian, and only for some of
-         !! what reaches it. Passed along rather than decided here: which cases
-         !! qualify is a fact about that backend.
+         !! what reaches it; the backend decides, not this routine.
 
       type(cuest_scf_settings_t) :: settings
       type(error_t) :: backend_error
 
       if (this%options%use_dispersion) then
-         ! Silently dropping a dispersion correction would bias every fragment
-         ! energy the same way, which is exactly the kind of error a many-body
-         ! expansion amplifies rather than cancels.
+         ! Refused rather than dropped: a missing dispersion correction biases
+         ! every fragment energy the same way.
          call result%error%set(ERROR_VALIDATION, &
                                "Empirical dispersion ("//trim(this%options%dispersion_type)// &
                                ") is not implemented")
@@ -110,8 +98,6 @@ contains
 
       call apply_scf_settings(settings, this%options)
       settings%functional = this%options%functional
-      ! Resolved here rather than carried as a string, so an unknown name fails
-      ! once, before any integrals, instead of at each dispatch.
       call parse_backend_name(this%options%backend, settings%backend, backend_error)
       if (backend_error%has_error()) then
          call result%error%set(ERROR_VALIDATION, backend_error%get_message())
@@ -124,27 +110,15 @@ contains
       settings%nlc_grid_level = this%options%nlc_grid_level
       settings%screening_tolerance = this%options%screening_tolerance
       settings%block_size = this%options%block_size
-      ! Where the molecule reacts. Absent here until now, so a DFT deck asking
-      ! for `properties.fukui` got a normal DFT run and no analysis, with no
-      ! error to say why: the bridge gates on this being allocated.
-      ! Refused rather than run. The quasi-atomic bonding analysis is not
-      ! defined against a Kohn-Sham reference, and nothing in the backend stops
-      ! it: `run_libcint_hf` serves both references and its dispatch is gated
-      ! only on the deck naming an analysis, so handing this over would run a
-      ! decomposition on Kohn-Sham orbitals and report numbers for it. Before
-      ! this refactor such a deck was silently ignored, which is the failure
-      ! this work exists to end -- but the fix is to say no, not to start
-      ! obeying a request the method was never meant to serve.
-      !
-      ! The analysis itself is refused, not merely its sub-options. Naming
-      ! `quao` with none of them set still runs it, so a check on
-      ! `bonding_energy` and friends alone would leave the plainest spelling of
-      ! the request working.
-      ! Tested on the name rather than through `bonding_analysis_kind`, which
-      ! lives in `mqc_libcint_bonding` -- a backend module this one must not
-      ! depend on, or the build without libcint stops compiling. "none" and
-      ! empty are that function's own spellings for off; any other name selects
-      ! an analysis, and QUAO is the only one there is.
+      ! TODO(mqc): `grid_type` is not copied here, and is read nowhere in the
+      ! tree, although the factory fills it from `dft.grid_type`. A deck naming
+      ! it silently gets whatever `grid_level` and the point counts above chose.
+      ! The quasi-atomic bonding analysis is refused, not ignored: it is defined
+      ! against a Hartree-Fock or MCSCF wavefunction, and `run_libcint_hf`
+      ! dispatches on the deck naming an analysis alone, so passing it on would
+      ! decompose Kohn-Sham orbitals and report numbers for it. Tested on the
+      ! name rather than through `bonding_analysis_kind`, which lives in a
+      ! backend module this one must not depend on.
       if (len_trim(this%options%properties%bonding_analysis) > 0 .and. &
           trim(adjustl(this%options%properties%bonding_analysis)) /= "none") then
          call result%error%set(ERROR_VALIDATION, "the quasi-atomic bonding analysis is "// &
@@ -155,34 +129,12 @@ contains
          return
       end if
       call apply_properties_settings(settings, this%options%properties)
-      ! Set unconditionally, and deliberately not guarded on the backend. cuEST
-      ! has no four-index path so it fits regardless and ignores this, per the
-      ! note at the top of this module; on the libcint side it is a real choice.
-      ! Guarding on `BACKEND_LIBCINT` was tried and was wrong: an unspecified
-      ! backend parses to `BACKEND_AUTO` and is only resolved further down, so
-      ! the guard was false for every ordinary deck and the flag never arrived.
-      !
-      ! Until this line existed a Kohn-Sham deck could not turn fitting on
-      ! however it asked. That made the fitted path unreachable rather than
-      ! wrong, which is the better of the two failures but still a gap.
 
-      ! The same choice Hartree-Fock makes, and made the same way rather than a
-      ! second time: cuEST when this build has it, because that is the production
-      ! path and the only one with gradients, and the CPU backend otherwise --
-      ! which is how a fragmented Kohn-Sham calculation runs on a laptop, and what
-      ! gives the GPU path a second implementation to disagree with.
-      !
-      ! Kohn-Sham reaches the CPU backend through `run_libcint_hf` rather than a
-      ! routine of its own. That is deliberate: on that side a functional is one
-      ! optional argument to the same SCF, so a separate entry point would be two
-      ! names for one code path and two places to keep the settings in step.
-      ! Which backend, and refuse a request that cannot be honoured.
-      !
-      ! `run_cuest_scf` exists either way -- the stub compiled without the
-      ! backend reports the missing build and computes nothing -- so asking for
-      ! cuEST on a CPU-only build produces that message rather than silently
-      ! running on the CPU. That is the point of naming a backend: a deck that
-      ! said `cuest` and got libcint would report a provenance that was not true.
+      ! Which backend, and refuse a request that cannot be honoured. Asking for
+      ! cuEST on a CPU-only build reaches the stub `run_cuest_scf`, which
+      ! reports the missing build rather than falling through to libcint.
+      ! TODO(mqc): the MP2/CC refusal below is copied from `hf_run` and is dead
+      ! here -- nothing on this path ever sets `run_mp2` or `run_cc`.
       select case (settings%backend)
       case (BACKEND_CUEST)
          if (settings%cartesian) then
@@ -225,7 +177,7 @@ contains
    end subroutine dft_run
 
    subroutine dft_calc_gradient(this, fragment, result)
-      !! Calculate energy gradient using Kohn-Sham DFT
+      !! Energy and nuclear gradient of a fragment
       class(dft_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
@@ -236,17 +188,11 @@ contains
    subroutine dft_calc_hessian(this, fragment, result)
       !! The analytic Hessian where there is one, central differences otherwise
       !!
-      !! The same shape as `hf_calc_hessian`, and for the same reason: whether
-      !! an analytic Hessian applies depends on what the backend knows -- which
-      !! rung the functional sits on, whether it carries VV10, whether the SCF
-      !! converged restricted and unfitted -- and not on anything visible here.
-      !! The request goes down and `has_hessian` comes back: true means it was
-      !! computed, false with no error means it was declined and finite
-      !! differences take over.
-      !!
-      !! Declining is not failing. A backend that cannot honour a *gradient*
-      !! refuses loudly, because there is no other way to get one; a Hessian
-      !! has a second way that is correct and merely slower.
+      !! The same shape as `hf_calc_hessian`: the request goes down and
+      !! `has_hessian` comes back, true meaning it was computed and false with
+      !! no error meaning it was declined and finite differences take over.
+      !! Which functionals qualify is a fact about the backend, not about
+      !! anything visible here.
       class(dft_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
@@ -255,9 +201,8 @@ contains
       if (result%has_error) return
       if (result%has_hessian) return
 
-      ! Declined. Nothing computed above is reusable -- the finite-difference
-      ! path runs its own reference point -- so this starts over rather than
-      ! trying to keep the SCF that just ran.
+      ! Declined. The finite-difference path runs its own reference point, so
+      ! nothing computed above is reusable.
       call result%destroy()
       call finite_difference_hessian(this, fragment, result, verbose=this%options%verbose, &
                                      displacement_in=this%options%hessian_displacement)

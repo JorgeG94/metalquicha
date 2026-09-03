@@ -211,11 +211,10 @@ largest order &ndash; is stored as 1287 (code, a, b, weight) records in
    code 3   (a, a, b)      b = sqrt(1-2a^2) 24 points
    code 4   (a, b, 0)      b = sqrt(1-a^2)  24 points
    code 5   (a, b, c)      c = sqrt(1-a^2-b^2)  48 points</p>
-<p>Rather than tabulate each orbit&rsquo;s points, <code>expand_orbit</code> generates them
-from the seed and discards duplicates &ndash; which is where the smaller counts
-come from, a seed with a repeated or zero coordinate having a smaller
-orbit than the 48 of a general point. The expected size is asserted, so a
-seed that collapsed further than it should cannot pass silently.</p>
+<p><code>expand_orbit</code> generates the points from the seed and discards
+duplicates, which is where the smaller counts come from: a seed with a
+repeated or zero coordinate has a smaller orbit than the 48 of a general
+point. The expected size is asserted.</p>
 <p>Weights are normalised to sum to 1: the 4*pi of the sphere&rsquo;s surface is
 not included and must be supplied by the caller if it is wanted.
 The orders that exist
@@ -229,9 +228,9 @@ Points and weights for an order</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_lebedev_data.html'>mqc_lebedev_data</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -524,8 +523,8 @@ parameter
 <td> =</td>
                 <td>1.0e-12_dp</td>
             <td>
-                <p>Two generated points closer than this are the same point. Seeds differ in
-their parameters by far more than this, so no distinct pair can merge.</p>
+                <p>Two generated points closer than this are the same point. Seeds differ
+in their parameters by far more, so no distinct pair can merge.</p>
             </td>
         </tr>
         <tr>
@@ -560,12 +559,11 @@ parameter
 <td> =</td>
                 <td>[74, 230, 266]</td>
             <td>
-                <p>Orders whose weights are not all positive.</p>
-<p>These are valid quadratures &ndash; they integrate to the stated accuracy, and
-their weights still sum to 1 &ndash; but a negative weight can drive a
-numerically integrated density negative in a low-density region, so DFT
-grids conventionally avoid them. Checked against PySCF: the same three
-orders, with 8, 6 and 18 negative weights respectively.</p>
+                <p>Orders whose weights are not all positive. They are valid quadratures
+&ndash; they integrate to the stated accuracy and their weights still sum
+to 1 &ndash; but a negative weight can drive a numerically integrated
+density negative in a low-density region, so DFT grids conventionally
+avoid them.</p>
             </td>
         </tr>
         <tr>
@@ -821,7 +819,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-code~7"></span>
+              <span class="anchor" id="variable-code~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -836,7 +834,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-a~18"></span>
+              <span class="anchor" id="variable-a~21"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -851,7 +849,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-b~14"></span>
+              <span class="anchor" id="variable-b~16"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -946,7 +944,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~148"></span>
+              <span class="anchor" id="variable-error~174"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -986,7 +984,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-code~6"></span>
+              <span class="anchor" id="variable-code~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1001,7 +999,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-a~17"></span>
+              <span class="anchor" id="variable-a~20"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1016,7 +1014,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-b~13"></span>
+              <span class="anchor" id="variable-b~15"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1089,7 +1087,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

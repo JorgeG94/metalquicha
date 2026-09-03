@@ -138,11 +138,11 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/write_ieda_section.html#variable-atom_obj">atom_obj</a>
             <a class="list-group-item" href="../proc/write_ieda_section.html#variable-atoms_arr">atoms_arr</a>
-            <a class="list-group-item" href="../proc/write_ieda_section.html#variable-i~160">i</a>
+            <a class="list-group-item" href="../proc/write_ieda_section.html#variable-i~65">i</a>
             <a class="list-group-item" href="../proc/write_ieda_section.html#variable-ieda_obj">ieda_obj</a>
             <a class="list-group-item" href="../proc/write_ieda_section.html#variable-indices_arr">indices_arr</a>
-            <a class="list-group-item" href="../proc/write_ieda_section.html#variable-j~45">j</a>
-            <a class="list-group-item" href="../proc/write_ieda_section.html#variable-natm~4">natm</a>
+            <a class="list-group-item" href="../proc/write_ieda_section.html#variable-j~21">j</a>
+            <a class="list-group-item" href="../proc/write_ieda_section.html#variable-natm~3">natm</a>
             <a class="list-group-item" href="../proc/write_ieda_section.html#variable-pair_obj">pair_obj</a>
             <a class="list-group-item" href="../proc/write_ieda_section.html#variable-pairs_arr">pairs_arr</a>
         </div>
@@ -186,10 +186,8 @@
 
     <p>The energy resolved onto atoms and atom pairs, under <code>bonding_energy</code></p>
 <p>Written whenever <code>properties.bonding_analysis.energy_decomposition</code>
-ran. The tables are printed too &ndash; that is what the deck asked for &ndash;
-but a printed table is not a number a script can act on, and the whole
-point of the decomposition is deciding which atoms and which pairs are
-worth attention.</p>
+ran. The tables are printed too, but a printed table is not a number a
+script can act on.</p>
 <p><strong>Atom indices are 0-based</strong>, as everywhere else in the interfaces,
 and the pairs are written once each with <code>i &lt; j</code> carrying the full
 pair energy &ndash; the (A,B)/(B,A) doubling of the internal matrices is an
@@ -210,7 +208,7 @@ is <code>sum(atoms) + sum(pairs)</code> here, with no factor of a half.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~49"></span>
+              <span class="anchor" id="variable-json~20"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -240,7 +238,7 @@ is <code>sum(atoms) + sum(pairs)</code> here, with no factor of a half.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~13"></span>
+              <span class="anchor" id="variable-data~10"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -846,7 +844,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~160"></span>
+              <span class="anchor" id="variable-i~65"></span>
               integer,
             </td>
               <td>private</td>
@@ -897,7 +895,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~45"></span>
+              <span class="anchor" id="variable-j~21"></span>
               integer,
             </td>
               <td>private</td>
@@ -914,7 +912,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-natm~4"></span>
+              <span class="anchor" id="variable-natm~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -983,10 +981,8 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! The energy resolved onto atoms and atom pairs, under `bonding_energy`</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Written whenever `properties.bonding_analysis.energy_decomposition`</span>
-<span class="w">      </span><span class="c">!! ran. The tables are printed too -- that is what the deck asked for --</span>
-<span class="w">      </span><span class="c">!! but a printed table is not a number a script can act on, and the whole</span>
-<span class="w">      </span><span class="c">!! point of the decomposition is deciding which atoms and which pairs are</span>
-<span class="w">      </span><span class="c">!! worth attention.</span>
+<span class="w">      </span><span class="c">!! ran. The tables are printed too, but a printed table is not a number a</span>
+<span class="w">      </span><span class="c">!! script can act on.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! **Atom indices are 0-based**, as everywhere else in the interfaces,</span>
 <span class="w">      </span><span class="c">!! and the pairs are written once each with `i &lt; j` carrying the full</span>
@@ -1071,7 +1067,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

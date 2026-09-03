@@ -166,18 +166,9 @@
     
 
     <p>Hand a backend the post-SCF properties the deck asked for</p>
-<p>The sibling of <code>apply_scf_settings</code>, and it exists for the same
-reason: this block was written out by hand in each method and the
-three had already diverged. Kohn-Sham unpacked four of the eight and
-MCSCF six, so <code>keywords.properties.bonding_energy</code> on a Kohn-Sham run
-reached a backend that reads <code>settings%bonding_energy</code> &ndash; the same
-routine Hartree-Fock uses &ndash; and found the default. That one is worse
-than a dropped feature: the flag guards a <em>refusal</em>, because the
-bonding energy decomposition rebuilds atom energies from gas-phase
-operators and must not run under a continuum, so never setting it
-disarmed a check that exists to stop a wrong answer.</p>
-<p><code>fukui_population</code> and <code>charges_scheme</code> are allocatable and stay
-guarded: an unset one must not overwrite what a backend already has.</p>
+<p><code>fukui_population</code>, <code>fukui_guess</code> and <code>charges_scheme</code> are allocatable
+and stay guarded: an unset one must not overwrite what a backend
+already has.</p>
 
 
     <h3>Arguments</h3>
@@ -193,7 +184,7 @@ guarded: an unset one must not overwrite what a backend already has.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~4"></span>
+              <span class="anchor" id="variable-settings~5"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -208,7 +199,7 @@ guarded: an unset one must not overwrite what a backend already has.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties"></span>
+              <span class="anchor" id="variable-properties~6"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -512,19 +503,9 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">apply_properties_settings</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span><span class="w"> </span><span class="n">properties</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Hand a backend the post-SCF properties the deck asked for</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The sibling of `apply_scf_settings`, and it exists for the same</span>
-<span class="w">      </span><span class="c">!! reason: this block was written out by hand in each method and the</span>
-<span class="w">      </span><span class="c">!! three had already diverged. Kohn-Sham unpacked four of the eight and</span>
-<span class="w">      </span><span class="c">!! MCSCF six, so `keywords.properties.bonding_energy` on a Kohn-Sham run</span>
-<span class="w">      </span><span class="c">!! reached a backend that reads `settings%bonding_energy` -- the same</span>
-<span class="w">      </span><span class="c">!! routine Hartree-Fock uses -- and found the default. That one is worse</span>
-<span class="w">      </span><span class="c">!! than a dropped feature: the flag guards a *refusal*, because the</span>
-<span class="w">      </span><span class="c">!! bonding energy decomposition rebuilds atom energies from gas-phase</span>
-<span class="w">      </span><span class="c">!! operators and must not run under a continuum, so never setting it</span>
-<span class="w">      </span><span class="c">!! disarmed a check that exists to stop a wrong answer.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! `fukui_population` and `charges_scheme` are allocatable and stay</span>
-<span class="w">      </span><span class="c">!! guarded: an unset one must not overwrite what a backend already has.</span>
+<span class="w">      </span><span class="c">!! `fukui_population`, `fukui_guess` and `charges_scheme` are allocatable</span>
+<span class="w">      </span><span class="c">!! and stay guarded: an unset one must not overwrite what a backend</span>
+<span class="w">      </span><span class="c">!! already has.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">cuest_scf_settings_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">settings</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">properties_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">properties</span>
 
@@ -568,7 +549,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

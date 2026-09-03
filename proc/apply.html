@@ -137,12 +137,12 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/apply.html#variable-f_mo">f_mo</a>
-            <a class="list-group-item" href="../proc/apply.html#variable-i~181">i</a>
-            <a class="list-group-item" href="../proc/apply.html#variable-n_ao~6">n_ao</a>
-            <a class="list-group-item" href="../proc/apply.html#variable-n_mo~5">n_mo</a>
+            <a class="list-group-item" href="../proc/apply.html#variable-i~29">i</a>
+            <a class="list-group-item" href="../proc/apply.html#variable-n_ao~4">n_ao</a>
+            <a class="list-group-item" href="../proc/apply.html#variable-n_mo~3">n_mo</a>
             <a class="list-group-item" href="../proc/apply.html#variable-nfo">nfo</a>
             <a class="list-group-item" href="../proc/apply.html#variable-nfr">nfr</a>
-            <a class="list-group-item" href="../proc/apply.html#variable-work~4">work</a>
+            <a class="list-group-item" href="../proc/apply.html#variable-work~2">work</a>
         </div>
       </div>
     </div>
@@ -200,7 +200,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~134"></span>
+              <span class="anchor" id="variable-this~24"></span>
               class(<a href='../type/fock_projector_t.html'>fock_projector_t</a>),
             </td>
 <td>intent(in)</td>
@@ -215,7 +215,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fock~4"></span>
+              <span class="anchor" id="variable-fock"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -230,7 +230,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~158"></span>
+              <span class="anchor" id="variable-error~35"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -428,7 +428,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~181"></span>
+              <span class="anchor" id="variable-i~29"></span>
               integer,
             </td>
               <td>private</td>
@@ -445,7 +445,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_ao~6"></span>
+              <span class="anchor" id="variable-n_ao~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -462,7 +462,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_mo~5"></span>
+              <span class="anchor" id="variable-n_mo~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -513,7 +513,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-work~4"></span>
+              <span class="anchor" id="variable-work~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -555,10 +555,9 @@ large graphs.</div>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 
-<span class="w">      </span><span class="c">! Nothing frozen is not "the identity to roundoff", it is the identity:</span>
-<span class="w">      </span><span class="c">! returning here rather than transforming there and back is what makes a</span>
+<span class="w">      </span><span class="c">! Returning here rather than transforming there and back is what keeps a</span>
 <span class="w">      </span><span class="c">! calculation with no frozen orbitals bit-identical to one that never had</span>
-<span class="w">      </span><span class="c">! a projector, which is the regression guarantee this is worth having.</span>
+<span class="w">      </span><span class="c">! a projector.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">n_frozen</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 
 <span class="k">      </span><span class="n">n_ao</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">fock</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
@@ -578,8 +577,7 @@ large graphs.</div>
 <span class="w">      </span><span class="n">nfr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">n_frozen</span>
 
 <span class="w">      </span><span class="c">! Every coupling out of the frozen-occupied block. The block itself is</span>
-<span class="w">      </span><span class="c">! left as it is -- those orbitals stay occupied and keep their own</span>
-<span class="w">      </span><span class="c">! structure; what must go is their mixing with anything else.</span>
+<span class="w">      </span><span class="c">! left as it is; what must go is its mixing with anything else.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nfo</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">f_mo</span><span class="p">(</span><span class="n">nfo</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">:,</span><span class="w"> </span><span class="p">:</span><span class="n">nfo</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 <span class="w">         </span><span class="n">f_mo</span><span class="p">(:</span><span class="n">nfo</span><span class="p">,</span><span class="w"> </span><span class="n">nfo</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">:)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
@@ -587,9 +585,7 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! The frozen-virtual block, held degenerate at `shift` and cut from the</span>
 <span class="w">      </span><span class="c">! unfrozen space. Degenerate rather than merely shifted: an off-diagonal</span>
-<span class="w">      </span><span class="c">! left inside this block would let its orbitals rotate among themselves,</span>
-<span class="w">      </span><span class="c">! and they are meant to be the orbitals that were chosen, not a basis for</span>
-<span class="w">      </span><span class="c">! them.</span>
+<span class="w">      </span><span class="c">! left inside this block would let its orbitals rotate among themselves.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nfr</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">nfo</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">f_mo</span><span class="p">(</span><span class="n">nfo</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">nfr</span><span class="p">,</span><span class="w"> </span><span class="n">nfo</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">nfr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 <span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nfo</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nfr</span>
@@ -627,7 +623,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -135,8 +135,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../module/mqc_capi_run.html#variable-message_len~3">MESSAGE_LEN</a>
-            <a class="list-group-item" href="../module/mqc_capi_run.html#variable-last_message~3">last_message</a>
+            <a class="list-group-item" href="../module/mqc_capi_run.html#variable-message_len~2">MESSAGE_LEN</a>
+            <a class="list-group-item" href="../module/mqc_capi_run.html#variable-last_message~2">last_message</a>
         </div>
       </div>
     </div>
@@ -196,36 +196,31 @@ list, across every rank of the session.</p>
 screens a term list, says what to compute in a JSON settings document,
 and hands all three over; the job&rsquo;s other ranks &ndash; which have seen none
 of it &ndash; are brought up to date and take part.</p>
-<p><strong>The settings travel as JSON text rather than as a struct.</strong> That looks
-like a round trip and is a deliberate one. The alternative is
-broadcasting <code>method_config_t</code>, which is sixty-odd fields across seven
-nested sub-configs, and every one of them would have to be transcribed
-into a send and a receive that stay in step forever. A field missed there
-does not fail; it leaves the workers running a slightly different method
-than rank 0 asked for, and the run converges and reports a number. Text
-has no field list to forget, and it puts the workers through the same
-validator as any input deck rather than around it.</p>
-<p>The system does <em>not</em> travel that way, because it is the opposite case:
-it carries conventions &ndash; the monomer padding, the 0-based atoms against
-1-based monomers &ndash; that a document would have to re-derive on arrival,
-which is where the silent wrongness would live for that one.</p>
+<p><strong>The settings travel as JSON text rather than as a struct.</strong> Text has no
+field list to keep in step, where a broadcast <code>method_config_t</code> that
+missed one would leave the workers running a slightly different method
+than rank 0 asked for and still report a number. It also puts the workers
+through the same validator as any input deck.</p>
+<p>The system does <em>not</em> travel that way: it carries conventions &ndash; the
+monomer padding, 0-based atoms against 1-based monomers &ndash; that a
+document would have to re-derive on arrival.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_capi_system.html'>mqc_capi_system</a></li>
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_capi_session.html'>mqc_capi_session</a></li>
-                  <li class="list-inline-item"><a href='mqc_fraglist.html'>mqc_fraglist</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_capi_status.html'>mqc_capi_status</a></li>
                   <li class="list-inline-item"><a href='mqc_session.html'>mqc_session</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_capi_session.html'>mqc_capi_session</a></li>
+                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
+                  <li class="list-inline-item"><a href='mqc_capi_system.html'>mqc_capi_system</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_fraglist.html'>mqc_fraglist</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
+                  <li class="list-inline-item"><a href='mqc_capi_status.html'>mqc_capi_status</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -3447,7 +3442,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-message_len~3"></span>
+              <span class="anchor" id="variable-message_len~2"></span>
               integer,
             </td>
               <td>private,</td>
@@ -3464,7 +3459,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-last_message~3"></span>
+              <span class="anchor" id="variable-last_message~2"></span>
               character(len=MESSAGE_LEN),
             </td>
               <td>private,</td>
@@ -3526,7 +3521,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~12"></span>
+              <span class="anchor" id="variable-terms~11"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -3556,7 +3551,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~11"></span>
+              <span class="anchor" id="variable-settings~13"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(in)</td>
@@ -3586,7 +3581,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-label~4"></span>
+              <span class="anchor" id="variable-label~6"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(in)</td>
@@ -3616,7 +3611,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~16"></span>
+              <span class="anchor" id="variable-energy~22"></span>
               real(kind=c_double),
             </td>
 <td>intent(out)</td>
@@ -3661,7 +3656,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~52"></span>
+              <span class="anchor" id="variable-n~61"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -3741,7 +3736,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-buffer~12"></span>
+              <span class="anchor" id="variable-buffer~11"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(inout)</td>
@@ -3781,7 +3776,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~15"></span>
+              <span class="anchor" id="variable-h~24"></span>
               type(<a href='../type/system_handle_t.html'>system_handle_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3796,7 +3791,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~30"></span>
+              <span class="anchor" id="variable-status~32"></span>
               integer(kind=c_int),
             </td>
 <td>intent(out)</td>
@@ -3839,7 +3834,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

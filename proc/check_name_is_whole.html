@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/check_name_is_whole.html#variable-role~2">role</a>
+            <a class="list-group-item" href="../proc/check_name_is_whole.html#variable-role~3">role</a>
         </div>
       </div>
     </div>
@@ -178,15 +178,10 @@
 
     <p>Refuse a libxc name that is only half of a functional</p>
 <p>libxc splits most of its semilocal functionals into an exchange half and
-a correlation half, and either half alone is a perfectly valid libxc
-functional that initialises, evaluates, and converges. It just is not the
-functional anyone meant: <code>mgga_x_r2scan</code> alone lands 0.32 Hartree from
-r2SCAN and <code>mgga_c_r2scan</code> alone nine Hartree, both silently, on a water
-molecule. Nothing downstream can catch that, because there is nothing
-wrong with the calculation &ndash; only with which functional it ran.</p>
-<p>This costs nothing in reach: a pair libxc does not carry under one name
-belongs in the table above, which is where every such functional in this
-module already is.</p>
+a correlation half, and either half alone initialises, evaluates and
+converges &ndash; to an energy that is not the functional it is named after.
+Nothing downstream catches that, because there is nothing wrong with the
+calculation, only with which functional it ran.</p>
 
 
     <h3>Arguments</h3>
@@ -202,7 +197,7 @@ module already is.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~5"></span>
+              <span class="anchor" id="variable-name~38"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -217,7 +212,7 @@ module already is.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~2"></span>
+              <span class="anchor" id="variable-error~132"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -521,7 +516,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-role~2"></span>
+              <span class="anchor" id="variable-role~3"></span>
               character(len=2),
             </td>
               <td>private</td>
@@ -556,16 +551,10 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Refuse a libxc name that is only half of a functional</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! libxc splits most of its semilocal functionals into an exchange half and</span>
-<span class="w">      </span><span class="c">!! a correlation half, and either half alone is a perfectly valid libxc</span>
-<span class="w">      </span><span class="c">!! functional that initialises, evaluates, and converges. It just is not the</span>
-<span class="w">      </span><span class="c">!! functional anyone meant: `mgga_x_r2scan` alone lands 0.32 Hartree from</span>
-<span class="w">      </span><span class="c">!! r2SCAN and `mgga_c_r2scan` alone nine Hartree, both silently, on a water</span>
-<span class="w">      </span><span class="c">!! molecule. Nothing downstream can catch that, because there is nothing</span>
-<span class="w">      </span><span class="c">!! wrong with the calculation -- only with which functional it ran.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! This costs nothing in reach: a pair libxc does not carry under one name</span>
-<span class="w">      </span><span class="c">!! belongs in the table above, which is where every such functional in this</span>
-<span class="w">      </span><span class="c">!! module already is.</span>
+<span class="w">      </span><span class="c">!! a correlation half, and either half alone initialises, evaluates and</span>
+<span class="w">      </span><span class="c">!! converges -- to an energy that is not the functional it is named after.</span>
+<span class="w">      </span><span class="c">!! Nothing downstream catches that, because there is nothing wrong with the</span>
+<span class="w">      </span><span class="c">!! calculation, only with which functional it ran.</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">name</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 
@@ -586,8 +575,7 @@ large graphs.</div>
 <span class="w">                        </span><span class="s2">"functional, not an exchange-correlation one."</span><span class="p">)</span>
 <span class="w">      </span><span class="k">case </span><span class="n">default</span>
 <span class="w">         </span><span class="c">! "xc", a whole functional; or "", a name following no libxc convention</span>
-<span class="w">         </span><span class="c">! at all. Both pass, the second because an unrecognisable name is libxc's</span>
-<span class="w">         </span><span class="c">! to reject in its own words rather than this module's to guess at.</span>
+<span class="w">         </span><span class="c">! at all. Both pass, the second for libxc to reject in its own words.</span>
 <span class="w">      </span><span class="k">end select</span>
 <span class="k">   end subroutine </span><span class="n">check_name_is_whole</span>
 </pre></div>
@@ -613,7 +601,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

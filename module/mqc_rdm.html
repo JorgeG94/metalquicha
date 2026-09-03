@@ -195,7 +195,7 @@ d_pqrs    = &lt;Psi| E_pq E_rs - delta_qr E_ps |Psi&gt;
 <p>with <code>E_pq</code> summed over both spins, so these are spin-traced. They are
 everything the rest of MCSCF needs from the CI: the orbital gradient, the
 generalised Fock matrix and the energy are all contractions of these two
-against integrals, and none of them ever sees a CI vector again.</p>
+against integrals.</p>
 <p>Both fall out of the same operation the sigma build uses. If
 <code>t_pq = E_pq |Psi&gt;</code> &ndash; which <code>apply_excitations</code> returns for every pair at
 once &ndash; then <code>D_pq</code> is the overlap of <code>t_pq</code> with the wave function, and
@@ -208,21 +208,21 @@ intermediate against itself. The <code>delta_qr E_ps</code> correction is then
 subtracted, which is what makes <code>d</code> the quantity that contracts with
 <code>(pq|rs)</code> to give the two-electron energy.</p>
 <p>The convention is PySCF&rsquo;s <code>make_rdm12</code>, which is also Helgaker&rsquo;s and
-GAMESS&rsquo;s. It is worth being explicit about because a factor of two and an
-index transposition are the two ways a two-particle density matrix is
-usually wrong, and both give a plausible energy.</p>
+GAMESS&rsquo;s. A factor of two and an index transposition are the two ways a
+two-particle density matrix is usually wrong, and both give a plausible
+energy, so the convention is worth stating.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_determinants.html'>mqc_determinants</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_blas_interfaces</li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_ci.html'>mqc_ci</a></li>
+                  <li class="list-inline-item">pic_io</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -557,7 +557,7 @@ enough that a few dozen chunks exist to balance across threads.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-h1e~4"></span>
+              <span class="anchor" id="variable-h1e~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -572,7 +572,7 @@ enough that a few dozen chunks exist to balance across threads.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-eri~3"></span>
+              <span class="anchor" id="variable-eri~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -587,7 +587,7 @@ enough that a few dozen chunks exist to balance across threads.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dm1~2"></span>
+              <span class="anchor" id="variable-dm1~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -602,7 +602,7 @@ enough that a few dozen chunks exist to balance across threads.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dm2~2"></span>
+              <span class="anchor" id="variable-dm2~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -652,7 +652,7 @@ enough that a few dozen chunks exist to balance across threads.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ci~4"></span>
+              <span class="anchor" id="variable-ci~10"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -667,7 +667,7 @@ enough that a few dozen chunks exist to balance across threads.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~8"></span>
+              <span class="anchor" id="variable-alpha~14"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in)</td>
@@ -682,7 +682,7 @@ enough that a few dozen chunks exist to balance across threads.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~8"></span>
+              <span class="anchor" id="variable-beta~14"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in)</td>
@@ -697,7 +697,7 @@ enough that a few dozen chunks exist to balance across threads.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dm1"></span>
+              <span class="anchor" id="variable-dm1~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -712,7 +712,7 @@ enough that a few dozen chunks exist to balance across threads.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dm2"></span>
+              <span class="anchor" id="variable-dm2~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -727,7 +727,7 @@ enough that a few dozen chunks exist to balance across threads.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~112"></span>
+              <span class="anchor" id="variable-error~55"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -770,7 +770,7 @@ enough that a few dozen chunks exist to balance across threads.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -137,17 +137,17 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-cursor">cursor</a>
-            <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-found~49">found</a>
-            <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-iatom~18">iatom</a>
-            <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-icomp">icomp</a>
+            <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-found~28">found</a>
+            <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-iatom~9">iatom</a>
+            <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-icomp~2">icomp</a>
             <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-ishell~7">ishell</a>
-            <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-json~37">json</a>
-            <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-key~8">key</a>
+            <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-json~22">json</a>
+            <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-key~5">key</a>
             <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-n_shells">n_shells</a>
-            <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-path~25">path</a>
+            <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-path~16">path</a>
             <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-shell_l">shell_l</a>
             <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-shell_n">shell_n</a>
-            <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-total~14">total</a>
+            <a class="list-group-item" href="../proc/aambs_shell_labels.html#variable-total~10">total</a>
         </div>
       </div>
     </div>
@@ -191,12 +191,9 @@
 <p>In the order <code>build_aambs_molecule</code> lays them out &ndash; atoms outermost,
 then the element&rsquo;s shells in the order <code>aambs.json</code> lists them, then
 <code>2l+1</code> functions per shell. That ordering is an invariant of the basis
-file rather than of this routine, and the same one <code>aambs_atom_ranges</code>
-relies on.</p>
-<p>The principal quantum number is the reason this exists. It is in the
-file and in nothing else: libcint knows an angular momentum and an atom
-but has no notion of a <code>2p</code> as opposed to a <code>3p</code>, and telling those
-apart is exactly what selecting an active space by orbital label needs.</p>
+file, not of this routine.</p>
+<p>The principal quantum number is in the file and in nothing else:
+libcint has no notion of a <code>2p</code> as opposed to a <code>3p</code>.</p>
 
 
     <h3>Arguments</h3>
@@ -212,7 +209,7 @@ apart is exactly what selecting an active space by orbital label needs.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~14"></span>
+              <span class="anchor" id="variable-atomic_numbers~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -272,7 +269,7 @@ apart is exactly what selecting an active space by orbital label needs.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~117"></span>
+              <span class="anchor" id="variable-error~100"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -593,7 +590,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~49"></span>
+              <span class="anchor" id="variable-found~28"></span>
               logical,
             </td>
               <td>private</td>
@@ -610,7 +607,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~18"></span>
+              <span class="anchor" id="variable-iatom~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -627,7 +624,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-icomp"></span>
+              <span class="anchor" id="variable-icomp~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -661,7 +658,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~37"></span>
+              <span class="anchor" id="variable-json~22"></span>
               type(json_file),
             </td>
               <td>private</td>
@@ -678,7 +675,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-key~8"></span>
+              <span class="anchor" id="variable-key~5"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -712,7 +709,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~25"></span>
+              <span class="anchor" id="variable-path~16"></span>
               character(len=:),
             </td>
               <td>private,</td>
@@ -763,7 +760,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total~14"></span>
+              <span class="anchor" id="variable-total~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -800,13 +797,10 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! In the order `build_aambs_molecule` lays them out -- atoms outermost,</span>
 <span class="w">      </span><span class="c">!! then the element's shells in the order `aambs.json` lists them, then</span>
 <span class="w">      </span><span class="c">!! `2l+1` functions per shell. That ordering is an invariant of the basis</span>
-<span class="w">      </span><span class="c">!! file rather than of this routine, and the same one `aambs_atom_ranges`</span>
-<span class="w">      </span><span class="c">!! relies on.</span>
+<span class="w">      </span><span class="c">!! file, not of this routine.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The principal quantum number is the reason this exists. It is in the</span>
-<span class="w">      </span><span class="c">!! file and in nothing else: libcint knows an angular momentum and an atom</span>
-<span class="w">      </span><span class="c">!! but has no notion of a `2p` as opposed to a `3p`, and telling those</span>
-<span class="w">      </span><span class="c">!! apart is exactly what selecting an active space by orbital label needs.</span>
+<span class="w">      </span><span class="c">!! The principal quantum number is in the file and in nothing else:</span>
+<span class="w">      </span><span class="c">!! libcint has no notion of a `2p` as opposed to a `3p`.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atomic_numbers</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_of</span><span class="p">(:)</span><span class="w">     </span><span class="c">!! 1-based atom index</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">principal</span><span class="p">(:)</span><span class="w">   </span><span class="c">!! n</span>
@@ -818,6 +812,8 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">shell_n</span><span class="p">(:),</span><span class="w"> </span><span class="n">shell_l</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">iatom</span><span class="p">,</span><span class="w"> </span><span class="n">ishell</span><span class="p">,</span><span class="w"> </span><span class="n">icomp</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="n">cursor</span><span class="p">,</span><span class="w"> </span><span class="n">n_shells</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">found</span>
+<span class="w">      </span><span class="c">! TODO(mqc): `key`, `n_shells` and `found` are declared here and never</span>
+<span class="w">      </span><span class="c">! used.</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      call </span><span class="n">aambs_file</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
@@ -831,9 +827,7 @@ large graphs.</div>
 <span class="k">      end if</span>
 
 <span class="w">      </span><span class="c">! Two passes: the first counts so the arrays can be sized exactly, the</span>
-<span class="w">      </span><span class="c">! second fills them. Cheaper than growing them and much easier to read</span>
-<span class="w">      </span><span class="c">! than predicting the size from the orbital counts, which would duplicate</span>
-<span class="w">      </span><span class="c">! the relationship between shells and functions that this is establishing.</span>
+<span class="w">      </span><span class="c">! second fills them.</span>
 <span class="w">      </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">      </span><span class="k">do </span><span class="n">iatom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">atomic_numbers</span><span class="p">)</span>
 <span class="w">         </span><span class="k">call </span><span class="n">element_shells</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">atomic_numbers</span><span class="p">(</span><span class="n">iatom</span><span class="p">),</span><span class="w"> </span><span class="n">shell_n</span><span class="p">,</span><span class="w"> </span><span class="n">shell_l</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
@@ -889,7 +883,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

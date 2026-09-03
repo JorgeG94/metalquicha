@@ -137,8 +137,8 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/connected_components.html#variable-bonds~19">bonds</a>
-            <a class="list-group-item" href="../proc/connected_components.html#variable-iatom~33">iatom</a>
-            <a class="list-group-item" href="../proc/connected_components.html#variable-ibond~7">ibond</a>
+            <a class="list-group-item" href="../proc/connected_components.html#variable-iatom~24">iatom</a>
+            <a class="list-group-item" href="../proc/connected_components.html#variable-ibond~8">ibond</a>
             <a class="list-group-item" href="../proc/connected_components.html#variable-n_bonds~3">n_bonds</a>
             <a class="list-group-item" href="../proc/connected_components.html#variable-root_i">root_i</a>
             <a class="list-group-item" href="../proc/connected_components.html#variable-root_j">root_j</a>
@@ -184,12 +184,7 @@
     <p>Label each atom with the covalently connected group it belongs to</p>
 <p>Components are numbered 1..n in first-atom order, so a group&rsquo;s number
 reflects where it appears in the geometry rather than where the
-union-find happened to root it.</p>
-<p>Separate from <code>auto_monomers</code> because two callers want the labelling and
-only one of them wants a partition: an internal-coordinate scheme needs
-to know which atoms are bonded to which so it can build coordinates per
-group, and that is true whether or not the <em>energy</em> is being fragmented.
-Those are different questions about the same geometry.</p>
+union-find happened to root it. <code>component</code> is 1-based over atoms.</p>
 
 
     <h3>Arguments</h3>
@@ -205,7 +200,7 @@ Those are different questions about the same geometry.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~86"></span>
+              <span class="anchor" id="variable-sys_geom~79"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -250,7 +245,7 @@ Those are different questions about the same geometry.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~14"></span>
+              <span class="anchor" id="variable-tolerance~15"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -701,7 +696,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~33"></span>
+              <span class="anchor" id="variable-iatom~24"></span>
               integer,
             </td>
               <td>private</td>
@@ -718,7 +713,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ibond~7"></span>
+              <span class="anchor" id="variable-ibond~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -805,13 +800,7 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Components are numbered 1..n in first-atom order, so a group's number</span>
 <span class="w">      </span><span class="c">!! reflects where it appears in the geometry rather than where the</span>
-<span class="w">      </span><span class="c">!! union-find happened to root it.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Separate from `auto_monomers` because two callers want the labelling and</span>
-<span class="w">      </span><span class="c">!! only one of them wants a partition: an internal-coordinate scheme needs</span>
-<span class="w">      </span><span class="c">!! to know which atoms are bonded to which so it can build coordinates per</span>
-<span class="w">      </span><span class="c">!! group, and that is true whether or not the *energy* is being fragmented.</span>
-<span class="w">      </span><span class="c">!! Those are different questions about the same geometry.</span>
+<span class="w">      </span><span class="c">!! union-find happened to root it. `component` is 1-based over atoms.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">component</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_components</span>
@@ -879,7 +868,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

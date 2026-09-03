@@ -177,14 +177,12 @@
     
 
     <p>Fold every fragment whose displacement results have all landed</p>
-<p>Called from the coordinator loop so a fragment&rsquo;s Hessian is assembled and its
-gradients released while the rest of the queue is still running, instead of
-holding every task result until the end. Memory then tracks the number of
-fragments in flight rather than the total task count.</p>
-<p>Completion is detected by a monotone scan from the oldest unfolded fragment,
-so the bookkeeping is O(1) amortised per task and the drain routines need to
-report nothing. A straggler at the head stalls the scan, in which case this
-degrades to folding everything at the end &ndash; never worse than that.</p>
+<p>Called from the coordinator loop, so a fragment&rsquo;s Hessian is assembled
+and its gradients released while the rest of the queue is still running.
+Memory then tracks the fragments in flight rather than the task count.</p>
+<p>Completion is detected by a monotone scan from the oldest unfolded
+fragment, <code>O(1)</code> amortised per task. A straggler at the head stalls the
+scan, which degrades to folding everything at the end.</p>
 
 
     <h3>Arguments</h3>
@@ -200,7 +198,7 @@ degrades to folding everything at the end &ndash; never worse than that.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~7"></span>
+              <span class="anchor" id="variable-polymers~21"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -215,7 +213,7 @@ degrades to folding everything at the end &ndash; never worse than that.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~3"></span>
+              <span class="anchor" id="variable-total_fragments~10"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -230,7 +228,7 @@ degrades to folding everything at the end &ndash; never worse than that.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~26"></span>
+              <span class="anchor" id="variable-sys_geom~73"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -335,7 +333,7 @@ degrades to folding everything at the end &ndash; never worse than that.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~6"></span>
+              <span class="anchor" id="variable-world_comm~23"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1097,15 +1095,13 @@ large graphs.</div>
 <span class="w">                                       </span><span class="n">next_frag</span><span class="p">,</span><span class="w"> </span><span class="n">scan_pos</span><span class="p">,</span><span class="w"> </span><span class="n">world_comm</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Fold every fragment whose displacement results have all landed</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Called from the coordinator loop so a fragment's Hessian is assembled and its</span>
-<span class="w">      </span><span class="c">!! gradients released while the rest of the queue is still running, instead of</span>
-<span class="w">      </span><span class="c">!! holding every task result until the end. Memory then tracks the number of</span>
-<span class="w">      </span><span class="c">!! fragments in flight rather than the total task count.</span>
+<span class="w">      </span><span class="c">!! Called from the coordinator loop, so a fragment's Hessian is assembled</span>
+<span class="w">      </span><span class="c">!! and its gradients released while the rest of the queue is still running.</span>
+<span class="w">      </span><span class="c">!! Memory then tracks the fragments in flight rather than the task count.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Completion is detected by a monotone scan from the oldest unfolded fragment,</span>
-<span class="w">      </span><span class="c">!! so the bookkeeping is O(1) amortised per task and the drain routines need to</span>
-<span class="w">      </span><span class="c">!! report nothing. A straggler at the head stalls the scan, in which case this</span>
-<span class="w">      </span><span class="c">!! degrades to folding everything at the end -- never worse than that.</span>
+<span class="w">      </span><span class="c">!! Completion is detected by a monotone scan from the oldest unfolded</span>
+<span class="w">      </span><span class="c">!! fragment, `O(1)` amortised per task. A straggler at the head stalls the</span>
+<span class="w">      </span><span class="c">!! scan, which degrades to folding everything at the end.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">polymers</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_fragments</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
@@ -1158,7 +1154,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

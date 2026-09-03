@@ -204,22 +204,15 @@
     <div class="col-md-9" id='text'>
       <p>Holds <code>cuest_scf_settings_t</code>, the settings an HF or DFT method hands to
 the cuEST backend.</p>
-<p>It lives here, in <code>src/</code>, rather than with the backend for one reason:
-the backend cannot be part of the fpm build (fpm cannot link the cuEST
-library, and its module-dependency scanner is preprocessor-blind, so it
-would demand the backend modules even from behind an <code>#ifdef</code>). Keeping
-the <em>type</em> here and reaching the backend through <code>mqc_cuest_bridge</code> &ndash;
-which has a stub form fpm compiles and a real form CMake compiles &ndash; lets
-the method files carry no preprocessor conditionals at all.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1236,12 +1229,7 @@ parameter
 <td> =</td>
                 <td>0</td>
             <td>
-                <p>Which integral backend a deck asked for.</p>
-<p><code>auto</code> is the historical behaviour and the default: cuEST when the build
-has it, the CPU path otherwise. The other two are requests, and a request
-that cannot be honoured is refused rather than quietly substituted &ndash; which
-is the whole reason for naming one. A deck that says <code>cuest</code> and silently
-got the CPU path would report timings and a provenance that were not true.</p>
+                
             </td>
         </tr>
         <tr>
@@ -1275,7 +1263,10 @@ parameter
 <td> =</td>
                 <td>2</td>
             <td>
-                
+                <p>Which integral backend a deck asked for. <code>auto</code> is the default: cuEST
+when the build has it, the CPU path otherwise. The other two are
+requests, and a request that cannot be honoured is refused rather than
+quietly substituted.</p>
             </td>
         </tr>
     </tbody>
@@ -1314,7 +1305,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-accelerator"></span>
+              <span class="anchor" id="variable-accelerator~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1326,12 +1317,15 @@ parameter
 <td> =</td>
                 <td>&#34;diis&#34;</td>
             <td>
-
+<p><code>keywords.scf.accelerator</code>: &lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or
+&lsquo;ediis&rsquo;. The energy-based pair runs only while the error is large
+and hands over to DIIS, so naming one chooses a different opening,
+not a different endgame.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf"></span>
+              <span class="anchor" id="variable-allow_crap_scf~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -1344,13 +1338,12 @@ parameter
                 <td>.false.</td>
             <td>
 <p>Keep a non-converged SCF instead of failing the fragment. Same
-meaning and same default as the xTB path &ndash; one physical condition
-must not have two behaviours depending on which backend ran it.</p>
+meaning and same default as the xTB path.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points"></span>
+              <span class="anchor" id="variable-angular_points~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1367,7 +1360,7 @@ must not have two behaviours depending on which backend ran it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_named"></span>
+              <span class="anchor" id="variable-aux_basis_named~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1385,7 +1378,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set"></span>
+              <span class="anchor" id="variable-aux_basis_set~4"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1397,12 +1390,13 @@ default exists because cuEST needs one, so its presence says nothing.</p>
 <td> =</td>
                 <td>&#34;def2-universal-jkfit&#34;</td>
             <td>
-
+<p>Auxiliary (JKFIT) basis. Required by cuEST, which fits J and K
+always.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend"></span>
+              <span class="anchor" id="variable-backend~6"></span>
               integer,
             </td>
               <td>public</td>
@@ -1419,7 +1413,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_set"></span>
+              <span class="anchor" id="variable-basis_set~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1436,7 +1430,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-block_size"></span>
+              <span class="anchor" id="variable-block_size~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1453,7 +1447,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_analysis"></span>
+              <span class="anchor" id="variable-bonding_analysis~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1465,12 +1459,13 @@ default exists because cuEST needs one, so its presence says nothing.</p>
 <td> =</td>
                 <td>&#34;none&#34;</td>
             <td>
-
+<p>Post-SCF bonding analysis from <code>properties.bonding_analysis</code>, run
+once the orbitals are converged. &ldquo;none&rdquo; for none.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_energy"></span>
+              <span class="anchor" id="variable-bonding_energy~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1487,7 +1482,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_no_sharing"></span>
+              <span class="anchor" id="variable-bonding_no_sharing~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1504,7 +1499,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_no_sharing_ci"></span>
+              <span class="anchor" id="variable-bonding_no_sharing_ci~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1521,7 +1516,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_restrict_localization"></span>
+              <span class="anchor" id="variable-bonding_restrict_localization~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1538,7 +1533,7 @@ default exists because cuEST needs one, so its presence says nothing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonding_threshold"></span>
+              <span class="anchor" id="variable-bonding_threshold~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1550,17 +1545,12 @@ default exists because cuEST needs one, so its presence says nothing.</p>
 <td> =</td>
                 <td>1.0_dp</td>
             <td>
-<p>kcal/mol; pairs weaker than this are counted rather than printed.
-A post-SCF analysis to run once the orbitals are converged, from
-<code>properties.bonding_analysis</code>. Travels with the SCF settings because
-it needs what only the backend has &ndash; the molecule and the converged
-orbitals &ndash; and because it is not a fragment property: it is a
-statement about the wave function this object describes.</p>
+<p>kcal/mol; pairs weaker than this are counted rather than printed.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~2"></span>
+              <span class="anchor" id="variable-cartesian~5"></span>
               logical,
             </td>
               <td>public</td>
@@ -1578,7 +1568,7 @@ statement about the wave function this object describes.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_diis_size"></span>
+              <span class="anchor" id="variable-cc_diis_size~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1612,7 +1602,7 @@ statement about the wave function this object describes.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_spin_adapted"></span>
+              <span class="anchor" id="variable-cc_spin_adapted~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1630,7 +1620,7 @@ CPU backend only; cuEST has no coupled cluster at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_tolerance"></span>
+              <span class="anchor" id="variable-cc_tolerance~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1647,7 +1637,7 @@ CPU backend only; cuEST has no coupled cluster at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_triples"></span>
+              <span class="anchor" id="variable-cc_triples~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1664,7 +1654,7 @@ CPU backend only; cuEST has no coupled cluster at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charges_scheme"></span>
+              <span class="anchor" id="variable-charges_scheme~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -1677,14 +1667,12 @@ CPU backend only; cuEST has no coupled cluster at all.</p>
                 <td></td>
             <td>
 <p>Atomic partial charges from <code>properties.charges</code>, unallocated when
-none were asked for. Travels here for the same reason the bonding
-analysis does: partitioning a density needs the molecule and the
-converged density, which only the backend holds.</p>
+none were asked for.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-convergence_metric"></span>
+              <span class="anchor" id="variable-convergence_metric~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1696,16 +1684,12 @@ converged density, which only the backend holds.</p>
 <td> =</td>
                 <td>&#34;standard&#34;</td>
             <td>
-<p>See <code>mqc_scf_convergence</code>.
-<code>keywords.scf.accelerator</code>: &lsquo;diis&rsquo; (the default), &lsquo;adiis&rsquo; or
-&lsquo;ediis&rsquo;. The energy-based pair runs only while the error is large
-and hands over to DIIS, so naming one asks for a different opening,
-not a different endgame.</p>
+<p>See <code>mqc_scf_convergence</code>.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-corr_density_fitting"></span>
+              <span class="anchor" id="variable-corr_density_fitting~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1722,7 +1706,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_fitting"></span>
+              <span class="anchor" id="variable-density_fitting~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1739,7 +1723,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~2"></span>
+              <span class="anchor" id="variable-density_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1756,7 +1740,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-device_rank"></span>
+              <span class="anchor" id="variable-device_rank~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1773,7 +1757,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size"></span>
+              <span class="anchor" id="variable-diis_size~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -1790,7 +1774,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ecp_set"></span>
+              <span class="anchor" id="variable-ecp_set~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1802,12 +1786,15 @@ not a different endgame.</p>
 <td> =</td>
                 <td>&#34;&#34;</td>
             <td>
-<p><code>model.ecp</code>, the effective core potential set, empty for none.</p><a href="../type/cuest_scf_settings_t.html#variable-ecp_set" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p><code>model.ecp</code>, the effective core potential set, empty for none. A
+basis does not imply a potential, and asking for one on a light
+element is not an error &ndash; the reader returns no channels and the
+term is zero.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~2"></span>
+              <span class="anchor" id="variable-energy_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1824,7 +1811,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-freeze_core"></span>
+              <span class="anchor" id="variable-freeze_core~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1841,7 +1828,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_guess"></span>
+              <span class="anchor" id="variable-fukui_guess~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -1858,7 +1845,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_population"></span>
+              <span class="anchor" id="variable-fukui_population~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -1875,7 +1862,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fukui_scf"></span>
+              <span class="anchor" id="variable-fukui_scf~3"></span>
               type(<a href='../type/deltascf_options_t.html'>deltascf_options_t</a>),
             </td>
               <td>public</td>
@@ -1893,7 +1880,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional"></span>
+              <span class="anchor" id="variable-functional~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1910,7 +1897,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grad_tol~2"></span>
+              <span class="anchor" id="variable-grad_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1927,7 +1914,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid_level"></span>
+              <span class="anchor" id="variable-grid_level~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1944,7 +1931,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~5"></span>
+              <span class="anchor" id="variable-guess~9"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1957,12 +1944,13 @@ not a different endgame.</p>
                 <td>&#34;auto&#34;</td>
             <td>
 <p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;basis_set_projection&rsquo;,
-or &lsquo;auto&rsquo;</p>
+or &lsquo;auto&rsquo;. &lsquo;auto&rsquo; lets the backend pick &ndash; the CPU path resolves it
+to &lsquo;sad&rsquo; and cuEST to &lsquo;gwh&rsquo;; an explicit spelling wins over both.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps"></span>
+              <span class="anchor" id="variable-guess_steps~4"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -1976,12 +1964,12 @@ or &lsquo;auto&rsquo;</p>
             <td>
 <p>The basis ladder for &lsquo;basis_set_projection&rsquo;, one entry per
 preliminary SCF in order. The target basis is <code>basis_set</code> and is not
-repeated, so STO-3G then 6-31G then cc-pVTZ is two steps.</p><a href="../type/cuest_scf_settings_t.html#variable-guess_steps" class="pull-right"><emph>Read more&hellip;</emph></a>
+repeated, so STO-3G then 6-31G then cc-pVTZ is two steps.</p><a href="../type/cuest_scf_settings_t.html#variable-guess_steps~4" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-incremental_fock"></span>
+              <span class="anchor" id="variable-incremental_fock~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1999,7 +1987,7 @@ repeated, so STO-3G then 6-31G then cc-pVTZ is two steps.</p><a href="../type/cu
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_shift"></span>
+              <span class="anchor" id="variable-level_shift~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2017,7 +2005,7 @@ tapered to zero before the SCF exits. See <code>scf_config_t</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-linear_dependence"></span>
+              <span class="anchor" id="variable-linear_dependence~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2036,7 +2024,7 @@ dependent. Zero means the orthogonaliser&rsquo;s own cutoff. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter"></span>
+              <span class="anchor" id="variable-max_iter~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -2053,7 +2041,7 @@ dependent. Zero means the orthogonaliser&rsquo;s own cutoff. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mcscf"></span>
+              <span class="anchor" id="variable-mcscf~5"></span>
               type(<a href='../type/mcscf_config_t.html'>mcscf_config_t</a>),
             </td>
               <td>public</td>
@@ -2065,13 +2053,13 @@ dependent. Zero means the orthogonaliser&rsquo;s own cutoff. See
                 <td></td>
                 <td></td>
             <td>
-<p>Read by the CPU backend only; cuEST has no CI.
-Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
+<p>The active space, when a multiconfigurational method is being run.
+Read by the CPU backend only; cuEST has no CI.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen_core"></span>
+              <span class="anchor" id="variable-n_frozen_core~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2088,7 +2076,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nlc_grid_level"></span>
+              <span class="anchor" id="variable-nlc_grid_level~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2105,7 +2093,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pcm"></span>
+              <span class="anchor" id="variable-pcm~3"></span>
               type(<a href='../type/pcm_config_t.html'>pcm_config_t</a>),
             </td>
               <td>public</td>
@@ -2117,12 +2105,13 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
                 <td></td>
                 <td></td>
             <td>
-<p>Read by the CPU backend only; cuEST always fits.</p>
+<p>The polarizable continuum, when one was asked for. Read by the CPU
+backend only.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-radial_points"></span>
+              <span class="anchor" id="variable-radial_points~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2173,7 +2162,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-screening_tolerance"></span>
+              <span class="anchor" id="variable-screening_tolerance~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2190,7 +2179,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scs_os"></span>
+              <span class="anchor" id="variable-scs_os~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2207,7 +2196,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scs_ss"></span>
+              <span class="anchor" id="variable-scs_ss~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2224,7 +2213,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spherical"></span>
+              <span class="anchor" id="variable-spherical~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2241,7 +2230,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unrestricted"></span>
+              <span class="anchor" id="variable-unrestricted~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -2258,7 +2247,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~2"></span>
+              <span class="anchor" id="variable-use_diis~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -2275,7 +2264,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~6"></span>
+              <span class="anchor" id="variable-verbose~9"></span>
               logical,
             </td>
               <td>public</td>
@@ -2324,7 +2313,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~2"></span>
+              <span class="anchor" id="variable-method_type~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2374,7 +2363,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~4"></span>
+              <span class="anchor" id="variable-settings~5"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2389,7 +2378,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties"></span>
+              <span class="anchor" id="variable-properties~6"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2429,7 +2418,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~5"></span>
+              <span class="anchor" id="variable-settings~6"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2444,7 +2433,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-options"></span>
+              <span class="anchor" id="variable-options~2"></span>
               class(<a href='../type/scf_options_t.html'>scf_options_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2484,7 +2473,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~11"></span>
+              <span class="anchor" id="variable-name~27"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2499,7 +2488,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-kind~4"></span>
+              <span class="anchor" id="variable-kind~6"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2514,7 +2503,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~41"></span>
+              <span class="anchor" id="variable-error~106"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2557,7 +2546,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

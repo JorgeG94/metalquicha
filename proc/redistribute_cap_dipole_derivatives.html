@@ -137,13 +137,13 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/redistribute_cap_dipole_derivatives.html#variable-global_i~2">global_i</a>
-            <a class="list-group-item" href="../proc/redistribute_cap_dipole_derivatives.html#variable-i~144">i</a>
+            <a class="list-group-item" href="../proc/redistribute_cap_dipole_derivatives.html#variable-i~126">i</a>
             <a class="list-group-item" href="../proc/redistribute_cap_dipole_derivatives.html#variable-i_cap~4">i_cap</a>
             <a class="list-group-item" href="../proc/redistribute_cap_dipole_derivatives.html#variable-icart~3">icart</a>
             <a class="list-group-item" href="../proc/redistribute_cap_dipole_derivatives.html#variable-local_cap_idx~3">local_cap_idx</a>
             <a class="list-group-item" href="../proc/redistribute_cap_dipole_derivatives.html#variable-local_i">local_i</a>
             <a class="list-group-item" href="../proc/redistribute_cap_dipole_derivatives.html#variable-n_real_atoms~3">n_real_atoms</a>
-            <a class="list-group-item" href="../proc/redistribute_cap_dipole_derivatives.html#variable-t~5">t</a>
+            <a class="list-group-item" href="../proc/redistribute_cap_dipole_derivatives.html#variable-t~4">t</a>
             <a class="list-group-item" href="../proc/redistribute_cap_dipole_derivatives.html#variable-tgt~3">tgt</a>
             <a class="list-group-item" href="../proc/redistribute_cap_dipole_derivatives.html#variable-tw~3">tw</a>
             <a class="list-group-item" href="../proc/redistribute_cap_dipole_derivatives.html#variable-w~3">w</a>
@@ -186,13 +186,9 @@
 </h2>
     
 
-    <p>Redistribute hydrogen cap dipole derivatives to original atoms</p>
-<p>Dipole derivatives have shape (3, 3*N_atoms) where each column corresponds to
-the derivative of the 3 dipole components w.r.t. one Cartesian coordinate.
-The mapping is similar to the column dimension of the Hessian.</p>
-<p>Algorithm:
-  1. For real atoms: accumulate to system using local_to_global mapping
-  2. For hydrogen caps: add to the original atom the cap replaces</p>
+    <p>Accumulate fragment dipole derivatives into the system&rsquo;s</p>
+<p>Shape (3, 3*n_atoms): one column per Cartesian coordinate, mapped like
+the column dimension of the Hessian.</p>
 
 
     <h3>Arguments</h3>
@@ -208,7 +204,7 @@ The mapping is similar to the column dimension of the Hessian.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~32"></span>
+              <span class="anchor" id="variable-fragment~30"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -713,7 +709,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~144"></span>
+              <span class="anchor" id="variable-i~126"></span>
               integer,
             </td>
               <td>private</td>
@@ -815,7 +811,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-t~5"></span>
+              <span class="anchor" id="variable-t~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -898,15 +894,10 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">redistribute_cap_dipole_derivatives</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_dipole_derivs</span><span class="p">,</span><span class="w"> </span><span class="n">system_dipole_derivs</span><span class="p">,</span><span class="w"> </span><span class="nb">scale</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Redistribute hydrogen cap dipole derivatives to original atoms</span>
+<span class="w">      </span><span class="c">!! Accumulate fragment dipole derivatives into the system's</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Dipole derivatives have shape (3, 3*N_atoms) where each column corresponds to</span>
-<span class="w">      </span><span class="c">!! the derivative of the 3 dipole components w.r.t. one Cartesian coordinate.</span>
-<span class="w">      </span><span class="c">!! The mapping is similar to the column dimension of the Hessian.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Algorithm:</span>
-<span class="w">      </span><span class="c">!!   1. For real atoms: accumulate to system using local_to_global mapping</span>
-<span class="w">      </span><span class="c">!!   2. For hydrogen caps: add to the original atom the cap replaces</span>
+<span class="w">      </span><span class="c">!! Shape (3, 3*n_atoms): one column per Cartesian coordinate, mapped like</span>
+<span class="w">      </span><span class="c">!! the column dimension of the Hessian.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_dipole_derivs</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">   </span><span class="c">!! (3, 3*n_atoms_fragment)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">system_dipole_derivs</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, 3*n_atoms_system)</span>
@@ -989,7 +980,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -209,7 +209,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~4"></span>
+              <span class="anchor" id="variable-driver_config~5"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -239,7 +239,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_rank~2"></span>
+              <span class="anchor" id="variable-node_rank"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -254,7 +254,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_fragments~3"></span>
+              <span class="anchor" id="variable-n_fragments~4"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -265,16 +265,15 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
             <td><strong>n_fragments</strong></td>
             <td>
                 <p>How many fragments the system actually has, when the config does
-not say. A settings-only document &ndash; the form a session broadcasts
-&ndash; carries no molecules, so its own <code>nfrag</code> is 0, and the rule
-below would read that as &ldquo;unfragmented&rdquo; and quietly compute the
-whole system as one piece. It converges and it looks right. Pass
-the count from wherever the geometry came from instead.</p>
+not say. A settings-only document carries no molecules, so its own
+<code>nfrag</code> is 0, and the rule below would read that as &ldquo;unfragmented&rdquo;
+and compute the whole system as one piece &ndash; which converges and
+looks right. Pass the count from wherever the geometry came from.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~129"></span>
+              <span class="anchor" id="variable-error~83"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -285,10 +284,9 @@ the count from wherever the geometry came from instead.</p>
             <td><strong>error</strong></td>
             <td>
                 <p>Refuses a setting spelled in a way this program does not know.
-Optional so that the callers which cannot fail &ndash; the tests, the
-session, the multi-molecule loop &ndash; are unchanged; an unrecognised
-spelling still reaches <code>run_geometry_optimization</code>, which refuses
-it there rather than optimizing in whatever the default was.</p>
+Optional, so the callers which cannot fail are unchanged; an
+unrecognised spelling then reaches <code>run_geometry_optimization</code>,
+which refuses it there.</p>
             </td>
         </tr>
     </tbody>
@@ -1103,17 +1101,15 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">node_rank</span><span class="w">  </span><span class="c">!! Node-local MPI rank, for GPU binding</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 <span class="w">         </span><span class="c">!! Refuses a setting spelled in a way this program does not know.</span>
-<span class="w">         </span><span class="c">!! Optional so that the callers which cannot fail -- the tests, the</span>
-<span class="w">         </span><span class="c">!! session, the multi-molecule loop -- are unchanged; an unrecognised</span>
-<span class="w">         </span><span class="c">!! spelling still reaches `run_geometry_optimization`, which refuses</span>
-<span class="w">         </span><span class="c">!! it there rather than optimizing in whatever the default was.</span>
+<span class="w">         </span><span class="c">!! Optional, so the callers which cannot fail are unchanged; an</span>
+<span class="w">         </span><span class="c">!! unrecognised spelling then reaches `run_geometry_optimization`,</span>
+<span class="w">         </span><span class="c">!! which refuses it there.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_fragments</span>
 <span class="w">         </span><span class="c">!! How many fragments the system actually has, when the config does</span>
-<span class="w">         </span><span class="c">!! not say. A settings-only document -- the form a session broadcasts</span>
-<span class="w">         </span><span class="c">!! -- carries no molecules, so its own `nfrag` is 0, and the rule</span>
-<span class="w">         </span><span class="c">!! below would read that as "unfragmented" and quietly compute the</span>
-<span class="w">         </span><span class="c">!! whole system as one piece. It converges and it looks right. Pass</span>
-<span class="w">         </span><span class="c">!! the count from wherever the geometry came from instead.</span>
+<span class="w">         </span><span class="c">!! not say. A settings-only document carries no molecules, so its own</span>
+<span class="w">         </span><span class="c">!! `nfrag` is 0, and the rule below would read that as "unfragmented"</span>
+<span class="w">         </span><span class="c">!! and compute the whole system as one piece -- which converges and</span>
+<span class="w">         </span><span class="c">!! looks right. Pass the count from wherever the geometry came from.</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nfrag_to_use</span>
 
@@ -1239,8 +1235,6 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! Set calculation-specific keywords</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">hessian</span><span class="p">%</span><span class="n">displacement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">hessian_displacement</span>
 <span class="w">      </span><span class="c">! ...and to the method, which is what actually runs the displacements.</span>
-<span class="w">      </span><span class="c">! Setting only the line above left the deck's value in a field nothing</span>
-<span class="w">      </span><span class="c">! downstream read.</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">hessian_displacement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">hessian_displacement</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">hessian</span><span class="p">%</span><span class="n">temperature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">hessian_temperature</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">hessian</span><span class="p">%</span><span class="n">pressure</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">hessian_pressure</span>
@@ -1270,11 +1264,8 @@ large graphs.</div>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">max_iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_maxiter</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">convergence_threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_tolerance</span>
 <span class="w">      </span><span class="c">! And again into the method's own SCF settings, which is the copy every</span>
-<span class="w">      </span><span class="c">! backend actually reads -- `configure_hf` takes max_iter and the</span>
-<span class="w">      </span><span class="c">! tolerances from `method_config%scf`, and the xTB calculator now does</span>
-<span class="w">      </span><span class="c">! too. Only `driver_config%scf` was being filled, so a deck asking for</span>
-<span class="w">      </span><span class="c">! more iterations or a tighter threshold got the hardcoded defaults and</span>
-<span class="w">      </span><span class="c">! no complaint. Two structures named scf, one of them wired up.</span>
+<span class="w">      </span><span class="c">! backend actually reads -- `configure_hf` and the xTB calculator both</span>
+<span class="w">      </span><span class="c">! take max_iter and the tolerances from `method_config%scf`.</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_maxiter</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">max_iter_set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_maxiter_set</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">energy_convergence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_tolerance</span>
@@ -1293,18 +1284,14 @@ large graphs.</div>
 <span class="w">      </span><span class="k">end if</span>
 <span class="k">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">linear_dependence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_linear_dependence</span>
 <span class="w">      </span><span class="c">! Carry across whether the deck actually named them, not just what they</span>
-<span class="w">      </span><span class="c">! came out as. A caller whose own default is stricter than the shared one</span>
-<span class="w">      </span><span class="c">! -- MAKEFP -- cannot otherwise tell "the user wants 1e-6" from "nobody</span>
-<span class="w">      </span><span class="c">! said anything", because both arrive here as 1e-6.</span>
+<span class="w">      </span><span class="c">! came out as: MAKEFP, whose own default is stricter, cannot otherwise</span>
+<span class="w">      </span><span class="c">! tell "the user wants 1e-6" from "nobody said anything".</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">energy_convergence_set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_tolerance_set</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">density_convergence_set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">         </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_density_tolerance_set</span>
-<span class="w">      </span><span class="c">! The MAKEFP group. No presence flags here, unlike the two SCF tolerances</span>
-<span class="w">      </span><span class="c">! above: those exist because MAKEFP holds a stricter default of its own and</span>
-<span class="w">      </span><span class="c">! has to tell "the deck asked for the shared default" from "the deck said</span>
-<span class="w">      </span><span class="c">! nothing". These four have one default each, named once in</span>
-<span class="w">      </span><span class="c">! `mqc_calculation_defaults` and read by both the deck and the solver, so a</span>
-<span class="w">      </span><span class="c">! silent deck carries the solver's own number back to it.</span>
+<span class="w">      </span><span class="c">! The MAKEFP group. No presence flags here: these have one default each,</span>
+<span class="w">      </span><span class="c">! named once in `mqc_calculation_defaults` and read by both the deck and</span>
+<span class="w">      </span><span class="c">! the solver, so a silent deck carries the solver's own number back to it.</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">efp</span><span class="p">%</span><span class="n">dynamic_tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">efp_dynamic_tolerance</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">efp</span><span class="p">%</span><span class="n">dynamic_maxiter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">efp_dynamic_maxiter</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">efp</span><span class="p">%</span><span class="n">allow_crap_response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">efp_allow_crap_response</span>
@@ -1385,8 +1372,7 @@ large graphs.</div>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">spin_adapted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">cc_spin_adapted</span>
 <span class="w">      </span><span class="c">! The method name settles the triples unless a deck said otherwise:</span>
 <span class="w">      </span><span class="c">! "ccsd(t)" and "ccsd" are separate method types, so the distinction</span>
-<span class="w">      </span><span class="c">! survives the parse and does not have to be recovered from the spelling</span>
-<span class="w">      </span><span class="c">! the way RI does.</span>
+<span class="w">      </span><span class="c">! survives the parse, unlike RI.</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">include_triples</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">         </span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">method</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">METHOD_TYPE_CCSD_T</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">cc_triples_set</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -1463,7 +1449,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

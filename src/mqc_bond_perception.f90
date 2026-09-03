@@ -13,10 +13,9 @@ module mqc_bond_perception
    !!
    !! **This is a heuristic and is wrong sometimes.** It will invent a bond
    !! across a short hydrogen bond, miss a long dative one, and has no idea
-   !! what a bond order is -- everything it finds is reported as single. It is
-   !! a good default and a bad authority, which is why the important entry
-   !! point here is `missing_broken_bonds`: it audits what a caller declared
-   !! rather than replacing their judgement with its own.
+   !! what a bond order is -- everything it finds is reported as single. Hence
+   !! `missing_broken_bonds`, which audits what a caller declared rather than
+   !! replacing it.
    !!
    !! Radii are in Angstrom and coordinates in Bohr, so the comparison converts.
    !! An element with no tabulated radius bonds to nothing rather than being
@@ -37,8 +36,9 @@ module mqc_bond_perception
    public :: severed_bond_t
    public :: DEFAULT_BOND_TOLERANCE
 
-   !> One bond that a partition cuts, and enough about it to decide what to do
    type :: severed_bond_t
+      !! One bond that a partition cuts, and enough about it to decide what to do
+      !!
       !! Atom indices are 1-based here, unlike `bond_t`, because the callers
       !! that want this -- fragment assembly and the frozen-orbital schemes --
       !! index the system directly rather than through a deck.
@@ -129,14 +129,12 @@ contains
                                    n_missing, tolerance)
       !! Bonds the geometry says are cut that the caller never mentioned
       !!
-      !! The audit the declaration check cannot do on its own. Verifying that a
-      !! declared bond is marked broken catches a caller who mis-labelled one;
-      !! it cannot catch a caller who left one out entirely, because nothing in
-      !! the declared list refers to it. This looks at the geometry instead.
+      !! Checking the declared list against itself catches a mis-labelled bond
+      !! but not an omitted one, since nothing in it refers to the omission.
+      !! This looks at the geometry instead.
       !!
-      !! Reported rather than acted on. Perception is a heuristic, and a caller
-      !! may have good reason to omit something it thinks is a bond -- so this
-      !! hands back a list and lets the caller decide whether it is a mistake.
+      !! Reported rather than acted on: perception is a heuristic, and a caller
+      !! may have good reason to omit something it calls a bond.
       type(system_geometry_t), intent(in) :: sys_geom
       type(bond_t), intent(in) :: declared(:)
       integer, intent(in) :: n_declared
@@ -198,11 +196,8 @@ contains
    subroutine find_severed_bonds(sys_geom, owner, cuts, n_cuts, tolerance)
       !! Every bond whose two atoms were put in different fragments
       !!
-      !! `refuse_severed_bonds` in the FMO backend asks a coarser question --
-      !! does any covalent molecule span two fragments -- and answers it with
-      !! one example, which is what a refusal needs. This is for the caller that
-      !! is going to *do* something about each cut and therefore needs all of
-      !! them, with the fragments named.
+      !! Every cut, with the fragments named -- unlike `refuse_severed_bonds`
+      !! in the FMO backend, which needs only one example to refuse on.
       !!
       !! The partition comes in as `owner` rather than being read off the
       !! geometry, because the caller doing the fragmenting is not always the
@@ -210,10 +205,7 @@ contains
       !!
       !! **Bond order is not reported and cannot be.** Perception here is
       !! distance-based and calls everything single; a cut double bond looks
-      !! exactly like a cut short single one. That question is answerable, but
-      !! only with a wave function -- localize the bond region and count the
-      !! orbitals sitting on it -- so it belongs where that calculation happens
-      !! and not here, where the only honest answer would be a guess.
+      !! exactly like a cut short single one.
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: owner(:)
       type(severed_bond_t), allocatable, intent(out) :: cuts(:)
@@ -257,8 +249,7 @@ contains
       !!
       !! Which is what makes that bond part of a ring. Breadth-first over the
       !! perceived bonds, recomputing `bonded` rather than materialising the
-      !! graph: this runs once per cut and a cut count in the tens is already a
-      !! strange partition, so the graph would cost more to build than to walk.
+      !! graph, since this runs once per cut.
       type(system_geometry_t), intent(in) :: sys_geom
       real(dp), intent(in) :: tol
       integer, intent(in) :: a, b
@@ -301,13 +292,7 @@ contains
       !!
       !! Components are numbered 1..n in first-atom order, so a group's number
       !! reflects where it appears in the geometry rather than where the
-      !! union-find happened to root it.
-      !!
-      !! Separate from `auto_monomers` because two callers want the labelling and
-      !! only one of them wants a partition: an internal-coordinate scheme needs
-      !! to know which atoms are bonded to which so it can build coordinates per
-      !! group, and that is true whether or not the *energy* is being fragmented.
-      !! Those are different questions about the same geometry.
+      !! union-find happened to root it. `component` is 1-based over atoms.
       type(system_geometry_t), intent(in) :: sys_geom
       integer, allocatable, intent(out) :: component(:)
       integer, intent(out) :: n_components
@@ -356,23 +341,20 @@ contains
    subroutine auto_monomers(sys_geom, error, tolerance)
       !! Make each covalently connected molecule a monomer
       !!
-      !! The obvious partition for a cluster: perceive the bonds, take the
-      !! connected components, and every water or every ligand becomes its own
-      !! monomer. Hydrogen bonds are not perceived as covalent, so a hydrogen
-      !! bonded cluster comes apart the way a chemist would expect.
+      !! Perceive the bonds, take the connected components, and write them into
+      !! `sys_geom` as the partition. Hydrogen bonds are not perceived as
+      !! covalent, so a hydrogen-bonded cluster comes apart per molecule.
       !!
-      !! **It refuses on a single connected molecule**, which is the covalent
-      !! case. There the components are a partition of one, which cannot be
-      !! fragmented -- and the reason is not that the algorithm is too weak but
-      !! that the question is genuinely the user's: where a molecule should be
-      !! cut is chemistry, not connectivity. A peptide can be split per residue,
-      !! per secondary structure, or somewhere else entirely, and nothing in a
-      !! bond graph prefers one. So it says so rather than guessing, and rather
-      !! than returning a single monomer that quietly makes fragmentation a no-op.
+      !! **It refuses on a single connected molecule.** Where to cut one is
+      !! chemistry rather than connectivity -- a peptide can be split per
+      !! residue, per secondary structure or elsewhere, and nothing in a bond
+      !! graph prefers one -- so it refuses rather than returning a single
+      !! monomer that makes fragmentation a silent no-op.
       !!
-      !! Two connected molecules are a fine partition even if each is large --
-      !! that is an ordinary MBE(2) on a dimer, and not this routine's business
-      !! to second-guess.
+      !! Fragments come back neutral singlets.
+      ! TODO(mqc): `bonds`, `n_bonds`, `ibond`, `root_i` and `root_j` are all
+      ! dead here -- leftovers from the union-find this routine ran before
+      ! `connected_components` was split out of it.
       type(system_geometry_t), intent(inout) :: sys_geom
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: tolerance
@@ -418,8 +400,7 @@ contains
 
       sys_geom%fragment_atoms = 0
       sys_geom%fragment_sizes = 0
-      ! Neutral singlets: connectivity says nothing about charge, and a caller
-      ! who needs otherwise has to say so.
+      ! Connectivity says nothing about charge.
       sys_geom%fragment_charges = 0
       sys_geom%fragment_multiplicities = 1
 

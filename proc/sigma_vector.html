@@ -136,23 +136,23 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-contracted">contracted</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-first~2">first</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-gathered~3">gathered</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-ia~4">ia</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-ib~3">ib</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-last~2">last</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-na~9">na</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-nb~6">nb</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-ndet~5">ndet</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-norb~4">norb</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-npair~3">npair</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-pair~3">pair</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-contracted~2">contracted</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-first">first</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-gathered~6">gathered</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-ia~8">ia</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-ib~8">ib</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-last">last</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-na~5">na</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-nb~4">nb</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-ndet~3">ndet</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-norb~10">norb</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-npair~5">npair</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-pair~5">pair</a>
             <a class="list-group-item" href="../proc/sigma_vector.html#variable-per_block">per_block</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-row~6">row</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-source~8">source</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-row~7">row</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-source~3">source</a>
             <a class="list-group-item" href="../proc/sigma_vector.html#variable-target_string~3">target_string</a>
-            <a class="list-group-item" href="../proc/sigma_vector.html#variable-weight~3">weight</a>
+            <a class="list-group-item" href="../proc/sigma_vector.html#variable-weight~4">weight</a>
             <a class="list-group-item" href="../proc/sigma_vector.html#variable-width~2">width</a>
         </div>
       </div>
@@ -199,12 +199,9 @@ once, gathering into an intermediate indexed by pair and determinant;
 contract that against the tensor, which is one matrix multiply and
 where all the arithmetic is; then apply <code>E_pq</code> again, scattering back.</p>
 <p>The gather and the scatter have the same loop, because <code>E_pq</code> and its
-adjoint are the same table read in opposite directions &ndash; the gather
-writes to the destination string and reads the source, the scatter
-writes to the destination and reads the source of the <em>second</em>
-application. Alpha excitations move the first index of the vector and
-beta excitations the second, which is the only place the two spins
-differ.</p>
+adjoint are the same table read in opposite directions. Alpha
+excitations move the first index of the vector and beta excitations the
+second, which is the only place the two spins differ.</p>
 
 
     <h3>Arguments</h3>
@@ -220,7 +217,7 @@ differ.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~4"></span>
+              <span class="anchor" id="variable-folded~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -235,7 +232,7 @@ differ.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ci~3"></span>
+              <span class="anchor" id="variable-ci~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -250,7 +247,7 @@ differ.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~5"></span>
+              <span class="anchor" id="variable-alpha~7"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in)</td>
@@ -265,7 +262,7 @@ differ.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~5"></span>
+              <span class="anchor" id="variable-beta~7"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in)</td>
@@ -280,7 +277,7 @@ differ.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma~7"></span>
+              <span class="anchor" id="variable-sigma~6"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -295,7 +292,7 @@ differ.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~54"></span>
+              <span class="anchor" id="variable-error~14"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -683,7 +680,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-contracted"></span>
+              <span class="anchor" id="variable-contracted~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -700,7 +697,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-first~2"></span>
+              <span class="anchor" id="variable-first"></span>
               integer,
             </td>
               <td>private</td>
@@ -717,7 +714,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gathered~3"></span>
+              <span class="anchor" id="variable-gathered~6"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -734,7 +731,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ia~4"></span>
+              <span class="anchor" id="variable-ia~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -751,7 +748,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ib~3"></span>
+              <span class="anchor" id="variable-ib~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -768,7 +765,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-last~2"></span>
+              <span class="anchor" id="variable-last"></span>
               integer,
             </td>
               <td>private</td>
@@ -785,7 +782,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-na~9"></span>
+              <span class="anchor" id="variable-na~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -802,7 +799,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nb~6"></span>
+              <span class="anchor" id="variable-nb~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -819,7 +816,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndet~5"></span>
+              <span class="anchor" id="variable-ndet~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -836,7 +833,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-norb~4"></span>
+              <span class="anchor" id="variable-norb~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -853,7 +850,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-npair~3"></span>
+              <span class="anchor" id="variable-npair~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -870,7 +867,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair~3"></span>
+              <span class="anchor" id="variable-pair~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -904,7 +901,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-row~6"></span>
+              <span class="anchor" id="variable-row~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -921,7 +918,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-source~8"></span>
+              <span class="anchor" id="variable-source~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -955,7 +952,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-weight~3"></span>
+              <span class="anchor" id="variable-weight~4"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -1012,12 +1009,9 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! where all the arithmetic is; then apply `E_pq` again, scattering back.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! The gather and the scatter have the same loop, because `E_pq` and its</span>
-<span class="w">      </span><span class="c">!! adjoint are the same table read in opposite directions -- the gather</span>
-<span class="w">      </span><span class="c">!! writes to the destination string and reads the source, the scatter</span>
-<span class="w">      </span><span class="c">!! writes to the destination and reads the source of the *second*</span>
-<span class="w">      </span><span class="c">!! application. Alpha excitations move the first index of the vector and</span>
-<span class="w">      </span><span class="c">!! beta excitations the second, which is the only place the two spins</span>
-<span class="w">      </span><span class="c">!! differ.</span>
+<span class="w">      </span><span class="c">!! adjoint are the same table read in opposite directions. Alpha</span>
+<span class="w">      </span><span class="c">!! excitations move the first index of the vector and beta excitations the</span>
+<span class="w">      </span><span class="c">!! second, which is the only place the two spins differ.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">folded</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">   </span><span class="c">!! From `absorb_one_electron`</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ci</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">       </span><span class="c">!! (n_alpha_strings, n_beta_strings)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">link_table_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="n">beta</span>
@@ -1092,11 +1086,11 @@ large graphs.</div>
 <span class="w">         </span><span class="c">!$omp end parallel do</span>
 
 <span class="w">         </span><span class="c">! A beta excitation reads the column of its *source* string and writes</span>
-<span class="w">         </span><span class="c">! wherever that string lands -- possibly outside the block, which is</span>
-<span class="w">         </span><span class="c">! why `sigma` accumulates across blocks rather than being filled one</span>
-<span class="w">         </span><span class="c">! block at a time. Splitting on the source would race, since several</span>
-<span class="w">         </span><span class="c">! sources can land on one target. Splitting on `ia` cannot: it fixes</span>
-<span class="w">         </span><span class="c">! the row of `sigma` written, and distinct rows are disjoint.</span>
+<span class="w">         </span><span class="c">! wherever that string lands, possibly outside the block, which is why</span>
+<span class="w">         </span><span class="c">! `sigma` accumulates across blocks rather than being filled one block</span>
+<span class="w">         </span><span class="c">! at a time. Splitting on the source would race, since several sources</span>
+<span class="w">         </span><span class="c">! can land on one target; splitting on `ia` fixes the row of `sigma`</span>
+<span class="w">         </span><span class="c">! written and distinct rows are disjoint.</span>
 <span class="w">         </span><span class="c">!$omp parallel do default(shared) schedule(static) &amp;</span>
 <span class="w">         </span><span class="c">!$omp   private(ia, source, row, pair, target_string, weight)</span>
 <span class="w">         </span><span class="k">do </span><span class="n">ia</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">na</span>
@@ -1138,7 +1132,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

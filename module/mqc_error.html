@@ -210,7 +210,7 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>Error codes</p>
+      
 <br>      
           <div class="card">
       <h3 class="card-header card-title bg-light">Used by</h3>
@@ -3687,7 +3687,7 @@ parameter
 <td> =</td>
                 <td>4</td>
             <td>
-                <p>Stack trace configuration</p>
+                
             </td>
         </tr>
         <tr>
@@ -3721,20 +3721,7 @@ parameter
 <td> =</td>
                 <td>128</td>
             <td>
-                <p>Unified error type with stack trace support</p>
-<p><strong>Inside an OpenMP region, clear it explicitly.</strong> Every routine in this
-project opens with <code>if (error%has_error()) return</code>, which is a fine
-convention serially and a trap in a parallel one. A <code>private</code> copy of an
-<code>error_t</code> is reused across the iterations one thread runs, so a single
-failure disables every later iteration on that thread; and a copy whose
-default initialisation the compiler has not applied disables all of them
-from the start. Neither crashes. Both look like work that quietly did not
-happen &ndash; which, when it happened in <code>distributed_multipoles</code>, showed up
-as a threaded run failing where the serial one passed, and nowhere else.</p>
-<p>So: <code>call err%clear()</code> at the top of the loop body, not once before the
-region. There is exactly one such region in the tree today and it does
-this; the note is here because the next one will be written by someone
-who did not debug the first.</p>
+                
             </td>
         </tr>
         <tr>
@@ -3775,7 +3762,7 @@ parameter
       </h3>
     </div>
     <div class="card-body">
-      
+      <p>Unified error type with stack trace support</p><a href="../type/error_t.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
         <h4>Components</h4>
           <table class="table table-striped varlist">
@@ -3807,7 +3794,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-code~3"></span>
+              <span class="anchor" id="variable-code~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -3824,7 +3811,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-message~2"></span>
+              <span class="anchor" id="variable-message~4"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3836,7 +3823,7 @@ parameter
                 <td></td>
                 <td></td>
             <td>
-<p>Error message</p><a href="../type/error_t.html#variable-message~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Error message</p>
             </td>
         </tr>
         <tr>
@@ -3935,7 +3922,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~57"></span>
+              <span class="anchor" id="variable-this~150"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3965,8 +3952,7 @@ parameter
 </h3></div>
     <div class="card-body">
           
-  <p>Get complete error message with stack trace
-Returns a multi-line string with error and call stack</p>
+  <p>Get complete error message with stack trace</p><a href="../proc/error_get_full_trace.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -3981,7 +3967,7 @@ Returns a multi-line string with error and call stack</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~60"></span>
+              <span class="anchor" id="variable-this~153"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4026,7 +4012,7 @@ Returns a multi-line string with error and call stack</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~58"></span>
+              <span class="anchor" id="variable-this~151"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4071,7 +4057,7 @@ Returns a multi-line string with error and call stack</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~54"></span>
+              <span class="anchor" id="variable-this~147"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4106,8 +4092,7 @@ Returns a multi-line string with error and call stack</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Add a call location to the stack trace
-Typically called when propagating errors upward</p><a href="../proc/error_add_context.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Add a call location to the stack trace</p><a href="../proc/error_add_context.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -4122,7 +4107,7 @@ Typically called when propagating errors upward</p><a href="../proc/error_add_co
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~59"></span>
+              <span class="anchor" id="variable-this~152"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4177,7 +4162,7 @@ Typically called when propagating errors upward</p><a href="../proc/error_add_co
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~56"></span>
+              <span class="anchor" id="variable-this~149"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4218,7 +4203,7 @@ If unit not specified, prints to stdout (unit 6)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~61"></span>
+              <span class="anchor" id="variable-this~154"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4233,7 +4218,7 @@ If unit not specified, prints to stdout (unit 6)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~8"></span>
+              <span class="anchor" id="variable-unit~10"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -4274,7 +4259,7 @@ Resets the stack trace</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~55"></span>
+              <span class="anchor" id="variable-this~148"></span>
               class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4289,7 +4274,7 @@ Resets the stack trace</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-code~4"></span>
+              <span class="anchor" id="variable-code~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -4304,7 +4289,7 @@ Resets the stack trace</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-message~3"></span>
+              <span class="anchor" id="variable-message~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -4347,7 +4332,7 @@ Resets the stack trace</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mcscf_run.html#variable-settings~10">settings</a>
+            <a class="list-group-item" href="../proc/mcscf_run.html#variable-settings~4">settings</a>
         </div>
       </div>
     </div>
@@ -192,7 +192,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~70"></span>
+              <span class="anchor" id="variable-this~77"></span>
               class(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -207,7 +207,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~18"></span>
+              <span class="anchor" id="variable-fragment~9"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -222,7 +222,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~36"></span>
+              <span class="anchor" id="variable-result~16"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -237,7 +237,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~4"></span>
+              <span class="anchor" id="variable-want_gradient~3"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -577,7 +577,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~10"></span>
+              <span class="anchor" id="variable-settings~4"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
               <td>private</td>
@@ -617,16 +617,9 @@ large graphs.</div>
 
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">cuest_scf_settings_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">settings</span>
 
-<span class="w">      </span><span class="c">! The reference SCF's settings, which is most of what this is: a CASSCF</span>
-<span class="w">      </span><span class="c">! begins with a closed-shell SCF and the backend takes the same settings</span>
-<span class="w">      </span><span class="c">! object for it that Hartree-Fock does.</span>
-<span class="w">      </span><span class="c">! Refused rather than dropped. `run_libcint_mcscf` never reads</span>
-<span class="w">      </span><span class="c">! `settings%fukui_population` -- unlike `run_libcint_hf`, which does --</span>
-<span class="w">      </span><span class="c">! so a deck asking for Fukui indices on a CASSCF would otherwise be</span>
-<span class="w">      </span><span class="c">! obeyed everywhere except where it matters and report a result that</span>
-<span class="w">      </span><span class="c">! ignored it. That is the failure this whole shared-settings work exists</span>
-<span class="w">      </span><span class="c">! to end, and handing the field over unread would recreate it one layer</span>
-<span class="w">      </span><span class="c">! further down.</span>
+<span class="w">      </span><span class="c">! Refused rather than dropped: `run_libcint_mcscf` never reads</span>
+<span class="w">      </span><span class="c">! `settings%fukui_population`, so passing it on would obey the deck</span>
+<span class="w">      </span><span class="c">! everywhere except where it matters.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">%</span><span class="n">fukui_population</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"Fukui indices are not available for "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                               </span><span class="s2">"an MCSCF reference: they need a response the CASSCF path "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -636,8 +629,8 @@ large graphs.</div>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 <span class="k">      call </span><span class="n">apply_properties_settings</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">%</span><span class="n">properties</span><span class="p">)</span>
-<span class="w">      </span><span class="c">! The reference SCF's settings, through the one routine that carries them.</span>
-<span class="w">      </span><span class="c">! `pcm` comes with them, so the assignment above this block is gone too.</span>
+<span class="w">      </span><span class="c">! The reference SCF's settings, `pcm` among them: a CASSCF begins with a</span>
+<span class="w">      </span><span class="c">! closed-shell SCF and the backend takes the same settings object for it.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">apply_scf_settings</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="k">options</span><span class="p">)</span>
 <span class="w">      </span><span class="n">settings</span><span class="p">%</span><span class="n">functional</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="w">        </span><span class="c">! empty selects pure Hartree-Fock</span>
 
@@ -683,7 +676,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

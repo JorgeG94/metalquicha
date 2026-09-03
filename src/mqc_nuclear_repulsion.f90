@@ -2,17 +2,6 @@
 module mqc_nuclear_repulsion
    !! `E_NN = sum_{A<B} Z_A Z_B / R_AB` and its derivative, which depend on
    !! nothing but charges and coordinates.
-   !!
-   !! Here because both were written twice, once per integral backend: the
-   !! energy as `nuclear_repulsion_energy` in the cuEST SCF and as
-   !! `molecule_nuclear_repulsion` in the libcint molecule, the gradient as a
-   !! `nuclear_repulsion_gradient` in each of the two gradient modules. Four
-   !! copies of a formula with no backend content in it at all.
-   !!
-   !! The copies had drifted in the small ways copies do -- one guarded against
-   !! coincident atoms and the others did not, one took integer atomic numbers
-   !! and the others real charges, one overwrote the gradient where the other
-   !! accumulated. None of those differences was a decision anybody made twice.
    use pic_types, only: dp
    implicit none
    private
@@ -52,11 +41,6 @@ contains
       !! The derivative on A points away from every other nucleus: repulsion
       !! pushes atoms apart, and a gradient is the direction of steepest
       !! *ascent*, which is what sets the sign below.
-      !!
-      !! Accumulates rather than assigns, because every caller but one was
-      !! adding this to a gradient that already had electronic terms in it. The
-      !! one that was not now zeroes its own array first, where that intent is
-      !! visible.
       real(dp), intent(in) :: charges(:)         !! Nuclear charges
       real(dp), intent(in) :: coordinates(:, :)  !! (3, n_atoms), Bohr
       real(dp), intent(inout) :: gradient(:, :)  !! (3, n_atoms)

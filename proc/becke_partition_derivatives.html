@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-a~4">a</a>
+            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-a~17">a</a>
             <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-atom_r~2">atom_r</a>
             <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-cell~3">cell</a>
             <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-dcell">dcell</a>
@@ -147,19 +147,19 @@
             <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-ds_i">ds_i</a>
             <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-ds_j">ds_j</a>
             <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-dtotal">dtotal</a>
-            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-i~109">i</a>
+            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-i~158">i</a>
             <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-inv_distance~2">inv_distance</a>
             <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-invd">invd</a>
-            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-j~26">j</a>
-            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-k~32">k</a>
+            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-j~51">j</a>
+            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-k~45">k</a>
             <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-mu~5">mu</a>
-            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-n_atoms~34">n_atoms</a>
+            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-n_atoms~38">n_atoms</a>
             <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-n_points~4">n_points</a>
             <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-nu~4">nu</a>
             <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-rij">rij</a>
-            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-s~4">s</a>
-            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-shift~3">shift</a>
-            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-total~12">total</a>
+            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-s~16">s</a>
+            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-shift~7">shift</a>
+            <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-total~19">total</a>
             <a class="list-group-item" href="../proc/becke_partition_derivatives.html#variable-unit_vec">unit_vec</a>
         </div>
       </div>
@@ -202,21 +202,15 @@
 
     <p>dP_k/dR_A at fixed grid points, as (3, n_atoms, n_points)</p>
 <p>The partition weight depends on every nuclear position, so moving any
-atom changes the weight of every point &ndash; including points owned by
-other atoms. That is the whole content of the &ldquo;grid response&rdquo; term in
-a DFT gradient, and omitting it leaves a gradient that looks entirely
-reasonable and disagrees with finite differences at about 1e-4.</p>
-<p><strong>The grid points are held fixed here.</strong> Points move with the atom that
-owns them, but that motion is a separate contribution which the caller
-adds; mixing the two into one routine would make neither checkable.</p>
-<p>The cell functions are differentiated by carrying the derivative
-through the product alongside the value, rather than as a logarithmic
-derivative summed at the end. The log form needs a division by each
-cutoff factor, and those legitimately reach zero far from the molecule
-&ndash; where the value underflows to zero but the derivative does not, so
-the quotient is 0/0 exactly where a guard would have to guess. Carrying
-both costs an extra factor of the atom count and cannot divide by
-anything.</p>
+atom changes the weight of every point, including points owned by other
+atoms. That is the &ldquo;grid response&rdquo; term of a DFT gradient.</p>
+<p><strong>The grid points are held fixed here.</strong> Points also move with the atom
+that owns them; that is a separate contribution the caller adds.</p>
+<p>The derivative is carried through the cell product alongside the value
+rather than as a logarithmic derivative summed at the end: the log form
+divides by each cutoff factor, and those reach zero far from the
+molecule where the derivative does not, so the quotient is 0/0 exactly
+where a guard would have to guess.</p>
 
 
     <h3>Arguments</h3>
@@ -262,7 +256,7 @@ anything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~12"></span>
+              <span class="anchor" id="variable-atomic_numbers~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -277,7 +271,7 @@ anything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~7"></span>
+              <span class="anchor" id="variable-owner~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -292,7 +286,7 @@ anything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~10"></span>
+              <span class="anchor" id="variable-scheme~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -337,7 +331,7 @@ anything.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~110"></span>
+              <span class="anchor" id="variable-error~141"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -581,7 +575,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-a~4"></span>
+              <span class="anchor" id="variable-a~17"></span>
               integer,
             </td>
               <td>private</td>
@@ -768,7 +762,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~109"></span>
+              <span class="anchor" id="variable-i~158"></span>
               integer,
             </td>
               <td>private</td>
@@ -819,7 +813,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~26"></span>
+              <span class="anchor" id="variable-j~51"></span>
               integer,
             </td>
               <td>private</td>
@@ -836,7 +830,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~32"></span>
+              <span class="anchor" id="variable-k~45"></span>
               integer,
             </td>
               <td>private</td>
@@ -870,7 +864,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~34"></span>
+              <span class="anchor" id="variable-n_atoms~38"></span>
               integer,
             </td>
               <td>private</td>
@@ -938,7 +932,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-s~4"></span>
+              <span class="anchor" id="variable-s~16"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -955,7 +949,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-shift~3"></span>
+              <span class="anchor" id="variable-shift~7"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -972,7 +966,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total~12"></span>
+              <span class="anchor" id="variable-total~19"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -1025,23 +1019,20 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! dP_k/dR_A at fixed grid points, as (3, n_atoms, n_points)</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! The partition weight depends on every nuclear position, so moving any</span>
-<span class="w">      </span><span class="c">!! atom changes the weight of every point -- including points owned by</span>
-<span class="w">      </span><span class="c">!! other atoms. That is the whole content of the "grid response" term in</span>
-<span class="w">      </span><span class="c">!! a DFT gradient, and omitting it leaves a gradient that looks entirely</span>
-<span class="w">      </span><span class="c">!! reasonable and disagrees with finite differences at about 1e-4.</span>
+<span class="w">      </span><span class="c">!! atom changes the weight of every point, including points owned by other</span>
+<span class="w">      </span><span class="c">!! atoms. That is the "grid response" term of a DFT gradient.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! **The grid points are held fixed here.** Points move with the atom that</span>
-<span class="w">      </span><span class="c">!! owns them, but that motion is a separate contribution which the caller</span>
-<span class="w">      </span><span class="c">!! adds; mixing the two into one routine would make neither checkable.</span>
+<span class="w">      </span><span class="c">!! **The grid points are held fixed here.** Points also move with the atom</span>
+<span class="w">      </span><span class="c">!! that owns them; that is a separate contribution the caller adds.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The cell functions are differentiated by carrying the derivative</span>
-<span class="w">      </span><span class="c">!! through the product alongside the value, rather than as a logarithmic</span>
-<span class="w">      </span><span class="c">!! derivative summed at the end. The log form needs a division by each</span>
-<span class="w">      </span><span class="c">!! cutoff factor, and those legitimately reach zero far from the molecule</span>
-<span class="w">      </span><span class="c">!! -- where the value underflows to zero but the derivative does not, so</span>
-<span class="w">      </span><span class="c">!! the quotient is 0/0 exactly where a guard would have to guess. Carrying</span>
-<span class="w">      </span><span class="c">!! both costs an extra factor of the atom count and cannot divide by</span>
-<span class="w">      </span><span class="c">!! anything.</span>
+<span class="w">      </span><span class="c">!! The derivative is carried through the cell product alongside the value</span>
+<span class="w">      </span><span class="c">!! rather than as a logarithmic derivative summed at the end: the log form</span>
+<span class="w">      </span><span class="c">!! divides by each cutoff factor, and those reach zero far from the</span>
+<span class="w">      </span><span class="c">!! molecule where the derivative does not, so the quotient is 0/0 exactly</span>
+<span class="w">      </span><span class="c">!! where a guard would have to guess.</span>
+<span class="w">      </span><span class="c">! TODO(mqc): unlike `becke_partition_weights`, this checks neither</span>
+<span class="w">      </span><span class="c">! `size(owner)` nor `size(dweights)` against the point count and does not</span>
+<span class="w">      </span><span class="c">! bound `owner`, yet indexes `dcell(:, a, owner(k))`.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">points</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">       </span><span class="c">!! (3, n_points), Bohr</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_coords</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, n_atoms), Bohr</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atomic_numbers</span><span class="p">(:)</span><span class="w">   </span><span class="c">!! Z per atom, for the radii</span>
@@ -1089,22 +1080,12 @@ large graphs.</div>
 <span class="k">         end do</span>
 <span class="k">      end do</span>
 
-<span class="w">      </span><span class="c">! One thread per grid point.</span>
-<span class="w">      </span><span class="c">!</span>
-<span class="w">      </span><span class="c">! Every iteration reads the geometry and writes its own `dweights(:, :, k)`,</span>
-<span class="w">      </span><span class="c">! so the points are independent and nothing is reduced. What is not</span>
-<span class="w">      </span><span class="c">! independent is the scratch -- `cell` and `dcell` are rebuilt per point --</span>
-<span class="w">      </span><span class="c">! so those move inside the region for each thread to allocate its own.</span>
-<span class="w">      </span><span class="c">! `shift` and `inv_distance` depend only on the nuclei and stay shared.</span>
-<span class="w">      </span><span class="c">!</span>
-<span class="w">      </span><span class="c">! This is the grid-response term of a density functional gradient, and it</span>
-<span class="w">      </span><span class="c">! was 100 s of CPU on twenty waters while this file had no OpenMP in it at</span>
-<span class="w">      </span><span class="c">! all. `dcell` is the only sizeable copy, three by the atom count squared:</span>
-<span class="w">      </span><span class="c">! 86 kB for twenty waters, so sixteen threads cost under two megabytes.</span>
-<span class="w">      </span><span class="c">!</span>
-<span class="w">      </span><span class="c">! `schedule(static)`, unlike the quadrature loops: every point costs the</span>
-<span class="w">      </span><span class="c">! same `n_atoms` squared wherever it sits, so there is nothing for dynamic</span>
-<span class="w">      </span><span class="c">! scheduling to balance and its bookkeeping would be pure overhead.</span>
+<span class="w">      </span><span class="c">! One thread per grid point. Every iteration writes its own</span>
+<span class="w">      </span><span class="c">! `dweights(:, :, k)`, so nothing is reduced; the per-point scratch `cell`</span>
+<span class="w">      </span><span class="c">! and `dcell` is allocated inside the region so each thread gets its own,</span>
+<span class="w">      </span><span class="c">! while `shift` and `inv_distance` depend only on the nuclei and stay</span>
+<span class="w">      </span><span class="c">! shared. `schedule(static)` because every point costs the same n_atoms</span>
+<span class="w">      </span><span class="c">! squared wherever it sits.</span>
 <span class="w">      </span><span class="c">!$omp parallel default(none) &amp;</span>
 <span class="w">      </span><span class="c">!$omp    shared(points, atom_coords, owner, scheme, dweights, shift, &amp;</span>
 <span class="w">      </span><span class="c">!$omp           inv_distance, n_points, n_atoms) &amp;</span>
@@ -1211,7 +1192,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

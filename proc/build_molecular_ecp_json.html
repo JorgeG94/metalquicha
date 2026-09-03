@@ -136,15 +136,15 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-iatom">iatom</a>
-            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-is_new">is_new</a>
-            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-iunique">iunique</a>
-            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-match">match</a>
-            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-n_atoms~4">n_atoms</a>
-            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-n_unique">n_unique</a>
+            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-iatom~4">iatom</a>
+            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-is_new~2">is_new</a>
+            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-iunique~2">iunique</a>
+            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-match~2">match</a>
+            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-n_atoms~12">n_atoms</a>
+            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-n_unique~2">n_unique</a>
             <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-unique_ecps">unique_ecps</a>
-            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-unique_z">unique_z</a>
-            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-z">z</a>
+            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-unique_z~2">unique_z</a>
+            <a class="list-group-item" href="../proc/build_molecular_ecp_json.html#variable-z~3">z</a>
         </div>
       </div>
     </div>
@@ -186,8 +186,7 @@
 
     <p>Build a per-atom ECP set for a list of atoms</p>
 <p>Each distinct element is read once and copied to every atom of that
-element, as the orbital basis reader does &ndash; parsing the same file per
-atom would dominate the setup for anything but a tiny molecule.</p>
+element, as the orbital basis reader does.</p>
 
 
     <h3>Arguments</h3>
@@ -203,7 +202,7 @@ atom would dominate the setup for anything but a tiny molecule.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_path~3"></span>
+              <span class="anchor" id="variable-json_path~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -218,7 +217,7 @@ atom would dominate the setup for anything but a tiny molecule.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols"></span>
+              <span class="anchor" id="variable-element_symbols~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -248,7 +247,7 @@ atom would dominate the setup for anything but a tiny molecule.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~8"></span>
+              <span class="anchor" id="variable-error~44"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -799,7 +798,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom"></span>
+              <span class="anchor" id="variable-iatom~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -816,7 +815,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-is_new"></span>
+              <span class="anchor" id="variable-is_new~2"></span>
               logical,
             </td>
               <td>private</td>
@@ -833,7 +832,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iunique"></span>
+              <span class="anchor" id="variable-iunique~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -850,7 +849,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-match"></span>
+              <span class="anchor" id="variable-match~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -867,7 +866,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~4"></span>
+              <span class="anchor" id="variable-n_atoms~12"></span>
               integer,
             </td>
               <td>private</td>
@@ -884,7 +883,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_unique"></span>
+              <span class="anchor" id="variable-n_unique~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -918,7 +917,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unique_z"></span>
+              <span class="anchor" id="variable-unique_z~2"></span>
               integer,
             </td>
               <td>private,</td>
@@ -935,7 +934,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-z"></span>
+              <span class="anchor" id="variable-z~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -970,8 +969,7 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Build a per-atom ECP set for a list of atoms</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Each distinct element is read once and copied to every atom of that</span>
-<span class="w">      </span><span class="c">!! element, as the orbital basis reader does -- parsing the same file per</span>
-<span class="w">      </span><span class="c">!! atom would dominate the setup for anything but a tiny molecule.</span>
+<span class="w">      </span><span class="c">!! element, as the orbital basis reader does.</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json_path</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">element_symbols</span><span class="p">(:)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">molecular_ecp_type</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mol_ecp</span>
@@ -1053,7 +1051,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

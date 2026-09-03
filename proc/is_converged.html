@@ -166,10 +166,8 @@
     
 
     <p>The one comparison</p>
-<p>Every SCF loop calls this and none of them decides anything. All three
-quantities are passed whether the metric reads them or not: an
-argument list that changed with the metric would put a branch back in
-the caller, which is the thing being removed.</p>
+<p>All three quantities are passed whether the metric reads them or not,
+so no caller has to branch on the metric.</p>
 
     <h3>Type Bound</h3>
     <p><a href='../type/scf_convergence_t.html'>scf_convergence_t</a></p>
@@ -187,7 +185,7 @@ the caller, which is the thing being removed.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~93"></span>
+              <span class="anchor" id="variable-this~45"></span>
               class(<a href='../type/scf_convergence_t.html'>scf_convergence_t</a>),
             </td>
 <td>intent(in)</td>
@@ -393,10 +391,8 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">is_converged</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">de</span><span class="p">,</span><span class="w"> </span><span class="n">drms</span><span class="p">,</span><span class="w"> </span><span class="n">gnorm</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">done</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The one comparison</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Every SCF loop calls this and none of them decides anything. All three</span>
-<span class="w">      </span><span class="c">!! quantities are passed whether the metric reads them or not: an</span>
-<span class="w">      </span><span class="c">!! argument list that changed with the metric would put a branch back in</span>
-<span class="w">      </span><span class="c">!! the caller, which is the thing being removed.</span>
+<span class="w">      </span><span class="c">!! All three quantities are passed whether the metric reads them or not,</span>
+<span class="w">      </span><span class="c">!! so no caller has to branch on the metric.</span>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">scf_convergence_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">de</span>
 <span class="w">         </span><span class="c">!! |E(iter) - E(iter-1)|</span>
@@ -414,8 +410,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">CONV_METRIC_DENSITY</span><span class="p">)</span>
 <span class="w">         </span><span class="n">done</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">drms</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">tolerance</span>
 <span class="w">      </span><span class="k">case </span><span class="n">default</span>
-<span class="w">         </span><span class="c">! CONV_METRIC_STANDARD, and anything unset -- both gates, which is</span>
-<span class="w">         </span><span class="c">! what every loop in this program tested before this type existed.</span>
+<span class="w">         </span><span class="c">! CONV_METRIC_STANDARD, and anything unset -- both gates.</span>
 <span class="w">         </span><span class="n">done</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">de</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">tolerance</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">gnorm</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">commutator_bound</span><span class="p">()</span>
 <span class="w">      </span><span class="k">end select</span>
 <span class="k">   end function </span><span class="n">is_converged</span>
@@ -442,7 +437,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

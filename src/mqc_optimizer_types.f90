@@ -2,16 +2,9 @@
 module mqc_optimizer_types
    !! The vocabulary shared by the optimization driver and whichever engine
    !! takes the steps. It knows about neither: no MPI, no DL-FIND, no quantum
-   !! chemistry. That is what lets `mqc_geometry_optimizer` and
-   !! `mqc_dlfind_bridge` reach each other without a circular dependency -- the
-   !! driver hands the engine a procedure matching `energy_gradient_i`, and the
-   !! engine calls it without ever learning what is on the other end.
-   !!
-   !! The same arrangement is what makes the optimizer backend-agnostic. The
-   !! evaluator behind that interface is `run_calculation` with a gradient
-   !! request, so xTB through tblite, Hartree-Fock through libcint and HF/DFT
-   !! through cuEST all arrive here as the same three arrays, fragmented or
-   !! not, and no engine has to be taught about any of them.
+   !! chemistry, which is what lets `mqc_geometry_optimizer` and
+   !! `mqc_dlfind_bridge` reach each other through `energy_gradient_i` without
+   !! a circular dependency.
    use pic_types, only: dp
    use mqc_calculation_defaults, only: DEFAULT_OPT_MAX_STEPS, &
                                        DEFAULT_OPT_GRADIENT_TOLERANCE, &
@@ -47,12 +40,7 @@ module mqc_optimizer_types
    public :: saddle_method_from_string, saddle_method_to_string
    public :: algorithm_needs_hessian
 
-   ! This program's own numbering rather than DL-FIND's, even though DL-FIND is
-   ! the only engine today and two of these would have mapped to themselves.
-   ! The translation lives in the bridge so that a deck saying "hdlc" keeps
-   ! meaning HDLC if a second engine numbers them differently, and so that an
-   ! engine which cannot do internal coordinates at all refuses in its own
-   ! terms rather than silently optimizing in Cartesians.
+   ! This program's own numbering, not DL-FIND's; the bridge translates.
    integer, parameter :: OPT_COORDS_UNKNOWN = 0
    integer, parameter :: OPT_COORDS_CARTESIAN = 1
    integer, parameter :: OPT_COORDS_HDLC = 2  !! Hybrid delocalised internal coordinates
@@ -61,18 +49,15 @@ module mqc_optimizer_types
       !! HDLC over a total connection scheme
       !!
       !! The primitive internals of a residue are built from every atom pair in
-      !! it rather than from the perceived bonds. That is what makes it useful on
-      !! a system whose connectivity is not what a covalent-radius rule says: a
-      !! weakly bound complex the perception splits, an ion pair it merges, a
-      !! transition state where a bond is half formed. The cost is quadratic in
-      !! residue size where a bond list is linear, so it is for small residues.
+      !! it rather than from the perceived bonds, so connectivity a
+      !! covalent-radius rule gets wrong does not matter. Quadratic in residue
+      !! size where a bond list is linear, so it is for small residues.
    integer, parameter :: OPT_COORDS_DLC_TC = 5
       !! DLC over a total connection scheme
       !!
-      !! One residue, totally connected. Unlike plain `dlc` this does not fail on
-      !! a cluster -- the total connection supplies the coordinates spanning the
-      !! molecules that no bond provides -- but it pays that quadratic cost over
-      !! the whole system rather than within a residue.
+      !! One residue, totally connected. Unlike plain `dlc` it does not fail on
+      !! a cluster, but pays that quadratic cost over the whole system rather
+      !! than within a residue.
 
    integer, parameter :: OPT_ALGO_UNKNOWN = 0
    integer, parameter :: OPT_ALGO_SD = 1      !! Steepest descent
@@ -80,10 +65,8 @@ module mqc_optimizer_types
    integer, parameter :: OPT_ALGO_LBFGS = 3   !! Limited-memory BFGS
    integer, parameter :: OPT_ALGO_PRFO = 4    !! Partitioned rational function, for a saddle
    integer, parameter :: OPT_ALGO_CG_AUTO = 5
-      !! Conjugate gradient restarting on the Powell-Beale test rather than
-      !! every ten steps. The other spelling of the same method: `cg` restarts
-      !! on a fixed schedule, this one when the search directions stop being
-      !! usefully conjugate.
+      !! Conjugate gradient restarting on the Powell-Beale test rather than on
+      !! `cg`'s fixed ten-step schedule.
    integer, parameter :: OPT_ALGO_NR = 6
       !! Newton-Raphson. Needs a Hessian, and descends to whatever stationary
       !! point it starts nearest -- which is a minimum only if it began in that
@@ -95,18 +78,13 @@ module mqc_optimizer_types
 
    ! What the optimization is looking for. Not the same question as which
    ! algorithm runs: P-RFO can be asked for either, and a Newton-Raphson run
-   ! settles on whatever stationary point it started nearest. Naming the target
-   ! separately is what lets the end-of-run Hessian say whether the thing found
-   ! is the thing wanted, rather than always reporting against "minimum".
+   ! settles on whatever stationary point it started nearest.
    integer, parameter :: OPT_TARGET_MINIMUM = 0
    integer, parameter :: OPT_TARGET_SADDLE = 1
       !! A first-order saddle: one imaginary frequency, and exactly one. Zero
       !! means the search fell off the ridge into a basin; two or more means it
       !! is a higher-order stationary point and not a transition state.
 
-   ! How a chain-of-states run treats the two structures it was given. The
-   ! endpoints are usually already optimized minima, so freezing them is the
-   ! default: relaxing a minimum again costs images and moves nothing.
    ! How a saddle is hunted, once `target` says one is wanted. Not the same
    ! axis as `algorithm`: the dimer is a way of *searching*, and the algorithm
    ! named alongside it is what translates and rotates the pair.
@@ -115,13 +93,14 @@ module mqc_optimizer_types
    integer, parameter :: SADDLE_METHOD_DIMER = 1
       !! Two images a short distance apart, rotated to find the softest
       !! direction and translated with the force along it inverted. Never forms
-      !! a Hessian at all, which is the point: on a system where the analytic
-      !! Hessian is the bottleneck, this is the method that runs.
+      !! a Hessian.
 
    integer, parameter :: MIN_NEB_IMAGES = 3
       !! DL-FIND's own floor. Two images are the two endpoints, so a band of
       !! two has nothing between them to relax.
    integer, parameter :: NEB_ENDS_FROZEN = 0
+      !! Endpoints held fixed, and the default for a chain-of-states run --
+      !! the two structures given are usually already optimized minima.
    integer, parameter :: NEB_ENDS_PERPENDICULAR = 1
       !! Endpoints move only perpendicular to their own tangent, which lets a
       !! slightly-off endpoint settle onto the path without sliding along it.
@@ -161,11 +140,8 @@ module mqc_optimizer_types
       !! One optimization's settings, as the deck asked for them
       !!
       !! A negative real or integer means "leave the engine's own default
-      !! alone", which is DL-FIND's own convention internally and is why it is
-      !! used here rather than transcribing every default twice. The two
-      !! settings a user actually reads back -- the step cap and the gradient
-      !! threshold -- are given real defaults anyway, because a run that stops
-      !! should be able to say what it stopped on.
+      !! alone". The step cap and the gradient threshold carry real defaults
+      !! anyway, so a run that stops can say what it stopped on.
       integer :: max_steps = DEFAULT_OPT_MAX_STEPS
          !! Give up after this many steps without converging
       real(dp) :: gradient_tolerance = DEFAULT_OPT_GRADIENT_TOLERANCE
@@ -189,12 +165,10 @@ module mqc_optimizer_types
          !! Independent of `algorithm` on purpose -- see `OPT_TARGET_SADDLE`.
       character(len=:), allocatable :: endpoint
          !! Path to a second geometry: the product, for a chain-of-states run.
-         !! Unallocated is the ordinary single-structure optimization, and is
-         !! what makes NEB opt-in rather than inferred.
+         !! Unallocated is the ordinary single-structure optimization.
       integer :: n_images = 0
          !! Images along the path, endpoints included. Zero means the engine's
-         !! own default. DL-FIND refuses fewer than three, since two images are
-         !! just the endpoints and there is no path between them to relax.
+         !! own default; fewer than `MIN_NEB_IMAGES` is refused.
       real(dp) :: neb_spring = -1.0_dp
          !! Spring constant holding neighbouring images apart. Negative means
          !! the engine default.
@@ -221,10 +195,8 @@ module mqc_optimizer_types
          !! default.
       logical :: connect = .false.
          !! After the saddle is found, follow its imaginary mode downhill in
-         !! both directions and report the two minima it falls to. One
-         !! imaginary frequency proves a first-order saddle; it does not prove
-         !! the saddle joins the two structures anybody had in mind, and this
-         !! is the check that settles it.
+         !! both directions and report the two minima it falls to -- which is
+         !! what says whether the saddle joins the structures anybody meant.
       real(dp) :: connect_distort = -1.0_dp
          !! How far to displace along the imaginary mode before relaxing.
          !! Negative is the engine default. Too small and both sides fall back
@@ -252,38 +224,30 @@ module mqc_optimizer_types
          !! system to hold them in -- see `mqc_dlfind_bridge`.
       logical :: hess_end = .false.
          !! Compute a Hessian at the converged geometry and say whether any
-         !! frequency came back imaginary.
+         !! frequency came back imaginary. A vanishing gradient is a stationary
+         !! point and not necessarily a minimum, so this is what establishes
+         !! what the run converged *to*.
          !!
-         !! A minimiser converges on the gradient alone, and a vanishing
-         !! gradient is a stationary point rather than a minimum -- a saddle
-         !! satisfies it exactly as well. Nothing in the optimization can tell
-         !! the two apart, so a run that ends "converged" has not established
-         !! what it converged *to*. This is what establishes it.
-         !!
-         !! Off by default because it is not free: one Hessian on top of the
-         !! optimization, analytic for restricted Hartree-Fock and central
-         !! differences of gradients otherwise.
+         !! Off by default: one Hessian on top of the optimization, analytic
+         !! for restricted Hartree-Fock and central differences of gradients
+         !! otherwise.
       logical :: trajectory = .true.
          !! Record every accepted geometry, for analysing the path afterwards.
-         !! Worth turning off for a large system optimized over many steps:
-         !! the geometries are held until the run ends so they can be written
-         !! as one document, which is 3N doubles per step of memory.
+         !! The geometries are held until the run ends, 3N doubles per step, so
+         !! this is worth turning off for a large system over many steps.
    end type optimizer_settings_t
 
    abstract interface
       subroutine hessian_i(n_atoms, coords, hessian, status)
          !! Second derivatives at a geometry, Hartree/Bohr^2
          !!
-         !! Cartesian, `(3N, 3N)`, in the system's own atom order. Cartesian
-         !! regardless of the coordinate system the optimization runs in: the
-         !! engine transforms it to whatever internals it is using, and cannot
-         !! do that if it is handed something already transformed.
+         !! Cartesian, `(3N, 3N)`, in the system's own atom order, whatever
+         !! coordinate system the optimization itself runs in -- the engine
+         !! transforms it.
          !!
          !! `status` is 0 for success. Anything else means no Hessian was
-         !! produced, which is not a failure -- an engine that asked for one is
-         !! expected to fall back to finite differences of gradients, which is
-         !! slower and correct. That is why this interface has no `error_t`:
-         !! there is nothing here a caller could not recover from.
+         !! produced, which is not a failure: the engine falls back to finite
+         !! differences of gradients, so there is no `error_t` here.
          import :: dp
          implicit none
          integer, intent(in) :: n_atoms
@@ -299,9 +263,7 @@ module mqc_optimizer_types
          !!
          !! Coordinates are Bohr and the gradient is Hartree/Bohr, both in the
          !! system's own atom order. Fragmentation and hydrogen caps have
-         !! already been folded back in by the time an engine sees this, so an
-         !! engine never learns whether the number it was handed came from one
-         !! calculation or from twenty thousand.
+         !! already been folded back in by the time an engine sees this.
          !!
          !! `status` is 0 for success. An engine must stop on anything else
          !! rather than step on a gradient that was never computed -- a failed
@@ -322,10 +284,8 @@ module mqc_optimizer_types
          !! One accepted geometry, as the optimization passes through it
          !!
          !! Called by the engine for each step it accepts -- not for every
-         !! energy evaluation, which includes the trial points of a line
-         !! search and would make a trajectory that goes backwards. What the
-         !! driver does with it (writes a frame, records it for the output
-         !! document) is not the engine's business.
+         !! energy evaluation, which includes the trial points of a line search
+         !! and would make a trajectory that goes backwards.
          import :: dp
          implicit none
          integer, intent(in) :: n_atoms
@@ -434,10 +394,8 @@ contains
    pure function algorithm_needs_hessian(algorithm) result(needs)
       !! Whether this algorithm holds a Hessian at all
       !!
-      !! What it decides is whether the driver bothers to offer one. An
-      !! algorithm that never builds one would be handed a callback it never
-      !! calls, and the Hessian settings beside it -- the update scheme above
-      !! all -- would read as though they were doing something.
+      !! Decides whether the driver offers one, and whether the Hessian
+      !! settings beside it mean anything.
       integer, intent(in) :: algorithm
       logical :: needs
 
@@ -446,6 +404,11 @@ contains
 
    pure function saddle_method_from_string(text) result(method)
       !! Parse how a deck wants the saddle hunted
+      ! TODO(mqc): unrecognised text comes back as a bare -2 here and in
+      ! `neb_ends_from_string`, `target_from_string` and
+      ! `hessian_update_from_string`, where the coordinate, algorithm and
+      ! constraint parsers return a named sentinel. Four magic numbers a caller
+      ! has to know without any constant naming them.
       character(len=*), intent(in) :: text
       integer :: method
 
@@ -513,10 +476,8 @@ contains
       !!
       !! P-RFO by construction -- it maximises along one eigenvector and
       !! minimises along the others. Newton-Raphson because it seeks a
-      !! vanishing gradient and does not care about the curvature it lands in,
-      !! so from a guess near the ridge it will settle there. Everything else
-      !! here goes downhill and will find a minimum however the deck spells the
-      !! target.
+      !! vanishing gradient regardless of the curvature it lands in. Everything
+      !! else here goes downhill however the deck spells the target.
       integer, intent(in) :: algorithm
       logical :: can
 
@@ -525,10 +486,6 @@ contains
 
    pure function target_from_string(text) result(want)
       !! Parse what the deck says it is looking for
-      !!
-      !! The result is `want` and not `target`: the component these two read
-      !! and write keeps the keyword's own spelling, but a local of that name
-      !! shadows the Fortran attribute, which is legal and reads badly.
       character(len=*), intent(in) :: text
       integer :: want
 
@@ -619,8 +576,7 @@ contains
    pure function constraint_atom_count(kind) result(n)
       !! How many atoms a constraint of this type names
       !!
-      !! Zero for a type nobody recognises, which is how a deck naming one is
-      !! caught: the count is what the reader validates the atom list against.
+      !! Zero for a type nobody recognises.
       integer, intent(in) :: kind
       integer :: n
 
@@ -641,7 +597,10 @@ contains
    end function constraint_atom_count
 
    pure function lowercase(text) result(lowered)
-      !! Case-insensitive comparison, the way mqc_calc_types does it
+      !! Trimmed, left-adjusted, ASCII-lowercased copy of `text`
+      ! TODO(mqc): a hand-rolled copy of `pic_ascii`'s `to_lower`, which this
+      ! repository already uses in `mqc_elements`, `mqc_io_helpers` and the
+      ! cuEST functional table.
       character(len=*), intent(in) :: text
       character(len=len_trim(adjustl(text))) :: lowered
 

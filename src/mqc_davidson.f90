@@ -2,24 +2,16 @@
 module mqc_davidson
    !! Davidson's method: build a small subspace, diagonalise the Hamiltonian
    !! inside it, and grow it in the direction the residual points. The only
-   !! thing it asks of the operator is a matrix-vector product, which is exactly
-   !! what `sigma_vector` provides and all that is affordable -- the matrix
-   !! whose lowest eigenvalue is wanted is 32 GB at CAS(10,10) and unthinkable
-   !! past that, while the subspace here is a few dozen vectors.
+   !! thing it asks of the operator is a matrix-vector product, which is what
+   !! `sigma_vector` provides.
    !!
    !! **The preconditioner is the whole method.** Without it this is Lanczos
-   !! with extra steps and converges at the rate the spectrum dictates. Dividing
-   !! the residual by `theta - H_DD` before adding it approximates the
-   !! correction that would solve the problem exactly if the Hamiltonian were
-   !! diagonal, and for a CI Hamiltonian -- strongly diagonally dominant, since
-   !! a determinant far from the reference is far in energy too -- that is a
-   !! good enough approximation to converge in tens of iterations rather than
-   !! thousands.
-   !!
-   !! A wrong preconditioner does not give a wrong answer. It gives the right
-   !! answer slowly, or no answer at all, and neither symptom points back here;
-   !! that is why `ci_diagonal` is checked against the assembled matrix
-   !! separately rather than trusted because the solver seems to work.
+   !! with extra steps. Dividing the residual by `theta - H_DD` before adding it
+   !! is the correction that would be exact if the Hamiltonian were diagonal,
+   !! and a CI Hamiltonian is diagonally dominant enough for that to converge in
+   !! tens of iterations rather than thousands. A wrong preconditioner does not
+   !! give a wrong answer, only a slow one or none at all, so `ci_diagonal` is
+   !! checked separately rather than trusted because the solver seems to work.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
@@ -39,9 +31,9 @@ module mqc_davidson
    public :: sigma_operator_t
 
    real(dp), parameter :: DEFAULT_TOLERANCE = 1.0e-10_dp
-      !! On the residual norm, not the energy. The energy error is second order
-      !! in the vector error near an eigenvector, so an energy-based test stops
-      !! about half way through the digits the vector has -- and the vector is
+      !! On the residual norm, not the energy: near an eigenvector the energy
+      !! error is second order in the vector error, so an energy test stops
+      !! about half way through the digits the vector has, and the vector is
       !! what the density matrices are built from.
    integer, parameter :: DEFAULT_MAX_ITERATIONS = 200
    real(dp), parameter :: PRECONDITION_FLOOR = 1.0e-8_dp
@@ -52,23 +44,18 @@ module mqc_davidson
       !! How much of a new direction has to survive projection out of the
       !! subspace for it to be worth adding, as a fraction of its own length.
       !!
-      !! **The fraction is the point.** Tested against the raw correction
-      !! instead, this threshold scales with the residual, so it stops being a
-      !! statement about linear dependence and becomes a floor on the residual:
-      !! near convergence every correction looks tiny and gets dropped, the
-      !! subspace stops growing, and the solve halts a long way short of the
-      !! tolerance it was asked for. Normalising first makes the test scale-free
-      !! and is the difference between converging to 1e-10 and stalling at 1e-6.
+      !! **The fraction is the point.** Tested against the raw correction the
+      !! threshold scales with the residual, so near convergence every
+      !! correction looks tiny, the subspace stops growing, and the solve stalls
+      !! short of its tolerance. Normalising first makes the test scale-free.
 
    type, abstract :: sigma_operator_t
       !! Whatever can multiply a vector by the Hamiltonian
       !!
-      !! Davidson asks the operator for one thing and the determinant space for
-      !! another: a matrix-vector product, and a diagonal to precondition with.
-      !! Neither needs the vector to be shaped, and a restricted active space
-      !! cannot shape it -- its determinants are not a rectangle. So the method
-      !! is written against a flat vector and this type, and the two spaces
-      !! differ only in what they put behind it.
+      !! Davidson needs a matrix-vector product and a diagonal to precondition
+      !! with, neither of which needs the vector shaped -- and a restricted
+      !! active space cannot shape it, its determinants not being a rectangle.
+      !! Hence a flat vector and this type.
    contains
       procedure(apply_sigma), deferred :: apply
    end type sigma_operator_t
@@ -140,18 +127,12 @@ contains
       real(dp), intent(in), optional :: guess(:, :, :)
          !! (n_alpha, n_beta, n_roots) starting vectors
       logical, intent(in), optional :: verbose
-         !! Print a line per iteration. Off by default, and worth having at all
-         !! because a large CI is silent for a long time: ethane's full valence
-         !! CAS(14,14) is eleven million determinants and takes twenty minutes,
-         !! during which a run that is converging and a run that is stuck look
-         !! exactly alike.
+         !! Print a line per iteration, off by default
       real(dp), intent(in), optional :: energy_offset
          !! Added to the eigenvalue before printing, and to nothing else. The
-         !! Davidson solves the active-space problem, so its eigenvalue is the
-         !! active energy alone -- for ethane that is -40.87 against a total of
-         !! -79.34, which in a column headed "energy" reads as the wrong
-         !! molecule. The caller knows the inactive-plus-nuclear constant; this
-         !! lets the table show the number the run is actually converging to.
+         !! Davidson solves the active-space problem, so its own eigenvalue is
+         !! the active energy alone; the caller knows the inactive-plus-nuclear
+         !! constant this adds back.
 
       type(cas_operator_t) :: operator
       real(dp), allocatable :: vectors(:, :), flat_guess(:, :)
@@ -215,22 +196,16 @@ contains
          !! vectors. Defaults to `max(2*n_roots + 8, 16)`, bounded by the size of
          !! the determinant space.
       real(dp), intent(in), optional :: guess(:, :)
+         !! (n_determinants, n_roots) starting vectors. Absent takes unit
+         !! vectors on the lowest diagonal elements, which for a CI is the
+         !! reference determinant and its nearest neighbours in energy.
       logical, intent(in), optional :: verbose
-         !! Print a line per iteration. Off by default, and worth having at all
-         !! because a large CI is silent for a long time: ethane's full valence
-         !! CAS(14,14) is eleven million determinants and takes twenty minutes,
-         !! during which a run that is converging and a run that is stuck look
-         !! exactly alike.
+         !! Print a line per iteration, off by default
       real(dp), intent(in), optional :: energy_offset
          !! Added to the eigenvalue before printing, and to nothing else. The
-         !! Davidson solves the active-space problem, so its eigenvalue is the
-         !! active energy alone -- for ethane that is -40.87 against a total of
-         !! -79.34, which in a column headed "energy" reads as the wrong
-         !! molecule. The caller knows the inactive-plus-nuclear constant; this
-         !! lets the table show the number the run is actually converging to.
-         !! (n_determinants, n_roots) starting vectors. Absent takes unit vectors
-         !! on the lowest diagonal elements, which for a CI is the reference
-         !! determinant and its nearest neighbours in energy.
+         !! Davidson solves the active-space problem, so its own eigenvalue is
+         !! the active energy alone; the caller knows the inactive-plus-nuclear
+         !! constant this adds back.
 
       real(dp), allocatable :: basis(:, :), sigma(:, :), small(:, :), small_values(:)
       character(len=128) :: line
@@ -324,22 +299,15 @@ contains
             root_converged(iroot) = residuals(iroot) < tol
          end do
 
-         ! Per iteration rather than a total, for the same reason the SCF does
-         ! it: what a long CI is doing is only visible from whether the residual
-         ! is still falling, and the time per iteration says whether the cost is
-         ! in the sigma products or somewhere else.
+         ! Time per iteration rather than a total, as the SCF prints it.
          if (loud) then
             call system_clock(tick)
             write (line, "(i8,f23.12,es12.3,i11,i10,f10.2,a)") &
                iteration, values(1) + shift, maxval(residuals), nsub, sigma_products, &
                real(tick - last, dp)/real(rate, dp), " s"
             call logger%info(trim(line))
-            ! Flushed, or the table is pointless. Redirected output is block
-            ! buffered, so without this the rows sit in a 4 kB buffer and
-            ! arrive in lumps -- which for a twenty-minute CI means the log
-            ! still shows nothing for minutes at a time, which is the whole
-            ! complaint this table exists to answer. One syscall against a
-            ! sigma product costing tens of seconds is not a cost.
+            ! Redirected output is block buffered, so without this the rows sit
+            ! in a 4 kB buffer and arrive in lumps.
             flush (output_unit)
             last = tick
          end if
@@ -420,6 +388,9 @@ contains
 
    subroutine initial_basis(diagonal, n_roots, ndet, basis, guess)
       !! Starting vectors: the supplied ones, or the lowest determinants
+      ! TODO(mqc): a supplied vector that is linearly dependent on an earlier
+      ! one is left unnormalised rather than replaced, so the subspace starts
+      ! with a near-null column and the Ritz vectors built on it are meaningless.
       real(dp), intent(in) :: diagonal(:)
       integer, intent(in) :: n_roots, ndet
       real(dp), intent(inout) :: basis(:, :)

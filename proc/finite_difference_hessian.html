@@ -136,18 +136,18 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-backward_dipoles">backward_dipoles</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-backward_dipoles~2">backward_dipoles</a>
             <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-backward_geoms">backward_geoms</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-backward_gradients">backward_gradients</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-displacement~2">displacement</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-forward_dipoles">forward_dipoles</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-backward_gradients~2">backward_gradients</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-displacement">displacement</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-forward_dipoles~2">forward_dipoles</a>
             <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-forward_geoms">forward_geoms</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-forward_gradients">forward_gradients</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-forward_gradients~2">forward_gradients</a>
             <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-have_dipoles">have_dipoles</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-i~33">i</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-is_verbose">is_verbose</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-n_atoms~7">n_atoms</a>
-            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-n_displacements">n_displacements</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-i~39">i</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-is_verbose~2">is_verbose</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-n_atoms~10">n_atoms</a>
+            <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-n_displacements~2">n_displacements</a>
             <a class="list-group-item" href="../proc/finite_difference_hessian.html#variable-point">point</a>
         </div>
       </div>
@@ -204,7 +204,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~3"></span>
+              <span class="anchor" id="variable-method~2"></span>
               class(<a href='../type/qc_method_t.html'>qc_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -219,7 +219,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~3"></span>
+              <span class="anchor" id="variable-fragment~4"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -234,7 +234,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~12"></span>
+              <span class="anchor" id="variable-result~9"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -249,7 +249,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~4"></span>
+              <span class="anchor" id="variable-verbose~7"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -274,8 +274,7 @@
             <td>::</td>
             <td><strong>displacement_in</strong></td>
             <td>
-                <p>Step in Bohr. Absent, <code>DEFAULT_DISPLACEMENT</code> stands, which is what
-every caller got before this argument existed.</p>
+                <p>Step in Bohr; <code>DEFAULT_DISPLACEMENT</code> when absent.</p>
             </td>
         </tr>
     </tbody>
@@ -804,7 +803,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-backward_dipoles"></span>
+              <span class="anchor" id="variable-backward_dipoles~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -838,7 +837,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backward_gradients"></span>
+              <span class="anchor" id="variable-backward_gradients~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -855,7 +854,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-displacement~2"></span>
+              <span class="anchor" id="variable-displacement"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -872,7 +871,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-forward_dipoles"></span>
+              <span class="anchor" id="variable-forward_dipoles~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -906,7 +905,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-forward_gradients"></span>
+              <span class="anchor" id="variable-forward_gradients~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -940,7 +939,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~33"></span>
+              <span class="anchor" id="variable-i~39"></span>
               integer,
             </td>
               <td>private</td>
@@ -957,7 +956,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-is_verbose"></span>
+              <span class="anchor" id="variable-is_verbose~2"></span>
               logical,
             </td>
               <td>private</td>
@@ -974,7 +973,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~7"></span>
+              <span class="anchor" id="variable-n_atoms~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -991,7 +990,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_displacements"></span>
+              <span class="anchor" id="variable-n_displacements~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1046,8 +1045,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span><span class="w">   </span><span class="c">!! Energy, gradient and Hessian</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">verbose</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">displacement_in</span>
-<span class="w">         </span><span class="c">!! Step in Bohr. Absent, `DEFAULT_DISPLACEMENT` stands, which is what</span>
-<span class="w">         </span><span class="c">!! every caller got before this argument existed.</span>
+<span class="w">         </span><span class="c">!! Step in Bohr; `DEFAULT_DISPLACEMENT` when absent.</span>
 
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">displaced_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">forward_geoms</span><span class="p">(:),</span><span class="w"> </span><span class="n">backward_geoms</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">forward_gradients</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">backward_gradients</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:)</span>
@@ -1077,8 +1075,7 @@ large graphs.</div>
 <span class="k">      call </span><span class="n">generate_perturbed_geometries</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">displacement</span><span class="p">,</span><span class="w"> </span><span class="n">forward_geoms</span><span class="p">,</span><span class="w"> </span><span class="n">backward_geoms</span><span class="p">)</span>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">forward_gradients</span><span class="p">(</span><span class="n">n_displacements</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">))</span>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">backward_gradients</span><span class="p">(</span><span class="n">n_displacements</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">))</span>
-<span class="w">      </span><span class="c">! The same displacements give dmu/dR, and so IR intensities, for nothing</span>
-<span class="w">      </span><span class="c">! beyond storing the dipole each method already returns.</span>
+<span class="w">      </span><span class="c">! The same displacements give dmu/dR, and so IR intensities.</span>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">forward_dipoles</span><span class="p">(</span><span class="n">n_displacements</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">),</span><span class="w"> </span><span class="n">backward_dipoles</span><span class="p">(</span><span class="n">n_displacements</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">))</span>
 <span class="w">      </span><span class="n">forward_dipoles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 <span class="w">      </span><span class="n">backward_dipoles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
@@ -1117,8 +1114,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">result</span><span class="p">%</span><span class="n">has_hessian</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 
 <span class="w">      </span><span class="c">! The undisplaced point supplies the energy and gradient that go with the</span>
-<span class="w">      </span><span class="c">! Hessian. It is one extra SCF on top of the 6N, and skipping it would</span>
-<span class="w">      </span><span class="c">! mean reporting a Hessian with no energy beside it.</span>
+<span class="w">      </span><span class="c">! Hessian.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">method</span><span class="p">%</span><span class="n">calc_gradient</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">point</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">point</span><span class="p">%</span><span class="n">has_error</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         result</span><span class="p">%</span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">point</span><span class="p">%</span><span class="n">error</span>
@@ -1138,9 +1134,8 @@ large graphs.</div>
 <span class="w">      </span><span class="k">end if</span>
 <span class="k">      call </span><span class="n">point</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
 
-<span class="w">      </span><span class="c">! Dipole derivatives, hence IR intensities, whenever every displacement</span>
-<span class="w">      </span><span class="c">! returned a dipole. A method that does not supply one leaves them</span>
-<span class="w">      </span><span class="c">! absent rather than silently zero.</span>
+<span class="w">      </span><span class="c">! Dipole derivatives, hence IR intensities, only when every displacement</span>
+<span class="w">      </span><span class="c">! returned a dipole; otherwise absent rather than silently zero.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">have_dipoles</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">finite_diff_dipole_derivatives</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">forward_dipoles</span><span class="p">,</span><span class="w"> </span><span class="n">backward_dipoles</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                             </span><span class="n">displacement</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">dipole_derivatives</span><span class="p">)</span>
@@ -1176,7 +1171,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

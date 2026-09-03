@@ -137,8 +137,8 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/send_error_state.html#variable-encoded">encoded</a>
-            <a class="list-group-item" href="../proc/send_error_state.html#variable-i~4">i</a>
-            <a class="list-group-item" href="../proc/send_error_state.html#variable-n~3">n</a>
+            <a class="list-group-item" href="../proc/send_error_state.html#variable-i~110">i</a>
+            <a class="list-group-item" href="../proc/send_error_state.html#variable-n~42">n</a>
             <a class="list-group-item" href="../proc/send_error_state.html#variable-trace">trace</a>
         </div>
       </div>
@@ -180,11 +180,9 @@
     
 
     <p>Send the failure flag, code and trace that travel with a result</p>
-<p>This is not optional bookkeeping. Without it a fragment that failed on
-a worker arrives at the coordinator looking healthy: <code>has_error</code> stays
-at its default <code>.false.</code>, the untouched SCF energy of 0 is taken at
-face value, and the many-body expansion quietly sums zeros. Every
-<code>has_error</code> check on the receiving side depends on this being sent.</p>
+<p>Every <code>has_error</code> check on the receiving side depends on this being
+sent. Without it a fragment that failed on a worker arrives looking
+healthy and its untouched SCF energy of 0 is summed at face value.</p>
 
 
     <h3>Arguments</h3>
@@ -200,7 +198,7 @@ face value, and the many-body expansion quietly sums zeros. Every
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result"></span>
+              <span class="anchor" id="variable-result~31"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -215,7 +213,7 @@ face value, and the many-body expansion quietly sums zeros. Every
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm"></span>
+              <span class="anchor" id="variable-comm~10"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -230,7 +228,7 @@ face value, and the many-body expansion quietly sums zeros. Every
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest"></span>
+              <span class="anchor" id="variable-dest~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -840,7 +838,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~4"></span>
+              <span class="anchor" id="variable-i~110"></span>
               integer,
             </td>
               <td>private</td>
@@ -857,7 +855,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~3"></span>
+              <span class="anchor" id="variable-n~42"></span>
               integer,
             </td>
               <td>private</td>
@@ -908,11 +906,9 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">send_error_state</span><span class="p">(</span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Send the failure flag, code and trace that travel with a result</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! This is not optional bookkeeping. Without it a fragment that failed on</span>
-<span class="w">      </span><span class="c">!! a worker arrives at the coordinator looking healthy: `has_error` stays</span>
-<span class="w">      </span><span class="c">!! at its default `.false.`, the untouched SCF energy of 0 is taken at</span>
-<span class="w">      </span><span class="c">!! face value, and the many-body expansion quietly sums zeros. Every</span>
-<span class="w">      </span><span class="c">!! `has_error` check on the receiving side depends on this being sent.</span>
+<span class="w">      </span><span class="c">!! Every `has_error` check on the receiving side depends on this being</span>
+<span class="w">      </span><span class="c">!! sent. Without it a fragment that failed on a worker arrives looking</span>
+<span class="w">      </span><span class="c">!! healthy and its untouched SCF energy of 0 is summed at face value.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
 <span class="k">      type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">comm</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span>
@@ -927,8 +923,8 @@ large graphs.</div>
 <span class="k">      call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_code</span><span class="p">(),</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! pic-mpi carries no character type, so the trace goes as one character</span>
-<span class="w">      </span><span class="c">! code per element. It is never empty: a zero-length message would leave</span>
-<span class="w">      </span><span class="c">! the coordinator with a failure it cannot name.</span>
+<span class="w">      </span><span class="c">! code per element, and is never empty -- a zero-length message would</span>
+<span class="w">      </span><span class="c">! leave the coordinator with a failure it cannot name.</span>
 <span class="w">      </span><span class="n">trace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_full_trace</span><span class="p">()</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">trace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Calculation failed without a diagnostic"</span>
 <span class="w">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">len_trim</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
@@ -961,7 +957,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

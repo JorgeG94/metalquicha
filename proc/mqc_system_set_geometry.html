@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mqc_system_set_geometry.html#variable-h~3">h</a>
-            <a class="list-group-item" href="../proc/mqc_system_set_geometry.html#variable-iatom~6">iatom</a>
+            <a class="list-group-item" href="../proc/mqc_system_set_geometry.html#variable-h~7">h</a>
+            <a class="list-group-item" href="../proc/mqc_system_set_geometry.html#variable-iatom~12">iatom</a>
         </div>
       </div>
     </div>
@@ -193,7 +193,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~3"></span>
+              <span class="anchor" id="variable-handle~7"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -208,7 +208,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~18"></span>
+              <span class="anchor" id="variable-n_atoms~26"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -223,7 +223,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~8"></span>
+              <span class="anchor" id="variable-atomic_numbers~12"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -238,7 +238,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~8"></span>
+              <span class="anchor" id="variable-coordinates~10"></span>
               real(kind=c_double),
             </td>
 <td>intent(in)</td>
@@ -253,7 +253,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~4"></span>
+              <span class="anchor" id="variable-charge~7"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -268,7 +268,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~2"></span>
+              <span class="anchor" id="variable-multiplicity~6"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -286,7 +286,7 @@
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-status~10"></span>
+          <span class="anchor" id="variable-status~16"></span>
           integer(kind=c_int)
         </small>
       </h3>
@@ -429,7 +429,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~3"></span>
+              <span class="anchor" id="variable-h~7"></span>
               type(<a href='../type/system_handle_t.html'>system_handle_t</a>),
             </td>
               <td>private,</td>
@@ -446,7 +446,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~6"></span>
+              <span class="anchor" id="variable-iatom~12"></span>
               integer,
             </td>
               <td>private</td>
@@ -481,6 +481,12 @@ large graphs.</div>
 <span class="w">                                    </span><span class="n">charge</span><span class="p">,</span><span class="w"> </span><span class="n">multiplicity</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">      </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">"mqc_system_set_geometry"</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The atoms, in Angstrom</span>
+<span class="w">      </span><span class="c">! TODO(mqc): callable again after everything else on the handle, and</span>
+<span class="w">      </span><span class="c">! invalidates all of it. A second call with fewer atoms leaves</span>
+<span class="w">      </span><span class="c">! `fragment_atoms` indexing atoms that no longer exist, `bonds_declared`</span>
+<span class="w">      </span><span class="c">! true over a boundary check made against the old geometry, and the</span>
+<span class="w">      </span><span class="c">! cached `bond_orders` and `charges` describing the old molecule. None is</span>
+<span class="w">      </span><span class="c">! cleared and none is re-run.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handle</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atomic_numbers</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">)</span>
@@ -552,7 +558,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

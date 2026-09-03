@@ -622,7 +622,7 @@ large graphs.</div>
         <h2><span class="anchor" id="src"></span>Source Code</h2>
         <div class="hl codehilite"><pre><span></span><a id="ln-1" name="ln-1" href="#ln-1"></a><span class="c">!! contains MPI tags used in the MQC parallel implementation</span>
 <a id="ln-2" name="ln-2" href="#ln-2"></a><span class="k">module </span><span class="n">mqc_mpi_tags</span>
-<a id="ln-3" name="ln-3" href="#ln-3"></a><span class="w">   </span><span class="c">!! Module defining MPI communication tags for clarity and maintainability</span>
+<a id="ln-3" name="ln-3" href="#ln-3"></a><span class="w">   </span><span class="c">!! Tag numbers, grouped by the phase of the run that uses them.</span>
 <a id="ln-4" name="ln-4" href="#ln-4"></a><span class="w">   </span><span class="k">use </span><span class="n">pic_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">default_int</span>
 <a id="ln-5" name="ln-5" href="#ln-5"></a><span class="w">   </span><span class="k">implicit none</span>
 <a id="ln-6" name="ln-6" href="#ln-6"></a><span class="k">   private</span>
@@ -659,12 +659,12 @@ large graphs.</div>
 <a id="ln-37" name="ln-37" href="#ln-37"></a><span class="w">   </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">parameter</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">TAG_GROUP_RESULT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">402</span>
 <a id="ln-38" name="ln-38" href="#ln-38"></a><span class="w">      </span><span class="c">!! Group global forwards batched results to super-global</span>
 <a id="ln-39" name="ln-39" href="#ln-39"></a><span class="w">   </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">parameter</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">TAG_GROUP_DONE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">403</span>
-<a id="ln-40" name="ln-40" href="#ln-40"></a>
-<a id="ln-41" name="ln-41" href="#ln-41"></a><span class="w">   </span><span class="c">!&gt; Setup-time broadcasts from rank 0 -- system, bonds, term list, config.</span>
-<a id="ln-42" name="ln-42" href="#ln-42"></a><span class="w">   </span><span class="c">!  A range of its own so it cannot collide with work distribution, which is</span>
-<a id="ln-43" name="ln-43" href="#ln-43"></a><span class="w">   </span><span class="c">!  in flight at a different phase but on the same communicator.</span>
-<a id="ln-44" name="ln-44" href="#ln-44"></a><span class="w">   </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">parameter</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">TAG_BCAST_PAYLOAD</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span>
-<a id="ln-45" name="ln-45" href="#ln-45"></a><span class="w">      </span><span class="c">!! Group global signals completion to super-global</span>
+<a id="ln-40" name="ln-40" href="#ln-40"></a><span class="w">      </span><span class="c">!! Group global signals completion to super-global</span>
+<a id="ln-41" name="ln-41" href="#ln-41"></a>
+<a id="ln-42" name="ln-42" href="#ln-42"></a><span class="w">   </span><span class="c">! Setup-time broadcasts from rank 0 (system, bonds, term list, config)</span>
+<a id="ln-43" name="ln-43" href="#ln-43"></a><span class="w">   </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">parameter</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">TAG_BCAST_PAYLOAD</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span>
+<a id="ln-44" name="ln-44" href="#ln-44"></a><span class="w">      </span><span class="c">!! Rank 0 broadcasting the system at setup. A range of its own, so it</span>
+<a id="ln-45" name="ln-45" href="#ln-45"></a><span class="w">      </span><span class="c">!! cannot collide with work distribution on the same communicator.</span>
 <a id="ln-46" name="ln-46" href="#ln-46"></a>
 <a id="ln-47" name="ln-47" href="#ln-47"></a><span class="k">end module </span><span class="n">mqc_mpi_tags</span>
 </pre></div>
@@ -688,7 +688,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

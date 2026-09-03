@@ -214,11 +214,10 @@ of each atom pair,</p>
 unnormalised cell function is the product over partners,</p>
 <p>P_A(r) = prod_{B /= A} s(nu_AB),   w_A = P_A / sum_C P_C</p>
 <p>Two cutoffs are offered. Becke&rsquo;s is three iterations of p(x) = x(3-x^2)/2,
-which is smooth everywhere and non-zero everywhere &ndash; so every atom
-contributes at every point, and the cost is unavoidably natoms^2 per
-point. Stratmann&rsquo;s [CPL 257, 213 (1996)] is a degree-5 polynomial that
-reaches exactly +-1 at |mu| &gt;= a, so distant pairs contribute exactly 0 or
-1 and can be skipped. That is what makes large systems affordable.</p>
+smooth and non-zero everywhere, so every atom contributes at every point.
+Stratmann&rsquo;s [CPL 257, 213 (1996)] is a degree-5 polynomial reaching
+exactly +-1 at |mu| &gt;= a, so a distant pair contributes exactly 0 or 1 and
+could be skipped.</p>
 <p><code>nu</code> is <code>mu</code> after an adjustment for the two atoms having different sizes,
 so that the cell boundary sits between them rather than halfway. Becke&rsquo;s
 appendix gives the shift in terms of the radius ratio chi:</p>
@@ -233,8 +232,8 @@ weights slightly and must match whatever a reference is being compared to.</p>
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='mqc_dft_radial.html'>mqc_dft_radial</a></li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -613,8 +612,7 @@ parameter
 <td> =</td>
                 <td>0</td>
             <td>
-                <p>Atomic size adjustment
-All atoms the same size</p>
+                <p>All atoms the same size</p>
             </td>
         </tr>
         <tr>
@@ -648,8 +646,7 @@ parameter
 <td> =</td>
                 <td>1</td>
             <td>
-                <p>Cutoff profile
-Three iterations of p(x), smooth everywhere</p>
+                <p>Three iterations of p(x), smooth everywhere</p>
             </td>
         </tr>
         <tr>
@@ -859,7 +856,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~8"></span>
+              <span class="anchor" id="variable-scheme~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1119,7 +1116,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~12"></span>
+              <span class="anchor" id="variable-atomic_numbers~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1134,7 +1131,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~7"></span>
+              <span class="anchor" id="variable-owner~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1149,7 +1146,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~10"></span>
+              <span class="anchor" id="variable-scheme~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1194,7 +1191,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~110"></span>
+              <span class="anchor" id="variable-error~141"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1264,7 +1261,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~11"></span>
+              <span class="anchor" id="variable-atomic_numbers~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1279,7 +1276,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~6"></span>
+              <span class="anchor" id="variable-owner~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1294,7 +1291,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~9"></span>
+              <span class="anchor" id="variable-scheme~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1339,7 +1336,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~109"></span>
+              <span class="anchor" id="variable-error~140"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1379,7 +1376,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~13"></span>
+              <span class="anchor" id="variable-atomic_numbers~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1409,7 +1406,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-shift~4"></span>
+              <span class="anchor" id="variable-shift~8"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1452,7 +1449,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

@@ -1,15 +1,9 @@
 !! The CI Hamiltonian, applied to a vector without ever being formed
 module mqc_ci
-   !! `sigma = H c` for a complete active space, which is the operation a CI
-   !! solver spends all of its time in and the only one that has to be fast.
-   !! The Hamiltonian is never built: at CAS(10,10) it would be 32 GB and at
-   !! CAS(12,12) it does not bear writing down, while the vector it acts on is
-   !! 508 kB and 6.8 MB.
+   !! `sigma = H c` for a complete active space, without ever forming `H`.
    !!
-   !! **One contraction, not three.** The textbook sigma splits into an
-   !! alpha-alpha, a beta-beta and an alpha-beta term, each with its own loop
-   !! structure and its own sign conventions to get wrong. That is avoidable.
-   !! The two-particle part of the Hamiltonian is
+   !! **One contraction, not three.** The two-particle part of the Hamiltonian
+   !! is
    !!
    !!     (pq|rs) E_pr,qs = (pq|rs) (E_pq E_rs - delta_qr E_ps)
    !!
@@ -19,14 +13,11 @@ module mqc_ci
    !! it is then: apply `E_pq` once, contract with the tensor, apply `E_pq`
    !! again. No case analysis, and the same excitation table for both spins.
    !!
-   !! The idea is PySCF's, from `pyscf/fci/direct_spin1.py` and the readable
-   !! `fci/fci_slow.py` beside it. The implementation here is its own; what was
-   !! taken is the formulation.
+   !! The formulation is PySCF's, from `pyscf/fci/direct_spin1.py`; the
+   !! implementation is this repository's own.
    !!
-   !! The cost is the intermediate, `n_orbitals^2` by the number of determinants:
-   !! 51 MB at CAS(10,10), 983 MB at CAS(12,12), and past that it has to be
-   !! blocked over beta strings. Blocking changes nothing structurally and is
-   !! deliberately not done yet.
+   !! The cost is the intermediate, `n_orbitals^2` by the number of
+   !! determinants, which is blocked over beta strings.
    use, intrinsic :: iso_fortran_env, only: int64
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
@@ -46,11 +37,8 @@ module mqc_ci
 
    integer(int64), parameter :: BLOCK_BYTES = 256_int64*1024_int64*1024_int64
       !! Working-set target for one block of the CI intermediate, per buffer
-      !! pair. Not a hard limit on the routine -- the vector, the diagonal and
-      !! the Davidson subspace sit outside it -- but the one allocation that
-      !! grows with the determinant count *and* the orbital count, so it is the
-      !! one worth bounding. At this size ethane's CAS(14,14) blocks into 23
-      !! beta strings at a time, against the 18.5 GB it would take whole.
+      !! pair. Not a hard limit on the routine: the vector, the diagonal and the
+      !! Davidson subspace sit outside it.
 
 contains
 
@@ -69,13 +57,11 @@ contains
       !!
       !! Then `f` is spread over the diagonal of the two-electron tensor, using
       !! `sum_k E_kk = N`: adding `f/N` to `g_kk,rs` and to `g_pq,kk` for every
-      !! `k` reproduces `sum f_pq E_pq` exactly, because the number operator
-      !! commutes with everything that conserves particles and each of the two
-      !! placements contributes half.
+      !! `k` reproduces `sum f_pq E_pq` exactly, each of the two placements
+      !! contributing half.
       !!
-      !! `factor` is folded in at the end and is normally a half, which is where
-      !! the `1/2` in front of the two-electron energy goes. `sigma_vector` has
-      !! no factors of its own.
+      !! The result carries the `1/2` in front of the two-electron energy, so
+      !! `sigma_vector` has no factors of its own.
       real(dp), intent(in) :: h1e(:, :)          !! (norb, norb), symmetric
       real(dp), intent(in) :: eri(:, :, :, :)    !! (norb^4), chemist (pq|rs)
       integer, intent(in) :: n_electrons         !! Total, both spins
@@ -151,24 +137,15 @@ contains
    pure function beta_strings_per_block(npair, na, nb) result(width)
       !! How many beta strings one working block may cover
       !!
-      !! The intermediate is `(n_orbitals^2, n_determinants)` and the
-      !! determinant count is the product of the two string counts, so building
-      !! it whole costs `norb^2 * na * nb * 8` bytes -- which is nothing for a
-      !! small active space and ruinous for a large one. Ethane's full valence
-      !! CAS(14,14) is 196 by 11,778,624, or **18.5 GB**, and the sigma build
-      !! needs two of them. Water's CAS(8,6) is 350 kB.
+      !! The intermediate is `(n_orbitals^2, n_determinants)`, or
+      !! `norb^2 * na * nb * 8` bytes whole, and the sigma build needs two of
+      !! them. Determinants are alpha-major within a beta string, so a range of
+      !! beta strings is a contiguous range of columns and the beta string is
+      !! the unit blocked on.
       !!
-      !! So the determinant axis is blocked, and this says how finely.
-      !! Determinants are laid out alpha-major within a beta string, which makes
-      !! a range of beta strings a contiguous range of columns and the beta
-      !! string the natural unit to block on.
-      !!
-      !! Deliberately a memory budget rather than a fixed count: a fixed count
-      !! would be far too small for a tiny space -- where the whole intermediate
-      !! is cheaper than the bookkeeping -- and still too large for a big one,
-      !! since the cost per beta string grows with both the orbital count and
-      !! the alpha string count. Below the budget nothing blocks at all, so
-      !! small spaces are untouched and take the same path they always did.
+      !! A memory budget, not a fixed count: the cost per beta string grows with
+      !! both the orbital count and the alpha string count. A space whose whole
+      !! intermediate fits in `BLOCK_BYTES` is not blocked at all.
       integer, intent(in) :: npair, na, nb
       integer :: width
 
@@ -187,15 +164,11 @@ contains
       !! columns of the full intermediate whose beta index lies in the range.
       !! `apply_excitations` is this over every beta string at once.
       !!
-      !! **The two spins block differently, and that is the whole subtlety.**
-      !! An alpha excitation leaves the beta string alone, so it only ever
-      !! writes columns whose beta index is already in the block -- the loop is
-      !! the original one with its beta range narrowed. A beta excitation
-      !! *moves* the beta string, so a contribution landing in this block can
-      !! come from any source string anywhere, and the whole table has to be
-      !! walked with the ones that miss skipped. That walk repeats per block;
-      !! the arithmetic inside it does not, because the inner loop over alpha
-      !! strings only runs for the rows that land.
+      !! **The two spins block differently.** An alpha excitation leaves the
+      !! beta string alone, so it only writes columns whose beta index is
+      !! already in the block. A beta excitation *moves* the beta string, so a
+      !! contribution landing in this block can come from any source string
+      !! anywhere and the whole table is walked with the misses skipped.
       real(dp), intent(in) :: ci(:, :)      !! (n_alpha_strings, n_beta_strings)
       type(link_table_t), intent(in) :: alpha, beta
       integer, intent(in) :: first_beta, last_beta
@@ -209,14 +182,12 @@ contains
       na = alpha%n_strings
       gathered = 0.0_dp
 
-      ! **Both loops are accumulations, so the parallel axis has to own its
-      ! output columns outright.** Reductions are not an option: the array is
-      ! the largest thing here and a per-thread copy of it is the memory the
-      ! blocking exists to avoid.
+      ! Both loops are accumulations, so the parallel axis has to own its output
+      ! columns outright; a reduction would need a per-thread copy of the
+      ! largest array here, which is the memory the blocking exists to avoid.
       !
       ! An alpha excitation cannot change the beta string, so a column's beta
-      ! index is fixed and `ib` owns a whole `na`-wide slice of the output. Two
-      ! iterations never touch the same column.
+      ! index is fixed and `ib` owns a whole `na`-wide slice of the output.
       !$omp parallel do default(shared) schedule(static) &
       !$omp   private(ib, source, row, pair, target_string, column)
       do ib = first_beta, last_beta
@@ -239,9 +210,7 @@ contains
       ! whatever the target.
       !
       ! Which sources land inside this block is found once rather than
-      ! rediscovered by every `ia`: without this the membership test would run
-      ! `na` times over, and for ethane that is six hundred million branches
-      ! bought for nothing.
+      ! rediscovered by every `ia`.
       allocate (hit_source(beta%n_strings*beta%n_rows))
       allocate (hit_row(beta%n_strings*beta%n_rows))
       allocate (hit_target(beta%n_strings*beta%n_rows))
@@ -281,16 +250,13 @@ contains
       !! Returns `(n_orbitals^2, n_determinants)`, column `d` and row
       !! `p + (q-1) n_orb` holding the determinant-`d` component of `E_pq |c>`.
       !!
-      !! Shared between the sigma build and the density matrices, which is not
-      !! an economy but a correctness argument: both are built entirely out of
-      !! this one operation, and it carries the excitation phases. Two copies
-      !! would be two places for a sign to go wrong, and the second copy would
-      !! be exercised only by the density matrices -- where a sign error does
-      !! not change the energy at all and so would survive every test that
-      !! looks at one.
-      !!
-      !! Alpha excitations move the first index of the vector and beta the
-      !! second. That is the only place the two spins differ anywhere in the CI.
+      !! Shared with the density matrices, so that the excitation phases are
+      !! carried in one place. Alpha excitations move the first index of the
+      !! vector and beta the second, which is the only place the two spins
+      !! differ anywhere in the CI.
+      ! TODO(mqc): `source`, `target_string`, `row`, `pair`, `ia`, `ib` and
+      ! `weight` are left over from before the body became one call to
+      ! `excitations_block`, and none of them is used.
       real(dp), intent(in) :: ci(:, :)      !! (n_alpha_strings, n_beta_strings)
       type(link_table_t), intent(in) :: alpha, beta
       real(dp), allocatable, intent(out) :: gathered(:, :)
@@ -317,12 +283,9 @@ contains
       !! where all the arithmetic is; then apply `E_pq` again, scattering back.
       !!
       !! The gather and the scatter have the same loop, because `E_pq` and its
-      !! adjoint are the same table read in opposite directions -- the gather
-      !! writes to the destination string and reads the source, the scatter
-      !! writes to the destination and reads the source of the *second*
-      !! application. Alpha excitations move the first index of the vector and
-      !! beta excitations the second, which is the only place the two spins
-      !! differ.
+      !! adjoint are the same table read in opposite directions. Alpha
+      !! excitations move the first index of the vector and beta excitations the
+      !! second, which is the only place the two spins differ.
       real(dp), intent(in) :: folded(:, :)   !! From `absorb_one_electron`
       real(dp), intent(in) :: ci(:, :)       !! (n_alpha_strings, n_beta_strings)
       type(link_table_t), intent(in) :: alpha, beta
@@ -397,11 +360,11 @@ contains
          !$omp end parallel do
 
          ! A beta excitation reads the column of its *source* string and writes
-         ! wherever that string lands -- possibly outside the block, which is
-         ! why `sigma` accumulates across blocks rather than being filled one
-         ! block at a time. Splitting on the source would race, since several
-         ! sources can land on one target. Splitting on `ia` cannot: it fixes
-         ! the row of `sigma` written, and distinct rows are disjoint.
+         ! wherever that string lands, possibly outside the block, which is why
+         ! `sigma` accumulates across blocks rather than being filled one block
+         ! at a time. Splitting on the source would race, since several sources
+         ! can land on one target; splitting on `ia` fixes the row of `sigma`
+         ! written and distinct rows are disjoint.
          !$omp parallel do default(shared) schedule(static) &
          !$omp   private(ia, source, row, pair, target_string, weight)
          do ia = 1, na
@@ -424,17 +387,10 @@ contains
    subroutine ci_hamiltonian(folded, alpha, beta, matrix, error)
       !! The Hamiltonian as a dense matrix, one column at a time
       !!
-      !! Only for spaces small enough that it fits, which past CAS(8,8) is none
-      !! of them -- CAS(10,10) would be 32 GB. It exists because it makes the
-      !! sigma build testable against a dense eigensolver, separating "is the
-      !! Hamiltonian right" from "does the iterative solver find its lowest
-      !! eigenvalue", which are different questions and worth failing
-      !! separately. It is also what a Davidson preconditioner will want for a
-      !! small subspace of determinants.
-      !!
-      !! Symmetry is not imposed. It comes out symmetric only if the excitation
-      !! tables and the folding are consistent, which makes it worth asserting
-      !! rather than assuming.
+      !! One sigma build per determinant and an `n_det` square matrix, so only
+      !! for spaces small enough to hold both. Symmetry is not imposed: the
+      !! matrix comes out symmetric only if the excitation tables and the
+      !! folding are consistent, so it is worth asserting rather than assuming.
       real(dp), intent(in) :: folded(:, :)
       type(link_table_t), intent(in) :: alpha, beta
       real(dp), allocatable, intent(out) :: matrix(:, :)
@@ -465,11 +421,8 @@ contains
    subroutine ci_diagonal(h1e, eri, alpha, beta, diagonal, error)
       !! The diagonal of the CI Hamiltonian, without touching the rest of it
       !!
-      !! `<D|H|D>` for every determinant, which is `n_det` numbers rather than
-      !! `n_det^2` and so is affordable where the matrix is not. A Davidson
-      !! preconditioner is the reason it is wanted: dividing a residual by
-      !! `theta - H_DD` is what turns an expansion that crawls into one that
-      !! converges, and it needs nothing but this.
+      !! `<D|H|D>` for every determinant: `n_det` numbers rather than `n_det^2`,
+      !! and all a Davidson preconditioner needs.
       !!
       !! For a determinant with alpha orbitals `A` and beta orbitals `B`,
       !!
@@ -481,9 +434,9 @@ contains
       !! -- Coulomb and exchange within each spin, Coulomb only between them,
       !! because two electrons of opposite spin do not exchange.
       !!
-      !! Takes the raw integrals, not the folded tensor: the folding rearranges
-      !! the Hamiltonian into a form convenient for `E_pq E_rs` and its diagonal
-      !! is not the diagonal of anything physical.
+      !! Takes the raw integrals, **not** the folded tensor: folding rearranges
+      !! the Hamiltonian for `E_pq E_rs` and its diagonal is not the diagonal of
+      !! anything physical.
       real(dp), intent(in) :: h1e(:, :)
       real(dp), intent(in) :: eri(:, :, :, :)
       type(link_table_t), intent(in) :: alpha, beta

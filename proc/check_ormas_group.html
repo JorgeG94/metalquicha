@@ -136,12 +136,12 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/check_ormas_group.html#variable-found~31">found</a>
+            <a class="list-group-item" href="../proc/check_ormas_group.html#variable-found~15">found</a>
             <a class="list-group-item" href="../proc/check_ormas_group.html#variable-keywords~3">keywords</a>
-            <a class="list-group-item" href="../proc/check_ormas_group.html#variable-mcscf~5">mcscf</a>
+            <a class="list-group-item" href="../proc/check_ormas_group.html#variable-mcscf~4">mcscf</a>
             <a class="list-group-item" href="../proc/check_ormas_group.html#variable-n_max">n_max</a>
             <a class="list-group-item" href="../proc/check_ormas_group.html#variable-n_min">n_min</a>
-            <a class="list-group-item" href="../proc/check_ormas_group.html#variable-n_spaces~2">n_spaces</a>
+            <a class="list-group-item" href="../proc/check_ormas_group.html#variable-n_spaces">n_spaces</a>
             <a class="list-group-item" href="../proc/check_ormas_group.html#variable-ormas">ormas</a>
         </div>
       </div>
@@ -183,10 +183,9 @@
     
 
     <p><code>keywords.mcscf.ormas</code>, and that it describes a partition</p>
-<p>The lengths are checked here rather than left to the builder because
-the deck is where the mistake is: three lists of different lengths is
-a typo, and saying so with the key names beats an error about class
-enumeration from four layers down.</p>
+<p>The three list lengths are checked here rather than left to the
+builder, so a typo is reported with the key names rather than as an
+error about class enumeration four layers down.</p>
 
 
     <h3>Arguments</h3>
@@ -232,7 +231,7 @@ enumeration from four layers down.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~72"></span>
+              <span class="anchor" id="variable-error~66"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -840,7 +839,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~31"></span>
+              <span class="anchor" id="variable-found~15"></span>
               logical,
             </td>
               <td>private</td>
@@ -874,7 +873,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mcscf~5"></span>
+              <span class="anchor" id="variable-mcscf~4"></span>
               type(json_value),
             </td>
               <td>private,</td>
@@ -925,7 +924,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_spaces~2"></span>
+              <span class="anchor" id="variable-n_spaces"></span>
               integer,
             </td>
               <td>private</td>
@@ -976,10 +975,9 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">check_ormas_group</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! `keywords.mcscf.ormas`, and that it describes a partition</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The lengths are checked here rather than left to the builder because</span>
-<span class="w">      </span><span class="c">!! the deck is where the mistake is: three lists of different lengths is</span>
-<span class="w">      </span><span class="c">!! a typo, and saying so with the key names beats an error about class</span>
-<span class="w">      </span><span class="c">!! enumeration from four layers down.</span>
+<span class="w">      </span><span class="c">!! The three list lengths are checked here rather than left to the</span>
+<span class="w">      </span><span class="c">!! builder, so a typo is reported with the key names rather than as an</span>
+<span class="w">      </span><span class="c">!! error about class enumeration four layers down.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_core</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">core</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_value</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">root</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
@@ -1041,7 +1039,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

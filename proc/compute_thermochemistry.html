@@ -142,7 +142,7 @@
             <a class="list-group-item" href="../proc/compute_thermochemistry.html#variable-center_of_mass~2">center_of_mass</a>
             <a class="list-group-item" href="../proc/compute_thermochemistry.html#variable-mult">mult</a>
             <a class="list-group-item" href="../proc/compute_thermochemistry.html#variable-principal_axes~2">principal_axes</a>
-            <a class="list-group-item" href="../proc/compute_thermochemistry.html#variable-sigma~5">sigma</a>
+            <a class="list-group-item" href="../proc/compute_thermochemistry.html#variable-sigma~3">sigma</a>
         </div>
       </div>
     </div>
@@ -183,7 +183,7 @@
     
 
     <p>Main driver for thermochemistry calculations.</p>
-<p>Computes all thermodynamic quantities from molecular geometry and vibrational frequencies.</p>
+<p>Every thermodynamic quantity, from a geometry and its frequencies.</p>
 
 
     <h3>Arguments</h3>
@@ -199,7 +199,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~6"></span>
+              <span class="anchor" id="variable-coords~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -214,7 +214,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~5"></span>
+              <span class="anchor" id="variable-atomic_numbers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -229,7 +229,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~4"></span>
+              <span class="anchor" id="variable-frequencies~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -244,7 +244,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~6"></span>
+              <span class="anchor" id="variable-n_atoms~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -274,7 +274,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~10"></span>
+              <span class="anchor" id="variable-result~4"></span>
               type(<a href='../type/thermochemistry_result_t.html'>thermochemistry_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -289,7 +289,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-temperature~7"></span>
+              <span class="anchor" id="variable-temperature~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -304,7 +304,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pressure~5"></span>
+              <span class="anchor" id="variable-pressure~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1323,7 +1323,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma~5"></span>
+              <span class="anchor" id="variable-sigma~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1358,7 +1358,7 @@ large graphs.</div>
 <span class="w">                                      </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">temperature</span><span class="p">,</span><span class="w"> </span><span class="n">pressure</span><span class="p">,</span><span class="w"> </span><span class="n">symmetry_number</span><span class="p">,</span><span class="w"> </span><span class="n">spin_multiplicity</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Main driver for thermochemistry calculations.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Computes all thermodynamic quantities from molecular geometry and vibrational frequencies.</span>
+<span class="w">      </span><span class="c">!! Every thermodynamic quantity, from a geometry and its frequencies.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coords</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">           </span><span class="c">!! Coordinates (3, n_atoms) in Bohr</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atomic_numbers</span><span class="p">(:)</span><span class="w">       </span><span class="c">!! Atomic numbers</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frequencies</span><span class="p">(:)</span><span class="w">         </span><span class="c">!! Frequencies in cm^-1</span>
@@ -1464,7 +1464,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

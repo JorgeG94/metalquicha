@@ -213,9 +213,9 @@
 
     <div class="col-md-9" id='text'>
       <p>The molecule, its monomer partition and its bonds, reachable from C.</p>
-<p>Wraps <code>system_geometry_t</code>, which already carries all three &ndash; the atoms,
+<p>Wraps <code>system_geometry_t</code>, which already carries all three: the atoms,
 the partition fragments are built from, and the connectivity hydrogen
-capping needs. Nothing new is modelled here; this is the way in.</p>
+capping needs.</p>
 <p>Three conventions that are invisible in the signatures and wrong by
 default if a caller assumes otherwise:</p>
 <ul>
@@ -234,13 +234,11 @@ default if a caller assumes otherwise:</p>
     indistinguishable from outside and only one of them is safe. Passing
     <code>n_bonds = 0</code> is the way to say a system has nothing to cut.</p>
 <p>Where the connectivity is given, every bond crossing a monomer
-boundary must carry <code>is_broken</code>. That is checked here rather than
-trusted, because the alternative is a fragment with a dangling
-valence: an uncapped radical treated as a closed shell, which
-converges to a plausible number and warns about nothing.
-Exposed for the sibling C-API modules that must open a system handle,
-not for general use. Nothing outside <code>src/interface</code> should hold one:
-the rest of the code works in <code>system_geometry_t</code>.</p>
+boundary must carry <code>is_broken</code>, and that is checked rather than
+trusted: the alternative is an uncapped radical run as a closed
+shell, which converges to a plausible number and warns about nothing.
+For the sibling C-API modules that open a system handle, not for
+general use: nothing outside <code>src/interface</code> should hold one.</p>
 </li>
 </ul>
 <br>          <div class="card mb-4">
@@ -249,12 +247,12 @@ the rest of the code works in <code>system_geometry_t</code>.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_string_utils.html'>mqc_string_utils</a></li>
-                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
+                  <li class="list-inline-item"><a href='mqc_string_utils.html'>mqc_string_utils</a></li>
                   <li class="list-inline-item"><a href='mqc_capi_status.html'>mqc_capi_status</a></li>
               </ul>
             </li>
@@ -931,10 +929,8 @@ parameter
                 <td></td>
             <td>
 <p>Wiberg-Mayer orders from <code>mqc_system_compute_bond_orders</code>, if it has
-run. On the handle rather than returned directly because a caller
-deciding where to cut reads the same matrix many times while trying
-partitions, and recomputing it per question would be an xTB
-calculation per question.</p>
+run. Cached on the handle because a caller deciding where to cut
+reads the same matrix once per partition it tries.</p>
             </td>
         </tr>
         <tr>
@@ -956,7 +952,7 @@ calculation per question.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge_scheme~2"></span>
+              <span class="anchor" id="variable-charge_scheme~3"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -968,14 +964,13 @@ calculation per question.</p>
 <td> =</td>
                 <td>&#34;&#34;</td>
             <td>
-<p>Which scheme produced <code>charges</code>. Kept because &ldquo;the charge on atom 3&rdquo;
-is not a well-defined number without it, and a caller comparing two
-systems has to be able to check they were partitioned the same way.</p>
+<p>Which scheme produced <code>charges</code>. &ldquo;The charge on atom 3&rdquo; is not a
+well-defined number without it.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charges~2"></span>
+              <span class="anchor" id="variable-charges~5"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -988,13 +983,13 @@ systems has to be able to check they were partitioned the same way.</p>
                 <td></td>
             <td>
 <p>Atomic partial charges from <code>mqc_system_compute_charges</code>, if it has
-run. Cached for the same reason as the bond orders, and more so:
-these cost an SCF rather than an xTB single point.</p>
+run. Cached for the same reason, and more so: these cost an SCF
+rather than an xTB single point.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~6"></span>
+              <span class="anchor" id="variable-geom~4"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public</td>
@@ -1043,7 +1038,7 @@ these cost an SCF rather than an xTB single point.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~8"></span>
+              <span class="anchor" id="variable-handle~12"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1058,7 +1053,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~4"></span>
+              <span class="anchor" id="variable-tolerance~8"></span>
               real(kind=c_double),
             </td>
 <td></td>
@@ -1103,7 +1098,7 @@ these cost an SCF rather than an xTB single point.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~7"></span>
+              <span class="anchor" id="variable-handle~11"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1148,7 +1143,7 @@ these cost an SCF rather than an xTB single point.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~10"></span>
+              <span class="anchor" id="variable-handle~14"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1163,7 +1158,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~6"></span>
+              <span class="anchor" id="variable-tolerance~10"></span>
               real(kind=c_double),
             </td>
 <td></td>
@@ -1208,7 +1203,7 @@ these cost an SCF rather than an xTB single point.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~11"></span>
+              <span class="anchor" id="variable-handle~15"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1253,7 +1248,7 @@ these cost an SCF rather than an xTB single point.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~13"></span>
+              <span class="anchor" id="variable-handle~17"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1298,7 +1293,7 @@ these cost an SCF rather than an xTB single point.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~12"></span>
+              <span class="anchor" id="variable-handle~16"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1361,7 +1356,7 @@ these cost an SCF rather than an xTB single point.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~9"></span>
+              <span class="anchor" id="variable-handle~13"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1376,7 +1371,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~5"></span>
+              <span class="anchor" id="variable-tolerance~9"></span>
               real(kind=c_double),
             </td>
 <td></td>
@@ -1421,7 +1416,7 @@ these cost an SCF rather than an xTB single point.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~6"></span>
+              <span class="anchor" id="variable-handle~10"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1481,7 +1476,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-order~2"></span>
+              <span class="anchor" id="variable-order~5"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1541,7 +1536,7 @@ these cost an SCF rather than an xTB single point.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~5"></span>
+              <span class="anchor" id="variable-handle~9"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1571,7 +1566,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stride"></span>
+              <span class="anchor" id="variable-stride~2"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1631,7 +1626,7 @@ these cost an SCF rather than an xTB single point.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~3"></span>
+              <span class="anchor" id="variable-handle~7"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1646,7 +1641,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~18"></span>
+              <span class="anchor" id="variable-n_atoms~26"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1661,7 +1656,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~8"></span>
+              <span class="anchor" id="variable-atomic_numbers~12"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1676,7 +1671,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~8"></span>
+              <span class="anchor" id="variable-coordinates~10"></span>
               real(kind=c_double),
             </td>
 <td>intent(in)</td>
@@ -1691,7 +1686,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~4"></span>
+              <span class="anchor" id="variable-charge~7"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1706,7 +1701,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~2"></span>
+              <span class="anchor" id="variable-multiplicity~6"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1751,7 +1746,7 @@ these cost an SCF rather than an xTB single point.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~4"></span>
+              <span class="anchor" id="variable-handle~8"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1766,7 +1761,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers"></span>
+              <span class="anchor" id="variable-n_monomers~4"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1796,7 +1791,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sizes"></span>
+              <span class="anchor" id="variable-sizes~3"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1811,7 +1806,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atoms~2"></span>
+              <span class="anchor" id="variable-atoms~3"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1826,7 +1821,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charges~3"></span>
+              <span class="anchor" id="variable-charges~6"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1891,7 +1886,7 @@ these cost an SCF rather than an xTB single point.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~2"></span>
+              <span class="anchor" id="variable-handle~6"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1946,7 +1941,7 @@ these cost an SCF rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-buffer~4"></span>
+              <span class="anchor" id="variable-buffer~3"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(inout)</td>
@@ -2029,7 +2024,7 @@ these cost an SCF rather than an xTB single point.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

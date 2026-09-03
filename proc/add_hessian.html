@@ -137,8 +137,8 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/add_hessian.html#variable-hess_arr">hess_arr</a>
-            <a class="list-group-item" href="../proc/add_hessian.html#variable-i~154">i</a>
-            <a class="list-group-item" href="../proc/add_hessian.html#variable-j~42">j</a>
+            <a class="list-group-item" href="../proc/add_hessian.html#variable-i~59">i</a>
+            <a class="list-group-item" href="../proc/add_hessian.html#variable-j~18">j</a>
             <a class="list-group-item" href="../proc/add_hessian.html#variable-row_arr">row_arr</a>
         </div>
       </div>
@@ -180,14 +180,10 @@
     
 
     <p>Second derivatives, as the Frobenius norm and as the matrix itself</p>
-<p>The norm went in first and is kept, because it is what a manifest of
-many systems can afford to carry. It is not what a Hessian should be
-validated on: it is one number out of <code>9N^2</code>, invariant under any
-orthogonal mixing, so a transposed block, a swapped atom pair or a
-sign flip in an off-diagonal element all leave it unchanged. Every
-one of those is a real way to get a Hessian wrong here &ndash; the
-assembly is <code>(3, 3, natm, natm)</code> collapsed to <code>(3N, 3N)</code> &ndash; and none
-would move the norm at all.</p>
+<p>The norm is one number out of <code>9N^2</code> and invariant under any orthogonal
+mixing, so a transposed block, a swapped atom pair or a sign flip in an
+off-diagonal element all leave it unchanged. It is kept for a manifest
+of many systems; it is not what a Hessian should be validated on.</p>
 <p>One row per array row, in the <code>(3N, 3N)</code> order the vibrational
 analysis reads, atom-major with <code>x, y, z</code> inside each atom. Hartree
 per Bohr squared, the internal unit.</p>
@@ -206,7 +202,7 @@ per Bohr squared, the internal unit.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~41"></span>
+              <span class="anchor" id="variable-json~12"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -236,7 +232,7 @@ per Bohr squared, the internal unit.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~9"></span>
+              <span class="anchor" id="variable-hessian~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -876,7 +872,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~154"></span>
+              <span class="anchor" id="variable-i~59"></span>
               integer,
             </td>
               <td>private</td>
@@ -893,7 +889,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~42"></span>
+              <span class="anchor" id="variable-j~18"></span>
               integer,
             </td>
               <td>private</td>
@@ -944,14 +940,10 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">add_hessian</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">parent</span><span class="p">,</span><span class="w"> </span><span class="n">hessian</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Second derivatives, as the Frobenius norm and as the matrix itself</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The norm went in first and is kept, because it is what a manifest of</span>
-<span class="w">      </span><span class="c">!! many systems can afford to carry. It is not what a Hessian should be</span>
-<span class="w">      </span><span class="c">!! validated on: it is one number out of `9N^2`, invariant under any</span>
-<span class="w">      </span><span class="c">!! orthogonal mixing, so a transposed block, a swapped atom pair or a</span>
-<span class="w">      </span><span class="c">!! sign flip in an off-diagonal element all leave it unchanged. Every</span>
-<span class="w">      </span><span class="c">!! one of those is a real way to get a Hessian wrong here -- the</span>
-<span class="w">      </span><span class="c">!! assembly is `(3, 3, natm, natm)` collapsed to `(3N, 3N)` -- and none</span>
-<span class="w">      </span><span class="c">!! would move the norm at all.</span>
+<span class="w">      </span><span class="c">!! The norm is one number out of `9N^2` and invariant under any orthogonal</span>
+<span class="w">      </span><span class="c">!! mixing, so a transposed block, a swapped atom pair or a sign flip in an</span>
+<span class="w">      </span><span class="c">!! off-diagonal element all leave it unchanged. It is kept for a manifest</span>
+<span class="w">      </span><span class="c">!! of many systems; it is not what a Hessian should be validated on.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! One row per array row, in the `(3N, 3N)` order the vibrational</span>
 <span class="w">      </span><span class="c">!! analysis reads, atom-major with `x, y, z` inside each atom. Hartree</span>
@@ -1000,7 +992,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

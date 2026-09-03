@@ -138,8 +138,8 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/report_connected_minima.html#variable-e_a">e_a</a>
             <a class="list-group-item" href="../proc/report_connected_minima.html#variable-e_b">e_b</a>
-            <a class="list-group-item" href="../proc/report_connected_minima.html#variable-found~23">found</a>
-            <a class="list-group-item" href="../proc/report_connected_minima.html#variable-line~5">line</a>
+            <a class="list-group-item" href="../proc/report_connected_minima.html#variable-found~27">found</a>
+            <a class="list-group-item" href="../proc/report_connected_minima.html#variable-line~8">line</a>
             <a class="list-group-item" href="../proc/report_connected_minima.html#variable-saddle_energy">saddle_energy</a>
             <a class="list-group-item" href="../proc/report_connected_minima.html#variable-side_a">side_a</a>
             <a class="list-group-item" href="../proc/report_connected_minima.html#variable-side_b">side_b</a>
@@ -183,15 +183,12 @@
     
 
     <p>The two minima the saddle falls to, and the barrier from each side</p>
-<p>One imaginary frequency proves a first-order saddle. It does not prove
-the saddle joins the two structures anybody had in mind, and a
-transition state between the wrong pair of minima is a number that
-looks entirely reasonable and describes a different reaction.</p>
-<p>Displacing along the imaginary mode and relaxing in each direction is
-what settles it. It is not an intrinsic reaction coordinate &ndash; the path
-taken downhill is a minimisation path rather than the steepest-descent
-one &ndash; but the endpoints are the same, and the endpoints are the
-question.</p>
+<p>One imaginary frequency proves a first-order saddle, but not that the
+saddle joins the two structures anybody had in mind. Displacing along
+the imaginary mode and relaxing in each direction is what settles it.</p>
+<p>Not an intrinsic reaction coordinate: the path downhill is a
+minimisation path rather than the steepest-descent one. The endpoints
+are the same.</p>
 
 
     <h3>Arguments</h3>
@@ -207,7 +204,7 @@ question.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~16"></span>
+              <span class="anchor" id="variable-sys_geom~42"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -599,7 +596,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~23"></span>
+              <span class="anchor" id="variable-found~27"></span>
               logical,
             </td>
               <td>private</td>
@@ -616,7 +613,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~5"></span>
+              <span class="anchor" id="variable-line~8"></span>
               character(len=LINE_LEN),
             </td>
               <td>private</td>
@@ -701,16 +698,13 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">report_connected_minima</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The two minima the saddle falls to, and the barrier from each side</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! One imaginary frequency proves a first-order saddle. It does not prove</span>
-<span class="w">      </span><span class="c">!! the saddle joins the two structures anybody had in mind, and a</span>
-<span class="w">      </span><span class="c">!! transition state between the wrong pair of minima is a number that</span>
-<span class="w">      </span><span class="c">!! looks entirely reasonable and describes a different reaction.</span>
+<span class="w">      </span><span class="c">!! One imaginary frequency proves a first-order saddle, but not that the</span>
+<span class="w">      </span><span class="c">!! saddle joins the two structures anybody had in mind. Displacing along</span>
+<span class="w">      </span><span class="c">!! the imaginary mode and relaxing in each direction is what settles it.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Displacing along the imaginary mode and relaxing in each direction is</span>
-<span class="w">      </span><span class="c">!! what settles it. It is not an intrinsic reaction coordinate -- the path</span>
-<span class="w">      </span><span class="c">!! taken downhill is a minimisation path rather than the steepest-descent</span>
-<span class="w">      </span><span class="c">!! one -- but the endpoints are the same, and the endpoints are the</span>
-<span class="w">      </span><span class="c">!! question.</span>
+<span class="w">      </span><span class="c">!! Not an intrinsic reaction coordinate: the path downhill is a</span>
+<span class="w">      </span><span class="c">!! minimisation path rather than the steepest-descent one. The endpoints</span>
+<span class="w">      </span><span class="c">!! are the same.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">side_a</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">side_b</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
@@ -762,7 +756,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

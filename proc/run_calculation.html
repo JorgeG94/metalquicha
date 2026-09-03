@@ -137,10 +137,10 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/run_calculation.html#variable-geometry_error">geometry_error</a>
-            <a class="list-group-item" href="../proc/run_calculation.html#variable-i~17">i</a>
-            <a class="list-group-item" href="../proc/run_calculation.html#variable-json_data">json_data</a>
+            <a class="list-group-item" href="../proc/run_calculation.html#variable-i~24">i</a>
+            <a class="list-group-item" href="../proc/run_calculation.html#variable-json_data~5">json_data</a>
             <a class="list-group-item" href="../proc/run_calculation.html#variable-lindep">lindep</a>
-            <a class="list-group-item" href="../proc/run_calculation.html#variable-max_level">max_level</a>
+            <a class="list-group-item" href="../proc/run_calculation.html#variable-max_level~8">max_level</a>
             <a class="list-group-item" href="../proc/run_calculation.html#variable-should_write_json">should_write_json</a>
             <a class="list-group-item" href="../proc/run_calculation.html#variable-wants_output">wants_output</a>
         </div>
@@ -314,24 +314,15 @@ large graphs.</div>
     </div>
 
 
-    <p>Main calculation dispatcher - routes to fragmented or unfragmented calculation</p>
-<p>Determines calculation type based on nlevel and dispatches to appropriate
-calculation routine with proper MPI setup and validation.
-<code>result_out</code> and <code>write_output</code> are independent. A caller can take the
-energy back, write the files, or both &ndash; the common case for a driven
-run being both, so a script can print or branch on a number without
-re-reading the file this just wrote. They used to be one switch, which
-meant asking for the result silently suppressed the output.</p>
-<p><code>supplied_terms</code> hands over a term list instead of generating one, which
-is how a caller applies a criterion this code knows nothing about &ndash;
-an energy threshold from a previous run&rsquo;s breakdown, the terms a dead
-run never reached, a hand-picked set. Distance screening and sorting
-are skipped with it: the list is taken as given, in the order given.</p>
-<p>Only rank 0 needs it. The coordinator hands individual fragment
-definitions to workers as tasks and they build them from <code>sys_geom</code>,
-so the list itself never leaves rank 0 &ndash; but every rank must already
-have <code>sys_geom</code>, which the normal program gets by having every rank
-parse the input and a session gets by broadcasting it.</p>
+    <p>Dispatch a configured system to the calculation it asks for</p>
+<p><code>config%nlevel</code> chooses fragmented or unfragmented; MAKEFP, EFP and
+SAPT take neither path. <code>result_out</code> and <code>write_output</code> are
+independent: a caller can take the energy back, write the files, or
+both.</p>
+<p><code>supplied_terms</code> hands over a term list instead of generating one.
+Distance screening and sorting are skipped with it: the list is taken
+as given, in the order given. Only rank 0 needs it &ndash; workers build
+each fragment from <code>sys_geom</code>, which every rank must already have.</p>
 <p><strong>The list must be closed under subsets.</strong> An n-body term&rsquo;s delta is
 its energy less every proper subset&rsquo;s delta, so keeping a trimer whose
 dimers were screened away fails the lookup rather than approximating
@@ -351,7 +342,7 @@ anything. <code>fraglist_t%close_subsets</code> exists for this.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources"></span>
+              <span class="anchor" id="variable-resources~2"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -366,7 +357,7 @@ anything. <code>fraglist_t%close_subsets</code> exists for this.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config"></span>
+              <span class="anchor" id="variable-config~5"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -381,7 +372,7 @@ anything. <code>fraglist_t%close_subsets</code> exists for this.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom"></span>
+              <span class="anchor" id="variable-sys_geom~8"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4353,7 +4344,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~17"></span>
+              <span class="anchor" id="variable-i~24"></span>
               integer,
             </td>
               <td>private</td>
@@ -4370,7 +4361,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data"></span>
+              <span class="anchor" id="variable-json_data~5"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
               <td>private</td>
@@ -4404,7 +4395,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level"></span>
+              <span class="anchor" id="variable-max_level~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -4471,27 +4462,17 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_calculation</span><span class="p">(</span><span class="n">resources</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">,</span><span class="w"> </span><span class="n">all_ranks_write_json</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="n">supplied_terms</span><span class="p">,</span><span class="w"> </span><span class="n">n_supplied_terms</span><span class="p">,</span><span class="w"> </span><span class="n">write_output</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Main calculation dispatcher - routes to fragmented or unfragmented calculation</span>
+<span class="w">      </span><span class="c">!! Dispatch a configured system to the calculation it asks for</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Determines calculation type based on nlevel and dispatches to appropriate</span>
-<span class="w">      </span><span class="c">!! calculation routine with proper MPI setup and validation.</span>
-<span class="w">      </span><span class="c">!! `result_out` and `write_output` are independent. A caller can take the</span>
-<span class="w">      </span><span class="c">!! energy back, write the files, or both -- the common case for a driven</span>
-<span class="w">      </span><span class="c">!! run being both, so a script can print or branch on a number without</span>
-<span class="w">      </span><span class="c">!! re-reading the file this just wrote. They used to be one switch, which</span>
-<span class="w">      </span><span class="c">!! meant asking for the result silently suppressed the output.</span>
+<span class="w">      </span><span class="c">!! `config%nlevel` chooses fragmented or unfragmented; MAKEFP, EFP and</span>
+<span class="w">      </span><span class="c">!! SAPT take neither path. `result_out` and `write_output` are</span>
+<span class="w">      </span><span class="c">!! independent: a caller can take the energy back, write the files, or</span>
+<span class="w">      </span><span class="c">!! both.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! `supplied_terms` hands over a term list instead of generating one, which</span>
-<span class="w">      </span><span class="c">!! is how a caller applies a criterion this code knows nothing about --</span>
-<span class="w">      </span><span class="c">!! an energy threshold from a previous run's breakdown, the terms a dead</span>
-<span class="w">      </span><span class="c">!! run never reached, a hand-picked set. Distance screening and sorting</span>
-<span class="w">      </span><span class="c">!! are skipped with it: the list is taken as given, in the order given.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Only rank 0 needs it. The coordinator hands individual fragment</span>
-<span class="w">      </span><span class="c">!! definitions to workers as tasks and they build them from `sys_geom`,</span>
-<span class="w">      </span><span class="c">!! so the list itself never leaves rank 0 -- but every rank must already</span>
-<span class="w">      </span><span class="c">!! have `sys_geom`, which the normal program gets by having every rank</span>
-<span class="w">      </span><span class="c">!! parse the input and a session gets by broadcasting it.</span>
+<span class="w">      </span><span class="c">!! `supplied_terms` hands over a term list instead of generating one.</span>
+<span class="w">      </span><span class="c">!! Distance screening and sorting are skipped with it: the list is taken</span>
+<span class="w">      </span><span class="c">!! as given, in the order given. Only rank 0 needs it -- workers build</span>
+<span class="w">      </span><span class="c">!! each fragment from `sys_geom`, which every rank must already have.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! **The list must be closed under subsets.** An n-body term's delta is</span>
 <span class="w">      </span><span class="c">!! its energy less every proper subset's delta, so keeping a trimer whose</span>
@@ -4499,12 +4480,18 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! anything. `fraglist_t%close_subsets` exists for this.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_method_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">METHOD_TYPE_EFP2</span><span class="p">,</span><span class="w"> </span><span class="n">METHOD_TYPE_SAPT0</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                  </span><span class="n">METHOD_TYPE_SAPT2</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">resources_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">resources</span><span class="w">  </span><span class="c">!! Resources container (MPI comms, etc.)</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span><span class="w">  </span><span class="c">!! Driver configuration</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span><span class="w">  </span><span class="c">!! System geometry and fragment info</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Bond connectivity information</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">result_out</span><span class="w">  </span><span class="c">!! Optional result output</span>
-<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">all_ranks_write_json</span><span class="w">  </span><span class="c">!! If true, all ranks write JSON (for multi-molecule)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">resources_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">resources</span>
+<span class="w">      </span><span class="c">!! Resources container (MPI comms, etc.)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
+<span class="w">      </span><span class="c">!! Driver configuration</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="c">!! System geometry and fragment info</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span>
+<span class="w">      </span><span class="c">!! Bond connectivity information</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">result_out</span>
+<span class="w">      </span><span class="c">!! Optional result output</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">all_ranks_write_json</span>
+<span class="w">      </span><span class="c">!! If true, all ranks write JSON (for multi-molecule)</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">write_output</span>
 <span class="w">         </span><span class="c">!! Write the JSON summary and fragment breakdown. Default true.</span>
 <span class="w">         </span><span class="c">!! `skip_json_output` in the config still overrides it.</span>
@@ -4520,6 +4507,8 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">wants_output</span><span class="w">       </span><span class="c">!! Whether the caller asked for files at all</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">geometry_error</span><span class="w">  </span><span class="c">!! Two atoms in the same place, if any</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">lindep_tally_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">lindep</span><span class="w">   </span><span class="c">!! One report for every fragment SCF</span>
+
+<span class="w">      </span><span class="c">! TODO(mqc): refactor</span>
 
 <span class="w">      </span><span class="c">! Set max_level from config</span>
 <span class="w">      </span><span class="n">max_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">nlevel</span>
@@ -4546,11 +4535,9 @@ large graphs.</div>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! Before anything is dispatched, and on every path. Two atoms in the same</span>
-<span class="w">      </span><span class="c">! place make the electron count wrong, so nothing computed afterwards</span>
-<span class="w">      </span><span class="c">! means anything -- and the per-fragment check that would eventually</span>
-<span class="w">      </span><span class="c">! notice does so a long way into a large expansion, on whichever rank drew</span>
-<span class="w">      </span><span class="c">! that term, or never at all if screening drops the fragment that would</span>
-<span class="w">      </span><span class="c">! have paired the two copies. It costs one sorted sweep.</span>
+<span class="w">      </span><span class="c">! place make the electron count wrong, and the per-fragment check that</span>
+<span class="w">      </span><span class="c">! would eventually notice does so a long way into a large expansion, or</span>
+<span class="w">      </span><span class="c">! never at all if screening drops the fragment holding both copies.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">check_system_geometry</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">geometry_error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">geometry_error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -4558,18 +4545,15 @@ large graphs.</div>
 <span class="w">         </span><span class="k">end if</span>
 <span class="w">         </span><span class="c">! `abort_comm` rather than `error stop`: under MPI the latter reaches</span>
 <span class="w">         </span><span class="c">! MPI_ABORT before anything written above it is flushed, so the run</span>
-<span class="w">         </span><span class="c">! dies with a rank number and no reason -- which is a worse failure</span>
-<span class="w">         </span><span class="c">! than the late discovery this check exists to replace.</span>
+<span class="w">         </span><span class="c">! dies with a rank number and no reason.</span>
 <span class="w">         </span><span class="k">call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! An optimization is a loop over calculations and is driven from above</span>
 <span class="w">      </span><span class="c">! this routine, so reaching here with one means a caller took a path that</span>
-<span class="w">      </span><span class="c">! does not know about it -- the multi-molecule loop, a session, the C</span>
-<span class="w">      </span><span class="c">! API. Refused by name rather than left to fall through: `calc_type`</span>
-<span class="w">      </span><span class="c">! reaches the method layer as an unhandled value, and what that produced</span>
-<span class="w">      </span><span class="c">! was a backtrace out of `unfragmented_calculation` rather than anything</span>
-<span class="w">      </span><span class="c">! a user could act on.</span>
+<span class="w">      </span><span class="c">! does not know about it -- the multi-molecule loop, a session, the C API.</span>
+<span class="w">      </span><span class="c">! Refused by name: left to fall through, `calc_type` reaches the method</span>
+<span class="w">      </span><span class="c">! layer as an unhandled value and the run dies in a backtrace.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">calc_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">CALC_TYPE_CONFORMERS</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s1">'driver "conformers" is not available on this path.'</span><span class="p">)</span>
@@ -4596,8 +4580,7 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! Resolved before the branches below rather than beside the JSON write at</span>
 <span class="w">      </span><span class="c">! the end, because those branches write their own summary and return</span>
-<span class="w">      </span><span class="c">! without ever reaching it. Left where it was, a SAPT run asked for no</span>
-<span class="w">      </span><span class="c">! files wrote one anyway.</span>
+<span class="w">      </span><span class="c">! without ever reaching it.</span>
 <span class="w">      </span><span class="n">wants_output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">write_output</span><span class="p">))</span><span class="w"> </span><span class="n">wants_output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">write_output</span>
 
@@ -4610,10 +4593,9 @@ large graphs.</div>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="w">      </span><span class="c">! EFP takes neither path either, for the opposite reason to MAKEFP: the</span>
-<span class="w">      </span><span class="c">! fragments already carry their wavefunctions, so there is no SCF to fragment</span>
-<span class="w">      </span><span class="c">! and nothing for a many-body expansion to expand. What is evaluated is the</span>
-<span class="w">      </span><span class="c">! interaction between potentials that already exist.</span>
+<span class="w">      </span><span class="c">! EFP takes neither path either: the fragments already carry their</span>
+<span class="w">      </span><span class="c">! wavefunctions, so there is no SCF to fragment and nothing for a</span>
+<span class="w">      </span><span class="c">! many-body expansion to expand.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">method_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">METHOD_TYPE_EFP2</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">run_efp</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">(),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                      </span><span class="n">wants_output</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">)</span>
@@ -4621,8 +4603,7 @@ large graphs.</div>
 <span class="k">      end if</span>
 
 <span class="w">      </span><span class="c">! SAPT takes neither path either: it returns the interaction between two</span>
-<span class="w">      </span><span class="c">! monomers rather than the energy of one system, so there is nothing for a</span>
-<span class="w">      </span><span class="c">! many-body expansion to expand and no single wavefunction to fragment.</span>
+<span class="w">      </span><span class="c">! monomers rather than the energy of one system.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">method_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">METHOD_TYPE_SAPT0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">          </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">method_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">METHOD_TYPE_SAPT2</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">run_sapt</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">(),</span><span class="w"> </span><span class="p">&amp;</span>
@@ -4638,26 +4619,15 @@ large graphs.</div>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">      end if</span>
 
-<span class="w">      </span><span class="c">! GMBE (overlapping fragments) with inclusion-exclusion principle</span>
-<span class="w">      </span><span class="c">! GMBE(1): Base fragments are monomers</span>
-<span class="w">      </span><span class="c">! GMBE(N): Base fragments are N-mers (e.g., dimers for N=2)</span>
-<span class="w">      </span><span class="c">! Algorithm: Generate primaries, use DFS to enumerate overlapping cliques,</span>
-<span class="w">      </span><span class="c">! accumulate PIE coefficients per unique atom set, evaluate each once</span>
-
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">max_level</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">max_level</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">         </span><span class="c">! One thread, for the methods that need it rather than for all of them.</span>
+<span class="w">         </span><span class="c">! tblite run threaded corrupts a result instead of failing, so xTB is</span>
+<span class="w">         </span><span class="c">! clamped here; the ab initio path keeps the threads it was given.</span>
 <span class="w">         </span><span class="c">!</span>
-<span class="w">         </span><span class="c">! tblite is the reason this pin exists: run threaded it corrupts a</span>
-<span class="w">         </span><span class="c">! result instead of failing, so xTB is clamped here and stays clamped.</span>
-<span class="w">         </span><span class="c">! The libcint Hartree-Fock path is a different case -- libcint keeps no</span>
-<span class="w">         </span><span class="c">! state across calls, and its Fock build threads its own quartet loop --</span>
-<span class="w">         </span><span class="c">! so clamping it does not make it safer, only slower, and on this box</span>
-<span class="w">         </span><span class="c">! by a factor of the core count.</span>
-<span class="w">         </span><span class="c">!</span>
-<span class="w">         </span><span class="c">! The clamp is deliberately not restored afterwards. `omp_set_num_threads(1)`</span>
-<span class="w">         </span><span class="c">! makes `omp_get_max_threads()` report 1, so the value has to be saved</span>
-<span class="w">         </span><span class="c">! before the call to be recoverable; an unfragmented run ends here, and</span>
-<span class="w">         </span><span class="c">! the one path that does need the count back saves it first. See</span>
+<span class="w">         </span><span class="c">! The clamp is not restored afterwards. `omp_set_num_threads(1)` makes</span>
+<span class="w">         </span><span class="c">! `omp_get_max_threads()` report 1, so the value has to be saved before</span>
+<span class="w">         </span><span class="c">! the call to be recoverable; an unfragmented run ends here, and the</span>
+<span class="w">         </span><span class="c">! one path that does need the count back saves it first. See</span>
 <span class="w">         </span><span class="c">! mqc_serial_fragment_processor.</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">needs_serial_execution</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">method_type</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">omp_set_num_threads</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
@@ -4673,17 +4643,11 @@ large graphs.</div>
 <span class="w">         </span><span class="c">! json_data is collected whether or not it will be written, because it</span>
 <span class="w">         </span><span class="c">! is also where a fragmented result comes from -- the expansion has no</span>
 <span class="w">         </span><span class="c">! other route back to a calculation_result_t.</span>
-<span class="w">         </span><span class="c">! Fold every fragment SCF's linear-dependence report into one.</span>
 <span class="w">         </span><span class="c">!</span>
-<span class="w">         </span><span class="c">! Each fragment raises its own otherwise, and the block is eight to</span>
-<span class="w">         </span><span class="c">! twelve lines -- an expansion over a few thousand fragments buries the</span>
-<span class="w">         </span><span class="c">! run in warnings about calculations that are, in the near-dependent</span>
-<span class="w">         </span><span class="c">! case, perfectly fine. Unfragmented runs are left alone: there is one</span>
-<span class="w">         </span><span class="c">! SCF, so the per-SCF report is already the summary.</span>
-<span class="w">         </span><span class="c">!</span>
-<span class="w">         </span><span class="c">! The window is per rank, so with MPI each rank reports its own</span>
-<span class="w">         </span><span class="c">! fragments rather than the run's. That still turns thousands of blocks</span>
-<span class="w">         </span><span class="c">! into one per rank, and a cross-rank reduction is a separate change.</span>
+<span class="w">         </span><span class="c">! Fold every fragment SCF's linear-dependence report into one, rather</span>
+<span class="w">         </span><span class="c">! than a block per fragment. Unfragmented runs are left alone: there is</span>
+<span class="w">         </span><span class="c">! one SCF, so the per-SCF report is already the summary. The window is</span>
+<span class="w">         </span><span class="c">! per rank, so with MPI each rank reports its own fragments.</span>
 <span class="w">         </span><span class="k">call </span><span class="n">lindep_collect_begin</span><span class="p">()</span>
 <span class="w">         </span><span class="k">call </span><span class="n">run_fragmented_calculation</span><span class="p">(</span><span class="n">resources</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                         </span><span class="n">supplied_terms</span><span class="o">=</span><span class="n">supplied_terms</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -4693,9 +4657,8 @@ large graphs.</div>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">result_out</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">result_from_json</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
-<span class="w">      </span><span class="c">! Stamped whether or not it is written, because the fingerprint is part</span>
-<span class="w">      </span><span class="c">! of the result rather than part of the reporting -- a caller taking the</span>
-<span class="w">      </span><span class="c">! energy back without files still needs to know what produced it.</span>
+<span class="w">      </span><span class="c">! Stamped whether or not it is written: a caller taking the energy back</span>
+<span class="w">      </span><span class="c">! without files still needs to know what produced it.</span>
 <span class="w">      </span><span class="n">json_data</span><span class="p">%</span><span class="n">fingerprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">calculation_fingerprint</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                                      </span><span class="n">config</span><span class="p">%</span><span class="n">calc_type</span><span class="p">)</span>
 
@@ -4747,7 +4710,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

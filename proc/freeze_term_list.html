@@ -137,7 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/freeze_term_list.html#variable-n_generated">n_generated</a>
-            <a class="list-group-item" href="../proc/freeze_term_list.html#variable-polymers~2">polymers</a>
+            <a class="list-group-item" href="../proc/freeze_term_list.html#variable-polymers~13">polymers</a>
         </div>
       </div>
     </div>
@@ -178,32 +178,19 @@
     
 
     <p>Choose the MBE term list once, here, and keep it for the whole run</p>
-<p><strong>The problem.</strong> A fragmented run generates its term list from the
-geometry it was handed, screening out the n-mers whose monomers are
-further apart than the cutoff. Regenerate that at every step of an
-optimization and the list changes as the molecules move: a dimer
-crossing the cutoff enters or leaves the sum, and the total energy
-jumps by that dimer&rsquo;s whole interaction. The optimizer has no way to
-know that the function changed shape rather than the geometry being
-bad &ndash; it reads the jump as real, rejects the step, shrinks the trust
-radius, and either stalls or converges to a point that is not a
-stationary point of anything. Nothing fails; the numbers all look
-plausible.</p>
-<p><strong>The fix.</strong> Generate the list once at the starting geometry and hand
-the same one to every step through <code>supplied_terms</code>, which
-<code>run_calculation</code> takes as given and does not re-screen. The energy is
-then a fixed sum of a fixed set of subsystems &ndash; a smooth function of
-the coordinates &ndash; and its gradient is that function&rsquo;s actual
-derivative, which is what makes the optimization well posed at all.</p>
-<p><strong>What is given up.</strong> A term screened out at the start stays out even
-if the molecules later approach. That is the right trade: it is a
-definite approximation, fixed and reportable, rather than a surface
-that changes underneath the optimizer. A run whose fragments move far
-is better served by looser cutoffs, or by <code>freeze_terms: false</code> and
-the knowledge that convergence is then not guaranteed.</p>
-<p>Only for plain MBE. GMBE derives its PIE terms from overlapping
-primaries rather than taking a supplied list, so there is nothing to
-freeze through this route and the honest thing is to say so.</p>
+<p>Screening a fragmented run&rsquo;s term list at every geometry lets a dimer
+cross the cutoff mid-optimization, and the energy then jumps by that
+dimer&rsquo;s whole interaction. The optimizer reads the jump as real:
+nothing fails, and it stalls or converges to a point that is not a
+stationary point of anything.</p>
+<p>Generating the list once and passing it to every step through
+<code>supplied_terms</code>, which <code>run_calculation</code> does not re-screen, makes
+the energy a smooth function of the coordinates again. The cost is
+that a term screened out at the start stays out even if the molecules
+later approach.</p>
+<p>Plain MBE only. GMBE derives its PIE terms from overlapping primaries
+rather than from a supplied list, so there is nothing to freeze; a
+warning is logged instead.</p>
 
 
     <h3>Arguments</h3>
@@ -219,7 +206,7 @@ freeze through this route and the honest thing is to say so.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~21"></span>
+              <span class="anchor" id="variable-sys_geom~47"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -234,7 +221,7 @@ freeze through this route and the honest thing is to say so.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~27"></span>
+              <span class="anchor" id="variable-config~21"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -904,7 +891,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~2"></span>
+              <span class="anchor" id="variable-polymers~13"></span>
               integer,
             </td>
               <td>private,</td>
@@ -938,35 +925,21 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">freeze_term_list</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Choose the MBE term list once, here, and keep it for the whole run</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! **The problem.** A fragmented run generates its term list from the</span>
-<span class="w">      </span><span class="c">!! geometry it was handed, screening out the n-mers whose monomers are</span>
-<span class="w">      </span><span class="c">!! further apart than the cutoff. Regenerate that at every step of an</span>
-<span class="w">      </span><span class="c">!! optimization and the list changes as the molecules move: a dimer</span>
-<span class="w">      </span><span class="c">!! crossing the cutoff enters or leaves the sum, and the total energy</span>
-<span class="w">      </span><span class="c">!! jumps by that dimer's whole interaction. The optimizer has no way to</span>
-<span class="w">      </span><span class="c">!! know that the function changed shape rather than the geometry being</span>
-<span class="w">      </span><span class="c">!! bad -- it reads the jump as real, rejects the step, shrinks the trust</span>
-<span class="w">      </span><span class="c">!! radius, and either stalls or converges to a point that is not a</span>
-<span class="w">      </span><span class="c">!! stationary point of anything. Nothing fails; the numbers all look</span>
-<span class="w">      </span><span class="c">!! plausible.</span>
+<span class="w">      </span><span class="c">!! Screening a fragmented run's term list at every geometry lets a dimer</span>
+<span class="w">      </span><span class="c">!! cross the cutoff mid-optimization, and the energy then jumps by that</span>
+<span class="w">      </span><span class="c">!! dimer's whole interaction. The optimizer reads the jump as real:</span>
+<span class="w">      </span><span class="c">!! nothing fails, and it stalls or converges to a point that is not a</span>
+<span class="w">      </span><span class="c">!! stationary point of anything.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! **The fix.** Generate the list once at the starting geometry and hand</span>
-<span class="w">      </span><span class="c">!! the same one to every step through `supplied_terms`, which</span>
-<span class="w">      </span><span class="c">!! `run_calculation` takes as given and does not re-screen. The energy is</span>
-<span class="w">      </span><span class="c">!! then a fixed sum of a fixed set of subsystems -- a smooth function of</span>
-<span class="w">      </span><span class="c">!! the coordinates -- and its gradient is that function's actual</span>
-<span class="w">      </span><span class="c">!! derivative, which is what makes the optimization well posed at all.</span>
+<span class="w">      </span><span class="c">!! Generating the list once and passing it to every step through</span>
+<span class="w">      </span><span class="c">!! `supplied_terms`, which `run_calculation` does not re-screen, makes</span>
+<span class="w">      </span><span class="c">!! the energy a smooth function of the coordinates again. The cost is</span>
+<span class="w">      </span><span class="c">!! that a term screened out at the start stays out even if the molecules</span>
+<span class="w">      </span><span class="c">!! later approach.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! **What is given up.** A term screened out at the start stays out even</span>
-<span class="w">      </span><span class="c">!! if the molecules later approach. That is the right trade: it is a</span>
-<span class="w">      </span><span class="c">!! definite approximation, fixed and reportable, rather than a surface</span>
-<span class="w">      </span><span class="c">!! that changes underneath the optimizer. A run whose fragments move far</span>
-<span class="w">      </span><span class="c">!! is better served by looser cutoffs, or by `freeze_terms: false` and</span>
-<span class="w">      </span><span class="c">!! the knowledge that convergence is then not guaranteed.</span>
-<span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Only for plain MBE. GMBE derives its PIE terms from overlapping</span>
-<span class="w">      </span><span class="c">!! primaries rather than taking a supplied list, so there is nothing to</span>
-<span class="w">      </span><span class="c">!! freeze through this route and the honest thing is to say so.</span>
+<span class="w">      </span><span class="c">!! Plain MBE only. GMBE derives its PIE terms from overlapping primaries</span>
+<span class="w">      </span><span class="c">!! rather than from a supplied list, so there is nothing to freeze; a</span>
+<span class="w">      </span><span class="c">!! warning is logged instead.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
 
@@ -1001,8 +974,8 @@ large graphs.</div>
 <span class="k">         return</span>
 <span class="k">      end if</span>
 
-<span class="w">      </span><span class="c">! The same call the driver makes, so the frozen list is the list this</span>
-<span class="w">      </span><span class="c">! run would have used anyway -- not a reimplementation that agrees today.</span>
+<span class="w">      </span><span class="c">! The same call the driver makes, so the frozen list is the list this run</span>
+<span class="w">      </span><span class="c">! would have used anyway.</span>
 <span class="w">      </span><span class="k">call </span><span class="n">generate_mbe_term_list</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">nlevel</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">n_generated</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_generated</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
@@ -1042,7 +1015,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>

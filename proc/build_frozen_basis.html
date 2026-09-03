@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/build_frozen_basis.html#variable-n_ao~3">n_ao</a>
-            <a class="list-group-item" href="../proc/build_frozen_basis.html#variable-n_frozen~3">n_frozen</a>
+            <a class="list-group-item" href="../proc/build_frozen_basis.html#variable-n_ao">n_ao</a>
+            <a class="list-group-item" href="../proc/build_frozen_basis.html#variable-n_frozen~2">n_frozen</a>
             <a class="list-group-item" href="../proc/build_frozen_basis.html#variable-n_virt">n_virt</a>
             <a class="list-group-item" href="../proc/build_frozen_basis.html#variable-piece">piece</a>
-            <a class="list-group-item" href="../proc/build_frozen_basis.html#variable-x~7">x</a>
+            <a class="list-group-item" href="../proc/build_frozen_basis.html#variable-x~2">x</a>
         </div>
       </div>
     </div>
@@ -181,31 +181,22 @@
     
 
     <p>Turn a set of chosen orbitals into a basis <code>init</code> will accept</p>
-<p>The constraint names its blocks by index range, so the orbitals to be
-frozen have to sit in the leading columns of an orthonormal basis, in
-block order, with the rest of the space after them. What arrives from a
-localization is none of those things: the chosen orbitals are neither
-mutually orthogonal nor normalised, and they span a few dimensions of
-many.</p>
-<p><strong>Block by block, and that is the whole subtlety.</strong> Orthonormalising
-the frozen set in one pass &ndash; the obvious thing &ndash; mixes the frozen
-occupied orbitals with the frozen virtual ones, and then the block
-boundary means nothing: <code>apply</code> would leave part of a virtual untouched
-and hold part of an occupied at the level shift. Mixing <em>within</em> a
-block is harmless, because the occupied block is left alone by the
-constraint and the virtual block is made degenerate, and both are
-invariant under a rotation among their own members. So each block is
-projected against everything already placed and then orthonormalised
-among itself, which mixes only where mixing costs nothing.</p>
-<p>Canonical rather than symmetric orthonormalisation, for the reason
-<code>build_orthogonalizer</code> gives and one more: the completion step is
-deliberately rank deficient &ndash; it starts from a basis for the whole
-space and must come back with the part not already spanned &ndash; so the
-same routine has to drop null directions rather than amplify them.</p>
-<p>Near-dependence among the frozen orbitals themselves is a caller&rsquo;s bug
-rather than something to quietly absorb: two localized orbitals that
-are the same orbital means the bond was assigned twice, and freezing it
-twice would be silent. It is refused.</p>
+<p>The constraint names its blocks by index range, so the frozen orbitals
+have to sit in the leading columns of an orthonormal basis, in block
+order, with the rest of the space after them. What arrives from a
+localization is neither orthogonal nor normalised.</p>
+<p><strong>Each block is orthonormalised separately.</strong> Doing the frozen set in
+one pass mixes the frozen occupied orbitals with the frozen virtual
+ones, and then the block boundary means nothing: <code>apply</code> would leave
+part of a virtual untouched and hold part of an occupied at the level
+shift. Mixing <em>within</em> a block is harmless, since both blocks are
+invariant under a rotation among their own members.</p>
+<p>Canonical rather than symmetric orthonormalisation: the completion
+step is deliberately rank deficient, so null directions have to be
+dropped rather than amplified.</p>
+<p>Near-dependence among the frozen orbitals themselves is refused &ndash;
+two localized orbitals that are the same orbital means the bond was
+assigned twice, and freezing it twice would be silent.</p>
 
 
     <h3>Arguments</h3>
@@ -251,7 +242,7 @@ twice would be silent. It is refused.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~10"></span>
+              <span class="anchor" id="variable-overlap~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -266,7 +257,7 @@ twice would be silent. It is refused.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~9"></span>
+              <span class="anchor" id="variable-basis~4"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -281,7 +272,7 @@ twice would be silent. It is refused.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_mo~3"></span>
+              <span class="anchor" id="variable-n_mo"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -296,7 +287,7 @@ twice would be silent. It is refused.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~155"></span>
+              <span class="anchor" id="variable-error~32"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -543,7 +534,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_ao~3"></span>
+              <span class="anchor" id="variable-n_ao"></span>
               integer,
             </td>
               <td>private</td>
@@ -560,7 +551,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen~3"></span>
+              <span class="anchor" id="variable-n_frozen~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -611,7 +602,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-x~7"></span>
+              <span class="anchor" id="variable-x~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -645,34 +636,25 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">build_frozen_basis</span><span class="p">(</span><span class="n">frozen</span><span class="p">,</span><span class="w"> </span><span class="n">n_frozen_occ</span><span class="p">,</span><span class="w"> </span><span class="n">overlap</span><span class="p">,</span><span class="w"> </span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">n_mo</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Turn a set of chosen orbitals into a basis `init` will accept</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! The constraint names its blocks by index range, so the orbitals to be</span>
-<span class="w">      </span><span class="c">!! frozen have to sit in the leading columns of an orthonormal basis, in</span>
-<span class="w">      </span><span class="c">!! block order, with the rest of the space after them. What arrives from a</span>
-<span class="w">      </span><span class="c">!! localization is none of those things: the chosen orbitals are neither</span>
-<span class="w">      </span><span class="c">!! mutually orthogonal nor normalised, and they span a few dimensions of</span>
-<span class="w">      </span><span class="c">!! many.</span>
+<span class="w">      </span><span class="c">!! The constraint names its blocks by index range, so the frozen orbitals</span>
+<span class="w">      </span><span class="c">!! have to sit in the leading columns of an orthonormal basis, in block</span>
+<span class="w">      </span><span class="c">!! order, with the rest of the space after them. What arrives from a</span>
+<span class="w">      </span><span class="c">!! localization is neither orthogonal nor normalised.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! **Block by block, and that is the whole subtlety.** Orthonormalising</span>
-<span class="w">      </span><span class="c">!! the frozen set in one pass -- the obvious thing -- mixes the frozen</span>
-<span class="w">      </span><span class="c">!! occupied orbitals with the frozen virtual ones, and then the block</span>
-<span class="w">      </span><span class="c">!! boundary means nothing: `apply` would leave part of a virtual untouched</span>
-<span class="w">      </span><span class="c">!! and hold part of an occupied at the level shift. Mixing *within* a</span>
-<span class="w">      </span><span class="c">!! block is harmless, because the occupied block is left alone by the</span>
-<span class="w">      </span><span class="c">!! constraint and the virtual block is made degenerate, and both are</span>
-<span class="w">      </span><span class="c">!! invariant under a rotation among their own members. So each block is</span>
-<span class="w">      </span><span class="c">!! projected against everything already placed and then orthonormalised</span>
-<span class="w">      </span><span class="c">!! among itself, which mixes only where mixing costs nothing.</span>
+<span class="w">      </span><span class="c">!! **Each block is orthonormalised separately.** Doing the frozen set in</span>
+<span class="w">      </span><span class="c">!! one pass mixes the frozen occupied orbitals with the frozen virtual</span>
+<span class="w">      </span><span class="c">!! ones, and then the block boundary means nothing: `apply` would leave</span>
+<span class="w">      </span><span class="c">!! part of a virtual untouched and hold part of an occupied at the level</span>
+<span class="w">      </span><span class="c">!! shift. Mixing *within* a block is harmless, since both blocks are</span>
+<span class="w">      </span><span class="c">!! invariant under a rotation among their own members.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Canonical rather than symmetric orthonormalisation, for the reason</span>
-<span class="w">      </span><span class="c">!! `build_orthogonalizer` gives and one more: the completion step is</span>
-<span class="w">      </span><span class="c">!! deliberately rank deficient -- it starts from a basis for the whole</span>
-<span class="w">      </span><span class="c">!! space and must come back with the part not already spanned -- so the</span>
-<span class="w">      </span><span class="c">!! same routine has to drop null directions rather than amplify them.</span>
+<span class="w">      </span><span class="c">!! Canonical rather than symmetric orthonormalisation: the completion</span>
+<span class="w">      </span><span class="c">!! step is deliberately rank deficient, so null directions have to be</span>
+<span class="w">      </span><span class="c">!! dropped rather than amplified.</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Near-dependence among the frozen orbitals themselves is a caller's bug</span>
-<span class="w">      </span><span class="c">!! rather than something to quietly absorb: two localized orbitals that</span>
-<span class="w">      </span><span class="c">!! are the same orbital means the bond was assigned twice, and freezing it</span>
-<span class="w">      </span><span class="c">!! twice would be silent. It is refused.</span>
+<span class="w">      </span><span class="c">!! Near-dependence among the frozen orbitals themselves is refused --</span>
+<span class="w">      </span><span class="c">!! two localized orbitals that are the same orbital means the bond was</span>
+<span class="w">      </span><span class="c">!! assigned twice, and freezing it twice would be silent.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frozen</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">         </span><span class="c">!! `n_ao` by `n_frozen`, occupied first, in the order the blocks want</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_frozen_occ</span>
@@ -734,9 +716,9 @@ large graphs.</div>
 <span class="k">         </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">n_frozen_occ</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">n_frozen</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">piece</span>
 <span class="w">      </span><span class="k">end if</span>
 
-<span class="w">      </span><span class="c">! Whatever is left of the space. Starting from a basis for all of it and</span>
-<span class="w">      </span><span class="c">! projecting out what is placed leaves exactly `n_mo - n_frozen`</span>
-<span class="w">      </span><span class="c">! directions, and the count coming back is the check that it did.</span>
+<span class="w">      </span><span class="c">! Whatever is left of the space: a basis for all of it, with what is</span>
+<span class="w">      </span><span class="c">! already placed projected out, leaves exactly `n_mo - n_frozen`</span>
+<span class="w">      </span><span class="c">! directions.</span>
 <span class="w">      </span><span class="n">piece</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span>
 <span class="w">      </span><span class="k">call </span><span class="n">orthonormalize_against</span><span class="p">(</span><span class="n">overlap</span><span class="p">,</span><span class="w"> </span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">n_frozen</span><span class="p">,</span><span class="w"> </span><span class="n">piece</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
@@ -770,7 +752,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-02 23:47 +0000             </p>
+ on 2026-09-03 00:21 +0000             </p>
           </div>
         </div>
         <br>
