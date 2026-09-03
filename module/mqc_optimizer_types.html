@@ -258,8 +258,8 @@ a circular dependency.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1111,18 +1111,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff7f00" stroke-dasharray="5,2" d="M943.14,-403.42C897.48,-407.03 807.25,-414.18 752.36,-418.53"/>
 <polygon fill="#ff7f00" stroke="#ff7f00" points="751.9,-415.06 742.2,-419.34 752.45,-422.04 751.9,-415.06"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_optimizer_types~~UsedByGraph_node44" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_optimizer_types~~UsedByGraph_node44"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_optimizer_types~~UsedByGraph_node44"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1011.5,-539.17 933.5,-539.17 933.5,-515.17 1011.5,-515.17 1011.5,-539.17"/>
 <text text-anchor="middle" x="972.5" y="-524.77" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_optimizer_types~~UsedByGraph_edge26" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ff7f00" stroke-dasharray="5,2" d="M933.35,-527.68C910.49,-526.22 881.9,-521.08 861,-506.17 834.75,-487.44 851.37,-461.74 825,-443.17 804.02,-428.39 775.89,-422.96 752.31,-421.31"/>
 <polygon fill="#ff7f00" stroke="#ff7f00" points="752.33,-417.81 742.17,-420.81 751.99,-424.8 752.33,-417.81"/>
 </g>
@@ -1846,7 +1846,7 @@ perfectly plausible small gradient.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~37"></span>
+              <span class="anchor" id="variable-n_atoms~39"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1861,7 +1861,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~7"></span>
+              <span class="anchor" id="variable-coords~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1876,7 +1876,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~18"></span>
+              <span class="anchor" id="variable-energy~13"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1891,7 +1891,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~12"></span>
+              <span class="anchor" id="variable-gradient~10"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1906,7 +1906,7 @@ perfectly plausible small gradient.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~28"></span>
+              <span class="anchor" id="variable-status~38"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1958,7 +1958,7 @@ differences of gradients, so there is no <code>error_t</code> here.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~36"></span>
+              <span class="anchor" id="variable-n_atoms~38"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1973,7 +1973,7 @@ differences of gradients, so there is no <code>error_t</code> here.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~6"></span>
+              <span class="anchor" id="variable-coords~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1988,7 +1988,7 @@ differences of gradients, so there is no <code>error_t</code> here.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~17"></span>
+              <span class="anchor" id="variable-hessian~14"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2003,7 +2003,7 @@ differences of gradients, so there is no <code>error_t</code> here.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~27"></span>
+              <span class="anchor" id="variable-status~37"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2052,7 +2052,7 @@ and would make a trajectory that goes backwards.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~38"></span>
+              <span class="anchor" id="variable-n_atoms~40"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2067,7 +2067,7 @@ and would make a trajectory that goes backwards.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~8"></span>
+              <span class="anchor" id="variable-coords~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2082,7 +2082,7 @@ and would make a trajectory that goes backwards.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~19"></span>
+              <span class="anchor" id="variable-energy~14"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2150,7 +2150,7 @@ and would make a trajectory that goes backwards.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-kind~3"></span>
+              <span class="anchor" id="variable-kind~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2272,7 +2272,7 @@ system to hold them in &ndash; see <code>mqc_dlfind_bridge</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~12"></span>
+              <span class="anchor" id="variable-coordinates~11"></span>
               integer,
             </td>
               <td>public</td>
@@ -2343,7 +2343,7 @@ gradient difference is not noise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-endpoint~2"></span>
+              <span class="anchor" id="variable-endpoint"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2470,7 +2470,7 @@ so a frozen pair contributes no coordinates at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient_tolerance~2"></span>
+              <span class="anchor" id="variable-gradient_tolerance~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2834,7 +2834,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~23"></span>
+              <span class="anchor" id="variable-text~25"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2969,7 +2969,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-kind~5"></span>
+              <span class="anchor" id="variable-kind~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3014,7 +3014,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~33"></span>
+              <span class="anchor" id="variable-text~35"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3059,7 +3059,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~21"></span>
+              <span class="anchor" id="variable-text~23"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3104,7 +3104,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~14"></span>
+              <span class="anchor" id="variable-coordinates~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3149,7 +3149,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~31"></span>
+              <span class="anchor" id="variable-text~33"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3239,7 +3239,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~27"></span>
+              <span class="anchor" id="variable-text~29"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3329,7 +3329,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~25"></span>
+              <span class="anchor" id="variable-text~27"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3374,7 +3374,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~15"></span>
+              <span class="anchor" id="variable-method~16"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3419,7 +3419,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~29"></span>
+              <span class="anchor" id="variable-text~31"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3509,7 +3509,7 @@ none, which is why this is off by default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~34"></span>
+              <span class="anchor" id="variable-text~36"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3558,7 +3558,7 @@ none, which is why this is off by default.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-03 05:42 +0000             </p>
+ on 2026-09-03 08:55 +0000             </p>
           </div>
         </div>
         <br>
