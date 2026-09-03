@@ -9,8 +9,8 @@ module mqc_method_mcscf
    !! reference SCF produced. Both spellings, and "mcscf", parse to
    !! `METHOD_TYPE_MCSCF` -- they are one method with a boolean, not two.
    !!
-   !! Everything is computed by `mqc_libcint_mcscf` and `mqc_libcint_casci`
-   !! behind `mqc_libcint_bridge`. There is no cuEST path and no `#ifdef` here,
+   !! Everything is computed by `mqc_czt_mcscf` and `mqc_czt_casci`
+   !! behind `mqc_czt_bridge`. There is no cuEST path and no `#ifdef` here,
    !! unlike Hartree-Fock: cuEST has no CI at all, so there is nothing to
    !! choose between.
    use pic_types, only: dp
@@ -22,7 +22,7 @@ module mqc_method_mcscf
    use mqc_error, only: ERROR_VALIDATION
    use mqc_cuest_iface, only: apply_properties_settings, apply_scf_settings, &
                               cuest_scf_settings_t
-   use mqc_libcint_bridge, only: run_libcint_mcscf
+   use mqc_czt_bridge, only: run_czt_mcscf
    implicit none
    private
 
@@ -123,7 +123,7 @@ contains
 
       type(cuest_scf_settings_t) :: settings
 
-      ! Refused rather than dropped: `run_libcint_mcscf` never reads
+      ! Refused rather than dropped: `run_czt_mcscf` never reads
       ! `settings%fukui_population`, so passing it on would obey the deck
       ! everywhere except where it matters.
       if (allocated(this%options%properties%fukui_population)) then
@@ -157,7 +157,7 @@ contains
       settings%mcscf%max_macro_iter = this%options%max_macro_iter
       settings%mcscf%orbital_convergence = this%options%orbital_tol
 
-      call run_libcint_mcscf(settings, fragment, result, want_gradient=want_gradient)
+      call run_czt_mcscf(settings, fragment, result, want_gradient=want_gradient)
    end subroutine mcscf_run
 
    subroutine mcscf_calc_gradient(this, fragment, result)

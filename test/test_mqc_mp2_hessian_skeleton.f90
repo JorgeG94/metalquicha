@@ -25,14 +25,14 @@ module test_mqc_mp2_hessian_skeleton
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient, build_amplitudes, &
-                                       build_effective_2pdm_ao
-   use mqc_libcint_mp2, only: transform_ovov
-   use mqc_libcint_mp2_hessian, only: mp2_skeleton_hessian
-   use mqc_libcint_hessian, only: response_hessian, rhf_hessian, &
-                                  nuclear_repulsion_hessian
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_mp2_gradient, only: czt_mp2_gradient, build_amplitudes, &
+                                   build_effective_2pdm_ao
+   use mqc_czt_mp2, only: transform_ovov
+   use mqc_czt_mp2_hessian, only: mp2_skeleton_hessian
+   use mqc_czt_hessian, only: response_hessian, rhf_hessian, &
+                              nuclear_repulsion_hessian
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    implicit none
    private
@@ -65,7 +65,7 @@ contains
    !! own pieces, and both skeleton blocks.
    subroutine skeleton_at(n_frozen, mol, scf, hess_corr, hess_ref, err)
       integer, intent(in) :: n_frozen
-      type(libcint_molecule_t), intent(out) :: mol
+      type(czt_molecule_t), intent(out) :: mol
       type(rhf_result_t), intent(out) :: scf
       real(dp), allocatable, intent(out) :: hess_corr(:, :, :, :)
       real(dp), allocatable, intent(out) :: hess_ref(:, :, :, :)
@@ -76,15 +76,15 @@ contains
       real(dp), allocatable :: gamma_eff(:, :, :, :)
       integer :: n_ao, n_mo, n_o
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, .false., &
-                           scf, err)
+      call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, .false., &
+                       scf, err)
       if (err%has_error()) return
 
-      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
-                                WATER_NELEC/2, gradient, err, n_frozen=n_frozen, &
-                                relaxed_density_mo=dm1mo, energy_weighted_ao=w_ao)
+      call czt_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
+                            WATER_NELEC/2, gradient, err, n_frozen=n_frozen, &
+                            relaxed_density_mo=dm1mo, energy_weighted_ao=w_ao)
       if (err%has_error()) return
 
       n_ao = mol%nao
@@ -115,7 +115,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: hess_corr(:, :, :, :), hess_ref(:, :, :, :)
       real(dp), allocatable :: nuc(:, :, :, :), resp(:, :, :, :), full(:, :, :, :)
@@ -161,7 +161,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: hess_corr(:, :, :, :), hess_ref(:, :, :, :)
       real(dp) :: worst

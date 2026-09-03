@@ -21,10 +21,10 @@ program check_charges
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger, info_level
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_charges, only: mulliken_charges, chelpg_charges, chelpg_grid
-   use mqc_libcint_esp, only: esp_contract
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_charges, only: mulliken_charges, chelpg_charges, chelpg_grid
+   use mqc_czt_esp, only: esp_contract
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    implicit none
 
    integer, parameter :: N_DIM = 3
@@ -76,7 +76,7 @@ contains
       real(dp), intent(in) :: rrms_tol
       integer, intent(inout) :: n_bad
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(error_t) :: error
       real(dp), allocatable :: s(:, :), q_mul(:), q_esp(:), pts(:, :), v(:)
@@ -88,9 +88,9 @@ contains
       write (line, "(a,a)") "== ", label
       call logger%info(trim(line))
 
-      call build_libcint_molecule(z, symbols, coords, "6-31g", mol, error)
+      call build_czt_molecule(z, symbols, coords, "6-31g", mol, error)
       if (failed(error, "molecule", n_bad)) return
-      call run_libcint_rhf(mol, nelec, 100, 1.0e-9_dp, 1.0e-7_dp, .false., scf, error)
+      call run_czt_rhf(mol, nelec, 100, 1.0e-9_dp, 1.0e-7_dp, .false., scf, error)
       if (failed(error, "scf", n_bad)) return
 
       call mol%overlap(s)
@@ -204,7 +204,7 @@ contains
       real(dp), intent(out) :: q_mul(3), q_esp(3)
       integer, intent(inout) :: n_bad
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(error_t) :: error
       real(dp), allocatable :: s(:, :), qm(:), qe(:)
@@ -216,10 +216,10 @@ contains
 
       q_mul = 0.0_dp
       q_esp = 0.0_dp
-      call build_libcint_molecule([8, 1, 1], [character(len=2) :: "O", "H", "H"], &
-                                  coords, basis, mol, error)
+      call build_czt_molecule([8, 1, 1], [character(len=2) :: "O", "H", "H"], &
+                              coords, basis, mol, error)
       if (failed(error, "molecule "//basis, n_bad)) return
-      call run_libcint_rhf(mol, 10, 100, 1.0e-9_dp, 1.0e-7_dp, .false., scf, error)
+      call run_czt_rhf(mol, 10, 100, 1.0e-9_dp, 1.0e-7_dp, .false., scf, error)
       if (failed(error, "scf "//basis, n_bad)) return
       call mol%overlap(s)
       call mulliken_charges(mol, scf%density, s, qm, error)

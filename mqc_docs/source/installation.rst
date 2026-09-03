@@ -71,7 +71,7 @@ with, run ``mqc --version``, which prints a ``features:`` line.
    * - ``MQC_ENABLE_TBLITE``
      - ``ON``
      - xTB (GFN1, GFN2) through tblite
-   * - ``MQC_ENABLE_LIBCINT``
+   * - ``MQC_ENABLE_CZT``
      - ``ON``
      - CPU Gaussian integrals: Hartree-Fock, MP2, coupled cluster
    * - ``MQC_ENABLE_LIBXC``

@@ -1,4 +1,4 @@
-!! Unit tests for the SCF linear algebra shared by the libcint and cuEST paths
+!! Unit tests for the SCF linear algebra shared by the cenzontle and cuEST paths
 module test_mqc_scf_common
    !! These routines used to exist twice, once per backend. Now that one copy
    !! serves both, its properties are worth pinning: an orthogonaliser that

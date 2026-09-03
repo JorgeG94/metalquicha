@@ -33,14 +33,14 @@ program check_dh_gradient
    !! gradient differentiates the energy that is actually produced.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, SCF_GUESS_SAD
-   use mqc_libcint_atomic_guess, only: build_atomic_guess
-   use mqc_libcint_mp2, only: run_libcint_mp2, run_libcint_ri_mp2, mp2_result_t
-   use mqc_libcint_gradient, only: libcint_scf_gradient
-   use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
-   use mqc_libcint_ri_mp2_gradient, only: libcint_ri_mp2_gradient
-   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, SCF_GUESS_SAD
+   use mqc_czt_atomic_guess, only: build_atomic_guess
+   use mqc_czt_mp2, only: run_czt_mp2, run_czt_ri_mp2, mp2_result_t
+   use mqc_czt_gradient, only: czt_scf_gradient
+   use mqc_czt_mp2_gradient, only: czt_mp2_gradient
+   use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
 
@@ -251,12 +251,12 @@ contains
       !! 68 and 130 from Wolfsberg-Helmholz, and at some displacements it never
       !! arrives. This is the guess the driver uses, so it is the one a check of
       !! the driver's arithmetic should use too.
-      type(libcint_molecule_t), intent(in) :: mol
+      type(czt_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
       type(xc_context_t), intent(inout) :: xc
       type(rhf_result_t), intent(out) :: scf
       type(error_t), intent(inout) :: error
-      type(libcint_molecule_t), intent(in), optional :: aux
+      type(czt_molecule_t), intent(in), optional :: aux
          !! Present, the SCF fits its own J and K. That is a different energy,
          !! and the gradient below has to differentiate the one that was run.
 
@@ -264,9 +264,9 @@ contains
 
       call build_atomic_guess(mol, SCF_GUESS_SAD, guess_a, guess_b, error)
       if (error%has_error()) return
-      call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, DENSITY_TOL, .false., scf, &
-                           error, xc=xc, guess=SCF_GUESS_SAD, &
-                           guess_density=guess_a + guess_b, aux=aux)
+      call run_czt_rhf(mol, nelec, 200, 1.0e-12_dp, DENSITY_TOL, .false., scf, &
+                       error, xc=xc, guess=SCF_GUESS_SAD, &
+                       guess_density=guess_a + guess_b, aux=aux)
    end subroutine converge
 
    subroutine central(numbers, symbols, coords, basis, nelec, functional, &
@@ -323,19 +323,19 @@ contains
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: error
 
-      type(libcint_molecule_t) :: mol
-      type(libcint_molecule_t), target :: aux
-      type(libcint_molecule_t), pointer :: aux_arg
+      type(czt_molecule_t) :: mol
+      type(czt_molecule_t), target :: aux
+      type(czt_molecule_t), pointer :: aux_arg
       type(rhf_result_t) :: scf
       type(xc_context_t) :: xc
       type(mp2_result_t) :: mp2
       real(dp), allocatable :: corr(:, :)
 
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
       aux_arg => null()
       if (len_trim(aux_basis) > 0) then
-         call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
+         call build_czt_molecule(numbers, symbols, coords, aux_basis, aux, error)
          if (error%has_error()) return
          if (fit_reference) aux_arg => aux
       end if
@@ -348,31 +348,31 @@ contains
       ! that pairing is the whole point. A fitted energy against an exact
       ! gradient is the derivative of a function nobody computed.
       if (fit_correlation) then
-         call run_libcint_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, &
-                                 nelec/2, scf%energy, mp2, error)
+         call run_czt_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, &
+                             nelec/2, scf%energy, mp2, error)
       else
-         call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
-                              scf%energy, mp2, error)
+         call run_czt_mp2(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
+                          scf%energy, mp2, error)
       end if
       if (error%has_error()) return
       energy = scf%energy + xc%pt2_fraction*mp2%correlation
 
-      call libcint_scf_gradient(mol, scf%density, orbitals=scf%orbitals, &
-                                orbital_energies=scf%orbital_energies, &
-                                n_occupied=scf%n_occupied, gradient=gradient, &
-                                error=error, xc=xc, aux=aux_arg)
+      call czt_scf_gradient(mol, scf%density, orbitals=scf%orbitals, &
+                            orbital_energies=scf%orbital_energies, &
+                            n_occupied=scf%n_occupied, gradient=gradient, &
+                            error=error, xc=xc, aux=aux_arg)
       if (error%has_error()) return
 
       if (fit_correlation) then
-         call libcint_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, &
-                                      nelec/2, corr, error, &
-                                      fitted_reference=fit_reference, xc=xc, &
-                                      scf_density=scf%density, &
-                                      pt2_scale=xc%pt2_fraction)
+         call czt_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, &
+                                  nelec/2, corr, error, &
+                                  fitted_reference=fit_reference, xc=xc, &
+                                  scf_density=scf%density, &
+                                  pt2_scale=xc%pt2_fraction)
       else
-         call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
-                                   corr, error, xc=xc, scf_density=scf%density, &
-                                   pt2_scale=xc%pt2_fraction, aux=aux_arg)
+         call czt_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
+                               corr, error, xc=xc, scf_density=scf%density, &
+                               pt2_scale=xc%pt2_fraction, aux=aux_arg)
       end if
       if (error%has_error()) return
       gradient = gradient + corr
@@ -395,19 +395,19 @@ contains
       real(dp), intent(out) :: energy
       type(error_t), intent(inout) :: error
 
-      type(libcint_molecule_t) :: mol
-      type(libcint_molecule_t), target :: aux
-      type(libcint_molecule_t), pointer :: aux_arg
+      type(czt_molecule_t) :: mol
+      type(czt_molecule_t), target :: aux
+      type(czt_molecule_t), pointer :: aux_arg
       type(rhf_result_t) :: scf
       type(xc_context_t) :: xc
       type(mp2_result_t) :: mp2
 
       energy = 0.0_dp
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
       aux_arg => null()
       if (len_trim(aux_basis) > 0) then
-         call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
+         call build_czt_molecule(numbers, symbols, coords, aux_basis, aux, error)
          if (error%has_error()) return
          if (fit_reference) aux_arg => aux
       end if
@@ -423,11 +423,11 @@ contains
          return
       end if
       if (fit_correlation) then
-         call run_libcint_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, &
-                                 nelec/2, scf%energy, mp2, error)
+         call run_czt_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, &
+                             nelec/2, scf%energy, mp2, error)
       else
-         call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
-                              scf%energy, mp2, error)
+         call run_czt_mp2(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
+                          scf%energy, mp2, error)
       end if
       if (error%has_error()) return
       energy = scf%energy + xc%pt2_fraction*mp2%correlation

@@ -19,9 +19,9 @@ module test_mqc_pcm
    use mqc_physical_constants, only: PI
    use mqc_pcm_radii, only: cavity_radius
    use mqc_method_config, only: pcm_config_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_pcm, only: pcm_context_t, build_pcm_surface
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_pcm, only: pcm_context_t, build_pcm_surface
    implicit none
    private
 
@@ -195,13 +195,13 @@ contains
       !! the 2.5e-8 gap to PySCF, so drifting past it means something moved.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(pcm_context_t) :: ctx
       type(pcm_config_t) :: config
       type(rhf_result_t) :: scf
       type(error_t) :: err
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), more="molecule build failed")
       if (allocated(error)) return
 
@@ -216,8 +216,8 @@ contains
          return
       end if
 
-      call run_libcint_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err, &
-                           pcm=ctx)
+      call run_czt_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err, &
+                       pcm=ctx)
       call mol%destroy()
       call check(error,.not. err%has_error(), more="the solvated SCF failed")
       if (allocated(error)) return

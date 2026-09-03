@@ -95,7 +95,7 @@ copies, or turn them off and build the xTB path alone.
 | Option | Default | What it controls |
 | --- | --- | --- |
 | `-DMQC_ENABLE_TBLITE=` | `ON` | xTB (GFN1/GFN2) through tblite |
-| `-DMQC_ENABLE_LIBCINT=` | `ON` | Gaussian integrals on the CPU, no GPU needed |
+| `-DMQC_ENABLE_CZT=` | `ON` | Gaussian integrals on the CPU, no GPU needed |
 | `-DMQC_ENABLE_LIBXC=` | `ON` | Exchange-correlation functionals, so DFT |
 | `-DMQC_ENABLE_HDF5=` | `OFF` | Binary checkpoints, to restart a gradient or Hessian |
 | `-DMQC_ENABLE_CUEST=` | `OFF` | GPU Hartree-Fock/DFT; also needs `-DCUEST_ROOT=` |
@@ -270,7 +270,7 @@ reference energies, and `energy_screened_mbe.py` shows a two-pass calculation
 that recomputes only the terms whose contribution exceeded a threshold.
 
 Which methods are available depends on the build, though the default has all of
-them: `gfn1`/`gfn2` need `MQC_ENABLE_TBLITE`, while `MQC_ENABLE_LIBCINT` brings
+them: `gfn1`/`gfn2` need `MQC_ENABLE_TBLITE`, while `MQC_ENABLE_CZT` brings
 the CPU ab initio path — `hf`, `dft`, `mp2`, `ccsd`, `ccsd(t)`, and the `ri-`
 spellings of the correlated ones. `dft` additionally needs `MQC_ENABLE_LIBXC`,
 which is on by default too.

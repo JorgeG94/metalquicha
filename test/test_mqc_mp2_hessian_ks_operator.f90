@@ -1,7 +1,7 @@
 module test_mqc_mp2_hessian_ks_operator
    !! The identity the double-hybrid Hessian's rewrite rests on
    !!
-   !! Every kernel contraction in `mqc_libcint_mp2_hessian` has one of two
+   !! Every kernel contraction in `mqc_czt_mp2_hessian` has one of two
    !! shapes -- a matrix contracted against slots 1 and 3 of `L`, or against
    !! slots 2 and 4 -- and both are the reference operator applied to a
    !! symmetric generalized density:
@@ -39,11 +39,11 @@ module test_mqc_mp2_hessian_ks_operator
    !! out entirely -- that is what makes an apply a legal substitution for
    !! sites whose generalized densities (`U^X`, `S^(X)`) are not symmetric.
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available, &
-                             xc_kernel_apply
-   use mqc_libcint_mp2_hessian, only: mp2_mo_eri_physicist
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available, &
+                         xc_kernel_apply
+   use mqc_czt_mp2_hessian, only: mp2_mo_eri_physicist
    use mqc_error, only: error_t
    use pic_types, only: dp
    implicit none
@@ -111,7 +111,7 @@ contains
          !! Two routes to one number through different arithmetic, so this is
          !! accumulation order and nothing else. There is no step and no grid
          !! difference: the kernel is evaluated once and used by both sides.
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx
       type(rhf_result_t) :: scf
       type(error_t) :: err
@@ -129,7 +129,7 @@ contains
       ! quietly. Returning with `error` unallocated is what testdrive reads as a
       ! pass, so a molecule that would not build or an SCF that would not
       ! converge used to leave this suite green with no comparison made.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "the molecule did not build: "// &
                  err%get_message())
       if (allocated(error)) return
@@ -139,9 +139,9 @@ contains
          call check(error,.not. err%has_error(), "the functional did not "// &
                     "resolve: "//err%get_message())
          if (allocated(error)) return
-         call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+         call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       else
-         call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+         call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       end if
       if (err%has_error()) call mol%destroy()
       call check(error,.not. err%has_error(), "the reference did not converge: "// &

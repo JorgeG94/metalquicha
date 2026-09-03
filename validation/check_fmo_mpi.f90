@@ -18,7 +18,7 @@ program check_fmo_mpi
    use pic_logger, only: logger => global_logger, warning_level
    use pic_mpi_lib, only: comm_t, comm_world, pic_mpi_init, pic_mpi_finalize
    use mqc_error, only: error_t
-   use mqc_libcint_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
+   use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
    implicit none
 
    real(dp), parameter :: A2B = 1.8897261254578281_dp

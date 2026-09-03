@@ -67,7 +67,7 @@ module mqc_method_config
          !! diagonalisation, to widen the gap the next density is built through.
          !! Zero is off. Tapered to zero as the SCF converges, so that the
          !! orbitals and orbital energies reported at exit belong to the
-         !! unshifted operator -- see `mqc_libcint_rhf`, where that matters more
+         !! unshifted operator -- see `mqc_czt_rhf`, where that matters more
          !! than it looks.
       logical :: use_diis = .true.
          !! Use DIIS acceleration
@@ -241,7 +241,7 @@ module mqc_method_config
       !!
       !! Backend-neutral in shape. The cuEST path hands the cavity and the charge
       !! solve to the library; the CPU path builds both itself in
-      !! `mqc_libcint_pcm`. tblite's CPCM is configured through `xtb_config_t`
+      !! `mqc_czt_pcm`. tblite's CPCM is configured through `xtb_config_t`
       !! and builds its own cavity; the two are separate models and share no
       !! settings.
       logical :: enabled = .false.

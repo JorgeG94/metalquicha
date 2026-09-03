@@ -180,7 +180,7 @@ endif()
 # build order all come along on their own.
 #
 # Resolved before libcint, and that order is load-bearing: check_dft is
-# registered from backends/libcint/validation.cmake and links both.
+# registered from backends/cenzontle/validation.cmake and links both.
 if(MQC_ENABLE_LIBXC)
   find_package(libxc REQUIRED)
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBXC)
@@ -209,18 +209,18 @@ endif()
 # time is the property that matters; if throughput ever does, libint can sit
 # behind the same interface later.
 #
-# Nothing under backends/libcint/ changes with the choice: libfint defines the
+# Nothing under backends/cenzontle/ changes with the choice: libfint defines the
 # same `libcint_fortran` module with the same 25 procedures, so this program
 # cannot tell which one it linked. That is the whole point of a port that is
 # bit-identical -- the swap is a build option, not a migration.
 #
 # One thing the swap is *not* is purely a link: libfint carries L (sp) shells
 # and libcint cannot represent one, so selecting it also defines
-# MQC_WITH_SP_SHELLS and the fused-sp view in mqc_libcint_integrals.F90 is
-# compiled in. A libcint build takes the split-shell path instead. The two
-# configurations therefore run different source, which is why both are built in
-# CI rather than only the default.
-if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
+# MQC_WITH_SP_SHELLS and the fused-sp view in mqc_czt_integrals.F90 is compiled
+# in. A libcint build takes the split-shell path instead. The two configurations
+# therefore run different source, which is why both are built in CI rather than
+# only the default.
+if(MQC_ENABLE_CZT AND MQC_USE_LIBFINT)
   find_package(libfint REQUIRED)
   message(STATUS "libfint: ${MQC_LIBFINT_REPOSITORY}@${MQC_LIBFINT_TAG}")
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBCINT)
@@ -259,12 +259,12 @@ if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
     add_library(cint_fortran ALIAS fint)
   endif()
   target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:fint>)
-  add_subdirectory(backends/libcint)
+  add_subdirectory(backends/cenzontle)
   message(
     STATUS
       "libfint enabled: CPU Gaussian integrals, all-Fortran, no C and no BLAS")
 
-elseif(MQC_ENABLE_LIBCINT)
+elseif(MQC_ENABLE_CZT)
   find_package(libcint REQUIRED)
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBCINT)
 
@@ -317,7 +317,7 @@ elseif(MQC_ENABLE_LIBCINT)
   target_include_directories(
     ${main_lib} PUBLIC $<BUILD_INTERFACE:${libcint_BINARY_DIR}/include>)
 
-  add_subdirectory(backends/libcint)
+  add_subdirectory(backends/cenzontle)
   message(
     STATUS "libcint enabled: CPU Gaussian integrals via the Fortran interface")
 endif()

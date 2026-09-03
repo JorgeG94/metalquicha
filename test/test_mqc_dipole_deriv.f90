@@ -17,8 +17,8 @@ module test_mqc_dipole_deriv
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_multipole, only: multipole_matrices, dipole_integral_derivatives
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_multipole, only: multipole_matrices, dipole_integral_derivatives
    implicit none
    private
 
@@ -60,14 +60,14 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       real(dp), allocatable :: plus(:, :, :), minus(:, :, :)
       real(dp) :: coords(3, 3)
 
       ok = .false.
       coords = WATER
       coords(cart, atom) = coords(cart, atom) + STEP
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, basis, mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, basis, mol, err)
       if (err%has_error()) return
       call multipole_matrices(mol, ORIGIN, 1, plus, err)
       call mol%destroy()
@@ -75,7 +75,7 @@ contains
 
       coords = WATER
       coords(cart, atom) = coords(cart, atom) - STEP
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, basis, mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, basis, mol, err)
       if (err%has_error()) return
       call multipole_matrices(mol, ORIGIN, 1, minus, err)
       call mol%destroy()
@@ -92,7 +92,7 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       real(dp), allocatable :: ddip(:, :, :, :, :), fd(:, :, :)
       integer :: atom, cart, a
 
@@ -100,7 +100,7 @@ contains
       direct = 0.0_dp
       transposed = 0.0_dp
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, basis, mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, basis, mol, err)
       if (err%has_error()) return
       call dipole_integral_derivatives(mol, ORIGIN, ddip, err)
       call mol%destroy()

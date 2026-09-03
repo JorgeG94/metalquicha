@@ -42,9 +42,9 @@ module test_mqc_casci
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_casci, only: run_libcint_casci, casci_result_t, active_space_integrals
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_casci, only: run_czt_casci, casci_result_t, active_space_integrals
    implicit none
    private
 
@@ -90,19 +90,19 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
 
       ok = .false.
       scf_energy = 0.0_dp
-      call build_libcint_molecule(atomic_numbers, symbols, coordinates, basis, mol, err)
+      call build_czt_molecule(atomic_numbers, symbols, coordinates, basis, mol, err)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, n_electrons, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call run_czt_rhf(mol, n_electrons, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       if (err%has_error() .or. .not. scf%converged) return
       scf_energy = scf%energy
 
-      call run_libcint_casci(mol, scf%orbitals, n_inactive, n_active, n_alpha, n_beta, &
-                             result, err, tolerance=1.0e-11_dp)
+      call run_czt_casci(mol, scf%orbitals, n_inactive, n_active, n_alpha, n_beta, &
+                         result, err, tolerance=1.0e-11_dp)
       ok = .not. err%has_error()
       call mol%destroy()
    end subroutine one_case
@@ -259,13 +259,13 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       type(casci_result_t) :: result
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: h_eff(:, :), eri_act(:, :, :, :)
       real(dp) :: core
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       call check(error, scf%converged, "the SCF should converge")
       if (allocated(error)) return
 
@@ -277,7 +277,7 @@ contains
       call err%clear()
 
       ! More electrons than the active orbitals can hold.
-      call run_libcint_casci(mol, scf%orbitals, 1, 2, 3, 3, result, err)
+      call run_czt_casci(mol, scf%orbitals, 1, 2, 3, 3, result, err)
       call check(error, err%has_error(), &
                  "three electrons of one spin in two orbitals should be refused")
       call err%clear()

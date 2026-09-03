@@ -93,11 +93,11 @@ addtestpp(mqc_basis_cartesian)
 target_compile_definitions(test_mqc_basis_cartesian PRIVATE MQC_HAVE_BASIS_SETS)
 
 # That the angular form reaches the integrals, counted in basis functions. Needs
-# libcint, since libcint_molecule_t is the thing it inspects.
-if(MQC_ENABLE_LIBCINT)
+# libcint, since czt_molecule_t is the thing it inspects.
+if(MQC_ENABLE_CZT)
   # The overlap between two different bases on the same atoms, which is the one
   # new integral the quasi-atomic construction needs. Gated because
-  # libcint_molecule_t is what it builds.
+  # czt_molecule_t is what it builds.
   addtest(mqc_mixed_overlap)
   target_link_libraries(test_mqc_mixed_overlap PRIVATE cint_fortran cint)
 
@@ -170,26 +170,24 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_avas)
   target_link_libraries(test_mqc_avas PRIVATE cint_fortran cint)
 
-  addtest(mqc_libcint_cartesian)
-  target_link_libraries(test_mqc_libcint_cartesian
-                        PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_cartesian)
+  target_link_libraries(test_mqc_czt_cartesian PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # That a general contraction reaches libcint as one shell rather than one per
   # coefficient column, and that merging them moves no basis function.
-  addtest(mqc_libcint_contraction)
-  target_link_libraries(test_mqc_libcint_contraction
-                        PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_contraction)
+  target_link_libraries(test_mqc_czt_contraction PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # The unrestricted SCF, against the properties a reference energy cannot see:
   # closed-shell UHF must equal RHF, direct must equal in-core.
-  addtest(mqc_libcint_uhf)
-  target_link_libraries(test_mqc_libcint_uhf PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_uhf)
+  target_link_libraries(test_mqc_czt_uhf PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # A fragment potential written and read back. The format is GAMESS's, so
   # writer and reader are two halves of one thing and a round trip is what pins
   # them.
-  addtest(mqc_efp_read)
-  target_link_libraries(test_mqc_efp_read PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_efp_read)
+  target_link_libraries(test_mqc_czt_efp_read PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # That the deck's SCF settings reach the one SCF a MakeFP run performs. Six of
   # them used to be dropped between the config and the call, which no deck test
@@ -200,58 +198,59 @@ if(MQC_ENABLE_LIBCINT)
   # The electrostatic interaction between two fragments, against the energy
   # GAMESS reports for the same dimer. Chiefly a guard on the charge-dipole
   # sign, which both ways round gives a plausible-looking answer.
-  addtest(mqc_efp_interaction)
-  target_link_libraries(test_mqc_efp_interaction PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_efp_interaction)
+  target_link_libraries(test_mqc_czt_efp_interaction
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # A molecule spanning two fragments, checked by the block structure of its own
   # overlap: the diagonal blocks must be each fragment's overlap exactly.
-  addtest(mqc_efp_pair)
-  target_link_libraries(test_mqc_efp_pair PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_efp_pair)
+  target_link_libraries(test_mqc_czt_efp_pair PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # All five EFP2 terms assembled into one energy. Each was pinned against
   # GAMESS on its own, so what this checks is the bookkeeping: no term dropped,
   # none counted twice, dispersion totalled damped rather than undamped.
-  addtest(mqc_efp_energy)
-  target_link_libraries(test_mqc_efp_energy PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_efp_energy)
+  target_link_libraries(test_mqc_czt_efp_energy PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Placing a fragment in an arbitrary orientation, piece by piece: the frame
   # construction, the Cartesian shell rotation as a group representation, and
   # the invariants a rotated fragment must keep. The energy test asserts the
   # same thing end to end but cannot say which piece broke.
-  addtest(mqc_efp_rotate)
-  target_link_libraries(test_mqc_efp_rotate PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_efp_rotate)
+  target_link_libraries(test_mqc_czt_efp_rotate PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # The free-atom initial guesses. Chiefly that every guess reaches the same
   # energy, and that SAD is spherically symmetric where SAC is not -- without
   # which the two would be one guess under two names.
-  addtest(mqc_libcint_guess)
-  target_link_libraries(test_mqc_libcint_guess PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_guess)
+  target_link_libraries(test_mqc_czt_guess PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Unrestricted Kohn-Sham, on the closed-shell limit: with equal spin densities
   # it must reproduce the restricted energy exactly, for every rung. That is
   # what catches libxc's interleaved arrays being read with the wrong stride and
   # the cross-spin gradient term being dropped -- both of which converge.
-  addtest(mqc_libcint_uks)
-  target_link_libraries(test_mqc_libcint_uks PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_uks)
+  target_link_libraries(test_mqc_czt_uks PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Range separation, on the two limits of the erf kernel. The validation
   # manifest checks the energies; this checks that omega reaches libcint at all,
   # which is the part that failed silently -- an ignored parameter returns
   # full-range exchange from the long-range pass and still converges.
-  addtest(mqc_libcint_rsh)
-  target_link_libraries(test_mqc_libcint_rsh PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_rsh)
+  target_link_libraries(test_mqc_czt_rsh PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Basis-function values on the grid, against the identity that the overlap
   # matrix is an integral of them. libcint cannot check these -- it does not
   # evaluate basis functions -- so the quadrature is the check.
-  addtest(mqc_libcint_ao)
-  target_link_libraries(test_mqc_libcint_ao PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_ao)
+  target_link_libraries(test_mqc_czt_ao PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # The potential integral against its own centre-gradient. This is what fixes
   # the sign of libcint's `nabla-rinv` for every caller, charge transfer's
   # dipole rank being the first.
-  addtest(mqc_libcint_esp)
-  target_link_libraries(test_mqc_libcint_esp PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_esp)
+  target_link_libraries(test_mqc_czt_esp PRIVATE ${MQC_INTEGRALS_LIBS})
   # The continuum: cavity geometry, the Born ion in closed form, and one
   # solvated SCF pinned against PySCF.
   addtest(mqc_pcm)
@@ -259,34 +258,34 @@ if(MQC_ENABLE_LIBCINT)
   # SAPT0's molecules: ghosts in the dimer basis. Everything checkable before a
   # term is computed -- that ghosts keep their basis and lose their charge, and
   # that a monomer's AO ordering is the dimer's, which Tr(D S) catches.
-  addtest(mqc_sapt)
-  target_link_libraries(test_mqc_sapt PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_sapt)
+  target_link_libraries(test_mqc_czt_sapt PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Coupled cluster, against the identities a reference energy cannot see:
   # <pq||rs> antisymmetry, spin-forbidden integrals vanishing exactly, and the
   # spin-orbital MP2 equalling the conventional one. PySCF comparison lives in
   # validation/check_cc.f90, which needs the basis files.
-  addtest(mqc_libcint_cc)
-  target_link_libraries(test_mqc_libcint_cc PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_cc)
+  target_link_libraries(test_mqc_czt_cc PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Spin-adapted coupled cluster, tied to the spin-orbital path above. For a
   # closed shell the two are the same theory written twice and must agree to
   # machine precision, which catches the transposed index that a reference
   # energy alone would not -- see the module header for why that is the failure
   # mode worth designing against.
-  addtest(mqc_libcint_rcc)
-  target_link_libraries(test_mqc_libcint_rcc PRIVATE cint_fortran cint)
+  addtest(mqc_czt_rcc)
+  target_link_libraries(test_mqc_czt_rcc PRIVATE cint_fortran cint)
 
   # Conventional MP2: the structural properties a reference energy cannot see,
   # chiefly that the four-index transform keeps (ia|jb) == (jb|ia).
-  addtest(mqc_libcint_mp2)
-  target_link_libraries(test_mqc_libcint_mp2 PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_mp2)
+  target_link_libraries(test_mqc_czt_mp2 PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # CPHF, which is the one response property needing no external reference: the
   # analytical polarizability is differenced out of the same SCF in a field, so
   # this belongs in the suite rather than in validation/.
-  addtest(mqc_libcint_cphf)
-  target_link_libraries(test_mqc_libcint_cphf PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_cphf)
+  target_link_libraries(test_mqc_czt_cphf PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Ghost centres and the superposition error they expose. Everything a
   # counterpoise-corrected expansion rests on, checked before any expansion is
@@ -306,45 +305,43 @@ if(MQC_ENABLE_LIBCINT)
   # one folds permutations into a multiplicity factor and is valid only for a
   # symmetric density; asserting that it is genuinely wrong otherwise is what
   # stops the general build being deleted as redundant.
-  addtest(mqc_libcint_direct)
-  target_link_libraries(test_mqc_libcint_direct PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_direct)
+  target_link_libraries(test_mqc_czt_direct PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Atomic charges, against the arithmetic every population analysis owes: both
   # schemes sum to the molecular charge, every basis function belongs to exactly
   # one atom, and the CHELPG grid stays outside the molecule it fits. The
   # numbers themselves are compared against other programs in validation/; none
   # of that catches a constraint row assembled wrongly, which still fits.
-  addtest(mqc_libcint_charges)
-  target_link_libraries(test_mqc_libcint_charges PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_charges)
+  target_link_libraries(test_mqc_czt_charges PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # The multipole matrices every distributed multipole and every localization
   # centroid is built from. Origin shifts, symmetry, and the redundancy in the
   # full Cartesian tensor -- the three things a transposed component breaks
   # while leaving the reported dipole intact.
-  addtest(mqc_libcint_multipole)
-  target_link_libraries(test_mqc_libcint_multipole
-                        PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_multipole)
+  target_link_libraries(test_mqc_czt_multipole PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Foster-Boys localization, against what a rotation among occupied orbitals
   # cannot change: the density, orthonormality, and the direction its own
   # functional moves.
-  addtest(mqc_libcint_localize)
-  target_link_libraries(test_mqc_libcint_localize PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_localize)
+  target_link_libraries(test_mqc_czt_localize PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Distributed multipoles, against the molecular moments they are a
   # redistribution of: the site charges must account for every electron, and the
   # site charges and dipoles together must reproduce the molecular dipole.
   # Everything an effective fragment potential's electrostatics rests on.
-  addtest(mqc_libcint_dma)
-  target_link_libraries(test_mqc_libcint_dma PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_dma)
+  target_link_libraries(test_mqc_czt_dma PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Carrying a density between basis sets, which is what the projection guess
   # does one rung at a time. Checked against the properties that make the result
   # a density rather than a matrix of the right shape -- idempotency, the
   # electron count, and the identity when both bases are the same.
-  addtest(mqc_libcint_projection)
-  target_link_libraries(test_mqc_libcint_projection
-                        PRIVATE ${MQC_INTEGRALS_LIBS})
+  addtest(mqc_czt_projection)
+  target_link_libraries(test_mqc_czt_projection PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Adjusted frozen orbitals. Here rather than beside the constraint they feed
   # because a hybrid is taken off a model system that has to be solved and
@@ -355,16 +352,16 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_afo_orbital)
   addtest(mqc_afo_fmo)
 
-  # The VV10 kernel. Inside this guard because mqc_libcint_vv10 lives in
-  # backends/libcint/, which is only added when an integrals backend is enabled
-  # -- registering it beside the src/ tests built fine here and broke every
-  # configuration that turns libcint off, because the test was unconditional and
-  # the module it uses was not.
+  # The VV10 kernel. Inside this guard because mqc_czt_vv10 lives in
+  # backends/cenzontle/, which is only added when an integrals backend is
+  # enabled -- registering it beside the src/ tests built fine here and broke
+  # every configuration that turns cenzontle off, because the test was
+  # unconditional and the module it uses was not.
   addtest(mqc_vv10)
 
   # The two guards that keep an effective core potential out of code that cannot
-  # carry it. Inside this guard for the same reason as mqc_vv10: mqc_libcint_ecp
-  # lives in backends/libcint/. The reader that parses the potential is
+  # carry it. Inside this guard for the same reason as mqc_vv10: mqc_czt_ecp
+  # lives in backends/cenzontle/. The reader that parses the potential is
   # registered unconditionally above -- it reads JSON and needs no backend --
   # and these do not.
   #

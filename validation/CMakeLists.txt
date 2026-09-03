@@ -1,7 +1,7 @@
 # The validation programs that do not need a particular integrals backend.
 #
-# The libcint ones live with the backend they exercise, in
-# backends/libcint/validation.cmake, and are registered from there so that a
+# The cenzontle ones live with the backend they exercise, in
+# backends/cenzontle/validation.cmake, and are registered from there so that a
 # build without that backend never mentions them.
 #
 # All of these are EXCLUDE_FROM_ALL -- see cmake/MqcValidation.cmake for why
@@ -25,8 +25,9 @@ mqc_add_validation_program(check_bcast)
 mqc_add_validation_program(check_bcast_system)
 
 # Bond orders come from an xTB single point, so this needs tblite, not libcint.
-# It was registered inside the libcint block once, so a libcint-on tblite-off
-# build compiled it against an mqc_method_xtb that CMake had never built.
+# It was registered inside the cenzontle block once, so a cenzontle-on
+# tblite-off build compiled it against an mqc_method_xtb that CMake had never
+# built.
 if(MQC_ENABLE_TBLITE)
   mqc_add_validation_program(check_bond_orders)
 endif()
@@ -65,6 +66,6 @@ endif()
 # code to compare against. libfint rather than libcint -- the ECP integrals are
 # libfint's and libcint has none, so this cannot link in a -DMQC_USE_LIBFINT=OFF
 # build.
-if(MQC_ENABLE_LIBCINT AND MQC_USE_LIBFINT)
+if(MQC_ENABLE_CZT AND MQC_USE_LIBFINT)
   mqc_add_validation_program(check_ecp)
 endif()

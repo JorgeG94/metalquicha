@@ -134,7 +134,7 @@ target_include_directories(${exe_name} PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(${exe_name} PRIVATE ${main_lib})
 
 # The backend-independent validation programs. The ones that need CPU integrals
-# are registered by backends/libcint/validation.cmake instead, which the
+# are registered by backends/cenzontle/validation.cmake instead, which the
 # dependency resolution above has already reached if that backend is on.
 add_subdirectory(validation)
 

@@ -21,10 +21,10 @@ program check_scf_gradient
    !! milliseconds, and the unit suite is meant to stay instant.
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf
-   use mqc_libcint_gradient, only: libcint_scf_gradient
-   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, run_czt_uhf
+   use mqc_czt_gradient, only: czt_scf_gradient
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
@@ -315,7 +315,7 @@ contains
       write (*, "(a)") ""
       write (*, "(a,a)") "== ", label
 
-      ! `run_libcint_uhf` has no `aux` argument -- unrestricted SCF is not
+      ! `run_czt_uhf` has no `aux` argument -- unrestricted SCF is not
       ! density-fitted here -- so an open-shell case given an auxiliary basis
       ! used to drop it on both sides and agree with finite differences
       ! perfectly, because both halves were then exact. That is the same
@@ -375,7 +375,7 @@ contains
    subroutine check_unrestricted_df_channels(n_bad)
       !! The unrestricted density-fitted branch, on a closed shell
       !!
-      !! mqc has no unrestricted density-fitted SCF -- `run_libcint_uhf` says
+      !! mqc has no unrestricted density-fitted SCF -- `run_czt_uhf` says
       !! so itself -- so there is no open-shell fitted energy to differentiate
       !! and no finite difference to check the unrestricted branch against.
       !!
@@ -391,7 +391,7 @@ contains
       integer, parameter :: numbers(3) = [8, 1, 1]
       character(len=1), parameter :: symbols(3) = ["O", "H", "H"]
       real(dp) :: coords(N_DIM, 3)
-      type(libcint_molecule_t) :: mol, aux
+      type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
       type(error_t) :: error
       real(dp), allocatable :: restricted(:, :), unrestricted(:, :)
@@ -414,31 +414,31 @@ contains
       write (*, "(a)") ""
       write (*, "(a,a)") "== ", label
 
-      call build_libcint_molecule(numbers, symbols, coords, "sto-3g", mol, error)
+      call build_czt_molecule(numbers, symbols, coords, "sto-3g", mol, error)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          n_bad = n_bad + 1
          return
       end if
-      call build_libcint_molecule(numbers, symbols, coords, "cc-pvdz-rifit", aux, error)
-      if (error%has_error()) then
-         write (*, "(a,a)") "FAIL: ", error%get_message()
-         n_bad = n_bad + 1
-         return
-      end if
-
-      call run_libcint_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error, aux=aux)
+      call build_czt_molecule(numbers, symbols, coords, "cc-pvdz-rifit", aux, error)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          n_bad = n_bad + 1
          return
       end if
 
-      call libcint_scf_gradient(mol, scf%density, &
-                                orbitals=scf%orbitals, &
-                                orbital_energies=scf%orbital_energies, &
-                                n_occupied=scf%n_occupied, &
-                                gradient=restricted, error=error, aux=aux)
+      call run_czt_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error, aux=aux)
+      if (error%has_error()) then
+         write (*, "(a,a)") "FAIL: ", error%get_message()
+         n_bad = n_bad + 1
+         return
+      end if
+
+      call czt_scf_gradient(mol, scf%density, &
+                            orbitals=scf%orbitals, &
+                            orbital_energies=scf%orbital_energies, &
+                            n_occupied=scf%n_occupied, &
+                            gradient=restricted, error=error, aux=aux)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          n_bad = n_bad + 1
@@ -451,15 +451,15 @@ contains
       allocate (half_density(mol%nao, mol%nao))
       half_density = 0.5_dp*scf%density
 
-      call libcint_scf_gradient(mol, half_density, &
-                                density_beta=half_density, &
-                                orbitals=scf%orbitals, &
-                                orbitals_beta=scf%orbitals, &
-                                orbital_energies=scf%orbital_energies, &
-                                orbital_energies_beta=scf%orbital_energies, &
-                                n_occupied=scf%n_occupied, &
-                                n_occupied_beta=scf%n_occupied, &
-                                gradient=unrestricted, error=error, aux=aux)
+      call czt_scf_gradient(mol, half_density, &
+                            density_beta=half_density, &
+                            orbitals=scf%orbitals, &
+                            orbitals_beta=scf%orbitals, &
+                            orbital_energies=scf%orbital_energies, &
+                            orbital_energies_beta=scf%orbital_energies, &
+                            n_occupied=scf%n_occupied, &
+                            n_occupied_beta=scf%n_occupied, &
+                            gradient=unrestricted, error=error, aux=aux)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          n_bad = n_bad + 1
@@ -487,14 +487,14 @@ contains
       character(len=*), intent(in), optional :: aux_basis
       character(len=*), intent(in), optional :: functional
 
-      type(libcint_molecule_t) :: mol, aux
+      type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
       type(xc_context_t) :: xc
 
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
       if (present(aux_basis)) then
-         call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
+         call build_czt_molecule(numbers, symbols, coords, aux_basis, aux, error)
          if (error%has_error()) return
       end if
 
@@ -513,72 +513,72 @@ contains
             ! gradient -- and agreed with finite differences perfectly, because
             ! both halves were exact. It read as a passing test of a path that
             ! never ran.
-            call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
-                                 error, xc=xc, aux=aux)
+            call run_czt_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
+                             error, xc=xc, aux=aux)
             if (error%has_error()) return
-            call libcint_scf_gradient(mol, scf%density, &
-                                      orbitals=scf%orbitals, &
-                                      orbital_energies=scf%orbital_energies, &
-                                      n_occupied=scf%n_occupied, &
-                                      gradient=gradient, error=error, xc=xc, aux=aux)
+            call czt_scf_gradient(mol, scf%density, &
+                                  orbitals=scf%orbitals, &
+                                  orbital_energies=scf%orbital_energies, &
+                                  n_occupied=scf%n_occupied, &
+                                  gradient=gradient, error=error, xc=xc, aux=aux)
          else if (multiplicity == 1) then
-            call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
-                                 error, xc=xc)
+            call run_czt_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
+                             error, xc=xc)
             if (error%has_error()) return
-            call libcint_scf_gradient(mol, scf%density, &
-                                      orbitals=scf%orbitals, &
-                                      orbital_energies=scf%orbital_energies, &
-                                      n_occupied=scf%n_occupied, &
-                                      gradient=gradient, error=error, xc=xc)
+            call czt_scf_gradient(mol, scf%density, &
+                                  orbitals=scf%orbitals, &
+                                  orbital_energies=scf%orbital_energies, &
+                                  n_occupied=scf%n_occupied, &
+                                  gradient=gradient, error=error, xc=xc)
          else
-            call run_libcint_uhf(mol, nelec, multiplicity, 200, 1.0e-12_dp, 1.0e-10_dp, &
-                                 .false., scf, error, xc=xc)
+            call run_czt_uhf(mol, nelec, multiplicity, 200, 1.0e-12_dp, 1.0e-10_dp, &
+                             .false., scf, error, xc=xc)
             if (error%has_error()) return
-            call libcint_scf_gradient(mol, scf%density, &
-                                      density_beta=scf%density_beta, &
-                                      orbitals=scf%orbitals, &
-                                      orbitals_beta=scf%orbitals_beta, &
-                                      orbital_energies=scf%orbital_energies, &
-                                      orbital_energies_beta=scf%orbital_energies_beta, &
-                                      n_occupied=scf%n_occupied, &
-                                      n_occupied_beta=scf%n_occupied_beta, &
-                                      gradient=gradient, error=error, xc=xc)
+            call czt_scf_gradient(mol, scf%density, &
+                                  density_beta=scf%density_beta, &
+                                  orbitals=scf%orbitals, &
+                                  orbitals_beta=scf%orbitals_beta, &
+                                  orbital_energies=scf%orbital_energies, &
+                                  orbital_energies_beta=scf%orbital_energies_beta, &
+                                  n_occupied=scf%n_occupied, &
+                                  n_occupied_beta=scf%n_occupied_beta, &
+                                  gradient=gradient, error=error, xc=xc)
          end if
          return
       end if
 
       if (multiplicity == 1) then
          if (present(aux_basis)) then
-            call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
-                                 error, aux=aux)
+            call run_czt_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
+                             error, aux=aux)
             if (error%has_error()) return
-            call libcint_scf_gradient(mol, scf%density, &
-                                      orbitals=scf%orbitals, &
-                                      orbital_energies=scf%orbital_energies, &
-                                      n_occupied=scf%n_occupied, &
-                                      gradient=gradient, error=error, aux=aux)
+            call czt_scf_gradient(mol, scf%density, &
+                                  orbitals=scf%orbitals, &
+                                  orbital_energies=scf%orbital_energies, &
+                                  n_occupied=scf%n_occupied, &
+                                  gradient=gradient, error=error, aux=aux)
             return
          end if
-         call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error)
+         call run_czt_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error)
          if (error%has_error()) return
-         call libcint_scf_gradient(mol, scf%density, &
-                                   orbitals=scf%orbitals, &
-                                   orbital_energies=scf%orbital_energies, &
-                                   n_occupied=scf%n_occupied, &
-                                   gradient=gradient, error=error)
+         call czt_scf_gradient(mol, scf%density, &
+                               orbitals=scf%orbitals, &
+                               orbital_energies=scf%orbital_energies, &
+                               n_occupied=scf%n_occupied, &
+                               gradient=gradient, error=error)
       else
-         call run_libcint_uhf(mol, nelec, multiplicity, 200, 1.0e-12_dp, 1.0e-10_dp, &
-                              .false., scf, error)
+         call run_czt_uhf(mol, nelec, multiplicity, 200, 1.0e-12_dp, 1.0e-10_dp, &
+                          .false., scf, error)
          if (error%has_error()) return
-         call libcint_scf_gradient(mol, scf%density, &
-                                   density_beta=scf%density_beta, &
-                                   orbitals=scf%orbitals, &
-                                   orbitals_beta=scf%orbitals_beta, &
-                                   orbital_energies=scf%orbital_energies, &
-                                   orbital_energies_beta=scf%orbital_energies_beta, &
-                                   n_occupied=scf%n_occupied, &
-                                   n_occupied_beta=scf%n_occupied_beta, &
-                                   gradient=gradient, error=error)
+         call czt_scf_gradient(mol, scf%density, &
+                               density_beta=scf%density_beta, &
+                               orbitals=scf%orbitals, &
+                               orbitals_beta=scf%orbitals_beta, &
+                               orbital_energies=scf%orbital_energies, &
+                               orbital_energies_beta=scf%orbital_energies_beta, &
+                               n_occupied=scf%n_occupied, &
+                               n_occupied_beta=scf%n_occupied_beta, &
+                               gradient=gradient, error=error)
       end if
    end subroutine gradient_at
 
@@ -595,15 +595,15 @@ contains
       character(len=*), intent(in), optional :: aux_basis
       character(len=*), intent(in), optional :: functional
 
-      type(libcint_molecule_t) :: mol, aux
+      type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
       type(xc_context_t) :: xc
 
       energy = 0.0_dp
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
       if (present(aux_basis)) then
-         call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
+         call build_czt_molecule(numbers, symbols, coords, aux_basis, aux, error)
          if (error%has_error()) return
       end if
 
@@ -621,25 +621,25 @@ contains
          ! the two disagree by the fitting error -- which reads as a broken
          ! gradient and is a broken reference.
          if (multiplicity == 1 .and. present(aux_basis)) then
-            call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
-                                 error, xc=xc, aux=aux)
+            call run_czt_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
+                             error, xc=xc, aux=aux)
          else if (multiplicity == 1) then
-            call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
-                                 error, xc=xc)
+            call run_czt_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
+                             error, xc=xc)
          else
-            call run_libcint_uhf(mol, nelec, multiplicity, 200, 1.0e-12_dp, 1.0e-10_dp, &
-                                 .false., scf, error, xc=xc)
+            call run_czt_uhf(mol, nelec, multiplicity, 200, 1.0e-12_dp, 1.0e-10_dp, &
+                             .false., scf, error, xc=xc)
          end if
       else if (multiplicity == 1) then
          if (present(aux_basis)) then
-            call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
-                                 error, aux=aux)
+            call run_czt_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, &
+                             error, aux=aux)
          else
-            call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error)
+            call run_czt_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error)
          end if
       else
-         call run_libcint_uhf(mol, nelec, multiplicity, 200, 1.0e-12_dp, 1.0e-10_dp, &
-                              .false., scf, error)
+         call run_czt_uhf(mol, nelec, multiplicity, 200, 1.0e-12_dp, 1.0e-10_dp, &
+                          .false., scf, error)
       end if
       if (error%has_error()) return
       energy = scf%energy

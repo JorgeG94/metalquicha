@@ -106,7 +106,7 @@ jobs:
           # are not interchangeable at compile time. libfint carries L (sp)
           # shells and libcint cannot represent one, so a libfint build defines
           # MQC_WITH_SP_SHELLS and compiles the fused-sp view in
-          # mqc_libcint_integrals.F90, while this job compiles the split-shell
+          # mqc_czt_integrals.F90, while this job compiles the split-shell
           # path instead. Every other job exercises one of those two bodies of
           # code and this one exercises the other.
           #
@@ -221,7 +221,7 @@ jobs:
                   -DMQC_ENABLE_TBLITE=${{ matrix.tblite && 'ON' || 'OFF' }} \
                   -DPIC_USE_LEGACY_MPI=${{ matrix.legacy_mpi && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_LIBXC=${{ matrix.libxc && 'ON' || 'OFF' }} \
-                  -DMQC_ENABLE_LIBCINT=${{ matrix.libcint && 'ON' || 'OFF' }} \
+                  -DMQC_ENABLE_CZT=${{ matrix.libcint && 'ON' || 'OFF' }} \
                   -DMQC_USE_LIBFINT=${{ matrix.backend == 'libcint' && 'OFF' || 'ON' }} \
                   -DMQC_ENABLE_HDF5=${{ matrix.hdf5 && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_DLFIND=${{ matrix.dlfind && 'ON' || 'OFF' }} \

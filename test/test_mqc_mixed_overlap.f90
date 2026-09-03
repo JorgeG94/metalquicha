@@ -17,8 +17,8 @@ module test_mqc_mixed_overlap
    use mqc_cgto, only: molecular_basis_type
    use mqc_json_basis_reader, only: build_molecular_basis_json
    use mqc_aambs, only: aambs_file, aambs_dimensions, aambs_dimensions_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, &
-                                    mixed_basis_overlap
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
+                                mixed_basis_overlap
    implicit none
    private
 
@@ -48,7 +48,7 @@ contains
 
    subroutine build_aambs(mol, error, ok)
       !! Water in the accurate atomic minimal basis
-      type(libcint_molecule_t), intent(out) :: mol
+      type(czt_molecule_t), intent(out) :: mol
       type(error_t), intent(inout) :: error
       logical, intent(out) :: ok
 
@@ -68,11 +68,11 @@ contains
    subroutine test_self_overlap(error)
       !! The overlap of a basis with itself is the overlap matrix
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: mixed(:, :), s(:, :)
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz", mol, err)
       call check(error,.not. err%has_error(), "water in cc-pVDZ should build")
       if (allocated(error)) return
 
@@ -104,7 +104,7 @@ contains
       !! A diagonal that is not 1 means the free-atom orbitals are being scaled
       !! somewhere between the JSON and the integral.
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: s(:, :)
       logical :: ok
@@ -135,13 +135,13 @@ contains
       !! and the orbital counts describe the same basis, which is the thing most
       !! likely to drift if either is edited.
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: orb, aambs
+      type(czt_molecule_t) :: orb, aambs
       type(aambs_dimensions_t) :: dims
       type(error_t) :: err
       real(dp), allocatable :: mixed(:, :)
       logical :: ok
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz", orb, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz", orb, err)
       call check(error,.not. err%has_error(), "water in cc-pVDZ should build")
       if (allocated(error)) return
 
@@ -182,15 +182,15 @@ contains
    subroutine test_refusal(error)
       !! Cartesian against spherical is refused rather than silently integrated
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: spherical, cartesian
+      type(czt_molecule_t) :: spherical, cartesian
       type(error_t) :: err
       real(dp), allocatable :: mixed(:, :)
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz", spherical, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz", spherical, err)
       call check(error,.not. err%has_error(), "the spherical build should succeed")
       if (allocated(error)) return
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz", cartesian, err, &
-                                  force_cartesian=.true.)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz", cartesian, err, &
+                              force_cartesian=.true.)
       call check(error,.not. err%has_error(), "the Cartesian build should succeed")
       if (allocated(error)) return
 

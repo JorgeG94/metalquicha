@@ -220,7 +220,7 @@ contains
       !! unreliable far from it, the second pair the other way round.
       !!
       !! One call runs one scheme. Choosing which, and handing over to DIIS
-      !! below `ACCEL_SWITCH`, is the caller's job -- see `mqc_libcint_rhf`.
+      !! below `ACCEL_SWITCH`, is the caller's job -- see `mqc_czt_rhf`.
       class(diis_state_t), intent(in) :: this
       integer, intent(in) :: scheme          !! One of the ACCEL_* parameters
       real(dp), intent(inout) :: fock(this%n_fock)

@@ -779,7 +779,7 @@ Current Limitations
 -------------------
 
 1. **Excited states**: none. No TD-DFT, no CIS, no linear-response excitation
-   energies. The coupled-perturbed solver in ``mqc_libcint_response`` already
+   energies. The coupled-perturbed solver in ``mqc_czt_response`` already
    handles an electric-field perturbation, which is the piece such a method
    would build on, but nothing consumes it yet
 2. **Relativistic Hamiltonians**: none -- no ZORA, DKH or X2C, and no spin-orbit

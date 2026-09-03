@@ -26,11 +26,11 @@ module test_mqc_rsh_gradient
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
-   use mqc_libcint_gradient, only: libcint_scf_gradient
-   use mqc_libcint_hessian, only: ks_hessian
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_czt_gradient, only: czt_scf_gradient
+   use mqc_czt_hessian, only: ks_hessian
    implicit none
    private
 
@@ -91,7 +91,7 @@ contains
    end subroutine test_rsh_hessian
 
    subroutine hess_against_gradient(functional, error)
-      !! `ks_hessian` against a difference of `libcint_scf_gradient`
+      !! `ks_hessian` against a difference of `czt_scf_gradient`
       !!
       !! The gradient this differences is the one checked against the energy
       !! above, so a failure here is in the second derivative rather than
@@ -183,19 +183,19 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx
       type(rhf_result_t) :: scf
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
       call xc_context_create(mol, functional, ctx, err, level=3)
       if (err%has_error()) then
          call mol%destroy()
          return
       end if
-      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (.not. err%has_error()) then
          call ks_hessian(mol, WATER_Z, scf%density, scf%orbitals, scf%orbital_energies, &
                          5, ctx, ctx%exx_fraction, hess, err)
@@ -299,23 +299,23 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx
       type(rhf_result_t) :: scf
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
       call xc_context_create(mol, functional, ctx, err, level=3)
       if (err%has_error()) then
          call mol%destroy()
          return
       end if
-      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (.not. err%has_error()) then
-         call libcint_scf_gradient(mol, scf%density, orbitals=scf%orbitals, &
-                                   orbital_energies=scf%orbital_energies, &
-                                   n_occupied=5, gradient=gradient, error=err, xc=ctx)
+         call czt_scf_gradient(mol, scf%density, orbitals=scf%orbitals, &
+                               orbital_energies=scf%orbital_energies, &
+                               n_occupied=5, gradient=gradient, error=err, xc=ctx)
       end if
       call mol%destroy()
       ok = .not. err%has_error()
@@ -328,20 +328,20 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx
       type(rhf_result_t) :: scf
 
       ok = .false.
       energy = 0.0_dp
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
       call xc_context_create(mol, functional, ctx, err, level=3)
       if (err%has_error()) then
          call mol%destroy()
          return
       end if
-      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (.not. err%has_error()) energy = scf%energy
       call mol%destroy()
       ok = .not. err%has_error()

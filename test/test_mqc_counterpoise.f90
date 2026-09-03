@@ -14,8 +14,8 @@
 module test_mqc_counterpoise
    use pic_types, only: dp
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
                                     build_fragment_from_indices
    use mqc_combinatorics, only: vmfc_subset_key, is_auxiliary_row, real_count_of
@@ -82,7 +82,7 @@ contains
       !! Ghosting monomer B removes its charge and leaves its functions
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: dimer, ghosted
+      type(czt_molecule_t) :: dimer, ghosted
       type(error_t) :: err
       integer :: z(6)
       character(len=2) :: sym(6)
@@ -92,11 +92,11 @@ contains
       call dimer_geometry(z, sym, c)
       ghost = [.false., .false., .false., .true., .true., .true.]
 
-      call build_libcint_molecule(z, sym, c, "sto-3g", dimer, err)
+      call build_czt_molecule(z, sym, c, "sto-3g", dimer, err)
       call check(error,.not. err%has_error(), "dimer: "//err%get_full_trace())
       if (allocated(error)) return
 
-      call build_libcint_molecule(z, sym, c, "sto-3g", ghosted, err, ghost=ghost)
+      call build_czt_molecule(z, sym, c, "sto-3g", ghosted, err, ghost=ghost)
       call check(error,.not. err%has_error(), "ghosted: "//err%get_full_trace())
       if (allocated(error)) return
 
@@ -119,7 +119,7 @@ contains
       !! comparable with the pair's and the difference would be meaningless.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: dimer, ghost_a, ghost_b
+      type(czt_molecule_t) :: dimer, ghost_a, ghost_b
       type(error_t) :: err
       integer :: z(6)
       character(len=2) :: sym(6)
@@ -127,11 +127,11 @@ contains
       real(dp), allocatable :: s_dimer(:, :), s_ghost(:, :)
 
       call dimer_geometry(z, sym, c)
-      call build_libcint_molecule(z, sym, c, "sto-3g", dimer, err)
-      call build_libcint_molecule(z, sym, c, "sto-3g", ghost_a, err, &
-                                  ghost=[.true., .true., .true., .false., .false., .false.])
-      call build_libcint_molecule(z, sym, c, "sto-3g", ghost_b, err, &
-                                  ghost=[.false., .false., .false., .true., .true., .true.])
+      call build_czt_molecule(z, sym, c, "sto-3g", dimer, err)
+      call build_czt_molecule(z, sym, c, "sto-3g", ghost_a, err, &
+                              ghost=[.true., .true., .true., .false., .false., .false.])
+      call build_czt_molecule(z, sym, c, "sto-3g", ghost_b, err, &
+                              ghost=[.false., .false., .false., .true., .true., .true.])
       call check(error,.not. err%has_error(), "build: "//err%get_full_trace())
       if (allocated(error)) return
 
@@ -164,7 +164,7 @@ contains
       !! nowhere else, which is why the dimer looks more bound than it is.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: alone, in_pair
+      type(czt_molecule_t) :: alone, in_pair
       type(rhf_result_t) :: scf_alone, scf_pair
       type(error_t) :: err
       integer :: z(6)
@@ -174,19 +174,19 @@ contains
       call dimer_geometry(z, sym, c)
 
       ! Monomer A in its own basis: three atoms, nothing else.
-      call build_libcint_molecule(z(1:3), sym(1:3), c(:, 1:3), "sto-3g", alone, err)
+      call build_czt_molecule(z(1:3), sym(1:3), c(:, 1:3), "sto-3g", alone, err)
       call check(error,.not. err%has_error(), "alone: "//err%get_full_trace())
       if (allocated(error)) return
-      call run_libcint_rhf(alone, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_alone, err)
+      call run_czt_rhf(alone, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_alone, err)
       call check(error,.not. err%has_error(), "alone SCF: "//err%get_full_trace())
       if (allocated(error)) return
 
       ! The same monomer, same ten electrons, in the pair's basis.
-      call build_libcint_molecule(z, sym, c, "sto-3g", in_pair, err, &
-                                  ghost=[.false., .false., .false., .true., .true., .true.])
+      call build_czt_molecule(z, sym, c, "sto-3g", in_pair, err, &
+                              ghost=[.false., .false., .false., .true., .true., .true.])
       call check(error,.not. err%has_error(), "in pair: "//err%get_full_trace())
       if (allocated(error)) return
-      call run_libcint_rhf(in_pair, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_pair, err)
+      call run_czt_rhf(in_pair, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_pair, err)
       call check(error,.not. err%has_error(), "pair SCF: "//err%get_full_trace())
       if (allocated(error)) return
 
@@ -221,7 +221,7 @@ contains
       !! same from the sign of one difference.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: alone, far
+      type(czt_molecule_t) :: alone, far
       type(rhf_result_t) :: scf_alone, scf_far
       type(error_t) :: err
       integer :: z(6)
@@ -230,17 +230,17 @@ contains
       integer :: i
 
       call dimer_geometry(z, sym, c)
-      call build_libcint_molecule(z(1:3), sym(1:3), c(:, 1:3), "sto-3g", alone, err)
-      call run_libcint_rhf(alone, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_alone, err)
+      call build_czt_molecule(z(1:3), sym(1:3), c(:, 1:3), "sto-3g", alone, err)
+      call run_czt_rhf(alone, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_alone, err)
       call check(error,.not. err%has_error(), "alone: "//err%get_full_trace())
       if (allocated(error)) return
 
       do i = 4, 6
          c(1, i) = c(1, i) + 200.0_dp*ANG
       end do
-      call build_libcint_molecule(z, sym, c, "sto-3g", far, err, &
-                                  ghost=[.false., .false., .false., .true., .true., .true.])
-      call run_libcint_rhf(far, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_far, err)
+      call build_czt_molecule(z, sym, c, "sto-3g", far, err, &
+                              ghost=[.false., .false., .false., .true., .true., .true.])
+      call run_czt_rhf(far, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_far, err)
       call check(error,.not. err%has_error(), "far: "//err%get_full_trace())
       if (allocated(error)) return
 
@@ -331,7 +331,7 @@ contains
 
       type(system_geometry_t) :: sys_geom
       type(physical_fragment_t) :: pair, a_ghosted, b_ghosted
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf_pair, scf_a, scf_b
       type(error_t) :: err
       real(dp) :: e_int_cp
@@ -374,7 +374,7 @@ contains
       type(rhf_result_t), intent(out) :: scf
       type(error_t), intent(inout) :: err
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       character(len=2), allocatable :: sym(:)
       integer :: i
 
@@ -387,12 +387,12 @@ contains
          end if
       end do
 
-      call build_libcint_molecule(fragment%element_numbers, sym, &
-                                  fragment%coordinates, "6-31g", mol, err, &
-                                  ghost=ghost_mask(fragment))
+      call build_czt_molecule(fragment%element_numbers, sym, &
+                              fragment%coordinates, "6-31g", mol, err, &
+                              ghost=ghost_mask(fragment))
       if (err%has_error()) return
-      call run_libcint_rhf(mol, fragment%nelec, 200, 1.0e-11_dp, 1.0e-9_dp, &
-                           .false., scf, err)
+      call run_czt_rhf(mol, fragment%nelec, 200, 1.0e-11_dp, 1.0e-9_dp, &
+                       .false., scf, err)
       call mol%destroy()
    end subroutine scf_of
 
@@ -546,7 +546,7 @@ contains
       real(dp), intent(out) :: bsse, raw, corrected
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: alone, in_pair, dimer
+      type(czt_molecule_t) :: alone, in_pair, dimer
       type(rhf_result_t) :: scf_alone, scf_pair, scf_dimer
       type(error_t) :: err
       integer :: z(N_ATOMS), i
@@ -560,14 +560,14 @@ contains
       end do
       c = c*ANG
 
-      call build_libcint_molecule(z(1:N_MONOMER), sym(1:N_MONOMER), &
-                                  c(:, 1:N_MONOMER), "6-31g", alone, err)
-      call run_libcint_rhf(alone, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_alone, err)
-      call build_libcint_molecule(z, sym, c, "6-31g", in_pair, err, &
-                                  ghost=[.false., .false., .false., .true., .true., .true.])
-      call run_libcint_rhf(in_pair, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_pair, err)
-      call build_libcint_molecule(z, sym, c, "6-31g", dimer, err)
-      call run_libcint_rhf(dimer, 20, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_dimer, err)
+      call build_czt_molecule(z(1:N_MONOMER), sym(1:N_MONOMER), &
+                              c(:, 1:N_MONOMER), "6-31g", alone, err)
+      call run_czt_rhf(alone, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_alone, err)
+      call build_czt_molecule(z, sym, c, "6-31g", in_pair, err, &
+                              ghost=[.false., .false., .false., .true., .true., .true.])
+      call run_czt_rhf(in_pair, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_pair, err)
+      call build_czt_molecule(z, sym, c, "6-31g", dimer, err)
+      call run_czt_rhf(dimer, 20, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf_dimer, err)
       if (err%has_error()) then
          call check(error, .false., "SCF at "//to_char(sep)//": "//err%get_full_trace())
          return

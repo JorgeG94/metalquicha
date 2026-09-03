@@ -59,7 +59,7 @@ KS_CASES = [("lda_x", "LDA_X", "cc-pvdz", 3, False), ("svwn", "SVWN", "cc-pvdz",
 #
 # Closed-shell water is here for a different reason: it must reproduce the
 # *restricted* energy exactly. That is the sharper test of the interleaved arrays
-# and the cross-spin gradient term, and it is asserted in test_mqc_libcint_uks too.
+# and the cross-spin gradient term, and it is asserted in test_mqc_czt_uks too.
 UKS_CASES = [("ch3", "svwn", "SVWN", "cc-pvdz", 3),
              ("ch3", "pbe", "PBE", "cc-pvdz", 3),
              ("ch3", "b3lyp", "B3LYP", "cc-pvdz", 3),

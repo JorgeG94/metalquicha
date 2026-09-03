@@ -15,12 +15,12 @@ module test_mqc_mcscf_gradient
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_gradient, only: libcint_scf_gradient
-   use mqc_libcint_mcscf, only: run_libcint_casscf, casscf_result_t
-   use mqc_libcint_mcscf_gradient, only: libcint_mcscf_gradient, &
-                                         cumulant_two_particle_density
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_gradient, only: czt_scf_gradient
+   use mqc_czt_mcscf, only: run_czt_casscf, casscf_result_t
+   use mqc_czt_mcscf_gradient, only: czt_mcscf_gradient, &
+                                     cumulant_two_particle_density
    implicit none
    private
 
@@ -68,7 +68,7 @@ contains
       !! or a wrong sign on any term -- which is what this test exists to catch
       !! -- lands at 1e-2, nine orders above where it passes.
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(error_t) :: err
       real(dp), allocatable :: g_scf(:, :), g_mc(:, :)
@@ -76,25 +76,25 @@ contains
       real(dp) :: worst
       integer :: i, j
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "the molecule should build")
       if (allocated(error)) return
 
-      call run_libcint_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call run_czt_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       call check(error, scf%converged, "the SCF should converge")
       if (allocated(error)) return
 
-      call libcint_scf_gradient(mol, scf%density, orbitals=scf%orbitals, &
-                                orbital_energies=scf%orbital_energies, &
-                                n_occupied=scf%n_occupied, gradient=g_scf, error=err)
+      call czt_scf_gradient(mol, scf%density, orbitals=scf%orbitals, &
+                            orbital_energies=scf%orbital_energies, &
+                            n_occupied=scf%n_occupied, gradient=g_scf, error=err)
       call check(error,.not. err%has_error(), "the SCF gradient should build")
       if (allocated(error)) return
 
       ! No active orbitals: the densities are zero-sized, and every active term
       ! is skipped rather than being multiplied by zero.
       allocate (dm1(0, 0), dm2(0, 0, 0, 0))
-      call libcint_mcscf_gradient(mol, scf%orbitals, scf%n_occupied, 0, dm1, dm2, &
-                                  g_mc, err)
+      call czt_mcscf_gradient(mol, scf%orbitals, scf%n_occupied, 0, dm1, dm2, &
+                              g_mc, err)
       call check(error,.not. err%has_error(), "the MCSCF gradient should build")
       if (allocated(error)) return
 
@@ -218,26 +218,26 @@ contains
       real(dp), intent(out), optional :: energy
       real(dp), allocatable, intent(out), optional :: gradient(:, :)
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(casscf_result_t) :: cas
       type(error_t) :: err
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coordinates, "6-31g", mol, err)
-      call run_libcint_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coordinates, "6-31g", mol, err)
+      call run_czt_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       call check(error, scf%converged, "the SCF should converge")
       if (allocated(error)) return
 
-      call run_libcint_casscf(mol, scf%orbitals, 3, 4, 2, 2, cas, err, &
-                              max_iterations=400, gradient_tol=1.0e-9_dp, &
-                              verbose=.false.)
+      call run_czt_casscf(mol, scf%orbitals, 3, 4, 2, 2, cas, err, &
+                          max_iterations=400, gradient_tol=1.0e-9_dp, &
+                          verbose=.false.)
       call check(error, cas%converged, "the CASSCF should converge")
       if (allocated(error)) return
 
       if (present(energy)) energy = cas%energy
       if (present(gradient)) then
-         call libcint_mcscf_gradient(mol, cas%orbitals, 3, 4, cas%dm1, cas%dm2, &
-                                     gradient, err)
+         call czt_mcscf_gradient(mol, cas%orbitals, 3, 4, cas%dm1, cas%dm2, &
+                                 gradient, err)
          call check(error,.not. err%has_error(), "the gradient should build")
       end if
    end subroutine energy_at
@@ -273,7 +273,7 @@ contains
       !!
       !! Nothing here is specific to a complete active space: the gradient is
       !! built from `dm1` and `dm2` and does not ask where they came from, and
-      !! `run_libcint_casscf` optimises a restricted space too -- its redundancy
+      !! `run_czt_casscf` optimises a restricted space too -- its redundancy
       !! rule already knows that rotating one active orbital into another stops
       !! being redundant once the two fall in different subspaces. So this
       !! ought to work, and "ought to" is why it is tested rather than assumed.
@@ -316,20 +316,20 @@ contains
       ! carry a gradient worth differencing.
       integer, parameter :: SUBSPACES(2) = [1, 3]
       integer, parameter :: MIN_E(2) = [3, 0], MAX_E(2) = [4, 1]
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(casscf_result_t) :: cas
       type(error_t) :: err
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coordinates, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coordinates, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       call check(error, scf%converged, "the SCF should converge")
       if (allocated(error)) return
 
-      call run_libcint_casscf(mol, scf%orbitals, 3, 4, 2, 2, cas, err, &
-                              max_iterations=400, gradient_tol=1.0e-9_dp, &
-                              verbose=.false., subspaces=SUBSPACES, &
-                              min_electrons=MIN_E, max_electrons=MAX_E)
+      call run_czt_casscf(mol, scf%orbitals, 3, 4, 2, 2, cas, err, &
+                          max_iterations=400, gradient_tol=1.0e-9_dp, &
+                          verbose=.false., subspaces=SUBSPACES, &
+                          min_electrons=MIN_E, max_electrons=MAX_E)
       call check(error,.not. err%has_error(), "the ORMAS-SCF should run")
       if (allocated(error)) return
       call check(error, cas%converged, "the ORMAS-SCF should converge")
@@ -337,8 +337,8 @@ contains
 
       if (present(energy)) energy = cas%energy
       if (present(gradient)) then
-         call libcint_mcscf_gradient(mol, cas%orbitals, 3, 4, cas%dm1, cas%dm2, &
-                                     gradient, err)
+         call czt_mcscf_gradient(mol, cas%orbitals, 3, 4, cas%dm1, cas%dm2, &
+                                 gradient, err)
          call check(error,.not. err%has_error(), "the gradient should build")
       end if
    end subroutine ormas_at
@@ -352,21 +352,21 @@ contains
       real(dp), intent(in) :: reference_energy
       real(dp), intent(in) :: reference(3, 3)
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(casscf_result_t) :: cas
       type(error_t) :: err
       real(dp), allocatable :: gradient(:, :)
       real(dp) :: worst, translation
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, basis, mol, err)
-      call run_libcint_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, basis, mol, err)
+      call run_czt_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       call check(error, scf%converged, "the SCF should converge")
       if (allocated(error)) return
 
-      call run_libcint_casscf(mol, scf%orbitals, n_inactive, n_active, n_alpha, n_beta, &
-                              cas, err, max_iterations=300, gradient_tol=1.0e-8_dp, &
-                              verbose=.false.)
+      call run_czt_casscf(mol, scf%orbitals, n_inactive, n_active, n_alpha, n_beta, &
+                          cas, err, max_iterations=300, gradient_tol=1.0e-8_dp, &
+                          verbose=.false.)
       call check(error,.not. err%has_error(), "the CASSCF should run")
       if (allocated(error)) return
       call check(error, cas%converged, "the CASSCF should converge")
@@ -375,8 +375,8 @@ contains
                  "the CASSCF energy should match PySCF's")
       if (allocated(error)) return
 
-      call libcint_mcscf_gradient(mol, cas%orbitals, n_inactive, n_active, &
-                                  cas%dm1, cas%dm2, gradient, err)
+      call czt_mcscf_gradient(mol, cas%orbitals, n_inactive, n_active, &
+                              cas%dm1, cas%dm2, gradient, err)
       call check(error,.not. err%has_error(), "the gradient should build")
       if (allocated(error)) return
 

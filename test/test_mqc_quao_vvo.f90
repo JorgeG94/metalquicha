@@ -17,11 +17,11 @@ module test_mqc_quao_vvo
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
    use mqc_aambs, only: aambs_dimensions, aambs_dimensions_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, &
-                                    mixed_basis_overlap
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_quao, only: build_aambs_molecule, mo_aambs_overlap, &
-                               valence_virtual_orbitals, vvo_result_t
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
+                                mixed_basis_overlap
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_quao, only: build_aambs_molecule, mo_aambs_overlap, &
+                           valence_virtual_orbitals, vvo_result_t
    implicit none
    private
 
@@ -57,14 +57,14 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol, aambs
+      type(czt_molecule_t) :: mol, aambs
       type(rhf_result_t) :: scf
       real(dp), allocatable :: mixed(:, :), s_mbs(:, :), projection(:, :)
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, basis_name, mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, basis_name, mol, err)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       if (err%has_error()) return
       if (.not. scf%converged) return
 

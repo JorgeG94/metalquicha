@@ -1,11 +1,11 @@
 !! Manual check that the CPU coupled cluster reproduces PySCF
 !!
-!!     cmake -B build -DMQC_ENABLE_LIBCINT=ON && ./build/check_cc
+!!     cmake -B build -DMQC_ENABLE_CZT=ON && ./build/check_cc
 !!
 !! Runs RHF, then CCSD and (T), on a ladder of systems chosen so a failure
 !! localises. The milestone order of CC_PLAN.md, in one program:
 !!
-!!   * **MP2 out of the spin-orbital integrals must equal `run_libcint_mp2`.**
+!!   * **MP2 out of the spin-orbital integrals must equal `run_czt_mp2`.**
 !!     Checked first and to 1e-10, because it is free -- MP2 is the first CCSD
 !!     iteration's energy -- and because it isolates the three things most
 !!     likely to be wrong (the antisymmetrisation, the spin-orbital index map,
@@ -19,10 +19,10 @@
 !! tools/cpu_validation/gen_cpu_validation.py.
 program check_cc
    use pic_types, only: dp
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2
-   use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2
+   use mqc_czt_cc, only: cc_result_t, run_czt_ccsd
    use mqc_error, only: error_t
    implicit none
 
@@ -83,7 +83,7 @@ contains
       integer, intent(in) :: frozen
       real(dp), intent(in) :: e_scf_ref, e_mp2_ref, e_ccsd_ref, e_t_ref
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(mp2_result_t) :: mp2
       type(cc_result_t) :: cc
@@ -96,7 +96,7 @@ contains
       c = reshape([0.0_dp, 0.00000000009155_dp*ANG, 0.10077199490609_dp*ANG, &
                    0.0_dp, 0.77250895271063_dp*ANG, -0.46780199741728_dp*ANG, &
                    0.0_dp, -0.77250895280218_dp*ANG, -0.46780199748881_dp*ANG], [3, 3])
-      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
       if (err%has_error()) then
          write (*, "(A,A,A,A)") "[cc] ", label, " basis failed: ", err%get_message()
          failures = failures + 1
@@ -104,8 +104,8 @@ contains
       end if
 
       n_occ = 5
-      call run_libcint_rhf(mol, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err, &
-                           in_core=.true.)
+      call run_czt_rhf(mol, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err, &
+                       in_core=.true.)
       if (err%has_error() .or. .not. scf%converged) then
          write (*, "(A,A,A)") "[cc] ", label, " SCF failed"
          failures = failures + 1
@@ -115,16 +115,16 @@ contains
 
       ! Conventional MP2 through the existing path, as the thing the
       ! spin-orbital MP2 has to reproduce exactly.
-      call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, n_occ, &
-                           scf%energy, mp2, err, n_frozen=frozen)
+      call run_czt_mp2(mol, scf%orbitals, scf%orbital_energies, n_occ, &
+                       scf%energy, mp2, err, n_frozen=frozen)
       if (err%has_error()) then
          write (*, "(A,A,A,A)") "[cc] ", label, " MP2 failed: ", err%get_message()
          failures = failures + 1
          return
       end if
 
-      call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, n_occ, frozen, &
-                            100, 1.0e-11_dp, .true., .false., cc, err)
+      call run_czt_ccsd(mol, scf%orbitals, scf%orbital_energies, n_occ, frozen, &
+                        100, 1.0e-11_dp, .true., .false., cc, err)
       if (err%has_error()) then
          write (*, "(A,A,A,A)") "[cc] ", label, " CCSD failed: ", err%get_message()
          failures = failures + 1
@@ -148,7 +148,7 @@ contains
       integer, intent(in) :: frozen
       real(dp), intent(in) :: e_ccsd_ref, e_t_ref
 
-      type(libcint_molecule_t) :: mol, aux
+      type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
       type(cc_result_t) :: cc
       type(error_t) :: err
@@ -158,13 +158,13 @@ contains
       c = reshape([0.0_dp, 0.00000000009155_dp*ANG, 0.10077199490609_dp*ANG, &
                    0.0_dp, 0.77250895271063_dp*ANG, -0.46780199741728_dp*ANG, &
                    0.0_dp, -0.77250895280218_dp*ANG, -0.46780199748881_dp*ANG], [3, 3])
-      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
       if (err%has_error()) then
          write (*, "(A,A,A,A)") "[cc] ", label, " basis failed: ", err%get_message()
          failures = failures + 1
          return
       end if
-      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, auxbasis, aux, err)
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, auxbasis, aux, err)
       if (err%has_error()) then
          write (*, "(A,A,A,A)") "[cc] ", label, " aux basis failed: ", err%get_message()
          failures = failures + 1
@@ -172,16 +172,16 @@ contains
       end if
 
       ! Exact SCF on purpose, matching how the reference was produced.
-      call run_libcint_rhf(mol, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err, &
-                           in_core=.true.)
+      call run_czt_rhf(mol, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err, &
+                       in_core=.true.)
       if (err%has_error() .or. .not. scf%converged) then
          write (*, "(A,A,A)") "[cc] ", label, " SCF failed"
          failures = failures + 1
          return
       end if
 
-      call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, 5, frozen, &
-                            100, 1.0e-11_dp, .true., .false., cc, err, aux=aux)
+      call run_czt_ccsd(mol, scf%orbitals, scf%orbital_energies, 5, frozen, &
+                        100, 1.0e-11_dp, .true., .false., cc, err, aux=aux)
       if (err%has_error()) then
          write (*, "(A,A,A,A)") "[cc] ", label, " RI-CCSD failed: ", err%get_message()
          failures = failures + 1

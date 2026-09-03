@@ -34,9 +34,9 @@ program check_fmo
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger, info_level
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
    use mqc_physical_constants, only: ANGSTROM_TO_BOHR
    implicit none
 
@@ -567,13 +567,13 @@ contains
       integer, intent(inout) :: n_bad
       type(error_t), intent(inout) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
 
       energy = 0.0_dp
-      call build_libcint_molecule(z, symbols, coords, basis, mol, error)
+      call build_czt_molecule(z, symbols, coords, basis, mol, error)
       if (failed(error, "supermolecule", n_bad)) return
-      call run_libcint_rhf(mol, sum(z), 200, 1.0e-10_dp, 1.0e-8_dp, .false., scf, error)
+      call run_czt_rhf(mol, sum(z), 200, 1.0e-10_dp, 1.0e-8_dp, .false., scf, error)
       if (failed(error, "supermolecular scf", n_bad)) return
       energy = scf%energy
    end subroutine supermolecule

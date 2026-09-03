@@ -11,8 +11,8 @@ module test_mqc_mp2_hessian_fd
    !! with an independent reference behind it rather than on its own internal
    !! consistency.
    !!
-   !! **The correlation block alone.** `libcint_mp2_gradient` returns the total,
-   !! so the correlation gradient is it minus `libcint_scf_gradient` over the
+   !! **The correlation block alone.** `czt_mp2_gradient` returns the total,
+   !! so the correlation gradient is it minus `czt_scf_gradient` over the
    !! same converged reference. That is what makes the column comparable to
    !! pycc's correlation Hessian, and it is what every later unit of the ladder
    !! works on. pycc difference exactly the same quantity for the same reason.
@@ -30,11 +30,11 @@ module test_mqc_mp2_hessian_fd
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_gradient, only: libcint_scf_gradient
-   use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
-   use mqc_libcint_mp2_hessian, only: mp2_correlation_hessian
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_gradient, only: czt_scf_gradient
+   use mqc_czt_mp2_gradient, only: czt_mp2_gradient
+   use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    implicit none
    private
@@ -96,17 +96,17 @@ contains
 
       integer :: use_frozen
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: total(:, :), reference(:, :)
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "6-31g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "6-31g", mol, err)
       if (err%has_error()) return
 
       ! Tighter than the default on purpose: a loose SCF is the usual cause of
       ! a noisy finite-difference column, and it is the cheapest thing to rule
       ! out before doubting the derivative.
-      call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, err)
+      call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, err)
       if (err%has_error()) then
          call mol%destroy()
          return
@@ -114,16 +114,16 @@ contains
 
       use_frozen = 0
       if (present(n_frozen)) use_frozen = n_frozen
-      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
-                                WATER_NELEC/2, total, err, n_frozen=use_frozen)
+      call czt_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
+                            WATER_NELEC/2, total, err, n_frozen=use_frozen)
       if (err%has_error()) then
          call mol%destroy()
          return
       end if
 
-      call libcint_scf_gradient(mol, density=scf%density, orbitals=scf%orbitals, &
-                                orbital_energies=scf%orbital_energies, &
-                                n_occupied=WATER_NELEC/2, gradient=reference, error=err)
+      call czt_scf_gradient(mol, density=scf%density, orbitals=scf%orbitals, &
+                            orbital_energies=scf%orbital_energies, &
+                            n_occupied=WATER_NELEC/2, gradient=reference, error=err)
       if (err%has_error()) then
          call mol%destroy()
          return
@@ -234,7 +234,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: hess_corr(:, :, :, :), hess_ref(:, :, :, :)
       real(dp) :: column(9)
@@ -242,10 +242,10 @@ contains
 
       threads = omp_get_max_threads()
       call omp_set_num_threads(1)
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
       if (.not. err%has_error()) then
-         call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
-                              .false., scf, err)
+         call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                          .false., scf, err)
       end if
       if (.not. err%has_error()) then
          call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &
@@ -285,7 +285,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: hess_corr(:, :, :, :), hess_ref(:, :, :, :)
       real(dp) :: fd(9), analytic(9)
@@ -299,10 +299,10 @@ contains
 
       threads = omp_get_max_threads()
       call omp_set_num_threads(1)
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
       if (.not. err%has_error()) then
-         call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
-                              .false., scf, err)
+         call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                          .false., scf, err)
       end if
       if (.not. err%has_error()) then
          call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &

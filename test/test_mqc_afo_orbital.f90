@@ -5,11 +5,11 @@ module test_mqc_afo_orbital
    use mqc_error, only: error_t
    use mqc_physical_fragment, only: system_geometry_t, to_bohr, to_angstrom
    use mqc_bond_perception, only: find_severed_bonds, severed_bond_t
-   use mqc_libcint_afo, only: afo_model_t, afo_options_t, build_afo_model, &
-                              bond_hybrid, BOND_ORBITAL_REACH, &
-                              afo_hybrid_t, build_group_frozen
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, atom_ao_blocks
-   use mqc_libcint_rhf, only: run_libcint_rhf, rhf_result_t
+   use mqc_czt_afo, only: afo_model_t, afo_options_t, build_afo_model, &
+                          bond_hybrid, BOND_ORBITAL_REACH, &
+                          afo_hybrid_t, build_group_frozen
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, atom_ao_blocks
+   use mqc_czt_rhf, only: run_czt_rhf, rhf_result_t
    use mqc_fock_projector, only: fock_projector_t, build_frozen_basis
    implicit none
 
@@ -133,7 +133,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       type(afo_model_t) :: model
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       real(dp), allocatable :: hybrid(:), distance(:), s(:, :)
       integer, allocatable :: offsets(:), counts(:)
       integer :: first, last
@@ -142,7 +142,7 @@ contains
       call hybrid_of(identity(), hybrid, distance, model, error, err)
       if (allocated(error)) return
 
-      call build_libcint_molecule(model%z, model%sym, model%xyz, "sto-3g", mol, err)
+      call build_czt_molecule(model%z, model%sym, model%xyz, "sto-3g", mol, err)
       allocate (offsets(mol%natm), counts(mol%natm))
       call atom_ao_blocks(mol, offsets, counts)
       first = offsets(model%bda_local) + 1
@@ -238,7 +238,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       type(afo_model_t) :: model
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(afo_hybrid_t) :: hybrids(1)
       type(fock_projector_t) :: proj
       type(rhf_result_t) :: bare, held
@@ -263,9 +263,9 @@ contains
       call check(error,.not. err%has_error(), "the projector rejected the basis")
       if (allocated(error)) return
 
-      call run_libcint_rhf(mol, 18, 100, 1.0e-10_dp, 1.0e-8_dp, .false., bare, err)
-      call run_libcint_rhf(mol, 18, 100, 1.0e-10_dp, 1.0e-8_dp, .false., held, err, &
-                           projector=proj)
+      call run_czt_rhf(mol, 18, 100, 1.0e-10_dp, 1.0e-8_dp, .false., bare, err)
+      call run_czt_rhf(mol, 18, 100, 1.0e-10_dp, 1.0e-8_dp, .false., held, err, &
+                       projector=proj)
       call check(error,.not. err%has_error(), "the constrained SCF failed")
       if (allocated(error)) return
       call check(error, held%converged, "the constrained SCF did not converge")
@@ -284,7 +284,7 @@ contains
 
    subroutine ethane_molecule(mol, err)
       !! Ethane in STO-3G: five functions on each carbon, one on each hydrogen
-      type(libcint_molecule_t), intent(out) :: mol
+      type(czt_molecule_t), intent(out) :: mol
       type(error_t), intent(inout) :: err
       type(system_geometry_t) :: sys
       character(len=2) :: sym(8)
@@ -298,15 +298,15 @@ contains
             sym(i) = "H "
          end if
       end do
-      call build_libcint_molecule(sys%element_numbers, sym, sys%coordinates, "sto-3g", &
-                                  mol, err)
+      call build_czt_molecule(sys%element_numbers, sym, sys%coordinates, "sto-3g", &
+                              mol, err)
    end subroutine ethane_molecule
 
    subroutine test_place(error)
       !! A hybrid writes into its own atom's block and nowhere else
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(afo_hybrid_t) :: hybrids(1)
       real(dp), allocatable :: frozen(:, :)
       integer, allocatable :: offsets(:), counts(:)
@@ -342,7 +342,7 @@ contains
       !! pair pushed out of the fragment that is supposed to hold it.
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(afo_hybrid_t) :: hybrids(2)
       real(dp), allocatable :: frozen(:, :)
       integer, allocatable :: offsets(:), counts(:)
@@ -373,7 +373,7 @@ contains
       !! A hybrid of the wrong length was built against a different basis
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(afo_hybrid_t) :: hybrids(1)
       real(dp), allocatable :: frozen(:, :)
       integer :: n_occ

@@ -32,18 +32,18 @@ module test_mqc_mp2_hessian_response
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient, build_amplitudes
-   use mqc_libcint_mp2, only: transform_ovov
-   use mqc_libcint_mp2_hessian, only: mp2_first_order_skeletons, mp2_mo_eri_physicist, &
-                                      mp2_cumulant_2pdm, mp2_mo_lagrangian, &
-                                      mp2_skeleton_lagrangian, mp2_pair_rotation_augment, &
-                                      mp2_orbital_response_term, mp2_full_u, &
-                                      mp2_perturbed_fock, mp2_perturbed_eri, &
-                                      mp2_perturbed_t2, mp2_perturbed_response
-   use mqc_libcint_hessian, only: make_h1_atom, overlap_deriv_atom, solve_mo1_batch
-   use mqc_libcint_hess_ints, only: eri_ip1_block
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_mp2_gradient, only: czt_mp2_gradient, build_amplitudes
+   use mqc_czt_mp2, only: transform_ovov
+   use mqc_czt_mp2_hessian, only: mp2_first_order_skeletons, mp2_mo_eri_physicist, &
+                                  mp2_cumulant_2pdm, mp2_mo_lagrangian, &
+                                  mp2_skeleton_lagrangian, mp2_pair_rotation_augment, &
+                                  mp2_orbital_response_term, mp2_full_u, &
+                                  mp2_perturbed_fock, mp2_perturbed_eri, &
+                                  mp2_perturbed_t2, mp2_perturbed_response
+   use mqc_czt_hessian, only: make_h1_atom, overlap_deriv_atom, solve_mo1_batch
+   use mqc_czt_hess_ints, only: eri_ip1_block
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    implicit none
    private
@@ -79,16 +79,16 @@ contains
 
    !! One SCF and the stacked first-order skeletons, shared by every test.
    subroutine stage_at(mol, scf, fx, sx, erix, err)
-      type(libcint_molecule_t), intent(out) :: mol
+      type(czt_molecule_t), intent(out) :: mol
       type(rhf_result_t), intent(out) :: scf
       real(dp), allocatable, intent(out) :: fx(:, :, :), sx(:, :, :)
       real(dp), allocatable, intent(out) :: erix(:, :, :, :, :)
       type(error_t), intent(inout) :: err
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, .false., &
-                           scf, err)
+      call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, .false., &
+                       scf, err)
       if (err%has_error()) return
       call mp2_first_order_skeletons(mol, scf%orbitals, WATER_NELEC/2, &
                                      fx, sx, erix, err)
@@ -104,7 +104,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: fx(:, :, :), sx(:, :, :), erix(:, :, :, :, :)
       real(dp) :: worst_f, worst_s, worst_e
@@ -156,7 +156,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: fx(:, :, :), sx(:, :, :), erix(:, :, :, :, :)
       real(dp) :: worst_x, worst_b, worst_h
@@ -210,7 +210,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: gradient(:, :), dm1mo(:, :), w_ao(:, :)
       real(dp), allocatable :: eri_packed(:, :), ovov(:, :, :, :), t2(:, :, :, :)
@@ -221,13 +221,13 @@ contains
 
       threads = omp_get_max_threads()
       call omp_set_num_threads(1)
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
-      call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, .false., &
-                           scf, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
+      call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, .false., &
+                       scf, err)
       n_o = WATER_NELEC/2
-      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, n_o, &
-                                gradient, err, n_frozen=0, relaxed_density_mo=dm1mo, &
-                                energy_weighted_ao=w_ao)
+      call czt_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, n_o, &
+                            gradient, err, n_frozen=0, relaxed_density_mo=dm1mo, &
+                            energy_weighted_ao=w_ao)
       call omp_set_num_threads(threads)
       call check(error,.not. err%has_error(), &
                  "the gradient did not evaluate: "//err%get_message())
@@ -275,7 +275,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: gradient(:, :), dm1mo(:, :), w_ao(:, :)
       real(dp), allocatable :: eri_packed(:, :), ovov(:, :, :, :), t2(:, :, :, :)
@@ -290,9 +290,9 @@ contains
       call omp_set_num_threads(1)
       call stage_at(mol, scf, fx, sx, erix, err)
       n_o = WATER_NELEC/2
-      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, n_o, &
-                                gradient, err, n_frozen=0, relaxed_density_mo=dm1mo, &
-                                energy_weighted_ao=w_ao)
+      call czt_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, n_o, &
+                            gradient, err, n_frozen=0, relaxed_density_mo=dm1mo, &
+                            energy_weighted_ao=w_ao)
       call omp_set_num_threads(threads)
       call check(error,.not. err%has_error(), &
                  "the setup did not evaluate: "//err%get_message())
@@ -352,7 +352,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: gradient(:, :), dm1mo(:, :), w_ao(:, :)
       real(dp), allocatable :: eri_packed(:, :), ovov(:, :, :, :), t2(:, :, :, :)
@@ -370,9 +370,9 @@ contains
       call omp_set_num_threads(1)
       call stage_at(mol, scf, fx, sx, erix, err)
       n_o = WATER_NELEC/2
-      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, n_o, &
-                                gradient, err, n_frozen=0, relaxed_density_mo=dm1mo, &
-                                energy_weighted_ao=w_ao)
+      call czt_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, n_o, &
+                            gradient, err, n_frozen=0, relaxed_density_mo=dm1mo, &
+                            energy_weighted_ao=w_ao)
       if (.not. err%has_error()) then
          n_ao = mol%nao
          n_mo = size(scf%orbitals, 2)
@@ -460,7 +460,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: fx(:, :, :), sx(:, :, :), erix(:, :, :, :, :)
       real(dp), allocatable :: eri_packed(:, :), ovov(:, :, :, :), t2(:, :, :, :)
@@ -551,7 +551,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: fx(:, :, :), sx(:, :, :), erix(:, :, :, :, :)
       real(dp), allocatable :: gradient(:, :), dm1mo(:, :)
@@ -569,8 +569,8 @@ contains
       call stage_at(mol, scf, fx, sx, erix, err)
       n_o = WATER_NELEC/2
       if (.not. err%has_error()) then
-         call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, n_o, &
-                                   gradient, err, n_frozen=0, relaxed_density_mo=dm1mo)
+         call czt_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, n_o, &
+                               gradient, err, n_frozen=0, relaxed_density_mo=dm1mo)
       end if
       if (.not. err%has_error()) then
          n_ao = mol%nao

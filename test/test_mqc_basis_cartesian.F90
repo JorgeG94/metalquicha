@@ -11,7 +11,7 @@ module test_mqc_basis_cartesian
    !!
    !! What these check is the decision, not the integrals -- which convention
    !! the reader concludes, and which combinations it refuses. The routing that
-   !! decision drives is checked in `test_mqc_libcint_cartesian`, where it
+   !! decision drives is checked in `test_mqc_czt_cartesian`, where it
    !! shows up as a basis function count.
    !!
    !! The distinction that matters here: s and p shells carry the same number

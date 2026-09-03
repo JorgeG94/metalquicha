@@ -9,13 +9,13 @@
 !! the thing SAPT is for: not the total, which a supermolecular calculation also
 !! gives, but which physics it is made of.
 !!
-!! The prism is a harder test than the reference dimer in `test_mqc_sapt`. Those
+!! The prism is a harder test than the reference dimer in `test_mqc_czt_sapt`. Those
 !! two waters share an orientation and sit 3 Angstrom apart on an axis; these are
 !! hydrogen-bonded at assorted angles and distances, so every term is exercised
 !! at a geometry nobody chose to be convenient.
 program check_sapt
    use pic_types, only: dp
-   use mqc_sapt, only: sapt_molecules_t, build_sapt_molecules, sapt_terms_t, run_sapt0
+   use mqc_czt_sapt, only: sapt_molecules_t, build_sapt_molecules, sapt_terms_t, run_sapt0
    use mqc_error, only: error_t
    implicit none
 

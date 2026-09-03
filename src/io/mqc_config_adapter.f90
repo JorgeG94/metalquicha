@@ -758,7 +758,7 @@ contains
                         "different molecule rather than as a basis-set correction. "// &
                         "Use an ab initio method, or drop counterpoise.")
       case default
-         ! An ab initio method: the libcint path reads `is_ghost` and honours it.
+         ! An ab initio method: the cenzontle path reads `is_ghost` and honours it.
       end select
 
    end subroutine check_counterpoise_support

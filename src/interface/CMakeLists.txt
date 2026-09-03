@@ -15,6 +15,6 @@ target_sources(
 # libcint there is nothing to partition and the symbols are simply absent -- a
 # Python caller gets an AttributeError on the binding rather than a link error
 # here.
-if(MQC_ENABLE_LIBCINT)
+if(MQC_ENABLE_CZT)
   target_sources(${main_lib} PRIVATE mqc_capi_charges.f90)
 endif()

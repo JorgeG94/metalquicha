@@ -27,10 +27,10 @@ program check_df_ref_gradient
    !! left for this program is the assembly.
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_ri_mp2
-   use mqc_libcint_ri_mp2_gradient, only: libcint_ri_mp2_gradient
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_mp2, only: mp2_result_t, run_czt_ri_mp2
+   use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
    use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
 
@@ -151,14 +151,14 @@ contains
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: error
 
-      type(libcint_molecule_t) :: mol, aux
+      type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
 
       call converge(numbers, symbols, coords, basis, aux_basis, nelec, mol, aux, &
                     scf, error)
       if (error%has_error()) return
-      call libcint_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, &
-                                   nelec/2, gradient, error, fitted_reference=.true.)
+      call czt_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, &
+                               nelec/2, gradient, error, fitted_reference=.true.)
       call mol%destroy()
       call aux%destroy()
    end subroutine analytic_gradient
@@ -200,7 +200,7 @@ contains
       real(dp), intent(out) :: energy
       type(error_t), intent(inout) :: error
 
-      type(libcint_molecule_t) :: mol, aux
+      type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
       type(mp2_result_t) :: mp2
 
@@ -208,8 +208,8 @@ contains
       call converge(numbers, symbols, coords, basis, aux_basis, nelec, mol, aux, &
                     scf, error)
       if (error%has_error()) return
-      call run_libcint_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, nelec/2, &
-                              scf%energy, mp2, error)
+      call run_czt_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, nelec/2, &
+                          scf%energy, mp2, error)
       if (error%has_error()) return
       energy = mp2%total
       call mol%destroy()
@@ -220,7 +220,7 @@ contains
                        scf, error)
       !! The density-fitted SCF, with one auxiliary basis serving both halves
       !!
-      !! `aux` is handed to `run_libcint_rhf`, which is what makes the reference
+      !! `aux` is handed to `run_czt_rhf`, which is what makes the reference
       !! fitted; the same molecule then names the correlation fit. That is not a
       !! simplification for the test's sake -- `model.aux_basis` is the only
       !! place a deck can name a fitting set, so it is the only combination that
@@ -230,16 +230,16 @@ contains
       real(dp), intent(in) :: coords(:, :)
       character(len=*), intent(in) :: basis, aux_basis
       integer, intent(in) :: nelec
-      type(libcint_molecule_t), intent(out) :: mol, aux
+      type(czt_molecule_t), intent(out) :: mol, aux
       type(rhf_result_t), intent(out) :: scf
       type(error_t), intent(inout) :: error
 
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
-      call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
+      call build_czt_molecule(numbers, symbols, coords, aux_basis, aux, error)
       if (error%has_error()) return
-      call run_libcint_rhf(mol, nelec, 300, 1.0e-14_dp, DENSITY_TOL, .false., scf, &
-                           error, aux=aux)
+      call run_czt_rhf(mol, nelec, 300, 1.0e-14_dp, DENSITY_TOL, .false., scf, &
+                       error, aux=aux)
    end subroutine converge
 
    function fail(error, n_bad) result(bad)

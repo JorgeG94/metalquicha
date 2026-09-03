@@ -1,6 +1,6 @@
 !! Manual check that libcint is wired up and gives the right integrals
 !!
-!!     cmake -B build -DMQC_ENABLE_LIBCINT=ON && ./build/check_libcint
+!!     cmake -B build -DMQC_ENABLE_CZT=ON && ./build/check_libcint
 !!
 !! H2 in STO-3G, at the textbook geometry, because it has answers that can be
 !! checked rather than merely admired: the overlap diagonal is 1 if and only

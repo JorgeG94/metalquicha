@@ -44,22 +44,38 @@ option(
 # and libcint a clone. For a machine without one, point
 # FETCHCONTENT_SOURCE_DIR_LIBCINT and FETCHCONTENT_SOURCE_DIR_LIBXC at local
 # copies, or turn these off and build the xTB path alone.
-option(MQC_ENABLE_LIBCINT
-       "Fetch libcint for CPU Gaussian integrals (real ab initio without a GPU)"
-       ON)
+option(
+  MQC_ENABLE_CZT
+  "Build cenzontle, the CPU ab initio backend (real ab initio without a GPU)"
+  ON)
+
+# This option was `MQC_ENABLE_LIBCINT` until the backend was named. Honour the
+# old spelling rather than ignoring it: CMake accepts an unknown -D silently, so
+# a script still passing it would otherwise configure a build with no CPU ab
+# initio path at all and say nothing about why every deck was refused.
+if(DEFINED MQC_ENABLE_LIBCINT)
+  message(
+    WARNING
+      "MQC_ENABLE_LIBCINT is now MQC_ENABLE_CZT (the backend is cenzontle, and "
+      "it is not a libcint wrapper -- libfint backs it by default). Using the "
+      "old value, ${MQC_ENABLE_LIBCINT}, for MQC_ENABLE_CZT.")
+  set(MQC_ENABLE_CZT
+      "${MQC_ENABLE_LIBCINT}"
+      CACHE BOOL "" FORCE)
+endif()
 option(MQC_ENABLE_LIBXC
        "Fetch libxc for exchange-correlation functionals (CPU DFT)" ON)
 
 # Which of the two CPU integral libraries provides them. They define the same
 # `libcint_fortran` module with the same procedures, so no source under
-# backends/libcint/ knows which one it linked -- but they are not the same
+# backends/cenzontle/ knows which one it linked -- but they are not the same
 # build: libfint carries L (sp) shells and turns on a different code path for
 # them. See cmake/MqcDependencies.cmake, which is where that happens.
 option(MQC_USE_LIBFINT
        "Use libfint (the Fortran port) instead of libcint for CPU integrals" ON)
 
 # A coverage build measures this project's own Fortran, not its dependencies --
-# and `backends/libcint/` is this project's own Fortran. It used to be dropped
+# and `backends/cenzontle/` is this project's own Fortran. It used to be dropped
 # here alongside libxc, which meant every line of the CPU backend -- the SCF,
 # MP2, coupled cluster, MCSCF, SAPT, EFP, the analyses -- was invisible to
 # coverage rather than uncovered by it. Half the program was not being measured,

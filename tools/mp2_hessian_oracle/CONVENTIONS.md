@@ -17,7 +17,7 @@ Each claim below cites where it was checked. Anything not yet measured says so.
 * **Our `gamma_ao` is chemist**, the same slot layout as the AO ERI. Fixed by
   its consumer: `contract_gamma_eri` computes
   `Imat(p,q) = Σ_{u,r,s} (u p|r s) γ(u,q,r,s)`
-  (`mqc_libcint_mp2_gradient.f90:1068`) — γ's four slots line up with the
+  (`mqc_czt_mp2_gradient.f90:1068`) — γ's four slots line up with the
   integral's, so it is `(μν|λσ)`-ordered, not `<μν|λσ>`.
 
 So our γ and pycc's `Gam` differ by the `1↔2` swap before any other difference
@@ -118,13 +118,13 @@ the gradient already builds.
 pycc hold `nmo⁴` MO-basis tensors and stream the per-perturbation ones from a
 disk store. We are AO-blocked and direct. The one place this matters for a gate:
 our gradient takes a **dense** `nao⁴` path whenever `2·nao⁴·8 ≤ IN_CORE_LIMIT`
-(4e9, about 118 basis functions; `mqc_libcint_mp2_gradient.f90:223`) and blocks
+(4e9, about 118 basis functions; `mqc_czt_mp2_gradient.f90:223`) and blocks
 only above it. Water/6-31G is far below, so every Phase 1 gate runs on the dense
 path and the blocked path is gated separately, later.
 
 ## 6. AO index map, psi4 ↔ libcint
 
-**Our conventions** (`mqc_libcint_ao.f90:10-30`, which documents them as three
+**Our conventions** (`mqc_czt_ao.f90:10-30`, which documents them as three
 ways to be wrong quietly):
 
 * normalisation is folded into `env` by `molecule_build`; nothing may normalise
@@ -132,7 +132,7 @@ ways to be wrong quietly):
 * **Cartesian component order is libcint's**: `x^(l-i) y^(i-j) z^j` over
   `i = 0..l`, `j = 0..i` — for d that is `xx, xy, xz, yy, yz, zz`;
 * the spherical transform is libcint's own table
-  (`mqc_libcint_ao_data.f90`), whose `l = 1` block is the px/py/pz identity.
+  (`mqc_czt_ao_data.f90`), whose `l = 1` block is the px/py/pz identity.
   That file's header records that libcint's C table carries **two p orderings**
   behind `#ifdef PYPZPX`, so anything scraped from it must say which it took.
 
@@ -195,7 +195,7 @@ Hessian contraction than like a basis convention.
 The measurement was made with a throwaway dump, deliberately not committed as a
 test: `test_mqc_hess_ints`' own header records why — a stored comparison against
 an external library pins our layout to that library's conventions rather than to
-anything true. The recipe is two lines (`build_libcint_molecule` then
+anything true. The recipe is two lines (`build_czt_molecule` then
 `mol%overlap`), so re-running it costs less than maintaining it.
 
 **This does not settle Gate 1.2a.** The AO *ordering* being the identity is a

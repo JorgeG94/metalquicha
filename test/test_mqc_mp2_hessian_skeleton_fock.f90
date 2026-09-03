@@ -25,13 +25,13 @@ module test_mqc_mp2_hessian_skeleton_fock
    !! comparison exact rather than approximate, and is also why a fixed geometry
    !! step suffices.
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
-   use mqc_libcint_mp2_hessian, only: mp2_first_order_skeletons, &
-                                      mp2_ks_first_order_fock
-   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available, &
-                             xc_add_potential
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
+   use mqc_czt_mp2_hessian, only: mp2_first_order_skeletons, &
+                                  mp2_ks_first_order_fock
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available, &
+                         xc_add_potential
    use mqc_error, only: error_t
    use pic_types, only: dp
    implicit none
@@ -67,7 +67,7 @@ contains
          !! Six times the measured worst entry, 3.38e-09 at this step, which is
          !! step error and nothing else: 8.54e-10 at 5e-5 and 1.35e-08 at 2e-4,
          !! ratios 3.95 and 4.00.
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(error_t) :: err
       real(dp), allocatable :: fx(:, :, :), sx(:, :, :), erix(:, :, :, :, :)
@@ -139,7 +139,7 @@ contains
          !! Not tighter than the Fock check, which is what a first guess assumed
          !! -- the overlap carries no two-electron accumulation, but the entries
          !! it is compared against are the same order, so the step error is too.
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(error_t) :: err
       real(dp), allocatable :: fx(:, :, :), sx(:, :, :), erix(:, :, :, :, :)
@@ -210,7 +210,7 @@ contains
          !! the step error still dominates: both sides evaluate the
          !! exchange-correlation pieces on the one reference grid and the
          !! quadrature cancels between them.
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx
       type(rhf_result_t) :: scf
       type(error_t) :: err
@@ -222,7 +222,7 @@ contains
 
       if (.not. xc_available()) return
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "the molecule did not build: "// &
                  err%get_message())
       if (allocated(error)) return
@@ -232,8 +232,8 @@ contains
          call mol%destroy()
          return
       end if
-      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, &
-                           xc=ctx)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, &
+                       xc=ctx)
       call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) then
          call mol%destroy()
@@ -289,12 +289,12 @@ contains
       real(dp), intent(out) :: f_mo(:, :)
       type(error_t), intent(inout) :: err
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(direct_stats_t) :: stats
       real(dp), allocatable :: h(:, :), bounds(:, :), f_ao(:, :), v_xc(:, :)
       real(dp) :: e_xc, n_elec
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
       allocate (f_ao(size(c, 1), size(c, 1)), v_xc(size(c, 1), size(c, 1)))
       call mol%core_hamiltonian(h)
@@ -315,13 +315,13 @@ contains
 
    subroutine reference(mol, scf, err)
       !! The converged reference, whose `C` and `D` every displacement reuses
-      type(libcint_molecule_t), intent(out) :: mol
+      type(czt_molecule_t), intent(out) :: mol
       type(rhf_result_t), intent(out) :: scf
       type(error_t), intent(inout) :: err
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
    end subroutine reference
 
    subroutine mo_fock_at(coords, c, dens, f_mo, err)
@@ -331,11 +331,11 @@ contains
       real(dp), intent(out) :: f_mo(:, :)
       type(error_t), intent(inout) :: err
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(direct_stats_t) :: stats
       real(dp), allocatable :: h(:, :), bounds(:, :), f_ao(:, :)
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
       allocate (f_ao(size(c, 1), size(c, 1)))
       call mol%core_hamiltonian(h)
@@ -354,10 +354,10 @@ contains
       real(dp), intent(out) :: s_mo(:, :)
       type(error_t), intent(inout) :: err
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       real(dp), allocatable :: s_ao(:, :)
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
       call mol%overlap(s_ao)
       call mol%destroy()

@@ -25,7 +25,7 @@ module test_mqc_json_reader
                                        EFP_RESPONSE_MATRIX_FREE
    use mqc_error, only: error_t
    use mqc_cuest_iface, only: parse_backend_name, BACKEND_AUTO, BACKEND_CUEST, &
-                              BACKEND_LIBCINT, method_runs_on_cuest
+                              BACKEND_CZT, method_runs_on_cuest
    use mqc_cuest_bridge, only: cuest_backend_available
    use pic_types, only: dp
    implicit none
@@ -778,7 +778,7 @@ contains
       call check(error, kind == BACKEND_CUEST, "'gpu' must mean cuEST")
       if (allocated(error)) return
       call parse_backend_name("cpu", kind, parse_error)
-      call check(error, kind == BACKEND_LIBCINT, "'cpu' must mean libcint")
+      call check(error, kind == BACKEND_CZT, "'cpu' must mean libcint")
       if (allocated(error)) return
       call parse_backend_name("", kind, parse_error)
       call check(error, kind == BACKEND_AUTO, "an empty name must mean auto")

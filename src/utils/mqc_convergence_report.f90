@@ -1,6 +1,6 @@
 !! A shared printer for iterative-solver convergence tables
 module mqc_convergence_report
-   !! Both the SCF (`mqc_libcint_rhf`) and the FMO outer loop (`mqc_libcint_fmo`)
+   !! Both the SCF (`mqc_czt_rhf`) and the FMO outer loop (`mqc_czt_fmo`)
    !! report convergence as the same table: a title, a ruled column header, one
    !! row per iteration, and a footer saying whether and in how many steps it
    !! converged. The rows differ -- the SCF carries DIIS depth and per-iteration

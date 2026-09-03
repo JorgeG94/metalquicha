@@ -61,7 +61,7 @@ scrolling past two hundred files::
 
    validation/inputs/
    |-- sample_inputs/          geometries, shared by every backend
-   |-- cpu/mqc/rhf/            the libcint CPU backend, one directory per method
+   |-- cpu/mqc/rhf/            the cenzontle CPU backend, one directory per method
    |   |-- df-hf/  uhf/  mp2/  ri-mp2/  ccsd/  ccsd-t/  ri-ccsd/  ...
    |-- cpu/tblite/gfn1/        the semi-empirical backend
    `-- gpu/cuest/dft/          the GPU backend

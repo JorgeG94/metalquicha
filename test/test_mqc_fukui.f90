@@ -14,12 +14,12 @@ module test_mqc_fukui
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_pcm, only: pcm_context_t
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_pcm, only: pcm_context_t
    use mqc_method_config, only: pcm_config_t
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, &
-                              SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
-   use mqc_libcint_fukui, only: fukui_result_t, fukui_indices
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, &
+                          SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
+   use mqc_czt_fukui, only: fukui_result_t, fukui_indices
    implicit none
    private
 
@@ -199,7 +199,7 @@ contains
       !! ions borrow `SCF_GUESS_SAD` as the kind meaning "a starting density is
       !! supplied", and in the normal path the neutral's orbitals supply it.
       !! Asked for by name with nothing seeding the ions, nothing built the
-      !! atomic densities, so `run_libcint_uhf` was handed an atomic guess with
+      !! atomic densities, so `run_czt_uhf` was handed an atomic guess with
       !! no density behind it and refused -- `properties.fukui.scf.guess: "sad"`
       !! was unusable.
       !!
@@ -286,7 +286,7 @@ contains
          !! so a change of default shows up as a new test failing rather than
          !! as a pinned value quietly describing a different calculation.
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(pcm_context_t) :: pcm_ctx
       type(pcm_config_t) :: pcm_cfg
@@ -297,7 +297,7 @@ contains
       wet = .false.
       if (present(solvate)) wet = solvate
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       if (err%has_error()) return
 
       if (wet) then
@@ -314,8 +314,8 @@ contains
 
       ! The neutral is solved in the same continuum the ions will be, which is
       ! the whole point: the three energies have to come from one Hamiltonian.
-      call run_libcint_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err, &
-                           pcm=pcm_ctx)
+      call run_czt_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err, &
+                       pcm=pcm_ctx)
       if (err%has_error()) then
          call mol%destroy()
          return
@@ -411,13 +411,13 @@ contains
       !! produce numbers that look exactly like the ones above.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(fukui_result_t) :: res
       type(error_t) :: err
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err)
       call check(error,.not. err%has_error(), "could not converge water")
       if (allocated(error)) then
          call mol%destroy()

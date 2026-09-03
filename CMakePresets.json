@@ -45,7 +45,7 @@
       "displayName": "xTB only",
       "description": "No CPU integrals and no libxc, so a configure touches the network far less. GFN1/GFN2 and fragmentation only.",
       "cacheVariables": {
-        "MQC_ENABLE_LIBCINT": "OFF",
+        "MQC_ENABLE_CZT": "OFF",
         "MQC_ENABLE_LIBXC": "OFF"
       }
     },

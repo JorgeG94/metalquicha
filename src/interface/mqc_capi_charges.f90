@@ -7,7 +7,7 @@ module mqc_capi_charges
    !! fragmentations asks for them once per trial partition.
    !!
    !! **Unlike bond orders, these cost a real SCF.** They come from
-   !! `run_libcint_rhf` in whatever basis the caller names, so the basis is a
+   !! `run_czt_rhf` in whatever basis the caller names, so the basis is a
    !! parameter rather than a default hidden inside, and it is the knob that
    !! decides what `compute` costs.
    !!
@@ -21,7 +21,7 @@ module mqc_capi_charges
    use mqc_capi_status, only: MQC_OK, MQC_FAIL, MQC_BAD_HANDLE
    use mqc_error, only: error_t
    use mqc_elements, only: element_number_to_symbol
-   use mqc_libcint_bridge, only: run_libcint_charges
+   use mqc_czt_bridge, only: run_czt_charges
    implicit none
    private
 
@@ -91,8 +91,8 @@ contains
       ! Through the bridge, not into the backend: the odd-electron refusal and
       ! the SCF are both on the other side of it, so this reports rather than
       ! decides.
-      call run_libcint_charges(h%geom%element_numbers, symbols, h%geom%coordinates, &
-                               basis_name, which, h%geom%charge, q, error)
+      call run_czt_charges(h%geom%element_numbers, symbols, h%geom%coordinates, &
+                           basis_name, which, h%geom%charge, q, error)
       if (failed(error, status)) return
 
       if (allocated(h%charges)) deallocate (h%charges)

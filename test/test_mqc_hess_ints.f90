@@ -12,20 +12,20 @@ module test_mqc_hess_ints
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_hess_ints, only: hess_1e_block, HESS_OVLP_II, HESS_OVLP_IJ, &
-                                    HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
-                                    hess_2e_block, HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK, &
-                                    hess_rinv_block, HESS_RINV_II, HESS_RINV_IJ, &
-                                    h1_contract, hess_2e_contract
-   use mqc_libcint_hessian, only: hcore_deriv_atom, make_h1_atom, overlap_deriv_atom, &
-                                  solve_mo1_atom, nuclear_repulsion_hessian, partial_hessian, &
-                                  response_hessian, rhf_hessian, hessian_to_matrix
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_hess_ints, only: hess_1e_block, HESS_OVLP_II, HESS_OVLP_IJ, &
+                                HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
+                                hess_2e_block, HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK, &
+                                hess_rinv_block, HESS_RINV_II, HESS_RINV_IJ, &
+                                h1_contract, hess_2e_contract
+   use mqc_czt_hessian, only: hcore_deriv_atom, make_h1_atom, overlap_deriv_atom, &
+                              solve_mo1_atom, nuclear_repulsion_hessian, partial_hessian, &
+                              response_hessian, rhf_hessian, hessian_to_matrix
    use mqc_vibrational_analysis, only: compute_vibrational_analysis
-   use mqc_libcint_hess_ints, only: eri_ip1_block
+   use mqc_czt_hess_ints, only: eri_ip1_block
    use pic_blas_interfaces, only: pic_gemm
-   use mqc_libcint_hess_ints, only: eri_ip1_block
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_czt_hess_ints, only: eri_ip1_block
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    implicit none
    private
 
@@ -70,11 +70,11 @@ contains
    end subroutine collect_mqc_hess_ints_tests
 
    subroutine build_water(mol, err, ok)
-      type(libcint_molecule_t), intent(out) :: mol
+      type(czt_molecule_t), intent(out) :: mol
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       ok = .not. err%has_error()
    end subroutine build_water
 
@@ -92,12 +92,12 @@ contains
       real(dp), intent(out) :: energy
       type(error_t), intent(inout) :: err
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       real(dp), allocatable :: h(:, :), s(:, :), eri(:, :, :, :)
       integer :: i, j, k, l, n
       real(dp) :: two
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, geo, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, geo, "sto-3g", mol, err)
       if (err%has_error()) return
 
       call mol%core_hamiltonian(h)
@@ -126,16 +126,16 @@ contains
    subroutine reference_scf(dens, weight, mol, err)
       !! Water in STO-3G, and the two matrices the partial Hessian contracts
       real(dp), allocatable, intent(out) :: dens(:, :), weight(:, :)
-      type(libcint_molecule_t), intent(out) :: mol
+      type(czt_molecule_t), intent(out) :: mol
       type(error_t), intent(inout) :: err
 
       type(rhf_result_t) :: scf
       integer :: i, n, nocc
 
       nocc = 5
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
       if (err%has_error()) return
 
       dens = scf%density
@@ -165,7 +165,7 @@ contains
       !! cancellation of nearly equal energies are both tolerable.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: dens(:, :), weight(:, :), hess(:, :, :, :), nn(:, :, :, :)
       real(dp) :: geo(3, 3), pp, pm, mp_, mm, fd, worst, scale
@@ -248,7 +248,7 @@ contains
       !! them, are exactly where that can happen.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: dens(:, :), weight(:, :), hess(:, :, :, :), nn(:, :, :, :)
       real(dp) :: row(3, 3), worst, scale
@@ -313,15 +313,15 @@ contains
       !! in a different order, not two approximations of one thing.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       type(rhf_result_t) :: scf
       real(dp), allocatable :: ip1(:, :, :, :, :), slow(:, :, :), fast(:, :, :, :)
       real(dp) :: worst, scale
       integer :: ia
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
       call check(error,.not. err%has_error(), "the reference did not converge")
       if (allocated(error)) return
 
@@ -399,14 +399,14 @@ contains
       !! The skeleton derivative Fock, at both limits of the attenuation
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       type(rhf_result_t) :: scf
       real(dp), allocatable :: full(:, :, :, :), faint(:, :, :, :), most(:, :, :, :)
       real(dp) :: scale
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
       call check(error,.not. err%has_error(), "the reference did not converge")
       if (allocated(error)) return
 
@@ -434,15 +434,15 @@ contains
       !! The two-electron second derivatives, at both limits of the attenuation
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       type(rhf_result_t) :: scf
       real(dp), allocatable :: full(:, :, :, :), faint(:, :, :, :), most(:, :, :, :)
       real(dp) :: scale
       integer :: natm
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
       call check(error,.not. err%has_error(), "the reference did not converge")
       if (allocated(error)) return
 
@@ -478,13 +478,13 @@ contains
       real(dp), intent(out) :: energy
       type(error_t), intent(inout) :: err
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
 
       energy = 0.0_dp
-      call build_libcint_molecule(WATER_Z, WATER_SYM, geo, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, geo, "sto-3g", mol, err)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
       if (err%has_error()) return
       energy = scf%energy
       call mol%destroy()
@@ -511,7 +511,7 @@ contains
       !! and gets some off-diagonal blocks qualitatively wrong.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       type(rhf_result_t) :: scf
       real(dp), allocatable :: hess(:, :, :, :)
@@ -522,8 +522,8 @@ contains
       integer :: ia, ja, a, b, nocc, k
 
       nocc = 5
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
       call check(error,.not. err%has_error(), "the reference did not converge")
       if (allocated(error)) return
 
@@ -676,7 +676,7 @@ contains
       !! is the finite-difference Hessian downstream.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       logical :: ok
       real(dp), allocatable :: nuc(:, :, :), rinv(:, :, :), total(:, :, :)
@@ -736,7 +736,7 @@ contains
       !! it alone and this identity does not apply to it.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: aa(:, :, :), ab(:, :, :)
       logical :: ok
@@ -791,7 +791,7 @@ contains
       !! of neither would miss a transposed component block.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: aa(:, :, :)
       logical :: ok
@@ -827,7 +827,7 @@ contains
       !! different numbers.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: a(:, :, :), b(:, :, :)
       logical :: ok
@@ -882,7 +882,7 @@ contains
       !! this suite.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: a(:, :, :)
       logical :: ok
@@ -947,7 +947,7 @@ contains
       !! was written.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: e(:, :, :, :, :)
       logical :: ok
@@ -1041,7 +1041,7 @@ contains
       !! not.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: h(:, :, :), total(:, :, :)
       logical :: ok
@@ -1112,7 +1112,7 @@ contains
       !! densities differ at rather than anything structural.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       type(rhf_result_t) :: scf
       real(dp), allocatable :: h(:, :, :), total(:, :, :), ip1(:, :, :, :, :)
@@ -1123,7 +1123,7 @@ contains
       call build_water(mol, err, ok)
       call check(error, ok, "could not build water")
       if (allocated(error)) return
-      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       call check(error,.not. err%has_error(), "the reference did not converge")
       if (allocated(error)) then
          call mol%destroy()
@@ -1178,7 +1178,7 @@ contains
       !! Matches PySCF's `s1ao` to 1e-16 on every atom.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: s1(:, :, :), total(:, :, :)
       logical :: ok
@@ -1232,14 +1232,14 @@ contains
       !! A converged density at one geometry, and the orbitals with it
       real(dp), intent(in) :: geo(3, 3)
       real(dp), allocatable, intent(out) :: dens(:, :), orbitals(:, :), energies(:)
-      type(libcint_molecule_t), intent(out) :: mol
+      type(czt_molecule_t), intent(out) :: mol
       type(error_t), intent(inout) :: err
 
       type(rhf_result_t) :: scf
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, geo, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, geo, "sto-3g", mol, err)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err)
       if (err%has_error()) return
       dens = scf%density
       orbitals = scf%orbitals
@@ -1263,7 +1263,7 @@ contains
       !! the answer.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol, mol_p, mol_m
+      type(czt_molecule_t) :: mol, mol_p, mol_m
       type(error_t) :: err
       real(dp), allocatable :: d0(:, :), dp_(:, :), dm(:, :), c0(:, :), e0(:)
       real(dp), allocatable :: cp(:, :), ep(:), cm(:, :), em(:)
@@ -1337,7 +1337,7 @@ contains
       !! Nothing downstream could tell.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: m(:, :, :)
       real(dp), allocatable :: e(:, :, :, :, :)

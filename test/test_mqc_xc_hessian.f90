@@ -16,19 +16,19 @@ module test_mqc_xc_hessian
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available, &
-                             xc_add_potential, vv10_add_potential, &
-                             vv10_kernel_apply, xc_grid_kernel_quantities, &
-                             KERNEL_RHO_FLOOR, xc_kernel_apply, xc_kernel2_apply
-   use mqc_libcint_hessian, only: ks_hessian
-   use mqc_libcint_gradient, only: libcint_scf_gradient, vv10_gradient_fixed_grid, &
-                                   xc_potential_gradient
-   use mqc_libcint_xc_hessian, only: xc_hessian, xc_gradient_fixed_grid, &
-                                     xc_potential_deriv, vv10_hessian, &
-                                     vv10_potential_deriv, xc_potential_hessian, &
-                                     xc_kernel_deriv
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available, &
+                         xc_add_potential, vv10_add_potential, &
+                         vv10_kernel_apply, xc_grid_kernel_quantities, &
+                         KERNEL_RHO_FLOOR, xc_kernel_apply, xc_kernel2_apply
+   use mqc_czt_hessian, only: ks_hessian
+   use mqc_czt_gradient, only: czt_scf_gradient, vv10_gradient_fixed_grid, &
+                               xc_potential_gradient
+   use mqc_czt_xc_hessian, only: xc_hessian, xc_gradient_fixed_grid, &
+                                 xc_potential_deriv, vv10_hessian, &
+                                 vv10_potential_deriv, xc_potential_hessian, &
+                                 xc_kernel_deriv
    implicit none
    private
 
@@ -124,13 +124,13 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       character(len=32) :: use_basis
 
       ok = .false.
       use_basis = "sto-3g"
       if (present(basis)) use_basis = basis
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, trim(use_basis), mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, trim(use_basis), mol, err)
       if (err%has_error()) return
       if (present(gradient)) then
          gradient = 0.0_dp
@@ -163,21 +163,21 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       character(len=32) :: use_basis
 
       ok = .false.
       use_basis = "sto-3g"
       if (present(basis)) use_basis = basis
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, trim(use_basis), mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, trim(use_basis), mol, err)
       if (err%has_error()) return
       call xc_context_create(mol, functional, ctx, err, level=3, allow_half=.true.)
       if (err%has_error()) then
          call mol%destroy()
          return
       end if
-      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (.not. err%has_error()) density = scf%density
       call mol%destroy()
       ok = .not. err%has_error()
@@ -485,7 +485,7 @@ contains
       real(dp) :: fd, worst
       real(dp), allocatable :: density(:, :)
       type(xc_context_t) :: ctx
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       logical :: ok
       integer :: ia, a, ja, b
@@ -496,7 +496,7 @@ contains
       call check(error, ok, "the b97m-v reference failed")
       if (allocated(error)) return
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       hess = 0.0_dp
       call vv10_hessian(ctx, mol, density, hess, err)
       call mol%destroy()
@@ -544,10 +544,10 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
       call vv10_gradient_fixed_grid(ctx, mol, density, gradient, err)
       call mol%destroy()
@@ -563,13 +563,13 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       real(dp), allocatable :: v(:, :)
       real(dp) :: n_elec
 
       ok = .false.
       e_xc = 0.0_dp
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
       allocate (v(mol%nao, mol%nao))
       v = 0.0_dp
@@ -593,7 +593,7 @@ contains
       real(dp) :: shifted(3, 3), worst
       real(dp), allocatable :: dens(:, :), h1(:, :, :, :), vp(:, :), vm(:, :)
       type(xc_context_t) :: ctx
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       logical :: ok
       integer :: ia, a, nao, u, v
@@ -618,7 +618,7 @@ contains
       real(dp) :: shifted(3, 3), worst
       real(dp), allocatable :: dens(:, :), h1(:, :, :, :), vp(:, :), vm(:, :)
       type(xc_context_t) :: ctx
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       logical :: ok
       integer :: ia, a, nao, u, v
@@ -630,7 +630,7 @@ contains
       nao = size(dens, 1)
       allocate (h1(nao, nao, 3, size(WATER_Z)))
       h1 = 0.0_dp
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call xc_potential_deriv(ctx, mol, dens, h1, err)
       call mol%destroy()
       call check(error,.not. err%has_error(), "the potential derivative failed")
@@ -666,10 +666,10 @@ contains
       real(dp), allocatable, intent(out) :: v(:, :)
       type(error_t), intent(inout) :: err
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       real(dp) :: e, n
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (allocated(v)) deallocate (v)
       allocate (v(size(dens, 1), size(dens, 2)))
       v = 0.0_dp
@@ -700,7 +700,7 @@ contains
       real(dp) :: shifted(3, 3), worst
       real(dp), allocatable :: dens(:, :), h1(:, :, :, :), vp(:, :), vm(:, :)
       type(xc_context_t) :: ctx
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       logical :: ok
       integer :: ia, a, nao, u, v
@@ -714,7 +714,7 @@ contains
       nao = size(dens, 1)
       allocate (h1(nao, nao, 3, size(WATER_Z)))
       h1 = 0.0_dp
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call vv10_potential_deriv(ctx, mol, dens, h1, err)
       call mol%destroy()
       call check(error,.not. err%has_error(), "the VV10 potential derivative failed")
@@ -750,10 +750,10 @@ contains
       real(dp), allocatable, intent(out) :: v(:, :)
       type(error_t), intent(inout) :: err
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       real(dp) :: e
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (allocated(v)) deallocate (v)
       allocate (v(size(dens, 1), size(dens, 2)))
       v = 0.0_dp
@@ -792,7 +792,7 @@ contains
       real(dp), allocatable :: dens(:, :), trial(:, :, :), vk(:, :, :)
       real(dp), allocatable :: vp(:, :), vm(:, :)
       type(xc_context_t) :: ctx
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       logical :: ok
       integer :: nao, u, v, it
@@ -817,7 +817,7 @@ contains
       ! Zeroed here because `vv10_kernel_apply` accumulates, as
       ! `xc_kernel_apply` does -- the convention its callers already carry.
       vk = 0.0_dp
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call vv10_kernel_apply(ctx, mol, dens, trial, vk, err)
       call mol%destroy()
       call check(error,.not. err%has_error(), "the VV10 kernel apply failed")
@@ -895,7 +895,7 @@ contains
          !!
          !! Relative rather than absolute, because these are third derivatives
          !! of a functional that diverges at the tail of every atomic grid.
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx
       type(rhf_result_t) :: scf
       type(error_t) :: err
@@ -918,7 +918,7 @@ contains
       ! of those in a build without libxc, so an implicit skip would turn a
       ! configuration that simply cannot run this into a red test.
       if (.not. xc_available()) return
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "the molecule did not build: "// &
                  err%get_message())
       if (allocated(error)) return
@@ -927,7 +927,7 @@ contains
       call check(error,.not. err%has_error(), "the functional did not resolve: "// &
                  err%get_message())
       if (allocated(error)) return
-      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (err%has_error()) call mol%destroy()
       call check(error,.not. err%has_error(), "the reference did not converge: "// &
                  err%get_message())
@@ -1024,7 +1024,7 @@ contains
       real(dp), parameter :: TOL = 1.0e-10_dp
          !! Two evaluations of one quantity, so this is round-off. There is no
          !! step here to carry a step error.
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx
       type(rhf_result_t) :: scf
       type(error_t) :: err
@@ -1043,7 +1043,7 @@ contains
       ! of those in a build without libxc, so an implicit skip would turn a
       ! configuration that simply cannot run this into a red test.
       if (.not. xc_available()) return
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "the molecule did not build: "// &
                  err%get_message())
       if (allocated(error)) return
@@ -1052,7 +1052,7 @@ contains
       call check(error,.not. err%has_error(), "the functional did not resolve: "// &
                  err%get_message())
       if (allocated(error)) return
-      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (err%has_error()) call mol%destroy()
       call check(error,.not. err%has_error(), "the reference did not converge: "// &
                  err%get_message())
@@ -1073,7 +1073,7 @@ contains
       allocate (grad(3, 3), h1(n, n, 3, 3))
       grad = 0.0_dp
       h1 = 0.0_dp
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "the molecule did not build: "// &
                  err%get_message())
       if (allocated(error)) return
@@ -1149,7 +1149,7 @@ contains
       real(dp) :: fd, worst
       real(dp), allocatable :: dens(:, :), trial(:, :)
       type(xc_context_t) :: ctx
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       logical :: ok
       integer :: ia, a, ja, b, i, j, n
@@ -1172,7 +1172,7 @@ contains
       trial = 0.5_dp*(trial + transpose(trial))
 
       hess = 0.0_dp
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call xc_potential_hessian(ctx, mol, dens, trial, hess, err)
       call mol%destroy()
       call check(error,.not. err%has_error(), &
@@ -1243,7 +1243,7 @@ contains
          !! Zeroing the `g_xc` group misses by 3.18 instead -- nine orders up,
          !! and on a system where no reflection plane can hide it.
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx
       type(rhf_result_t) :: scf
       type(error_t) :: err
@@ -1255,7 +1255,7 @@ contains
 
       if (.not. xc_available()) return
 
-      call build_libcint_molecule(DZ, DSYM, DIMER, "6-31g*", mol, err)
+      call build_czt_molecule(DZ, DSYM, DIMER, "6-31g*", mol, err)
       call check(error,.not. err%has_error(), "the dimer did not build: "// &
                  err%get_message())
       if (allocated(error)) return
@@ -1264,7 +1264,7 @@ contains
       call check(error,.not. err%has_error(), "the functional did not resolve: "// &
                  err%get_message())
       if (allocated(error)) return
-      call run_libcint_rhf(mol, 20, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      call run_czt_rhf(mol, 20, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       call mol%destroy()
       call check(error,.not. err%has_error(), "the dimer reference did not "// &
                  "converge: "//err%get_message())
@@ -1282,7 +1282,7 @@ contains
 
       allocate (hess(3, 3, 6, 6))
       hess = 0.0_dp
-      call build_libcint_molecule(DZ, DSYM, DIMER, "6-31g*", mol, err)
+      call build_czt_molecule(DZ, DSYM, DIMER, "6-31g*", mol, err)
       call check(error,.not. err%has_error(), "the dimer did not rebuild: "// &
                  err%get_message())
       if (allocated(error)) return
@@ -1332,13 +1332,13 @@ contains
       real(dp), intent(out) :: trace(:, :)   !! (3, natm), Tr(P dV/dR) per component
       type(error_t), intent(inout) :: err
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       integer :: ia, c, u, v
       real(dp) :: acc
 
       trace = 0.0_dp
       h1 = 0.0_dp
-      call build_libcint_molecule(z, sym, coords, "6-31g*", mol, err)
+      call build_czt_molecule(z, sym, coords, "6-31g*", mol, err)
       if (err%has_error()) return
       call xc_potential_deriv(ctx, mol, dens, h1, err)
       call mol%destroy()
@@ -1385,7 +1385,7 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       real(dp), allocatable :: h1(:, :, :, :)
       integer :: ia, a
 
@@ -1393,7 +1393,7 @@ contains
       gradient = 0.0_dp
       allocate (h1(size(dens, 1), size(dens, 2), 3, size(WATER_Z)))
       h1 = 0.0_dp
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
       call xc_potential_deriv(ctx, mol, dens, h1, err)
       call mol%destroy()
@@ -1531,16 +1531,16 @@ contains
       real(dp), allocatable, intent(out) :: hess(:, :, :, :)
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx
       type(rhf_result_t) :: scf
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
       call xc_context_create(mol, functional, ctx, err, level=3, allow_half=.true.)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (.not. err%has_error()) then
          call ks_hessian(mol, WATER_Z, scf%density, scf%orbitals, scf%orbital_energies, &
                          5, ctx, ctx%exx_fraction, hess, err)
@@ -1556,20 +1556,20 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx
       type(rhf_result_t) :: scf
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "sto-3g", mol, err)
       if (err%has_error()) return
       call xc_context_create(mol, functional, ctx, err, level=3, allow_half=.true.)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (.not. err%has_error()) then
-         call libcint_scf_gradient(mol, scf%density, orbitals=scf%orbitals, &
-                                   orbital_energies=scf%orbital_energies, &
-                                   n_occupied=5, gradient=gradient, error=err, xc=ctx)
+         call czt_scf_gradient(mol, scf%density, orbitals=scf%orbitals, &
+                               orbital_energies=scf%orbital_energies, &
+                               n_occupied=5, gradient=gradient, error=err, xc=ctx)
       end if
       call mol%destroy()
       ok = .not. err%has_error()
@@ -1650,7 +1650,7 @@ contains
       real(dp), intent(out) :: worst
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx
       type(error_t) :: err
       real(dp), allocatable :: dens(:, :), ta(:, :), tb(:, :)
@@ -1669,7 +1669,7 @@ contains
 
       allocate (h1(nao, nao, 3, natm))
       h1 = 0.0_dp
-      call build_libcint_molecule(z, sym, coords, basis, mol, err)
+      call build_czt_molecule(z, sym, coords, basis, mol, err)
       if (.not. err%has_error()) call xc_kernel_deriv(ctx, mol, dens, ta, h1, err)
       call mol%destroy()
       call check(error,.not. err%has_error(), "the kernel derivative failed")
@@ -1780,7 +1780,7 @@ contains
       real(dp), intent(out) :: worst
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx
       type(error_t) :: err
       real(dp), allocatable :: dens(:, :), ta(:, :), tb(:, :)
@@ -1798,7 +1798,7 @@ contains
 
       allocate (v2(nao, nao))
       v2 = 0.0_dp
-      call build_libcint_molecule(z, sym, coords, basis, mol, err)
+      call build_czt_molecule(z, sym, coords, basis, mol, err)
       if (.not. err%has_error()) call xc_kernel2_apply(ctx, mol, dens, ta, tb, v2, err)
       call mol%destroy()
       call check(error,.not. err%has_error(), "the second kernel apply failed")
@@ -1830,12 +1830,12 @@ contains
       real(dp), allocatable, intent(out) :: v(:, :)
       type(error_t), intent(inout) :: err
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
 
       if (err%has_error()) return
       allocate (v(size(dens, 1), size(dens, 2)))
       v = 0.0_dp
-      call build_libcint_molecule(z, sym, coords, basis, mol, err)
+      call build_czt_molecule(z, sym, coords, basis, mol, err)
       if (err%has_error()) return
       call xc_kernel_apply(ctx, mol, dens, dtilde, v, err)
       call mol%destroy()
@@ -1876,19 +1876,19 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
 
       ok = .false.
-      call build_libcint_molecule(z, sym, coords, basis, mol, err)
+      call build_czt_molecule(z, sym, coords, basis, mol, err)
       if (err%has_error()) return
       call xc_context_create(mol, functional, ctx, err, level=3, allow_half=.true.)
       if (err%has_error()) then
          call mol%destroy()
          return
       end if
-      call run_libcint_rhf(mol, sum(z), 100, 1.0e-12_dp, 1.0e-10_dp, .false., &
-                           scf, err, xc=ctx)
+      call run_czt_rhf(mol, sum(z), 100, 1.0e-12_dp, 1.0e-10_dp, .false., &
+                       scf, err, xc=ctx)
       if (.not. err%has_error()) dens = scf%density
       call mol%destroy()
       ok = .not. err%has_error()

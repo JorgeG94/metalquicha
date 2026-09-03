@@ -34,7 +34,7 @@ find_deck() { find validation/inputs -name "$1.json" -print -quit; }
 
 
 if [ ! -x "$MQC" ]; then
-    echo "No mqc binary at $MQC -- build with -DMQC_ENABLE_LIBCINT=ON first." >&2
+    echo "No mqc binary at $MQC -- build with -DMQC_ENABLE_CZT=ON first." >&2
     exit 1
 fi
 

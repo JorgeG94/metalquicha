@@ -11,28 +11,28 @@ program check_df_deriv
    !! happened.
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_gradient, only: three_centre_deriv, two_centre_deriv
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_gradient, only: three_centre_deriv, two_centre_deriv
    implicit none
 
    integer, parameter :: N_DIM = 3
-   type(libcint_molecule_t) :: orb, aux
+   type(czt_molecule_t) :: orb, aux
    type(error_t) :: error
    real(dp), allocatable :: ip1(:, :, :, :), ip2(:, :, :, :), ip2c(:, :, :)
    integer :: i, j, k, c
 
-   call build_libcint_molecule([1, 1], ["H", "H"], &
-                               reshape([0.0_dp, 0.0_dp, -0.7_dp, &
-                                        0.0_dp, 0.0_dp, 0.7_dp], [N_DIM, 2]), &
-                               "sto-3g", orb, error)
+   call build_czt_molecule([1, 1], ["H", "H"], &
+                           reshape([0.0_dp, 0.0_dp, -0.7_dp, &
+                                    0.0_dp, 0.0_dp, 0.7_dp], [N_DIM, 2]), &
+                           "sto-3g", orb, error)
    if (error%has_error()) then
       write (*, "(a,a)") "orbital basis failed: ", error%get_message()
       error stop 1
    end if
-   call build_libcint_molecule([1, 1], ["H", "H"], &
-                               reshape([0.0_dp, 0.0_dp, -0.7_dp, &
-                                        0.0_dp, 0.0_dp, 0.7_dp], [N_DIM, 2]), &
-                               "cc-pvdz-rifit", aux, error)
+   call build_czt_molecule([1, 1], ["H", "H"], &
+                           reshape([0.0_dp, 0.0_dp, -0.7_dp, &
+                                    0.0_dp, 0.0_dp, 0.7_dp], [N_DIM, 2]), &
+                           "cc-pvdz-rifit", aux, error)
    if (error%has_error()) then
       write (*, "(a,a)") "auxiliary basis failed: ", error%get_message()
       error stop 1

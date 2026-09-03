@@ -20,10 +20,10 @@ module test_mqc_ump2
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf
-   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ump2, &
-                              run_libcint_ri_mp2, run_libcint_uri_mp2
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, run_czt_uhf
+   use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ump2, &
+                          run_czt_ri_mp2, run_czt_uri_mp2
    implicit none
    private
 
@@ -54,18 +54,18 @@ contains
       !! One converged reference on the shared geometry
       integer, intent(in) :: nelec, mult
       logical, intent(in) :: unrestricted
-      type(libcint_molecule_t), intent(out) :: mol
+      type(czt_molecule_t), intent(out) :: mol
       type(rhf_result_t), intent(out) :: scf
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       if (err%has_error()) return
       if (unrestricted) then
-         call run_libcint_uhf(mol, nelec, mult, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err)
+         call run_czt_uhf(mol, nelec, mult, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err)
       else
-         call run_libcint_rhf(mol, nelec, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err)
+         call run_czt_rhf(mol, nelec, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err)
       end if
       ok = .not. err%has_error()
    end subroutine water_scf
@@ -74,7 +74,7 @@ contains
       !! UMP2 on a closed shell is RMP2, to machine precision
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol_r, mol_u
+      type(czt_molecule_t) :: mol_r, mol_u
       type(rhf_result_t) :: rhf, uhf
       type(mp2_result_t) :: rmp2, ump2
       type(error_t) :: err
@@ -83,17 +83,17 @@ contains
       call water_scf(10, 1, .false., mol_r, rhf, err, ok)
       call check(error, ok, "the restricted reference did not converge")
       if (allocated(error)) return
-      call run_libcint_mp2(mol_r, rhf%orbitals, rhf%orbital_energies, 5, rhf%energy, &
-                           rmp2, err)
+      call run_czt_mp2(mol_r, rhf%orbitals, rhf%orbital_energies, 5, rhf%energy, &
+                       rmp2, err)
       call check(error,.not. err%has_error(), "RMP2 failed")
       if (allocated(error)) return
 
       call water_scf(10, 1, .true., mol_u, uhf, err, ok)
       call check(error, ok, "the unrestricted reference did not converge")
       if (allocated(error)) return
-      call run_libcint_ump2(mol_u, uhf%orbitals, uhf%orbitals_beta, &
-                            uhf%orbital_energies, uhf%orbital_energies_beta, &
-                            5, 5, uhf%energy, ump2, err)
+      call run_czt_ump2(mol_u, uhf%orbitals, uhf%orbitals_beta, &
+                        uhf%orbital_energies, uhf%orbital_energies_beta, &
+                        5, 5, uhf%energy, ump2, err)
       call check(error,.not. err%has_error(), "UMP2 failed")
       if (allocated(error)) return
 
@@ -115,7 +115,7 @@ contains
       !! A doublet correlates, and both channels contribute
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: uhf
       type(mp2_result_t) :: ump2
       type(error_t) :: err
@@ -124,9 +124,9 @@ contains
       call water_scf(9, 2, .true., mol, uhf, err, ok)
       call check(error, ok, "the cation did not converge")
       if (allocated(error)) return
-      call run_libcint_ump2(mol, uhf%orbitals, uhf%orbitals_beta, &
-                            uhf%orbital_energies, uhf%orbital_energies_beta, &
-                            5, 4, uhf%energy, ump2, err)
+      call run_czt_ump2(mol, uhf%orbitals, uhf%orbitals_beta, &
+                        uhf%orbital_energies, uhf%orbital_energies_beta, &
+                        5, 4, uhf%energy, ump2, err)
       call check(error,.not. err%has_error(), "UMP2 on the cation failed")
       if (allocated(error)) return
 
@@ -159,7 +159,7 @@ contains
       !! enough to hide a real mistake.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol_r, mol_u, aux_r, aux_u
+      type(czt_molecule_t) :: mol_r, mol_u, aux_r, aux_u
       type(rhf_result_t) :: rhf, uhf
       type(mp2_result_t) :: rmp2, ump2
       type(error_t) :: err
@@ -168,23 +168,23 @@ contains
       call water_scf(10, 1, .false., mol_r, rhf, err, ok)
       call check(error, ok, "the restricted reference did not converge")
       if (allocated(error)) return
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz-rifit", aux_r, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz-rifit", aux_r, err)
       call check(error,.not. err%has_error(), "the auxiliary basis did not build")
       if (allocated(error)) return
-      call run_libcint_ri_mp2(mol_r, aux_r, rhf%orbitals, rhf%orbital_energies, 5, &
-                              rhf%energy, rmp2, err)
+      call run_czt_ri_mp2(mol_r, aux_r, rhf%orbitals, rhf%orbital_energies, 5, &
+                          rhf%energy, rmp2, err)
       call check(error,.not. err%has_error(), "RI-MP2 failed")
       if (allocated(error)) return
 
       call water_scf(10, 1, .true., mol_u, uhf, err, ok)
       call check(error, ok, "the unrestricted reference did not converge")
       if (allocated(error)) return
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz-rifit", aux_u, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz-rifit", aux_u, err)
       call check(error,.not. err%has_error(), "the auxiliary basis did not build")
       if (allocated(error)) return
-      call run_libcint_uri_mp2(mol_u, aux_u, uhf%orbitals, uhf%orbitals_beta, &
-                               uhf%orbital_energies, uhf%orbital_energies_beta, &
-                               5, 5, uhf%energy, ump2, err)
+      call run_czt_uri_mp2(mol_u, aux_u, uhf%orbitals, uhf%orbitals_beta, &
+                           uhf%orbital_energies, uhf%orbital_energies_beta, &
+                           5, 5, uhf%energy, ump2, err)
       call check(error,.not. err%has_error(), "URI-MP2 failed")
       if (allocated(error)) return
 
@@ -205,7 +205,7 @@ contains
       !! Alpha and beta must span the same orbital space
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: uhf
       type(mp2_result_t) :: ump2
       type(error_t) :: err
@@ -217,9 +217,9 @@ contains
 
       ! Beta truncated by one column. Silently correlating a smaller virtual
       ! space than alpha would return a plausible number.
-      call run_libcint_ump2(mol, uhf%orbitals, uhf%orbitals_beta(:, 1:size(uhf%orbitals_beta, 2) - 1), &
-                            uhf%orbital_energies, uhf%orbital_energies_beta, &
-                            5, 5, uhf%energy, ump2, err)
+      call run_czt_ump2(mol, uhf%orbitals, uhf%orbitals_beta(:, 1:size(uhf%orbitals_beta, 2) - 1), &
+                        uhf%orbital_energies, uhf%orbital_energies_beta, &
+                        5, 5, uhf%energy, ump2, err)
       call check(error, err%has_error(), "a truncated beta space was accepted")
       call err%clear()
       call mol%destroy()

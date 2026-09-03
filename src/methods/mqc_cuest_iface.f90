@@ -15,13 +15,13 @@ module mqc_cuest_iface
    public :: cuest_scf_settings_t
    public :: apply_scf_settings
    public :: apply_properties_settings
-   public :: BACKEND_AUTO, BACKEND_CUEST, BACKEND_LIBCINT
+   public :: BACKEND_AUTO, BACKEND_CUEST, BACKEND_CZT
    public :: parse_backend_name
    public :: method_runs_on_cuest
 
    integer, parameter :: BACKEND_AUTO = 0
    integer, parameter :: BACKEND_CUEST = 1
-   integer, parameter :: BACKEND_LIBCINT = 2
+   integer, parameter :: BACKEND_CZT = 2
       !! Which integral backend a deck asked for. `auto` is the default: cuEST
       !! when the build has it, the CPU path otherwise. The other two are
       !! requests, and a request that cannot be honoured is refused rather than
@@ -33,7 +33,7 @@ module mqc_cuest_iface
          !! Orbital basis set name
       logical :: cartesian = .false.
          !! Read the basis in Cartesian form whatever its file declares; see
-         !! `mqc_config_t`. Only the libcint path acts on it.
+         !! `mqc_config_t`. Only the cenzontle path acts on it.
       character(len=32) :: ecp_set = ""
          !! `model.ecp`, the effective core potential set, empty for none. A
          !! basis does not imply a potential, and asking for one on a light
@@ -124,7 +124,7 @@ module mqc_cuest_iface
          !! preliminary SCF in order. The target basis is `basis_set` and is not
          !! repeated, so STO-3G then 6-31G then cc-pVTZ is two steps.
          !!
-         !! Only the libcint backend acts on it; the cuEST path refuses the
+         !! Only the cenzontle backend acts on it; the cuEST path refuses the
          !! guess rather than silently running a different one.
       integer :: device_rank = 0
          !! Node-local MPI rank; decides which GPU this rank binds to
@@ -249,7 +249,7 @@ contains
       case ("cuest", "gpu")
          kind = BACKEND_CUEST
       case ("libcint", "cpu")
-         kind = BACKEND_LIBCINT
+         kind = BACKEND_CZT
       case default
          call error%set(ERROR_VALIDATION, "unknown backend '"//lower//"'; expected "// &
                         "'auto', 'cuest' (or 'gpu'), or 'libcint' (or 'cpu')")

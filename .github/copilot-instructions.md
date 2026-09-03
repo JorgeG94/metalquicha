@@ -48,8 +48,8 @@ without being listed is invisible to CMake. Adding either kind breaks one build
 and not the other, and CI may only cover one.
 
 **Tests registered outside their backend guard.** `test/CMakeLists.txt` wraps
-libcint-dependent tests in `if(MQC_ENABLE_LIBCINT)`. A test using
-`mqc_libcint_*` modules registered outside it breaks every reduced build with
+libcint-dependent tests in `if(MQC_ENABLE_CZT)`. A test using
+`mqc_czt_*` modules registered outside it breaks every reduced build with
 `Cannot open module file`. Check which modules a new test `use`s, not where its
 `addtest` line happens to sit.
 
