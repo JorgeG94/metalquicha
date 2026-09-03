@@ -37,7 +37,8 @@ contains
                   new_unittest("gradient_never_yields_energy", test_gradient_refused), &
                   new_unittest("correlated_never_yields_energy", test_correlated_refused), &
                   new_unittest("missing_build_is_reported", test_missing_build), &
-                  new_unittest("agrees_with_the_cpu_path", test_matches_cpu) &
+                  new_unittest("agrees_with_the_cpu_path", test_matches_cpu), &
+                  new_unittest("agrees_on_general_contraction", test_general_contraction) &
                   ]
    end subroutine collect_mqc_terco_backend_tests
 
@@ -195,6 +196,46 @@ contains
       call check(error, abs(terco_result%energy%scf - cpu_result%energy%scf) < 1.0e-8_dp, &
                  "terco and the CPU path disagree on water/6-31G Hartree-Fock")
    end subroutine test_matches_cpu
+
+   subroutine test_general_contraction(error)
+      !! cc-pVDZ, whose s space is one shell carrying three contracted functions
+      !!
+      !! terco has no `NCTR_OF`, so the driver splits each column into its own
+      !! shell before handing the basis over. The failure that guards against is
+      !! silent: terco would otherwise build one function per shell from the
+      !! first column, run a perfectly convergent SCF over a smaller basis, and
+      !! report the energy as the deck's own.
+      !!
+      !! Cartesian because terco reads every shell that way and cc-pVDZ has d
+      !! functions -- six against five is a different basis, and the driver
+      !! refuses that mismatch rather than papering over it.
+      !!
+      !! **Only runs where terco is linked.**
+      type(error_type), allocatable, intent(out) :: error
+      type(cuest_scf_settings_t) :: settings
+      type(physical_fragment_t) :: fragment
+      type(calculation_result_t) :: terco_result, cpu_result
+
+      if (.not. terco_backend_available()) return
+
+      call water(fragment)
+      settings%basis_set = "cc-pvdz"
+      settings%cartesian = .true.
+      settings%energy_tol = 1.0e-10_dp
+      settings%density_tol = 1.0e-8_dp
+
+      call run_terco_scf(settings, fragment, terco_result)
+      call check(error, terco_result%has_energy, "terco returned no energy for water/cc-pVDZ")
+      if (allocated(error)) return
+
+      call run_czt_hf(settings, fragment, cpu_result)
+      call check(error, cpu_result%has_energy, "the CPU path returned no energy for water/cc-pVDZ")
+      if (allocated(error)) return
+
+      call check(error, abs(terco_result%energy%scf - cpu_result%energy%scf) < 1.0e-8_dp, &
+                 "terco and the CPU path disagree on water/cc-pVDZ -- a dropped "// &
+                 "contraction column would show up exactly here")
+   end subroutine test_general_contraction
 
    subroutine water(fragment)
       !! One water, near equilibrium, in Bohr

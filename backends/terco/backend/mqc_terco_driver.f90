@@ -22,7 +22,7 @@ module mqc_terco_driver
    use mqc_elements, only: element_number_to_symbol
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_ao, only: max_ao_l
-   use libcint_fortran, only: LIBCINT_NCTR_OF
+   use libcint_fortran, only: LIBCINT_NCTR_OF, LIBCINT_NPRIM_OF, LIBCINT_PTR_COEFF
    use mqc_czt_atomic_guess, only: build_restricted_guess, build_atomic_guess, &
                                    parse_guess_name
    use trc_c_interfaces, only: trc_basis_create_libcint, trc_basis_destroy, &
@@ -57,7 +57,7 @@ contains
       real(dp), allocatable :: dmat(:, :, :), eps(:, :)
       character(kind=c_char), allocatable :: functional_c(:)
       type(c_ptr) :: basis_handle, dguess_ptr
-      integer(c_int) :: rc, nao_c, nalpha_c, nbeta_c, grid_c, maxiter_c, niter_c
+      integer(c_int) :: rc, nao_c, nalpha_c, nbeta_c, grid_c, maxiter_c, niter_c, nbas_c
       integer(c_int), allocatable :: atm_c(:, :), bas_c(:, :)
       real(c_double), allocatable :: env_c(:)
       real(c_double) :: energy_c, e_xc_c
@@ -113,6 +113,7 @@ contains
 
       call build_czt_molecule(fragment%element_numbers, element_symbols, &
                               fragment%coordinates, settings%basis_set, mol, error, &
+                              force_cartesian=settings%cartesian, &
                               ecp_name=settings%ecp_set)
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, "backend 'terco': "//error%get_message())
@@ -144,24 +145,6 @@ contains
                                "for five -- a different basis, reported as though it were "// &
                                "the requested one. Set 'model.cartesian', or ask for "// &
                                "backend 'libcint'.")
-         result%has_error = .true.
-         result%has_energy = .false.
-         return
-      end if
-
-      ! A generally contracted row -- one `bas` entry carrying several contracted
-      ! functions over the same primitives, which is how cc-pVDZ writes its s
-      ! space -- is refused. terco reads `NPRIM_OF` coefficients from
-      ! `PTR_COEFF` and has no notion of `NCTR_OF`, so it would build ONE
-      ! function from the first column and quietly drop the rest. That is a
-      ! smaller basis than the deck asked for, reported as the deck's own, and
-      ! the AO count is the only place it shows.
-      if (any(mol%bas(LIBCINT_NCTR_OF, 1:mol%nbas) > 1)) then
-         call result%error%set(ERROR_VALIDATION, "backend 'terco' was asked for with a "// &
-                               "generally contracted basis. terco reads one contracted "// &
-                               "function per shell, so it would silently build a smaller "// &
-                               "basis than the deck names. Ask for backend 'libcint', or "// &
-                               "choose a segmented basis such as 6-31G.")
          result%has_error = .true.
          result%has_energy = .false.
          return
@@ -234,11 +217,11 @@ contains
       ! The split `bas`/`env`, never the fused sp view: terco reads plain
       ! libcint rows and an L-shell marker is not one.
       atm_c = int(mol%atm, c_int)
-      bas_c = int(mol%bas, c_int)
       env_c = real(mol%env, c_double)
+      call segment_general_contractions(mol%bas, mol%nbas, bas_c, nbas_c)
 
       rc = trc_basis_create_libcint(atm_c, int(mol%natm, c_int), bas_c, &
-                                    int(mol%nbas, c_int), env_c, &
+                                    nbas_c, env_c, &
                                     int(size(mol%env), c_int), 1_c_int, basis_handle)
       if (rc /= TRC_OK) then
          call result%error%set(ERROR_VALIDATION, "backend 'terco': the basis was refused "// &
@@ -307,6 +290,59 @@ contains
 
       rc = trc_basis_destroy(basis_handle)
    end subroutine run_terco_scf
+
+   pure subroutine segment_general_contractions(bas, nbas, bas_out, nbas_out)
+      !! One `bas` row per contracted function, which is all terco can read
+      !!
+      !! A generally contracted shell -- several contracted functions sharing one
+      !! set of primitives, which is how cc-pVDZ writes its s space -- is stored
+      !! by libcint as an `(nprim, nctr)` coefficient matrix with stride nprim,
+      !! `coeff[nprim*ictr + iprim]`. terco reads `NPRIM_OF` coefficients from
+      !! `PTR_COEFF` and has no notion of `NCTR_OF`, so handing it such a row
+      !! builds ONE function from the first column and drops the rest: a smaller
+      !! basis than the deck names, reported as the deck's own.
+      !!
+      !! The columns are already independent functions over shared exponents, so
+      !! the fix is bookkeeping rather than arithmetic. Each column becomes its
+      !! own shell: same `PTR_EXP`, `NCTR_OF` of one, and `PTR_COEFF` advanced to
+      !! that column. `env` is untouched -- the split rows point into the
+      !! coefficient block that is already there.
+      !!
+      !! **AO order is preserved**, which is what makes this safe to do behind
+      !! the caller's back. libcint numbers a shell's functions with the
+      !! contraction index slowest -- `libcint_cgto_cart` is `nctr*ncart` -- so
+      !! consecutive split shells occupy exactly the positions the one general
+      !! shell did, and a density built against `mol` still lines up.
+      !!
+      !! What it costs is the reason general contraction exists: the primitive
+      !! work that the columns used to share is now repeated per column, and the
+      !! shell-pair count grows with it. Correct and slower beats refused.
+      integer, intent(in) :: bas(:, :)
+      integer, intent(in) :: nbas
+      integer(c_int), allocatable, intent(out) :: bas_out(:, :)
+      integer(c_int), intent(out) :: nbas_out
+
+      integer :: ish, ictr, nprim, nctr, row
+
+      nbas_out = 0
+      do ish = 1, nbas
+         nbas_out = nbas_out + int(max(bas(LIBCINT_NCTR_OF, ish), 1), c_int)
+      end do
+
+      allocate (bas_out(size(bas, 1), nbas_out))
+      row = 0
+      do ish = 1, nbas
+         nprim = bas(LIBCINT_NPRIM_OF, ish)
+         nctr = max(bas(LIBCINT_NCTR_OF, ish), 1)
+         do ictr = 1, nctr
+            row = row + 1
+            bas_out(:, row) = int(bas(:, ish), c_int)
+            bas_out(LIBCINT_NCTR_OF, row) = 1_c_int
+            bas_out(LIBCINT_PTR_COEFF, row) = &
+               int(bas(LIBCINT_PTR_COEFF, ish) + (ictr - 1)*nprim, c_int)
+         end do
+      end do
+   end subroutine segment_general_contractions
 
    pure subroutine spin_occupations(n_electrons, multiplicity, n_alpha, n_beta, ok)
       !! Alpha and beta counts from an electron count and a multiplicity
