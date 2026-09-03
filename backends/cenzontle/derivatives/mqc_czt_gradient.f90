@@ -49,8 +49,9 @@ module mqc_czt_gradient
                               libcint_2e_ip1_sph_optimizer, libcint_2e_ip1_cart_optimizer, &
                               libcint_del_optimizer, LIBCINT_PTR_RINV_ORIG, &
                               LIBCINT_PTR_RANGE_OMEGA, LIBCINT_PTR_EXP, &
-                              LIBCINT_NPRIM_OF
-   use mqc_czt_direct, only: schwarz_bounds
+                              LIBCINT_NPRIM_OF, LIBCINT_ATOM_OF
+   use mqc_czt_direct, only: schwarz_bounds, block_density_max, pair_degeneracy, &
+                             pair_work_order
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    implicit none
    private
@@ -67,6 +68,8 @@ module mqc_czt_gradient
    public :: two_electron_deriv
       !! Exposed for the MCSCF gradient, whose inactive and active blocks are
       !! separable and contract exactly as a closed-shell reference does.
+   public :: two_electron_gradient
+   public :: hellmann_feynman_gradient
    public :: iprinv_deriv_at
    public :: xc_potential_gradient
    public :: vv10_gradient_fixed_grid     !! The VV10 Hessian differences this
@@ -84,6 +87,18 @@ module mqc_czt_gradient
       !! Set two decades tighter than the accuracy actually wanted, because the
       !! bra bound it multiplies is an estimate rather than a rigorous
       !! Cauchy-Schwarz one -- see `two_electron_deriv`.
+
+   real(dp), parameter :: GRAD_SCREEN_TOL = 1.0e-12_dp
+      !! Contribution below which `two_electron_gradient` skips one derivative
+      !! integral.
+      !!
+      !! Two decades inside `DERIV_SCREEN_TOL` because the quantity it bounds
+      !! is two decades smaller: the contribution of an integral to the
+      !! gradient itself, weighted by a product of two density elements, where
+      !! `two_electron_deriv` bounds an element of `vhf` weighted by one.
+      !! Measured on a 74-atom 6-31G* Hartree-Fock gradient, this value
+      !! reproduces the unscreened result to 1e-9 Hartree/Bohr, which is what
+      !! the older loop gave at its own default; 1e-10 here would be 1e-7.
 
 contains
 
@@ -122,8 +137,6 @@ contains
 
       real(dp), allocatable :: total_density(:, :), weighted(:, :)
       real(dp), allocatable :: s1(:, :, :), h1(:, :, :), kin(:, :, :)
-      real(dp), allocatable :: vhf(:, :, :), vhf_beta(:, :, :), vhf_lr(:, :, :)
-      real(dp), allocatable :: vrinv(:, :, :), hcore_a(:, :, :)
       real(dp) :: exx
       integer, allocatable :: offsets(:), counts(:)
       integer :: nao, iatom, comp, p0, p1
@@ -208,77 +221,56 @@ contains
             end if
          end if
          if (error%has_error()) return
-      else if (unrestricted) then
-         call two_electron_deriv(mol, total_density, vhf, error, exx_fraction=exx, &
-                                 exchange_density=density)
-         if (error%has_error()) return
-         call two_electron_deriv(mol, total_density, vhf_beta, error, exx_fraction=exx, &
-                                 exchange_density=density_beta)
-         if (error%has_error()) return
       else
-         call two_electron_deriv(mol, total_density, vhf, error, exx_fraction=exx)
+         ! The exact two-electron term accumulates straight into `gradient` as
+         ! well, one pass over the unique shell quartets whichever way the
+         ! spins go: the Coulomb field comes from the total density and
+         ! exchange from each spin, or from the total carrying its factor of
+         ! two at a closed shell.
+         if (unrestricted) then
+            call two_electron_gradient(mol, total_density, gradient, error, &
+                                       density_alpha=density, density_beta=density_beta, &
+                                       exx_fraction=exx)
+         else
+            call two_electron_gradient(mol, total_density, gradient, error, &
+                                       exx_fraction=exx)
+         end if
          if (error%has_error()) return
          ! The long-range half of a range-separated functional's exchange, at
-         ! the screened omega. Exchange only, and added into the same `vhf` the
-         ! per-atom loop below contracts: `J` is complete from the pass above,
-         ! and the attenuated kernel carries no Coulomb term of its own.
-         if (present(xc)) then
+         ! the screened omega. Exchange only: `J` is complete from the pass
+         ! above, and the attenuated kernel carries no Coulomb term of its own.
+         if (present(xc) .and. .not. unrestricted) then
             if (xc%range_separated) then
-               call two_electron_deriv(mol, total_density, vhf_lr, error, &
-                                       exx_fraction=xc%rs_k_lr, omega=xc%rs_omega, &
-                                       with_coulomb=.false.)
+               call two_electron_gradient(mol, total_density, gradient, error, &
+                                          exx_fraction=xc%rs_k_lr, omega=xc%rs_omega, &
+                                          with_coulomb=.false.)
                if (error%has_error()) return
-               vhf = vhf + vhf_lr
-               deallocate (vhf_lr)
             end if
          end if
       end if
 
+      ! dH/dR_A has two parts that look alike and are not. Moving atom A moves
+      ! the *nucleus*, which every electron feels wherever its orbital sits:
+      ! the Hellmann-Feynman term, with no basis-set derivative in it, and one
+      ! pass over the shell pairs for every atom at once. Moving atom A also
+      ! moves the basis functions centred on it, which is the `h1` block in the
+      ! per-atom loop below.
+      call hellmann_feynman_gradient(mol, total_density, gradient)
+
       allocate (offsets(mol%natm), counts(mol%natm))
       call atom_ao_blocks(mol, offsets, counts)
 
-      allocate (vrinv(nao, nao, 3), hcore_a(nao, nao, 3))
-
       do iatom = 1, mol%natm
+         if (counts(iatom) == 0) cycle
          p0 = offsets(iatom) + 1
          p1 = offsets(iatom) + counts(iatom)
-
-         ! dH/dR_A has two parts that look alike and are not. Moving atom A
-         ! moves the basis functions centred on it, which is the `h1` block
-         ! below; it also moves the *nucleus*, which every electron feels
-         ! wherever its orbital sits. The second is the Hellmann-Feynman term,
-         ! it involves no basis-set derivative, and it is what `iprinv` is for.
-         call iprinv_deriv_at(mol, iatom, vrinv)
-         vrinv = -mol%charges(iatom)*vrinv
-         if (counts(iatom) > 0) then
-            vrinv(p0:p1, :, :) = vrinv(p0:p1, :, :) + h1(p0:p1, :, :)
-         end if
-         do comp = 1, 3
-            hcore_a(:, :, comp) = vrinv(:, :, comp) + transpose(vrinv(:, :, comp))
-         end do
-
-         do comp = 1, 3
-            gradient(comp, iatom) = gradient(comp, iatom) &
-                                    + sum(hcore_a(:, :, comp)*total_density)
-         end do
-
-         if (counts(iatom) == 0) cycle
 
          ! Twice, because the nabla was on the bra: the ket's contribution is
          ! the same number by the symmetry of the integrals, so it is counted
          ! rather than computed.
          do comp = 1, 3
-            if (.not. fitted) then
-               if (unrestricted) then
-                  gradient(comp, iatom) = gradient(comp, iatom) &
-                                          + 2.0_dp*sum(vhf(p0:p1, :, comp)*density(p0:p1, :)) &
-                                          + 2.0_dp*sum(vhf_beta(p0:p1, :, comp)*density_beta(p0:p1, :))
-               else
-                  gradient(comp, iatom) = gradient(comp, iatom) &
-                                          + 2.0_dp*sum(vhf(p0:p1, :, comp)*total_density(p0:p1, :))
-               end if
-            end if
             gradient(comp, iatom) = gradient(comp, iatom) &
+                                    + 2.0_dp*sum(h1(p0:p1, :, comp)*total_density(p0:p1, :)) &
                                     - 2.0_dp*sum(s1(p0:p1, :, comp)*weighted(p0:p1, :))
          end do
       end do
@@ -1563,8 +1555,13 @@ contains
       ! the wrong strides for every smaller one -- invisible in a basis of s
       ! functions and wrong everywhere else.
       mx = max_block(mol)
-      allocate (buf(mx*mx*3))
 
+      ! Threaded over the bra shell: every block a thread writes sits in its
+      ! own rows, so nothing is shared but the molecule.
+      !$omp parallel default(none) shared(mol, matrix, which, mx) &
+      !$omp    private(ish, jsh, di, dj, io, jo, i, j, comp, ret, shls, buf)
+      allocate (buf(mx*mx*3))
+      !$omp do schedule(dynamic)
       do ish = 1, mol%nbas
          di = shell_dim(mol%cartesian, ish - 1, mol%bas)
          io = mol%shell_offset(ish)
@@ -1609,6 +1606,9 @@ contains
             end do
          end do
       end do
+      !$omp end do
+      deallocate (buf)
+      !$omp end parallel
    end subroutine one_electron_deriv
 
    subroutine iprinv_deriv_at(mol, iatom, matrix)
@@ -1629,8 +1629,11 @@ contains
 
       matrix = 0.0_dp
       mx = max_block(mol)
-      allocate (buf(mx*mx*3))
 
+      !$omp parallel default(none) shared(mol, matrix, env, mx) &
+      !$omp    private(ish, jsh, di, dj, io, jo, i, j, comp, ret, shls, buf)
+      allocate (buf(mx*mx*3))
+      !$omp do schedule(dynamic)
       do ish = 1, mol%nbas
          di = shell_dim(mol%cartesian, ish - 1, mol%bas)
          io = mol%shell_offset(ish)
@@ -1657,7 +1660,81 @@ contains
             end do
          end do
       end do
+      !$omp end do
+      deallocate (buf)
+      !$omp end parallel
    end subroutine iprinv_deriv_at
+
+   subroutine hellmann_feynman_gradient(mol, density, gradient)
+      !! The Hellmann-Feynman term of dE/dR, added into `gradient`
+      !!
+      !! `-2 Z_A sum_ij D_ij (nabla i|1/|r-R_A||j)` for every atom A: the force
+      !! of the electrons on a nucleus that moves while the basis stays put.
+      !! Integration by parts turns the derivative of the operator into the
+      !! derivative of the bra plus that of the ket, and `D` is symmetric, so
+      !! the ket's half is the bra's counted twice.
+      !!
+      !! One pass over the shell pairs with the atoms inside, rather than a
+      !! full `iprinv_deriv_at` matrix per atom: the integral count is the
+      !! same and nothing of size `nao^2` is stored.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)       !! Symmetric, the total density
+      real(dp), intent(inout) :: gradient(:, :)   !! (3, natm), added to
+
+      real(dp), allocatable :: env(:), buf(:), g_local(:, :)
+      real(dp) :: acc
+      integer :: shls(2)
+      integer :: ish, jsh, di, dj, i, j, comp, ret, io, jo, mx, iatom
+
+      mx = max_block(mol)
+
+      ! `env` is private because the operator origin lives in it and each
+      ! thread moves it from atom to atom.
+      !$omp parallel default(none) shared(mol, density, gradient, mx) &
+      !$omp    private(ish, jsh, di, dj, io, jo, i, j, comp, ret, shls, buf, env, &
+      !$omp            g_local, iatom, acc)
+      allocate (buf(mx*mx*3), env(size(mol%env)), g_local(3, mol%natm))
+      env = mol%env
+      g_local = 0.0_dp
+      !$omp do schedule(dynamic)
+      do ish = 1, mol%nbas
+         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         io = mol%shell_offset(ish)
+         do jsh = 1, mol%nbas
+            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+            jo = mol%shell_offset(jsh)
+            shls = [ish - 1, jsh - 1]
+
+            do iatom = 1, mol%natm
+               env(LIBCINT_PTR_RINV_ORIG + 1:LIBCINT_PTR_RINV_ORIG + 3) = mol%coords(:, iatom)
+               if (mol%cartesian) then
+                  ret = libcint_1e_iprinv_cart(buf, shls, mol%atm, mol%natm, &
+                                               mol%bas, mol%nbas, env)
+               else
+                  ret = libcint_1e_iprinv_sph(buf, shls, mol%atm, mol%natm, &
+                                              mol%bas, mol%nbas, env)
+               end if
+               if (ret == 0) cycle
+
+               do comp = 1, 3
+                  acc = 0.0_dp
+                  do j = 1, dj
+                     do i = 1, di
+                        acc = acc + buf(i + di*(j - 1 + dj*(comp - 1)))*density(io + i, jo + j)
+                     end do
+                  end do
+                  g_local(comp, iatom) = g_local(comp, iatom) - 2.0_dp*mol%charges(iatom)*acc
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+      !$omp critical
+      gradient = gradient + g_local
+      !$omp end critical
+      deallocate (buf, env, g_local)
+      !$omp end parallel
+   end subroutine hellmann_feynman_gradient
 
    subroutine two_electron_deriv(mol, density, vhf, error, exchange_density, exx_fraction, &
                                  screen_tol, omega, with_coulomb)
@@ -1903,6 +1980,310 @@ contains
 
       deallocate (bounds, bq, bra_bound, dsh, esh, dims, offs)
    end subroutine two_electron_deriv
+
+   subroutine two_electron_gradient(mol, density, gradient, error, density_alpha, density_beta, &
+                                    exx_fraction, screen_tol, omega, with_coulomb)
+      !! The two-electron term of dE/dR, added into `gradient`
+      !!
+      !! `density` is the total density and drives the Coulomb term. Exchange
+      !! comes from the two spin densities when both are present, and from the
+      !! total alone when neither is -- a closed shell, where the total carries
+      !! its factor of two and each spin is half of it.
+      !!
+      !! **Unique quartets, three integrals each.** A differentiated quartet
+      !! `(nabla i j|kl)` has none of the eightfold symmetry of `(ij|kl)`, but
+      !! the density it is contracted against has all of it, so the loop is the
+      !! direct Fock build's -- unique shell quartets, each weighted by its
+      !! degeneracy -- and inside one the derivative on each of the first three
+      !! centres is `int2e_ip1` on a permuted quartet: `(nabla i j|kl)`,
+      !! `(nabla j i|kl)` and `(nabla k l|ij)`. The fourth is translational
+      !! invariance -- the four derivatives of an integral sum to zero -- so it
+      !! is counted rather than computed. That is three integrals in eight where
+      !! `two_electron_deriv`, which walks every ordered bra pair, takes four,
+      !! and the result is the gradient itself rather than an `nao^2` matrix
+      !! per component and thread.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)          !! The total density
+      real(dp), intent(inout) :: gradient(:, :)      !! (3, natm), added to
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: density_alpha(:, :)
+      real(dp), intent(in), optional :: density_beta(:, :)
+         !! Both or neither. One spin alone is refused.
+      real(dp), intent(in), optional :: exx_fraction   !! Default one, for Hartree-Fock
+      real(dp), intent(in), optional :: screen_tol
+         !! Bound below which one derivative integral's contribution to the
+         !! gradient is skipped. Default `DERIV_SCREEN_TOL`.
+      real(dp), intent(in), optional :: omega
+         !! Switch the kernel to `erf(omega r)/r`, for the long-range exchange
+         !! of a range-separated functional.
+      logical, intent(in), optional :: with_coulomb
+         !! Default true. False builds exchange alone, for the long-range pass.
+
+      real(dp), allocatable :: da(:, :), db(:, :), env_use(:)
+      real(dp), allocatable :: bounds(:, :), bq(:, :), dfac(:), dsh(:, :), dsa(:, :), dsb(:, :)
+      real(dp), allocatable :: buf1(:), buf2(:), buf3(:), gam(:), gam2(:), gam3(:)
+      real(dp), allocatable :: g_local(:, :)
+      integer, allocatable :: dims(:), offs(:), atom_of(:), pair_i(:), pair_j(:), order(:)
+      real(dp) :: f(3, 3), kx, jx, tol, coef, deg, schwarz, gmax, weight, amax
+      logical :: do_j, unrestricted, have1, have2, have3, same_bra, same_pair
+      type(c_ptr) :: opt
+      type(eri_shell_table_t) :: tab
+      integer :: shls(4)
+      integer :: itask, ij, kl, npair, ipair, nbas, mx, n, nprim, ptr
+      integer :: s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4
+      integer :: a, b, c, d, ia, ib, ic, id, idx, comp, ret
+
+      unrestricted = present(density_alpha)
+      if (unrestricted .neqv. present(density_beta)) then
+         call error%set(ERROR_VALIDATION, "two_electron_gradient: the spin densities "// &
+                        "come as a pair; one alone is not an unrestricted reference")
+         return
+      end if
+
+      call eri_shell_table(mol, tab)
+      mx = tab%block_max
+      nbas = tab%nbas
+      dims = tab%dims
+      offs = tab%offs(1:nbas)
+
+      tol = GRAD_SCREEN_TOL
+      if (present(screen_tol)) tol = screen_tol
+
+      do_j = .true.
+      if (present(with_coulomb)) do_j = with_coulomb
+      jx = 0.0_dp
+      if (do_j) jx = 1.0_dp
+
+      ! The exchange part of the two-particle density, symmetrised over the
+      ! quartet: `-(1/2) sum_spin (Ds_ik Ds_jl + Ds_il Ds_jk)`, times the
+      ! fraction of exact exchange. A closed shell is the same expression with
+      ! each spin half the total, which is why the total is split rather than
+      ! given a coefficient of its own.
+      kx = 0.5_dp
+      if (present(exx_fraction)) kx = 0.5_dp*exx_fraction
+      if (unrestricted) then
+         da = density_alpha
+         db = density_beta
+      else
+         da = 0.5_dp*density
+         db = da
+      end if
+
+      ! A copy, because `tab%env` is shared and an attenuated pass must not
+      ! leave the omega set behind for the next caller. The slot is one-based
+      ! here and zero-based in libfint's headers, hence the `+ 1`; getting it
+      ! wrong is silent, and the "attenuated" integrals come back full-range.
+      env_use = tab%env
+      if (present(omega)) env_use(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
+
+      opt = c_null_ptr
+      if (mol%cartesian) then
+         call libcint_2e_ip1_cart_optimizer(opt, mol%atm, mol%natm, tab%bas, tab%nbas, env_use)
+      else
+         call libcint_2e_ip1_sph_optimizer(opt, mol%atm, mol%natm, tab%bas, tab%nbas, env_use)
+      end if
+
+      ! Screening, as `two_electron_deriv` does it: the Schwarz bound of the
+      ! undifferentiated quartet, grown by `2*sqrt(alpha_max)` for the shell
+      ! the nabla lands on, times the largest two-particle density the block
+      ! can hold. Not the rigorous Cauchy-Schwarz bound of the derivative
+      ! distribution -- that was measured on a 74-atom 6-31G* case and removed
+      ! three per cent of the quartets this one keeps, not worth its pass -- so
+      ! the tolerance stays two decades inside the accuracy wanted, and the
+      ! tests check the result against an unscreened gradient.
+      call schwarz_bounds(mol, bounds, error)
+      if (error%has_error()) return
+      call eri_schwarz_collapse(mol, bounds, bq)
+
+      allocate (dfac(nbas), atom_of(nbas))
+      do s1 = 1, nbas
+         nprim = tab%bas(LIBCINT_NPRIM_OF, s1)
+         ptr = tab%bas(LIBCINT_PTR_EXP, s1)
+         amax = maxval(tab%env(ptr + 1:ptr + nprim))
+         dfac(s1) = 2.0_dp*sqrt(amax)
+         atom_of(s1) = tab%bas(LIBCINT_ATOM_OF, s1) + 1
+      end do
+
+      call block_density_max(density, nbas, offs, dims, dsh)
+      call block_density_max(da, nbas, offs, dims, dsa)
+      call block_density_max(db, nbas, offs, dims, dsb)
+
+      ! The quartet loop flattened onto shell pairs, most expensive first, so
+      ! `schedule(dynamic)` does not finish with every other thread idle behind
+      ! the last d-shell pair.
+      npair = nbas*(nbas + 1)/2
+      allocate (pair_i(npair), pair_j(npair))
+      ipair = 0
+      do s1 = 1, nbas
+         do s2 = 1, s1
+            ipair = ipair + 1
+            pair_i(ipair) = s1
+            pair_j(ipair) = s2
+         end do
+      end do
+      call pair_work_order(pair_i, pair_j, dims, order)
+
+      ! Each thread accumulates a (3, natm) of its own and adds it in once:
+      ! the whole of what a quartet touches is four atoms.
+      !$omp parallel default(none) &
+      !$omp    shared(mol, tab, density, da, db, opt, mx, nbas, &
+      !$omp           dims, offs, atom_of, bq, dfac, dsh, dsa, dsb, tol, env_use, jx, kx, &
+      !$omp           pair_i, pair_j, order, npair, gradient) &
+      !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
+      !$omp            a, b, c, d, ia, ib, ic, id, idx, comp, ret, n, shls, deg, schwarz, &
+      !$omp            gmax, weight, coef, f, have1, have2, have3, same_bra, same_pair, &
+      !$omp            buf1, buf2, buf3, gam, gam2, gam3, g_local)
+      allocate (buf1(mx**4*3), buf2(mx**4*3), buf3(mx**4*3))
+      allocate (gam(mx**4), gam2(mx**4), gam3(mx**4))
+      allocate (g_local(3, mol%natm))
+      g_local = 0.0_dp
+
+      !$omp do schedule(dynamic)
+      do itask = 1, npair
+         ij = order(itask)
+         s1 = pair_i(ij)
+         s2 = pair_j(ij)
+         d1 = dims(s1)
+         o1 = offs(s1)
+         d2 = dims(s2)
+         o2 = offs(s2)
+         same_bra = s1 == s2
+
+         do kl = 1, ij
+            s3 = pair_i(kl)
+            s4 = pair_j(kl)
+            d3 = dims(s3)
+            o3 = offs(s3)
+            d4 = dims(s4)
+            o4 = offs(s4)
+            same_pair = kl == ij
+
+            ! The largest |Gamma| in the block, from the same density maxima
+            ! the elements below are built from. `deg/2` is the weight the
+            ! contribution carries, so it belongs in the bound.
+            deg = pair_degeneracy(s1, s2, s3, s4)
+            schwarz = bq(s1, s2)*bq(s3, s4)
+            gmax = jx*dsh(s1, s2)*dsh(s3, s4) &
+                   + kx*(dsa(s1, s3)*dsa(s2, s4) + dsa(s1, s4)*dsa(s2, s3) &
+                         + dsb(s1, s3)*dsb(s2, s4) + dsb(s1, s4)*dsb(s2, s3))
+            weight = 0.5_dp*deg*schwarz*gmax
+
+            ! One decision per integral. A skipped integral is zero on its own
+            ! centre and in the fourth centre's sum alike, so the three are
+            ! independent. When two shells coincide the second integral is the
+            ! first one read with its indices swapped, and needs no call.
+            have1 = weight*dfac(s1) >= tol
+            have2 = weight*dfac(s2) >= tol
+            have3 = weight*dfac(s3) >= tol
+            if (same_bra) have2 = have1
+            if (same_pair) have3 = have1
+            if (.not. (have1 .or. have2 .or. have3)) cycle
+
+            n = d1*d2*d3*d4
+
+            if (have1) then
+               shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
+               have1 = ip1_block(mol%cartesian, buf1, shls, mol%atm, mol%natm, &
+                                 tab%bas, nbas, env_use, opt)
+               if (same_bra) have2 = have1
+               if (same_pair) have3 = have1
+            end if
+            if (have2 .and. .not. same_bra) then
+               shls = [s2 - 1, s1 - 1, s3 - 1, s4 - 1]
+               have2 = ip1_block(mol%cartesian, buf2, shls, mol%atm, mol%natm, &
+                                 tab%bas, nbas, env_use, opt)
+            end if
+            if (have3 .and. .not. same_pair) then
+               shls = [s3 - 1, s4 - 1, s1 - 1, s2 - 1]
+               have3 = ip1_block(mol%cartesian, buf3, shls, mol%atm, mol%natm, &
+                                 tab%bas, nbas, env_use, opt)
+            end if
+            if (.not. (have1 .or. have2 .or. have3)) cycle
+
+            ! Gamma once per element, laid out three ways to match the three
+            ! buffers: (a,b,c,d) for the nabla on a, (b,a,c,d) on b, (c,d,a,b)
+            ! on c. The contraction is then a dot product per component.
+            do d = 1, d4
+               id = o4 + d
+               do c = 1, d3
+                  ic = o3 + c
+                  do b = 1, d2
+                     ib = o2 + b
+                     do a = 1, d1
+                        ia = o1 + a
+                        idx = a + d1*(b - 1 + d2*(c - 1 + d3*(d - 1)))
+                        gam(idx) = jx*density(ia, ib)*density(ic, id) &
+                                   - kx*(da(ia, ic)*da(ib, id) + da(ia, id)*da(ib, ic) &
+                                         + db(ia, ic)*db(ib, id) + db(ia, id)*db(ib, ic))
+                        gam2(b + d2*(a - 1 + d1*(c - 1 + d3*(d - 1)))) = gam(idx)
+                        gam3(c + d3*(d - 1 + d4*(a - 1 + d1*(b - 1)))) = gam(idx)
+                     end do
+                  end do
+               end do
+            end do
+
+            f = 0.0_dp
+            do comp = 1, 3
+               if (have1) f(comp, 1) = dot_product(gam(1:n), buf1((comp - 1)*n + 1:comp*n))
+               if (have2) then
+                  if (same_bra) then
+                     f(comp, 2) = dot_product(gam2(1:n), buf1((comp - 1)*n + 1:comp*n))
+                  else
+                     f(comp, 2) = dot_product(gam2(1:n), buf2((comp - 1)*n + 1:comp*n))
+                  end if
+               end if
+               if (have3) then
+                  if (same_pair) then
+                     f(comp, 3) = dot_product(gam3(1:n), buf1((comp - 1)*n + 1:comp*n))
+                  else
+                     f(comp, 3) = dot_product(gam3(1:n), buf3((comp - 1)*n + 1:comp*n))
+                  end if
+               end if
+            end do
+
+            ! Minus, because libcint puts the nabla on the function and the
+            ! derivative with respect to the atom it sits on is the negative;
+            ! the fourth centre is minus the other three again.
+            coef = 0.5_dp*deg
+            g_local(:, atom_of(s1)) = g_local(:, atom_of(s1)) - coef*f(:, 1)
+            g_local(:, atom_of(s2)) = g_local(:, atom_of(s2)) - coef*f(:, 2)
+            g_local(:, atom_of(s3)) = g_local(:, atom_of(s3)) - coef*f(:, 3)
+            g_local(:, atom_of(s4)) = g_local(:, atom_of(s4)) + coef*(f(:, 1) + f(:, 2) + f(:, 3))
+         end do
+      end do
+      !$omp end do
+
+      !$omp critical
+      gradient = gradient + g_local
+      !$omp end critical
+      deallocate (buf1, buf2, buf3, gam, gam2, gam3, g_local)
+      !$omp end parallel
+
+      call libcint_del_optimizer(opt)
+   end subroutine two_electron_gradient
+
+   function ip1_block(cartesian, buf, shls, atm, natm, bas, nbas, env, opt) result(have)
+      !! One `int2e_ip1` shell quartet; false when libcint found it zero
+      logical, intent(in) :: cartesian
+      real(dp), intent(inout), contiguous :: buf(:)
+      integer, intent(in) :: shls(4)
+      integer, intent(in), contiguous :: atm(:, :)
+      integer, intent(in) :: natm
+      integer, intent(in), contiguous :: bas(:, :)
+      integer, intent(in) :: nbas
+      real(dp), intent(in), contiguous :: env(:)
+      type(c_ptr), intent(in) :: opt
+      logical :: have
+
+      integer :: ret
+
+      if (cartesian) then
+         ret = libcint_2e_ip1_cart(buf, shls, atm, natm, bas, nbas, env, opt)
+      else
+         ret = libcint_2e_ip1_sph(buf, shls, atm, natm, bas, nbas, env, opt)
+      end if
+      have = ret /= 0
+   end function ip1_block
 
    subroutine df_two_electron_gradient(orb, aux, total_density, orbitals, n_occupied, &
                                        orbitals_beta, n_occupied_beta, gradient, error, &

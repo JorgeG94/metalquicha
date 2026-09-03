@@ -41,6 +41,9 @@ module mqc_czt_direct
 
    public :: schwarz_bounds
    public :: shell_density_max
+   public :: block_density_max
+   public :: pair_degeneracy
+   public :: pair_work_order
    public :: build_fock_direct
    public :: build_fock_direct_many
    public :: build_fock_direct_nosym
