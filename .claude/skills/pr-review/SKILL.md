@@ -171,6 +171,32 @@ the area.
   sourced (PySCF fed *this repo's* basis JSON, not PySCF's internal tables —
   those differ in the eighth decimal on Pople sets)?
 - Did the change need a doc update in `mqc_docs/source/`?
+- **Does the Python API need to follow?** See below — this is the one that
+  drifts silently, because nothing in CI fails when it does.
+
+### The Python API drifts, and nothing catches it
+
+`python/mqc/` is a hand-written mirror of three separate surfaces, and a change
+to any of them leaves it stale without breaking a build or a test. Check the
+layer the diff actually touches:
+
+| the diff adds | the Python side that has to follow |
+|---|---|
+| a `bind(C, name="...")` entry point in `src/interface/` | a `_declare` in `python/mqc/_ffi.py`, then a method on `System` or `MBE` |
+| a key to the output JSON in `src/io/mqc_json_writer.f90` | a `Result` property in `python/mqc/__init__.py` |
+| a `keywords.<block>` to `mqc_json_schema.f90` | usually nothing — `MBE(keywords={...})` reaches any block — but a block users will reach for wants a named argument beside `scf`, `dft`, `cc` |
+| a new `driver` | `driver=` is an unvalidated string, so nothing breaks; the gap is that the *result* of the new driver is unreadable until `Result` gains an accessor |
+
+The FFI layer is currently complete (41 entry points, 41 bindings), so the live
+risk is the second row. A driver can gain a whole capability while the Python
+API silently cannot see it: `mqc_json_writer.f90` writes `vibrational_analysis`
+(frequencies, IR intensities), `thermochemistry`, `dipole`, `fukui`,
+`atomic_charges` and `pie_terms`, and `Result` has an accessor for none of
+them. Adding one is a few lines over `_output_document()`, so the cost of
+keeping up is small and the cost of not is that a feature ships unreachable.
+
+Say so as a **Consider** unless the diff is *itself* the feature's user-facing
+entry point, in which case it is a **Should fix**.
 
 ## 6. Report
 

@@ -227,7 +227,11 @@ crosses to the other ranks:
    * - ``method``, ``basis``, ``aux_basis``, ``functional``
      - The model. Same spellings a deck uses.
    * - ``driver``
-     - ``"energy"``, ``"gradient"``, ``"hessian"``, ``"makefp"``.
+     - ``"energy"``, ``"gradient"``, ``"hessian"``, ``"optimize"``,
+       ``"makefp"``, ``"conformers"``, and the aliases the Fortran side
+       accepts. Case-insensitive, and checked here: a misspelling raises
+       ``ValueError`` at the call rather than after the deck has been built.
+       ``mqc.DRIVERS`` is the set.
    * - ``density_fitting``
      - Fit J and K. Asked for, never inferred from ``aux_basis``.
    * - ``cutoffs``
@@ -236,8 +240,9 @@ crosses to the other ranks:
      - ``"cuest"``/``"gpu"``, ``"libcint"``/``"cpu"``, or omitted for the
        build's default.
    * - ``scf``, ``correlation``, ``cc``, ``mcscf``, ``dft``, ``guess``,
-       ``xtb``, ``pcm``
+       ``xtb``, ``pcm``, ``hessian``, ``optimization``, ``efp``
      - One dict per keyword block of the deck, taking that block's own keys.
+       The last three follow the driver that needs them.
    * - ``properties``
      - The deck's ``properties`` block -- things to report once the wave
        function exists.
@@ -366,7 +371,7 @@ The keyword blocks
 
 Each of the deck's ``keywords`` blocks is a named argument taking a dict of
 that block's own keys: ``scf``, ``correlation``, ``cc``, ``mcscf``, ``dft``,
-``guess``, ``xtb`` and ``pcm``. They are dicts rather than a scalar per
+``guess``, ``xtb``, ``pcm``, ``hessian``, ``optimization`` and ``efp``. They are dicts rather than a scalar per
 setting, so a key added to the schema is reachable without the signature
 moving, and named rather than left to ``keywords`` because what a method needs
 should be visible from ``help(mqc.MBE)`` -- an active space is not an obscure
@@ -629,6 +634,34 @@ rest available.
      - The per-term rows, as ``Term`` objects.
    * - ``unconverged()``
      - The terms whose SCF did not converge. Empty is the answer you want.
+   * - ``frequencies``
+     - Harmonic frequencies in cm\ :sup:`-1` from a ``driver="Hessian"`` run,
+       ascending, with imaginary modes negative. ``3N-6`` of them for a
+       non-linear molecule; the rigid-body modes are projected out, not
+       returned as zeros.
+   * - ``ir_intensities``
+     - Intensities in km/mol, one per mode, when dipole derivatives were
+       computed as well. A Hessian on its own gives frequencies and ``None``
+       here.
+   * - ``vibrational_analysis``
+     - The whole block: ``n_modes``, ``frequencies_cm1``,
+       ``reduced_masses_amu``, ``force_constants_mdyne_ang`` and
+       ``ir_intensities_km_mol``.
+   * - ``thermochemistry``
+     - RRHO thermochemistry, built from the frequencies. Read
+       ``n_imaginary_frequencies`` before quoting the free energy -- RRHO has
+       nothing to say about a saddle point and still prints a number.
+   * - ``dipole``
+     - ``x``, ``y``, ``z`` in atomic units and ``magnitude_debye`` beside them.
+   * - ``atomic_charges``
+     - The charges a calculation wrote: ``scheme``, ``sum``, and ``atoms``.
+       ``System.compute_charges`` is the other route and needs no driver.
+   * - ``fukui``
+     - Per-atom ``f_plus``/``f_minus``/``f_zero``/``dual`` and the global
+       descriptors. Check ``anion_bound`` first: a negative electron affinity
+       means every ``f_minus`` describes a state that does not exist.
+   * - ``pie_terms``
+     - The GMBE inclusion-exclusion terms, overlapping-fragment runs only.
 
 .. code-block:: python
 

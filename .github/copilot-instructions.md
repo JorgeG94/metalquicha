@@ -59,6 +59,19 @@ decks it did not write. A deck added by hand needs an entry in `HAND_MAINTAINED`
 *and* its manifest entry survives only through the read-back — both, or it is
 silently dropped and the coverage looks present while no longer running.
 
+**The Python API left behind.** `python/mqc/` is hand-written against three
+surfaces and follows none of them automatically: `bind(C, name=...)` entry
+points in `src/interface/` need a `_declare` in `python/mqc/_ffi.py`, and every
+key `src/io/mqc_json_writer.f90` writes needs a `Result` property in
+`python/mqc/__init__.py` before anyone can read it. Nothing in CI fails when
+this drifts. It already has: the writer emits `vibrational_analysis`
+(frequencies, IR intensities), `thermochemistry`, `dipole`, `fukui`,
+`atomic_charges` and `pie_terms`, and `Result` exposes none of them, so a
+Hessian run through the Python API returns an energy and no frequencies. When a
+diff adds an entry point, an output key or a driver, ask whether the Python side
+follows -- an accessor is a few lines over `_output_document()`, and without it
+the capability ships unreachable.
+
 **Scatter indices.** `frag%atoms` maps a fragment onto the system and is used as
 an array index in several places. Anything appended to it that is not a real
 system atom writes out of bounds. Ghost and cap atoms live in the coordinate and

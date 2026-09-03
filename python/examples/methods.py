@@ -474,9 +474,14 @@ def refuses_sapt_on_three_monomers():
 
 
 def _raises(call, expected):
+    # `ValueError` as well as `MQCError`: a few refusals now happen in the
+    # Python constructor rather than in the library -- an unknown `driver` is
+    # the one below -- and that is the better place for them, since nothing is
+    # built and no call is made. What the case asserts is that the request is
+    # refused and says why, not which layer noticed.
     try:
         call()
-    except mqc.MQCError as exc:
+    except (mqc.MQCError, ValueError) as exc:
         message = str(exc)
         return (expected in message, None, None,
                 f"refused: {message.split('.')[0][:70]}")

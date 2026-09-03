@@ -45,6 +45,7 @@ __all__ = [
     "Result",
     "MQCError",
     "ELEMENTS",
+    "DRIVERS",
 ]
 
 HARTREE_TO_EV = 27.211386245988
@@ -62,6 +63,29 @@ ELEMENTS = (
 ).split()
 
 _NUMBER = {sym.upper(): i + 1 for i, sym in enumerate(ELEMENTS)}
+
+
+#: Driver names the Fortran side accepts, lowercased. Mirrored from
+#: `calc_type_from_string` in `src/mqc_calc_types.f90`, including the aliases:
+#: GAMESS spells the fragment-potential run MAKEFP, "optimize" is the QCSchema
+#: name the decks use, and CREST is what "conformers" drives. Kept here so a
+#: misspelled driver is refused at the call rather than after the deck has been
+#: written and handed to the library.
+DRIVERS = frozenset(
+    [
+        "energy",
+        "gradient",
+        "hessian",
+        "makefp",
+        "makeefp",
+        "optimize",
+        "optimization",
+        "opt",
+        "conformers",
+        "conformer",
+        "crest",
+    ]
+)
 
 
 class MQCError(RuntimeError):
@@ -581,6 +605,134 @@ class Result:
             return None
         return document.get("gradient_norm")
 
+    @property
+    def frequencies(self):
+        """Harmonic frequencies in cm^-1, or None.
+
+        Only a ``driver="Hessian"`` run that wrote its output has these.
+        Imaginary modes come back negative, which is the convention the
+        vibrational analysis writes and the one every other code prints: a
+        first-order saddle point is one negative entry, not a complex number.
+
+        The companion arrays -- reduced masses, force constants, IR
+        intensities -- are on `vibrational_analysis`, which is this without
+        the convenience.
+        """
+        analysis = self.vibrational_analysis
+        if not analysis:
+            return None
+        modes = analysis.get("frequencies_cm1")
+        return list(modes) if modes is not None else None
+
+    @property
+    def ir_intensities(self):
+        """IR intensities in km/mol, one per mode, or None.
+
+        Present only when the run computed dipole derivatives as well as the
+        Hessian; a Hessian on its own gives frequencies and no intensities, so
+        this returns None where `frequencies` does not.
+        """
+        analysis = self.vibrational_analysis
+        if not analysis:
+            return None
+        intensities = analysis.get("ir_intensities_km_mol")
+        return list(intensities) if intensities is not None else None
+
+    @property
+    def vibrational_analysis(self):
+        """The whole vibrational block, or None.
+
+        ``n_modes``, ``frequencies_cm1``, ``reduced_masses_amu``,
+        ``force_constants_mdyne_ang`` and -- when dipole derivatives were
+        computed -- ``ir_intensities_km_mol``. Returned raw rather than
+        reshaped, so the keys match what the deck path writes and a number can
+        be compared against another program's field of the same name.
+        """
+        return self._section("vibrational_analysis")
+
+    @property
+    def thermochemistry(self):
+        """The RRHO thermochemistry block, or None.
+
+        Follows a Hessian, since it is built from the frequencies. Carries the
+        conditions it was evaluated at (``temperature_K``, ``pressure_atm``),
+        what it assumed about the molecule (``symmetry_number``, ``is_linear``,
+        ``n_real_frequencies``, ``n_imaginary_frequencies``), the zero-point
+        energy in both units, and nested ``partition_functions``,
+        ``thermal_corrections_hartree``, ``total_energies_hartree`` and
+        ``moments_of_inertia_amu_ang2``.
+
+        The imaginary count is worth reading before the free energy: RRHO has
+        nothing to say about a saddle point, and the number is still printed.
+        """
+        return self._section("thermochemistry")
+
+    @property
+    def dipole(self):
+        """The dipole moment, or None.
+
+        ``x``, ``y``, ``z`` in atomic units and ``magnitude_debye`` beside
+        them, which is the one to quote and the one that is basis-set
+        sensitive enough to be worth comparing rather than trusting.
+        """
+        return self._section("dipole")
+
+    @property
+    def atomic_charges(self):
+        """Partial charges from the run, or None.
+
+        ``scheme`` names what produced them, ``sum`` is what they have to add
+        up to, and ``atoms`` is one entry per atom in input order carrying
+        ``atom`` (1-based), ``charge`` and, for an unrestricted run,
+        ``spin_population``.
+
+        This is the charges a *calculation* wrote. `System.compute_charges` is
+        the other route and answers without running a driver; they agree when
+        asked for the same scheme on the same density.
+        """
+        return self._section("atomic_charges")
+
+    @property
+    def fukui(self):
+        """The Fukui analysis, or None.
+
+        Present after a ``properties={"fukui": ...}`` run. ``atoms`` carries
+        ``f_plus``, ``f_minus``, ``f_zero`` and ``dual`` per atom, and the
+        global reactivity descriptors -- ``chemical_potential``,
+        ``hardness``, ``electrophilicity``, ``ionisation_potential``,
+        ``electron_affinity`` -- sit beside it.
+
+        ``anion_bound`` is the one to check first. A negative electron
+        affinity means the anion is unbound in this basis, and every f_minus
+        derived from it describes a state that does not exist.
+        """
+        return self._section("fukui")
+
+    @property
+    def pie_terms(self):
+        """The GMBE inclusion-exclusion terms, or None.
+
+        Only an overlapping-fragment run has these. ``count`` is how many
+        survived with a non-zero coefficient, and ``terms`` carries each
+        subsystem's ``atom_indices``, ``coefficient``, ``energy`` and
+        ``weighted_energy``. A term whose coefficient cancelled is not
+        written, so the count is of what was actually evaluated.
+        """
+        return self._section("pie_terms")
+
+    def _section(self, name):
+        """One object out of the output document, or None if it is absent.
+
+        Every block below is optional: it is there when the run produced it
+        and missing otherwise, and a caller asking for frequencies after an
+        energy should get None rather than an exception.
+        """
+        document = self._output_document()
+        if not document:
+            return None
+        section = document.get(name)
+        return dict(section) if isinstance(section, dict) else None
+
     def _output_document(self):
         if not self.wrote:
             return None
@@ -751,6 +903,9 @@ class MBE:
         cc=None,
         mcscf=None,
         dft=None,
+        hessian=None,
+        optimization=None,
+        efp=None,
         guess=None,
         xtb=None,
         properties=None,
@@ -764,6 +919,11 @@ class MBE:
         self.aux_basis = aux_basis
         self.density_fitting = density_fitting
         self.functional = functional
+        if str(driver).strip().lower() not in DRIVERS:
+            raise ValueError(
+                f"unknown driver {driver!r}. Choose one of "
+                f"{', '.join(sorted(DRIVERS))}."
+            )
         self.driver = driver
         self.cutoffs = dict(cutoffs) if cutoffs else None
         self.unchecked = bool(unchecked)
@@ -793,6 +953,12 @@ class MBE:
         self.cc = dict(cc) if cc else None
         self.mcscf = dict(mcscf) if mcscf else None
         self.dft = dict(dft) if dft else None
+        # The derivative blocks. `hessian` follows `driver="Hessian"` and
+        # `optimization` follows `driver="Optimize"`, so they arrive with the
+        # driver that needs them rather than on their own.
+        self.hessian = dict(hessian) if hessian else None
+        self.optimization = dict(optimization) if optimization else None
+        self.efp = dict(efp) if efp else None
         self.guess = dict(guess) if guess else None
         self.xtb = dict(xtb) if xtb else None
         # `properties` is not a keyword block: it sits beside `keywords` in the
@@ -864,6 +1030,9 @@ class MBE:
             ("dft", self.dft),
             ("guess", self.guess),
             ("xtb", self.xtb),
+            ("hessian", self.hessian),
+            ("optimization", self.optimization),
+            ("efp", self.efp),
         ):
             if block:
                 _merge(document["keywords"], {name: dict(block)})

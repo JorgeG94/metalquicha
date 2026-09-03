@@ -353,6 +353,13 @@ jobs:
           # no longer reachable from Python, or is reachable and wrong.
           MQC_LIBRARY=$PWD/build/libmqc.so PYTHONPATH=$PWD/python \
             python3 python/examples/methods.py
+          # Third script, third failure mode: derivatives.py breaks when a
+          # driver's *output* stops being readable from Python. The Fortran
+          # side can gain frequencies, intensities or thermochemistry and pass
+          # every test here while `Result` has no accessor for them, which is
+          # exactly what had happened before this script existed.
+          MQC_LIBRARY=$PWD/build/libmqc.so PYTHONPATH=$PWD/python \
+            python3 python/examples/derivatives.py
 
       # A geometry optimization, which is the only thing here that drives
       # DL-FIND rather than merely linking it. Water in STO-3G from a distorted
