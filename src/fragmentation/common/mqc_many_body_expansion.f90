@@ -1,7 +1,8 @@
 !! Many-Body Expansion abstract base type and concrete implementations
 module mqc_many_body_expansion
-   !! Provides an abstract base class for all many-body expansion methods
-   !! with concrete implementations for standard MBE and generalized MBE (GMBE).
+   !! The abstract base every many-body expansion shares, and the three
+   !! concrete ones: standard MBE, generalized MBE, and FMO2 with the
+   !! electrostatically embedded MBE beside it.
    use pic_types, only: int32, int64, dp
    use mqc_method_config, only: method_config_t
    use mqc_physical_fragment, only: system_geometry_t
@@ -24,9 +25,8 @@ module mqc_many_body_expansion
    type, abstract :: many_body_expansion_t
       !! Abstract base for all many-body expansion methods
       !!
-      !! Encapsulates shared configuration for MBE and GMBE calculations.
-      !! Concrete implementations provide specific fragment representations
-      !! and expansion computation logic.
+      !! Holds the configuration every expansion shares. A concrete type adds
+      !! its own fragment representation and how it evaluates the expansion.
 
       ! Required configuration
       type(method_config_t) :: method_config
@@ -36,11 +36,11 @@ module mqc_many_body_expansion
 
       ! System geometry (includes connectivity via sys_geom%bonds)
       type(system_geometry_t), allocatable :: sys_geom
+         !! Coordinates, elements, fragments and bonds
       type(checkpoint_t) :: checkpoint
          !! Fragments already computed by an earlier run, and where the ones
          !! computed by this run are appended. Inactive unless a path was
-         !! configured, in which case everything below behaves as before.
-         !! System geometry (coordinates, elements, fragments, bonds)
+         !! configured.
 
       ! MPI configuration (optional - for distributed calculations)
       type(resources_t), pointer :: resources => null()
@@ -78,6 +78,10 @@ module mqc_many_body_expansion
    !============================================================================
    abstract interface
       subroutine run_serial_sub(this, json_data)
+         ! TODO(mqc): neither deferred procedure carries an `error_t`, so every
+         ! implementation reports a failure by logging it and returning. The
+         ! caller cannot tell an expansion that failed from one that ran, and
+         ! the run finishes reporting no energy rather than an error.
          import :: many_body_expansion_t, json_output_data_t
          implicit none
          class(many_body_expansion_t), intent(inout) :: this
@@ -98,9 +102,8 @@ module mqc_many_body_expansion
    type, extends(many_body_expansion_t) :: mbe_context_t
       !! Standard Many-Body Expansion for non-overlapping fragments
       !!
-      !! Uses polymer representation where each fragment is defined by
-      !! monomer indices. Coefficients are implicit: (-1)^(n+1) based on
-      !! fragment size.
+      !! Each fragment is a row of monomer indices. Coefficients are implicit:
+      !! `(-1)^(n+1)` from the fragment's size.
 
       integer, allocatable :: polymers(:, :)
          !! Fragment composition array (fragment_idx, monomer_indices)
@@ -122,9 +125,8 @@ module mqc_many_body_expansion
    type, extends(many_body_expansion_t) :: gmbe_context_t
       !! Generalized Many-Body Expansion for overlapping fragments
       !!
-      !! Uses PIE (Principle of Inclusion-Exclusion) representation where
-      !! each term is defined by atom indices with explicit coefficients
-      !! from the inclusion-exclusion principle.
+      !! Each term is a set of atom indices carrying an explicit coefficient
+      !! from the principle of inclusion-exclusion.
 
       integer, allocatable :: pie_atom_sets(:, :)
          !! Unique atom sets (max_atoms, n_pie_terms)
@@ -190,13 +192,9 @@ module mqc_many_body_expansion
          !! subspace, level shift, linear-dependence threshold and incremental
          !! Fock building.
          !!
-         !! Separate from the three fields below, which are per-fragment on
-         !! purpose: a fragment is a smaller, easier problem than the whole
-         !! system and gets its own budget and tolerances. How the iteration is
-         !! driven is not a property of the fragment, and none of it reached a
-         !! fragment before -- so a deck could not give a stalling fragment an
-         !! accelerator or a level shift, on the feature most likely to meet
-         !! one.
+         !! Separate from the three fields below, which are per-fragment: a
+         !! fragment is a smaller, easier problem than the whole system and
+         !! gets its own budget and tolerances.
       integer :: scf_max_iter = 100
       real(dp) :: scf_energy_tol = 1.0e-9_dp
       real(dp) :: scf_density_tol = 1.0e-7_dp
@@ -349,10 +347,9 @@ contains
    subroutine fmo_report(this, json_data)
       !! Hand the total to whatever writes the output file
       !!
-      !! Reported as a fragmented total, which is what it is: the expansion is
-      !! different from MBE's but the shape of the answer -- one energy for the
-      !! whole system, assembled from fragments -- is the same, and a reader
-      !! should not have to learn a third format to find it.
+      !! Written in `OUTPUT_MODE_MBE`: the expansion differs from MBE's, but
+      !! the shape of the answer -- one energy for the whole system, assembled
+      !! from fragments -- is the same.
       use mqc_json_output_types, only: OUTPUT_MODE_MBE
 
       class(fmo_context_t), intent(in) :: this
@@ -367,13 +364,9 @@ contains
    subroutine fmo_run_distributed(this, json_data)
       !! Run FMO across ranks
       !!
-      !! The two phases distribute differently and both go through the backend,
-      !! which is where the loops are: a monomer pass is a bag of independent
-      !! tasks followed by a barrier and a density exchange, and the pair phase
-      !! is one bag with no barrier at all. Handing the communicator down rather
-      !! than distributing here keeps the fragment geometries from ever crossing
-      !! a wire -- every rank assembles what it was asked for from the geometry
-      !! it already holds.
+      !! The communicator is handed down to the backend rather than the work
+      !! being distributed here, so no fragment geometry ever crosses a wire --
+      !! every rank assembles what it was asked for from the geometry it holds.
       use mqc_libcint_bridge, only: run_libcint_fmo
       use mqc_error, only: error_t
       use pic_logger, only: logger => global_logger
@@ -470,6 +463,10 @@ contains
       if (this%resources%mpi_comms%world_comm%leader() .and. &
           this%resources%mpi_comms%node_comm%leader()) then
          ! Global coordinator (rank 0, node leader on node 0)
+         ! TODO(mqc): setting the thread count to what it already reports is a
+         ! no-op -- `omp_set_num_threads(1)` elsewhere makes
+         ! `omp_get_max_threads()` return 1, so this cannot undo a clamp. Same
+         ! line in `gmbe_run_distributed`.
          call omp_set_num_threads(omp_get_max_threads())
          call logger%verbose("Rank 0: global coordinator, "// &
                              to_char(omp_get_max_threads())//" thread(s)")
@@ -591,20 +588,13 @@ contains
    subroutine set_worker_threads(this, role)
       !! Give a worker rank its threads, and say what it got
       !!
-      !! This used to be an unconditional `omp_set_num_threads(1)`, which made
-      !! "one fragment per rank, several threads per rank" impossible: the ranks
-      !! that run the chemistry were clamped to one thread whatever the launcher
-      !! asked for, so raising OMP_NUM_THREADS did nothing and the cause was
-      !! nowhere near the command line.
+      !! The clamp to one thread is for tblite alone, which corrupts a result
+      !! when threaded rather than failing. Every other method keeps the
+      !! threads the launcher gave it -- a libcint Fock build threads its own
+      !! quartet loop, which is where they go.
       !!
-      !! The clamp exists for tblite, which corrupts a result when threaded
-      !! rather than failing, so it is kept for exactly that -- and the ranks
-      !! running anything else now use the threads they were given. A libcint
-      !! Fock build threads its own quartet loop, which is where they go.
-      !!
-      !! Every rank reports its role and thread count because the failure this
-      !! replaces was invisible: nothing in the output distinguished "four
-      !! threads, no speedup" from "one thread all along".
+      !! The role and thread count are logged because "four threads, no
+      !! speedup" and "one thread all along" are otherwise indistinguishable.
       use omp_lib, only: omp_set_num_threads, omp_get_max_threads
       use mqc_method_types, only: needs_serial_execution
       use pic_logger, only: logger => global_logger

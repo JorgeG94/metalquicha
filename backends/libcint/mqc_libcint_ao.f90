@@ -2,12 +2,11 @@
 module mqc_libcint_ao
    !! Evaluates every basis function of a molecule at a set of points.
    !!
-   !! **libcint does not do this.** It computes integrals; there is no `GTOval` in
-   !! it, and the function of that name belongs to PySCF's own `libcgto`. So this
-   !! is the one piece of the DFT path that had to be written rather than called,
-   !! and the whole difficulty is matching libcint's conventions exactly -- a basis
-   !! function evaluated under a different-but-valid convention is a different
-   !! basis, and the resulting SCF converges tidily onto a wrong number.
+   !! **libcint does not do this.** It computes integrals; the `GTOval` of that
+   !! name belongs to PySCF's own `libcgto`. So this is written rather than
+   !! called, and the difficulty is matching libcint's conventions exactly -- a
+   !! basis function evaluated under a different-but-valid convention is a
+   !! different basis, and the SCF converges tidily onto a wrong number.
    !!
    !! Three conventions have to line up, and each is a way to be wrong quietly:
    !!
@@ -25,10 +24,9 @@ module mqc_libcint_ao
    !! Which convention a molecule is in comes from `mol%cartesian`, the same flag
    !! `shell_dim` routes on, so the AO values cannot disagree with the AO count.
    !!
-   !! Points are taken in blocks. A medium grid on a modest molecule is tens of
+   !! Points are taken in blocks: a medium grid on a modest molecule is tens of
    !! thousands of points, and `n_points` by `n_ao` held whole is hundreds of
-   !! megabytes at a real basis size -- the shape of mistake the coupled-cluster
-   !! work already paid for once.
+   !! megabytes at a real basis size.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -45,13 +43,13 @@ module mqc_libcint_ao
    public :: eval_rho
    public :: max_ao_l
 
-   !> Points per pass when a caller asks for a whole grid at once.
    integer, parameter, public :: AO_POINT_BLOCK = 512
+      !! Points per pass when a caller asks for a whole grid at once.
 
-   !> Unique components of a symmetric second-derivative tensor: xx, xy, xz,
-   !> yy, yz, zz. Public because a caller indexing `hess` has to agree with the
-   !> packing, and a bare 6 at both ends is how they stop agreeing.
    integer, parameter, public :: AO_HESS_COMP = 6
+      !! Unique components of a symmetric second-derivative tensor: xx, xy, xz,
+      !! yy, yz, zz. Public because a caller indexing `hess` has to agree with
+      !! the packing.
    integer, parameter, public :: AO_DERIV3_COMP = 10
       !! xxx, xxy, xxz, xyy, xyz, xzz, yyy, yyz, yzz, zzz -- the ten unique
       !! entries of a symmetric rank-three tensor, in `GTOval_sph_deriv3` order.
@@ -85,21 +83,12 @@ contains
       !!
       !!     (sum_p |c_p|) r^l exp(-a_min r^2)
       !!
-      !! which is above the shell at every r. Taking `max_p |c_p|` instead --
-      !! which this did first -- bounds one primitive rather than their sum and
-      !! can be under the true value by up to a factor of `nprim`, worst on a
-      !! heavily contracted s shell whose tightest primitives have not yet died
-      !! at the cutoff. That made the stated threshold optimistic rather than
-      !! the answer wrong, but "a bound" has to mean a bound.
-      !! Solved by bisection rather than by the closed form: the closed form
-      !! needs the Lambert W function for l > 0, and this is computed once per
-      !! molecule and then reused for every block of every iteration, so a
-      !! hundred bisection steps cost nothing worth avoiding.
+      !! which is above the shell at every r. Inverted by bisection, the closed
+      !! form needing the Lambert W function for l > 0.
       !!
       !! **A bound, not an estimate.** Every function of a shell is below the
       !! threshold beyond this radius, so dropping the shell outside it changes
-      !! the quadrature by less than the threshold per point rather than by an
-      !! amount nobody has characterised.
+      !! the quadrature by less than the threshold per point.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: threshold
       real(dp), allocatable, intent(out) :: radius(:)
@@ -109,8 +98,7 @@ contains
 
       allocate (radius(mol%nbas))
       ! A non-positive threshold turns the screen off rather than being an
-      ! error: it is how a run checks what the screening is worth, and how a
-      ! disagreement gets bisected without rebuilding.
+      ! error, which is how a run checks what the screening is worth.
       if (threshold <= 0.0_dp) then
          radius = huge(1.0_dp)
          return
@@ -176,10 +164,8 @@ contains
       !! The test is against the block's bounding sphere rather than each point:
       !! one distance per shell instead of `n_points`, and the bound stays a
       !! bound because a shell that fails it fails at every point in the block.
-      !!
-      !! Blocks that are spatially compact screen far harder than blocks that
-      !! are not, which is the whole argument for keeping them small -- a block
-      !! spanning the molecule reaches everything and screens nothing.
+      !! A block spanning the molecule therefore reaches everything and screens
+      !! nothing.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coords(:, :)     !! (3, n_points), Bohr
       real(dp), intent(in) :: radius(:)        !! from `shell_extents`
@@ -196,18 +182,11 @@ contains
          !! numbering, and how many it kept. Zero count for an atom that reaches
          !! this block with nothing.
          !!
-         !! **These stay contiguous, and not by luck.** `molecule_build` packs
-         !! shells with the loop over atoms outermost, so shells are strictly
-         !! atom-ordered; the loop below walks them in that order handing out
-         !! compressed indices as it goes, so an atom's kept functions are
-         !! consecutive exactly as its full set was. `atom_ao_blocks` already
-         !! relies on the same ordering for the unscreened case.
-         !!
-         !! The gradient is what needs them. `accumulate_channel` sums one
-         !! atom's range onto that atom and every function onto the atom owning
-         !! the point, with opposite signs, and those two cancel when the
-         !! molecule translates. A range that straddled two atoms would put
-         !! force on the wrong nucleus and leave a net force behind.
+         !! **These stay contiguous.** `molecule_build` packs shells with the
+         !! loop over atoms outermost, so shells are strictly atom-ordered and
+         !! the loop below hands out compressed indices in that order. The
+         !! gradient depends on it: a range straddling two atoms would put force
+         !! on the wrong nucleus and leave a net force behind.
 
       integer :: ish, ig, npts, iatom, off_ao, ndim, i
       real(dp) :: centre(3)
@@ -270,11 +249,6 @@ contains
       type(error_t), intent(inout) :: error
       real(dp), allocatable, intent(out), optional :: grad(:, :, :)
          !! d chi / d r, as (n_points, n_ao, 3). Asked for by GGA and above.
-         !!
-         !! Produced here rather than by a second routine because it shares
-         !! everything expensive: the same exponentials, the same angular
-         !! components, the same spherical transform. A separate `eval_ao_deriv1`
-         !! would duplicate all three and have to be kept in step with them.
       logical, intent(in), optional :: shell_mask(:)
          !! (nbas) which shells reach these points, from `block_significant_aos`.
          !! Absent means all of them, which is the unscreened path every other
@@ -288,21 +262,14 @@ contains
          !! xxx, xxy, xxz, xyy, xyz, xzz, yyy, yyz, yzz, zzz -- the order
          !! `GTOval_sph_deriv3` uses.
          !!
-         !! A *GGA Hessian* needs these. The energy depends on grad rho, which
-         !! already costs one position derivative of a basis function to form,
-         !! and two nuclear derivatives on top of that land on the third. There
-         !! is no cheaper identity; it is what the chain rule gives.
+         !! A *GGA Hessian* needs these: the energy depends on grad rho, which
+         !! already costs one position derivative to form, and two nuclear
+         !! derivatives on top of that land on the third.
       real(dp), allocatable, intent(out), optional :: hess(:, :, :)
          !! d2 chi / d r_j d r_k, as (n_points, n_ao, 6), packed xx, xy, xz, yy,
          !! yz, zz -- the six unique components of a symmetric tensor, in the
          !! order PySCF's `GTOval_sph_deriv2` uses, so a comparison against it
-         !! needs no reshuffling.
-         !!
-         !! Here for the same reason `grad` is: it shares the exponentials, the
-         !! angular components and the transform with both of them. A GGA
-         !! *gradient* needs these -- the energy depends on grad rho, and
-         !! differentiating that with respect to a nuclear position differentiates
-         !! the basis functions a second time.
+         !! needs no reshuffling. A GGA *gradient* needs these.
 
       logical :: screened
       integer :: n_ao_here, shell_base
@@ -320,9 +287,8 @@ contains
       logical :: want_grad, want_hess, want_d3
       integer :: id, ih, px, py, pz
 
-      ! The (j, k) each packed component stands for, and whether it is diagonal.
-      ! The delta only enters the second derivative of the radial part -- see
-      ! the assembly below -- so it is worth having rather than re-deriving.
+      ! The (j, k) each packed component stands for. The delta only enters the
+      ! second derivative of the radial part, in the assembly below.
       integer, parameter :: HESS_J(AO_HESS_COMP) = [1, 1, 1, 2, 2, 3]
       integer, parameter :: HESS_K(AO_HESS_COMP) = [1, 2, 3, 2, 3, 3]
       integer, parameter :: D3_I(AO_DERIV3_COMP) = [1, 1, 1, 1, 1, 1, 2, 2, 2, 3]
@@ -330,6 +296,10 @@ contains
       integer, parameter :: D3_K(AO_DERIV3_COMP) = [1, 2, 3, 2, 3, 3, 2, 3, 3, 3]
       integer, parameter :: HESS_OF(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
          !! Which packed Hessian component a Cartesian pair (j,k) is.
+      ! TODO(mqc): `HESS_OF` is never read -- `assemble_third` declares the same
+      ! table again as `PAIR`, as it does `D3_I/D3_J/D3_K` under the names
+      ! `DI/DJ/DK`. Four constants written down twice, so a change to the
+      ! packing order has to be made in two places.
 
       n_points = size(coords, 2)
 
@@ -343,11 +313,8 @@ contains
 
       want_d3 = present(deriv3)
       ! Each order is built from the one below it, so asking for a third
-      ! implies the second and the first.
+      ! implies the second and the second implies the first.
       want_hess = present(hess) .or. want_d3
-      ! The second derivative is built from the first, so asking for one
-      ! implies the other. Computing grad silently and discarding it would be
-      ! the alternative, and it is the same work.
       want_grad = present(grad) .or. want_hess
       screened = present(shell_mask)
       if (screened) then
@@ -413,12 +380,10 @@ contains
          n_sph = 2*l + 1
          n_here = shell_dim(mol%cartesian, ish - 1, mol%bas)/nctr
 
-         ! The factor libcint keeps outside its transform table, and it applies to
+         ! The factor libcint keeps outside its transform table. It applies to
          ! *both* angular conventions -- `cint1e.c` multiplies every integral by
-         ! `CINTcommon_fac_sp` of each shell's l without consulting cart-vs-sph.
-         ! Gating it on the spherical path is wrong and shows up only in a
-         ! Cartesian basis, where s and p come out too large by 1/0.2820948 and
-         ! 1/0.4886025.
+         ! `CINTcommon_fac_sp` of each shell's l without consulting
+         ! cart-vs-sph -- so gating it on the spherical path is wrong.
          fac = common_fac_sp(l)
          if (.not. mol%cartesian) call c2s_block(l, trans)
 
@@ -431,8 +396,8 @@ contains
             dr = [dx, dy, dz]
 
             ! Angular part, in libcint's Cartesian order, and its gradient. The
-            ! power rule term vanishes when the exponent is zero, which has to be
-            ! a branch rather than an evaluation: pow(x, -1) is not what it means.
+            ! power rule term vanishes when the exponent is zero, which has to
+            ! be a branch: `pow(x, -1)` is not what it means.
             comp = 0
             do i = 0, l
                do j = 0, i
@@ -471,10 +436,8 @@ contains
                                                    *pow(dx, px)*pow(dy, py)*pow(dz, pz - 2)
                   end if
                   if (want_d3) then
-                     ! The power rule a third time. `angular_third` keeps the
-                     ! exponent bookkeeping in one place rather than writing ten
-                     ! guarded expressions out, which is where a transposition
-                     ! would hide.
+                     ! The power rule a third time, with `angular_third`
+                     ! keeping the exponent bookkeeping in one place.
                      do ih = 1, AO_DERIV3_COMP
                         d3cart(comp, ih) = angular_third(px, py, pz, dx, dy, dz, &
                                                          D3_I(ih), D3_J(ih), D3_K(ih))
@@ -506,9 +469,9 @@ contains
                end do
             end if
 
-            ! One contraction column at a time; libcint lays a shell's functions
-            ! out with the contraction index outermost, and `molecule_build`
-            ! preserved that, so the AO offset advances by n_here per column.
+            ! One contraction column at a time: libcint lays a shell's
+            ! functions out with the contraction index outermost, so the AO
+            ! offset advances by `n_here` per column.
             do ic = 1, nctr
                radial = 0.0_dp
                dradial = 0.0_dp
@@ -617,6 +580,9 @@ contains
          !$omp end do
       end do
 
+      ! TODO(mqc): `d3cart` and `d3sph` are allocated per thread above and are
+      ! not in this list, so every thread's third-derivative scratch is left
+      ! allocated at the end of the parallel region.
       deallocate (cart, sph, trans, dcart, dsph, d2cart, d2sph)
       !$omp end parallel
    end subroutine eval_ao_block
@@ -635,10 +601,10 @@ contains
       !!   R_ij  = r2 x_i x_j + r1 delta_ij
       !!   R_ijk = r3 x_i x_j x_k + r2 (delta_ij x_k + delta_ik x_j + delta_jk x_i)
       !!
-      !! Shared by the Cartesian and spherical branches. The transform is linear
-      !! and position-independent, so it commutes with every derivative -- which
-      !! is why one routine serves both, with `fac` folded in on one side and
-      !! already inside the angular arrays on the other.
+      !! Shared by the Cartesian and spherical branches: the transform is
+      !! linear and position-independent, so it commutes with every derivative.
+      !! `fac` is folded in on the Cartesian side and is already inside the
+      !! angular arrays on the other.
       real(dp), intent(in) :: a3(:, :), a2(:, :), a1(:, :), a0(:)
       integer, intent(in) :: n
       real(dp), intent(in) :: r0, r1, r2, r3, fac
@@ -688,11 +654,10 @@ contains
    pure function angular_third(px, py, pz, dx, dy, dz, i, j, k) result(v)
       !! d3/dx_i dx_j dx_k of x^px y^py z^pz, at (dx, dy, dz)
       !!
-      !! Written as exponent bookkeeping rather than ten guarded expressions:
-      !! count how many derivatives fall on each axis, drop the term if any axis
-      !! is differentiated more times than its exponent allows, and multiply the
-      !! falling factorials. The guard is what keeps `pow` from being asked for
-      !! a negative exponent, which is not what a vanishing prefactor means.
+      !! Count how many derivatives fall on each axis, drop the term if any
+      !! axis is differentiated more times than its exponent allows, and
+      !! multiply the falling factorials. That guard is also what keeps `pow`
+      !! from being asked for a negative exponent.
       integer, intent(in) :: px, py, pz, i, j, k
       real(dp), intent(in) :: dx, dy, dz
       real(dp) :: v
@@ -738,15 +703,11 @@ contains
       !!
       !! Through a gemm rather than a double loop over basis functions: form
       !! X = chi D once, then rho at a point is the row-wise dot of X with chi.
-      !! The alternative is n_points n_ao^2 scalar work with the density matrix
-      !! read in the worst possible order, which is the mistake the coupled-cluster
-      !! ladder already paid for.
       !!
-      !! `density` is whatever convention the caller's SCF uses -- the restricted
-      !! path's D already carries two electrons per orbital, so this returns the
-      !! total density for it and a spin density for an unrestricted D. Nothing
-      !! here applies a factor, because doing so would be right for exactly one of
-      !! those and silently wrong for the other.
+      !! `density` is whatever convention the caller's SCF uses -- the
+      !! restricted path's D already carries two electrons per orbital, so this
+      !! returns the total density for it and a spin density for an
+      !! unrestricted D. **No factor is applied here.**
       real(dp), intent(in) :: ao(:, :)        !! (n_points, n_ao)
       real(dp), intent(in) :: density(:, :)   !! (n_ao, n_ao)
       real(dp), allocatable, intent(out) :: rho(:)
@@ -756,19 +717,15 @@ contains
          !!
          !!     grad rho = 2 sum_uv D_uv chi_v grad chi_u
          !!
-         !! The factor of two is the symmetry of D, not a spin factor, and it is
-         !! the term that a GGA gets wrong by a few millihartree while converging
-         !! perfectly.
+         !! The factor of two is the symmetry of D, not a spin factor.
 
       real(dp), allocatable, intent(out), optional :: tau(:)
          !! The kinetic energy density, for meta-GGA. Needs `ao_grad`.
          !!
          !!     tau(r) = 1/2 sum_d sum_uv D_uv d_d chi_u d_d chi_v
          !!
-         !! The half is libxc's convention and PySCF's, checked against
-         !! `eval_rho(..., xctype='MGGA')` rather than assumed -- the same quantity
-         !! is defined without it elsewhere in the literature, and a factor of two
-         !! in tau converges to a wrong energy like everything else here.
+         !! The half is libxc's convention and PySCF's; the same quantity is
+         !! defined without it elsewhere in the literature.
 
       real(dp), allocatable :: work(:, :), gwork(:, :)
       integer :: n_points, n_ao, ig, mu, id
@@ -841,8 +798,8 @@ contains
    pure function pow(x, n) result(v)
       !! x**n for small non-negative n, without the intrinsic's generality
       !!
-      !! `x**0` must be one even when x is zero, which is exactly what happens at
-      !! a grid point sitting on a nucleus -- and there are such points.
+      !! `x**0` must be one even when x is zero, which is what happens at a grid
+      !! point sitting on a nucleus, and there are such points.
       real(dp), intent(in) :: x
       integer, intent(in) :: n
       real(dp) :: v

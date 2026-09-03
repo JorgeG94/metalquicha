@@ -109,8 +109,8 @@ program check_crest_refine
          implicit none
          type(systemdata), intent(inout) :: env
          integer, intent(in) :: nra
-         !> No intent, matching the definition in confparse.f90; intent is part
-         !> of a procedure's characteristics.
+         !! No intent, matching the definition in confparse.f90; intent is part
+         !! of a procedure's characteristics.
          ! allow(missing-intent)
          character(len=*) :: arg(nra)
       end subroutine parseflags

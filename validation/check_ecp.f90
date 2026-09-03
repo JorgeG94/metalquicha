@@ -24,7 +24,7 @@ program check_ecp
    use mqc_libcint_ecp, only: ecp_matrix
    implicit none
 
-   !> PySCF 2.14, mol.intor('ECPscalar_sph') on the system below
+   !! PySCF 2.14, mol.intor('ECPscalar_sph') on the system below
    real(dp), parameter :: REF_MAX = 2.54494167e+01_dp
    real(dp), parameter :: REF_TRACE = 9.05132744e+01_dp
    real(dp), parameter :: TOL = 1.0e-7_dp

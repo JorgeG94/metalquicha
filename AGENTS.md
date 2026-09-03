@@ -257,8 +257,8 @@ cd build && ctest
 # Run specific test
 ./test_mqc_mbe
 
-# Run validation suite
-python run_validation.py
+# Run the validation suite -- from inside validation/, every default is relative
+cd validation && python3 run_validation.py
 ```
 
 Test files follow pattern `test/test_mqc_*.f90`.
@@ -287,6 +287,34 @@ for the build system. Key points:
 - **Environment**: Conda environment defined in `environment.yml`
 
 **Forbidden**: `GOTO`, arithmetic IF, implicit SAVE, COMMON blocks, EQUIVALENCE, fixed-form source, assumed-size arrays
+
+### Comments
+
+`!!` documents a Fortran entity, `!` is an ordinary comment. Nothing else --
+`mqc_lint.py` enforces this and now runs **strict**, with no `--allow-predoc`,
+so `!>` is refused rather than tolerated.
+
+FORD's `!!` is *post-doc*: it documents what **precedes** it. A block therefore
+goes on the lines after a `module`/`type`/`subroutine`/`function` statement, and
+after a declaration -- never above one. Converting a block that sits above a
+declaration by swapping `!>` for `!!` reattaches it to whatever is above; move
+it instead. `ford.md` renders `src` and `app` only, so elsewhere the placement
+is a convention for readers rather than something the published docs depend on.
+
+A plain `!` line inside a `!!` block splits the docstring and FORD renders only
+the first half. Put a marker after the complete block, never inside it.
+
+A docstring says what the thing is and the facts a caller cannot see from the
+signature -- shape, units, index base, when it is allocated, which way a sign
+runs. Design rationale, counterfactuals, worked examples and history do not
+belong there; if a note would only matter to whoever edits *this file*, demote
+it to `!`.
+
+`! TODO(mqc): <what is wrong, and the consequence>` is the only marker form.
+Plain `!`, never `!!`, so it stays out of the rendered docs. Prefer recording a
+defect this way over fixing it inside an unrelated change.
+
+`test/` and `validation/` are deliberately left verbose; do not trim them.
 
 ## MPI Architecture
 
@@ -344,11 +372,35 @@ Examples, all under `validation/inputs/cpu/tblite/gfn1/`:
 - `overlapping_gly3.json` - Glycine tripeptide GMBE(1)
 - `w20_isomer.json` - Water 20-mer MBE(2)
 
-The CPU ab initio suite is the bulk of ~258 cases under `cpu/mqc/`: RHF across H-Ar
+The CPU ab initio suite is the bulk of ~305 decks under `cpu/mqc/`: RHF across H-Ar
 and eight basis sets, UHF, density fitting, MP2, RI-MP2, CCSD(T) and RI-CCSD(T),
 and one fragmented case. References are PySCF fed this repository's own basis
 JSON, not PySCF's internal tables - those differ in the eighth decimal on Pople
 sets, which looks exactly like a bug in whichever code you are checking.
+
+### Running it
+
+`validation/run_validation.py`, and it has to be run **from inside
+`validation/`** -- `--exe` defaults to `../build/mqc` and `--validation-dir` to
+`.`, so it finds nothing from the repository root. There are two manifests and
+the default is the smaller one:
+
+```bash
+cd validation
+python3 run_validation.py                                       # validation_tests.json, 23 cases
+python3 run_validation.py --manifest validation_tests_cpu.json  # 299 cases, the ab initio suite
+python3 run_validation.py -t water_sto-3g                       # substring filter on the test name
+python3 run_validation.py --mpi --np 4                          # fragmented on 4 ranks
+```
+
+**A build without tblite skips most of the default manifest, and skips are not
+failures.** `-t h3o` on such a build runs zero tests and prints a green summary.
+Check the "Total tests" line, not the colour. `validation_tests_cpu.json` is the
+one that exercises a libfint/libcint-only build.
+
+The runner deletes every `output_*.json` in `validation/` before it starts.
+Those are working outputs rather than references, but do not leave anything you
+want under that name.
 
 ## Output Format
 

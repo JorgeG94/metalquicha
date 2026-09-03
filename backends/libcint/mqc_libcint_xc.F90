@@ -3,32 +3,22 @@ module mqc_libcint_xc
    !! Everything the Kohn-Sham SCF needs that Hartree-Fock does not, behind one
    !! derived type and one call.
    !!
-   !! The shape is deliberate. `run_libcint_rhf` already takes a dozen arguments,
-   !! and exchange-correlation needs a grid, a functional, its components, their
-   !! weights, an exact-exchange fraction and a running energy -- six more would
-   !! have made the signature unreadable and every future addition worse. So the
-   !! SCF gains exactly one optional argument of type `xc_context_t`, and one call
-   !! inside its Fock build. Hartree-Fock is then the case where that argument is
-   !! absent, rather than a separate path, and there is no second SCF loop to keep
-   !! in step with the first.
+   !! The SCF gains one optional argument of type `xc_context_t` and one call
+   !! inside its Fock build; Hartree-Fock is the case where that argument is
+   !! absent, rather than a separate path.
    !!
-   !! What the context owns: the grid, the resolved libxc functionals and their
-   !! weights, and the exact-exchange fraction. What it deliberately does not own:
-   !! basis function values. Those are rebuilt per block of grid points on every
-   !! iteration rather than cached, because cached they are `n_points` by `n_ao` --
-   !! 6 MB on water/cc-pVDZ but hundreds at a real size, and the coupled-cluster
-   !! work already paid once for retrofitting blocking onto something that assumed
-   !! it could hold everything.
+   !! The context owns the grid, the resolved libxc functionals and their
+   !! weights, and the exact-exchange fraction. It does **not** own basis
+   !! function values: those are rebuilt per block of grid points on every
+   !! iteration rather than cached, because cached they are `n_points` by
+   !! `n_ao`.
    !!
-   !! LDA, GGA and meta-GGA are all evaluated, restricted and spin-polarised, and
-   !! each rung was added inside the same block loop without the interface moving --
-   !! which was the bet this shape was making. There are two evaluators rather than
-   !! one, `xc_add_potential` and `xc_add_potential_uks`, because libxc fixes the
-   !! spin channel when a functional is initialised and the polarised arrays are
-   !! spin-interleaved: the two cases genuinely take different array shapes. What
-   !! they do share -- the three terms that turn a pointwise potential into a matrix
-   !! -- is factored into `accumulate_xc_matrix`, since that is the arithmetic worth
-   !! having exactly one copy of.
+   !! LDA, GGA and meta-GGA are all evaluated, restricted and spin-polarised.
+   !! There are two evaluators, `xc_add_potential` and `xc_add_potential_uks`,
+   !! because libxc fixes the spin channel when a functional is initialised and
+   !! the polarised arrays are spin-interleaved, so the two cases take different
+   !! array shapes. What they share -- the three terms that turn a pointwise
+   !! potential into a matrix -- is `accumulate_xc_matrix`.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -61,21 +51,16 @@ module mqc_libcint_xc
    real(dp), parameter :: AO_SCREEN_TOL = 1.0e-12_dp
       !! The AO value below which a shell is dropped from a block.
       !!
-      !! Tighter than the 1e-10 that is often quoted, and deliberately: the
-      !! quantity being converged here is a total energy at the microhartree
-      !! level over ~10^6 points, and the cost of the extra digit is a couple
-      !! of bohr of radius on the most diffuse shells. Loosening it is the
-      !! first thing to try if the screen is not paying for itself, and the
-      !! gly10 total energy is the thing to watch while doing so.
+      !! Tighter than the 1e-10 often quoted: the quantity being converged is a
+      !! total energy at the microhartree level over ~10^6 points, and the extra
+      !! digit costs a couple of bohr of radius on the most diffuse shells.
 
    integer, parameter, public :: NLC_GRID_LEVEL = 1
       !! Default level for the non-local inner grid.
       !!
-      !! Deliberately not the exchange grid's level. PySCF defaults its
-      !! `nlcgrids` to the same level as the main grid, which is the safe
-      !! choice and costs the full product; this is one step down, and the
-      !! error it introduces is measured rather than assumed -- see the
-      !! validation deck. A deck can raise it back.
+      !! Not the exchange grid's level: PySCF defaults its `nlcgrids` to the
+      !! main grid's, which costs the full product, and this is one step down.
+      !! A deck can raise it back.
 
    public :: xc_context_t
    public :: xc_context_create
@@ -97,12 +82,11 @@ module mqc_libcint_xc
       !!
       !! Not a tolerance -- a necessity. The LDA kernel is `d2e/drho2`, which for
       !! the exchange part goes as `rho^(-2/3)` and diverges at the tail of every
-      !! atomic grid. Left in, those points carry weights that swamp the real
-      !! ones and the response operator stops being positive definite, so the
-      !! conjugate-gradient solver refuses along its first search direction and
-      !! reports a saddle point that is not there. The energy and potential never
-      !! see this because `vrho` and `exc` stay finite where `v2rho2` does not,
-      !! which is why nothing before the kernel needed a floor.
+      !! atomic grid. Left in, those points swamp the real ones and the response
+      !! operator stops being positive definite, so the conjugate-gradient solver
+      !! reports a saddle point that is not there. `vrho` and `exc` stay finite
+      !! where `v2rho2` does not, which is why nothing before the kernel needed a
+      !! floor.
 
    type :: xc_context_t
       !! A functional, a grid, and the fraction of exact exchange to keep
@@ -122,60 +106,48 @@ module mqc_libcint_xc
          !!
          !!     K_eff = exx_fraction * K_full + rs_k_lr * K_lr(rs_omega)
          !!
-         !! libxc reports (omega, alpha, beta) with alpha the long-range coefficient
-         !! and alpha+beta the short-range one, so exx_fraction is alpha+beta and
-         !! this is -beta. Checked against PySCF's resolved values rather than read
-         !! off the convention: CAM-B3LYP comes out 0.19 short-range and 0.65 long,
-         !! and wB97X 0.157706 and 1.0, which are the published numbers.
+         !! libxc reports (omega, alpha, beta) with alpha the long-range
+         !! coefficient and alpha+beta the short-range one, so `exx_fraction` is
+         !! alpha+beta and this is -beta.
       real(dp) :: pt2_fraction = 0.0_dp
-         !! MP2 correlation fraction, for a double hybrid. Carried here so the
-         !! caller can see it without re-parsing the name; nothing in this module
-         !! acts on it, because perturbative correlation is not a grid quantity.
+         !! MP2 correlation fraction, for a double hybrid. Nothing in this module
+         !! acts on it -- perturbative correlation is not a grid quantity.
       type(dft_grid_t) :: nlc_grid
          !! A second, coarser quadrature for VV10's inner sum only.
          !!
          !! The non-local term is a double integral, so its cost goes as the
-         !! product of the two grids' sizes while everything else here is
-         !! linear in one. On water that product is 5.7e8 pairs per iteration
-         !! against the exchange grid and 7.8e7 against this one; on benzene it
-         !! is six times worse again. The outer points stay on the exchange
-         !! grid because that is where the potential has to be contracted into
-         !! the Fock matrix.
+         !! product of the two grids' sizes while everything else here is linear
+         !! in one.
       integer :: nlc_grid_level = NLC_GRID_LEVEL
       real(dp) :: nlc_b = 0.0_dp
       real(dp) :: nlc_c = 0.0_dp
          !! VV10's two parameters, as libxc reports them. Both zero means the
          !! functional carries no non-local correlation, which is every
-         !! functional here except the `-V` family. Stored rather than only
-         !! tested, because the term has to be evaluated now rather than
-         !! refused -- see `mqc_libcint_vv10`.
+         !! functional here except the `-V` family.
       real(dp) :: screen_tol = AO_SCREEN_TOL
          !! The AO value below which a shell is dropped from a grid block.
          !! From `keywords.dft.screening_tolerance`; the default is the constant.
       integer :: point_block = AO_POINT_BLOCK
          !! Grid points per block. From `keywords.dft.block_size`.
          !!
-         !! Two things at once, which is why it is worth exposing. A smaller
-         !! block is spatially tighter, so fewer shells reach it and the screen
-         !! keeps less; and the loop over blocks *is* the OpenMP loop, so the
-         !! block count is the thread granularity. Too large and threads idle;
-         !! too small and the per-block gather and scatter start to show.
+         !! Two things at once. A smaller block is spatially tighter, so fewer
+         !! shells reach it and the screen keeps less; and the loop over blocks
+         !! *is* the OpenMP loop, so the block count is the thread granularity.
       logical :: polarized = .false.
          !! Whether the functionals were initialised spin-polarised.
          !!
-         !! Not a detail a caller can be indifferent to: libxc fixes this when a
-         !! functional is initialised, and the two cases take different array
-         !! shapes and return a different number of potential components. So a
-         !! context belongs to a restricted calculation or to an unrestricted one,
-         !! and `xc_add_potential` and `xc_add_potential_uks` each refuse the other
-         !! kind rather than reinterpreting the arrays -- which would be a silent
-         !! read of the wrong element, not a crash.
+         !! libxc fixes this at initialisation, and the two cases take different
+         !! array shapes and return a different number of potential components.
+         !! So a context belongs to a restricted calculation or to an
+         !! unrestricted one, and `xc_add_potential` and `xc_add_potential_uks`
+         !! each refuse the other kind rather than reinterpreting the arrays --
+         !! which would be a silent read of the wrong element, not a crash.
       type(dft_grid_t) :: grid
       integer :: n_func = 0
       integer :: family(MAX_XC_COMPONENTS) = 0
          !! libxc's family per component. A composition may mix them -- a hybrid
-         !! GGA exchange beside an LDA correlation is ordinary -- so the block loop
-         !! asks per component rather than once for the whole functional.
+         !! GGA exchange beside an LDA correlation -- so the block loop asks per
+         !! component rather than once for the whole functional.
       logical :: any_gga = .false.
          !! Whether anything here needs density gradients, and so whether the AO
          !! gradients are worth evaluating at all.
@@ -259,10 +231,8 @@ contains
       ! The *element*, not the charge it presents. `mol%charges` has the ECP's
       ! core subtracted, and every table the grid reaches for is an element
       ! property: the radial count and Lebedev order come from the period, the
-      ! Treutler-Ahlrichs xi and the Becke radii are per element. Handing it the
-      ! reduced charge builds iodine's grid as though it were manganese --
-      ! 53 - 28 = 25, one period too low -- which is worth about 1e-06 Hartree
-      ! on HI/def2-SVP and converges to a different limit rather than to PySCF's.
+      ! Treutler-Ahlrichs xi and the Becke radii are per element. The reduced
+      ! charge builds iodine's grid as though it were manganese, 53 - 28 = 25.
       ! `core_electrons` is zero for an all-electron atom and for a ghost, so
       ! this is the identity everywhere an ECP is not involved.
       numbers = nint(mol%charges) + mol%core_electrons
@@ -324,16 +294,13 @@ contains
 
          ! **Range separation, detected rather than asked about.** libxc 7.1.2's
          ! Fortran bindings expose no `xc_hyb_type`, so the test is on the
-         ! coefficients: a global hybrid reports omega = 0, and anything else
-         ! splits its exchange into short and long range over an erf-attenuated
-         ! kernel. Detecting it matters either way, because `hyb_exx_coef` does
-         ! not mean for such a functional what it means for a global one --
-         ! taking it at face value gave CAM-B3LYP an energy 3.4 Hartree low and
-         ! wB97X 6.4 low, both converged and neither flagged.
+         ! coefficients: a global hybrid reports omega = 0. Detecting it matters
+         ! because `hyb_exx_coef` does not mean the same thing for a
+         ! range-separated functional as for a global one, and taking it at face
+         ! value converges to a badly wrong energy without a warning.
          !
-         ! The attenuated integrals need no new integral code: they are the same
-         ! entry points with `env(PTR_RANGE_OMEGA)` set, so a second exchange
-         ! pass and these coefficients are the whole of it.
+         ! The attenuated integrals need no new integral code: the same entry
+         ! points with `env(PTR_RANGE_OMEGA)` set.
          call xc_f03_hyb_cam_coef(ctx%func(i), cam_omega, cam_alpha, cam_beta)
          if (cam_omega /= 0.0_dp .and. cam_beta /= 0.0_dp) then
             if (ctx%range_separated) then
@@ -352,9 +319,6 @@ contains
             ctx%rs_k_lr = ctx%rs_k_lr - spec%component(i)%weight*cam_beta
          end if
 
-         ! Non-local correlation likewise: VV10 is a double integral over the
-         ! density, not a functional of it at a point, and a functional carrying it
-         ! would silently lose that whole term.
          ! Non-local correlation: VV10 is a double integral over the density,
          ! not a functional of it at a point, so libxc supplies only the
          ! semilocal half and hands back the two parameters. Kept here and
@@ -376,19 +340,16 @@ contains
             ctx%nlc_c = nlc_c
          end if
 
-         ! libxc owns a hybrid's fraction, so ask rather than assume -- and ask it
-         ! of every component, not only of a functional libxc carries whole. SCAN0
-         ! is the case that separates those two readings: it is a composition here,
-         ! because libxc pairs no correlation with it, but its exchange component
-         ! `hyb_mgga_x_scan0` carries the quarter of exact exchange itself. Asking
-         ! only for single-component specs dropped that quarter silently, which is
-         ! a converged number for a different functional.
+         ! libxc owns a hybrid's fraction, so ask rather than assume -- of every
+         ! component, not only of a functional libxc carries whole. SCAN0 is the
+         ! case that separates the two: it is a composition here, because libxc
+         ! pairs no correlation with it, but its exchange component
+         ! `hyb_mgga_x_scan0` carries the quarter of exact exchange itself.
          !
          ! Safe to ask always: every semilocal component of every composition in
-         ! `mqc_xc_spec` reports zero here, so nothing existing moves. A spec's own
-         ! `exx_fraction` remains for exchange libxc knows nothing about, which is
-         ! the double hybrids and only them -- so the two still cannot both be
-         ! nonzero and disagree.
+         ! `mqc_xc_spec` reports zero here. A spec's own `exx_fraction` remains
+         ! for exchange libxc knows nothing about, which is the double hybrids
+         ! and only them.
          if (.not. (cam_omega /= 0.0_dp .and. cam_beta /= 0.0_dp)) then
             libxc_exx = xc_f03_hyb_exx_coef(ctx%func(i))
             ctx%exx_fraction = ctx%exx_fraction + spec%component(i)%weight*libxc_exx
@@ -427,17 +388,19 @@ contains
                                      density_beta, rho_beta, vrho_beta)
       !! rho, eps_xc and v_xc at every grid point, for an LDA functional
       !!
-      !! The gradient needs these three on the grid rather than contracted into
-      !! a matrix: the exchange-correlation gradient has one term contracting
-      !! `vrho` against the moving basis functions and another contracting
-      !! `rho*exc` against the moving quadrature weights, and neither can be
-      !! recovered from the Fock-matrix contribution that `xc_add_potential`
-      !! returns.
+      !! The gradient needs these three on the grid rather than contracted into a
+      !! matrix: one term contracts `vrho` against the moving basis functions and
+      !! another contracts `rho*exc` against the moving quadrature weights, and
+      !! neither can be recovered from the Fock-matrix contribution
+      !! `xc_add_potential` returns.
       !!
-      !! LDA only, and it refuses anything else rather than returning something
-      !! incomplete. A GGA needs `vsigma` and the density gradient as well, and
-      !! its gradient needs second derivatives of the basis functions, which
-      !! `eval_ao_block` does not produce.
+      !! LDA only, and anything else is refused rather than returned incomplete.
+      ! TODO(mqc): this loop, and the ones in `xc_grid_gga_quantities` and
+      ! `xc_grid_kernel_quantities`, block on the `AO_POINT_BLOCK` constant and
+      ! apply no AO screen, where every other loop in this module blocks on
+      ! `ctx%point_block`. So `keywords.dft.block_size` and
+      ! `keywords.dft.screening_tolerance` are silently ignored on the gradient
+      ! and kernel-quantity paths.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)         !! Total density, or alpha
@@ -555,25 +518,23 @@ contains
       !! rho, eps_xc, dE/drho and dE/d(grad rho) at every grid point, for a GGA
       !!
       !! The counterpart of `xc_grid_lda_quantities` for a functional that reads
-      !! the density gradient, and it returns one thing that routine does not:
+      !! the density gradient, returning one thing that routine does not:
       !! `grad_coeff`, the quantity conjugate to `grad rho`.
       !!
-      !! **It returns that rather than `vsigma` and `rho_grad` separately, on
-      !! purpose.** libxc parametrises a GGA by sigma = |grad rho|^2, so what
-      !! multiplies d(grad rho)/dR is 2 vsigma grad rho -- and in the polarised
-      !! case the spins couple through sigma_ab, giving
+      !! **`grad_coeff` rather than `vsigma` and `rho_grad` separately.** libxc
+      !! parametrises a GGA by sigma = |grad rho|^2, so what multiplies
+      !! d(grad rho)/dR is 2 vsigma grad rho, and in the polarised case the spins
+      !! couple through sigma_ab:
       !!
       !!     dE/d(grad rho_a) = 2 vsigma_aa grad rho_a + vsigma_ab grad rho_b
       !!
-      !! Resolving that here means the gradient contracts a single vector per
-      !! spin and never has to know how many sigma channels there were. It is
-      !! also the same combination `xc_add_potential` builds for the Fock
-      !! matrix, so the two paths cannot disagree about the chain rule.
+      !! Resolving it here means the caller contracts a single vector per spin
+      !! and never has to know how many sigma channels there were. It is also the
+      !! combination `xc_add_potential` builds for the Fock matrix, so the two
+      !! paths cannot disagree about the chain rule.
       !!
-      !! LDA functionals are accepted and return `grad_coeff` zero, so a caller
-      !! that has already decided to take the GGA path does not need a second
-      !! branch. Meta-GGA is refused: tau brings a term of its own that nothing
-      !! here computes.
+      !! LDA functionals are accepted and return `grad_coeff` zero. Meta-GGA
+      !! needs `vtau`, and is refused without it.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)         !! Total density, or alpha
@@ -587,13 +548,13 @@ contains
       real(dp), allocatable, intent(out), optional :: vrho_beta(:)
       real(dp), allocatable, intent(out), optional :: grad_coeff_beta(:, :)
       real(dp), allocatable, intent(out), optional :: vtau(:)
+         !! `dE/dtau` per point, for a meta-GGA. Absent, a meta-GGA is refused
+         !! rather than evaluated without it: the dispatch further down would
+         !! otherwise treat one as an LDA.
       real(dp), allocatable, intent(out), optional :: sigma_out(:)
          !! |grad rho|^2 on the whole grid. Formed per block here already and
          !! otherwise discarded; VV10 needs it over every point at once, since
          !! its inner sum is not blockable.
-         !! `dE/dtau` per point, for a meta-GGA. Absent, a meta-GGA is refused
-         !! rather than evaluated without it -- see the check below, and note
-         !! that the dispatch further down would otherwise treat one as an LDA.
 
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
       real(dp), allocatable :: rho_blk(:), sigma(:), exc_i(:), vrho_i(:), vsigma_i(:)
@@ -808,15 +769,13 @@ contains
       !! since `V_xc` is itself a first derivative, differentiating it brings
       !! second ones.
       !!
-      !! **Returned raw rather than pre-combined**, which is the opposite of the
-      !! choice next door. `xc_grid_gga_quantities` resolves `2 vsigma grad rho`
-      !! into one vector because its caller contracts exactly that. Here there
-      !! are two densities and four independent combinations of them, and which
-      !! is wanted depends on whether the moving object is the reference's
-      !! density or the other one -- so combining early would mean returning all
-      !! four, and the caller assembling them anyway.
+      !! **Returned raw rather than pre-combined**, unlike next door: there are
+      !! two densities and four independent combinations of them, and which is
+      !! wanted depends on whether the moving object is the reference's density
+      !! or the other one.
       !!
-      !! LDA and GGA. A meta-GGA is refused for the same reason the kernel is.
+      !! Restricted only, and a meta-GGA is served through the optional tau
+      !! outputs.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
@@ -1119,15 +1078,12 @@ contains
       !!     E_xc = sum_g w_g rho_g eps_xc(rho_g)
       !!     V_uv = sum_g w_g v_xc(rho_g) chi_u(r_g) chi_v(r_g)
       !!
-      !! `v_xc` comes back on its own rather than added into a Fock matrix, because
-      !! the energy expression needs the Fock matrix *without* it: the Kohn-Sham
-      !! energy takes E_xc directly, not half the trace of D V_xc, so a caller that
-      !! could not separate them would have to reconstruct one or the other.
+      !! `v_xc` comes back on its own rather than added into a Fock matrix,
+      !! because the Kohn-Sham energy takes E_xc directly and not half the trace
+      !! of D V_xc, so the caller needs the Fock matrix *without* it.
       !!
-      !! `n_elec` is the integrated density, returned because it costs nothing and
-      !! is the cheapest possible statement that the grid and the density agree --
-      !! a caller printing it once per run turns a silent grid problem into an
-      !! obvious one.
+      !! `n_elec` is the integrated density, returned because it is the cheapest
+      !! check that the grid and the density agree.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
@@ -1169,48 +1125,30 @@ contains
       end if
 
 #ifdef MQC_WITH_LIBXC
-      ! One thread per block of grid points.
+      ! One thread per block of grid points. This loop is where a density
+      ! functional run spends nearly all of its time, and the blocks are
+      ! independent: each evaluates the basis on its own points, calls libxc on
+      ! its own densities, and contributes to `v_xc`, `e_xc` and `n_elec` only by
+      ! accumulation. `schedule(dynamic)` because a block's cost depends on how
+      ! many basis functions reach its points.
       !
-      ! This loop is where a density functional run spends nearly all of its
-      ! time -- 89 per cent of an LDA run on twenty waters and 98 per cent of a
-      ! meta-GGA one, against a Fock build that is under two per cent -- and the
-      ! blocks are independent. Each one evaluates the basis on its own points,
-      ! calls libxc on its own densities, and contributes to `v_xc`, `e_xc` and
-      ! `n_elec` only by accumulation.
-      !
-      ! **Threaded here rather than by the BLAS underneath.** The dominant cost
-      ! inside a block is the gemm in `accumulate_xc_matrix`, so a threaded BLAS
-      ! also speeds this up -- measurably, by five times on an unfragmented run.
-      ! But this program's fragment paths pin themselves to one OpenMP thread
-      ! and parallelise over fragments with MPI instead, and a threaded BLAS
-      ! underneath *that* competes with the ranks: measured on a twenty-water
-      ! MBE(2), four ranks went from 129 s to 169 s. Our own OpenMP is the level
-      ! that respects `omp_set_num_threads`, so the same code threads on an
-      ! unfragmented run and stays serial inside a pinned fragment worker.
-      !
-      ! The regions inside `eval_ao_block` are nested within this one and so run
-      ! serially, nesting being off by default. The parallelism moves up a level
-      ! rather than doubling: points within a block become blocks across threads.
-      !
-      ! `schedule(dynamic)` because a block's cost depends on how many basis
-      ! functions reach its points, which varies across the molecule.
+      ! Threaded here rather than by the BLAS underneath, so that the level which
+      ! respects `omp_set_num_threads` is this one. The regions inside
+      ! `eval_ao_block` nest within this one and so run serially, nesting being
+      ! off by default.
       !
       ! `local_error` is **firstprivate and not private**. A private copy of a
       ! derived type is not required to pick up its default initialisation, and
-      ! here it did not: every thread started with a nonzero error code, the
-      ! first block reported failure and the potential came back zero. Clearing
-      ! it inside the region is not the fix either -- `clear` deallocates the
-      ! message, and doing that to an uninitialised copy frees a pointer that
-      ! was never allocated. Copying in the routine-scope variable, which *is*
-      ! default-initialised, gives every thread a clean one to start from.
+      ! here it did not: every thread started holding an error. Clearing it
+      ! inside the region is not the fix either -- `clear` deallocates the
+      ! message, and doing that to an uninitialised copy frees a pointer that was
+      ! never allocated.
       failed = .false.
 
       ! One bound per shell for the whole molecule, computed once and read by
-      ! every block of every iteration. `AO_SCREEN_TOL` is on the AO *value*,
-      ! and a shell dropped beyond its radius contributes less than that at
-      ! every point of the block -- so this is a truncation with a stated
-      ! bound, not a heuristic.
-
+      ! every block of every iteration. The tolerance is on the AO *value*, and a
+      ! shell dropped beyond its radius contributes less than that at every point
+      ! of the block, so this is a truncation with a stated bound.
       call shell_extents(mol, ctx%screen_tol, extents)
 
       !$omp parallel default(none) &
@@ -1242,9 +1180,9 @@ contains
          nb = g1 - g0 + 1
 
          ! Which shells reach this block at all. Everything downstream -- the
-         ! basis evaluation, the density contraction, the potential gemm --
-         ! runs on that subset and nothing else, which is where the time goes:
-         ! both gemms are n_points * n_ao^2, so halving n_ao quarters them.
+         ! basis evaluation, the density contraction, the potential gemm -- runs
+         ! on that subset: both gemms are n_points * n_ao^2, so halving n_ao
+         ! quarters them.
          call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
                                     shell_mask, ao_list, ao_offset, n_sig)
          if (n_sig == 0) cycle          ! empty space; no basis function reaches it
@@ -1308,8 +1246,7 @@ contains
 
          ! Each component contributes its weight of the energy density and of the
          ! potential. One functional with weight one is the ordinary case; more
-         ! than one is a composition this repository defines, and a double hybrid
-         ! is the only such case in view.
+         ! than one is a composition this repository defines.
          do i = 1, ctx%n_func
             select case (ctx%family(i))
             case (XC_FAMILY_MGGA, XC_FAMILY_HYB_MGGA)
@@ -1332,9 +1269,9 @@ contains
          e_local = e_local + sum(ctx%grid%weights(g0:g1)*rho*exc)
 
          ! The gradient coefficient is dE/d(grad rho). Differentiating
-         ! sigma = |grad rho|^2 gives 2 vsigma grad rho; the unrestricted case has
-         ! a cross-spin term as well, which is the only difference between the two
-         ! and the reason this is assembled by the caller rather than inside.
+         ! sigma = |grad rho|^2 gives 2 vsigma grad rho; the unrestricted case
+         ! adds a cross-spin term, which is why this is assembled by the caller
+         ! rather than inside `accumulate_xc_matrix`.
          if (ctx%any_gga) then
             if (allocated(grad_coeff)) deallocate (grad_coeff)
             allocate (grad_coeff(nb, 3))
@@ -1374,10 +1311,8 @@ contains
       !$omp end parallel
 
       ! VV10 last, on its own grid, adding into the same matrix and the same
-      ! energy. It is outside the parallel region because it runs its own two
-      ! sweeps over a different quadrature; folding it into the block loop
-      ! above would tie its cost to the exchange grid, which is exactly what
-      ! the separate grid exists to avoid.
+      ! energy. Outside the parallel region because it runs its own two sweeps
+      ! over a different quadrature.
       if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
          call vv10_add_potential(ctx, mol, density, v_xc, e_nl_total, error)
          if (error%has_error()) return
@@ -1390,18 +1325,15 @@ contains
                                    e_xc, n_elec, error)
       !! The exchange-correlation potential and energy for a pair of spin densities
       !!
-      !! The unrestricted counterpart of `xc_add_potential`, and the same structure:
-      !! one pass over blocks of grid points, libxc per component, one matrix
-      !! assembled per spin. Two things are genuinely different, and they are the
-      !! two places an unrestricted functional goes wrong.
+      !! The unrestricted counterpart of `xc_add_potential`, with the same
+      !! structure. Two things differ, and they are the two places an
+      !! unrestricted functional goes wrong.
       !!
       !! **libxc's arrays are spin-interleaved.** A polarised functional takes
       !! `rho` as (rho_a, rho_b) per point, `sigma` as (sigma_aa, sigma_ab,
-      !! sigma_bb) and `tau` as (tau_a, tau_b), all with spin as the fastest index,
-      !! and returns `vrho` and `vtau` in the same layout with `vsigma` in three
-      !! components. Nothing in the interface enforces that -- the F03 bindings take
-      !! bare arrays -- so a wrong stride here is a silent misread, which is why the
-      !! closed-shell-equals-restricted test exists.
+      !! sigma_bb) and `tau` as (tau_a, tau_b), spin fastest, and returns `vrho`
+      !! and `vtau` in the same layout with `vsigma` in three components. The F03
+      !! bindings take bare arrays, so a wrong stride here is a silent misread.
       !!
       !! **The gradient term couples the spins.** sigma_ab = grad rho_a . grad rho_b
       !! belongs to both, so
@@ -1460,11 +1392,10 @@ contains
       end if
 
 #ifdef MQC_WITH_LIBXC
-      ! Threaded over blocks, exactly as the restricted path is, and for the same
-      ! reason: the grid quadrature is where a density functional run spends its
-      ! time. `firstprivate(local_error)` rather than `private` -- a private copy
-      ! of a derived type need not pick up its default initialisation, and on the
-      ! restricted side it did not, so every thread began holding an error.
+      ! Threaded over blocks exactly as the restricted path is.
+      ! `firstprivate(local_error)` rather than `private` -- a private copy of a
+      ! derived type need not pick up its default initialisation, and here it
+      ! does not.
       failed = .false.
 
       ! One bound per shell for the whole molecule, computed once and read by
@@ -1520,9 +1451,8 @@ contains
             end do
          end do
 
-         ! One AO evaluation for both spins -- the expensive part -- and then the
-         ! density contraction once per spin. `eval_rho` takes a density matrix and
-         ! asks nothing about whose it is, so a spin density needs no new code.
+         ! One AO evaluation for both spins -- the expensive part -- then the
+         ! density contraction once per spin.
          !
          ! The evaluation is hoisted out of the spin-family branch so its error is
          ! checked once, before anything reads `ao`. That ordering is load-bearing:
@@ -1694,19 +1624,14 @@ contains
       !$omp end critical (xc_uks_reduce)
       !$omp end parallel
 
-      ! VV10 sees only the total density, so one evaluation serves both spins
-      ! and its contribution is identical in each. That is not a
-      ! simplification: the kernel is built from rho and |grad rho| of the
-      ! total density, with no spin dependence anywhere in it, so
-      ! dE/drho_a = dE/drho_b and likewise for the gradient term.
+      ! VV10 sees only the total density, so one evaluation serves both spins and
+      ! its contribution is identical in each: the kernel is built from rho and
+      ! |grad rho| of the total density with no spin dependence anywhere in it,
+      ! so dE/drho_a = dE/drho_b and likewise for the gradient term.
       if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
-         ! Evaluated once and added to both, rather than called twice. The
-         ! comment above is the reason it can be: the kernel has no spin
-         ! dependence, so the two calls did identical work and the second
-         ! existed only to reach `v_beta`. That doubled the whole non-local
-         ! term, which is the dominant cost of a `-V` SCF iteration -- on an
-         ! open-shell case here the exchange-correlation column ran 23 s
-         ! against the Fock build's 5 s, and half of it was this.
+         ! Evaluated once and added to both, rather than called twice: with no
+         ! spin dependence the two calls did identical work, and the non-local
+         ! term is the dominant cost of a `-V` SCF iteration.
          if (.not. allocated(v_nl)) allocate (v_nl(size(v_alpha, 1), size(v_alpha, 2)))
          v_nl = 0.0_dp
          call vv10_add_potential(ctx, mol, d_alpha + d_beta, v_nl, e_nl_total, error)
@@ -1733,11 +1658,8 @@ contains
       !! exchange it does include.
       !!
       !! **An addend, not a fourth branch.** The two-electron part of the
-      !! response operator already comes three ways -- stored, integral-direct
-      !! and density-fitted -- and the kernel is orthogonal to that choice: it
-      !! is a grid quantity that knows nothing about where the Coulomb and
-      !! exchange came from. Written as a fourth case beside them it would have
-      !! to be written three times over.
+      !! response operator comes three ways -- stored, integral-direct and
+      !! density-fitted -- and the kernel is orthogonal to that choice.
       !!
       !! **LDA and GGA; meta-GGA is refused.** For a GGA the response density
       !! has a gradient too, and both of the potential's pieces respond:
@@ -1748,16 +1670,13 @@ contains
       !!
       !! which is the same pair of coefficients `accumulate_xc_matrix` already
       !! turns into a matrix for the potential -- so the kernel is a different
-      !! `vrho` and `grad_coeff`, not a different assembly. The last term is the
-      !! one with no analogue in the LDA case and the one a first attempt drops:
-      !! `v_sigma` is a *first* derivative, and it enters the kernel because the
-      !! response density's gradient multiplies it.
+      !! `vrho` and `grad_coeff`, not a different assembly. The last term has no
+      !! analogue in the LDA case: `v_sigma` is a *first* derivative, and it
+      !! enters because the response density's gradient multiplies it.
       !!
-      !! A meta-GGA adds `v2tau2`, `v2rhotau` and `v2sigmatau`, and a tau
-      !! component of the response density on top. That is real work rather than
-      !! more of this one, and returning a GGA kernel for a meta-GGA would be a
-      !! converged, plausible, wrong response -- the failure mode this file has
-      !! hit twice already.
+      !! A meta-GGA would add `v2tau2`, `v2rhotau` and `v2sigmatau` and a tau
+      !! component of the response density; returning a GGA kernel for one would
+      !! be a converged, plausible, wrong response.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)   !! The converged SCF density
@@ -1779,9 +1698,8 @@ contains
       real(dp), allocatable :: lapl_scratch(:)
          !! libxc's meta-GGA entry points take the Laplacian and return its
          !! derivatives whether or not the functional uses them. Laplacian
-         !! dependent functionals are refused at construction, so these are
-         !! zeros in and discarded out -- the single largest simplification
-         !! available on this rung, and the energy path already takes it.
+         !! dependent functionals are refused at construction, so these are zeros
+         !! in and discarded out.
       real(dp), allocatable :: v_local(:, :), v_sig(:, :), d_sig(:, :), dt_sig(:, :)
       real(dp), allocatable :: extents(:)
       logical, allocatable :: shell_mask(:)
@@ -1809,9 +1727,9 @@ contains
 
       call shell_extents(mol, ctx%screen_tol, extents)
 
-      ! Threaded over blocks like the potential paths. This one is driven once
-      ! per CPHF iteration rather than once per SCF iteration, so a response
-      ! property or a Z-vector pays for it repeatedly.
+      ! Threaded over blocks like the potential paths. Driven once per CPHF
+      ! iteration rather than once per SCF iteration, so a response property or a
+      ! Z-vector pays for it repeatedly.
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, density, dtilde, v_kernel, error, failed, &
       !$omp           gga, mgga, npts, extents) &
@@ -1880,11 +1798,9 @@ contains
 
          if (mgga) then
             ! **The tau convention never has to be decided here.** Whatever
-            ! `eval_rho` means by tau is what the energy path already fed libxc
-            ! and what `accumulate_xc_matrix` already differentiates, and the
-            ! response density goes through the same routine with `dtilde` in
-            ! place of `density`. Deriving the factor again would be inventing a
-            ! second convention that has to agree with the first.
+            ! `eval_rho` means by tau is what the energy path fed libxc and what
+            ! `accumulate_xc_matrix` differentiates, and the response density
+            ! goes through the same routine with `dtilde` in place of `density`.
             call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
                           rho_grad=rho_grad, tau=tau)
             call eval_rho(ao, dt_sig(1:n_sig, 1:n_sig), drho, ao_grad=ao_grad, &
@@ -2027,8 +1943,7 @@ contains
          end if
 
          ! The same assembly the potential uses, with the kernel's coefficients
-         ! in place of the potential's. Writing a second one would be two copies
-         ! of the arithmetic that is hardest to get right here.
+         ! in place of the potential's.
          v_sig(1:n_sig, 1:n_sig) = 0.0_dp
          if (mgga) then
             call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, &
@@ -2327,28 +2242,20 @@ contains
    subroutine vv10_add_potential(ctx, mol, density, v_nl, e_nl, error)
       !! VV10's energy and Fock contribution, entirely on its own coarse grid
       !!
-      !! **Both grids are the coarse one, and that is the whole point.** The
-      !! non-local term is a double integral, so its cost goes as the product
-      !! of the two grids' sizes. Coarsening only the inner sum saves 13x on
-      !! water; coarsening both saves 184x, which is the difference between
-      !! usable and not. PySCF makes the same choice for the same reason.
-      !!
-      !! It costs a second AO pass, because a potential has to be contracted on
-      !! the grid it was evaluated on. That pass is linear in points, on a grid
-      !! an order of magnitude smaller than the exchange one, so it disappears
-      !! against the double sum it enables.
+      !! **Both grids are the coarse one.** The non-local term is a double
+      !! integral, so its cost goes as the product of the two grids' sizes;
+      !! coarsening only the inner sum is not enough. PySCF makes the same
+      !! choice. It costs a second AO pass, because a potential has to be
+      !! contracted on the grid it was evaluated on, and that pass is linear in
+      !! points on a grid an order of magnitude smaller than the exchange one.
       !!
       !! Two sweeps over that grid rather than one: the kernel's inner sum runs
       !! over every point, so nothing can be contracted until rho and sigma are
       !! known everywhere. Both are threaded over blocks, as is the double sum
-      !! between them -- this routine is the whole cost of a `-V` iteration, so
-      !! a serial stretch anywhere in it is the run's critical path.
+      !! between them.
       !!
-      !! No AO screening here, unlike the exchange loop. On a grid this size
-      !! the saving is small and the indexing it needs -- a per-block
-      !! significant-AO list, a compacted density, a scatter back -- is a
-      !! standing invitation to an off-by-one that would be wrong by
-      !! millihartree while converging.
+      !! No AO screening here, unlike the exchange loop: on a grid this size the
+      !! saving is small against the indexing it would need.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
@@ -2384,13 +2291,10 @@ contains
       ! Threaded over blocks, as the semilocal loops are. Every block writes to
       ! its own slice of `rho`, `sigma` and `rho_grad` -- the index is the grid
       ! point, so there is nothing to reduce and no two threads touch the same
-      ! element. Both sweeps here used to run serially while the double sum
-      ! between them was threaded, which on a `-V` functional left most of the
-      ! machine idle for the part that is linear in the grid.
+      ! element.
       !
       ! `firstprivate(local_error)` rather than `private`, for the reason the
-      ! restricted path sets out: a private copy of a derived type need not pick
-      ! up its default initialisation, and here it did not.
+      ! restricted path sets out.
       failed = .false.
       !$omp parallel do default(none) &
       !$omp    shared(ctx, mol, density, npts, rho, sigma, rho_grad, error, failed) &
@@ -2431,12 +2335,9 @@ contains
                     ctx%nlc_grid%coords, rho, sigma, ctx%nlc_grid%weights, &
                     exc, vrho, vsigma, n_inner_kept=n_kept)
 
-      ! What the double integral actually costs, which is otherwise invisible:
-      ! the pair count is the product of these two, and the term is the whole
-      ! expense of a `-V` functional. Both grids here are the non-local one --
-      ! see `nlc_grid_level`, which is a fixed level rather than a step below
-      ! `grid_level`, so a deck already running a coarse grid gets no
-      ! separation between the two unless it asks.
+      ! TODO(mqc): this diagnostic is commented out, and it is the only consumer
+      ! of `n_kept` and of the `logger` and `to_char` imports at the top of the
+      ! module -- all three are now dead. Either restore the line or drop them.
       !call logger%verbose("  VV10: "//to_char(npts)//" grid points, "// &
       !                    to_char(n_kept)//" carry density, "// &
       !                    to_char(real(npts, dp)*real(n_kept, dp)/1.0e6_dp)// &
@@ -2444,16 +2345,14 @@ contains
 
       e_nl = sum(ctx%nlc_grid%weights*rho*exc)
 
-      ! Sweep two: contract the potential on the grid it was evaluated on.
       allocate (vtau_none(0))
 
       ! Sweep two: contract the potential on the grid it was evaluated on.
       !
-      ! This one accumulates into a single matrix, so unlike sweep one it needs
-      ! a reduction: each thread fills its own `v_local` and adds it in once at
-      ! the end, rather than contending for `v_nl` on every block. `v_nl` itself
-      ! is *not* zeroed here -- the restricted caller passes the matrix that
-      ! already holds the semilocal potential and expects this to add to it.
+      ! This one accumulates into a single matrix, so unlike sweep one it needs a
+      ! reduction: each thread fills its own `v_local` and adds it in once at the
+      ! end. `v_nl` itself is *not* zeroed here -- the restricted caller passes
+      ! the matrix that already holds the semilocal potential.
       failed = .false.
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, npts, vrho, vsigma, rho_grad, v_nl, vtau_none, &
@@ -2518,17 +2417,14 @@ contains
       !!
       !! PySCF's `get_vnlc_resp`, term for term.
       !!
-      !! **Batched, unlike `xc_kernel_apply`, and deliberately.** The pair
-      !! sweep is O(npts^2) whether it carries one trial or thirty, so a
-      !! response solve that applied this per perturbation would multiply the
-      !! only expensive part of the routine by `3*natm` every iteration.
-      !! `vv10_hessian_kernel` already takes the batch; this passes it through.
+      !! **Batched, unlike `xc_kernel_apply`.** The pair sweep is O(npts^2)
+      !! whether it carries one trial or thirty, so applying this per
+      !! perturbation would multiply the only expensive part of the routine by
+      !! `3*natm` every iteration.
       !!
-      !! **Accumulates into `v_kernel`**, exactly as `xc_kernel_apply` does --
-      !! the caller adds this to a response operator it has already partly
-      !! built, and the caller zeroes. Each trial must be symmetric, which is
-      !! what `eval_rho`'s gradient assumes and what every response density
-      !! here is. Restricted only, like everything upstream.
+      !! **Accumulates into `v_kernel`**, as `xc_kernel_apply` does; the caller
+      !! zeroes. Each trial must be symmetric, which is what `eval_rho`'s
+      !! gradient assumes. Restricted only.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)      !! The converged SCF density
@@ -2565,9 +2461,7 @@ contains
 
       ! Sweep one: the reference density and every trial's, gradients included,
       ! over the whole NLC grid -- the pair sums read every point before any
-      ! output exists. No AO screening, matching `vv10_add_potential` and for
-      ! its reasons; and the kernel is non-local anyway, so no block could be
-      ! skipped on any per-atom argument.
+      ! output exists. No AO screening, matching `vv10_add_potential`.
       allocate (rho(npts), sigma(npts), rho_grad(npts, 3))
       allocate (rho_t(n_trial, npts), gamma_t(n_trial, npts))
       allocate (grad_t(npts, 3, n_trial))
@@ -2607,8 +2501,7 @@ contains
       end do
 
       ! One pair sweep for the potential -- whose `vsigma` *is* PySCF's
-      ! `f_gamma`, the identity Phase 1's test pins -- and every kernel
-      ! intermediate the perturbed potential needs.
+      ! `f_gamma` -- and every kernel intermediate the perturbed potential needs.
       allocate (exc(npts), vrho(npts), vsigma(npts))
       allocate (pu(npts), pw(npts), pa(npts), pb(npts), pc(npts))
       allocate (dodr(npts), dodg(npts), d2odr2(npts), d2odg2(npts), d2odrdg(npts))
@@ -2669,14 +2562,10 @@ contains
    subroutine ensure_nlc_grid(ctx, mol, error)
       !! Build the non-local correlation grid, once, on first use
       !!
-      !! Built on first use rather than beside the exchange grid, because
-      !! whether it is needed at all is only known once the functional's
-      !! components have been read, which happens after that grid is made.
-      !! Nothing that is not a `-V` functional ever pays for it.
-      !!
-      !! Shared by the potential and the gradient so that the two integrate and
-      !! differentiate the same quadrature. They would otherwise each build one
-      !! and agree only as long as the level and the partition defaults did.
+      !! Built on first use rather than beside the exchange grid, because whether
+      !! it is needed is only known once the functional's components have been
+      !! read. Shared by the potential and the gradient, so the two integrate and
+      !! differentiate the same quadrature.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       type(error_t), intent(inout) :: error
@@ -2696,13 +2585,10 @@ contains
                                    any_gga, any_mgga)
       !! One spin's exchange-correlation matrix, over one block of grid points
       !!
-      !! Shared by the restricted and unrestricted paths, which is the whole point:
-      !! the three terms below are where a functional is wrong by millihartree
-      !! while converging perfectly, and there should be one copy of them. What
-      !! differs between the two callers is not this arithmetic but what goes into
-      !! `vrho`, `grad_coeff` and `vtau` -- for a spin-polarised functional those
-      !! are that spin's derivatives, including the cross-spin gradient term, and
-      !! this routine neither knows nor needs to.
+      !! Shared by the restricted and unrestricted paths. What differs between the
+      !! two callers is not this arithmetic but what goes into `vrho`,
+      !! `grad_coeff` and `vtau` -- for a spin-polarised functional those are that
+      !! spin's derivatives, including the cross-spin gradient term.
       !!
       !! Accumulates into `v` rather than returning, so the caller's matrix is the
       !! sum over blocks.

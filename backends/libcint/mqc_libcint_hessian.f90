@@ -1,22 +1,15 @@
 !! The analytic Hessian, for a restricted Hartree-Fock reference
 module mqc_libcint_hessian
    !! Second derivatives of the energy with respect to nuclear coordinates,
-   !! without displacing anything.
-   !!
-   !! The finite-difference Hessian this replaces costs `6N+1` gradient
-   !! evaluations and inherits each one's convergence noise amplified by `1/h`.
-   !! That amplification lands hardest on the low-frequency modes, which is
-   !! exactly where the rigid-rotor harmonic-oscillator partition function is
-   !! most sensitive -- so the noise ends up in the thermochemistry numbers
-   !! people quote. It also makes a transition-state search unreliable, since
-   !! that needs one negative eigenvalue whose sign a noisy near-zero mode can
-   !! flip.
+   !! without displacing anything. Replaces a `6N+1` finite-difference Hessian
+   !! and the `1/h` amplification of gradient noise that goes with it, which
+   !! lands hardest on the low-frequency modes the thermochemistry depends on.
    !!
    !! **Built in the pieces the standard decomposition uses**, which is also
    !! how PySCF's `hessian.rhf` is arranged, so the two can be compared stage
-   !! by stage rather than only at the end: the nuclear repulsion term, the
-   !! per-atom perturbation that drives the coupled-perturbed equations, the
-   !! response solve itself, and the explicit second-derivative assembly.
+   !! by stage: the nuclear repulsion term, the per-atom perturbation that
+   !! drives the coupled-perturbed equations, the response solve itself, and
+   !! the explicit second-derivative assembly.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, atom_ao_blocks
@@ -35,6 +28,9 @@ module mqc_libcint_hessian
    use mqc_libcint_response, only: response_operator_t, solve_response
    use pic_blas_interfaces, only: pic_gemm
    use mqc_libcint_ecp, only: ecp_refuses_derivatives
+   ! TODO(mqc): `eri_ip1_block`, `hess_2e_block`, `HESS_ERI_II`, `HESS_ERI_IJ`
+   ! and `HESS_ERI_IK` above are imported and used nowhere; the two-electron
+   ! work moved to `hess_2e_contract` and `h1_contract` and the imports stayed.
    implicit none
    private
 
@@ -59,10 +55,6 @@ module mqc_libcint_hessian
       !! occupied-occupied block is not zero here, it is fixed by orthonormality
       !! at minus half the overlap derivative, and it contributes a density of
       !! its own that a virtual-by-occupied layout has nowhere to put.
-      !!
-      !! Everything the operator needs is held rather than rebuilt: the Schwarz
-      !! bounds cost a pass over shell pairs and would otherwise be recomputed
-      !! once per iteration.
       type(libcint_molecule_t), pointer :: mol => null()
       real(dp), allocatable :: orbitals(:, :)     !! (n_ao, n_mo)
       real(dp), allocatable :: c_occ(:, :)        !! (n_ao, n_occ)
@@ -72,26 +64,23 @@ module mqc_libcint_hessian
       integer :: n_occ = 0
       integer :: n_mo = 0
       integer :: n_pert = 1
-         !! How many perturbations travel together. The trial vector is
-         !! `n_mo` by `n_occ` by this, and the whole point of it being more
-         !! than one is that a Fock build costs an integral pass whether it
+         !! How many perturbations travel together; the trial vector is `n_mo`
+         !! by `n_occ` by this. A Fock build costs an integral pass whether it
          !! contracts one density or a dozen.
       type(xc_context_t), pointer :: xc => null()
-         !! The exchange-correlation context when the reference was Kohn-Sham.
-         !! Null for Hartree-Fock, which is what makes the kernel term opt-in
-         !! rather than a branch on the functional name.
+         !! The exchange-correlation context when the reference was Kohn-Sham,
+         !! null for Hartree-Fock, which is what makes the kernel term opt-in.
       real(dp), allocatable :: reference(:, :)
-         !! The converged density the kernel is evaluated at. The kernel is a
-         !! second derivative of the energy, so it has a point to be taken at,
-         !! and it is not the trial density being contracted.
+         !! The converged density the kernel is evaluated at, which is not the
+         !! trial density being contracted.
       real(dp) :: k_scale = 1.0_dp
+         !! Exact exchange in the response operator. One for Hartree-Fock, zero
+         !! for a pure functional, the mixing fraction for a hybrid.
       real(dp) :: rs_k_lr = 0.0_dp
       real(dp) :: rs_omega = 0.0_dp
          !! A range-separated functional's second exchange term:
          !! `rs_k_lr` of the exchange built against `erf(omega r)/r`. Zero
          !! omega is the ordinary case and costs nothing.
-         !! Exact exchange in the response operator. One for Hartree-Fock, zero
-         !! for a pure functional, the mixing fraction for a hybrid.
    contains
       procedure :: apply => nuclear_apply
       procedure :: length => nuclear_length
@@ -103,20 +92,15 @@ contains
       !! `dH_core/dR_A`, the one-electron Hamiltonian moved by one atom
       !!
       !! Two contributions that look alike and are not. Moving atom `A` moves
-      !! the basis functions centred on it, which is a derivative of the
-      !! integral's bra and ket and only touches that atom's block. It also
-      !! moves the **nucleus**, and every electron feels that wherever its
-      !! orbital sits -- the Hellmann-Feynman term, which involves no
-      !! basis-function derivative at all and is what differentiating the
-      !! origin of `1/|r-R|` gives.
+      !! the basis functions centred on it, which touches that atom's block
+      !! alone. It also moves the **nucleus**, and every electron feels that
+      !! wherever its orbital sits -- the Hellmann-Feynman term, which involves
+      !! no basis-function derivative at all.
       !!
       !! Symmetrised at the end because the library puts the nabla on the bra,
-      !! so what comes back is one half of a derivative that is symmetric in
-      !! its two indices.
-      !!
-      !! The sign is the library's: its `ip` integrals carry a nabla on the bra,
-      !! and the derivative with respect to the atom the bra sits on is minus
-      !! that.
+      !! so what comes back is one half of a derivative symmetric in its two
+      !! indices. The sign is the library's: the derivative with respect to the
+      !! atom the bra sits on is minus its `ip` integral.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: iatom
       real(dp), allocatable, intent(out) :: hcore_a(:, :, :)   !! (n_ao, n_ao, 3)
@@ -164,8 +148,7 @@ contains
       !!
       !! with the mean field differentiated with respect to the same atom. It
       !! needs **first** derivatives only -- the second derivatives belong to
-      !! the explicit part of the Hessian, not here, which is easy to assume the
-      !! other way round.
+      !! the explicit part of the Hessian, not here.
       !!
       !! **A quartet contributes through every index that sits on this atom.**
       !! `int2e_ip1` puts the nabla on the first index alone, so the derivative
@@ -173,11 +156,9 @@ contains
       !! positions into first place in turn and keeping the ones whose orbital
       !! belongs to `A`. The permutations used are the ordinary symmetries of
       !! an undifferentiated integral -- `(ij|kl) = (ji|kl) = (kl|ij)` -- which
-      !! hold because the nabla is applied *after* the permutation, not before.
+      !! hold because the nabla is applied *after* the permutation.
       !!
-      !! The sign is the library's, as everywhere else here: `ip` carries a
-      !! nabla on the bra and the derivative with respect to that centre is
-      !! minus it.
+      !! The sign is the library's, as everywhere else here.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)          !! Total AO density
       real(dp), intent(in) :: eri_ip1(:, :, :, :, :)  !! From `eri_ip1_block`
@@ -217,9 +198,8 @@ contains
       allocate (vhf(nao, nao, 3))
       vhf = 0.0_dp
 
-      ! J - K/2, differentiated. Written as a plain quadruple loop over the
-      ! whole basis: this is the readable form, and the shell-driven one that
-      ! replaces it will be checked against it.
+      ! J - K/2, differentiated, as a plain quadruple loop over the whole basis.
+      ! `h1_contract` is the shell-driven form the assembly actually uses.
       !
       ! **Two copies of the loop, split on the exchange fraction.** A variable
       ! multiplier on the exchange terms shifts the compiler's contraction and
@@ -338,16 +318,14 @@ contains
       !!
       !! **The reason a nuclear Hessian needs a different coupled-perturbed
       !! solve from every other perturbation in this code.** An electric field
-      !! does not move the basis functions, so the overlap is unchanged and its
-      !! derivative is zero; displacing a nucleus drags its functions with it,
-      !! and the orbitals must stay orthonormal while that happens. That
-      !! constraint is what puts a non-zero occupied-occupied block into the
-      !! orbital response, and this matrix is where it comes from.
+      !! leaves the overlap unchanged; displacing a nucleus drags its functions
+      !! with it, and the orbitals must stay orthonormal while that happens.
+      !! That constraint is what puts a non-zero occupied-occupied block into
+      !! the orbital response.
       !!
       !! Only functions centred on `A` move, so the derivative is the
       !! differentiated overlap restricted to that atom's rows, plus its
-      !! transpose in the same columns -- one term for the bra moving and one
-      !! for the ket. The sign is the library's, as everywhere else here.
+      !! transpose in the same columns. The sign is the library's.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: iatom
       real(dp), allocatable, intent(out) :: s1(:, :, :)   !! (n_ao, n_ao, 3)
@@ -395,25 +373,14 @@ contains
    subroutine nuclear_apply(this, vector, image, error)
       !! The two-electron response a trial vector induces, scaled and flattened
       !!
-      !! Four steps and each is somewhere the conventions can go wrong. The
-      !! trial vector becomes an atomic-orbital density; that density is
-      !! **symmetrised**, which is what makes the fast Fock build correct here
-      !! -- the antisymmetrised variant belongs to the frequency-dependent
-      !! `A - B` block and needs a different build entirely. The resulting `G`
-      !! goes back to the molecular basis, and finally the virtual rows are
-      !! divided by their orbital energy gaps while the occupied rows are set to
-      !! zero.
+      !! The trial density is **symmetrised**, which is what makes the fast Fock
+      !! build correct here -- the antisymmetrised variant belongs to the
+      !! frequency-dependent `A - B` block and needs a different build entirely.
       !!
       !! **The occupied rows are zeroed rather than solved for.** They are
       !! already known -- orthonormality fixes them -- so the iteration must not
       !! move them, and the solver puts them back from the right-hand side on
-      !! every pass.
-      !!
-      !! Allocates its scratch on every call, and this runs once per iteration.
-      !! At the sizes this is correct for that is invisible against the Fock
-      !! build it wraps; on anything large the arrays want to live in the type
-      !! alongside the bounds. Left as it is because moving them there before
-      !! the assembly exists would be guessing at what the assembly needs.
+      !! every pass. The virtual rows are divided by their orbital energy gaps.
       class(nuclear_response_t), intent(inout) :: this
       real(dp), intent(in) :: vector(:)
       real(dp), intent(out) :: image(:)
@@ -435,24 +402,20 @@ contains
       ! The densities these responses imply, symmetrised, one per perturbation.
       allocate (half(n_ao, this%n_occ), dens(n_ao, n_ao, this%n_pert))
       do p = 1, this%n_pert
-         ! **Twice, for double occupancy.** The trial vector describes how one
-         ! spatial orbital moves; the density it perturbs holds two electrons in
-         ! that orbital. Leaving the factor out halves the response, which does not
-         ! stop the iteration converging -- it converges to the wrong answer, and
-         ! the first-order density comes out roughly a third too large rather than
-         ! obviously doubled, because the error feeds back through the coupling.
+         ! Twice, for double occupancy: the trial vector describes how one
+         ! spatial orbital moves, and the density it perturbs holds two
+         ! electrons in it. Leaving the factor out still converges, to a wrong
+         ! answer that is not obviously doubled because the error feeds back
+         ! through the coupling.
          call pic_gemm(this%orbitals, mo1(:, :, p), half, alpha=2.0_dp, beta=0.0_dp)
          call pic_gemm(half, this%c_occ, dens(:, :, p), transb="T")
          dens(:, :, p) = dens(:, :, p) + transpose(dens(:, :, p))
       end do
 
-      ! **One integral pass for the whole batch.** This is the entire reason the
-      ! perturbations travel together: the quartets do not depend on which
-      ! density is being contracted, and evaluating them is what the build
-      ! costs. `build_fock_direct_many` screens on the Schwarz bound alone, so
-      ! a batch is bit-for-bit what the same densities give one at a time --
-      ! which matters here, because a response density is not a density and
-      ! screening on its magnitude would be wrong.
+      ! One integral pass for the whole batch. `build_fock_direct_many` screens
+      ! on the Schwarz bound alone, so a batch is bit-for-bit what the same
+      ! densities give one at a time -- which matters here, because a response
+      ! density is not a density and screening on its magnitude would be wrong.
       call build_fock_direct_many(this%mol, this%zero_h, dens, this%bounds, g, stats, error, &
                                   k_scale=this%k_scale)
       if (error%has_error()) return
@@ -468,13 +431,10 @@ contains
          g = g + g_lr
       end if
 
-      ! The exchange-correlation kernel, for a Kohn-Sham reference. `J - K/2`
-      ! above is the whole two-electron response of a Hartree-Fock operator; a
-      ! functional's response also contains the second derivative of E_xc with
-      ! respect to the density, which is what `xc_kernel_apply` contracts
-      ! against the trial density. Leaving it out does not fail -- the solve
-      ! still converges -- it converges to the wrong orbital response, and the
-      ! Hessian is then wrong by a few percent with nothing to object.
+      ! The exchange-correlation kernel, for a Kohn-Sham reference: the second
+      ! derivative of E_xc with respect to the density, contracted against the
+      ! trial density. Leaving it out does not fail, it converges to the wrong
+      ! orbital response.
       if (associated(this%xc)) then
          if (.not. allocated(vxc)) allocate (vxc(size(dens, 1), size(dens, 2)))
          do p = 1, size(dens, 3)
@@ -488,9 +448,7 @@ contains
          end do
          ! The non-local kernel, once for the whole batch rather than inside
          ! the loop above: `vv10_kernel_apply`'s pair sweep is O(npts^2)
-         ! whether it carries one trial or a dozen, so applying it per
-         ! perturbation would multiply the only expensive part by the batch
-         ! width on every iteration of the solve. It accumulates, like the
+         ! whether it carries one trial or a dozen. It accumulates, like the
          ! semilocal kernel, hence the zeroed buffer of its own.
          if (this%xc%nlc_b /= 0.0_dp .or. this%xc%nlc_c /= 0.0_dp) then
             allocate (vnl(size(dens, 1), size(dens, 2), size(dens, 3)))
@@ -529,20 +487,18 @@ contains
       !! The first-order orbitals for one atom's displacement
       !!
       !! Assembles the right-hand side and hands it to the shared solver.
+      !! `solve_mo1_batch` solves the same equations for every atom at once and
+      !! is what the assembly uses.
       !!
       !! **The occupied-occupied block is not solved for.** Orthonormality fixes
       !! it at minus half the overlap derivative, so it goes into the
-      !! right-hand side and the operator zeroes it on every pass, which leaves
-      !! it exactly where it was put. The virtual-occupied block is the only
-      !! unknown, and it is coupled to the fixed block through the density the
-      !! whole vector induces -- which is the reason the occupied rows have to
-      !! be carried at all rather than dropped.
+      !! right-hand side and the operator zeroes it on every pass. It is carried
+      !! rather than dropped because the virtual-occupied block couples to it
+      !! through the density the whole vector induces.
       !!
       !! The right-hand side is `h1 - s1 e_i` divided by the orbital energy
       !! gap, with the sign that makes the response enter the fixed point with
-      !! the opposite one. That asymmetry is not a typo: the base is the
-      !! uncoupled solution of an equation whose response term sits on the other
-      !! side of the equals sign.
+      !! the opposite one.
       type(libcint_molecule_t), intent(in), target :: mol
       real(dp), intent(in) :: orbitals(:, :)
       real(dp), intent(in) :: energies(:)
@@ -556,9 +512,8 @@ contains
       real(dp), intent(in), optional :: tol
 
       ! Rebuilt per atom, including the Schwarz bounds and a copy of the
-      ! orbitals. One pass over shell pairs per atom where one per molecule
-      ! would do, which is worth hoisting when the assembly above this decides
-      ! how it wants to loop -- and not before.
+      ! orbitals: one pass over shell pairs per atom where one per molecule
+      ! would do. `solve_mo1_batch` builds them once.
       type(nuclear_response_t) :: operator
       real(dp), allocatable :: rhs(:), answer(:), h1mo(:, :), s1mo(:, :)
       real(dp), allocatable :: work(:, :), base(:, :)
@@ -623,12 +578,11 @@ contains
       !!
       !!     Z_A Z_B [ delta_ij / R^3 - 3 r_i r_j / R^5 ]
       !!
-      !! and the diagonal block is minus the sum of the others in its row --
-      !! which is not an economy but the statement that translating the whole
-      !! molecule costs nothing, imposed rather than hoped for.
+      !! and the diagonal block is minus the sum of the others in its row, which
+      !! imposes rather than hopes for translational invariance.
       !!
-      !! `(3, 3, n_atoms, n_atoms)` with the Cartesian pair innermost, which is
-      !! the layout the electronic part will want to add into.
+      !! `(3, 3, n_atoms, n_atoms)` with the Cartesian pair innermost, the
+      !! layout the electronic part adds into.
       integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: coordinates(:, :)      !! (3, n_atoms), Bohr
       real(dp), allocatable, intent(out) :: hess(:, :, :, :)
@@ -685,35 +639,14 @@ contains
       !! density that the unperturbed SCF converged to. The rest -- the response
       !! -- is what `solve_mo1_atom` is for, and is added on top of this.
       !!
-      !! **Assembled by depositing rather than by slicing.** Each derivative
-      !! belongs to whichever atom the differentiated basis function sits on, so
-      !! the loop runs over all indices once and adds each term into the atom
-      !! pair its own indices name. The usual arrangement instead fixes a pair
-      !! of atoms and slices the integrals to their rows, which is faster and
-      !! puts the ownership rules in the slice bounds, where an off-by-one is a
-      !! wrong Hessian rather than a crash. Depositing keeps the rule next to
-      !! the term it belongs to.
+      !! **The one-electron terms are assembled by depositing rather than by
+      !! slicing.** Each derivative belongs to whichever atom the differentiated
+      !! basis function sits on, so the loop runs over all indices once and adds
+      !! each term into the atom pair its own indices name, which keeps the
+      !! ownership rule next to the term rather than in a slice bound.
       !!
-      !! **The permutational folding is real and is worth stating.** The
-      !! two-electron sum has sixteen terms, one per ordered pair of the four
-      !! indices. Contracted against a weight symmetric under all eight
-      !! permutations of `(mu nu|lambda sigma)`, they collapse to three: four
-      !! copies of the both-on-one-index term, four of the same-pair term and
-      !! eight of the cross-pair term. That is where the 4, 4 and 8 below come
-      !! from -- not from spin, and not from counting a term twice.
-      !!
-      !! The symmetric weight is
-      !!
-      !!     G = 1/2 D_mn D_ls - 1/8 (D_ms D_ln + D_ml D_ns)
-      !!
-      !! which is the Coulomb-minus-half-exchange contraction with its exchange
-      !! half written in both of the ways the eightfold symmetry allows, so that
-      !! no permutation of the four indices can tell it apart from itself.
-      !!
-      !! Cost is `nao^4` times nine, three times over, because that is what
-      !! `hess_2e_block` returns. It is a correct implementation and not yet a
-      !! usable one; the fix is to drive the contraction from shells and never
-      !! form the array, which changes nothing above this line.
+      !! The two-electron terms go through `hess_2e_contract`, which drives the
+      !! same deposit from shells and never forms an `nao^4` array.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)    !! Closed shell, carrying its factor of two
       real(dp), intent(in) :: weighted(:, :)   !! `2 sum_i eps_i C_i C_i^T`
@@ -760,8 +693,7 @@ contains
       !
       ! `ipipnuc` and `ipnucip` carry the sum over every nucleus and its charge
       ! already, so these are the terms where the nuclei sat still and only the
-      ! functions moved. The terms where a nucleus moved come further down and
-      ! need the operator pinned one atom at a time.
+      ! functions moved.
       call hess_1e_block(mol, HESS_KIN_II, h2, error)
       call hess_1e_block(mol, HESS_NUC_II, tmp, error)
       if (error%has_error()) return
@@ -801,17 +733,14 @@ contains
 
       ! ---- one electron, at least one derivative on a nucleus --------------
       !
-      ! `-Z_C / |r - R_C|` depends on three positions, not two: the bra centre,
-      ! the ket centre and the nucleus. Differentiating the nucleus is the
-      ! Hellmann-Feynman direction and produces no basis derivative at all, so
-      ! it reaches atom pairs that the block above cannot see -- a nucleus with
-      ! no basis functions on it would still have a Hessian row.
+      ! `-Z_C / |r - R_C|` depends on three positions: the bra centre, the ket
+      ! centre and the nucleus. Differentiating the nucleus produces no basis
+      ! derivative at all, so it reaches atom pairs the block above cannot see
+      ! -- a nucleus with no basis functions on it still has a Hessian row.
       !
       ! `cross(a, b, A)` collects, for the atom `c` whose nucleus is moving, the
-      ! part belonging to basis functions centred on `A`. Both the bra and the
-      ! ket contribute and fold onto each other, hence the factor of two; the
-      ! sign is the derivative of a basis function with respect to its own
-      ! centre being minus the derivative with respect to the electron.
+      ! part belonging to basis functions centred on `A`. Bra and ket fold onto
+      ! each other, hence the factor of two.
       allocate (cross(3, 3, natm))
       do c = 1, natm
          call hess_rinv_block(mol, c, HESS_RINV_II, r2, error)
@@ -855,10 +784,8 @@ contains
 
       ! ---- two electron ----------------------------------------------------
       !
-      ! Driven from shells and contracted on the spot rather than assembled and
-      ! then read back: the three arrays this would otherwise form are `nao^4`
-      ! times nine each. The deposit rules live there with the loop that uses
-      ! them.
+      ! Driven from shells and contracted on the spot: the three arrays this
+      ! would otherwise form are `nao^4` times nine each.
       call hess_2e_contract(mol, density, hess, error, k_scale=k_scale)
       if (error%has_error()) return
       if (present(rs_omega)) then
@@ -889,17 +816,12 @@ contains
       !! only -- and the ones on the left are total.
       !!
       !! **`W` is taken as `D F D / 2` rather than as orbital energies.** The
-      !! two are the same object: `D F D / 2 = 2 C_occ eps C_occ^T`, because
-      !! `C_occ^T F C_occ` is diagonal at convergence. Writing it the first way
-      !! means its derivative needs only `dD/dR` and `dF/dR`, both of which are
-      !! already here, instead of the derivative of the Lagrange multiplier
-      !! matrix -- an occupied-occupied object that stops being diagonal the
-      !! moment the molecule is perturbed, and whose relation to the overlap
-      !! derivative is exactly the kind of factor of a half that this code has
-      !! no independent way to check.
+      !! two are the same object -- `D F D / 2 = 2 C_occ eps C_occ^T`, because
+      !! `C_occ^T F C_occ` is diagonal at convergence -- but the first form's
+      !! derivative needs only `dD/dR` and `dF/dR`, both already here, instead
+      !! of the derivative of the Lagrange multiplier matrix.
       !!
-      !! The coupled-perturbed equations are solved once per atom, three
-      !! components at a time, which is where essentially all of the time goes.
+      !! The coupled-perturbed solve is where essentially all of the time goes.
       type(libcint_molecule_t), intent(in), target :: mol
       real(dp), intent(in) :: density(:, :)     !! Closed shell, carrying its factor of two
       real(dp), intent(in) :: orbitals(:, :)
@@ -954,9 +876,8 @@ contains
       ! The converged Fock, and for a Kohn-Sham reference that means *its* Fock:
       ! exact exchange at the functional's fraction and the exchange-correlation
       ! potential added on. `W = D F D / 2` is built from this, so a
-      ! Hartree-Fock matrix here gives a wrong energy-weighted density and an
-      ! error spread across every atom pair -- large, smooth, and symmetric
-      ! enough to look like physics.
+      ! Hartree-Fock matrix here spreads a smooth, symmetric error across every
+      ! atom pair.
       call build_fock_direct(mol, hcore, density, bounds, fock, stats, error, &
                              density_screen=.false., k_scale=k_scale)
       if (error%has_error()) return
@@ -981,18 +902,15 @@ contains
       end if
 
       ! Every atom's two-electron perturbation in one pass over the shell
-      ! quartets, rather than `make_h1_atom` per atom over a stored `nao^4`
-      ! array. The core Hamiltonian derivative is per-atom either way and is
+      ! quartets. The core Hamiltonian derivative is per-atom either way and is
       ! added below.
       call h1_contract(mol, density, h1, error, k_scale=k_scale)
       if (error%has_error()) return
       if (present(rs_omega)) then
          if (rs_omega > 0.0_dp) then
-            ! Into a temporary and added: `h1_contract` allocates its output and
-            ! zeroes it, so a second call in place would discard the full-range
-            ! pass rather than adding to it. `hess_2e_contract` next door
-            ! accumulates, which is exactly the asymmetry that makes this easy
-            ! to get wrong.
+            ! Into a temporary and added: `h1_contract` zeroes its output where
+            ! `hess_2e_contract` next door accumulates, so a second call in
+            ! place would discard the full-range pass.
             call h1_contract(mol, density, h1_lr, error, k_scale=rs_k_lr, &
                              j_scale=0.0_dp, omega=rs_omega)
             if (error%has_error()) return
@@ -1003,9 +921,7 @@ contains
       if (error%has_error()) return
       ! For a Kohn-Sham reference the Fock derivative also carries the
       ! exchange-correlation potential's own, which `h1_contract` does not
-      ! produce -- it knows only about integrals. The non-local term's is
-      ! separate because it lives on the NLC grid: `vv10_potential_deriv`
-      ! accumulates into `h1` exactly as `xc_potential_deriv` does, and
+      ! produce. Both of these accumulate into `h1`, and `vv10_potential_deriv`
       ! returns untouched when the functional carries no VV10.
       if (present(xc)) then
          call xc_potential_deriv(xc, mol, density, h1, error)
@@ -1038,8 +954,7 @@ contains
 
       do ia = 1, natm
          do a = 1, 3
-            ! The first-order density, the same expression the finite-difference
-            ! test in `test_mqc_hess_ints` pins directly.
+            ! The first-order density.
             call pic_gemm(orbitals, mo1(:, :, a, ia), half, alpha=2.0_dp, beta=0.0_dp)
             call pic_gemm(half, c_occ, tmp, transb="T")
             tmp = tmp + transpose(tmp)
@@ -1055,9 +970,7 @@ contains
          if (error%has_error()) return
       end if
 
-      ! Their mean fields in one batch, chunked the same way and for the same
-      ! reason as the solve above: `3 natm` separate builds pay for the same
-      ! integrals `3 natm` times.
+      ! Their mean fields in one batch, chunked as the solve above is.
       call mean_field_batch(mol, d1, bounds, zero_h, g1all, error, &
                             xc=xc, reference=reference, k_scale=k_scale, &
                             rs_k_lr=rs_k_lr, rs_omega=rs_omega)
@@ -1067,19 +980,15 @@ contains
          do a = 1, 3
             tmp = d1(:, :, a, ia)
             ! `dF/dR` in full: the skeleton derivative plus the mean field of
-            ! the relaxed density. Leaving the second term out is the same
-            ! mistake as leaving the response out of the Hessian, made one
-            ! level down.
+            ! the relaxed density.
             f1 = h1(:, :, a, ia) + g1all(:, :, 3*(ia - 1) + a)
 
             ! W = D F D / 2, differentiated by the product rule: three terms,
             ! all of which get the half. The first and last are transposes of
-            ! each other and the middle one is already symmetric, which is what
-            ! makes the sum symmetric -- but *only* if the middle one is not
-            ! symmetrised a second time. Adding it before a `(X + X^T)/2` gives
-            ! it twice its weight, which is a wrong `dW/dR` that is still
-            ! symmetric, still translationally invariant, and wrong by tens of
-            ! percent in the Hessian.
+            ! each other and the middle one is already symmetric, so it must
+            ! **not** be symmetrised a second time -- doing so doubles its
+            ! weight and gives a `dW/dR` that is still symmetric, still
+            ! translationally invariant, and wrong.
             call pic_gemm(tmp, fock, work)
             call pic_gemm(work, density, outer)
             call pic_gemm(density, f1, work)
@@ -1109,15 +1018,12 @@ contains
                           hess, error, max_iter, tol, dipole_derivatives)
       !! The analytic Hessian of a converged restricted Hartree-Fock energy
       !!
-      !! Three pieces that are checked three different ways and only mean
-      !! anything added together: the nuclear repulsion, which is arithmetic;
-      !! the explicit integral second derivatives against the fixed density;
+      !! Three pieces, only meaningful added together: the nuclear repulsion,
+      !! the explicit integral second derivatives against the fixed density,
       !! and the response.
       !!
       !! Returned as `(3, 3, n_atoms, n_atoms)`. A vibrational analysis wants
-      !! `(3*n_atoms, 3*n_atoms)`, which is a reshape the caller can do -- and
-      !! which is deliberately not done here, because the four-index form is
-      !! the one where a wrong atom pair is visible.
+      !! `(3*n_atoms, 3*n_atoms)`, which `hessian_to_matrix` produces.
       type(libcint_molecule_t), intent(in), target :: mol
       integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: density(:, :)
@@ -1166,44 +1072,26 @@ contains
       !! The analytic Hessian of a converged Kohn-Sham energy
       !!
       !! `rhf_hessian` with the exchange-correlation parts put back. Three
-      !! things change and each is a place a Kohn-Sham Hessian is commonly got
-      !! wrong:
+      !! things change:
       !!
       !! **Exact exchange is scaled.** A pure functional has none, so the
       !! exchange half of the explicit two-electron term and of the response
-      !! operator both vanish; a hybrid keeps its mixing fraction. Left at one,
-      !! the Hessian is a Hartree-Fock one with a functional's density in it.
+      !! operator both vanish; a hybrid keeps its mixing fraction.
       !!
       !! **The exchange-correlation second derivatives are added** -- the
       !! explicit term, `xc_hessian`.
       !!
       !! **The response operator gains the kernel.** Without it the
-      !! coupled-perturbed solve still converges, to the wrong orbital
-      !! response, and the result is wrong by a few percent with nothing to
-      !! object to it.
+      !! coupled-perturbed solve still converges, to the wrong orbital response.
       !!
-      !! The grid is held fixed throughout, as `xc_hessian` sets out.
+      !! The grid is held fixed throughout, as `xc_hessian` sets out, which is
+      !! `grid_response = False` in PySCF's terms.
       !!
-      !! Validated against `pyscf.hessian.rks` with `grid_response = False`:
-      !! water at STO-3G and LDA exchange agrees to **1.8e-8** on every entry.
-      !!
-      !! Three bugs were found getting there, and all three produce a Hessian
-      !! that is symmetric, translationally invariant and wrong -- so they are
-      !! worth naming rather than leaving in the history:
-      !!
-      !!   * The relaxed mean field feeding `dW/dR` needed the same kernel and
-      !!     exchange fraction as the response operator. Without it the two
-      !!     halves of the response disagree about what the Fock operator is.
-      !!   * `xc_kernel_apply` accumulates into its output rather than
-      !!     assigning. A buffer shared across perturbations carried each one's
-      !!     kernel into the next: 0.49 of translational-invariance violation on
-      !!     its own.
-      !!   * **The converged Fock that `W = D F D / 2` is built from was a
-      !!     Hartree-Fock matrix** -- full exact exchange, no `V_xc`. That was
-      !!     the last 0.12, spread smoothly across every atom pair.
-      !!
-      !! LDA, GGA, meta-GGA, hybrids of each, range-separated hybrids, and
-      !! functionals carrying VV10 non-local correlation.
+      !! Covers LDA, GGA, meta-GGA, hybrids of each, range-separated hybrids,
+      !! and functionals carrying VV10 non-local correlation.
+      ! TODO(mqc): no `ecp_refuses_derivatives` guard, where `rhf_hessian` has
+      ! one, so a Kohn-Sham Hessian on a molecule with an effective core
+      ! potential returns wrong derivatives instead of refusing.
       use mqc_libcint_xc_hessian, only: xc_hessian, vv10_hessian
       type(libcint_molecule_t), intent(in), target :: mol
       integer, intent(in) :: atomic_numbers(:)
@@ -1230,28 +1118,20 @@ contains
       if (error%has_error()) return
       if (ecp_refuses_derivatives(mol%core_electrons, "nuclear Hessian", error)) return
 
-      ! **VV10 contributes in the same three places as the semilocal term**,
-      ! each validated on its own by differencing the object one derivative
-      ! order below it: `vv10_hessian` in the explicit part alongside
-      ! `xc_hessian`, `vv10_potential_deriv` in the perturbed Fock alongside
+      ! VV10 contributes in the same three places as the semilocal term:
+      ! `vv10_hessian` in the explicit part alongside `xc_hessian`,
+      ! `vv10_potential_deriv` in the perturbed Fock alongside
       ! `xc_potential_deriv`, and `vv10_kernel_apply` in the response operator
-      ! and the relaxed mean field alongside `xc_kernel_apply` -- PySCF's
-      ! `_get_enlc_deriv2`, `_get_vnlc_deriv1` and `get_vnlc_resp`. The NLC
-      ! grid is held fixed like the semilocal one, which is one place this
-      ! deliberately departs from PySCF: its `_get_vnlc_deriv1` hard-codes the
-      ! NLC grid response even when the rest of its Hessian omits grid
-      ! response, so the two Hessians differ by exactly that term. On
-      ! water/STO-3G it is 2.1e-5 on the worst element at NLC level 1,
-      ! shrinking to 3.6e-6 at level 2 and 6.0e-7 at level 3 -- the clean
-      ! grid-scaling that identifies quadrature response, where a missing
-      ! derivative would sit still.
+      ! and the relaxed mean field alongside `xc_kernel_apply`.
       !
-      ! The kernel intermediates VV10 rebuilds on every `vv10_kernel_apply`
-      ! depend only on the SCF density; caching them across the solve's
-      ! iterations would save one of its two pair sweeps per call. Left as a
-      ! measured follow-up rather than folded in here: it is a speed change
-      ! with a stale-cache failure mode, and this assembly is the correctness
-      ! commit.
+      ! The NLC grid is held fixed like the semilocal one, which departs from
+      ! PySCF: its `_get_vnlc_deriv1` hard-codes the NLC grid response even
+      ! when the rest of its Hessian omits grid response, so the two Hessians
+      ! differ by exactly that term, shrinking as the NLC grid is refined.
+      !
+      ! TODO(mqc): `vv10_kernel_apply` rebuilds kernel intermediates that
+      ! depend only on the SCF density on every call, so the solve pays one of
+      ! its two pair sweeps per iteration for nothing.
 
       nao = mol%nao
       allocate (weighted(nao, nao))
@@ -1291,15 +1171,10 @@ contains
       !! `finite_diff_hessian_from_gradients` already builds, so the two
       !! Hessian paths hand the same layout to the same analysis.
       !!
-      !! Worth being a routine rather than six lines at the call site, because
-      !! only one of the ways to get it wrong is harmless and it is not the
-      !! obvious one. Swapping **both** index pairs -- `hess(b, a, ja, ia)` --
-      !! is the genuine transpose, and a Hessian is symmetric, so it changes
-      !! nothing; measured, and it passes. Swapping only the atoms is not a
-      !! transpose of anything, and neither is interleaving the two indices
-      !! Cartesian-slowest. Both of those move every frequency and both are
-      !! caught. The rule to keep is the layout, not a symmetry argument about
-      !! it.
+      !! **The rule to keep is the layout, not a symmetry argument about it.**
+      !! Swapping both index pairs is the genuine transpose and changes nothing,
+      !! but swapping only the atoms, or interleaving the two indices
+      !! Cartesian-slowest, moves every frequency.
       real(dp), intent(in) :: hess(:, :, :, :)
       real(dp), allocatable, intent(out) :: matrix(:, :)
 
@@ -1326,21 +1201,17 @@ contains
       !! Same equations `solve_mo1_atom` solves and the same right-hand side;
       !! what changes is how many of them are in flight when the Fock build
       !! runs. A direct build costs an integral pass whichever density it
-      !! contracts, so solving `3 natm` perturbations one at a time pays for
-      !! the integrals `3 natm` times over.
+      !! contracts.
       !!
-      !! **Chunked at a dozen rather than all at once**, which is
-      !! `build_fock_direct_many`'s own measured advice and worth repeating
-      !! because the shape of it is not obvious: the win saturates near
-      !! fourfold and then *reverses*, since the accumulator that makes the
-      !! reuse possible grows with the batch while the integral it reuses does
-      !! not. Past about a dozen densities it stops fitting in cache and the
-      !! build becomes memory-bound. So this is not "batch everything"; it is
-      !! "batch enough".
+      !! **Chunked at `MAX_BATCH` rather than all at once.** The win saturates
+      !! near fourfold and then *reverses*: the accumulator that makes the reuse
+      !! possible grows with the batch while the integral it reuses does not,
+      !! so past about a dozen densities the build becomes memory-bound.
       !!
-      !! The Schwarz bounds are built once here rather than once per atom,
-      !! which is the wart `solve_mo1_atom` documents and could not fix while
-      !! it was the only caller.
+      !! The Schwarz bounds are built once here rather than once per atom.
+      ! TODO(mqc): `MAX_BATCH` is spelled twice, here and in
+      ! `mean_field_batch`, for a figure both routines document as coming from
+      ! the same cache limit. Changing one leaves the other behind.
       type(libcint_molecule_t), intent(in), target :: mol
       real(dp), intent(in) :: orbitals(:, :)
       real(dp), intent(in) :: energies(:)
@@ -1371,12 +1242,9 @@ contains
       natm = size(h1, 4)
       n_pert = 3*natm
 
-      ! `xc` and `reference` are one argument in two halves: the kernel apply
-      ! contracts the trial density against the functional's second derivative
-      ! *at* the reference density, so a caller supplying the context without
-      ! the density it was built at would reach `xc_kernel_apply` through
-      ! `nuclear_apply` with `operator%reference` unallocated. Refuse the pair
-      ! rather than index it.
+      ! `xc` and `reference` are one argument in two halves: the context without
+      ! the density its kernel is evaluated at would reach `xc_kernel_apply`
+      ! through `nuclear_apply` with `operator%reference` unallocated.
       if (present(xc) .neqv. present(reference)) then
          call error%set(ERROR_VALIDATION, "the coupled-perturbed solver was given an "// &
                         "exchange-correlation context without the reference density its "// &
@@ -1403,10 +1271,9 @@ contains
       allocate (mo1(n_mo, n_occ, 3, natm))
       allocate (h1mo(n_mo, n_occ), s1mo(n_mo, n_occ), work(n_ao, n_occ))
 
-      ! Balanced rather than greedy. Eighteen perturbations taken twelve at a
-      ! time leaves a chunk of six, and the small chunk pays a full integral
-      ! pass for half the reuse; nine and nine costs the same two passes and
-      ! amortises both of them.
+      ! Balanced rather than greedy: eighteen perturbations taken twelve at a
+      ! time leaves a chunk of six that pays a full integral pass for half the
+      ! reuse, where nine and nine costs the same two passes and amortises both.
       n_chunks = (n_pert + MAX_BATCH - 1)/MAX_BATCH
       per_chunk = (n_pert + n_chunks - 1)/n_chunks
 
@@ -1463,10 +1330,9 @@ contains
                                k_scale, rs_k_lr, rs_omega)
       !! `G(D')` for every first-order density, a chunk at a time
       !!
-      !! Flattens `(n_ao, n_ao, 3, natm)` to `(n_ao, n_ao, 3*natm)` and hands
-      !! it to the many-density build in the same chunks the coupled-perturbed
-      !! solve uses, and for the same reason: past about a dozen the
-      !! accumulator stops fitting in cache and the reuse turns into a loss.
+      !! Flattens `(n_ao, n_ao, 3, natm)` to `(n_ao, n_ao, 3*natm)` and hands it
+      !! to the many-density build in the same chunks, and for the same reason,
+      !! as `solve_mo1_batch`.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: d1(:, :, :, :)
       real(dp), intent(in) :: bounds(:, :)
@@ -1476,11 +1342,10 @@ contains
       type(xc_context_t), intent(inout), optional :: xc
       real(dp), intent(in), optional :: reference(:, :)
       real(dp), intent(in), optional :: k_scale
-         !! As the response operator's. The relaxed mean field entering
-         !! `dW/dR` is the same object the coupled-perturbed operator
-         !! applies, so it needs the same exchange fraction and the same
-         !! kernel -- getting one right and not the other is a Hessian
-         !! that is wrong while looking symmetric and plausible.
+         !! **The response operator's, and it has to match.** The relaxed mean
+         !! field entering `dW/dR` is the same object the coupled-perturbed
+         !! operator applies; getting one right and not the other gives a
+         !! Hessian that is wrong while looking symmetric and plausible.
       real(dp), intent(in), optional :: rs_k_lr, rs_omega
 
       integer, parameter :: MAX_BATCH = 12
@@ -1493,10 +1358,9 @@ contains
 
       if (error%has_error()) return
 
-      ! Both halves of the kernel or neither, as the coupled-perturbed solver
-      ! demands: with only one supplied the loop below would quietly build a
-      ! mean field without the exchange-correlation response, and `dW/dR` would
-      ! then disagree with the operator that produced the orbitals it uses.
+      ! Both halves of the kernel or neither: with only one supplied the loop
+      ! below builds a mean field without the exchange-correlation response, and
+      ! `dW/dR` then disagrees with the operator that produced its orbitals.
       if (present(xc) .neqv. present(reference)) then
          call error%set(ERROR_VALIDATION, "the relaxed mean field was given an "// &
                         "exchange-correlation context without the reference density its "// &
@@ -1537,10 +1401,8 @@ contains
             end if
          end if
 
-         ! The same kernel the response operator applies. `dW/dR` is built from
-         ! this mean field, so leaving it out here while including it there
-         ! makes the two halves of the response disagree about what the Fock
-         ! operator is.
+         ! The same kernel the response operator applies, for the reason
+         ! `k_scale` above gives.
          if (present(xc) .and. present(reference)) then
             if (.not. allocated(vxc_chunk)) allocate (vxc_chunk(size(chunk, 1), size(chunk, 2)))
             do ic = 1, size(chunk, 3)
@@ -1549,9 +1411,8 @@ contains
                if (error%has_error()) return
                out(:, :, ic) = out(:, :, ic) + vxc_chunk
             end do
-            ! The non-local kernel, once per chunk for the reason `nuclear_apply`
-            ! gives: the pair sweep costs the same however many densities ride
-            ! along, so it takes the whole chunk rather than one column at a time.
+            ! The non-local kernel, once per chunk for the reason
+            ! `nuclear_apply` gives.
             if (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp) then
                allocate (vnl_chunk(size(chunk, 1), size(chunk, 2), size(chunk, 3)))
                vnl_chunk = 0.0_dp

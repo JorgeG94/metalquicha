@@ -33,22 +33,22 @@ module test_mqc_ecp_matrix
    private
    public :: collect_mqc_ecp_matrix_tests
 
-   !> PySCF 2.14, `mol.intor('ECPscalar_sph')` on Yb plus a hydrogen 25 Bohr
-   !> away -- far enough that the overlap screen has to reject as well as accept.
+   !! PySCF 2.14, `mol.intor('ECPscalar_sph')` on Yb plus a hydrogen 25 Bohr
+   !! away -- far enough that the overlap screen has to reject as well as accept.
    real(dp), parameter :: REF_MAX = 8.43440930940146e+02_dp
    real(dp), parameter :: REF_TRACE = 2.78522522914258e+03_dp
 
-   !> Measured agreement is 6e-12 on the trace and 1e-13 on the largest element,
-   !> against references written to fifteen significant figures -- so the bound
-   !> below carries two orders over what the comparison can resolve.
-   !>
-   !> It is calibrated against losing a channel, which is the fault this exists
-   !> to catch and which is not equally visible in all of them: dropping
-   !> ytterbium's l = 0 projector moves the trace by 2.5e+03 and the l = 3 one by
-   !> 1.3e+01, but the l = 4 projector -- the one no lighter element has, and so
-   !> the whole reason this case is here -- is worth only 3.0e-06. That is the
-   !> number the tolerance has to sit under, and 1e-09 clears it by three orders
-   !> where the 1e-06 this started at would have had a factor of three.
+   !! Measured agreement is 6e-12 on the trace and 1e-13 on the largest element,
+   !! against references written to fifteen significant figures -- so the bound
+   !! below carries two orders over what the comparison can resolve.
+   !!
+   !! It is calibrated against losing a channel, which is the fault this exists
+   !! to catch and which is not equally visible in all of them: dropping
+   !! ytterbium's l = 0 projector moves the trace by 2.5e+03 and the l = 3 one by
+   !! 1.3e+01, but the l = 4 projector -- the one no lighter element has, and so
+   !! the whole reason this case is here -- is worth only 3.0e-06. That is the
+   !! number the tolerance has to sit under, and 1e-09 clears it by three orders
+   !! where the 1e-06 this started at would have had a factor of three.
    real(dp), parameter :: TOL = 1.0e-9_dp
 
 contains

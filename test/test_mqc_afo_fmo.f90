@@ -26,8 +26,8 @@ module test_mqc_afo_fmo
    use mqc_libcint_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
    implicit none
 
-   !> Both sides are the same SCF on the same molecule in the same basis, so
-   !> what separates them is the assembly and not the convergence.
+   !! Both sides are the same SCF on the same molecule in the same basis, so
+   !! what separates them is the assembly and not the convergence.
    real(dp), parameter :: TOL = 1.0e-9_dp
 
    private

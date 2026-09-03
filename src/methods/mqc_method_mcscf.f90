@@ -10,15 +10,9 @@ module mqc_method_mcscf
    !! `METHOD_TYPE_MCSCF` -- they are one method with a boolean, not two.
    !!
    !! Everything is computed by `mqc_libcint_mcscf` and `mqc_libcint_casci`
-   !! behind `mqc_libcint_bridge`, for the reason `mqc_method_hf` reaches the
-   !! CPU SCF the same way: those modules use libcint, fpm globs `src/` and has
-   !! no source for it, so `src/methods/` cannot name them. Without that backend
-   !! the stub bridge reports the missing build rather than returning a
-   !! placeholder -- a plausible wrong number inside a many-body expansion is
-   !! far worse than a failed fragment.
-   !!
-   !! There is no cuEST path and no `#ifdef` here, unlike Hartree-Fock: cuEST
-   !! has no CI at all, so there is nothing to choose between.
+   !! behind `mqc_libcint_bridge`. There is no cuEST path and no `#ifdef` here,
+   !! unlike Hartree-Fock: cuEST has no CI at all, so there is nothing to
+   !! choose between.
    use pic_types, only: dp
    use mqc_program_limits, only: MAX_ORBITAL_LABEL_LEN
    use mqc_method_base, only: qc_method_t
@@ -37,21 +31,8 @@ module mqc_method_mcscf
    type, extends(scf_options_t) :: mcscf_options_t
       !! What a CASSCF adds to the reference SCF every method shares
       !!
-      !! **The reference SCF's settings are inherited, not re-declared.** This
-      !! type used to carry its own `basis_set`, `spherical`, `verbose`, `pcm`,
-      !! `properties`, `max_iter`, `density_tol`, `linear_dependence`,
-      !! `level_shift`, `use_diis` and `diis_size`, each a copy of the field of
-      !! the same name on `scf_options_t`, and each needing the same three hand
-      !! edits to add or change. That is the duplication `scf_options_t` exists
-      !! to remove, and MCSCF was the one reference-based method still outside
-      !! it.
-      !!
-      !! It also carried a `conv_tol`, documented as the reference SCF's energy
-      !! threshold, that **nothing read** -- the reference SCF was given the
-      !! CASSCF's `energy_tol` instead. Both defaulted to 1e-8, so the two were
-      !! indistinguishable in every run; the field is gone and the inherited
-      !! `energy_tol` is what reaches the SCF, which is what was happening
-      !! anyway.
+      !! The reference SCF's settings are inherited from `scf_options_t`, not
+      !! re-declared. The inherited `energy_tol` is what reaches that SCF.
 
       ! Active space definition
       character(len=MAX_ORBITAL_LABEL_LEN), allocatable :: avas_orbitals(:)
@@ -113,12 +94,8 @@ module mqc_method_mcscf
    end type mcscf_options_t
 
    type, extends(qc_method_t) :: mcscf_method_t
-      !! MCSCF/CASSCF method implementation
-      !!
-      !! Complete Active Space SCF. Suitable for:
-      !! - Near-degenerate electronic states
-      !! - Bond breaking/formation
-      !! - Transition metal complexes
+      !! Complete active space SCF: near-degeneracy, bond breaking, open-shell
+      !! transition metals
       type(mcscf_options_t) :: options
    contains
       procedure :: calc_energy => mcscf_calc_energy
@@ -146,16 +123,9 @@ contains
 
       type(cuest_scf_settings_t) :: settings
 
-      ! The reference SCF's settings, which is most of what this is: a CASSCF
-      ! begins with a closed-shell SCF and the backend takes the same settings
-      ! object for it that Hartree-Fock does.
-      ! Refused rather than dropped. `run_libcint_mcscf` never reads
-      ! `settings%fukui_population` -- unlike `run_libcint_hf`, which does --
-      ! so a deck asking for Fukui indices on a CASSCF would otherwise be
-      ! obeyed everywhere except where it matters and report a result that
-      ! ignored it. That is the failure this whole shared-settings work exists
-      ! to end, and handing the field over unread would recreate it one layer
-      ! further down.
+      ! Refused rather than dropped: `run_libcint_mcscf` never reads
+      ! `settings%fukui_population`, so passing it on would obey the deck
+      ! everywhere except where it matters.
       if (allocated(this%options%properties%fukui_population)) then
          call result%error%set(ERROR_VALIDATION, "Fukui indices are not available for "// &
                                "an MCSCF reference: they need a response the CASSCF path "// &
@@ -165,8 +135,8 @@ contains
          return
       end if
       call apply_properties_settings(settings, this%options%properties)
-      ! The reference SCF's settings, through the one routine that carries them.
-      ! `pcm` comes with them, so the assignment above this block is gone too.
+      ! The reference SCF's settings, `pcm` among them: a CASSCF begins with a
+      ! closed-shell SCF and the backend takes the same settings object for it.
       call apply_scf_settings(settings, this%options)
       settings%functional = ""        ! empty selects pure Hartree-Fock
 
@@ -193,18 +163,14 @@ contains
    subroutine mcscf_calc_gradient(this, fragment, result)
       !! The analytic gradient of an optimised CASSCF
       !!
-      !! Analytic rather than by differences, and that remains a deliberate
-      !! choice: a numerical MCSCF gradient is 6N converged orbital
-      !! optimisations, each of which can land on a *different* active space --
-      !! the orbitals that make up a CAS are identified by their character, and
-      !! a displaced geometry can reorder them. The result has discontinuities
-      !! that look like noise and nothing in the output says which displacement
-      !! wandered.
+      !! Analytic rather than by differences: a displaced geometry can reorder
+      !! the orbitals a CAS is built from, so 6N re-optimisations can each land
+      !! on a different active space and the result has discontinuities that
+      !! look like noise.
       !!
-      !! A CASCI is still refused, and the backend says so: its orbitals came
-      !! from the SCF and were never optimised for the active space, so the
-      !! energy is not stationary with respect to them and the response terms
-      !! this omits are not zero.
+      !! A CASCI is refused by the backend. Its orbitals were never optimised
+      !! for the active space, so the energy is not stationary with respect to
+      !! them and the response terms this omits are not zero.
       class(mcscf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
@@ -223,7 +189,7 @@ contains
    end subroutine mcscf_calc_hessian
 
    subroutine refuse_derivative(fragment, result, what)
-      !! Say that a derivative is not available, once, for both of them
+      !! Say that a derivative is not available
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
       character(len=*), intent(in) :: what

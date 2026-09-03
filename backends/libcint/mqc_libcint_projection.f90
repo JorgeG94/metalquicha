@@ -2,11 +2,10 @@
 module mqc_libcint_projection
    !! Converge the cheap basis first, then start the expensive one from it.
    !!
-   !! For a system that converges badly, the cost is rarely the iterations in the
-   !! target basis -- it is that a core or GWH guess is far enough from the answer
-   !! that the iteration wanders. An STO-3G calculation on the same geometry costs
-   !! almost nothing and lands close to the right density, and that density can be
-   !! carried across.
+   !! For a system that converges badly the cost is rarely the iterations in the
+   !! target basis, but that a core or GWH guess is far enough from the answer
+   !! that the iteration wanders. A small-basis calculation on the same geometry
+   !! costs almost nothing and lands close to the right density.
    !!
    !! **What is projected is the occupied orbitals, not the density.** The obvious
    !! thing is
@@ -30,8 +29,8 @@ module mqc_libcint_projection
    !! in the target basis, columns in the small one -- does not exist for either
    !! molecule alone. `merge_basis_sets` builds a third whose shell list is the
    !! target's followed by the small one's over the same atoms, and the wanted
-   !! block is the off-diagonal corner of its overlap. This is what PySCF's
-   !! `intor_cross` does and for the same reason.
+   !! block is the off-diagonal corner of its overlap, as PySCF's `intor_cross`
+   !! does.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
@@ -52,12 +51,10 @@ module mqc_libcint_projection
    public :: project_occupied
    public :: climb_basis_ladder
 
-   !> Overlap eigenvalues below this are dropped when inverting.
-   !>
-   !> The same cutoff `build_orthogonalizer` uses, and for the same reason: a
-   !> near-dependent target basis has directions the small basis cannot inform,
-   !> and amplifying them by dividing through a tiny eigenvalue produces a guess
-   !> worse than the one it replaces.
+   ! Overlap eigenvalues below this are dropped when inverting. The same cutoff
+   ! `build_orthogonalizer` uses: a near-dependent target basis has directions the
+   ! small basis cannot inform, and amplifying them by dividing through a tiny
+   ! eigenvalue produces a guess worse than the one it replaces.
    real(dp), parameter :: OVERLAP_FLOOR = 1.0e-7_dp
 
 contains
@@ -68,18 +65,14 @@ contains
       !! in the target basis
       !!
       !! Each rung starts from the previous rung's density rather than from a
-      !! core guess, so the ladder gets cheaper as it climbs even though the
-      !! bases get larger: the first SCF is the only one starting from nothing.
+      !! core guess, so the first SCF is the only one starting from nothing.
       !!
       !! The target basis is not a rung. `mol_target` is already built by the
       !! caller and the last projection lands in it, so a two-step ladder plus a
       !! model basis is three SCFs, the last of which is the caller's.
       type(guess_step_t), intent(in) :: steps(:)
-      !! Note what a rung does NOT get its own copy of: only `maxiter` and
-      !! `tolerance` are per-rung, because only those differ by rung -- an
-      !! early one has to land in the right basin and can stop loosely. How the
-      !! iteration is *driven* is a property of the calculation, not of the
-      !! rung, which is what `scf` carries.
+         !! Only `maxiter` and `tolerance` are per-rung. How the iteration is
+         !! *driven* is a property of the calculation and lives in `scf_in`.
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: symbols(:)
       real(dp), intent(in) :: coords(:, :)
@@ -91,14 +84,11 @@ contains
       type(scf_numerics_t), intent(in), optional :: scf_in
          !! How to drive each rung's SCF: the accelerator, the DIIS subspace,
          !! the level shift, the linear-dependence threshold and incremental
-         !! Fock building.
+         !! Fock building. Absent leaves every rung on the defaults.
          !!
-         !! **None of these reached a rung before.** The calls below passed
-         !! eight positional arguments and named one, so every rung ran on
-         !! defaults whatever the deck said. `linear_dependence` is the one
-         !! that matters: a ladder exists to climb into a large diffuse basis,
-         !! which is exactly where the overlap goes near-singular, so the rung
-         !! that most needs a cutoff was the one guaranteed not to get it.
+         !! `linear_dependence` is the one that matters: a ladder exists to climb
+         !! into a large diffuse basis, which is exactly where the overlap goes
+         !! near-singular.
 
       type(libcint_molecule_t), allocatable :: rungs(:)
       type(rhf_result_t) :: scf
@@ -120,12 +110,7 @@ contains
          return
       end if
 
-      ! Every rung is built up front. The last one is needed after its SCF to
-      ! project into the next, and a molecule that has been destroyed cannot be
-      ! asked for its overlap.
-      ! Resolved once for the whole ladder. Absent leaves exactly the defaults
-      ! every rung used before this argument existed, so a caller that does not
-      ! pass `scf` is unaffected.
+      ! The SCF settings are resolved once for the whole ladder.
       shift = 0.0_dp
       lindep = 0.0_dp
       accel = ACCEL_DIIS
@@ -144,6 +129,9 @@ contains
          if (.not. accel_ok) accel = ACCEL_DIIS
       end if
 
+      ! Every rung is built up front. The last one is needed after its SCF to
+      ! project into the next, and a molecule that has been destroyed cannot be
+      ! asked for its overlap.
       allocate (rungs(n))
       do i = 1, n
          call build_libcint_molecule(atomic_numbers, symbols, coords, steps(i)%basis, &
@@ -176,11 +164,10 @@ contains
                                  incremental_fock=incr)
          end if
          if (error%has_error()) return
-         ! A rung that does not converge is not fatal. It is a starting point for
-         ! the next one, and a half-converged density from a smaller basis is
-         ! still closer to the answer than a core guess -- which is the whole
-         ! reason for climbing. Reported, because a ladder that never converges
-         ! anywhere is worth knowing about.
+         ! A rung that does not converge is not fatal: a half-converged density
+         ! from a smaller basis is still closer to the answer than a core guess.
+         ! Reported, because a ladder that never converges anywhere is worth
+         ! knowing about.
          if (talk) then
             call logger%info("  guess rung "//to_char(i)//": "//trim(steps(i)%basis)// &
                              ", "//to_char(rungs(i)%nao)//" functions, "// &
@@ -203,9 +190,9 @@ contains
       !!
       !! Only the shells are concatenated. Both molecules describe the same atoms
       !! at the same coordinates, and `molecule_build` writes those into `env`
-      !! before any basis data at offsets that depend on the atom count alone --
-      !! so the target's `atm` already points at coordinates that are correct for
-      !! the merged molecule, and the small basis contributes exponents and
+      !! before any basis data, at offsets that depend on the atom count alone, so
+      !! the target's `atm` already points at coordinates that are correct for the
+      !! merged molecule and the small basis contributes exponents and
       !! coefficients only.
       type(libcint_molecule_t), intent(in) :: mol_target, mol_small
       type(libcint_molecule_t), intent(out) :: merged
@@ -277,10 +264,8 @@ contains
    subroutine cross_overlap(mol_target, mol_small, s_target, s_cross, error)
       !! S_BB and S_BA in one pass over the merged molecule
       !!
-      !! Both come out of the same matrix, so they are returned together: the
-      !! projection needs each of them and computing the merged overlap twice to
-      !! hand them back separately would be the only cost of pretending they were
-      !! independent.
+      !! Both are blocks of the merged molecule's overlap, so they are returned
+      !! together rather than computing it twice.
       type(libcint_molecule_t), intent(in) :: mol_target, mol_small
       real(dp), allocatable, intent(out) :: s_target(:, :)   !! (n_B, n_B)
       real(dp), allocatable, intent(out) :: s_cross(:, :)    !! (n_B, n_A)
@@ -304,8 +289,7 @@ contains
       !! A target-basis density from the small basis's occupied orbitals
       !!
       !! The result is idempotent against S_BB and its trace against S_BB is
-      !! exactly 2*n_occ, both by construction rather than by luck -- which is
-      !! what makes it usable as a density rather than merely density-shaped.
+      !! exactly 2*n_occ, both by construction.
       type(libcint_molecule_t), intent(in) :: mol_target, mol_small
       real(dp), intent(in) :: coeff_small(:, :)   !! (n_A, n_mo_A), occupied first
       integer, intent(in) :: n_occ
@@ -369,10 +353,10 @@ contains
          return
       end if
       ! M^-1/2 = V d^-1/2 V^T, so exactly one of the two factors carries the
-      ! eigenvalue scaling. Scaling `vec` in place and then multiplying it by
-      ! itself would put d^-1/2 in twice and produce M^-1 -- which is wrong in a
-      ! way the self-projection check cannot see, because there M is the identity
-      ! and every power of it is the same matrix.
+      ! eigenvalue scaling. Scaling `vec` in place and multiplying it by itself
+      ! would put d^-1/2 in twice and produce M^-1, which the self-projection
+      ! check cannot see: there M is the identity and every power of it is the
+      ! same matrix.
       allocate (half(n_occ, n_occ))
       do i = 1, n_occ
          half(:, i) = vec(:, i)/sqrt(val(i))

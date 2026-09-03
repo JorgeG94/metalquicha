@@ -9,7 +9,7 @@ module test_mqc_split_lines_module
 
 contains
 
-   !> Collect all exported unit tests
+   !! Collect all exported unit tests
    subroutine collect_mqc_split_lines(testsuite)
       !! Collect tests for split_lines functionality
       type(unittest_type), allocatable, intent(out) :: testsuite(:)

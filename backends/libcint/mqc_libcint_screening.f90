@@ -1,40 +1,31 @@
 !! Charge-penetration screening parameters, by fitting the electrostatic potential
 module mqc_libcint_screening
-   !! The two screening blocks a potential carries are *fitted*, not computed: the
-   !! damped classical multipole potential is matched to the quantum one on a grid
-   !! of fused scaled van der Waals spheres, and the damping exponents are what
-   !! comes out. So this module is a grid, an objective and a minimizer, and every
-   !! constant in it was read out of GAMESS rather than guessed -- the exponents in
-   !! a reference potential are the check.
+   !! The two screening blocks a potential carries are *fitted*, not computed:
+   !! the damped classical multipole potential is matched to the quantum one on a
+   !! grid of fused scaled van der Waals spheres, and the damping exponents are
+   !! what comes out. Every constant here was read out of GAMESS.
    !!
    !! **Two blocks, two damping functions.** GAMESS names them:
    !!
    !!     SCREEN2   1 - exp(-alpha r)     exponential, EFP2 fragment-fragment
    !!     SCREEN    1 - exp(-alpha r^2)   Gaussian, EFP1 ab initio-fragment
    !!
-   !! and the linear coefficient in front is frozen at one in both, because
-   !! `1 - A exp(...)` only vanishes at the origin when `A = 1`, which is why GAMESS freezes it there.
-   !! That is why the first column of every screening record is `1.000000000`.
+   !! The linear coefficient in front is frozen at one in both, since
+   !! `1 - A exp(...)` vanishes at the origin only when `A = 1`, which is why the
+   !! first column of every screening record is `1.000000000`.
    !!
-   !! **The grid, from the source.** Radii are Gavezzotti and Spackman's, selected
-   !! because the point scheme is geodesic, over Gavezzotti and Spackman's radii;
-   !! spheres sit on *every* expansion centre, since GAMESS passes the full centre count to
-   !! `PDCPTS`; a bond midpoint takes the mean of its two atoms' radii
-   !! ; layers run from `VDWSCL = 0.7` in steps of `0.1`, and the
-   !! points per layer grow as the square of the scale, which is a constant surface
-   !! density and is also the only weighting there is.
+   !! **The grid.** Gavezzotti and Spackman radii, a sphere on *every* expansion
+   !! centre, and a bond midpoint taking the mean of its two atoms' radii. Layers
+   !! run from `VDWSCL = 0.7` in steps of `0.1` and the points per layer grow as
+   !! the square of the scale; that constant surface density is the only
+   !! weighting there is.
    !!
-   !! Getting that last point wrong is instructive: a fixed count per layer with an
-   !! explicit `1/(layer+1)` weight -- weighting the inner layers up, the opposite
-   !! way round -- leaves GAMESS's own fitted exponents scoring *worse* than the
-   !! initial guess they started from, which a converged search cannot do.
-   !!
-   !! **`alpha = 10` is an absorbing state and the reference shows it.** At the upper
-   !! bound the damping is switched off and the objective is flat in that exponent,
-   !! so a search that wanders there gets nothing back. Water's reference has one
-   !! bond midpoint at `10.0` and the other at `2.48`, and nothing distinguishes them
-   !! physically. So a fitted set will not match a reference digit for digit -- part
-   !! of what is in a reference is search history. What matches is the objective.
+   !! **`alpha = 10` is an absorbing state.** At the upper bound the damping is
+   !! switched off and the objective is flat in that exponent, so a search that
+   !! wanders there gets nothing back -- water's reference has one bond midpoint
+   !! at `10.0` and the other at `2.48`, with nothing to distinguish them
+   !! physically. A fitted set therefore will not match a reference digit for
+   !! digit; what matches is the objective.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_atomic_radii, only: vdw_radius_geodesic
@@ -51,14 +42,13 @@ module mqc_libcint_screening
    public :: screening_target_t
    public :: SCREEN_EXPONENTIAL, SCREEN_GAUSSIAN
 
-   !> The part of a screening fit that does not depend on the damping function
-   !>
-   !> Both blocks are fitted to the *same* quantum potential on the *same* grid;
-   !> only the objective's damping term differs. Computing them once and handing
-   !> them to both fits halves the stage, and the expensive half is the one being
-   !> shared -- the grid runs to tens of thousands of points and every one of them
-   !> costs an integral over every shell pair.
    type :: screening_target_t
+      !! The part of a screening fit that does not depend on the damping function
+      !!
+      !! Both blocks are fitted to the same quantum potential on the same grid;
+      !! only the objective's damping term differs, so the pair shares one of
+      !! these. The grid runs to tens of thousands of points and every one of
+      !! them costs an integral over every shell pair.
       logical :: ready = .false.
       real(dp), allocatable :: grid(:, :)     !! (3, n_points), Bohr
       real(dp), allocatable :: quantum(:)     !! Electronic potential at each point
@@ -66,25 +56,25 @@ module mqc_libcint_screening
       procedure :: destroy => screening_target_destroy
    end type screening_target_t
 
-   !> Which damping function to fit.
+   ! Which damping function to fit.
    integer, parameter :: SCREEN_EXPONENTIAL = 1   !! `1 - exp(-alpha r)`, the SCREEN2 block
    integer, parameter :: SCREEN_GAUSSIAN = 2      !! `1 - exp(-alpha r^2)`, the SCREEN block
 
-   !> Layer schedule: `VDWSCL`, `VDWINC` and the layer count.
+   ! Layer schedule: `VDWSCL`, `VDWINC` and the layer count.
    real(dp), parameter :: VDW_STEP = 0.1_dp
    integer, parameter :: N_LAYER = 25
 
-   !> Points on the innermost sphere; outer layers scale by area from this.
+   ! Points on the innermost sphere; outer layers scale by area from this.
    integer, parameter :: N_ANGULAR = 110
 
-   !> Bounds on an exponent, and the starting values: two on an atom, four on a
-   !> bond midpoint, which is how GAMESS initialises the search.
+   ! Bounds on an exponent, and the starting values: two on an atom, four on a
+   ! bond midpoint, which is how GAMESS initialises the search.
    real(dp), parameter :: ALPHA_MIN = 0.5_dp
    real(dp), parameter :: ALPHA_MAX = 10.0_dp
    real(dp), parameter :: ALPHA_ATOM = 2.0_dp
    real(dp), parameter :: ALPHA_MIDPOINT = 4.0_dp
 
-   !> Sweeps of the minimizer, and the bracket it stops refining at.
+   ! Sweeps of the minimizer, and the bracket it stops refining at.
    integer, parameter :: MAX_SWEEPS = 12
    real(dp), parameter :: ALPHA_TOL = 1.0e-7_dp
 
@@ -98,11 +88,9 @@ contains
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: vdw_scale
          !! Where the innermost layer sits, as a fraction of a van der Waals
-         !! radius. Absent is `DEFAULT_VDW_SCALE`, which is what every caller got
-         !! before `keywords.efp.vdw_scale` existed. It reaches the layer spacing
+         !! radius; `DEFAULT_VDW_SCALE` when absent. It reaches the layer spacing
          !! and the point count as well as the radius, since both are written
-         !! relative to it -- moving it thins or thickens the whole shell, which is
-         !! the point of moving it.
+         !! relative to it, so moving it thins or thickens the whole shell.
 
       real(dp), allocatable :: radii(:), unit(:, :), kept(:, :)
       real(dp) :: scale, distance, inner
@@ -180,10 +168,9 @@ contains
    subroutine fibonacci_sphere(n, points)
       !! `n` roughly equal-area points on the unit sphere
       !!
-      !! Not the geodesic tessellation GAMESS builds, and it does not need to be:
-      !! the objective is an average over thousands of points, and what matters is
-      !! that the density is uniform and scales with area. The fitted exponents move
-      !! in the last digit or two between the two constructions.
+      !! Not the geodesic tessellation GAMESS builds. What matters is that the
+      !! density is uniform and scales with area; the fitted exponents move in
+      !! the last digit or two between the two constructions.
       integer, intent(in) :: n
       real(dp), allocatable, intent(out) :: points(:, :)
       real(dp) :: polar, azimuth, offset
@@ -203,11 +190,9 @@ contains
       !! Split the objective into the part that depends on alpha and the part that does not
       !!
       !! The exponents enter only through the damped monopole, so the dipole and
-      !! quadrupole contributions and the quantum target can be folded into one
-      !! array per grid point once, and each objective evaluation then costs one
-      !! exponential per point per centre instead of a multipole sum. Without this
-      !! the fit is minutes rather than seconds, since a line search calls it
-      !! thousands of times.
+      !! quadrupole contributions and the quantum target fold into one array per
+      !! grid point once. Each objective evaluation then costs one exponential
+      !! per point per centre instead of a multipole sum.
       type(dma_result_t), intent(in) :: dma
       real(dp), intent(in) :: grid(:, :), quantum(:)
       real(dp), allocatable, intent(out) :: base(:), monopole(:, :), argument(:, :)
@@ -274,14 +259,12 @@ contains
       !!
       !! A line search moves one exponent and leaves the rest where they are, so
       !! everything but that centre is constant across the whole bracket. Summed
-      !! once here, the search then costs one exponential per grid point instead of
-      !! one per point per centre -- which on eighteen centres is the difference
-      !! between the fit being the longest stage of a potential and being noise.
+      !! once here, the search costs one exponential per grid point instead of one
+      !! per point per centre.
       !!
-      !! Summed rather than subtracted from a running total. Subtracting would be
-      !! one operation instead of eighteen, but the total is a residual that the
-      !! fit is driving toward zero, so the cancellation gets worse exactly as the
-      !! search converges.
+      !! Summed rather than subtracted from a running total: the total is a
+      !! residual the fit drives toward zero, so a subtraction cancels worse
+      !! exactly as the search converges.
       real(dp), intent(in) :: base(:), monopole(:, :), argument(:, :), alpha(:)
       integer, intent(in) :: skip
       real(dp), intent(out) :: rest(:)
@@ -304,9 +287,9 @@ contains
    function objective_one(rest, monopole, argument, alpha) result(rms)
       !! The objective with every other centre already summed into `rest`
       !!
-      !! Identical to `objective` term for term; what differs is that seventeen of
-      !! the eighteen exponentials were evaluated once by `hold_others` rather than
-      !! again for every probe of the bracket.
+      !! Identical to `objective` term for term, except that every other centre's
+      !! exponential was evaluated once by `hold_others` rather than again for
+      !! every probe of the bracket.
       real(dp), intent(in) :: rest(:), monopole(:), argument(:)
       real(dp), intent(in) :: alpha
       real(dp) :: rms
@@ -337,11 +320,10 @@ contains
                             residual, grid_size, target, vdw_scale)
       !! Fit one damping exponent per expansion centre
       !!
-      !! Minimized by repeated bracketed line searches over one exponent at a time,
-      !! swept to convergence. GAMESS uses Powell's direction-set method; this is the
-      !! same objective and the same bounds, and on five smooth parameters both land
-      !! on the same minimum -- which is what is being reproduced, since the search
-      !! *path* is exactly the part of a reference that is not physics.
+      !! Minimized by repeated bracketed line searches over one exponent at a
+      !! time, swept to convergence. GAMESS uses Powell's direction-set method;
+      !! this is the same objective and the same bounds, and on a few smooth
+      !! parameters both land on the same minimum.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
       type(dma_result_t), intent(in) :: dma
@@ -352,22 +334,19 @@ contains
       real(dp), intent(out), optional :: residual
       integer, intent(out), optional :: grid_size
       type(screening_target_t), intent(inout), optional :: target
-         !! The grid and quantum potential, built here if it is not ready and kept
-         !! for the next fit. Both damping forms are fitted to the same target, so
-         !! passing this across the pair halves the stage. Absent means build it,
-         !! use it and drop it, which is what a lone fit wants.
+         !! The grid and quantum potential, built here if it is not ready and
+         !! kept for the next fit. Absent means build it, use it and drop it.
       real(dp), intent(in), optional :: vdw_scale
-         !! Passed to `screening_grid`. Note that a shared `target` is built once
-         !! and then reused, so the scale that reaches the grid is the one the
-         !! *first* fit of a pair asked for -- both fits of a potential pass the
-         !! same value, and a caller that varied it between them would be fitting
-         !! two damping forms to one grid and calling it two grids.
+         !! Passed to `screening_grid`. A shared `target` is built once and then
+         !! reused, so the scale that reaches the grid is the one the *first* fit
+         !! of a pair asked for.
 
       real(dp), allocatable :: grid(:, :), potential(:, :, :), quantum(:)
       real(dp), allocatable :: base(:), monopole(:, :), argument(:, :), rest(:)
       real(dp) :: best, trial, low, high, mid, value_low, value_high, keep
       integer :: n_centre, i, sweep, step, g
       logical :: shared
+      ! TODO(mqc): `potential` and `g` are declared and never used.
 
       if (kind /= SCREEN_EXPONENTIAL .and. kind /= SCREEN_GAUSSIAN) then
          call error%set(ERROR_VALIDATION, "screening: unknown damping function")
@@ -384,11 +363,10 @@ contains
          call screening_grid(dma, atomic_numbers, grid, error, vdw_scale=vdw_scale)
          if (error%has_error()) return
 
-         ! The quantum target: the electronic potential, nuclei excluded, because the
-         ! classical side above carries the electronic monopoles alone.
-         ! Contracted inside the integral loop. Holding the whole
-         ! `(n_ao, n_ao, n_grid)` tensor to form this one vector is 786 MB at 58
-         ! orbitals and 3.1 GB at 115, for a grid of about thirty thousand points.
+         ! The quantum target: the electronic potential, nuclei excluded, since
+         ! the classical side above carries the electronic monopoles alone.
+         ! Contracted inside the integral loop rather than through the whole
+         ! `(n_ao, n_ao, n_grid)` tensor, which no grid this size can hold.
          call esp_contract(mol, grid, density, quantum, error)
          if (error%has_error()) return
 
@@ -415,9 +393,9 @@ contains
       do sweep = 1, MAX_SWEEPS
          keep = best
          do i = 1, n_centre
-            ! Everything but centre `i` is fixed for the whole bracket below, so it
-            ! is summed once here and the sixty-one probes that follow each cost a
-            ! single exponential per grid point.
+            ! Everything but centre `i` is fixed for the whole bracket below, so
+            ! it is summed once here and each probe that follows costs a single
+            ! exponential per grid point.
             call hold_others(base, monopole, argument, alpha, i, rest)
 
             ! Golden-section on one exponent, inside the bounds.

@@ -50,9 +50,9 @@ module test_mqc_mp2_hessian_response
 
    public :: collect_mqc_mp2_hessian_response_tests
 
-   !> The ladder's pinned case, deliberately at the **asymmetric** geometry:
-   !> pycc record a ket-swap bug that the symmetric one masked, and nothing
-   !> here depends on the residual planarity.
+   !! The ladder's pinned case, deliberately at the **asymmetric** geometry:
+   !! pycc record a ket-swap bug that the symmetric one masked, and nothing
+   !! here depends on the residual planarity.
    integer, parameter :: WATER_Z(3) = [8, 1, 1]
    character(len=2), parameter :: WATER_SYM(3) = ["O ", "H ", "H "]
    real(dp), parameter :: WATER(3, 3) = reshape( &
@@ -77,7 +77,7 @@ contains
                   ]
    end subroutine collect_mqc_mp2_hessian_response_tests
 
-   !> One SCF and the stacked first-order skeletons, shared by every test.
+   !! One SCF and the stacked first-order skeletons, shared by every test.
    subroutine stage_at(mol, scf, fx, sx, erix, err)
       type(libcint_molecule_t), intent(out) :: mol
       type(rhf_result_t), intent(out) :: scf
@@ -94,12 +94,12 @@ contains
                                      fx, sx, erix, err)
    end subroutine stage_at
 
-   !> Rigid translation moves no integral, so every skeleton summed over the
-   !> atoms of one Cartesian component cancels. Nothing imposes this: the
-   !> per-atom pieces mix basis-centre and operator-centre derivatives, and
-   !> the two-electron assembly deposits each atom from different index
-   !> permutations. Elements reach ~30 (the core Hamiltonian), so 1e-12 is
-   !> thirteen digits of cancellation.
+   !! Rigid translation moves no integral, so every skeleton summed over the
+   !! atoms of one Cartesian component cancels. Nothing imposes this: the
+   !! per-atom pieces mix basis-centre and operator-centre derivatives, and
+   !! the two-electron assembly deposits each atom from different index
+   !! permutations. Elements reach ~30 (the core Hamiltonian), so 1e-12 is
+   !! thirteen digits of cancellation.
    subroutine skeletons_translate(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -148,10 +148,10 @@ contains
       call mol%destroy()
    end subroutine skeletons_translate
 
-   !> `<pq|rs>^(X) = <qp|sr>^(X) = <rq|ps>^(X)`: the derivative inherits the
-   !> integral's permutational symmetry, but the assembly does not -- each
-   !> relation pairs elements deposited from different `ip1` orderings and
-   !> different owner tests, so this checks the permutation map.
+   !! `<pq|rs>^(X) = <qp|sr>^(X) = <rq|ps>^(X)`: the derivative inherits the
+   !! integral's permutational symmetry, but the assembly does not -- each
+   !! relation pairs elements deposited from different `ip1` orderings and
+   !! different owner tests, so this checks the permutation map.
    subroutine eri_symmetries(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -201,11 +201,11 @@ contains
       call mol%destroy()
    end subroutine eri_symmetries
 
-   !> The transcribed generalized-Fock Lagrangian against the gradient's
-   !> `energy_weighted_ao`: `C I' C^T` must equal the correlation share of the
-   !> matrix multiplying `dS/dR`, which is `(W_total + 2 W_ref) / 2` with
-   !> `W_ref = 2 sum_i eps_i C_i C_i^T` (conventions note, s.4a). Two routines
-   !> that never share a line, one matrix.
+   !! The transcribed generalized-Fock Lagrangian against the gradient's
+   !! `energy_weighted_ao`: `C I' C^T` must equal the correlation share of the
+   !! matrix multiplying `dS/dR`, which is `(W_total + 2 W_ref) / 2` with
+   !! `W_ref = 2 sum_i eps_i C_i C_i^T` (conventions note, s.4a). Two routines
+   !! that never share a line, one matrix.
    subroutine lagrangian_agrees(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -267,10 +267,10 @@ contains
       call mol%destroy()
    end subroutine lagrangian_agrees
 
-   !> All-electron and non-canonical, the pair-rotation augmentation must be
-   !> the exact identity -- both rotation classes are guarded off, so the
-   !> carriers copy through untouched and `P^(X)` is zero. This pins the guard
-   !> structure Phase 2's frozen core will open, bitwise.
+   !! All-electron and non-canonical, the pair-rotation augmentation must be
+   !! the exact identity -- both rotation classes are guarded off, so the
+   !! carriers copy through untouched and `P^(X)` is zero. This pins the guard
+   !! structure Phase 2's frozen core will open, bitwise.
    subroutine augment_identity(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -343,11 +343,11 @@ contains
       call mol%destroy()
    end subroutine augment_identity
 
-   !> `2 U^Y X^(X) + S^(Y) I''^(X)` summed over the atoms of either
-   !> perturbation cancels: translating every atom leaves the orbitals and the
-   !> overlap alone, so both `U^Y` and the skeleton carriers sum to zero, and
-   !> the term inherits it -- through the CPHF solve on the `Y` side, which is
-   !> why the bound is the solver's, not machine epsilon.
+   !! `2 U^Y X^(X) + S^(Y) I''^(X)` summed over the atoms of either
+   !! perturbation cancels: translating every atom leaves the orbitals and the
+   !! overlap alone, so both `U^Y` and the skeleton carriers sum to zero, and
+   !! the term inherits it -- through the CPHF solve on the `Y` side, which is
+   !! why the bound is the solver's, not machine epsilon.
    subroutine response_translates(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -442,20 +442,20 @@ contains
       call mol%destroy()
    end subroutine response_translates
 
-   !> Rigid translation leaves the orbitals, and so the amplitudes, exactly
-   !> where they were -- so the perturbed amplitudes summed over the atoms of
-   !> one Cartesian component cancel. This is earned across the whole of Unit
-   !> 1.7: the skeleton derivatives, the full `U^Y` rotation of the `nmo^4`
-   !> integrals, the perturbed Fock with its response fold, and the closed-form
-   !> divide all have to agree about their conventions for the sum to vanish,
-   !> and it runs through the CPHF solve on every perturbation, which is why
-   !> the bound is the solver's rather than machine epsilon.
-   !>
-   !> What this cannot see is a gauge error -- a perturbed quantity wrong by an
-   !> orbital rotation translates to zero just as well (the plan's Unit 1.7
-   !> warning). The cross-code gate against pycc's `dt2` dump was run when the
-   !> unit landed (sym 6.6e-12, asym 3.4e-11, one thread) and lives in the
-   !> commit message, per `test_mqc_hess_ints`' rule on external comparisons.
+   !! Rigid translation leaves the orbitals, and so the amplitudes, exactly
+   !! where they were -- so the perturbed amplitudes summed over the atoms of
+   !! one Cartesian component cancel. This is earned across the whole of Unit
+   !! 1.7: the skeleton derivatives, the full `U^Y` rotation of the `nmo^4`
+   !! integrals, the perturbed Fock with its response fold, and the closed-form
+   !! divide all have to agree about their conventions for the sum to vanish,
+   !! and it runs through the CPHF solve on every perturbation, which is why
+   !! the bound is the solver's rather than machine epsilon.
+   !!
+   !! What this cannot see is a gauge error -- a perturbed quantity wrong by an
+   !! orbital rotation translates to zero just as well (the plan's Unit 1.7
+   !! warning). The cross-code gate against pycc's `dt2` dump was run when the
+   !! unit landed (sym 6.6e-12, asym 3.4e-11, one thread) and lives in the
+   !! commit message, per `test_mqc_hess_ints`' rule on external comparisons.
    subroutine amplitudes_translate(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -538,15 +538,15 @@ contains
       call mol%destroy()
    end subroutine amplitudes_translate
 
-   !> The perturbed relaxed density and energy-weighted density summed over
-   !> the atoms of one Cartesian component cancel, through both Z-vector
-   !> solves -- the unperturbed one and the batched perturbed one. And the
-   !> unperturbed Z-vector this driver solves in pycc's convention must agree
-   !> with the one the gradient buried in its relaxed density's ov block:
-   !> two of our own routines, two conventions, one number. As everywhere on
-   !> this ladder, translation is blind to a gauge error; the cross-code gate
-   !> against pycc's `dDrel`/`dI`/`dGam` dumps was run when the unit landed
-   !> and its residuals live in the commit message.
+   !! The perturbed relaxed density and energy-weighted density summed over
+   !! the atoms of one Cartesian component cancel, through both Z-vector
+   !! solves -- the unperturbed one and the batched perturbed one. And the
+   !! unperturbed Z-vector this driver solves in pycc's convention must agree
+   !! with the one the gradient buried in its relaxed density's ov block:
+   !! two of our own routines, two conventions, one number. As everywhere on
+   !! this ladder, translation is blind to a gauge error; the cross-code gate
+   !! against pycc's `dDrel`/`dI`/`dGam` dumps was run when the unit landed
+   !! and its residuals live in the commit message.
    subroutine perturbed_response_translates(error)
       type(error_type), allocatable, intent(out) :: error
 

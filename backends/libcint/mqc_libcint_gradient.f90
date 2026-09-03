@@ -3,12 +3,10 @@ module mqc_libcint_gradient
    !! The derivative of a converged SCF energy with respect to the nuclear
    !! coordinates, for a restricted or unrestricted reference.
    !!
-   !! **Why a variational wavefunction makes this cheap.** The energy is
-   !! stationary with respect to the orbitals, so their derivatives do not
-   !! appear: nothing here solves a response equation. What is left is the
-   !! derivative of the *integrals*, contracted with densities the SCF already
-   !! produced. That is why Hartree-Fock gradients come before MP2 or coupled
-   !! cluster ones, which are not stationary and do need a response solve.
+   !! The energy is stationary with respect to the orbitals, so their
+   !! derivatives do not appear and nothing here solves a response equation.
+   !! What is left is the derivative of the *integrals*, contracted with
+   !! densities the SCF already produced.
    !!
    !! **The four terms.**
    !!
@@ -16,16 +14,14 @@ module mqc_libcint_gradient
    !!   * the core Hamiltonian, `Tr(D dH/dR)`
    !!   * the two-electron term, `Tr(D dG/dR)`
    !!   * the Pulay term, `-Tr(W dS/dR)`, from the basis functions moving with
-   !!     their atoms. This is the one that has no analogue in a plane-wave
-   !!     code, and `W` is the energy-weighted density rather than the density
+   !!     their atoms. `W` is the energy-weighted density, not the density
    !!
    !! **libcint differentiates the bra, and only the bra.** Every `ip` entry
    !! point returns the derivative with respect to the first shell's centre;
    !! the ket's derivative is recovered from translational invariance rather
    !! than integrated for. That is what the transposes and the factors of two
-   !! below are doing, and it is why the sum of the returned gradient over
-   !! atoms is zero by construction only if they are right -- which is worth
-   !! checking, and is checked in the tests.
+   !! below are doing, and it is why the returned gradient sums to zero over
+   !! atoms only if they are right -- which the tests check.
    use pic_types, only: dp
    use mqc_nuclear_repulsion, only: add_nuclear_repulsion_gradient
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -66,8 +62,7 @@ module mqc_libcint_gradient
    ! The pieces an MP2 gradient assembles for itself. It cannot call
    ! `libcint_scf_gradient` and add to the answer -- the relaxed density enters
    ! the one-electron and overlap terms in place of the reference one, not
-   ! alongside it -- so it needs the same derivative integrals rather than the
-   ! same assembly.
+   ! alongside it.
    public :: one_electron_deriv
    public :: two_electron_deriv
       !! Exposed for the MCSCF gradient, whose inactive and active blocks are
@@ -86,27 +81,9 @@ module mqc_libcint_gradient
    real(dp), parameter :: DERIV_SCREEN_TOL = 1.0e-10_dp
       !! Contribution below which a differentiated shell quartet is dropped.
       !!
-      !! Measured on a seventeen-atom closed shell in 6-31G, against the same
-      !! gradient computed with no screening at all:
-      !!
-      !!     tolerance     time      error in |g|
-      !!     none         16.7 s      --
-      !!     1e-12        14.9 s      1e-11
-      !!     1e-10        13.7 s      7e-11
-      !!     1e-9         12.9 s      5e-9
-      !!
-      !! 1e-10 is the knee. Below it the error starts moving a decade per decade
-      !! while the time barely does, and an optimiser converging on a 1e-4
-      !! gradient norm has no use for the accuracy being bought. The margin
-      !! matters here because the bra bound this multiplies is an estimate
-      !! rather than a rigorous Cauchy-Schwarz one -- see `two_electron_deriv`.
-      !!
-      !! Note how little any of this saves. On a molecule this compact almost
-      !! every quartet genuinely contributes, and the same is true of the
-      !! undifferentiated build next door -- `build_fock_direct` screens 15 % at
-      !! 1e-11. Screening is what makes a *large* system tractable; it is not
-      !! where a small one's time goes, and it should not be tuned as though it
-      !! were.
+      !! Set two decades tighter than the accuracy actually wanted, because the
+      !! bra bound it multiplies is an estimate rather than a rigorous
+      !! Cauchy-Schwarz one -- see `two_electron_deriv`.
 
 contains
 
@@ -115,19 +92,15 @@ contains
                                    n_occupied, n_occupied_beta, gradient, error, aux, xc)
       !! dE/dR for a converged SCF, in Hartree/Bohr
       !!
-      !! The beta arguments are what makes this one routine rather than two.
-      !! Present means unrestricted: the Coulomb field is built from the total
-      !! density and exchange from each spin separately, which is the only
-      !! place the two paths differ. Absent means closed shell, where the
-      !! density already carries its factor of two.
+      !! The beta arguments present mean unrestricted: the Coulomb field is
+      !! built from the total density and exchange from each spin separately,
+      !! which is the only place the two paths differ. Absent means closed
+      !! shell, where the density already carries its factor of two.
       !!
       !! `aux` present means the SCF being differentiated fitted its J and K,
-      !! and only the two-electron term changes: a density-fitted SCF is still
-      !! variational, so the one-electron, Pulay and nuclear-repulsion terms
-      !! are the same integrals contracted with the same densities. Passing an
-      !! auxiliary basis that the SCF did not use would differentiate a
-      !! different energy, which nothing here can detect -- it is the caller's
-      !! job to pass the one it converged with.
+      !! and only the two-electron term changes. **Passing an auxiliary basis
+      !! the SCF did not use differentiates a different energy**, and nothing
+      !! here can detect it.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)          !! Alpha, or the total for RHF
       real(dp), intent(in), optional :: density_beta(:, :)
@@ -163,9 +136,7 @@ contains
       nao = mol%nao
 
       ! Hartree-Fock keeps all of its exchange; a functional keeps the fraction
-      ! it declares. A range-separated one needs a second exchange derivative at
-      ! a screened omega, which this does not build, so it is refused below
-      ! rather than silently given its full-range part.
+      ! it declares.
       exx = 1.0_dp
       if (present(xc)) exx = xc%exx_fraction
 
@@ -273,12 +244,10 @@ contains
          p1 = offsets(iatom) + counts(iatom)
 
          ! dH/dR_A has two parts that look alike and are not. Moving atom A
-         ! moves the basis functions centred on it, which is the h1 block
-         ! below; it also moves the *nucleus*, and every electron feels that
+         ! moves the basis functions centred on it, which is the `h1` block
+         ! below; it also moves the *nucleus*, which every electron feels
          ! wherever its orbital sits. The second is the Hellmann-Feynman term,
-         ! it involves no basis-set derivative at all, and it is what `iprinv`
-         ! is for -- differentiating the origin of 1/|r-R| rather than a
-         ! basis-function centre.
+         ! it involves no basis-set derivative, and it is what `iprinv` is for.
          call iprinv_deriv_at(mol, iatom, vrinv)
          vrinv = -mol%charges(iatom)*vrinv
          if (counts(iatom) > 0) then
@@ -318,16 +287,11 @@ contains
       ! an addition to the Hartree-Fock gradient, not a replacement for any part
       ! of it.
       if (present(xc)) then
-         ! Both closed-shell paths now build the second exchange derivative
-         ! at the screened omega -- the fitted one through
-         ! `df_two_electron_gradient`'s `rs_omega`, the exact one through
-         ! `two_electron_deriv`'s. What is left is the open shell, and it is
-         ! not hypothetical: neither long-range pass is written in an
-         ! unrestricted branch. Without this refusal, unrestricted plus range
-         ! separation falls through both the pass and the check and returns a
-         ! gradient missing wB97X's dominant exchange term, converged and
-         ! unflagged -- the same shape the fitted-exchange-fraction bug had
-         ! before Kohn-Sham fitting became reachable and turned it live.
+         ! Both closed-shell paths build the second exchange derivative at the
+         ! screened omega. Neither long-range pass is written in an unrestricted
+         ! branch, and without this refusal an open-shell range-separated
+         ! gradient would come back missing its dominant exchange term,
+         ! converged and unflagged.
          if (xc%range_separated .and. unrestricted) then
             call error%set(ERROR_VALIDATION, "the gradient of a range-separated "// &
                            "functional needs a second exchange derivative at the "// &
@@ -357,26 +321,22 @@ contains
       !!
       !! **The basis functions move.** rho is built from functions centred on
       !! atoms, so moving atom A changes rho wherever A's functions reach. This
-      !! is the term that looks like the Pulay term of the one-electron part and
-      !! is written the same way.
+      !! is the analogue of the one-electron Pulay term.
       !!
       !! **The grid points move.** The quadrature is atom-centred, so the points
-      !! belonging to A travel with it and the integrand is sampled at moved
-      !! positions. This contributes the same quantity as the first term but
-      !! summed over A's *points* rather than A's *functions* -- over every
-      !! basis function, not only the ones on A -- and with the opposite sign.
+      !! belonging to A travel with it. This contributes the same quantity as
+      !! the first term but summed over A's *points* rather than A's
+      !! *functions* -- over every basis function, not only the ones on A -- and
+      !! with the opposite sign.
       !!
       !! **The partition weights move.** The Becke weight of every point depends
       !! on every nuclear position, so moving A reweights the whole grid,
-      !! including points it does not own. This is the term whose absence leaves
-      !! a gradient that looks entirely plausible and misses finite differences
-      !! at about 1e-4, and it is also the term translational invariance is
-      !! sensitive to -- which is why that check is worth running on a DFT
-      !! gradient even though it is free.
+      !! including points it does not own. Its absence leaves a gradient that
+      !! looks entirely plausible and misses finite differences at about 1e-4,
+      !! and it is the term translational invariance is sensitive to.
       !!
-      !! LDA only. `xc_grid_lda_quantities` refuses anything else, because a GGA
-      !! needs second derivatives of the basis functions and `eval_ao_block`
-      !! produces first.
+      !! LDA, GGA and meta-GGA, restricted or unrestricted; the non-local (VV10)
+      !! term goes through `vv10_gradient` and is refused for an open shell.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
@@ -406,9 +366,8 @@ contains
 
       ! The non-local term, where the functional carries one. Refused for an
       ! open shell rather than omitted: omitting it survives every check a user
-      ! can make -- the SCF converges, the energy is right, and the forces are
-      ! quietly wrong, so an optimisation walks confidently to the wrong
-      ! minimum. It is worth 43 mHartree in the energy on water/STO-3G.
+      ! can make -- the SCF converges, the energy is right, and only the forces
+      ! are wrong.
       if (ctx%nlc_b /= 0.0_dp .or. ctx%nlc_c /= 0.0_dp) then
          if (unrestricted) then
             call error%set(ERROR_VALIDATION, "this functional carries a non-local "// &
@@ -433,13 +392,9 @@ contains
          ! `vtau` is what makes this legal: `xc_grid_gga_quantities` refuses a
          ! meta-GGA outright when the caller cannot take it, because its own
          ! per-functional dispatch would otherwise fall through to the LDA
-         ! branch. Unrestricted is refused in there for a separate reason.
-         ! `density_beta` where there is one, so the meta-GGA refusal inside
-         ! fires for the reason it was written. Without it that routine sees a
-         ! restricted call, its own guard never runs, and what refuses an
-         ! unrestricted meta-GGA gradient is the spin-consistency check further
-         ! down -- correct by accident, with a message about internal state
-         ! rather than about the missing feature.
+         ! branch. `density_beta` is passed where there is one, so that the
+         ! meta-GGA refusal inside fires for the reason it was written rather
+         ! than being caught later by the spin-consistency check.
          if (unrestricted) then
             call xc_grid_gga_quantities(ctx, mol, density, rho, exc, vrho, gcoef, error, &
                                         density_beta=density_beta, rho_beta=rho_beta, &
@@ -488,12 +443,10 @@ contains
          !
          ! **Both halves of every accumulation below run over that same
          ! compressed set** -- the per-atom ranges and the sum over every
-         ! function -- and those ranges tile 1..n_sig without a gap, so summing
-         ! them is still summing every function that survived. That is what
-         ! keeps the two opposite-signed terms cancelling and the gradient
-         ! translationally invariant. Screening the two halves against
-         ! different sets would not crash; it would leave a small spurious net
-         ! force, which is why the sum over atoms is the check worth running.
+         ! function -- and those ranges tile 1..n_sig without a gap. That is
+         ! what keeps the two opposite-signed terms cancelling and the gradient
+         ! translationally invariant; screening them against different sets
+         ! would leave a small spurious net force rather than crash.
          call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
                                     shell_mask, ao_list, ao_offset, n_sig, &
                                     atom_offsets=c_offsets, atom_counts=c_counts)
@@ -612,18 +565,15 @@ contains
 
             ! The partition weight of a point owned by A also changes because
             ! the *point* moves with A, not only because A moves. That second
-            ! piece is what makes this term cancel the integrand's own
-            ! grid-motion contribution above -- together they are the integral
-            ! of grad(P f) over one atomic subgrid, which the quadrature
-            ! evaluates as very nearly zero because P f decays. Leaving it out
-            ! does not make the answer slightly worse: it leaves the
-            ! grid-motion term uncancelled, which on water is an error of 0.77
-            ! Hartree/Bohr against a gradient of 0.06.
+            ! piece is what cancels the integrand's own grid-motion
+            ! contribution above; leaving it out does not make the answer
+            ! slightly worse but leaves that term uncancelled, which on water is
+            ! an error of 0.77 Hartree/Bohr against a gradient of 0.06.
             !
-            ! It needs no new derivative. Displacing the point is the same as
-            ! displacing every nucleus the other way, so the gradient of the
-            ! partition with respect to the point is minus the sum over atoms
-            ! of what `becke_partition_derivatives` already returned.
+            ! It needs no new derivative: displacing the point is the same as
+            ! displacing every nucleus the other way, so the partition's
+            ! gradient with respect to the point is minus the sum over atoms of
+            ! what `becke_partition_derivatives` already returned.
             own = ctx%grid%atom(gg)
             do ia = 1, natm
                do comp = 1, 3
@@ -650,17 +600,13 @@ contains
       !! VV10's dE/dR with the grid held fixed
       !!
       !! The first derivative a VV10 *Hessian* is the second derivative of, in
-      !! the same sense `xc_gradient_fixed_grid` is for the semilocal term:
-      !! the points do not move, the partition does not respond, and the
-      !! kernel's dependence on where the points are drops out with them. Not
-      !! the physical gradient -- `vv10_gradient` is -- and differencing this
-      !! against the physical one disagrees by 4.5e-4 on water, which is the
-      !! size of exactly the terms it omits.
+      !! the same sense `xc_gradient_fixed_grid` is for the semilocal term: the
+      !! points do not move, the partition does not respond, and the kernel's
+      !! dependence on where the points are drops out with them.
       !!
-      !! It exists so the Hessian can be differenced against its own first
-      !! derivative with the same approximation on both sides. That is the
-      !! check that found every error in the gradient below it, and there is
-      !! no reason to build the harder object without it.
+      !! **Not the physical gradient** -- `vv10_gradient` is, and the two differ
+      !! by 4.5e-4 on water. This exists so a Hessian can be differenced against
+      !! its own first derivative with the same approximation on both sides.
       type(xc_context_t), intent(inout) :: ctx
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
@@ -673,29 +619,20 @@ contains
    subroutine vv10_gradient_core(ctx, mol, density, gradient, error, fixed_grid)
       !! The two above, which differ only in whether the grid is allowed to move
       !!
-      !! **The non-locality is already inside `vrho` and `vsigma`.** VV10's
-      !! energy is a double integral, which makes it sound as though its
-      !! derivative needs machinery a semilocal functional does not have. It
-      !! does not. `E_nl` is a functional of rho and sigma, so
+      !! **The non-locality is already inside `vrho` and `vsigma`.** `E_nl` is a
+      !! functional of rho and sigma, so
       !!
       !!     dE/dR = int dr [ dE/drho(r) drho(r)/dR + dE/dsigma(r) dsigma(r)/dR ]
       !!
       !! and the pair sum over the second grid is spent entirely on producing
-      !! those two arrays -- the same two the Fock build already consumes. What
-      !! is left is the ordinary GGA contraction, term for term, which is why
-      !! this reads like `xc_gradient`'s GGA path with the quantities swapped.
-      !! PySCF reaches the same conclusion by the same route: `get_nlc_vxc`
-      !! calls `_vv10nlc` for the potential and then hands it to the shared
-      !! `_gga_grad_sum_`.
+      !! those two arrays. What is left is the ordinary GGA contraction, term
+      !! for term, which is why this reads like `xc_gradient`'s GGA path with
+      !! the quantities swapped.
       !!
-      !! **The grid response is kept, unlike PySCF's.** `get_nlc_vxc` stops at
-      !! the basis-function term; this carries the moving points and the moving
-      !! partition weights too, because the semilocal gradient next door does
-      !! and a total made of one of each would be neither. It also makes the
-      !! term checkable: against a difference of the energy the three-term
-      !! version agrees to the step error, where a basis-function-only version
-      !! sits about 1e-4 away -- small enough to read as a loose tolerance and
-      !! large enough to hide a sign error.
+      !! **The grid response is kept, unlike PySCF's**, which stops at the
+      !! basis-function term: the semilocal gradient next door carries the
+      !! moving points and moving partition weights, and a total made of one of
+      !! each would be neither.
       !!
       !! Restricted only. The caller refuses an open shell before this is
       !! reached.
@@ -735,8 +672,8 @@ contains
       scale = 2.0_dp
 
       ! Sweep one: rho and its gradient over the whole grid at once. The pair
-      ! sum needs every point before it can produce any potential, so unlike
-      ! the semilocal path this cannot be done a block at a time.
+      ! sum needs every point before it can produce any potential, so unlike the
+      ! semilocal path this cannot be done a block at a time.
       allocate (rho(npts), sigma(npts), rho_grad(npts, 3))
       rho = 0.0_dp
       sigma = 0.0_dp
@@ -835,16 +772,14 @@ contains
          if (fixed_grid) cycle
 
          ! The partition-weight term, and the point-motion term that cancels
-         ! most of it, written as `xc_gradient` writes them -- see there for
-         ! why the second is not optional.
+         ! most of it, as `xc_gradient` writes them.
          !
          ! **Two things differ from the semilocal version and neither is
          ! optional.** The coefficient is `dE/dw` and not `rho*exc`, because a
          ! point's weight multiplies it twice over; and the points carry an
          ! explicit force of their own, because the kernel is a function of
-         ! where they are. Together they are worth 4.5e-4 on water, which is
-         ! not a tolerance question: it does not shrink when the grid is
-         ! refined, because it is not a quadrature error.
+         ! where they are. Together they are worth 4.5e-4 on water, and that
+         ! does not shrink when the grid is refined.
          if (allocated(dpart)) deallocate (dpart)
          allocate (dpart(3, natm, nb))
          call becke_partition_derivatives(ctx%nlc_grid%coords(:, g0:g1), mol%coords, &
@@ -882,34 +817,30 @@ contains
    subroutine xc_potential_gradient(ctx, mol, density, pmat, gradient, error, fixed_grid)
       !! `d/dR Tr(P V_xc[D])`, with both densities held fixed, accumulated in place
       !!
-      !! **Why a double hybrid needs this and no gradient before it did.** Every
-      !! gradient up to here differentiates an energy that is stationary in the
-      !! orbitals, so the reference operator's derivative never appears on its
-      !! own. A double hybrid's perturbative term is not stationary: eliminating
-      !! the orbital response leaves the Z-vector contracted with the derivative
-      !! of the *reference* operator, and for a Kohn-Sham reference that operator
-      !! contains `V_xc`. Omitting this term gives a gradient of entirely
-      !! plausible magnitude -- it is not a correction, it is a missing piece of
-      !! the same order as the Coulomb one beside it.
+      !! What a double hybrid's gradient needs and no gradient before it did:
+      !! its perturbative term is not stationary, so eliminating the orbital
+      !! response leaves the Z-vector contracted with the derivative of the
+      !! *reference* operator, which for a Kohn-Sham reference contains `V_xc`.
+      !! Omitting it gives a gradient of entirely plausible magnitude, short by
+      !! a piece the same order as the Coulomb one beside it.
       !!
       !! **`P` is not a density in the usual sense.** It is the relaxed
-      !! correlation density plus the Z-vector, so it is symmetric but
-      !! indefinite, integrates to zero rather than to the electron count, and is
-      !! nowhere near idempotent. Nothing here assumes otherwise; in particular
-      !! the functional is evaluated at `D` alone and `P` only ever appears
-      !! linearly, which is what makes this the derivative of a *linear form*
-      !! rather than of an energy.
+      !! correlation density plus the Z-vector: symmetric but indefinite,
+      !! integrating to zero rather than to the electron count, and nowhere near
+      !! idempotent. The functional is evaluated at `D` alone and `P` appears
+      !! only linearly, which is what makes this the derivative of a *linear
+      !! form* rather than of an energy.
       !!
       !!     G(R) = int w(R) [ v_rho rho_P + 2 v_sigma grad rho . grad rho_P ]
       !!
-      !! and `dG/dR` has the same three sources the exchange-correlation gradient
+      !! `dG/dR` has the same three sources the exchange-correlation gradient
       !! has -- the basis functions move, the grid points move, the partition
-      !! weights move -- with one addition: `v_rho` and `v_sigma` are themselves
-      !! functions of the reference density, which moves too. That is where the
-      !! second derivatives enter, and it is the part with no analogue next door.
+      !! weights move -- plus one: `v_rho` and `v_sigma` are functions of the
+      !! reference density, which moves too. That is where the second
+      !! derivatives enter.
       !!
-      !! **Four channels, two of them the reference's.** Collecting terms by
-      !! which object is being differentiated:
+      !! **Four channels, two of them the reference's**, collected by which
+      !! object is differentiated:
       !!
       !!     d rho      : f_rr rho_P + 2 f_rs (grad rho . grad rho_P)
       !!     d grad rho : 2 f_rs rho_P grad rho
@@ -918,11 +849,9 @@ contains
       !!     d rho_P    : v_rho
       !!     d grad rho_P: 2 v_sigma grad rho
       !!
-      !! Each is the same contraction `accumulate_channel` and
-      !! `accumulate_gga_channel` already perform for the energy gradient -- what
-      !! differs is the density they carry and the coefficient they are weighted
-      !! by, neither of which those routines know about. So this adds no new
-      !! arithmetic of the kind that is hard to get right, only new coefficients.
+      !! Each is a contraction `accumulate_channel` and `accumulate_gga_channel`
+      !! already perform for the energy gradient; only the density they carry
+      !! and the coefficient weighting it differ.
       !!
       !! LDA and GGA; a meta-GGA is refused upstream by
       !! `xc_grid_kernel_quantities`.
@@ -989,10 +918,9 @@ contains
          g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
 
-         ! Which functions reach this block. This routine pays more for the
-         ! screen than the energy gradient does, because it asks `eval_ao_block`
-         ! for second derivatives as well: ten components per function per point
-         ! against the potential's one.
+         ! Which functions reach this block. The screen pays for more here than
+         ! in the energy gradient, because `eval_ao_block` is asked for second
+         ! derivatives as well: ten components per function per point.
          call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
                                     shell_mask, ao_list, ao_offset, n_sig, &
                                     atom_offsets=c_offsets, atom_counts=c_counts)
@@ -1036,8 +964,7 @@ contains
 
             ! rho_P and its gradient, on the same footing as the reference's.
             ! Built from `pchi` directly rather than through `eval_rho`, since
-            ! the partner matrices are wanted anyway and this saves a second
-            ! pass.
+            ! the partner matrices are wanted anyway.
             do ig = 1, nb
                rho_p(ig) = sum(pchi(ig, :)*ao(ig, :))
             end do
@@ -1072,9 +999,8 @@ contains
                                        c_offsets, c_counts, natm, own, gradient, &
                                        moving=.not. hold_grid)
 
-               ! `P`'s own channel, weighted by the ordinary potential. This is
-               ! the term that survives when the functional is a constant -- and
-               ! the only one an LDA-shaped first attempt would write.
+               ! `P`'s own channel, weighted by the ordinary potential: the
+               ! term that survives when the functional is a constant.
                call accumulate_channel(ao_grad, pchi, ig, n_sig, w*vrho(gg), 2.0_dp, &
                                        c_offsets, c_counts, natm, own, gradient, &
                                        moving=.not. hold_grid)
@@ -1137,15 +1063,11 @@ contains
                                         gradient, error, k_scale)
       !! `d/dR Tr(G[A] B)` when `G` is built from fitted integrals
       !!
-      !! **What this replaces.** With exact integrals the reference part of a
-      !! correlated gradient is a four-centre `int2e_ip1` contraction --
-      !! `two_electron_mp2_terms` builds it, and the assembly contracts the
-      !! result against the relaxed density. Fitted, the same quantity has no
-      !! four-centre derivative anywhere in it: `(mu nu|lam sig)` is a product
-      !! of three-centre integrals and a metric, and differentiating a product
-      !! gives terms of each kind. So this returns the two intermediates that
-      !! contract against those, in the shapes the correlation's own fitted
-      !! terms already use.
+      !! The fitted counterpart of `two_electron_mp2_terms`. Fitted,
+      !! `(mu nu|lam sig)` is a product of three-centre integrals and a metric,
+      !! so its derivative has no four-centre term anywhere in it and this
+      !! returns the two intermediates that contract against the three- and
+      !! two-centre ones instead.
       !!
       !! **Coulomb.** `F_J = sum_PQ g^A_P J^-1_PQ g^B_Q` with
       !! `g^A_P = sum_uv A_uv (uv|P)`. Each `g` differentiates, and
@@ -1165,19 +1087,15 @@ contains
       !!     Omega_RS    += +(k/2) sum_uv S^R_uv Y^S_uv
       !!
       !! The metric half is written through `S` and `Y` rather than through the
-      !! `n_aux^2` intermediate `W_PQ = Tr(B M^P A M^Q)` it comes from: applying
-      !! `J^-1` on both sides of `W` is what the derivative wants anyway, and
-      !! `S` already carries one of the two applications.
+      !! `n_aux^2` intermediate `W_PQ = Tr(B M^P A M^Q)` it comes from, since
+      !! `S` already carries one of the two applications of `J^-1`.
       !!
       !! **The caller halves this.** What an assembly wants is
-      !! `(1/2) Tr(G^x[D] D) + Tr(G^x[D] P)` -- the reference's own two-electron
-      !! gradient plus the cross term -- which is half of `Tr(G^x[D](D + 2P))`.
-      !! The exact path reaches the same half by building only two of the four
-      !! differentiated positions and letting the integral's symmetry supply the
-      !! rest, which is invisible from its call site. Left in, the water
-      !! gradient comes out thirty times too large with translational invariance
-      !! holding at 1e-14 throughout, so this returns the honest derivative and
-      !! the factor is written where it can be read.
+      !! `(1/2) Tr(G^x[D] D) + Tr(G^x[D] P)`, which is half of
+      !! `Tr(G^x[D](D + 2P))`. The exact path reaches the same half by building
+      !! only two of the four differentiated positions, invisibly from its call
+      !! site; this returns the honest derivative, so the factor is the caller's
+      !! and can be read there.
       type(libcint_molecule_t), intent(in) :: mol, aux
       real(dp), intent(in) :: three(:, :)   !! Raw `(mu nu|P)`, (n_ao^2, naux)
       real(dp), intent(in) :: jm12(:, :)    !! `J^(-1/2)`, as the energy fitted with
@@ -1231,8 +1149,7 @@ contains
       call pic_gemm(jm12, jm12, jinv)
 
       ! `Y^P = sum_Q J^-1_PQ M^Q`, wanted by both halves of the exchange term
-      ! and by the two `rho` vectors, which are `<Y^P, D>` rather than a second
-      ! metric solve.
+      ! and by the two `rho` vectors, which are `<Y^P, D>`.
       allocate (y(n*n, naux))
       call pic_gemm(three, jinv, y)
 
@@ -1270,6 +1187,11 @@ contains
       ! terms use: libcint's `ip` integrals differentiate the electronic
       ! coordinate, so the derivative with respect to a nucleus carrying the
       ! function is minus them.
+      ! TODO(mqc): the auxiliary loops below index `gradient` by the auxiliary
+      ! basis's own atom numbering, which only matches the orbital basis's when
+      ! the two sit on the same atoms in the same order. `df_two_electron_gradient`
+      ! refuses a mismatch explicitly; this does not, and would attribute a
+      ! derivative to the wrong nucleus.
       allocate (offsets(mol%natm), counts(mol%natm))
       allocate (aux_offsets(aux%natm), aux_counts(aux%natm))
       call atom_ao_blocks(mol, offsets, counts)
@@ -1338,10 +1260,9 @@ contains
       integer, intent(in) :: nb, nao
       real(dp), intent(out) :: dchi(:, :)
 
-      ! As a gemm. `dchi = ao D^T`, and `D` is symmetric so the transpose is
-      ! free -- it is written anyway, because the expression above is what the
-      ! loop said and a routine that quietly depends on symmetry is one that
-      ! breaks when somebody passes an energy-weighted matrix that is not.
+      ! `dchi = ao D^T`. `D` is symmetric, so the transpose is free -- written
+      ! anyway, so that this does not quietly depend on symmetry the day
+      ! somebody passes an energy-weighted matrix that has none.
       call pic_gemm(ao, density, dchi, transb="T")
    end subroutine density_times_ao
 
@@ -1349,12 +1270,12 @@ contains
                                  offsets, counts, natm, own, gradient, moving)
       !! One spin channel's basis-function and grid-point terms at one point
       !!
-      !! Both are the same contraction of `grad chi` against `D chi`. They
-      !! differ in which basis functions are summed and where the result lands:
-      !! the basis-function term takes only the functions on atom A and lands on
-      !! A, the grid-point term takes every function and lands on the atom that
-      !! owns the point. Their signs are opposite, which is what makes the two
-      !! cancel when every atom moves together.
+      !! Both are the same contraction of `grad chi` against `D chi`, differing
+      !! in which basis functions are summed and where the result lands: the
+      !! basis-function term takes only the functions on atom A and lands on A,
+      !! the grid-point term takes every function and lands on the atom owning
+      !! the point. Their signs are opposite, which is what makes the two cancel
+      !! when every atom moves together.
       real(dp), intent(in) :: ao_grad(:, :, :)
       real(dp), intent(in) :: dchi(:, :)
       integer, intent(in) :: ig, nao, natm, own
@@ -1362,13 +1283,10 @@ contains
       integer, intent(in) :: offsets(:), counts(:)
       real(dp), intent(inout) :: gradient(:, :)
       logical, intent(in), optional :: moving
-         !! Whether the grid points travel with their owning atom. Default
-         !! true, which is the physical gradient. False leaves the
-         !! basis-function term alone, which is what a *fixed-grid* first
-         !! derivative is -- the object a Hessian that omits the grid response
-         !! is the second derivative of. Passing it here rather than writing a
-         !! second contraction keeps the two from disagreeing about the term
-         !! they share.
+         !! Whether the grid points travel with their owning atom. Default true,
+         !! which is the physical gradient. False leaves the basis-function term
+         !! alone, which is the *fixed-grid* first derivative a Hessian omitting
+         !! the grid response is the second derivative of.
 
       integer :: ia, mu, comp, p0, p1
       real(dp) :: block_sum(3), total(3)
@@ -1419,15 +1337,10 @@ contains
 
       ! One gemm per Cartesian direction. `ao_grad(:, :, k)` and its target are
       ! contiguous, the direction being the last dimension, so each is a plain
-      ! `(nb, nao) x (nao, nao)` and no copy is made.
-      !
-      ! This was the single most expensive routine in a density functional
-      ! gradient run -- 382 s of CPU on twenty waters, against 684 s for the
-      ! whole gradient phase -- and the reason is the loop it replaces rather
-      ! than the arithmetic, which is unchanged. Written out, the innermost
-      ! index walked `ao_grad(ig, nu, k)` along `nu`, which strides by `nb`:
-      ! one useful element per cache line, and nothing a vector unit can hold.
-      ! A gemm blocks the same multiply to fit the cache instead.
+      ! `(nb, nao) x (nao, nao)` and no copy is made. Written out, the innermost
+      ! index walks `ao_grad(ig, nu, k)` along `nu`, striding by `nb` -- one
+      ! useful element per cache line, and the single most expensive thing in a
+      ! density functional gradient run.
       do k = 1, 3
          call pic_gemm(ao_grad(:, :, k), density, dgchi(:, :, k), transb="T")
       end do
@@ -1443,14 +1356,12 @@ contains
       !!     tau = 1/2 sum_j sum_uv D_uv d_j chi_u d_j chi_v
       !!     dtau/dR_{A,k} = -sum_{mu in A} sum_j d2chi_mu/dx_k dx_j (D grad chi)_mu,j
       !!
-      !! **The half is already gone by the time it is written that way**, and
-      !! that is the factor to be careful about. `tau` carries libxc's 1/2, and
-      !! differentiating pairs the moving function with either the bra or the
-      !! ket, which are equal by the symmetry of D -- so the two cancel and the
-      !! net coefficient is one, not one half and not two. It is applied through
-      !! `scale` and an explicit half below so that both appear where the
-      !! corresponding factors in `accumulate_xc_matrix` do, rather than being
-      !! silently folded into a single constant nobody can check.
+      !! **The half is already gone by the time it is written that way.** `tau`
+      !! carries libxc's 1/2, and differentiating pairs the moving function with
+      !! either the bra or the ket, which are equal by the symmetry of D -- so
+      !! the two cancel and the net coefficient is one, not one half and not
+      !! two. It is applied through `scale` and an explicit half below, where
+      !! the matching factors in `accumulate_xc_matrix` appear.
       !!
       !! Only one contraction, unlike the GGA term next door: `tau` pairs a
       !! first derivative with a first derivative, so differentiating it gives a
@@ -1497,6 +1408,9 @@ contains
       do k = 1, 3
          gradient(k, own) = gradient(k, own) + factor*total(k)
       end do
+      ! TODO(mqc): dead statement, and `nao` is an unused dummy here as it is in
+      ! `accumulate_channel` and `accumulate_gga_channel`. Drop the argument
+      ! from all three rather than referencing it to keep a warning quiet.
       if (nao < 0) return
    end subroutine accumulate_mgga_channel
 
@@ -1513,12 +1427,12 @@ contains
       !!
       !! **The two pieces are not one term doubled, and that is the trap.** The
       !! second derivative pairs with `chi_nu`; the two first derivatives pair
-      !! with *each other*, one on the bra and one on the ket. Writing this as a
-      !! single doubled term gives a gradient of entirely plausible magnitude
-      !! that misses finite differences -- which is why the check that decides
-      !! this routine is the numerical one and not translational invariance.
+      !! with *each other*, one on the bra and one on the ket. A single doubled
+      !! term gives a gradient of entirely plausible magnitude that misses
+      !! finite differences, so the check that decides this routine is the
+      !! numerical one and not translational invariance.
       !!
-      !! `wg` is the weight times dE/d(grad rho), the conjugate quantity
+      !! `wg` is the weight times dE/d(grad rho), which
       !! `xc_grid_gga_quantities` returns already resolved over libxc's sigma
       !! channels, so nothing here knows whether the calculation was polarised.
       !!
@@ -1561,9 +1475,9 @@ contains
                   ! Note which index sits where. The derivative direction k is
                   ! on the *bra* in both pieces; the summed direction j rides
                   ! the second derivative in the first piece and the *ket* in
-                  ! the second. Pairing j with the bra instead -- the natural
-                  ! misreading -- is wrong by about six percent on water/PBE,
-                  ! and translational invariance does not notice.
+                  ! the second. Pairing j with the bra instead is wrong by about
+                  ! six percent on water/PBE, and translational invariance does
+                  ! not notice.
                   acc = acc + wg(j)*(ao_hess(ig, mu, HESS_INDEX(k, j))*dchi(ig, mu) &
                                      + ao_grad(ig, mu, k)*dgchi(ig, mu, j))
                end do
@@ -1595,9 +1509,11 @@ contains
    subroutine energy_weighted_density(orbitals, energies, n_occ, closed_shell, weighted)
       !! W = sum_i occ_i eps_i C_i C_i^T
       !!
-      !! The Pulay term contracts against this rather than the density,
-      !! because what moves with the basis functions is the orthonormality
-      !! constraint, and its Lagrange multipliers are the orbital energies.
+      !! The Pulay term contracts against this rather than the density, because
+      !! what moves with the basis functions is the orthonormality constraint,
+      !! whose Lagrange multipliers are the orbital energies.
+      ! TODO(mqc): written as an n_ao^2 * n_occ triple loop where every other
+      ! contraction in this module goes through `pic_gemm`.
       real(dp), intent(in) :: orbitals(:, :)
       real(dp), intent(in) :: energies(:)
       integer, intent(in) :: n_occ
@@ -1630,7 +1546,7 @@ contains
       !!
       !! The same shell-pair loop as `one_electron` next door, with three
       !! components per block instead of one. libcint returns them with the
-      !! component slowest, so a block is buf(di, dj, 1:3).
+      !! component slowest, so a block is `buf(di, dj, 1:3)`.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), allocatable, intent(out) :: matrix(:, :, :)
       integer, intent(in) :: which
@@ -1642,10 +1558,10 @@ contains
       allocate (matrix(mol%nao, mol%nao, 3))
       matrix = 0.0_dp
 
-      ! Flat, and indexed by hand below. libcint packs a block with the
-      ! *actual* shell dimensions, so a rank-3 buffer declared at the largest
-      ! shell has the wrong strides for every smaller one -- which is invisible
-      ! in a basis of s functions and wrong everywhere else.
+      ! Flat, and indexed by hand below. libcint packs a block with the *actual*
+      ! shell dimensions, so a rank-3 buffer declared at the largest shell has
+      ! the wrong strides for every smaller one -- invisible in a basis of s
+      ! functions and wrong everywhere else.
       mx = max_block(mol)
       allocate (buf(mx*mx*3))
 
@@ -1699,9 +1615,7 @@ contains
       !! The 1/|r-R| derivative with the operator origin on atom `iatom`
       !!
       !! `env` is copied rather than modified, because the origin lives in it
-      !! and the molecule is shared. One copy per atom of an array that is a
-      !! few kilobytes is not worth avoiding; mutating the caller's molecule
-      !! and putting it back would be.
+      !! and the molecule is shared.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: iatom
       real(dp), intent(out) :: matrix(:, :, :)
@@ -1749,21 +1663,20 @@ contains
                                  screen_tol, omega, with_coulomb)
       !! `J - K/2` built from the differentiated ERIs, as (nao, nao, 3)
       !!
-      !! `density` drives the Coulomb field and is the total density in both
-      !! the restricted and unrestricted cases. `exchange_density` is the one
+      !! `density` drives the Coulomb field and is the total density in both the
+      !! restricted and unrestricted cases. `exchange_density` is the one
       !! exchange is built from: absent for a closed shell, where the total
       !! density carries its factor of two and `J - K/2` is the right
       !! combination; present for one spin of an unrestricted reference, where
-      !! exchange takes that spin alone and the coefficient is one rather than
-      !! a half.
+      !! exchange takes that spin alone and the coefficient is one, not a half.
       !!
       !! **One permutation survives, and it is used.** A differentiated quartet
-      !! has none of the eightfold symmetry of an ordinary one: the nabla
-      !! distinguishes the first index from the second and the bra from the
-      !! ket. What is left untouched is the ket pair, `(∇i j|k l) = (∇i j|l k)`,
-      !! so this walks `l <= k` and counts the off-diagonal pair twice -- once
-      !! as itself and once transposed, which is not the same contraction and
-      !! has to be written out rather than doubled.
+      !! has none of the eightfold symmetry of an ordinary one -- the nabla
+      !! distinguishes the first index from the second and the bra from the ket.
+      !! What is left is the ket pair, `(∇i j|k l) = (∇i j|l k)`, so this walks
+      !! `l <= k` and counts the off-diagonal pair twice: once as itself and
+      !! once transposed, which is a different contraction and is written out
+      !! rather than doubled.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
       real(dp), allocatable, intent(out) :: vhf(:, :, :)
@@ -1775,9 +1688,9 @@ contains
          !! rather than the integral. Default `DERIV_SCREEN_TOL`.
       real(dp), intent(in), optional :: omega
          !! Switch the kernel to `erf(omega r)/r`, for the long-range exchange
-         !! of a range-separated functional. libfint takes this through `env`
-         !! rather than a separate entry point, so an attenuated pass is this
-         !! same loop over a modified copy -- no new integrals.
+         !! of a range-separated functional. It travels through `env` rather
+         !! than a separate entry point, so an attenuated pass is this same loop
+         !! over a modified copy.
       logical, intent(in), optional :: with_coulomb
          !! Default true. False builds exchange alone, which is what the
          !! long-range pass wants: `J` is complete from the full-range pass,
@@ -1799,13 +1712,11 @@ contains
 
       ! The shells the quartet loop runs over: the fused-sp view when the
       ! molecule carries one, its split shells otherwise -- the same table the
-      ! direct Fock build takes, for the same 6-31G-shaped reason. This was
-      ! split-only for a while: libfint's int2e_ip1 applied an L shell's s and
-      ! p coefficients on the wrong stride whenever an integral carries more
-      ! than one tensor component, so the view was correct for int2e and
-      ! garbage here. Fixed in libfint (l_shell_grad_check guards it), and the
-      ! AO order of a fused shell is its split shells' order, so the scatter
-      ! into vj/vk needs nothing beyond the view's own offsets.
+      ! direct Fock build takes. The AO order of a fused shell is its split
+      ! shells' order, so the scatter into vj/vk needs nothing beyond the view's
+      ! own offsets. libfint's `l_shell_grad_check` guards the stride an L
+      ! shell's s and p coefficients are applied on, which is what makes the
+      ! view usable for a multi-component integral at all.
       call eri_shell_table(mol, tab)
       mx = tab%block_max
       nao = mol%nao
@@ -1824,7 +1735,7 @@ contains
 
       ! A copy, because `tab%env` is shared and an attenuated pass must not
       ! leave the omega set behind for the next caller. The slot is one-based
-      ! here and zero-based in libfint's headers, so it is `+ 1`; getting it
+      ! here and zero-based in libfint's headers, hence the `+ 1`; getting it
       ! wrong is silent, and the "attenuated" integrals come back full-range.
       env_use = tab%env
       if (present(omega)) env_use(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
@@ -1847,33 +1758,24 @@ contains
          call libcint_2e_ip1_sph_optimizer(opt, mol%atm, mol%natm, tab%bas, tab%nbas, env_use)
       end if
 
-      ! Shell dimensions and offsets once, rather than a `shell_dim` call --
-      ! which reaches into `bas` and recomputes an angular-momentum formula --
-      ! at every level of a four-deep loop that runs millions of times.
+      ! Shell dimensions and offsets once, rather than a `shell_dim` call at
+      ! every level of a four-deep loop that runs millions of times.
       dims = tab%dims
       offs = tab%offs(1:nbas)
 
-      ! Screening. The undifferentiated loop in `build_fock_direct` has had this
-      ! from the start; this one had none at all and evaluated every quartet the
-      ! basis admits, which is why a gradient cost eight Fock builds.
-      !
-      ! Two factors go into the estimate:
+      ! Screening. Two factors go into the estimate:
       !
       !   * **The bra carries a derivative, so its Schwarz bound is not the
-      !     ordinary one.** Differentiating a primitive brings down `2*alpha*r`,
+      !     ordinary one.** Differentiating a primitive brings down `2*alpha*r`
       !     and the extent of that primitive is `r ~ 1/sqrt(alpha)`, so the
       !     distribution grows by roughly `2*sqrt(alpha)`. Taking the largest
-      !     exponent in the shell makes that an over- rather than an
-      !     under-estimate, which is the direction a screen has to err in. It is
-      !     not the rigorous Cauchy-Schwarz bound -- that needs `(∇i j|∇i j)`,
-      !     and libcint's `int2e_ip1ip2` is not among the entry points bound
-      !     here -- so the tolerance is set two decades tighter than the
-      !     accuracy actually wanted, and the result is checked against an
-      !     unscreened gradient in the tests.
-      !   * **The density the quartet multiplies.** Blocked to shells, the same
-      !     way `shell_density_max` does it next door. A quartet whose four
-      !     density blocks are negligible contributes nothing however large its
-      !     integral, and near a converged density most of them are.
+      !     exponent in the shell makes that an over-estimate, which is the
+      !     direction a screen has to err in. It is **not** the rigorous
+      !     Cauchy-Schwarz bound, which would need `(∇i j|∇i j)`, so the
+      !     tolerance is two decades tighter than the accuracy wanted and the
+      !     result is checked against an unscreened gradient in the tests.
+      !   * **The density the quartet multiplies**, blocked to shells as
+      !     `shell_density_max` does it next door.
       call schwarz_bounds(mol, bounds, error)
       if (error%has_error()) return
       ! Per split shell from `schwarz_bounds`, re-blocked onto the view's
@@ -1899,13 +1801,12 @@ contains
       end do
 
       ! Thread-local accumulators merged once, rather than atomics on a shared
-      ! matrix: the inner update is two scattered writes per integral, and
-      ! making those atomic costs more than the integral. The price is
-      ! 2 * nao^2 * 3 doubles per thread, which is worth watching on a few
-      ! thousand functions -- the same caveat the direct Fock build carries.
+      ! matrix: the inner update is two scattered writes per integral. The price
+      ! is `2 * nao^2 * 3` doubles per thread, worth watching on a few thousand
+      ! functions.
       !
-      ! schedule(dynamic) because the l <= k triangle makes the work per ish
-      ! uneven, and a static split leaves threads idle on the tail.
+      ! schedule(dynamic) because the `l <= k` triangle makes the work per `ish`
+      ! uneven.
       !$omp parallel default(none) &
       !$omp    shared(mol, tab, density, exchange_from, opt, vj, vk, mx, nao, nbas, &
       !$omp           dims, offs, bq, bra_bound, dsh, esh, tol, env_use, do_j) &
@@ -1932,11 +1833,10 @@ contains
                   dl = dims(lsh)
                   lo = offs(lsh)
 
-                  ! The largest density element this quartet can reach. The
-                  ! four entries are exactly the four the inner loop reads:
-                  ! two Coulomb, from the ket pair both ways round, and two
+                  ! The largest density element this quartet can reach: two
+                  ! Coulomb, from the ket pair both ways round, and two
                   ! exchange, pairing the bra's second index with each of the
-                  ! ket's.
+                  ! ket's -- exactly the four the inner loop reads.
                   if (do_j) then
                      est = bra*bq(ksh, lsh) &
                            *max(dsh(lsh, ksh), dsh(ksh, lsh), esh(jsh, ksh), esh(jsh, lsh))
@@ -2037,11 +1937,9 @@ contains
       !! **The pseudo-inverse must be the SCF's.** `J^-1` is formed as
       !! `J^-1/2 J^-1/2` from `metric_inverse_sqrt`, the same routine and the
       !! same eigenvalue threshold `build_df_tensor` uses. A fitting set is
-      !! near-linearly-dependent by construction, so a `J^-1` that kept
-      !! different modes would be differentiating a slightly different energy
-      !! than the one that converged -- which shows up as a gradient that
-      !! disagrees with finite differences by a little, in a way that looks
-      !! like a factor being wrong somewhere.
+      !! near-linearly-dependent by construction, so a `J^-1` keeping different
+      !! modes would differentiate a slightly different energy from the one that
+      !! converged.
       type(libcint_molecule_t), intent(in) :: orb, aux
       real(dp), intent(in) :: total_density(:, :)
       real(dp), intent(in) :: orbitals(:, :)
@@ -2057,11 +1955,9 @@ contains
       real(dp), intent(in), optional :: rs_omega
          !! Fit and differentiate the attenuated kernel `erf(omega r)/r`. Named
          !! `rs_omega` and not `omega` because `omega` is already the two-index
-         !! density `Omega_PQ` in this routine -- the collision compiles in some
-         !! orderings and means the wrong thing in all of them.
+         !! density `Omega_PQ` in this routine.
          !!
-         !! A
-         !! range-separated functional calls this routine twice: once
+         !! A range-separated functional calls this routine twice: once
          !! full-range for `J` and its short-range exchange fraction, and once
          !! attenuated with `with_coulomb` false for the long-range exchange.
       logical, intent(in), optional :: with_coulomb
@@ -2085,11 +1981,9 @@ contains
       naux = aux%nao
       unrestricted = present(orbitals_beta)
 
-      ! The auxiliary basis sits on the same nuclei as the orbital one, and the
-      ! per-atom accumulation below indexes both by the same atom number. A
-      ! mismatch would silently attribute an auxiliary function's derivative to
-      ! the wrong nucleus, which translational invariance would catch but only
-      ! after the fact.
+      ! The per-atom accumulation below indexes both bases by the same atom
+      ! number, so a mismatch would attribute an auxiliary function's derivative
+      ! to the wrong nucleus.
       if (aux%natm /= orb%natm) then
          call error%set(ERROR_VALIDATION, &
                         "density-fitted gradient: the auxiliary basis is on a "// &
@@ -2126,12 +2020,10 @@ contains
       do ip = 1, naux
          gamma(:, :, ip) = rho(ip)*total_density
       end do
-      ! The exchange fraction rides the channel weight rather than being
-      ! applied afterwards, because both of exchange's shapes -- the one in
-      ! `gamma` and the one in `omega` -- are linear in it and
-      ! `add_exchange_channel` builds them together. A pure functional passes
-      ! zero and the whole exchange assembly is skipped, which is most of the
-      ! work in this routine rather than a small saving.
+      ! The exchange fraction rides the channel weight rather than being applied
+      ! afterwards: both of exchange's shapes -- the one in `gamma` and the one
+      ! in `omega` -- are linear in it, and `add_exchange_channel` builds them
+      ! together.
       kf = 1.0_dp
       if (present(exx_fraction)) kf = exx_fraction
 
@@ -2144,10 +2036,9 @@ contains
          omega = 0.0_dp
       end if
 
-      ! Skipped outright at zero rather than multiplied by it. The header a
-      ! few lines up claimed this and the code did not: a pure functional was
-      ! paying the whole `e^P_ij` transform, the `J^-1 e` solve and the `Z^P`
-      ! back-transform to add exactly nothing.
+      ! Skipped outright at zero rather than multiplied by it: a pure functional
+      ! would otherwise pay the whole `e^P_ij` transform, the `J^-1 e` solve and
+      ! the `Z^P` back-transform to add nothing.
       if (kf /= 0.0_dp) then
          if (unrestricted) then
             call add_exchange_channel(three, jinv, orbitals, n_occupied, kf, gamma, omega)
@@ -2183,10 +2074,10 @@ contains
          q1 = aux_off(iatom) + aux_cnt(iatom)
 
          do comp = 1, 3
-            ! Orbital indices. Twice: ip1 differentiates the first index only,
-            ! and the second index contributes the transpose -- which is the
-            ! same number because both (uv|P) and Gamma^P are symmetric in u
-            ! and v. Minus, because libcint's nabla is on the bra.
+            ! Orbital indices, twice: `ip1` differentiates the first only, and
+            ! the second contributes the transpose -- the same number, since
+            ! both (uv|P) and Gamma^P are symmetric in u and v. Minus, because
+            ! libcint's nabla is on the bra.
             if (orb_cnt(iatom) > 0) then
                gradient(comp, iatom) = gradient(comp, iatom) &
                                        - 2.0_dp*sum(ip1(p0:p1, :, :, comp)*gamma(p0:p1, :, :))
@@ -2212,10 +2103,11 @@ contains
       !!
       !! `weight` is two for a closed shell, where the single channel carries
       !! both spins, and one for each channel of an unrestricted reference. The
-      !! metric term takes half of it, which is the factor that makes the
-      !! restricted and unrestricted expressions agree when the two spins are
-      !! identical -- and the one worth checking by feeding a closed-shell
-      !! system through the unrestricted path.
+      !! metric term takes half of it, which is what makes the restricted and
+      !! unrestricted expressions agree when the two spins are identical.
+      ! TODO(mqc): the `f = J^-1 e` and metric loops below are naux^2 * n_occ^2
+      ! written out by hand, where every other contraction in this module goes
+      ! through `pic_gemm`. They dominate a fitted exchange gradient.
       real(dp), intent(in) :: three(:, :)     !! (nao*nao, naux)
       real(dp), intent(in) :: jinv(:, :)      !! (naux, naux)
       real(dp), intent(in) :: orbitals(:, :)
@@ -2289,23 +2181,22 @@ contains
    subroutine three_centre_deriv(orb, aux, which, deriv, omega)
       !! d(mu nu | P) / dR, as (nao, nao, naux, 3)
       !!
-      !! `which` selects whose centre is differentiated: 1 for the first
-      !! orbital index, through int3c2e_ip1, and 2 for the auxiliary one,
-      !! through int3c2e_ip2. The second orbital index has no entry point of
-      !! its own -- (mu nu|P) is symmetric in mu and nu, so its derivative is
-      !! the transpose of the first, which is why nothing here integrates for
-      !! it.
+      !! `which` selects whose centre is differentiated: 1 for the first orbital
+      !! index, through int3c2e_ip1, and 2 for the auxiliary one, through
+      !! int3c2e_ip2. The second orbital index has no entry point of its own --
+      !! (mu nu|P) is symmetric in mu and nu, so its derivative is the transpose
+      !! of the first.
       !!
-      !! No symmetry in the shell-pair loop, unlike the energy's `three_centre`
-      !! next door: ip1 differentiates mu and not nu, so the block for (ish,
-      !! jsh) is not the transpose of (jsh, ish).
+      !! **No symmetry in the shell-pair loop**, unlike the energy's
+      !! `three_centre` next door: ip1 differentiates mu and not nu, so the block
+      !! for (ish, jsh) is not the transpose of (jsh, ish).
       type(libcint_molecule_t), intent(in) :: orb, aux
       integer, intent(in) :: which
       real(dp), allocatable, intent(out) :: deriv(:, :, :, :)
       real(dp), intent(in), optional :: omega
          !! Attenuate to `erf(omega r)/r`, matching `three_centre`. A fitted
-         !! range-separated gradient differentiates two fits, and the long-range
-         !! one has to be differentiated with the kernel it was made from.
+         !! range-separated gradient differentiates two fits, and each has to be
+         !! differentiated with the kernel it was made from.
 
       integer, allocatable :: bas(:, :)
       real(dp), allocatable :: env(:), buf(:)
@@ -2324,10 +2215,8 @@ contains
       mx = max(max_block(orb), max_block(aux))
 
       ! Threaded over the first orbital shell. Each (ish, jsh, ksh) writes its
-      ! own block of `deriv` and reads nothing another writes, so the only
-      ! shared state is the output array and no reduction is needed. `buf` is
-      ! allocated inside the region because libcint writes into it per quartet,
-      ! which makes it the one genuinely private object here.
+      ! own block of `deriv` and reads nothing another writes, so no reduction
+      ! is needed; `buf` is the one genuinely private object.
       !$omp parallel default(none) &
       !$omp    shared(deriv, orb, aux, bas, env, dummy, nbas_orb, nbas_aux, mx, which) &
       !$omp    private(ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, comp, ret, idx, &

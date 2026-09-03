@@ -22,9 +22,9 @@ module test_mqc_physical_fragment
 
 contains
 
-   !> Collect all exported unit tests
+   !! Collect all exported unit tests
    subroutine collect_mqc_physical_fragment_tests(testsuite)
-      !> Collection of tests
+      !! Collection of tests
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &

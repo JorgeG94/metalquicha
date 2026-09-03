@@ -41,8 +41,8 @@ program bench_efp
    implicit none
 
    real(dp), parameter :: ANG = 1.0_dp/0.52917724924_dp
-   !> Lattice spacing, in Angstrom. Loose enough that the induced dipoles converge
-   !> and tight enough that nothing is negligible.
+   !! Lattice spacing, in Angstrom. Loose enough that the induced dipoles converge
+   !! and tight enough that nothing is negligible.
    real(dp), parameter :: SPACING = 3.5_dp
    integer, parameter :: SIZES(4) = [8, 27, 64, 125]
 

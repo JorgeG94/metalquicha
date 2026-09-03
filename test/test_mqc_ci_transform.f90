@@ -36,9 +36,9 @@ module test_mqc_ci_transform
 
    real(dp), parameter :: TOL = 1.0e-12_dp
 
-   !> A rotation by 30 degrees in a two-orbital space. With one electron the
-   !> strings are the orbitals themselves, so the string transformation has to
-   !> come back as this matrix unchanged.
+   !! A rotation by 30 degrees in a two-orbital space. With one electron the
+   !! strings are the orbitals themselves, so the string transformation has to
+   !! come back as this matrix unchanged.
    real(dp), parameter :: C30 = 0.86602540378443864676_dp   ! cos(30 degrees)
    real(dp), parameter :: S30 = 0.5_dp                      ! sin(30 degrees)
    real(dp), parameter :: ROT2(2, 2) = reshape([C30, S30, -S30, C30], [2, 2])

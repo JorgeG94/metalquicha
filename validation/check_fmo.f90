@@ -41,9 +41,9 @@ program check_fmo
    implicit none
 
    integer, parameter :: N_DIM = 3
-   !> Water plus ammonia, for the unequal-fragment case
+   !! Water plus ammonia, for the unequal-fragment case
    integer, parameter :: N_MIXED = 7
-   !> Atom counts for the bond-cutting partition cases
+   !! Atom counts for the bond-cutting partition cases
    integer, parameter :: N_ETHANE = 8
    integer, parameter :: N_RING = 9
    integer, parameter :: N_DIMER = 6

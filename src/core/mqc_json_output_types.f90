@@ -18,9 +18,8 @@ module mqc_json_output_types
    type :: json_output_data_t
       !! Unified container for all JSON output data
       !!
-      !! This type consolidates all data needed to write JSON output for any
-      !! calculation type (unfragmented, MBE, GMBE PIE). The output_mode field
-      !! determines which format to use when writing JSON.
+      !! `output_mode` selects the format the writer uses: unfragmented, MBE or
+      !! GMBE PIE.
 
       integer :: output_mode = OUTPUT_MODE_NONE  !! OUTPUT_MODE_* constant
 
@@ -54,9 +53,8 @@ module mqc_json_output_types
       real(dp) :: homo = 0.0_dp          !! Whole-system HOMO, unfragmented runs only
       real(dp) :: lumo = 0.0_dp          !! Whole-system LUMO, unfragmented runs only
       logical :: has_orbitals = .false.
-         !! Set only where a gap means something -- one SCF over one system.
-         !! A fragmented run leaves this false on purpose: gaps do not add,
-         !! so there is no expansion of them to report.
+         !! Set only where a gap means something -- one SCF over one system. A
+         !! fragmented run leaves it false: gaps do not add.
       logical, allocatable :: fragment_has_orbitals(:)
          !! Whether that fragment reported a frontier pair. Not inferred from
          !! the values: homo == lumo == 0 is what a method that said nothing
@@ -64,45 +62,37 @@ module mqc_json_output_types
       real(dp), allocatable :: fragment_homo(:)   !! Per-fragment HOMO (Hartree)
       real(dp), allocatable :: fragment_lumo(:)   !! Per-fragment LUMO (Hartree)
       integer, allocatable :: fragment_scf_status(:)
-         !! Per-fragment SCF convergence, as SCF_* from mqc_result_types.
-         !! Recorded because a non-converged fragment still yields a number of
-         !! the right magnitude, so nothing downstream can tell -- and at
-         !! millions of terms nobody is reading the log.
+         !! Per-fragment SCF convergence, as `SCF_*` from `mqc_result_types`. A
+         !! non-converged fragment still yields a number of the right
+         !! magnitude, so nothing downstream can tell without this.
       integer(int64), allocatable :: unconverged_ids(:)
-         !! Fragment indices whose SCF did not converge, in order. Written out
-         !! so a follow-up run can be built from them without reading back a
-         !! per-fragment table that may have millions of rows -- and because a
-         !! log line saying "and 4382 more" is not something a script can act
-         !! on. Empty when everything converged, unallocated when the method
-         !! does not report convergence at all, which is not the same thing.
+         !! Fragment indices whose SCF did not converge, in order, so a
+         !! follow-up run can be built from them without reading back a
+         !! per-fragment table of millions of rows. Empty when everything
+         !! converged, unallocated when the method does not report convergence
+         !! at all, which is not the same thing.
       integer, allocatable :: unconverged_monomers(:, :)
          !! (n_unconverged, max_level) the monomers each of those fragments is
-         !! built from, zero-padded, exactly as `polymers` holds them. A dimer
-         !! that failed is only re-runnable if you know which two monomers it
-         !! was, and at that point the follow-up job writes itself.
+         !! built from, zero-padded, exactly as `polymers` holds them.
       real(dp), allocatable :: unconverged_deltas(:)
          !! What each failed fragment contributes to the total, in the same
          !! units and sign as `delta_energies`. The list of failures says which
-         !! fragments are suspect; this says whether it matters. Fragments that
-         !! screening or cancellation has already made negligible are the
-         !! common case, and a run that fails on a hundred of those is fine.
+         !! fragments are suspect; this says whether it matters.
       integer, allocatable :: culprit_monomers(:)
          !! Monomers appearing in at least one failed fragment, most frequent
          !! first, paired with `culprit_counts`.
       integer(int64), allocatable :: culprit_counts(:)
          !! How many failed fragments each of those monomers appears in. **This
-         !! is the number that collapses a failure list into a diagnosis**: one
-         !! monomer with a wrecked geometry or a mis-assigned charge drags every
-         !! dimer it belongs to down with it, and four hundred failures sharing
-         !! one monomer is one problem rather than four hundred.
+         !! collapses a failure list into a diagnosis**: four hundred failures
+         !! sharing one monomer is one problem rather than four hundred.
       integer(int64) :: fragment_count = 0
       integer :: max_level = 0
       character(len=16) :: fragment_breakdown = "csv"
+         !! Where the per-fragment table goes: "csv", "json" or "none"
       character(len=16) :: fingerprint = ""
          !! Identity of the calculation that produced this output. Stamped so a
-         !! restart can check what it is about to reuse -- see mqc_fingerprint.
+         !! restart can check what it is about to reuse -- see `mqc_fingerprint`.
          !! Empty when nothing computed it.
-         !! Where the per-fragment table goes: "csv", "json" or "none"
 
       !----- GMBE PIE-specific data -----
       integer, allocatable :: pie_atom_sets(:, :)     !! Unique atom sets (max_atoms, n_terms)
@@ -110,11 +100,6 @@ module mqc_json_output_types
       real(dp), allocatable :: pie_energies(:)        !! Per-term energies
       integer(int64) :: n_pie_terms = 0
 
-      !! ---- SAPT ----
-      !! An interaction energy decomposed, ordered by `SAPT_TERM_NAMES`. The
-      !! total also goes to `total_energy` like any other method's, but on its
-      !! own it is the one number a supermolecular calculation would also give;
-      !! the decomposition is what the method was run for.
       ! Intrinsic energy decomposition, unfragmented runs that asked for one.
       ! Hartree, and the pair matrices carry the full pair energy in both
       ! (A,B) and (B,A) -- see `calculation_result_t`, which these are copied
@@ -139,6 +124,10 @@ module mqc_json_output_types
       logical :: has_fukui = .false.
 
       real(dp), allocatable :: sapt_terms(:)
+         !! An interaction energy decomposed, ordered by `SAPT_TERM_NAMES`. The
+         !! total also goes to `total_energy` like any other method's, but on
+         !! its own it is the one number a supermolecular calculation would also
+         !! give; the decomposition is what the method was run for.
       logical :: has_sapt = .false.
 
    contains
@@ -150,6 +139,11 @@ contains
 
    subroutine json_output_data_destroy(this)
       !! Clean up all allocated memory
+      ! TODO(mqc): every per-fragment array added for SCF status is missing
+      ! here -- `fragment_has_orbitals`, `fragment_homo`, `fragment_lumo`,
+      ! `fragment_scf_status`, the five `unconverged_*`/`culprit_*` arrays --
+      ! so on a reused container they survive with the previous run's contents
+      ! and length.
       class(json_output_data_t), intent(inout) :: this
 
       ! Common data
@@ -192,6 +186,9 @@ contains
 
    subroutine json_output_data_reset(this)
       !! Reset all flags and scalar values to defaults
+      ! TODO(mqc): `has_charges`, `has_orbitals`, `charge_scheme`,
+      ! `fukui_scheme` and `fingerprint` are not among them, so a reused
+      ! container reports the previous run's charges and gap as its own.
       class(json_output_data_t), intent(inout) :: this
 
       this%output_mode = OUTPUT_MODE_NONE

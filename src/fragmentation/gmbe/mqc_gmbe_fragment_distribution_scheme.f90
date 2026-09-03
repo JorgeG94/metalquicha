@@ -1,7 +1,7 @@
 !! Generalized Many-Body Expansion (GMBE) fragment distribution module
 module mqc_gmbe_fragment_distribution_scheme
-   !! Implements fragment distribution schemes for GMBE calculations with overlapping fragments
-   !! Handles both serial and MPI-parallelized distribution of monomers and intersection fragments
+   !! Serial and MPI-parallel evaluation of a GMBE PIE term list, and the
+   !! accumulation of the results back into one energy, gradient or Hessian.
    use pic_types, only: int32, int64, dp
    use pic_timer, only: timer_type
    use mqc_calc_types, only: CALC_TYPE_GRADIENT
@@ -31,9 +31,9 @@ module mqc_gmbe_fragment_distribution_scheme
                                  handle_node_results_to_batch, handle_group_results
    implicit none
 
-   !! term index, fragment type, atom count, atom list, displacement code
    integer, parameter :: N_TERM_PAYLOAD_MSGS = 5
-   ! Error handling imported where needed
+      !! Messages in one term payload: term index, fragment type, atom count,
+      !! atom list, displacement code.
    private
 
    ! Public interface
@@ -45,11 +45,11 @@ contains
 
    subroutine serial_gmbe_pie_processor(pie_atom_sets, pie_coefficients, n_pie_terms, &
                                         sys_geom, method_config, calc_type, json_data)
-      !! Serial GMBE processor using PIE coefficients
-      !! Evaluates each unique atom set once and sums with PIE coefficients
-      !! Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations
-      !! If json_data is present, populates it for centralized JSON output
-      !! Bond connectivity is accessed via sys_geom%bonds
+      !! Evaluate every PIE term on one rank and sum them with their coefficients
+      !!
+      !! Energy, gradient or Hessian, by `calc_type`. Bonds come from
+      !! `sys_geom%bonds`; `json_data`, when present, is filled for the caller
+      !! to write.
       use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, CALC_TYPE_ENERGY, calc_type_to_string
       use mqc_physical_fragment, only: redistribute_cap_gradients, redistribute_cap_hessian, &
                                        redistribute_cap_dipole_derivatives
@@ -350,10 +350,10 @@ contains
                                     task_atom_sets, task_offset, term_natoms, total_tasks, world_comm)
       !! Expand the PIE term list into the flat list of independent evaluations
       !!
-      !! Same idea as the MBE task table, and the payoff is larger here: GMBE
-      !! typically has a handful of big overlapping fragments, so one-task-per-term
-      !! caps strong scaling at a very small number while each term still needs
-      !! 6*n_atoms + 1 sequential gradients.
+      !! One task per term for an energy or gradient run; for a Hessian, one per
+      !! displacement, `6*n_atoms + 1` of them per term. GMBE typically has a
+      !! handful of big overlapping fragments, so one task per term would cap
+      !! strong scaling at a very small number.
       !!
       !! Atom sets are column-major (max_atoms, n_terms), so the displacement code
       !! rides in one extra row appended to each column. Atom indices are >= 0 and
@@ -536,10 +536,9 @@ contains
                                        next_term, scan_pos, world_comm)
       !! Fold every PIE term whose displacement results have all landed
       !!
-      !! Mirror of fold_completed_fragments on the MBE side: a monotone scan from the
-      !! oldest unfolded term, so bookkeeping is O(1) amortised per task and the drain
-      !! routines report nothing. Terms with no atoms carry no Hessian and are stepped
-      !! over rather than waited on.
+      !! A monotone scan from the oldest unfolded term, so bookkeeping is O(1)
+      !! amortised per task. Terms with no atoms carry no Hessian and are
+      !! stepped over rather than waited on.
       integer, intent(in) :: pie_atom_sets(:, :)
       integer(int64), intent(in) :: n_pie_terms
       type(system_geometry_t), intent(in) :: sys_geom
@@ -576,10 +575,10 @@ contains
    subroutine gmbe_pie_coordinator(resources, pie_atom_sets, pie_coefficients, n_pie_terms, &
                                    node_leader_ranks, num_nodes, group_leader_ranks, group_ids, global_groups, &
                                    sys_geom, method_config, calc_type, json_data)
-      !! MPI coordinator for PIE-based GMBE calculations
-      !! Distributes PIE terms across MPI ranks and accumulates results
-      !! If json_data is present, populates it for centralized JSON output
-      !! Bond connectivity is accessed via sys_geom%bonds
+      !! Distribute the PIE terms across the ranks and accumulate the results
+      !!
+      !! Bonds come from `sys_geom%bonds`; `json_data`, when present, is filled
+      !! for the caller to write.
       use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
       use mqc_physical_fragment, only: redistribute_cap_gradients, redistribute_cap_hessian, &
                                        redistribute_cap_dipole_derivatives

@@ -4,25 +4,18 @@ module mqc_diis_device
    !! coefficients, but the Fock and error histories live on the GPU and are
    !! never copied to the host.
    !!
-   !! What is shared with the host version, deliberately. `diis_slot_of_age`
-   !! and `diis_coefficients` come straight out of `mqc_diis` rather than being
-   !! reimplemented here, so the ring indexing and the small linear solve are
-   !! literally the same code. That narrows a host-versus-device divergence to
-   !! the vector arithmetic, which is the only part that genuinely differs --
-   !! and the characteristic DIIS failure (a stale history producing plausible
-   !! coefficients, no crash, no error) is otherwise very hard to localise.
+   !! `diis_slot_of_age` and `diis_coefficients` come straight out of
+   !! `mqc_diis`, so the ring indexing and the small linear solve are the same
+   !! code in both and only the vector arithmetic differs.
    !!
-   !! What is not shared: the overlap matrix stays on the host in both. It is
-   !! max_vectors square -- 64 doubles at the usual subspace size -- and the
-   !! solve over it is a Gaussian elimination that would need cuSOLVER to move,
-   !! for no measurable gain.
+   !! The overlap matrix stays on the host here as it does there: it is
+   !! `max_vectors` square, and the solve over it is a Gaussian elimination.
    !!
    !! Two cuBLAS habits this module exists to enforce:
    !!
    !!   * The overlap row is **one `cublasDgemv`** of the new error vector
    !!     against the whole history, not `n_stored` calls to `cublasDdot`.
-   !!     `Ddot` returns through a host pointer and therefore blocks; the naive
-   !!     loop costs one synchronise per stored vector, every iteration.
+   !!     `Ddot` returns through a host pointer and therefore blocks.
    !!   * History slots are offsets into one allocation, not separate buffers.
    !!     A `cudaMalloc` per slot per fragment would dominate a fragmented run.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int64_t
@@ -152,10 +145,9 @@ contains
       if (error%has_error()) return
 
       ! One gemv gives every <e_new|e_i> at once. Columns 1..n_stored are
-      ! exactly the occupied slots: the ring fills 1,2,3,... in order, so until
-      ! it wraps the used slots are the leading ones, and once it wraps every
-      ! slot is used. Nothing past n_stored is read, so unused columns never
-      ! need clearing.
+      ! exactly the occupied slots -- the ring fills in order and every slot is
+      ! used once it wraps -- so unused columns are never read and never need
+      ! clearing.
       call cublas_status_check(cublasDgemv(this%cublas, CUBLAS_OP_T, &
                                            int(this%n_error, c_int), &
                                            int(this%n_stored, c_int), &
@@ -165,9 +157,8 @@ contains
                                "cublasDgemv(DIIS overlap row)", error)
       if (error%has_error()) return
 
-      ! A synchronous D2H on the default stream is ordered after the gemv, so
-      ! no explicit synchronise is needed -- and adding one here would put a
-      ! device-wide stall in the middle of every SCF iteration.
+      ! A synchronous D2H on the default stream is ordered after the gemv, so no
+      ! explicit synchronise is needed.
       call copy_to_host(this%row_host(1:this%n_stored), this%d_row, &
                         "DIIS overlap row", error)
       if (error%has_error()) return

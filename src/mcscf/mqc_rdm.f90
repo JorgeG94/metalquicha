@@ -8,7 +8,7 @@ module mqc_rdm
    !! with `E_pq` summed over both spins, so these are spin-traced. They are
    !! everything the rest of MCSCF needs from the CI: the orbital gradient, the
    !! generalised Fock matrix and the energy are all contractions of these two
-   !! against integrals, and none of them ever sees a CI vector again.
+   !! against integrals.
    !!
    !! Both fall out of the same operation the sigma build uses. If
    !! `t_pq = E_pq |Psi>` -- which `apply_excitations` returns for every pair at
@@ -23,9 +23,9 @@ module mqc_rdm
    !! `(pq|rs)` to give the two-electron energy.
    !!
    !! The convention is PySCF's `make_rdm12`, which is also Helgaker's and
-   !! GAMESS's. It is worth being explicit about because a factor of two and an
-   !! index transposition are the two ways a two-particle density matrix is
-   !! usually wrong, and both give a plausible energy.
+   !! GAMESS's. A factor of two and an index transposition are the two ways a
+   !! two-particle density matrix is usually wrong, and both give a plausible
+   !! energy, so the convention is worth stating.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use pic_io, only: to_char
@@ -79,11 +79,9 @@ contains
          return
       end if
 
-      ! Blocked over beta strings, for the reason `beta_strings_per_block`
-      ! gives: the intermediate is `norb^2` by the determinant count, which for
-      ! a large active space is tens of gigabytes. Both contractions below sum
-      ! over determinants, so a block contributes a partial sum and the totals
-      ! accumulate -- exactly, not approximately.
+      ! Blocked over beta strings, as `beta_strings_per_block` explains. Both
+      ! contractions below sum over determinants, so a block contributes a
+      ! partial sum and the totals accumulate exactly.
       per_block = beta_strings_per_block(npair, na, nb)
       allocate (gathered(npair, na*per_block))
       allocate (dm1(norb, norb), paired(npair, npair))
@@ -104,11 +102,7 @@ contains
          ! **Not a loop of dot products.** `gathered(pq, :)` walks a *row* of an
          ! array whose leading dimension is the pair count, so consecutive
          ! elements sit a couple of kilobytes apart: one cache line fetched per
-         ! element, nothing reused, and `npair` such walks per block. On C2F2
-         ! that was three quarters of the density-matrix time and did not show
-         ! up in any flop count, because the cost was latency rather than
-         ! arithmetic. As a GEMV the same numbers come out of a routine that
-         ! knows how the array is laid out.
+         ! element and nothing reused.
          call pic_gemm(gathered(:, 1:width), flat(1:width, 1:1), pair_column, &
                        alpha=1.0_dp, beta=1.0_dp)
 
@@ -117,16 +111,10 @@ contains
          !
          ! **Threaded here rather than left to the BLAS, because of the shape.**
          ! This is `(npair, width) x (width, npair)` with `width` in the tens of
-         ! thousands and `npair` a few hundred: an enormous inner dimension
-         ! against a tiny output. A BLAS will not split the inner dimension,
-         ! since doing so needs a reduction, so the whole contraction runs on
-         ! one core -- 1.25e12 flops at 19 GFlop/s for C2F2, which was 98% of
-         ! the analysis.
-         !
-         ! Splitting it is cheap because the thing being reduced is small: each
-         ! thread accumulates its own `npair` by `npair` block, half a megabyte,
-         ! and they are added at the end. The per-thread GEMMs are still GEMMs,
-         ! so the flop rate within a chunk is unchanged.
+         ! thousands and `npair` a few hundred, and a BLAS will not split an
+         ! inner dimension because doing so needs a reduction. The reduction is
+         ! cheap here: each thread accumulates its own `npair` square block and
+         ! they are added at the end, the per-thread GEMMs still being GEMMs.
          !$omp parallel default(shared) private(c0, c1, mine, chunk_product)
          allocate (mine(npair, npair), chunk_product(npair, npair))
          mine = 0.0_dp
@@ -182,12 +170,10 @@ contains
       !!
       !!     E = sum_pq h_pq D_pq + (1/2) sum_pqrs (pq|rs) d_pqrs
       !!
-      !! Nothing needs this to run an MCSCF -- the CI already produced the
-      !! energy as an eigenvalue. It exists because the two numbers agreeing is
-      !! the strongest single check available on the density matrices: they are
-      !! reached by completely different arithmetic, and a transposed index or a
-      !! factor of two in `d` that leaves every trace identity intact will not
-      !! survive it.
+      !! The CI already produced this energy as an eigenvalue, so the two
+      !! numbers agreeing is a check on the density matrices: a transposed index
+      !! or a factor of two in `d` that leaves every trace identity intact does
+      !! not survive it.
       real(dp), intent(in) :: h1e(:, :)
       real(dp), intent(in) :: eri(:, :, :, :)
       real(dp), intent(in) :: dm1(:, :)

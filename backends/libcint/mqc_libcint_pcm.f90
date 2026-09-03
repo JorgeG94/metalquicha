@@ -2,37 +2,30 @@
 module mqc_libcint_pcm
    !! The cavity, the surface charges, and the one-electron operator they add.
    !!
-   !! This is the smooth switching/Gaussian (SWIG) discretization of Lange and
-   !! Herbert [J. Chem. Phys. 133, 244111 (2010)], solved either as C-PCM or as
-   !! IEF-PCM, and it follows PySCF's `pyscf.solvent.pcm` term for term -- the
-   !! same Lebedev points per sphere, the same switching function, the same
-   !! per-point Gaussian exponents from the fitted xi of Table II in
-   !! [J. Chem. Phys. 122, 194110 (2005)], the same S and D matrices. That is a
-   !! deliberate choice of reference: every piece of this file can be diffed
-   !! against a working Python implementation, and the validation suite does so.
+   !! The smooth switching/Gaussian (SWIG) discretization of Lange and Herbert
+   !! [J. Chem. Phys. 133, 244111 (2010)], solved either as C-PCM or as IEF-PCM,
+   !! following PySCF's `pyscf.solvent.pcm` term for term: the same Lebedev
+   !! points per sphere, switching function, per-point Gaussian exponents from
+   !! the fitted xi of Table II in [J. Chem. Phys. 122, 194110 (2005)], and S
+   !! and D matrices.
    !!
    !! **What each surface point is.** Not a point charge but a normalized
-   !! spherical Gaussian of exponent `zeta**2`, which is what keeps every matrix
-   !! element finite as points approach each other and the cavity smooth as
-   !! points cross the switching region. Its electrostatic potential at distance
-   !! d is `erf(zeta*d)/d` -- exactly the attenuated `1/r` that libcint's
-   !! `int1e_grids` produces when `env(PTR_RANGE_OMEGA)` holds `zeta`. So the
-   !! solute-surface integrals need no fake basis functions: the points are
-   !! grouped by their zeta (there are few distinct values -- one per cavity
-   !! radius per Lebedev weight orbit) and each group is one batched grids call
-   !! per shell pair, attenuated by its own omega.
+   !! spherical Gaussian of exponent `zeta**2`, which keeps every matrix element
+   !! finite as points approach each other and the cavity smooth as points cross
+   !! the switching region. Its electrostatic potential at distance d is
+   !! `erf(zeta*d)/d` -- the attenuated `1/r` that libcint's `int1e_grids`
+   !! produces when `env(PTR_RANGE_OMEGA)` holds `zeta`, so the solute-surface
+   !! integrals need no fake basis functions: the points are grouped by their
+   !! zeta and each group is one batched grids call per shell pair.
    !!
-   !! **The charge solve is direct.** K is formed once per geometry -- it depends
-   !! on the cavity and the dielectric, neither of which moves during an SCF --
-   !! and LU-factored; each iteration is two triangular solves. So
+   !! **The charge solve is direct.** K is formed once per geometry and
+   !! LU-factored; each iteration is two triangular solves. So
    !! `keywords.pcm.tolerance` and `max_iter`, which bound cuEST's conjugate
-   !! gradient solve, have nothing to bound here: the direct solve meets any
-   !! tolerance they could ask for.
+   !! gradient solve, have nothing to bound here.
    !!
    !! The energy is `E_diel = q . v / 2` and the Fock matrix takes the *full*
-   !! potential of the charges, because the charges are determined variationally
-   !! and the half does not appear in the derivative -- the same split the cuEST
-   !! path documents in `system_pcm_device`.
+   !! potential of the charges, since the charges are determined variationally
+   !! and the half does not appear in the derivative.
    use pic_types, only: dp
    use, intrinsic :: iso_c_binding, only: c_int, c_ptr, c_loc, c_null_ptr
    use pic_blas_interfaces, only: pic_gemm, pic_gemv
@@ -60,15 +53,16 @@ module mqc_libcint_pcm
    integer, parameter :: PCM_MODEL_IEFPCM = 2
       !! Integral equation formalism: the D-matrix terms, scaled by (eps-1)/(eps+1)
 
-   !> `PTR_GRIDS` from libcint's `cint.h`. Not exported by the Fortran
-   !> interface, and 0-based like every other `PTR_*`, so it is used as `+ 1`.
+   ! `PTR_GRIDS` from libcint's `cint.h`. Not exported by the Fortran
+   ! interface, and 0-based like every other `PTR_*`, so it is used as `+ 1`.
+   ! TODO(mqc): `mqc_libcint_esp` declares the same slot number under the same
+   ! name. Two spellings of one constant, which is what MQC002 exists to prevent.
    integer, parameter :: LIBCINT_PTR_GRIDS = 12
 
-   !> The Lebedev orders the SWIG exponents are fitted for, and the fitted
-   !> values. Table II of [J. Chem. Phys. 122, 194110 (2005)], copied from
-   !> PySCF's `pcm.XI` so the two discretizations are the same numbers.
-   !> `mqc_lebedev` also carries orders 74, 230 and 266, which the paper does
-   !> not tabulate; those are refused rather than interpolated.
+   ! The Lebedev orders the SWIG exponents are fitted for, and the fitted
+   ! values. Table II of [J. Chem. Phys. 122, 194110 (2005)], copied from
+   ! PySCF's `pcm.XI`. `mqc_lebedev` also carries orders 74, 230 and 266, which
+   ! the paper does not tabulate; those are refused rather than interpolated.
    integer, parameter :: N_XI_ORDERS = 29
    integer, parameter :: XI_ORDERS(N_XI_ORDERS) = [ &
                          6, 14, 26, 38, 50, 86, 110, 146, 170, 194, 302, 350, 434, 590, &
@@ -84,8 +78,8 @@ module mqc_libcint_pcm
                           4.90777965981_dp, 4.90782469526_dp, 4.90749125553_dp, 4.90762073452_dp, &
                           4.90792902522_dp]
 
-   !> A point whose quadrature weight times switching value falls below this is
-   !> buried inside a neighbouring sphere and dropped, as PySCF drops it.
+   ! A point whose quadrature weight times switching value falls below this is
+   ! buried inside a neighbouring sphere and dropped, as PySCF drops it.
    real(dp), parameter :: BURIED_CUTOFF = 1.0e-16_dp
 
    type :: pcm_surface_t
@@ -187,10 +181,6 @@ contains
    subroutine build_pcm_surface(atomic_numbers, coords, angular_points, radii_scale, &
                                 surface, error)
       !! Tessellate the cavity: Lebedev points per atom, switched and pruned
-      !!
-      !! Free of the molecule type on purpose: the cavity depends on nuclei and
-      !! radii, not on the basis, and the unit tests exercise it against
-      !! analytic spheres with no basis in sight.
       integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: coords(:, :)      !! (3, natm), Bohr
       integer, intent(in) :: angular_points     !! Lebedev points per sphere
@@ -215,9 +205,8 @@ contains
       end if
 
       ! The exponent table is fitted per Lebedev order, so an order it does not
-      ! cover has no exponents to use -- refused rather than interpolated, since
-      ! a wrong exponent smooths the cavity by the wrong amount and changes the
-      ! solvation energy without failing.
+      ! cover has no exponents to use. A wrong exponent smooths the cavity by
+      ! the wrong amount and changes the solvation energy without failing.
       xi_index = 0
       do i = 1, size(XI_ORDERS)
          if (XI_ORDERS(i) == angular_points) then
@@ -319,9 +308,8 @@ contains
 
       if (error%has_error()) return
 
-      ! A dielectric is required rather than defaulted: every solvent has a
-      ! different one, and a default would silently pick a solvent. Same
-      ! refusal the cuEST plan makes.
+      ! A dielectric is required rather than defaulted: a default would
+      ! silently pick a solvent.
       if (dielectric <= 1.0_dp) then
          call error%set(ERROR_VALIDATION, "the polarizable continuum needs a solvent "// &
                         "dielectric greater than one; set keywords.pcm.dielectric. "// &
@@ -496,10 +484,9 @@ contains
       if (error%has_error()) return
 
       ! `zeta` tunes the exponent convention cuEST's plan takes, and this path
-      ! does not have that freedom: its exponents are the fitted xi values the
+      ! has no such freedom: its exponents are the fitted xi values the
       ! discretization was parameterized with, one per Lebedev order. A deck
-      ! that moves the knob would silently get the same surface, which is the
-      ! kind of ignored keyword this codebase refuses.
+      ! that moved the knob would silently get the same surface.
       if (abs(config%zeta - DEFAULT_PCM_ZETA) > 0.0_dp) then
          call error%set(ERROR_VALIDATION, "keywords.pcm.zeta tunes the Gaussian "// &
                         "switching exponents of the cuEST plan. The CPU continuum "// &
@@ -608,9 +595,9 @@ contains
       !! `values(k) = sum_uv D_uv <u| erf(zeta_k |r - r_k|)/|r - r_k| |v>`
       !!
       !! The electronic part of the solute potential on the surface, contracted
-      !! inside the integral loop -- the tensor this avoids storing is
-      !! `(n_ao, n_ao, n_points)`, the same reasoning as `esp_contract`, whose
-      !! loop this is with the group batching and the omega attenuation added.
+      !! inside the integral loop rather than through an `(n_ao, n_ao,
+      !! n_points)` tensor. `esp_contract`'s loop with the group batching and
+      !! the omega attenuation added.
       type(pcm_group_t), intent(in), target :: groups(:)
       integer, intent(in) :: n_groups
       type(libcint_molecule_t), intent(in), target :: mol
@@ -710,9 +697,7 @@ contains
       !!
       !! The one-electron operator the surface charges add to the Fock matrix.
       !! The minus sign is the electron's charge against the apparent charges'
-      !! potential. Same loop as `surface_potential` contracted the other way;
-      !! a shell pair owns its block of `vmat` outright, so the threads share
-      !! nothing but the read-only tables.
+      !! potential. `surface_potential`'s loop contracted the other way.
       type(pcm_group_t), intent(in), target :: groups(:)
       integer, intent(in) :: n_groups
       type(libcint_molecule_t), intent(in), target :: mol
@@ -815,8 +800,8 @@ contains
       !! One SCF iteration's continuum: charges from this density, then their operator
       !!
       !! The caller adds `vmat` -- the full potential -- to its Fock matrix and
-      !! `energy` -- which already carries the half -- to its electronic energy,
-      !! the same contract `system_pcm_device` keeps on the GPU path.
+      !! `energy` -- which already carries the half -- to its electronic
+      !! energy.
       class(pcm_context_t), intent(inout) :: this
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)   !! Total density (alpha plus beta)

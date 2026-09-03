@@ -25,7 +25,7 @@
       "name": "debug",
       "inherits": "base",
       "displayName": "Debug",
-      "description": "Debug flags. Expect 24 baseline failures with libcint selected -- see docs/CMAKE_STYLE.md.",
+      "description": "Debug flags: -fcheck=all and -ffpe-trap. Expect a large baseline of failures, most of them inside libfint rather than this project -- see CMAKE_STYLE.md.",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }

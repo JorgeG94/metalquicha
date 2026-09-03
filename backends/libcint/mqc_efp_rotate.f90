@@ -1,31 +1,28 @@
 !! Placing a fragment in an arbitrary orientation
 module mqc_efp_rotate
-   !! A potential carries the geometry it was made at. A deck puts its atoms
-   !! somewhere else, in general rotated as well as translated, and *everything* the
-   !! potential stores is expressed in its own frame: the multipoles, the
-   !! polarizability tensors at every rank, and the localized orbitals. Placing the
-   !! fragment means rotating all of it.
+   !! A potential carries the geometry it was made at, and everything it stores
+   !! is expressed in its own frame: the multipoles, the polarizability tensors
+   !! at every rank, and the localized orbitals. Placing the fragment where a
+   !! deck puts it means rotating all of it.
    !!
    !! **The orbitals are the part that is easy to forget.** Cartesian `d` and `f`
-   !! basis functions rotate among themselves, so a coefficient vector expressed in a
-   !! basis at one orientation is wrong in a basis at another. GAMESS does this too --
-   !! it is why `FRGROT` takes `PROVEC` and `CTVEC` as arguments and works through
-   !! them shell by shell (`efinp.src:2090` onward). Skipping it leaves exchange
-   !! repulsion, charge transfer and every damped dispersion term quietly wrong, the
-   !! damping being an overlap between localized orbitals on different fragments.
+   !! basis functions rotate among themselves, so a coefficient vector expressed
+   !! in a basis at one orientation is wrong in a basis at another. Skipping it
+   !! leaves exchange repulsion, charge transfer and every damped dispersion term
+   !! quietly wrong, the damping being an overlap between localized orbitals on
+   !! different fragments.
    !!
-   !! **The rotation itself is three atoms, not Euler angles.** `ROTMAT`
-   !! (`efinp.src:5681`) builds an orthonormal frame from two edges of the triangle
-   !! three points make, and the rotation is the one carrying the potential's own
-   !! frame onto the deck's. There are no angle conventions to pin and no chirality
+   !! **The rotation itself is three atoms, not Euler angles.** GAMESS's `ROTMAT`
+   !! builds an orthonormal frame from two edges of the triangle three points
+   !! make, and the rotation is the one carrying the potential's own frame onto
+   !! the deck's. There are no angle conventions to pin and no chirality
    !! ambiguity: the third axis is a cross product.
    !!
-   !! Our route through the orbitals is shorter than GAMESS's. It rotates them in its
-   !! own AO convention, where each Cartesian component carries its own
-   !! normalization, hence the `2/sqrt(3)` factors dividing in and out of `FRGROT`.
-   !! We convert to libcint's convention first, where every component of a shell
-   !! shares one normalization constant, so the rotation there is the plain monomial
-   !! expansion with no normalization ratios in it at all.
+   !! The orbitals are converted to libcint's convention first, where every
+   !! component of a shell shares one normalization constant, so the rotation is
+   !! the plain monomial expansion with no normalization ratios in it. GAMESS
+   !! rotates them in its own convention instead, hence the `2/sqrt(3)` factors
+   !! dividing in and out of `FRGROT`.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -41,9 +38,9 @@ module mqc_efp_rotate
    public :: rotate_fragment
    public :: cartesian_rotation
 
-   !> Highest angular momentum a projection basis is handled at. `mqc_efp_potential`
-   !> refuses to write anything higher, so a shell beyond this is a corrupt file
-   !> rather than a case to support.
+   ! Highest angular momentum a projection basis is handled at.
+   ! `mqc_efp_potential` refuses to write anything higher, so a shell beyond this
+   ! is a corrupt file rather than a case to support.
    integer, parameter :: MAX_L = 4
 
 contains
@@ -51,13 +48,13 @@ contains
    subroutine superpose(own, deck, rot, translation, rmsd, error)
       !! The rigid transform carrying a potential's own atoms onto a deck's
       !!
-      !! `deck(:,k) ~ rot . own(:,k) + translation`. Built the way `ROTMAT` builds it,
-      !! from the frame three atoms define rather than from a least-squares fit: an
-      !! EFP fragment is rigid, so the transform is exact and there is nothing to fit.
-      !! `rmsd` is then a *test* of that rigidity rather than a residual to minimise,
-      !! and the caller is expected to refuse a placement where it is not tiny --
-      !! which is what catches a potential paired with the wrong species, atoms listed
-      !! in a different order, or a geometry that has been relaxed since.
+      !! `deck(:,k) ~ rot . own(:,k) + translation`, from the frame three atoms
+      !! define rather than from a least-squares fit: an EFP fragment is rigid, so
+      !! the transform is exact. `rmsd` is therefore a *test* of that rigidity and
+      !! not a residual to minimise, and the caller is expected to refuse a
+      !! placement where it is not tiny -- which is what catches a potential
+      !! paired with the wrong species, atoms listed in a different order, or a
+      !! geometry that has been relaxed since.
       real(dp), intent(in) :: own(:, :)    !! (3, n) the potential's own atoms
       real(dp), intent(in) :: deck(:, :)   !! (3, n) where the deck puts them
       real(dp), intent(out) :: rot(3, 3)
@@ -226,8 +223,7 @@ contains
 
       ! The two higher dispersion blocks are stored flat in the file's own slot
       ! order, so they are unpacked, rotated and repacked rather than rotated in
-      ! place. Their index conventions are GAMESS's and are documented where they are
-      ! consumed, in `mqc_efp_pair`.
+      ! place. Their index conventions are documented in `mqc_efp_pair`.
       if (allocated(frag%dipquad)) then
          do f = 1, size(frag%dipquad, 3)
             do k = 1, size(frag%dipquad, 2)
@@ -366,9 +362,8 @@ contains
    pure function rotate_packed_octopole(packed, rot) result(out)
       !! Ten stored components, `xxx yyy zzz xxy xxz xyy yyz xzz yzz xyz`
       !!
-      !! GAMESS's order, read off how `efelec.src` unpacks `EFOCT` -- the same order
-      !! `mqc_efp_interaction` spreads into a full tensor, and repeated here rather
-      !! than shared because a rotation needs the full tensor anyway.
+      !! GAMESS's order, read off how `efelec.src` unpacks `EFOCT`; the same order
+      !! `mqc_efp_interaction` spreads into a full tensor.
       real(dp), intent(in) :: packed(N_OCTUPOLE), rot(3, 3)
       real(dp) :: out(N_OCTUPOLE)
 
@@ -537,12 +532,12 @@ contains
       !! gives the matrix.
       !!
       !! **There are no normalization ratios here, and that is a property of the
-      !! convention rather than an omission.** libcint gives every Cartesian component
-      !! of a shell the same normalization constant -- the one belonging to
-      !! `(l,0,0)` -- so the ratio between any two is 1 and the monomial expansion *is*
-      !! the transformation. In a convention that normalizes each component
-      !! separately, as GAMESS's does, factors of `sqrt(3)` and friends appear; that
-      !! is what `from_gamess_ao_order` has already divided out by the time this runs.
+      !! convention rather than an omission.** libcint gives every Cartesian
+      !! component of a shell the same normalization constant, the one belonging
+      !! to `(l,0,0)`, so the monomial expansion *is* the transformation. A
+      !! convention that normalizes each component separately, as GAMESS's does,
+      !! brings in factors of `sqrt(3)` and friends; `from_gamess_ao_order` has
+      !! divided those out by the time this runs.
       integer, intent(in) :: l
       real(dp), intent(in) :: rot(3, 3)
       real(dp), allocatable, intent(out) :: d(:, :)
@@ -612,6 +607,8 @@ contains
 
    pure function exponent_slot(l, e, expo) result(slot)
       !! Which component carries these exponents
+      ! TODO(mqc): `l` is never used, and a set of exponents not in `expo`
+      ! returns 0, which `cartesian_rotation` then uses as an array index.
       integer, intent(in) :: l
       integer, intent(in) :: e(3)
       integer, intent(in) :: expo(:, :)

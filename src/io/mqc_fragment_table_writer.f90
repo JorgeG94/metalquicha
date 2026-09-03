@@ -3,15 +3,9 @@ module mqc_fragment_table_writer
    !! Writes the per-fragment MBE breakdown as a CSV sidecar next to the summary JSON.
    !!
    !! The breakdown is a homogeneous table of numbers, one row per fragment, which is
-   !! the shape JSON handles worst: a repeated key string for every field of every
-   !! row. Embedding it cost 18.3 us per fragment -- about seven minutes on a
-   !! twenty-million-fragment run, and by far the largest part of the serial tail on
-   !! rank 0 -- against 2.2 us for the same data written flat.
-   !!
-   !! It is also the shape the consumer wants. Convergence analysis and cross-method
-   !! comparison mean pandas, and json.load has to hold the whole document resident:
-   !! roughly 16 GB for twenty million fragments, times one per method being compared.
-   !! A CSV streams, chunks, and joins.
+   !! the shape JSON handles worst -- a repeated key string for every field of every
+   !! row -- and the shape a consumer wants: a CSV streams, chunks and joins, where
+   !! `json.load` has to hold the whole document resident.
    !!
    !! The summary -- total energy, per-level sums, thermochemistry, norms -- stays in
    !! the JSON, where a human can still read it.
@@ -82,6 +76,9 @@ contains
       have_delta = allocated(data%delta_energies)
       have_distance = allocated(data%fragment_distances)
       have_scf = allocated(data%fragment_scf_status)
+      ! TODO(mqc): the second assignment overwrites the first and drops the
+      ! `fragment_has_orbitals` test, so a run with homo and lumo but no
+      ! presence mask reads an unallocated array in the row loop below.
       have_orbitals = allocated(data%fragment_homo) .and. allocated(data%fragment_lumo) &
                       .and. allocated(data%fragment_has_orbitals)
       have_orbitals = allocated(data%fragment_homo) .and. allocated(data%fragment_lumo)
@@ -93,9 +90,9 @@ contains
       write (row_fmt, "(a,i0,a)") '(i0,",",i0,', data%max_level, '(",",i0))'
 
       ! Two write statements per row rather than one per column: statement overhead
-      ! dominates at this row count, and collapsing them more than halves the cost.
-      ! Reals go out at full precision, not a rounded display value -- screening
-      ! studies difference the distances against the cutoffs that produced the list.
+      ! dominates at this row count. Reals go out at full precision, not a rounded
+      ! display value -- screening studies difference the distances against the
+      ! cutoffs that produced the list.
       do i = 1_int64, data%fragment_count
          level = count(data%polymers(i, :) > 0)
 
@@ -131,9 +128,9 @@ contains
             write (unit, "(a)", advance="no") ",,,"
          end if
 
-         ! Charge and multiplicity last, so appending them left every existing
-         ! column where a reader's parser already expects it. A charged
-         ! fragment is otherwise invisible in the breakdown.
+         ! Charge and multiplicity last, so every existing column stays where a
+         ! reader's parser expects it. A charged fragment is otherwise invisible
+         ! in the breakdown.
          if (have_charmult) then
             write (unit, '(",",i0,",",i0)') data%fragment_charges(i), data%fragment_multiplicities(i)
          else

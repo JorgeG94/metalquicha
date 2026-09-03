@@ -6,25 +6,21 @@ module mqc_libcint_casci
    !! set over some orbitals. This is what produces that set.
    !!
    !! The orbitals are partitioned into three groups. **Inactive** orbitals are
-   !! doubly occupied in every determinant, so they never appear in the CI at
-   !! all; what they contribute is a fixed energy and a mean field that the
-   !! active electrons move in. **Active** orbitals are the ones the CI
-   !! distributes electrons over. **Virtual** orbitals are empty in every
-   !! determinant and contribute nothing whatsoever -- a CASCI energy does not
-   !! depend on them, which is worth knowing because it means the size of the
-   !! basis set past the active space affects this calculation only through the
-   !! orbitals themselves.
+   !! doubly occupied in every determinant and contribute a fixed energy and a
+   !! mean field the active electrons move in. **Active** orbitals are the ones
+   !! the CI distributes electrons over. **Virtual** orbitals are empty in every
+   !! determinant and contribute nothing, so the basis past the active space
+   !! reaches this calculation only through the orbitals themselves.
    !!
    !! So the active-space Hamiltonian is
    !!
    !!     h_tu^eff = h_tu + sum_i [2 (tu|ii) - (ti|iu)]
    !!
    !! -- the bare one-electron integral plus the inactive mean field, which is
-   !! exactly the closed-shell Fock matrix built from the inactive density and
-   !! then projected onto the active orbitals. That is why no separate
-   !! Coulomb-exchange assembly appears below: `build_fock_direct` already
-   !! computes `H + J - K/2`, and fed an inactive density it is the inactive
-   !! Fock.
+   !! the closed-shell Fock matrix built from the inactive density and projected
+   !! onto the active orbitals. So no separate Coulomb-exchange assembly appears
+   !! below: `build_fock_direct` computes `H + J - K/2`, and fed an inactive
+   !! density it is the inactive Fock.
    !!
    !! The constant is the energy of the inactive electrons in their own field
    !! plus nuclear repulsion, and it is not a detail -- it is most of the total
@@ -65,24 +61,22 @@ module mqc_libcint_casci
       real(dp), allocatable :: ci_flat(:)
          !! (n_determinants), the ground root of a restricted space
       type(ormas_space_t) :: ormas
-         !! The partition `ci_flat` is addressed by, kept because a flat list of
-         !! coefficients means nothing without it. Populated only by a
-         !! restricted solve; `ormas%n_determinants` is zero otherwise, which is
-         !! how a caller tells.
+         !! The partition `ci_flat` is addressed by -- a flat list of
+         !! coefficients means nothing without it. Populated only by a restricted
+         !! solve; `ormas%n_determinants` is zero otherwise, which is how a
+         !! caller tells.
       real(dp), allocatable :: vectors(:, :, :)   !! All roots
       real(dp), allocatable :: dm1(:, :)
          !! (n_active, n_active) one-particle density of the ground root, in the
-         !! active orbital basis. Built here rather than left to the caller
-         !! because doing it outside means rebuilding the excitation tables,
-         !! which this routine has already built and thrown away.
+         !! active orbital basis. Built here because rebuilding it outside means
+         !! rebuilding the excitation tables this routine has already thrown
+         !! away.
       real(dp), allocatable :: dm2(:, :, :, :)
          !! Active two-particle density, spin-traced, in the convention of
-         !! `mqc_rdm`. Kept for the same reason and by the same argument, and
-         !! because an energy decomposition of a correlated wave function cannot
+         !! `mqc_rdm`. Kept for the same reason as `dm1`, and because it cannot
          !! be rebuilt from `dm1`: the single-determinant
-         !! `Gamma = gamma gamma - (1/2) gamma gamma` is exactly what
-         !! correlation makes false, and the difference between the two is the
-         !! whole correlation contribution.
+         !! `Gamma = gamma gamma - (1/2) gamma gamma` is exactly what correlation
+         !! makes false.
       integer :: n_determinants = 0
       integer :: iterations = 0
       integer :: sigma_products = 0
@@ -98,11 +92,8 @@ contains
       !! Returns the effective one-electron integrals over active orbitals, the
       !! two-electron integrals over active orbitals, and the constant.
       !!
-      !! Costs one packed AO integral build, which is `n_ao^4 / 4` and is the
-      !! memory ceiling on this routine rather than anything about the active
-      !! space. An active-space transformation driven directly from AO integrals
-      !! would not need it and is the obvious thing to do when it starts to
-      !! matter; nothing above here would change.
+      !! Costs one packed AO integral build, `n_ao^4 / 4`, which is the memory
+      !! ceiling on this routine rather than anything about the active space.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)      !! (n_ao, n_mo), the SCF's
       integer, intent(in) :: n_inactive           !! Doubly occupied, frozen
@@ -217,10 +208,8 @@ contains
          return
       end if
 
-      ! Timed from here, because everything between the reference energy and
-      ! the first CI iteration is silent and some of it is slow. A caller
-      ! watching a full valence run has no way to tell an integral transform
-      ! from a hang, and the answer should not require a rebuild to get.
+      ! Timed from here: everything between the reference energy and the first
+      ! CI iteration is silent and some of it is slow.
       call clk%start()
 
       call active_space_integrals(mol, orbitals, n_inactive, n_active, h_eff, &
@@ -253,11 +242,9 @@ contains
       if (error%has_error()) return
       call clk%lap("CI diagonal")
 
-      ! Announced before the solve rather than after it. A full valence CI is
-      ! silent for as long as it takes -- ethane's CAS(14,14) is eleven million
-      ! determinants and twenty minutes -- and a caller staring at the last line
-      ! of the SCF has no way to tell what is being attempted, or whether
-      ! anything is.
+      ! Announced before the solve rather than after it: a full valence CI is
+      ! silent for as long as it takes, and a caller staring at the last line of
+      ! the SCF has no way to tell what is being attempted.
       if (loud) then
          call logger%info("")
          call logger%info("  complete active space CI")
@@ -324,12 +311,10 @@ contains
       !! determinants are kept, not what the Hamiltonian over them is -- and
       !! then `ormas_solve` instead of a Davidson over the rectangle.
       !!
-      !! Fixed orbitals only. Optimising them for a restricted space is not the
-      !! same problem as for a complete one: rotating one active orbital into
-      !! another stops being redundant the moment the space is not complete, so
-      !! the orbital gradient acquires a block a CASSCF is entitled to ignore.
-      !! Pretending otherwise would converge to the wrong answer quietly, so the
-      !! caller is refused instead.
+      !! Fixed orbitals only. Rotating one active orbital into another stops
+      !! being redundant the moment the space is not complete, so the orbital
+      !! gradient acquires a block a CASSCF is entitled to ignore; the caller is
+      !! refused rather than converged to the wrong answer.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)
       integer, intent(in) :: n_inactive, n_active
@@ -398,10 +383,8 @@ contains
          result%energies(i) = result%core_energy + energies(i)
       end do
       result%ci_flat = vectors(:, 1)
-      ! Deep-copied rather than referenced, then destroyed below as before: the
-      ! flat coefficients are unreadable without the addressing that produced
-      ! them, and anything wanting to re-express this wave function in another
-      ! orbital basis needs both.
+      ! Deep-copied rather than referenced: the flat coefficients are unreadable
+      ! without the addressing that produced them.
       result%ormas = space
 
       call ormas_density_matrices(space, result%ci_flat, result%dm1, result%dm2, error)

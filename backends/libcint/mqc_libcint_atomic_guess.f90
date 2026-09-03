@@ -5,53 +5,26 @@ module mqc_libcint_atomic_guess
    !! Each distinct element is solved once as an isolated atom -- unrestricted,
    !! at its Hund's-rule ground-state multiplicity, in exactly the basis
    !! functions it contributes to the molecule -- and its density is dropped into
-   !! the diagonal block belonging to each atom of that element. Nothing couples
-   !! the blocks, so the guess is block-diagonal by construction and costs one
-   !! small SCF per element rather than anything that scales with the molecule.
+   !! the diagonal block belonging to each atom of that element. The guess is
+   !! block-diagonal by construction.
    !!
-   !! Two flavours, and the difference is not cosmetic:
+   !! Two flavours:
    !!
-   !! * **SAC** keeps the free atom's own alpha and beta densities. An open-shell
-   !!   atom's converged solution has picked one p orbital out of three, so the
-   !!   guess arrives with its spatial and spin symmetry already broken. For a
-   !!   radical that is exactly what is wanted -- it is what gets the sigma/pi
-   !!   ordering right, and cuEST uses it for that reason -- and for a closed
-   !!   shell it is an arbitrary choice that the SCF then has to undo.
+   !! * **SAC** keeps the free atom's own alpha and beta densities, so an
+   !!   open-shell atom's guess arrives with its spatial and spin symmetry
+   !!   already broken -- what a radical wants, and what a closed shell then has
+   !!   to undo.
    !!
    !! * **SAD** spherically averages the total atomic density and halves it, so
-   !!   both spins start from the same rotation-invariant block. No arbitrary
-   !!   orbital choice survives, which makes it the better closed-shell default
-   !!   and leaves the occupations to break the symmetry in an open-shell case,
-   !!   the same position the core guess is in but from a far better density.
-   !!
-   !! Densities rather than coefficients, which is where this parts company with
-   !! `mqc_cuest_atomic_guess`. That one superposes occupied *coefficients*
-   !! because cuEST's fitted exchange takes nothing else. The CPU Fock builds all
-   !! take a density, so handing over the density is both simpler and strictly
-   !! more general -- a spherically averaged density is not idempotent and has no
-   !! set of occupied orbitals to be expressed as. Note that superposed atomic
-   !! coefficients would have given the identical first Fock: the columns are
-   !! row-disjoint, so the density they imply is exactly the sum of the atomic
-   !! densities. SAC and SAD would then be the same guess under two names, which
-   !! is the reason SAD averages.
+   !!   both spins start from the same rotation-invariant block. The
+   !!   closed-shell default.
    !!
    !! Atomic solutions are cached for the lifetime of the process, keyed by the
-   !! basis data they were converged in. That matters more than it looks: a
-   !! Hessian is 6N SCFs over the same elements and a fragmented run is
-   !! thousands, and without the cache each of them would re-solve every atom.
-   !! Under MPI each rank keeps its own, which costs one atomic SCF per element
-   !! per rank and needs no communication -- the right trade for something this
-   !! small.
+   !! basis data they were converged in; under MPI each rank keeps its own.
    !!
-   !! **The cache is module state and is not thread-safe.** Today nothing needs it
-   !! to be: fragments are processed one at a time, and the threading inside the
-   !! SCF is below this level. But `mqc_serial_fragment_processor.f90` clamps the
-   !! fragment loop to one thread for tblite's sake rather than for this, so
-   !! whoever lifts that clamp for the libcint path has to put a critical section
-   !! around the miss-and-solve block below -- two threads missing on the same
-   !! element would both increment `n_cached` and write the same slot. It would
-   !! corrupt a guess rather than an answer, which is exactly the kind of bug this
-   !! code is bad at noticing.
+   !! **The cache is module state and is not thread-safe.** Two threads missing
+   !! on the same element would both increment `n_cached` and write the same
+   !! slot, corrupting a guess rather than failing.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -72,50 +45,42 @@ module mqc_libcint_atomic_guess
    public :: free_atom_energies     !! Converged energy of each atom on its own
    public :: clear_atomic_cache     !! Drop cached atomic solutions
 
-   !> How many distinct (element, basis) atomic solutions are kept at once.
-   !> One per element in the calculation, so this is generous; a deck spanning
-   !> more than 64 elements would be doing something no part of this code has
-   !> been near.
    integer, parameter :: MAX_CACHED = 64
+      !! How many distinct (element, basis) atomic solutions are kept at once,
+      !! one per element in the calculation.
 
-   !> The free-atom SCF's own convergence settings.
-   !>
-   !> Looser than a production SCF on purpose -- this is a guess, and the fourth
-   !> digit of an atomic density is not what makes a molecular SCF converge --
-   !> but with a high iteration cap, because a first-row transition metal at
-   !> Hund multiplicity is genuinely slow and a guess that gives up is worse than
-   !> a guess that takes a moment.
    integer, parameter :: ATOMIC_MAX_ITER = 200
    real(dp), parameter :: ATOMIC_ENERGY_TOL = 1.0e-8_dp
    real(dp), parameter :: ATOMIC_DENSITY_TOL = 1.0e-6_dp
+      !! The free-atom SCF's convergence settings: looser than a production SCF
+      !! because the answer is a guess, with a high iteration cap because a
+      !! first-row transition metal at Hund multiplicity is slow.
 
-   !> Above this many functions the free atom is solved directly rather than in
-   !> core. One atom's n^4 tensor at 50 functions is 50 MB, which is worth
-   !> spending to keep a guess quick; at 100 it would be 800 MB, which is not.
    integer, parameter :: ATOMIC_INCORE_MAX = 50
+      !! Above this many functions the free atom is solved directly rather than
+      !! in core. One atom's n^4 tensor is 50 MB at 50 functions, 800 MB at 100.
 
    type :: atomic_solution_t
       !! One converged free-atom calculation, with both guesses precomputed
       integer :: atomic_number = 0
       integer :: n_ao = 0
       real(dp) :: energy = 0.0_dp
-         !! The converged free-atom energy. Kept because it is the reference an
-         !! energy decomposition subtracts to get an energy of formation, and it
-         !! is already being computed here and thrown away. Solved in exactly the
-         !! basis functions this atom contributes to the parent molecule, so the
-         !! difference from the atom-in-molecule energy is free of any
-         !! basis-set superposition -- neither side has seen the other's
-         !! functions.
+         !! The converged free-atom energy, hartree. Solved in exactly the basis
+         !! functions this atom contributes to the parent molecule, so the
+         !! difference from an atom-in-molecule energy carries no basis-set
+         !! superposition error.
       real(dp), allocatable :: d_alpha(:, :), d_beta(:, :)  !! As converged, for SAC
       real(dp), allocatable :: d_half(:, :)                 !! Averaged and halved, for SAD
       logical :: average_exact = .true.
          !! False when a Cartesian shell of l >= 2 was left unaveraged. See
          !! `spherical_average`.
-      ! The basis this was solved in, kept verbatim so a cache hit can be proved
-      ! rather than assumed. Comparing a basis set *name* would not do it: the
-      ! same name reaches different atoms as different shells once general
-      ! contractions have been merged, and the whole point of slicing the parent
-      ! molecule is that the free atom carries the parent's own numbers.
+      ! TODO(mqc): `average_exact` is assigned in `solve_free_atom` and read
+      ! nowhere, so the one case where the SAD guess is not spherically
+      ! symmetric is recorded and never reported.
+
+      ! The basis this was solved in, kept verbatim: a basis set *name* would
+      ! not identify it, since the same name reaches different atoms as
+      ! different shells once general contractions have been merged.
       integer, allocatable :: bas(:, :)
       real(dp), allocatable :: env(:)
       logical :: cartesian = .false.
@@ -130,16 +95,8 @@ contains
    subroutine parse_guess_name(text, kind, error)
       !! Deck spelling to a guess constant, refusing anything unrecognised
       !!
-      !! Strict rather than falling back to a default, because the failure it
-      !! prevents is silent: a deck asking for a guess this backend does not have
-      !! would otherwise run a different one and report convergence as if the
-      !! request had been honoured. The schema validates that the *key* exists;
-      !! nothing but this validates the value.
-      !!
-      !! "auto" is what the method layer carries when a deck said nothing, and it
-      !! resolves per backend -- SAD here. It exists so the default can differ
-      !! between the CPU and GPU paths without either of them having to know what
-      !! the other chose.
+      !! The schema validates that the *key* exists; nothing but this validates
+      !! the value. `"auto"` and `""` resolve to SAD, this backend's default.
       character(len=*), intent(in) :: text
       integer, intent(out) :: kind
       type(error_t), intent(inout) :: error
@@ -168,19 +125,14 @@ contains
    subroutine build_restricted_guess(mol, guess_name, guess_kind, guess_total, error)
       !! Resolve a deck guess name and build the density a restricted SCF starts from
       !!
-      !! The restricted counterpart of the guess block the bridge runs before its
-      !! own SCF: parse the name, and for the atomic guesses (SAD, SAC) build the
-      !! free-atom density and sum its spin channels into the one total a closed
-      !! shell takes. A guess that will not build is a reason to start elsewhere,
-      !! not to fail the run, so a failed atomic guess falls back to GWH -- loudly,
-      !! since the run is then doing something other than what the deck asked.
+      !! For SAD and SAC, the free-atom spin channels summed into the one total a
+      !! closed shell takes. An atomic guess that will not build warns and falls
+      !! back to GWH rather than failing the run.
       !!
-      !! Core and GWH need nothing here: the SCF builds them from H (and S), so
-      !! `guess_total` is left unallocated and only the kind comes back -- the same
-      !! contract `run_libcint_rhf` reads, which touches `guess_density` only for
-      !! the atomic guesses. Basis-set projection is refused rather than guessed
-      !! at: it needs a sub-SCF ladder the caller drives, which a single-shot
-      !! caller like MAKEFP has not.
+      !! Core and GWH need nothing here -- the SCF builds them from H and S -- so
+      !! `guess_total` comes back unallocated and only the kind is set.
+      !! Basis-set projection needs a sub-SCF ladder the caller drives and is
+      !! refused.
       type(libcint_molecule_t), intent(in) :: mol
       character(len=*), intent(in) :: guess_name
       integer, intent(out) :: guess_kind
@@ -245,14 +197,10 @@ contains
       !! survive -- 1s with 2s is a legitimate radial off-diagonal -- which is
       !! why this walks columns rather than shells.
       !!
-      !! Exact for spherical harmonics at any l, and for Cartesian s and p, where
-      !! the three functions are the same three the spherical set has. Not exact
-      !! for Cartesian d and above: six Cartesian d functions are five d plus an
-      !! s, so averaging over them mixes angular momenta rather than averaging
-      !! within one. Those columns are left as converged and `exact` comes back
-      !! false. Across H-Ar this costs nothing measurable -- d functions there are
-      !! empty polarisation shells whose free-atom block is zero to rounding --
-      !! and the guess does not have to be exactly symmetric to be a good guess.
+      !! Exact for spherical harmonics at any l, and for Cartesian s and p. Not
+      !! exact for Cartesian d and above, where six Cartesian d functions are
+      !! five d plus an s and averaging over them would mix angular momenta:
+      !! those columns are left as converged and `exact` comes back false.
       type(libcint_molecule_t), intent(in) :: atom_mol
       real(dp), intent(in) :: density(:, :)
       real(dp), intent(out) :: averaged(:, :)
@@ -295,11 +243,9 @@ contains
    subroutine build_atomic_guess(mol, kind, d_alpha, d_beta, error)
       !! Molecular guess densities, one atomic block at a time
       !!
-      !! The blocks are neutral free atoms, so the guess carries sum(Z) electrons
-      !! whatever the molecule's own charge is. That is not an oversight and not
-      !! worth correcting: the density is used to build one Fock matrix, which is
-      !! then diagonalised and occupied with the right number of electrons. A
-      !! cation starting from neutral atoms is the ordinary case.
+      !! The blocks are neutral free atoms, so the guess carries sum(Z)
+      !! electrons whatever the molecule's own charge is; the Fock matrix it
+      !! builds is then occupied with the right number.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: kind    !! SCF_GUESS_SAC or SCF_GUESS_SAD
       real(dp), allocatable, intent(out) :: d_alpha(:, :), d_beta(:, :)
@@ -326,17 +272,15 @@ contains
          z = nint(mol%charges(iatom))
          if (z <= 0) cycle   ! a ghost centre carries no electrons to superpose
 
-         ! Sliced before the cache is consulted, because the slice is the key:
-         ! two calculations naming the same basis set can still hand this atom
-         ! different shells.
+         ! Sliced before the cache is consulted, because the slice is the key.
          call mol%atom_subset(iatom, atom_mol, error)
          if (error%has_error()) return
 
          idx = cached_index(z, atom_mol)
          if (idx == 0) then
             if (n_cached >= MAX_CACHED) then
-               ! Rather than evict: a run that has seen 64 distinct elements will
-               ! see them again, and any eviction policy would thrash.
+               ! Refused rather than evicted: a run that has seen 64 distinct
+               ! elements will see them again.
                call error%set(ERROR_VALIDATION, "atomic guess: solution cache exhausted")
                call atom_mol%destroy()
                return
@@ -395,11 +339,8 @@ contains
       multiplicity = hund_multiplicity(atomic_number)
 
       ! mqc: scf-subset -- a per-element atomic SCF that exists only to build the
-      ! SAD guess. Its thresholds are the ATOMIC_* constants above and are fixed
-      ! on purpose: this is a small, well-conditioned closed system whose answer
-      ! is a starting density, not a result. Inheriting the molecule's level
-      ! shift or linear-dependence cutoff would change a guess for no gain, and
-      ! inheriting a tight tolerance would make every SAD guess expensive.
+      ! SAD guess. Its thresholds are the ATOMIC_* constants above rather than
+      ! the molecule's, deliberately: the answer here is a starting density.
       call run_libcint_uhf(atom_mol, atomic_number, multiplicity, ATOMIC_MAX_ITER, &
                            ATOMIC_ENERGY_TOL, ATOMIC_DENSITY_TOL, .false., scf, error, &
                            diis_vectors=8, in_core=(atom_mol%nao <= ATOMIC_INCORE_MAX), &
@@ -437,10 +378,7 @@ contains
    function cached_index(atomic_number, atom_mol) result(idx)
       !! Position of a cached solution for this atom in this basis, or 0
       !!
-      !! The basis data is compared element by element rather than hashed. It is
-      !! a few hundred numbers per element and the comparison happens once per
-      !! atom, so there is nothing to gain by being clever and a correctness
-      !! argument to lose.
+      !! The basis data is compared element by element rather than hashed.
       integer, intent(in) :: atomic_number
       type(libcint_molecule_t), intent(in) :: atom_mol
       integer :: idx, i
@@ -463,18 +401,15 @@ contains
       !! The energy each atom would have on its own, in its own basis
       !!
       !! One unrestricted SCF per *distinct* element at its Hund's-rule ground
-      !! state, which is the same calculation the SAD and SAC guesses need and
-      !! the same cache: asking for these after a run that used an atomic guess
-      !! costs nothing at all.
+      !! state, sharing the cache the SAD and SAC guesses fill.
       !!
       !! **Each atom is solved in exactly the basis functions it contributes to
       !! the molecule**, so subtracting these from atom-in-molecule energies
-      !! leaves no basis-set superposition error to correct -- neither side has
-      !! seen the other atoms' functions. That is the reference the papers mean
-      !! by a free atom, and it is why the slice rather than the element name is
-      !! the cache key.
-      !!
-      !! A ghost centre carries no electrons and gets zero.
+      !! leaves no basis-set superposition error to correct. A ghost centre
+      !! carries no electrons and gets zero.
+      ! TODO(mqc): the cache miss-and-solve block below is a verbatim copy of
+      ! the one in `build_atomic_guess`, so a change to the eviction or failure
+      ! policy has to be made twice or the two drift apart.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), allocatable, intent(out) :: energies(:)   !! (n_atoms), hartree
       type(error_t), intent(inout) :: error
@@ -521,9 +456,9 @@ contains
    subroutine clear_atomic_cache()
       !! Drop every cached atomic solution
       !!
-      !! Nothing in a single run needs this -- the cache keys itself on the basis
-      !! data, so a changed basis simply misses. It exists for the tests, which
-      !! have to be able to count how many free-atom SCFs a call performs.
+      !! For the tests, which count how many free-atom SCFs a call performs; a
+      !! run needs it only if it wants the memory back, since the cache keys
+      !! itself on the basis data and a changed basis simply misses.
       integer :: i
 
       do i = 1, MAX_CACHED

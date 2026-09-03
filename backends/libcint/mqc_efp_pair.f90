@@ -5,16 +5,11 @@ module mqc_efp_pair
    !! *another's*. Those are integrals over both fragments' basis functions at once,
    !! so they need a molecule that spans the pair -- which is what this builds.
    !!
-   !! **Nothing new is needed in the integral layer.** `libcint_molecule_t` already
-   !! has `build`, which takes a `molecular_basis_type` directly;
-   !! `build_libcint_molecule` is only the wrapper that looks a basis up by name. So
-   !! the work here is assembling the basis object, not plumbing integrals.
-   !!
    !! The basis comes from the potential's own `PROJECTION BASIS SET`, recovered by
-   !! `mqc_efp_read` with GAMESS's primitive normalization divided back out. Using the
-   !! *file's* basis rather than looking up the name it was computed with matters: a
-   !! potential is a self-contained object, and the shipped GAMESS library potentials
-   !! do not all name a basis this program has.
+   !! `mqc_efp_read` with GAMESS's primitive normalization divided back out. The
+   !! *file's* basis, not a lookup of the name it was computed with: a potential is
+   !! a self-contained object, and the shipped GAMESS library potentials do not all
+   !! name a basis this program has.
    use pic_types, only: dp
    use mqc_physical_constants, only: PI
    use pic_blas_interfaces, only: pic_gemm
@@ -39,30 +34,28 @@ module mqc_efp_pair
    public :: dispersion_e8_damped
    public :: lmo_overlap
    public :: charge_transfer
-   ! Slot counts of the two higher dispersion records. Exposed because
-   ! anything unpacking one needs the same number, and two files agreeing by
-   ! coincidence is how a packing convention drifts apart.
+   ! Slot counts of the two higher dispersion records, exposed because anything
+   ! unpacking one needs the same number.
    public :: N_DQ_SLOTS, N_QQ_SLOTS
 
-   !> Overlap below which a pair's damping series is not evaluated at all,
-   !> `efdrvr.src:4464`.
    real(dp), parameter :: S_FLOOR = 1.0e-5_dp
+      !! Overlap below which a pair's damping series is not evaluated at all,
+      !! `efdrvr.src:4464`.
 
-   !> Slots in a `DIPOLE-QUADRUPOLE` record: a 3x3x3 tensor, last index fastest.
    integer, parameter :: N_DQ_SLOTS = 27
+      !! Slots in a `DIPOLE-QUADRUPOLE` record: a 3x3x3 tensor, last index fastest.
 
-   !> Slots in the `LMOQQPOL` record: a 3x3x3x3 tensor, last index fastest.
    integer, parameter :: N_QQ_SLOTS = 81
+      !! Slots in the `LMOQQPOL` record: a 3x3x3x3 tensor, last index fastest.
 
 contains
 
    subroutine fragment_basis(frag, basis, error)
       !! A basis object for one fragment, from the projection basis it carries
       !!
-      !! Cartesian, because that is what a potential this program writes is: the
-      !! ordering maps in `mqc_efp_potential` cover Cartesian s, p, d and f, and a
-      !! spherical potential is refused at write time. A GAMESS library potential
-      !! read here would need that assumption revisited.
+      !! Cartesian: the ordering maps in `mqc_efp_potential` cover Cartesian s, p,
+      !! d and f, and a spherical potential is refused at write time. **A GAMESS
+      !! library potential read here would need that assumption revisited.**
       type(efp_fragment_t), intent(in) :: frag
       type(molecular_basis_type), intent(out) :: basis
       type(error_t), intent(inout) :: error
@@ -78,8 +71,8 @@ contains
       natm = frag%n_atoms
       call basis%allocate_elements(natm)
       do at = 1, natm
-         ! How many shells this atom owns. The reader tags each shell with the atom
-         ! it was read under, in file order, so a count is enough.
+         ! How many shells this atom owns. The reader tags each shell with the
+         ! atom it was read under, in file order.
          count = 0
          do sh = 1, frag%n_shells
             if (frag%shell_atom(sh) == at) count = count + 1
@@ -118,16 +111,16 @@ contains
       !!       CT  += W (W + STIN) / ( (1 - SAB2) (F_A(i) - T_BB(n,n)) )
       !!     E = 2 CT(A->B) + 2 CT(B->A)
       !!
-      !! The orbitals are `CTVEC`'s -- occupied *and* virtual, since this moves density
-      !! into the latter -- and `F_A(i)` is `CTFOK`. Note the denominator pairs an
-      !! orbital energy with a *kinetic-energy diagonal* standing in for the virtual's;
-      !! that is GAMESS's expression, not an approximation introduced here.
+      !! The orbitals are `CTVEC`'s -- occupied *and* virtual, since this moves
+      !! density into the latter -- and `F_A(i)` is `CTFOK`. The denominator pairs
+      !! an orbital energy with a *kinetic-energy diagonal* standing in for the
+      !! virtual's; that is GAMESS's expression, not an approximation introduced
+      !! here.
       !!
-      !! **`V` is the other fragment's multipole potential over these orbitals**, built
-      !! by `EFCEF`, `EFDEF` and `EFQEF` in GAMESS -- charges, dipoles and quadrupoles,
-      !! no octupole. `multipole_potential` builds all three, so this is the complete
-      !! expression rather than a rung of one. That the rank ends at the quadrupole is
-      !! GAMESS's own answer being unchanged by an octupole section, not an omission.
+      !! `V` is the other fragment's multipole potential over these orbitals:
+      !! charges, dipoles and quadrupoles, and no octupole. The rank ending at the
+      !! quadrupole is GAMESS's answer being unchanged by an octupole section,
+      !! not an omission.
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: offset_a(3), offset_b(3)
       type(error_t), intent(inout) :: error
@@ -233,26 +226,25 @@ contains
    subroutine multipole_potential(pair, frag, offset, v, error)
       !! The potential of one fragment's multipoles over the pair's basis
       !!
-      !! `VEFP`, built by `EFCEF`, `EFDEF` and `EFQEF` in `efchtr.src`: charges, dipoles
-      !! and quadrupoles, and **no octupole** -- one rank fewer than the electrostatic
-      !! energy uses. That the octupole is genuinely absent is not inferred from the
-      !! source alone; GAMESS's charge transfer is the same number with and without an
-      !! octupole section in the potential.
+      !! `VEFP`, built by `EFCEF`, `EFDEF` and `EFQEF` in `efchtr.src`: charges,
+      !! dipoles and quadrupoles, and **no octupole** -- one rank fewer than the
+      !! electrostatic energy uses.
       !!
       !! Every rank carries a minus, because this is the potential energy of an
-      !! *electron* in the multipole's field and the electron's charge is negative. The
-      !! ranks are successive centre-gradients of one integral:
+      !! *electron* in the multipole's field. The ranks are successive
+      !! centre-gradients of one integral:
       !!
       !!     charge      -        q     <mu| 1/r_C |nu>
       !!     dipole      -        d_a   grad_a <mu| 1/r_C |nu>
       !!     quadrupole  - (1/3)  Q_ab  grad_a grad_b <mu| 1/r_C |nu>
       !!
-      !! all gradients with respect to `C`, and the quadrupole one summed over all nine
-      !! `ab` -- which is `efchtr.src:1801-1807`'s three diagonal terms plus twice its
+      !! all gradients with respect to `C`, and the quadrupole one summed over all
+      !! nine `ab` -- `efchtr.src:1801-1807`'s three diagonal terms plus twice its
       !! three off-diagonal ones, written out.
       !!
-      !! The dipole and quadrupole moments here are **electronic only** -- the nucleus
-      !! sits entirely in the monopole -- which is how the potential stores them.
+      !! The dipole and quadrupole moments here are **electronic only**; the
+      !! nucleus sits entirely in the monopole, which is how the potential stores
+      !! them.
       type(libcint_molecule_t), intent(in) :: pair
       type(efp_fragment_t), intent(in) :: frag
       real(dp), intent(in) :: offset(3)
@@ -279,10 +271,10 @@ contains
       end do
       deallocate (matrices)
 
-      ! The dipole rank. `drinv_matrices` is `grad_C` of the integral above, its sign
-      ! fixed in `test_mqc_libcint_esp` against a difference of `esp_matrices` rather
-      ! than read off libcint's `nabla-rinv` naming, which does not say whether the
-      ! gradient is with respect to `r` or to `C`.
+      ! The dipole rank. `drinv_matrices` is `grad_C` of the integral above, its
+      ! sign fixed in `test_mqc_libcint_esp` against a difference of `esp_matrices`:
+      ! libcint's `nabla-rinv` naming does not say whether the gradient is with
+      ! respect to `r` or to `C`.
       call drinv_matrices(pair, grids, grad, error)
       if (error%has_error()) return
       do k = 1, frag%n_points
@@ -299,10 +291,8 @@ contains
       ! coefficient a *traceless* quadrupole carries against `grad grad (1/R)`: the
       ! expansion is `(1/2) M_ab grad_a grad_b` over the second moments, and
       ! substituting `Q = (3M - tr M)/2` turns the half into a third, because
-      ! `delta_ab grad_a grad_b (1/R)` vanishes and the trace part drops out. GAMESS
-      ! folds it into its Rys assembly instead of writing it at the contraction, which
-      ! is why reading that contraction alone suggests there is no factor. Fitting the
-      ! rung numerically gives 0.33336, which is how this was caught.
+      ! `delta_ab grad_a grad_b (1/R)` vanishes. GAMESS folds it into its Rys
+      ! assembly instead of writing it at the contraction.
       call ddrinv_matrices(pair, grids, second, error)
       if (error%has_error()) return
       do k = 1, frag%n_points
@@ -319,10 +309,9 @@ contains
    pure function traceless_quadrupole(stored) result(quad)
       !! The stored second moments as the electric quadrupole `EFQEF` contracts
       !!
-      !! `efchtr.src:1557-1571`, which does this conversion on its own copy before using
-      !! it -- so a potential's `QUADRUPOLES` section holds **second moments, not
-      !! traceless quadrupoles**. That is visible in the files themselves: HCN's stored
-      !! trace is -12.40 rather than 0.
+      !! `efchtr.src:1557-1571`, which does this conversion on its own copy before
+      !! using it -- so a potential's `QUADRUPOLES` section holds **second moments,
+      !! not traceless quadrupoles**, as a nonzero stored trace shows.
       !!
       !!     Q_aa = (3 M_aa - tr M) / 2        Q_ab = (3/2) M_ab,  a /= b
       !!
@@ -371,8 +360,15 @@ contains
    subroutine lmo_overlap(frag_a, frag_b, offset_a, offset_b, s_lmo, t_lmo, error)
       !! Overlap and kinetic energy between two fragments' localized orbitals
       !!
-      !! `(n_lmo_a, n_lmo_b)`. Both exchange repulsion and the dispersion damping are
-      !! built from this, so it is computed in one place.
+      !! `(n_lmo_proj_a, n_lmo_proj_b)`. Both exchange repulsion and the dispersion
+      !! damping are built from this.
+      ! TODO(mqc): `t_lmo` is only used by the exchange repulsion; all three
+      ! dispersion routines allocate it, pay for the kinetic integrals and two
+      ! gemms, and discard it.
+      ! TODO(mqc): the shapes are `n_lmo_proj`, from the projection wavefunction,
+      ! while the dispersion callers index them by `n_lmo`, from the dynamic
+      ! polarizability block. Nothing checks that the two sections of a potential
+      ! agree, so a file where they differ reads out of bounds.
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: offset_a(3), offset_b(3)
       real(dp), allocatable, intent(out) :: s_lmo(:, :), t_lmo(:, :)
@@ -407,20 +403,17 @@ contains
    function dispersion_e6_damped(frag_a, frag_b, offset_a, offset_b, error) result(energy)
       !! `E6` with GAMESS's overlap-based damping, which is what it reports
       !!
-      !! The undamped `E6` in `mqc_efp_interaction` is 0.19% from GAMESS's number, and
-      !! this is the difference. GAMESS's output says
-      !! `DISPERSION EFP-EFP SCREENING CHOICE IS USING OVERLAP`, and its default
-      !! `IDISDMP = 1` damps each orbital pair by a Tang-Toennies series in that pair's
-      !! own overlap (`efdrvr.src` around line 2734):
+      !! GAMESS's default `IDISDMP = 1` damps each orbital pair by a Tang-Toennies
+      !! series in that pair's own overlap (`efdrvr.src` around line 2734):
       !!
       !!     RB = -2 ln|S_ij|
       !!     F6 = 1 - S_ij^2 ( 1 + sqrt(RB) + RB/2 + RB^(3/2)/6
       !!                         + RB^2/24 + RB^(5/2)/120 + RB^3/720 )
       !!
       !! and `F6 = 1` where `|S_ij| <= 1e-5`, the series being meaningless once the
-      !! orbitals do not overlap. Note the half-integer powers: the series is in
-      !! `sqrt(RB)`, not in `RB`, so six of its seven terms would be wrong if read as an
-      !! ordinary exponential expansion.
+      !! orbitals do not overlap. **The series is in `sqrt(RB)`, not in `RB`**, so
+      !! six of its seven terms would be wrong if read as an ordinary exponential
+      !! expansion.
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: offset_a(3), offset_b(3)
       type(error_t), intent(inout) :: error
@@ -466,20 +459,16 @@ contains
       !!
       !!     F_n = 1 - S^2 sum_{k=0..K} x^k / k!,   x = sqrt(-2 ln|S|)
       !!
-      !! with `K = 6, 7, 8`. The variable is `sqrt(RB)`, not `RB`, so six of F6's
-      !! seven terms carry half-integer powers -- read as an ordinary exponential
-      !! expansion the series still damps, plausibly and wrongly.
+      !! with `K = 6, 7, 8`. **The variable is `sqrt(RB)`, not `RB`**, so six of
+      !! F6's seven terms carry half-integer powers -- read as an ordinary
+      !! exponential expansion the series still damps, plausibly and wrongly.
       !!
-      !! `F8` is assembled the way the source assembles it, by subtracting the two
-      !! extra terms from `F6` rather than by re-summing, so the transcription can be
-      !! read against `efdrvr.src:4491-4492` line for line. Algebraically it is the
-      !! `K = 8` sum. Since each factor subtracts one more positive term than the
-      !! last, `F8 < F7 < F6 < 1` holds wherever the series is used at all.
+      !! `F8` is assembled as the source assembles it, by subtracting the two extra
+      !! terms from `F6` rather than by re-summing; algebraically it is the `K = 8`
+      !! sum. Each factor subtracts one more positive term than the last, so
+      !! `F8 < F7 < F6 < 1` wherever the series is used at all.
       !!
-      !! Below `|S| = 1e-5` the series is meaningless -- the orbitals do not overlap
-      !! -- and all three are 1. GAMESS additionally zeroes a whole fragment pair's
-      !! overlaps when every one of them is under `1e-6` (`efpaul.src:2925-2930`),
-      !! which reaches the same answer by a different route.
+      !! Below `|S| = 1e-5` all three are 1.
       real(dp), intent(in) :: sab
       real(dp), intent(out) :: f6, f7, f8
 
@@ -502,27 +491,22 @@ contains
    function dispersion_e8_damped(frag_a, frag_b, offset_a, offset_b, error) result(energy)
       !! `E8`, the isotropic one -- which is the one GAMESS prints
       !!
-      !! `Disp8_LMOpol` (`efdrvr.src:4311`) computes two unrelated things. The
-      !! anisotropic E8, with its `E8DO`/`E8DQ`/`E8QQ` decomposition, sits behind
-      !! `IF(do_aniso_disp)` and accumulates into `EDISP8_aniso` -- a variable no
-      !! `WRITE` in the tree ever names, and `do_aniso_disp` is off unless `$EFRAG
-      !! ANISO` asks for it. What reaches `E8 DISPERSION ENERGY` is the isotropic form
-      !! at `efdrvr.src:4401-4418`, computed whenever the potential carries an
-      !! `LMOQQPOL` section at all:
+      !! `Disp8_LMOpol` (`efdrvr.src:4311`) computes two unrelated things, and the
+      !! anisotropic one is never printed. What reaches `E8 DISPERSION ENERGY` is
+      !! the isotropic form at `efdrvr.src:4401-4418`, computed whenever the
+      !! potential carries an `LMOQQPOL` section at all:
       !!
       !!     C8 = sum_f (15/pi) FACT(f) ( a_iso^A A_QQ^B + a_iso^B A_QQ^A )
       !!     E8 = - F8 C8 / R^8
       !!
       !! It therefore needs the trace of the dipole-dipole polarizability and the
-      !! spherical average of the quadrupole-quadrupole one, and nothing else: no `T`
-      !! tensors, no dipole-quadrupole, no dipole-octupole. Both averages are
-      !! isotropic contractions and so survive the rotation that carries a potential
-      !! into the current frame unchanged, which is why nothing is rotated here.
+      !! spherical average of the quadrupole-quadrupole one, and nothing else. Both
+      !! averages are isotropic contractions and survive the rotation into the
+      !! current frame unchanged, which is why nothing is rotated here.
       !!
-      !! **Not `E6/3`.** That approximation is `efdrvr.src:1917`, behind
-      !! `IF((.not.E8DISP).or.IQMDISP.eq.1)`, and it does not run for a pair of
-      !! file-based fragments -- it would give -1.72e-04 where the real E8 is
-      !! -1.14e-04. Reconciling against it would fit a factor to the wrong quantity.
+      !! **Not `E6/3`.** That approximation is `efdrvr.src:1917` and does not run
+      !! for a pair of file-based fragments; reconciling against it would fit a
+      !! factor to the wrong quantity.
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: offset_a(3), offset_b(3)
       type(error_t), intent(inout) :: error
@@ -583,35 +567,29 @@ contains
       !!     E7 = F7 sum_f sum_abcde (-1/3pi) T2(a,b) T3(c,d,e) FACT(f) (DUM1 - DUM2)
       !!
       !! `a` and `b` are the two `T2` slots and `c,d,e` the three `T3` slots; `a`
-      !! belongs to A and `b` to B. Each dipole-quadrupole tensor puts its dipole index
-      !! on a `T2` slot and its quadrupole pair on `T3` slots. Unlike E6 and E8 there is
-      !! only one E7 -- no isotropic variant exists anywhere in the file, and the
-      !! printed number is this one, gated by `E7DISP` alone and not by `do_aniso_disp`.
+      !! belongs to A and `b` to B. Each dipole-quadrupole tensor puts its dipole
+      !! index on a `T2` slot and its quadrupole pair on `T3` slots. There is only
+      !! one E7 -- no isotropic variant exists.
       !!
-      !! **Three things here are sign- or transpose-critical, and E7 is the first term
-      !! that can see any of them.** E6 and E8 reach the polarizabilities only through
-      !! isotropic averages and depend on the separation only through `R`, so all three
-      !! were invisible until now.
+      !! **Three conventions here are sign- or transpose-critical**, and E7 is the
+      !! first term that can see any of them; E6 and E8 reach the polarizabilities
+      !! only through isotropic averages and the separation only through `R`.
       !!
-      !! *The displacement runs A minus B* (`efdrvr.src:1724-1726`), where A is the
-      !! fragment GAMESS visits first. E7 is odd in `C`: `T2` is even and `T3` is odd,
-      !! so the whole term changes sign with it, where E6 and E8 see only `|C|`.
+      !! *The displacement runs A minus B* (`efdrvr.src:1724-1726`), A being this
+      !! routine's first fragment. E7 is odd in `C`: `T2` is even and `T3` is odd,
+      !! so the whole term changes sign with it.
       !!
-      !! *`T3` carries a deliberate extra negative* (`efdrvr.src:3507`, with the comment
-      !! `in EFPDYN, T3 had an extra negative sign`). The textbook
-      !! `-grad grad grad 1/R` gives E7 the wrong sign; `t_tensors` builds the form the
-      !! routine actually hands over.
+      !! *`T3` carries a deliberate extra negative* (`efdrvr.src:3507`). The
+      !! textbook `-grad grad grad 1/R` gives E7 the wrong sign; `t_tensors` builds
+      !! the form GAMESS's routine actually hands over.
       !!
       !! *The dipole-dipole tensor arrives transposed.* GAMESS indexes it
-      !! `(field, dipole)` and `mqc_efp_read` indexes it `(dipole, field)` -- the two
-      !! conventions differ by a transpose, which is why the file's nine slots are read
-      !! with a map that looks like the transpose of `efinp.src`'s and is not. So
-      !! GAMESS's `DYNDD_LMO_ROT(a,c)` is our `dyn_pol(c,a)`, and the swap below is
-      !! load-bearing: the tensor's antisymmetric part is 12% of it here, so getting
-      !! this wrong is worth far more than the number itself.
+      !! `(field, dipole)` and `mqc_efp_read` indexes it `(dipole, field)`, so
+      !! GAMESS's `DYNDD_LMO_ROT(a,c)` is our `dyn_pol(c,a)`. The swap below is
+      !! load-bearing: the tensor's antisymmetric part is 12% of it here.
       !!
-      !! The dipole-quadrupole tensor needs no such care because `mqc_efp_read` keeps it
-      !! flat in file order, so GAMESS's own slot formula recovers GAMESS's own tensor.
+      !! The dipole-quadrupole tensor needs no such care -- `mqc_efp_read` keeps it
+      !! flat in file order, so GAMESS's own slot formula recovers GAMESS's tensor.
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: offset_a(3), offset_b(3)
       type(error_t), intent(inout) :: error
@@ -684,11 +662,10 @@ contains
       !!     T3(i,j,k) = ( 15 C_i C_j C_k
       !!                   - 3 R^2 ( C_i d_jk + C_j d_ik + C_k d_ij ) ) / R^7
       !!
-      !! `T3`'s sign is GAMESS's, not the textbook's: `T_tensor_3` builds the negative
-      !! of the form above and then flips it in place at `efdrvr.src:3507`, commenting
-      !! `in EFPDYN, T3 had an extra negative sign`. What is written here is the net
-      !! tensor its caller receives. E7 is linear in `T3`, so this is the difference
-      !! between `+5.99e-05` and `-5.99e-05` and nothing subtler.
+      !! `T3`'s sign is GAMESS's, not the textbook's: `T_tensor_3` builds the
+      !! negative of the form above and flips it in place at `efdrvr.src:3507`.
+      !! What is written here is the net tensor its caller receives, and E7 is
+      !! linear in `T3`.
       real(dp), intent(in) :: c(3)
       real(dp), intent(out) :: t2(3, 3), t3(3, 3, 3)
 
@@ -730,8 +707,7 @@ contains
       !!
       !! `i` is the dipole index and `(j,k)` the quadrupole pair. Row-major with the
       !! last index fastest, in GAMESS's writer (`efinp.src:7635`) and reader
-      !! (`efinp.src:12943-12949`) alike -- they are exact inverses, so the file
-      !! convention is not in doubt.
+      !! (`efinp.src:12943-12949`) alike.
       integer, intent(in) :: i, j, k
       integer :: slot
 
@@ -751,11 +727,8 @@ contains
       !! symmetrises in `(i,j) <-> (k,l)`, so whether the stored tensor is exactly
       !! symmetric under that swap does not affect this number.
       !!
-      !! The 81 file slots are plain row-major with the last index fastest, both in
-      !! the writer (`efinp.src:7744`) and in the reader (`efinp.src:13004-13010`) --
-      !! unlike the nine dipole-dipole slots, which are permuted. `E8` reaches the
-      !! tensor only through this average, so a wrong slot order would show up as a
-      !! wrong energy rather than as anything more legible.
+      !! The 81 file slots are plain row-major with the last index fastest, unlike
+      !! the nine dipole-dipole slots, which are permuted.
       real(dp), intent(in) :: values(N_QQ_SLOTS)
       real(dp) :: a
 
@@ -793,10 +766,10 @@ contains
    function exchange_repulsion(frag_a, frag_b, offset_a, offset_b, error) result(energy)
       !! Pauli exchange repulsion between two fragments
       !!
-      !! From `EXREP` in GAMESS's `efpaul.src`, which is the energy routine -- `ODM` in
-      !! the same file is its gradient and carries factors that only mean something in a
-      !! derivative. Three terms over pairs of localized orbitals on different
-      !! fragments, with `S` and `T` in the localized-orbital basis:
+      !! From `EXREP` in GAMESS's `efpaul.src` -- the energy routine, not `ODM` in
+      !! the same file, which is its gradient and carries factors that only mean
+      !! something in a derivative. Three terms over pairs of localized orbitals on
+      !! different fragments, with `S` and `T` in the localized-orbital basis:
       !!
       !!     XR1 = -2 sqrt(2/pi) sum_ij sqrt(-ln|S_ij|) S_ij^2 / R_ij
       !!     XR2 = -sum_ij S_ij ( sum_k F^A_ik S_kj + sum_l F^B_jl S_il - 2 T_ij )
@@ -809,21 +782,21 @@ contains
       !! two inside `V`, are `ICOEFF` and `JCOEFF` at `MLSWTCH = 1`, which is the
       !! closed-shell case.
       !!
-      !! The first term is skipped where `|S_ij| <= 1e-7` -- its logarithm diverges as
+      !! The first term is skipped where `|S_ij| <= 1e-7`: its logarithm diverges as
       !! the overlap vanishes, and the `S^2` in front does not save it in floating
-      !! point. GAMESS skips a whole fragment pair when every `|S_ij| <= 1e-6`; that is
-      !! a screening decision rather than a numerical one and is not copied here.
+      !! point. GAMESS's separate screening of a whole fragment pair below `1e-6` is
+      !! not copied here.
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: offset_a(3), offset_b(3)
       type(error_t), intent(inout) :: error
       real(dp) :: energy
 
       real(dp), parameter :: RT2PI = 0.7978845608028654_dp   !! sqrt(2/pi)
-      !> Named apart from the module's `S_FLOOR_LOCAL` deliberately: that one is the
-      !> 1e-5 damping cutoff from `efdrvr.src:4464`, this is a different and
-      !> tighter threshold, and one name for both made the module constant
-      !> silently mean something else inside this procedure.
       real(dp), parameter :: S_FLOOR_LOCAL = 1.0e-7_dp
+         !! Named apart from the module's `S_FLOOR` deliberately: that one is the
+         !! 1e-5 damping cutoff from `efdrvr.src:4464`, this is a different and
+         !! tighter threshold, and one name for both would make the module constant
+         !! silently mean something else inside this procedure.
       type(libcint_molecule_t) :: pair
       real(dp), allocatable :: s_ao(:, :), t_ao(:, :), lmo_a(:, :), lmo_b(:, :)
       real(dp), allocatable :: s_lmo(:, :), t_lmo(:, :), work(:, :)
@@ -844,9 +817,9 @@ contains
       call pair%overlap(s_ao)
       call pair%kinetic(t_ao)
 
-      ! Each fragment's orbitals live on its own functions, so they are padded into the
-      ! pair's space rather than transformed with a rectangular block: that way the
-      ! transform is one gemm and the block boundary appears once, here.
+      ! Each fragment's orbitals live on its own functions, so they are padded into
+      ! the pair's space rather than transformed with a rectangular block: the
+      ! transform is then one gemm and the block boundary appears once, here.
       n_lmo_a = frag_a%n_lmo_proj
       n_lmo_b = frag_b%n_lmo_proj
       call padded_lmo(frag_a, pair, 0, n_ao_a, lmo_a, error)
@@ -870,8 +843,7 @@ contains
          cen_b(:, j) = frag_b%pol_points(:, j) + offset_b
       end do
 
-      ! The potential at each centroid from the other fragment, built once rather than
-      ! inside the pair loop.
+      ! The potential at each centroid from the other fragment, built once.
       allocate (v_a(n_lmo_a), v_b(n_lmo_b))
       do i = 1, n_lmo_a
          v_a(i) = other_potential(cen_a(:, i), frag_b, offset_b, cen_b)
@@ -925,9 +897,9 @@ contains
 
       v = 0.0_dp
       do k = 1, frag%n_atoms
-         ! Valence charge, not the full nuclear one: the localized orbitals a potential
-         ! carries are valence only, so the core electrons have to be counted as
-         ! screening their own nucleus. This is the same number the PROJECTION BASIS SET
+         ! Valence charge, not the full nuclear one: the localized orbitals a
+         ! potential carries are valence only, so the core electrons count as
+         ! screening their own nucleus. The same number the PROJECTION BASIS SET
          ! atom header carries.
          v = v - (frag%charge(k) - 2.0_dp*real(frozen_core([nint(frag%charge(k))]), dp)) &
              /sqrt(sum((point - frag%points(:, k) - offset)**2))
@@ -968,8 +940,8 @@ contains
    subroutine fragment_molecule(frag, offset, mol, error)
       !! One fragment as a molecule of its own, from the basis it carries
       !!
-      !! Useful in its own right and as the reference the pair is checked against: the
-      !! pair's diagonal block has to be this molecule's overlap.
+      !! Also the reference the pair is checked against: the pair's diagonal block
+      !! has to be this molecule's overlap.
       type(efp_fragment_t), intent(in) :: frag
       real(dp), intent(in) :: offset(3)
       type(libcint_molecule_t), intent(out) :: mol
@@ -995,13 +967,11 @@ contains
       !! The fragment's localized orbitals in *our* AO order
       !!
       !! The file stores them in GAMESS's, so the d and f permutation and its
-      !! normalizations have to be undone -- `from_gamess_ao_order`, which lives beside
-      !! the forward map so the two cannot drift apart.
+      !! normalizations are undone by `from_gamess_ao_order`.
       !!
       !! The check that this is right is that the orbitals come back orthonormal
-      !! against the fragment's own overlap: `C^T S C = I`. Nothing weaker would
-      !! notice a permutation applied in the wrong direction, because a wrongly
-      !! permuted set is still a perfectly good-looking matrix.
+      !! against the fragment's own overlap, `C^T S C = I`. Nothing weaker would
+      !! notice a permutation applied in the wrong direction.
       type(efp_fragment_t), intent(in) :: frag
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), allocatable, intent(out) :: lmo(:, :)
@@ -1026,9 +996,9 @@ contains
       !!
       !! The atoms of `a` come first and then those of `b`, so the overlap matrix
       !! this yields is block structured: the leading `n_ao_a` rows and columns are
-      !! `a`'s own overlap, the trailing block is `b`'s, and the off-diagonal block is
-      !! what the inter-fragment terms want. `n_ao_a` is returned for exactly that
-      !! reason -- without it the caller cannot find the block it came for.
+      !! `a`'s own overlap, the trailing block is `b`'s, and the off-diagonal block
+      !! is what the inter-fragment terms want. `n_ao_a` is returned so the caller
+      !! can find it.
       !!
       !! Only the atoms are included. A fragment's expansion points also sit at bond
       !! midpoints, and those carry multipoles but no basis functions, which is why
@@ -1070,20 +1040,18 @@ contains
          z(na + at) = nint(frag_b%charge(at))
       end do
 
-      ! Cartesian explicitly, not left to the basis object to declare. A potential
-      ! this program writes is Cartesian by construction -- the ordering maps cover
-      ! Cartesian s through f and a spherical one is refused at write time -- and
-      ! setting the angular form per element is not enough: the molecule asks the
-      ! basis as a whole, which came back spherical and gave five d functions where
-      ! the potential has six.
+      ! Cartesian explicitly, not left to the basis object to declare. Setting the
+      ! angular form per element is not enough: the molecule asks the basis as a
+      ! whole, which comes back spherical and gives five d functions where the
+      ! potential has six.
       call mol%build(z, coords, both, error, force_cartesian=.true.)
       if (error%has_error()) then
          deallocate (coords, z)
          return
       end if
 
-      ! Where a's functions stop, counted from the basis rather than assumed to be
-      ! half: the two fragments need not be the same species.
+      ! Where a's functions stop, counted from the basis: the two fragments need not
+      ! be the same species.
       n_ao_a = 0
       do at = 1, na
          n_ao_a = n_ao_a + basis_a%elements(at)%num_basis_functions()

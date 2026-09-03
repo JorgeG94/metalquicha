@@ -47,34 +47,34 @@ module test_mqc_dh_dipole_deriv
    character(len=*), parameter :: FUNCTIONAL = "b2plyp"
    integer, parameter :: GRID_LEVEL = 5
 
-   !> One column, as the rest of this ladder takes one.
    integer, parameter :: PERT_ATOM = 1
+      !! One column, as the rest of this ladder takes one.
    integer, parameter :: PERT_CART = 3
    real(dp), parameter :: STEP = 2.0e-3_dp
 
-   !> The stencil's floor, bounded across toolchains rather than on one box.
-   !>
-   !> Measured 6.687e-10 here and **1.313e-08 in CI** -- a factor of twenty
-   !> between two machines running the same source. Both are the finite
-   !> difference's own noise, amplified by the stencil's `1/60h`: the
-   !> displaced points each re-converge an SCF and a Z-vector solve, and where
-   !> those land in their last digits depends on the BLAS and the compiler.
-   !> A bound set at fifteen times one machine's number failed the other, which
-   !> is what this value is corrected from.
-   !>
-   !> Loose only in appearance. What it exists to catch is the orbital-rotation
-   !> terms: without them this reads **1.110e-02**, against a correlation dipole
-   !> of 1.26e-02 -- five orders above this bound, and a derivative that was
-   !> smooth, correctly signed and summed to the molecular charge while being
-   !> completely wrong.
    real(dp), parameter :: TOL = 2.0e-7_dp
+      !! The stencil's floor, bounded across toolchains rather than on one box.
+      !!
+      !! Measured 6.687e-10 here and **1.313e-08 in CI** -- a factor of twenty
+      !! between two machines running the same source. Both are the finite
+      !! difference's own noise, amplified by the stencil's `1/60h`: the
+      !! displaced points each re-converge an SCF and a Z-vector solve, and where
+      !! those land in their last digits depends on the BLAS and the compiler.
+      !! A bound set at fifteen times one machine's number failed the other, which
+      !! is what this value is corrected from.
+      !!
+      !! Loose only in appearance. What it exists to catch is the orbital-rotation
+      !! terms: without them this reads **1.110e-02**, against a correlation dipole
+      !! of 1.26e-02 -- five orders above this bound, and a derivative that was
+      !! smooth, correctly signed and summed to the molecular charge while being
+      !! completely wrong.
 
-   !> `-c Tr(C dm1mo C^T r)` at the reference geometry, about the nuclear
-   !> centroid, from a field difference of PySCF's own B2PLYP energy:
-   !> `E(F) = E0 - mu.F` with the field in `hcore`, so this is the electronic
-   !> part and the nuclei cancel out of the Kohn-Sham/double-hybrid difference.
    real(dp), parameter :: PYSCF_MU_CORR(3) = [0.0_dp, -1.2571831434e-02_dp, &
                                               -9.7393535725e-03_dp]
+      !! `-c Tr(C dm1mo C^T r)` at the reference geometry, about the nuclear
+      !! centroid, from a field difference of PySCF's own B2PLYP energy:
+      !! `E(F) = E0 - mu.F` with the field in `hcore`, so this is the electronic
+      !! part and the nuclei cancel out of the Kohn-Sham/double-hybrid difference.
 
 contains
 
@@ -90,16 +90,16 @@ contains
                   ]
    end subroutine collect_mqc_dh_dipole_deriv_tests
 
-   !> The nuclear centroid, which both halves of the assembly expand about
    pure function centroid(coords) result(o)
+      !! The nuclear centroid, which both halves of the assembly expand about
       real(dp), intent(in) :: coords(3, 3)
       real(dp) :: o(3)
 
       o = (coords(:, 1) + coords(:, 2) + coords(:, 3))/3.0_dp
    end function centroid
 
-   !> `c mu_corr` at one geometry, about a fixed origin
    subroutine mu_corr_at(coords, origin, mu, err, ok)
+      !! `c mu_corr` at one geometry, about a fixed origin
       real(dp), intent(in) :: coords(3, 3), origin(3)
       real(dp), intent(out) :: mu(3)
       type(error_t), intent(inout) :: err

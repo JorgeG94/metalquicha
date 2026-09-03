@@ -1,15 +1,12 @@
 !! Hartree-Fock method implementation for metalquicha
 module mqc_method_hf
-   !! Closed-shell Hartree-Fock.
+   !! Hartree-Fock, and the MP2 and coupled-cluster corrections built on it.
    !!
-   !! With the cuEST backend (CMake, MQC_ENABLE_CUEST=ON) the integrals come
-   !! the GPU and the SCF runs in `mqc_cuest_scf`. Because cuEST offers no
-   !! conventional four-index ERI path, J and K are always density-fitted, so
-   !! an auxiliary (JKFIT) basis is required alongside the orbital basis.
-   !!
-   !! Without that backend the method reports a clear error rather than a
-   !! placeholder number -- a silently wrong energy inside a many-body
-   !! expansion is far worse than a failed fragment.
+   !! Dispatches to whichever backend `model.backend` names: the CPU one
+   !! through `mqc_libcint_bridge`, or the GPU one through `mqc_cuest_bridge`.
+   !! cuEST has no conventional four-index ERI path, so J and K are always
+   !! density-fitted there and an auxiliary (JKFIT) basis is required alongside
+   !! the orbital basis.
    use pic_types, only: dp
    use mqc_scf_types, only: guess_step_t
    use mqc_method_base, only: qc_method_t
@@ -31,15 +28,13 @@ module mqc_method_hf
       !! Hartree-Fock calculation options
       logical :: run_mp2 = .false.
          !! Follow the reference with an MP2 correction. Set by the factory
-         !! from the method name rather than by a keyword: "mp2" is a method,
-         !! not an option on Hartree-Fock.
+         !! from the method name, not by a deck keyword.
       logical :: corr_density_fitting = .false.
       real(dp) :: scs_ss = 1.0_dp
       real(dp) :: scs_os = 1.0_dp
       logical :: run_cc = .false.
          !! Follow the reference with coupled cluster. Set by the factory from
-         !! the method name, for the same reason `run_mp2` is: "ccsd" is a
-         !! method, not an option on Hartree-Fock.
+         !! the method name, not by a deck keyword.
       logical :: cc_triples = .false.
       integer :: cc_max_iter = 100
       real(dp) :: cc_tolerance = 1.0e-8_dp
@@ -60,7 +55,7 @@ module mqc_method_hf
 contains
 
    subroutine hf_calc_energy(this, fragment, result)
-      !! Calculate electronic energy using Hartree-Fock method
+      !! Electronic energy of a fragment
       class(hf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
@@ -69,15 +64,14 @@ contains
    end subroutine hf_calc_energy
 
    subroutine hf_run(this, fragment, result, want_gradient, want_hessian)
-      !! Run a density-fitted RHF calculation through cuEST
+      !! Run the SCF through whichever backend `options%backend` resolves to
       class(hf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
       logical, intent(in) :: want_gradient
       logical, intent(in), optional :: want_hessian
          !! Only the CPU backend has an analytic Hessian, and only for some of
-         !! what reaches it. Passed along rather than decided here: which cases
-         !! qualify is a fact about that backend.
+         !! what reaches it; the backend decides, not this routine.
 
       type(cuest_scf_settings_t) :: settings
       type(error_t) :: backend_error
@@ -95,8 +89,6 @@ contains
       settings%scs_ss = this%options%scs_ss
       settings%scs_os = this%options%scs_os
       settings%functional = ""        ! empty selects pure Hartree-Fock
-      ! Resolved here rather than carried as a string, so an unknown name fails
-      ! once, before any integrals, instead of at each dispatch.
       call parse_backend_name(this%options%backend, settings%backend, backend_error)
       if (backend_error%has_error()) then
          call result%error%set(ERROR_VALIDATION, backend_error%get_message())
@@ -104,18 +96,13 @@ contains
          return
       end if
 
-      ! cuEST when this build has it, because that is the production path and
-      ! the only one with gradients. The CPU backend takes over when it does
-      ! not, which is how a fragmented Hartree-Fock runs on a laptop at all --
-      ! and, when both are built, gives the GPU one something to be compared
-      ! against.
-      ! Which backend, and refuse a request that cannot be honoured.
-      !
-      ! `run_cuest_scf` exists either way -- the stub compiled without the
-      ! backend reports the missing build and computes nothing -- so asking for
-      ! cuEST on a CPU-only build produces that message rather than silently
-      ! running on the CPU. That is the point of naming a backend: a deck that
-      ! said `cuest` and got libcint would report a provenance that was not true.
+      ! Which backend, and refuse a request that cannot be honoured. Asking for
+      ! cuEST on a CPU-only build reaches the stub `run_cuest_scf`, which
+      ! reports the missing build rather than falling through to libcint.
+      ! TODO(mqc): the MP2/CC refusal below guards BACKEND_CUEST only. On a
+      ! cuEST build `backend: auto` falls into the default branch and runs
+      ! `run_cuest_scf` for an MP2 or CC deck too -- which is exactly what the
+      ! refusal's own message advises the user to do.
       select case (settings%backend)
       case (BACKEND_CUEST)
          if (settings%cartesian) then
@@ -158,7 +145,7 @@ contains
    end subroutine hf_run
 
    subroutine hf_calc_gradient(this, fragment, result)
-      !! Calculate energy gradient using Hartree-Fock method
+      !! Energy and nuclear gradient of a fragment
       class(hf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
@@ -169,19 +156,10 @@ contains
    subroutine hf_calc_hessian(this, fragment, result)
       !! The analytic Hessian where there is one, central differences otherwise
       !!
-      !! **The backend decides, not this routine.** Whether an analytic Hessian
-      !! applies depends on things the backend knows and this does not -- what
-      !! the SCF actually fitted, whether it converged restricted, whether a
-      !! functional was built. So the request goes down and the answer comes
-      !! back as `has_hessian`: true means it was computed, false with no error
-      !! means it was declined, and finite differences take over.
-      !!
-      !! That is deliberately not the pattern the rest of this file uses. A
-      !! backend that cannot honour a *gradient* request refuses loudly,
-      !! because there is no other way to get one and a silent substitution
-      !! would report a provenance that was not true. A Hessian has a second
-      !! way to get one that is correct and merely slower, so declining is not
-      !! a failure and should not read as one.
+      !! **The backend decides, not this routine.** The request goes down and
+      !! the answer comes back as `has_hessian`: true means it was computed,
+      !! false with no error means it was declined and finite differences take
+      !! over. Unlike a gradient, a declined Hessian is not a failure.
       class(hf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
@@ -190,9 +168,8 @@ contains
       if (result%has_error) return
       if (result%has_hessian) return
 
-      ! Declined. Nothing computed above is reusable -- the finite-difference
-      ! path runs its own reference point -- so this starts over rather than
-      ! trying to keep the SCF that just ran.
+      ! Declined. The finite-difference path runs its own reference point, so
+      ! nothing computed above is reusable.
       call result%destroy()
       call finite_difference_hessian(this, fragment, result, verbose=this%options%verbose, &
                                      displacement_in=this%options%hessian_displacement)

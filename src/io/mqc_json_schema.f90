@@ -2,20 +2,13 @@
 module mqc_json_schema
    !! Checks a deck against the input schema before anything reads it.
    !!
-   !! Why this is separate from the reader. The reader's `optional_*`
-   !! accessors leave a component alone when a key is absent, which is what
-   !! keeps the defaults declared in one place -- but it means a key the reader
-   !! does not recognise is indistinguishable from a key nobody wrote.
-   !! `"maxiter"` misspelled as `"max_iter"` would silently run 300 iterations
-   !! instead of the 40 you asked for, and nothing would say so. Rejecting
-   !! unknown keys is the only way to tell those two apart, and it cannot be
-   !! done by the reader, which by construction only ever looks up names it
-   !! already knows.
-   !!
-   !! So this module walks the document instead of querying it. That needs the
-   !! `json_core`/`json_value` interface rather than `json_file`: the latter
-   !! reaches a value by path and has no way to ask an object what keys it
-   !! actually has.
+   !! The reader's `optional_*` accessors leave a component alone when a key is
+   !! absent, so a key it does not recognise is indistinguishable from a key
+   !! nobody wrote -- `"maxiter"` misspelled as `"max_iter"` would run the
+   !! default silently. Rejecting unknown keys is the only way to tell the two
+   !! apart, and it needs the `json_core`/`json_value` interface rather than
+   !! `json_file`: the latter reaches a value by path and has no way to ask an
+   !! object what keys it actually has.
    !!
    !! What is checked:
    !!
@@ -25,8 +18,7 @@ module mqc_json_schema
    !!   * fragment charges sum to the molecular charge
    !!
    !! What is not: types and ranges. The reader reports those where it reads
-   !! them, with the value in hand, and duplicating the knowledge here would
-   !! give two places to update and two chances to disagree.
+   !! them, with the value in hand.
    use mqc_error, only: error_t, ERROR_VALIDATION
    use json_module, only: json_file, json_core, json_value
    use mqc_string_utils, only: int_to_text
@@ -36,18 +28,9 @@ module mqc_json_schema
    public :: ensure_valid_json  !! Reject a deck the schema does not describe
 
    integer, parameter :: MAX_KEYS = 40
-      !! Widest allow-list below; raising it is the only cost of a new key.
-      !! optimization_keys is now the widest: the transition-state work added
-      !! `target`, and the chain-of-states work `endpoint`, `neb_endpoints`,
-      !! `images`, `neb_spring`, the dimer controls and `connect`, which took it
-      !! past fragmentation_keys (21,
-      !! pushed there by its FMO inner-SCF controls and bond_breaking/cap_scale).
-      !! This keeps headroom above that.
-      !!
-      !! `allow` checks this rather than trusting the comment. It used not to,
-      !! and going one over wrote past `allowed` and corrupted whatever followed
-      !! -- which showed up as a segfault in an unrelated test four cases later,
-      !! not as anything pointing at the key that overflowed.
+      !! Widest allow-list below, which is `optimization_keys` at 35; raising it
+      !! is the only cost of a new key. `allow` checks it rather than trusting
+      !! this comment.
 
    type :: key_set_t
       !! The keys one object may contain, and which of them it must
@@ -62,16 +45,13 @@ contains
    subroutine ensure_valid_json(json, error, settings_only)
       !! Validate a loaded deck, setting `error` on the first problem found
       !!
-      !! Reports one problem rather than all of them: the first unknown key is
-      !! usually the whole story, and a reader that stops there gives a
-      !! message short enough to act on.
+      !! Reports one problem rather than all of them.
       !!
       !! `settings_only` validates a document that describes what to compute
       !! but not what to compute it on -- the form that crosses to the workers
       !! when the system arrives by another route. It relaxes exactly one
       !! thing, the requirement that molecules be present; every other key is
-      !! held to the same spelling and the same shape, which is the point of
-      !! sending a document rather than a struct.
+      !! held to the same spelling and the same shape.
       type(json_file), intent(inout) :: json
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: settings_only
@@ -99,6 +79,11 @@ contains
       if (error%has_error()) return
       call check_child_object(core, root, "system", system_keys(), error)
 
+      ! TODO(mqc): no `error%has_error()` test between this call and the four
+      ! that follow, and neither `check_child_object` nor
+      ! `check_grandchild_object` guards on entry, so a second problem
+      ! overwrites the first -- against the "first problem found" this routine
+      ! documents and every other checker here observes.
       call check_child_object(core, root, "properties", properties_keys(), error)
       call check_grandchild_object(core, root, "properties", "fukui", &
                                    fukui_keys(), error)
@@ -162,11 +147,7 @@ contains
    end subroutine ensure_valid_json
 
    ! ==========================================================================
-   !  The schema
-   !
-   !  One function per object, so adding a key is a one-line change next to
-   !  the other keys of the same object rather than an edit to a table
-   !  somewhere else.
+   !  The schema -- one function per object
    ! ==========================================================================
 
    function root_keys(settings_only) result(keys)
@@ -208,15 +189,11 @@ contains
       call allow(keys, "aux_basis")
       call allow(keys, "functional")
       call allow(keys, "cartesian")
+      ! Here rather than under `keywords.scf`: an unrestricted reference is a
+      ! different wavefunction, not a different route to the same one, so it
+      ! belongs with `method` and `functional`. `check_object` tells a deck
+      ! using the old spelling where it went.
       call allow(keys, "unrestricted")
-         !! Here rather than under `keywords.scf`, where it used to live. That
-         !! block is how an answer is reached -- iterations, tolerances, the
-         !! extrapolation -- and none of it changes the answer. This does: an
-         !! unrestricted reference is a larger variational space and a different
-         !! wavefunction, so a broken-symmetry singlet has its own energy. It
-         !! belongs with `method` and `functional`, which is what the code has
-         !! always said -- `run_libcint_rhf` and `run_libcint_uhf` are separate
-         !! routines and the output banner labels runs RKS or UKS.
       call require(keys, "method")
    end function model_keys
 
@@ -255,11 +232,11 @@ contains
    function properties_keys() result(keys)
       !! Things to report once the wave function exists
       !!
-      !! Beside `keywords` rather than inside it, and the distinction is worth
-      !! keeping: `keywords` say how to compute the wave function and change the
-      !! number that comes out, while `properties` ask for something further to
-      !! be done with it and change nothing about the energy. A bonding analysis
-      !! belongs in the second group, which is why `driver` stays "energy".
+      !! Beside `keywords` rather than inside it: `keywords` say how to compute
+      !! the wave function and change the number that comes out, `properties`
+      !! ask for something further to be done with it and change nothing about
+      !! the energy. A bonding analysis is one of the latter, which is why
+      !! `driver` stays "energy".
       type(key_set_t) :: keys
       call allow(keys, "bonding_analysis")
       call allow(keys, "fukui")
@@ -269,30 +246,20 @@ contains
    function fukui_keys() result(keys)
       !! Settings for the Fukui index analysis
       !!
-      !! `population` defaults to CHELPG. It was required rather than
-      !! defaulted, on the argument that a choice which changes the numbers
-      !! should be written down rather than inherited -- but the two schemes
-      !! are not equal candidates. CHELPG fits the electrostatic potential and
-      !! is what a condensed Fukui index is normally reported from; Mulliken is
-      !! basis-set dependent to the point of changing which site ranks first.
-      !! Defaulting to the better one and naming the other is more useful than
-      !! refusing to choose, and the scheme is echoed in the report and the
-      !! JSON either way, so nothing is inherited silently.
+      !! `population` defaults to CHELPG, which fits the electrostatic
+      !! potential and is what a condensed Fukui index is normally reported
+      !! from; Mulliken is basis-set dependent to the point of changing which
+      !! site ranks first. The scheme is echoed in the report and the JSON
+      !! either way.
       type(key_set_t) :: keys
       call allow(keys, "population")
-      ! Which starting density each ion gets: "neutral" or "independent".
-      !
-      ! **Deliberately a sibling of `scf`, not a key inside it**, even though
-      ! `scf` has a `guess` of its own. The two are different questions and the
-      ! spelling collides: this one says whether the ion starts from the
-      ! neutral's converged orbitals at all, while `scf.guess` says how a
-      ! density is built when it starts from nothing -- `core`, `gwh`, `sad`.
-      ! Nesting is what keeps them apart, so moving this one inside `scf` would
-      ! put two unrelated meanings on one name.
+      ! Which starting density each ion gets: "neutral" or "independent". A
+      ! sibling of `scf` and not a key inside it, because `scf.guess` is a
+      ! different question -- how a density is built when it starts from
+      ! nothing.
       call allow(keys, "guess")
-      ! The ions are their own SCF problem and are configured as one, with the
-      ! same key spellings `keywords.scf` uses so a block can be moved between
-      ! them unchanged.
+      ! The ions are their own SCF problem, configured with the same key
+      ! spellings `keywords.scf` uses.
       call allow(keys, "scf")
    end function fukui_keys
 
@@ -302,21 +269,17 @@ contains
       !! Every key here is spelled exactly as its `keywords.scf` counterpart,
       !! and each is *seeded* from that counterpart before the deck is read --
       !! so naming none of them leaves the ions converging the way the neutral
-      !! did, and naming one changes only that one. There is no sentinel for
-      !! "absent" anywhere below, because absent is spelled by the field still
-      !! holding what it inherited.
+      !! did, and naming one changes only that one.
       !!
       !! `inherit_scf` is the exception, and the only key here without a
       !! `keywords.scf` twin: false drops the seed, so unnamed keys fall back
-      !! to the type defaults rather than to the neutral's settings. That is
-      !! for a neutral converged tightly, or with an accelerator chosen for it,
-      !! where inheriting is the wrong start rather than a cautious one.
+      !! to the type defaults rather than to the neutral's settings.
       !!
       !! No `basis`, `density_fitting` or `unrestricted`: the density
       !! difference is taken over the neutral's own basis functions by
       !! construction, and an ion disagreeing with the neutral about the
-      !! Hamiltonian would not give a Fukui index -- it would give a
-      !! difference between two different calculations.
+      !! Hamiltonian would give a difference between two different calculations
+      !! rather than a Fukui index.
       type(key_set_t) :: keys
       call allow(keys, "inherit_scf")
       call allow(keys, "maxiter")
@@ -337,14 +300,10 @@ contains
    function charges_keys() result(keys)
       !! Settings for the atomic partial charges
       !!
-      !! `scheme` defaults to Mulliken, which is the opposite of the Fukui
-      !! default and for a reason. A condensed Fukui index is a difference of
-      !! two charges, where Mulliken's basis-set sensitivity does not cancel
-      !! and can change which site ranks first; asked for on its own, a charge
-      !! is usually wanted as the cheap population number, and Mulliken costs
-      !! one trace against an overlap that already exists. CHELPG costs an ESP
-      !! evaluation on a few thousand points. Naming the cheap one and
-      !! documenting the better one is the honest default here.
+      !! `scheme` defaults to Mulliken, the opposite of the Fukui default: a
+      !! charge asked for on its own is usually wanted as the cheap population
+      !! number, one trace against an overlap that already exists, where CHELPG
+      !! costs an ESP evaluation on a few thousand points.
       type(key_set_t) :: keys
       call allow(keys, "scheme")
    end function charges_keys
@@ -352,12 +311,8 @@ contains
    function bonding_analysis_keys() result(keys)
       !! Settings for the quasi-atomic bonding analysis
       !!
-      !! An object rather than a bare string, and that is worth getting right
-      !! before anything depends on it: `"bonding_analysis": "gms_quao"` reads
-      !! well until the first setting has to go somewhere, and then the choice
-      !! is between a second key that has to stay in step with it and a breaking
-      !! change to decks already written. `type` follows `keywords.guess.type`,
-      !! which is the same shape -- a named choice with settings beside it.
+      !! An object rather than a bare string, shaped like `keywords.guess`: a
+      !! named choice in `type`, with settings beside it.
       type(key_set_t) :: keys
       call allow(keys, "type")
       call allow(keys, "energy_threshold")
@@ -371,9 +326,7 @@ contains
    function avas_keys() result(keys)
       !! Choosing the active space by atomic orbital character
       !!
-      !! `orbitals` is a list of labels like `["N 2s", "N 2p"]`. Required, since
-      !! an AVAS block that names no orbitals is asking for a selection based on
-      !! nothing.
+      !! `orbitals` is a list of labels like `["N 2s", "N 2p"]`, and required.
       type(key_set_t) :: keys
       call allow(keys, "orbitals")
       call allow(keys, "threshold")
@@ -427,11 +380,11 @@ contains
    function efp_keys() result(keys)
       !! MAKEFP settings, deliberately not under "scf"
       !!
-      !! The SCF a potential runs already reads `keywords.scf.tolerance` and
-      !! `keywords.scf.density_tolerance`. Spelling either of them again here would
-      !! give a deck two ways to set one number and this validator no way to object,
-      !! since both would be keys it knows -- the trap `correlation_keys` records
-      !! for `aux_basis`. Everything here belongs to a stage after the SCF.
+      !! Everything here belongs to a stage after the SCF. The SCF a potential
+      !! runs already reads `keywords.scf.tolerance` and
+      !! `keywords.scf.density_tolerance`; spelling either again here would give
+      !! a deck two ways to set one number and this validator no way to object,
+      !! since both would be keys it knows.
       type(key_set_t) :: keys
       call allow(keys, "dynamic_tolerance")
       call allow(keys, "dynamic_maxiter")
@@ -449,10 +402,9 @@ contains
       !! conventional MP2 is a combination someone will ask for, and one
       !! `density_fitting` shared between them could not express it.
       !!
-      !! The auxiliary basis is deliberately *not* here. A basis set belongs in
-      !! `model` beside the orbital basis it fits, which is where `model.aux_basis`
-      !! is, and having two places to name one meant a deck could name both and
-      !! silently prefer one.
+      !! The auxiliary basis is deliberately *not* here: it is `model.aux_basis`,
+      !! beside the orbital basis it fits. Two places to name one thing let a
+      !! deck name both and silently prefer one.
       type(key_set_t) :: keys
       call allow(keys, "freeze_core")
       call allow(keys, "n_frozen_core")
@@ -495,11 +447,10 @@ contains
       !! Coupled-cluster settings, separate from "correlation"
       !!
       !! `correlation` holds what every post-Hartree-Fock method shares -- the
-      !! frozen core, the fitting, the auxiliary basis. These are the ones only an
-      !! iterative method has: how long to iterate and how hard, and whether the
-      !! triples correction runs. `triples` is here as an override; ordinarily the
-      !! method name settles it, since "ccsd" and "ccsd(t)" are separate method
-      !! types rather than one type with a flag.
+      !! frozen core, the fitting, the auxiliary basis. These are the ones only
+      !! an iterative method has. `triples` is here as an override; ordinarily
+      !! the method name settles it, since "ccsd" and "ccsd(t)" are separate
+      !! method types rather than one type with a flag.
       type(key_set_t) :: keys
       call allow(keys, "maxiter")
       call allow(keys, "tolerance")
@@ -514,7 +465,7 @@ contains
       !!
       !! All three are required and all three are lists of the same length:
       !! where each subspace starts, and the fewest and most electrons it may
-      !! hold. A partition given by halves is not a partition.
+      !! hold.
       type(key_set_t) :: keys
       call allow(keys, "subspaces")
       call allow(keys, "min_electrons")
@@ -530,16 +481,13 @@ contains
       !! **Only what the backend actually acts on is listed.** `mcscf_config_t`
       !! carries fields for state averaging and for a CASPT2/NEVPT2 correction,
       !! and none of that is implemented -- `run_libcint_casscf` optimises one
-      !! state and there is no perturbative step at all. Allowing the keys would
-      !! mean a deck could ask for a three-state average, get a ground-state
-      !! energy, and find nothing in the output to say so. Left out, the
-      !! validator refuses the key and lists what may be written instead, which
-      !! is the difference between "not yet" and "quietly ignored".
+      !! state and there is no perturbative step at all. Allowing those keys
+      !! would let a deck ask for a three-state average and get a ground-state
+      !! energy with nothing in the output to say so.
       !!
-      !! `max_micro_iter` and a CI threshold are absent for a duller reason:
-      !! neither routine underneath takes them. The macro loop pins its CASCI at
-      !! 1e-11 so the orbital gradient it differentiates is not contaminated by
-      !! a loose CI, and that is not a knob worth exposing.
+      !! `max_micro_iter` and a CI threshold are absent because neither routine
+      !! underneath takes them: the macro loop pins its CASCI at 1e-11, so the
+      !! orbital gradient it differentiates is not contaminated by a loose CI.
       type(key_set_t) :: keys
       call allow(keys, "avas")
       call allow(keys, "ormas")
@@ -554,8 +502,7 @@ contains
 
    function hessian_keys() result(keys)
       type(key_set_t) :: keys
-      ! Both spellings of the displacement are accepted, as the retired JSON
-      ! generator accepted them.
+      ! Both spellings of the displacement are accepted.
       call allow(keys, "finite_difference_displacement")
       call allow(keys, "displacement")
       call allow(keys, "temperature")
@@ -659,10 +606,9 @@ contains
       call allow(keys, "fragments")
       call allow(keys, "fragment_charges")
       call allow(keys, "fragment_multiplicities")
-      ! One effective fragment potential per fragment, or a single one standing for all
-      ! of them when `uniform_system` says every fragment is the same species -- which
-      ! is what keeps a ten-thousand-water deck from repeating one filename ten
-      ! thousand times. A fragment with no potential named for it stays quantum, so
+      ! One effective fragment potential per fragment, or a single one standing
+      ! for all of them when `uniform_system` says every fragment is the same
+      ! species. A fragment with no potential named for it stays quantum, so
       ! this is also how a mixed calculation is spelled.
       call allow(keys, "fragment_potentials")
       call allow(keys, "uniform_system")
@@ -695,10 +641,9 @@ contains
          call core%info(child, name=name)
          if (.not. allocated(name)) cycle
          if (.not. is_allowed(keys, name)) then
-            ! A key that moved gets told where it went. The generic message
-            ! lists what is allowed *here*, which for a relocated key is the
-            ! one list guaranteed not to contain it -- so it reads as "no such
-            ! setting" when the setting exists a line away.
+            ! A key that moved gets told where it went: the generic message
+            ! lists what is allowed *here*, which is the one list guaranteed
+            ! not to contain a relocated key.
             if (path == "keywords.scf" .and. name == "unrestricted") then
                call error%set(ERROR_VALIDATION, "keywords.scf.unrestricted has moved "// &
                               "to model.unrestricted. It selects which wavefunction is "// &
@@ -761,10 +706,7 @@ contains
       !!
       !! An active space can be named directly, by counts, or chosen by AVAS
       !! from orbital labels. Giving both is refused rather than resolved by
-      !! precedence: two ways of saying one thing leaves the deck's meaning
-      !! depending on which the reader reaches first, and the counts a user
-      !! wrote would be silently discarded in favour of whatever the projection
-      !! decided.
+      !! precedence, which would silently discard the counts the deck wrote.
       type(json_core), intent(inout) :: core
       type(json_value), pointer, intent(in) :: root
       type(error_t), intent(inout) :: error
@@ -815,8 +757,8 @@ contains
       !! `keywords.mcscf.full_valence`, and that it is the only space named
       !!
       !! The valence shell is a complete description of an active space, so
-      !! counts written beside it would be silently discarded. Refused rather
-      !! than resolved, for the reason the AVAS check gives.
+      !! counts written beside it would be silently discarded. Refused, as in
+      !! the AVAS check.
       type(json_core), intent(inout) :: core
       type(json_value), pointer, intent(in) :: root
       type(error_t), intent(inout) :: error
@@ -848,10 +790,9 @@ contains
    subroutine check_ormas_group(core, root, error)
       !! `keywords.mcscf.ormas`, and that it describes a partition
       !!
-      !! The lengths are checked here rather than left to the builder because
-      !! the deck is where the mistake is: three lists of different lengths is
-      !! a typo, and saying so with the key names beats an error about class
-      !! enumeration from four layers down.
+      !! The three list lengths are checked here rather than left to the
+      !! builder, so a typo is reported with the key names rather than as an
+      !! error about class enumeration four layers down.
       type(json_core), intent(inout) :: core
       type(json_value), pointer, intent(in) :: root
       type(error_t), intent(inout) :: error
@@ -910,9 +851,9 @@ contains
       !! Validate `properties.fukui.scf`, one level deeper than the helpers go
       !!
       !! `check_grandchild_object` walks two levels and this key is three down,
-      !! so the walk is spelled out. Worth validating rather than waving
-      !! through: an unrecognised key here is a convergence setting the ions
-      !! silently did not get, and the run still prints Fukui indices.
+      !! so the walk is spelled out. An unrecognised key here is a convergence
+      !! setting the ions silently did not get, with the run still printing
+      !! Fukui indices.
       type(json_core), intent(inout) :: core
       type(json_value), pointer, intent(in) :: root
       type(error_t), intent(inout) :: error
@@ -988,12 +929,9 @@ contains
    subroutine check_fukui_guess(core, root, error)
       !! `properties.fukui.guess` names a mode this code has
       !!
-      !! Checked here rather than left to the reader, for the reason the whole
-      !! validator exists: the reader compares against "independent" and treats
-      !! everything else as the default, so a misspelling would silently seed
-      !! from the neutral -- which is the setting the deck was trying to turn
-      !! off. A wrong answer produced by a typo in the thing meant to prevent
-      !! it is the worst shape this failure could take.
+      !! The reader compares against "independent" and treats everything else
+      !! as the default, so a misspelling would silently seed from the neutral
+      !! -- the setting the deck was trying to turn off.
       type(json_core), intent(inout) :: core
       type(json_value), pointer, intent(in) :: root
       type(error_t), intent(inout) :: error
@@ -1025,12 +963,10 @@ contains
    subroutine check_ecp_supported(core, root, error)
       !! `model.ecp` only reaches the methods that were wired for it
       !!
-      !! Checked here rather than left to each method because the failure is
-      !! silence: `ecp_set` is threaded into the Hartree-Fock and DFT builders
-      !! and nowhere else, so a CASSCF or xTB deck naming a potential today
-      !! runs all-electron and reports a number with nothing to say it ignored
-      !! half the request. That is the failure mode the ECP work exists to
-      !! prevent, so it must not be the one the deck layer has.
+      !! `ecp_set` is threaded into the Hartree-Fock and DFT builders and
+      !! nowhere else, so a CASSCF or xTB deck naming a potential would run
+      !! all-electron and report a number with nothing to say it ignored half
+      !! the request.
       !!
       !! Correlated methods built on Hartree-Fock -- MP2, RI-MP2, coupled
       !! cluster, the double hybrids -- are not listed: they take their
@@ -1078,10 +1014,9 @@ contains
    subroutine check_bonding_analysis(core, root, error)
       !! The value of `properties.bonding_analysis` names an analysis we have
       !!
-      !! Checked here rather than left to the reader because an unknown name is
-      !! the failure this schema exists to catch: a deck that asks for an
-      !! analysis nobody implements would otherwise run a perfectly good energy
-      !! and report nothing, which looks like the analysis found nothing to say.
+      !! A deck asking for an analysis nobody implements would otherwise run a
+      !! perfectly good energy and report nothing, which looks like the analysis
+      !! found nothing to say.
       type(json_core), intent(inout) :: core
       type(json_value), pointer, intent(in) :: root
       type(error_t), intent(inout) :: error
@@ -1129,13 +1064,11 @@ contains
       !! The three rules that make `keywords.guess` unambiguous
       !!
       !!   1. `keywords.scf.guess` and `keywords.guess.type` must not both be
-      !!      set. The second supersedes the first; refusing both rather than
-      !!      picking one keeps the deck's meaning independent of reader order.
+      !!      set. The second supersedes the first, and naming both is refused
+      !!      rather than resolved by precedence.
       !!   2. `subscf` is only meaningful under `basis_set_projection`. Beside
-      !!      any other guess it would be read, validated and then ignored, which
-      !!      is the failure mode this whole schema exists to prevent.
-      !!   3. `basis_set_projection` needs at least one step. A ladder with no
-      !!      rungs is the default guess wearing a longer name.
+      !!      any other guess it would be read, validated and then ignored.
+      !!   3. `basis_set_projection` needs at least one step.
       type(json_core), intent(inout) :: core
       type(json_value), pointer, intent(in) :: root
       type(error_t), intent(inout) :: error
@@ -1362,11 +1295,9 @@ contains
    pure subroutine allow(keys, name)
       !! Record a key an object may contain
       !!
-      !! Stops rather than overflowing. These sets are built from literals at
-      !! startup, so going over MAX_KEYS is a programming error fixed by raising
-      !! it -- never something a deck can provoke -- and failing here names the
-      !! key that did it instead of corrupting memory for a later test to trip
-      !! over.
+      !! Stops rather than overflowing, naming the key that did it. These sets
+      !! are built from literals at startup, so going over `MAX_KEYS` is a
+      !! programming error and never something a deck can provoke.
       type(key_set_t), intent(inout) :: keys
       character(len=*), intent(in) :: name
 
@@ -1381,8 +1312,8 @@ contains
       !! Record a key an object must contain
       !!
       !! Required keys are also allowed ones, so every call here is paired with
-      !! an `allow` above rather than implying it -- the allow-list is what the
-      !! error message offers the user, and it should read as the whole set.
+      !! an `allow` above rather than implying it: the allow-list is what the
+      !! error message offers the user.
       type(key_set_t), intent(inout) :: keys
       character(len=*), intent(in) :: name
 

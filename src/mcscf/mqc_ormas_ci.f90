@@ -2,18 +2,11 @@
 module mqc_ormas_ci
    !! What `mqc_ci` does for a complete active space, for a restricted one.
    !!
-   !! The physics is untouched: ORMAS restricts which determinants exist, not
-   !! what the Hamiltonian is, so every matrix element here is the same Slater
-   !! rule it would be in a CAS. What changes is the bookkeeping around it --
-   !! the determinants no longer form a rectangle, so a quantity indexed by one
-   !! is a flat vector rather than a matrix, and reaching a determinant means
-   !! going through `mqc_ormas_space`.
-   !!
-   !! The diagonal comes first and on its own. It is the whole Davidson
-   !! preconditioner, it needs no excitations, and -- being written by walking
-   !! the determinants in storage order while an independent path reaches the
-   !! same elements through the address formula -- it checks the addressing
-   !! exactly, before anything harder is built on top of it.
+   !! ORMAS restricts which determinants exist, not what the Hamiltonian is, so
+   !! every matrix element here is the same Slater rule it would be in a CAS.
+   !! Only the bookkeeping differs: the determinants no longer form a rectangle,
+   !! so a quantity indexed by one is a flat vector rather than a matrix, and
+   !! reaching a determinant goes through `mqc_ormas_space`.
    use pic_types, only: dp, int64
    use pic_io, only: to_char
    use pic_lapack_interfaces, only: pic_syev
@@ -39,17 +32,16 @@ module mqc_ormas_ci
 
    integer(int64), parameter :: GATHER_BUDGET = 256_int64*1024_int64*1024_int64
       !! Bytes the excitation intermediate may occupy at once. It is built one
-      !! run of alpha strings at a time and consumed before the next, so this
-      !! bounds the memory rather than the problem: a larger space means more
-      !! runs, not a larger array.
+      !! run of alpha strings at a time and consumed before the next, so a
+      !! larger space means more runs, not a larger array.
    public :: ormas_density_matrices
 
    type, extends(sigma_operator_t) :: ormas_operator_t
       !! The restricted Hamiltonian, as something Davidson can multiply by
       !!
       !! Holds what `ormas_sigma_direct` needs and nothing else. The vector it
-      !! is handed is already flat, which is the reason the method had to be
-      !! written that way: a restricted space has no rectangle to reshape into.
+      !! is handed is already flat: a restricted space has no rectangle to
+      !! reshape into.
       type(ormas_space_t), pointer :: space => null()
       type(ormas_closure_t), pointer :: closure => null()
       real(dp), pointer :: folded(:, :) => null()
@@ -83,10 +75,9 @@ contains
       !! Everything about a diagonal element that one spin decides alone
       !!
       !! Three things per string: its one-electron sum, its own Coulomb and
-      !! exchange, and -- the one worth hoisting -- the vector
-      !! `screened(q) = sum over occupied p of (pp|qq)`. Without it the
-      !! opposite-spin Coulomb term costs a double loop for every determinant;
-      !! with it, a single sum over the other spin's electrons.
+      !! exchange, and the vector `screened(q) = sum over occupied p of
+      !! (pp|qq)`, which turns the opposite-spin Coulomb term of a determinant
+      !! into a single sum over the other spin's electrons.
       integer(int64), intent(in) :: strings(:)
       integer, intent(in) :: n_orbitals, n_electrons
       real(dp), intent(in) :: h1e(:, :), coulomb(:, :), exchange(:, :)
@@ -128,21 +119,15 @@ contains
       !!       + sum_{p in A} sum_{q in B} (pp|qq)
       !!
       !! Coulomb and exchange within a spin, Coulomb only between the two,
-      !! because electrons of opposite spin do not exchange. Identical to the
-      !! complete-active-space expression -- a restricted space contains fewer
-      !! determinants, not different ones.
+      !! because electrons of opposite spin do not exchange.
       !!
-      !! Filled by walking the space in storage order: alpha class, then alpha
-      !! string, then each compatible beta class, then its strings. That order
-      !! is exactly the one the offsets in `mqc_ormas_space` were accumulated
-      !! in, so a plain counter tracks the address and the writes run straight
-      !! down the array. It also means a disagreement between this counter and
-      !! the address formula is a disagreement about the layout itself, which
-      !! is why the test asserts they agree at every determinant rather than
-      !! only that the energies come out right.
+      !! Filled by walking the space in storage order -- alpha class, alpha
+      !! string, each compatible beta class, its strings -- which is the order
+      !! the offsets in `mqc_ormas_space` were accumulated in, so a plain
+      !! counter tracks the address.
       !!
-      !! Takes the raw integrals, not the folded tensor: folding rearranges the
-      !! Hamiltonian for `E_pq E_rs` and its diagonal is not the diagonal of
+      !! Takes the raw integrals, **not** the folded tensor: folding rearranges
+      !! the Hamiltonian for `E_pq E_rs` and its diagonal is not the diagonal of
       !! anything physical.
       type(ormas_space_t), intent(in) :: space
       integer(int64), intent(in) :: alpha(:), beta(:)   !! As `ormas_strings` gives them
@@ -218,10 +203,8 @@ contains
       !! Where each of the space's strings sits in the unrestricted list
       !!
       !! The restricted space groups its strings by occupation class; the
-      !! complete space orders them by bit pattern. Both index the same objects,
-      !! so one permutation relates them, and it is wanted because the machinery
-      !! being borrowed below -- excitation tables, the sigma build -- is
-      !! written against the complete space.
+      !! complete space orders them by bit pattern. `in_*` maps class order to
+      !! bit-pattern order and `from_*` inverts it.
       type(ormas_space_t), intent(in) :: space
       integer(int64), intent(in) :: alpha(:), beta(:)
       integer, allocatable, intent(out) :: in_alpha(:), in_beta(:)
@@ -267,21 +250,12 @@ contains
       !! restriction excludes; apply the complete-space Hamiltonian; keep only
       !! what lands back inside. Because the vector vanishes outside, the sum
       !! that reaches an in-space determinant runs only over in-space
-      !! determinants, so this *is* the restricted Hamiltonian -- not an
+      !! determinants, so this *is* the restricted Hamiltonian and not an
       !! approximation to it.
       !!
-      !! Which makes it correct by construction and, for the moment, the whole
-      !! implementation: it inherits a sigma already checked against PySCF
-      !! rather than introducing a second one to get wrong.
-      !!
-      !! What it does not inherit is the saving. The work is that of the
-      !! complete space, so this is the route while a space is small enough to
-      !! check, and not the route that makes a restricted space worth having.
-      !! The intermediate a direct build needs is subtler than it looks: an
-      !! excitation may leave the space and a second bring it back, so the
-      !! basis it lives on is the space plus one excitation, and truncating it
-      !! to the space itself silently drops terms. That is the next piece, and
-      !! it has to reproduce this one.
+      !! The work is that of the complete space, so this is the reference the
+      !! direct build is checked against rather than the route that makes a
+      !! restricted space worth having.
       type(ormas_space_t), intent(in) :: space
       real(dp), intent(in) :: folded(:, :)
       type(link_table_t), intent(in) :: alpha_table, beta_table
@@ -327,8 +301,10 @@ contains
    end subroutine ormas_sigma
 
    pure function determinant_address_local(space, ia, ib) result(at)
-      !! `determinant_address`, spelled out here so this module needs no
-      !! circular use of the one it is built on
+      !! `determinant_address`, spelled out again
+      ! TODO(mqc): a second copy of the address formula, free to drift from the
+      ! one in `mqc_ormas_space`. That module is already used here and exports
+      ! `determinant_address`, so there is no circular dependency to avoid.
       type(ormas_space_t), intent(in) :: space
       integer, intent(in) :: ia, ib
       integer(int64) :: at
@@ -346,11 +322,8 @@ contains
       !! The lowest eigenvalues of the restricted Hamiltonian, densely
       !!
       !! Builds the matrix a column at a time by applying `ormas_sigma` to each
-      !! unit vector, then diagonalises it. That costs a determinant's worth of
-      !! sigma per determinant and is only sane while the space is small -- but
-      !! it introduces no matrix elements of its own, so the energies it
-      !! returns are exactly what the sigma says they are and nothing has been
-      !! written twice.
+      !! unit vector, then diagonalises it: one sigma per determinant, so only
+      !! sane while the space is small.
       type(ormas_space_t), intent(in) :: space
       real(dp), intent(in) :: folded(:, :)
       type(link_table_t), intent(in) :: alpha_table, beta_table
@@ -402,17 +375,8 @@ contains
       !! Hamiltonian, apply an excitation again -- with the intermediate living
       !! on the closure rather than on the whole rectangle.
       !!
-      !! That is the only real difference and it is the whole point. The
-      !! intermediate has to be wider than the space, because an excitation can
-      !! leave and a second bring it back; it does not have to be as wide as the
-      !! complete space, because two excitations from the space is further than
-      !! anything here reaches. One excitation is exactly enough, and for a
-      !! restricted space that is a far smaller set than the rectangle the
-      !! projected build pays for.
-      !!
-      !! The excitation tables are the unrestricted ones, indexed by bit
-      !! pattern; the strings here are grouped by occupation class. `in_*` and
-      !! `from_*` carry an index between the two orderings, in each direction.
+      !! One excitation of width is exactly enough: an excitation can leave the
+      !! space and a second bring it back, but nothing here reaches two away.
       type(ormas_space_t), intent(in) :: space
       type(ormas_closure_t), intent(in) :: closure
       real(dp), intent(in) :: folded(:, :)
@@ -492,16 +456,13 @@ contains
       !! Every single excitation out of every string the space keeps
       !!
       !! The same table `mqc_determinants` builds for a complete space, over the
-      !! pruned string list instead of all `C(norb, nelec)` of them -- which is
-      !! the point, because that table is one of the objects that made a real
-      !! restricted space unreachable. Singles and doubles from seven orbitals
-      !! into twenty-nine has 8,347,680 strings and needs 136,620 of them.
+      !! pruned string list rather than all `C(norb, nelec)` of them, so its
+      !! indices are the space's own.
       !!
-      !! `dest` is zero where the excitation leaves the kept classes altogether.
-      !! That is not an error and not rare: it is what an excitation does at the
-      !! edge of a restricted space, and the callers skip it. Nothing is lost by
-      !! doing so, because a string outside the kept set is more than one
-      !! excitation from the space and can carry no weight the sigma will read.
+      !! `dest` is zero where the excitation leaves the kept classes, which is
+      !! normal at the edge of a restricted space and which the callers skip: a
+      !! string outside the kept set is more than one excitation from the space
+      !! and can carry no weight the sigma will read.
       type(ormas_space_t), intent(in) :: space
       integer(int64), intent(in) :: strings(:)
       logical, intent(in) :: alpha_spin
@@ -561,15 +522,13 @@ contains
       !! The longest run of alpha strings from here that stays inside the budget
       !!
       !! At least one string always, even where that one exceeds the budget by
-      !! itself: a single alpha string's row of the closure is the smallest
-      !! thing this can work on, and a large allocation beats a refusal.
+      !! itself -- a single alpha string's row of the closure is the smallest
+      !! unit this can work on.
       type(ormas_space_t), intent(in) :: space
       type(ormas_closure_t), intent(in) :: closure
       integer, intent(in) :: alpha_lo, n_alpha_strings
       integer(int64), intent(in), optional :: max_columns
-         !! Overrides the budget. Only a test has a reason to: the runs have to
-         !! give the same answer as one pass over everything, and on any space
-         !! small enough to check that against, the budget is never reached.
+         !! Overrides the budget; testing only
       integer :: alpha_hi
 
       integer(int64) :: limit
@@ -605,22 +564,16 @@ contains
       !! Column `d` and row `p + (q-1) n_orb` hold the component on closure
       !! determinant `alpha_base(alpha_lo) + d` of `E_pq |c>`.
       !!
-      !! The whole intermediate is `n_orb^2` by the size of the closure, and for
-      !! anything worth restricting that does not fit -- singles and doubles on
-      !! methanol would want 39 GB of it. But the contraction that consumes it
-      !! treats each determinant column independently, so it can be built a run
-      !! of alpha strings at a time and consumed before the next is built. The
-      !! closure is laid out alpha-major, so a run of alpha strings is a
-      !! contiguous block of columns and no gathering is repeated.
+      !! The whole intermediate is `n_orb^2` by the size of the closure. The
+      !! contraction that consumes it treats each determinant column
+      !! independently, so it is built a run of alpha strings at a time; the
+      !! closure is alpha-major, so a run is a contiguous block of columns.
       !!
       !! **The alpha half is driven from the destination**, which is what makes
-      !! a tile self-contained: contributions to a column can come from an alpha
-      !! string outside the run, so enumerating by source would need every tile
-      !! to sweep every string. Reading the excitation table from the other end
-      !! costs nothing and needs no second table -- the row of `a2` that leads
-      !! back to `a` is the same excitation with the orbitals exchanged, and the
-      !! phase is the same because the occupied orbitals it steps over are the
-      !! same. Hence the swapped `des`/`cre` below, which is deliberate.
+      !! a run self-contained: contributions to a column can come from an alpha
+      !! string outside it. The row of `a2` leading back to `a` is the same
+      !! excitation with the orbitals exchanged and carries the same phase,
+      !! hence the swapped `des`/`cre` below, which is deliberate.
       !!
       !! The beta half needs no such trick: a beta excitation leaves the alpha
       !! string alone, so everything it writes is already in the run.
@@ -681,14 +634,12 @@ contains
       !! <Psi|E_ps|Psi>`, the second being what contracts with `(pq|rs)` to give
       !! the two-electron energy.
       !!
-      !! The one-particle matrix needs nothing outside the space: it contracts
-      !! the intermediate back against the vector, and the vector is zero
-      !! wherever the windows exclude. The two-particle matrix does need the
-      !! closure, and this is the sharpest place that shows -- it is
-      !! `<E_qp Psi|E_rs Psi>`, an inner product of two intermediates, and both
-      !! of them have weight on determinants the space does not contain. Summing
-      !! only over the space would drop those products silently, leaving density
-      !! matrices whose traces are all correct and whose energy is not.
+      !! The one-particle matrix needs nothing outside the space, since the
+      !! vector is zero wherever the windows exclude. The two-particle one does:
+      !! it is `<E_qp Psi|E_rs Psi>`, an inner product of two intermediates that
+      !! both carry weight on determinants the space does not contain. Summing
+      !! only over the space drops those products silently, for density matrices
+      !! whose traces are correct and whose energy is not.
       type(ormas_space_t), intent(in), target :: space
       real(dp), intent(in) :: ci(:)
       real(dp), allocatable, intent(out) :: dm1(:, :), dm2(:, :, :, :)
@@ -803,12 +754,8 @@ contains
       !!
       !! Everything from the partition and the integrals: the strings, the
       !! closure the sigma needs, the excitation tables, the folded Hamiltonian,
-      !! the diagonal to precondition with, and then Davidson.
-      !!
-      !! This is the route that scales. The dense solve alongside it costs a
-      !! sigma per determinant and exists to be compared against; this one costs
-      !! a sigma per expansion vector, which is tens rather than thousands, and
-      !! never forms a matrix.
+      !! the diagonal to precondition with, and then Davidson. One sigma per
+      !! expansion vector, and no matrix is ever formed.
       type(ormas_space_t), intent(in), target :: space
       real(dp), intent(in) :: h1e(:, :), eri(:, :, :, :)
       integer, intent(in) :: n_roots
@@ -818,16 +765,13 @@ contains
       real(dp), intent(in), optional :: tolerance
       integer, intent(in), optional :: max_iterations
       real(dp), intent(in), optional :: guess(:, :)
+         !! (n_determinants, n_roots) starting vectors, as an orbital optimiser
+         !! has from the previous macro-iteration
       logical, intent(in), optional :: verbose
-         !! Print a line per iteration, as the complete-space solver does. A
-         !! restricted space is smaller but not necessarily quick, and it was
-         !! the one path still finishing without ever having said it started.
+         !! Print a line per iteration, as the complete-space solver does
       real(dp), intent(in), optional :: energy_offset
          !! Added to the eigenvalue before printing, so the table shows the
-         !! total rather than the active-space energy alone.
-         !! (n_determinants, n_roots) starting vectors. An orbital optimiser
-         !! hands back the previous macro-iteration's answer, which after the
-         !! first few is nearly this one already.
+         !! total rather than the active-space energy alone
 
       type(ormas_operator_t) :: operator
       type(ormas_closure_t), target :: closure

@@ -3,23 +3,20 @@ module mqc_checkpoint
    !! Writes each fragment energy as it is produced, and reads them back so a
    !! rerun computes only what is missing.
    !!
-   !! **The file is appended, not written at the end.** That is the whole
-   !! point: a run killed at hour eleven of twelve leaves eleven hours of
-   !! results behind, and the fragment table -- written once, after the
-   !! expansion -- leaves nothing. Every line is flushed as it is recorded, so
-   !! what survives a kill is every fragment that finished before it.
+   !! **The file is appended, not written at the end.** Every line is flushed
+   !! as it is recorded, so what survives a kill is every fragment that
+   !! finished before it -- where the fragment table, written once after the
+   !! expansion, leaves nothing.
    !!
    !! **Terms are keyed by their monomers, not by their index.** A screened run
    !! and a full run number the same dimer differently, so an index-keyed
-   !! checkpoint would silently pair energies with the wrong fragments the
-   !! first time anyone resumed a screened list against a full one. The
-   !! monomer tuple means the same thing in both.
+   !! checkpoint would pair energies with the wrong fragments the first time
+   !! anyone resumed a screened list against a full one.
    !!
    !! **The header carries a fingerprint and a mismatch is fatal.** Reusing an
-   !! energy computed for a different geometry, basis or functional is the one
-   !! failure that finishes early and reports a converged total with nothing
-   !! wrong on the face of it. Refusing is the entire reason the fingerprint
-   !! exists, so it is refused loudly rather than warned about.
+   !! energy computed for a different geometry, basis or functional finishes
+   !! early and reports a converged total with nothing wrong on the face of it,
+   !! so it is refused rather than warned about.
    !!
    !! A truncated final line -- the job died mid-write -- is dropped rather
    !! than being an error. That is the expected state of a checkpoint from a
@@ -75,7 +72,7 @@ contains
       !! Refuses rather than starting fresh when the fingerprint disagrees.
       !! Overwriting would throw away hours of a run whose file was merely
       !! misnamed; ignoring it would splice its energies into a different
-      !! calculation. Neither is the caller's intent, so neither is guessed at.
+      !! calculation.
       class(checkpoint_t), intent(inout) :: this
       character(len=*), intent(in) :: path
       character(len=*), intent(in) :: fingerprint
@@ -91,16 +88,10 @@ contains
       this%max_level = max_level
       if (len_trim(path) == 0) return
 
-      ! A line holds one energy and nothing else, so a reused fragment comes
-      ! back without its gradient and the run dies assembling one. Refused
-      ! rather than half-supported: extending the format to carry gradients
-      ! and displacement sets is a real piece of work, and pretending to
-      ! support them meanwhile costs a job that thought it was resumable.
-      ! The backend is chosen, not configured. A run needing derivatives has
-      ! to have HDF5 because the text format holds one energy per record; an
-      ! energy-only run gets text because it is crash-proof line by line and
-      ! costs no dependency. A caller can still ask for HDF5 by naming the
-      ! file .h5, which is what a screening pass wants when it is large.
+      ! The backend is chosen, not configured. A run needing derivatives has to
+      ! have HDF5, because a text line holds one energy and nothing else; an
+      ! energy-only run gets text, which is crash-proof line by line and costs
+      ! no dependency. A caller can still ask for HDF5 by naming the file .h5.
       this%use_hdf5 = (.not. energy_only) .or. ends_with(this%path, ".h5") &
                       .or. ends_with(this%path, ".hdf5")
 
@@ -276,10 +267,9 @@ contains
       real(dp), intent(in), optional :: hessian(:, :)
       real(dp), intent(in), optional :: homo, lumo
       logical, intent(in), optional :: has_orbitals
-         !! Whether the method reported a frontier pair. Passed as a flag
-         !! rather than by omitting the values, so a caller forwards three
-         !! arguments unconditionally instead of branching -- and a resumed
-         !! fragment does not come back claiming a gap of zero.
+         !! Whether the method reported a frontier pair. A flag rather than
+         !! omitted values, so a resumed fragment does not come back claiming a
+         !! gap of zero.
 
       integer :: level, islot, natoms_local
       logical :: orbitals_out
@@ -319,8 +309,7 @@ contains
       !! Is this term already done, and with what energy
       !!
       !! Bisection over the sorted load rather than a scan: a resume asks this
-      !! once per term, and at the fragment counts this exists for, linear
-      !! search would cost more than recomputing everything.
+      !! once per term, so a linear search would be quadratic in the term list.
       class(checkpoint_t), intent(inout) :: this
       integer, intent(in) :: term(:)
       logical, intent(out) :: found
@@ -405,11 +394,10 @@ contains
 
    subroutine sort_terms(this)
       !! Insertion sort by monomer tuple
-      !!
-      !! Quadratic, and deliberately so for now: the load is bounded by what a
-      !! previous run finished, and anything large enough for this to hurt is
-      !! also large enough that the sort wants to happen while reading rather
-      !! than after. Marked so the next person knows it was a choice.
+      ! TODO(mqc): quadratic in the number of loaded entries, which is however
+      ! many fragments a previous run finished. A resume of a large screening
+      ! pass pays it once, before any work starts, with nothing in the log to
+      ! say what it is doing.
       class(checkpoint_t), intent(inout) :: this
 
       integer(int64) :: i, j
@@ -453,13 +441,12 @@ contains
       if (this%use_hdf5) then
          call this%h5%close()
       else if (this%active) then
-         ! Not `this%unit >= 0`: `newunit=` hands back *negative* unit
-         ! numbers, so that test was never true and the file was never
-         ! closed. A program that runs once and exits does not notice --
-         ! the process closes it -- but a session runs many calculations
-         ! in one process, and the second one asking for the same
-         ! checkpoint got "already opened on another unit" instead of a
-         ! resume. `active` is the thing that actually says a unit is open.
+         ! Guarded on `active`, not on `this%unit >= 0`: `newunit=` hands back
+         ! *negative* unit numbers, so that test is never true and the file is
+         ! never closed. One run does not notice, since the process closes it;
+         ! a session runs many calculations in one process, and the second one
+         ! asking for the same checkpoint gets "already opened on another unit"
+         ! instead of a resume.
          close (this%unit)
       end if
       this%active = .false.

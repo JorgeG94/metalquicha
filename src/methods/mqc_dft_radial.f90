@@ -8,18 +8,14 @@ module mqc_dft_radial
    !!
    !! with alpha = 0.6 and xi an element-specific scale. The weight returned is
    !! dr/di -- the mapping Jacobian times the Chebyshev weight -- and does *not*
-   !! include the r^2 of the volume element or the 4*pi of the sphere.
-   !!
-   !! That split is deliberate and worth stating, because getting it wrong gives
-   !! a grid that integrates to a plausible but wrong number rather than failing.
-   !! A caller assembling a molecular grid wants
+   !! include the r^2 of the volume element or the 4*pi of the sphere. A caller
+   !! assembling a molecular grid wants
    !!
    !!    volume weight = 4*pi * r^2 * dr * (angular weight)
    !!
-   !! with the angular weight from `mqc_lebedev`, whose weights sum to 1. This is
-   !! the same convention PySCF uses, which is what makes the two directly
-   !! comparable. `radial_volume_weights` does the r^2 and 4*pi for callers that
-   !! want a ready-made spherical quadrature.
+   !! with the angular weight from `mqc_lebedev`, whose weights sum to 1.
+   !! `radial_volume_weights` does the r^2 and 4*pi for callers that want a
+   !! ready-made spherical quadrature.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_physical_constants, only: PI
@@ -33,11 +29,11 @@ module mqc_dft_radial
    public :: treutler_ahlrichs_radial  !! M4 radial nodes and mapping weights
    public :: radial_volume_weights    !! 4*pi*r^2*dr, for a full spherical quadrature
 
-   !> Exponent of the M4 mapping
    real(dp), parameter, public :: M4_ALPHA = 0.6_dp
+      !! Exponent of the M4 mapping
 
-   !> Used where an element has no tabulated value. Every element up to Z=103
-   !> has one, so this is only reached by superheavy placeholders.
+   ! Used where an element has no tabulated value. Every element up to Z=103
+   ! has one, so these are only reached by superheavy placeholders.
    real(dp), parameter :: DEFAULT_XI = 1.0_dp
    real(dp), parameter :: DEFAULT_BRAGG = 1.0_dp
 
@@ -114,9 +110,9 @@ contains
    pure subroutine radial_volume_weights(r, dr, weights)
       !! Turn mapping weights into spherical volume weights, 4*pi*r^2*dr
       !!
-      !! Use this only when integrating a spherically symmetric function. For a
-      !! molecular grid the 4*pi belongs with the angular weights, which sum to
-      !! 1, so applying it here as well would count it twice.
+      !! For a spherically symmetric integrand only. On a molecular grid the
+      !! 4*pi belongs with the angular weights, which sum to 1, so applying it
+      !! here as well counts it twice.
       real(dp), intent(in) :: r(:)         !! Radial nodes
       real(dp), intent(in) :: dr(:)        !! Mapping weights
       real(dp), intent(out) :: weights(:)  !! 4*pi*r^2*dr

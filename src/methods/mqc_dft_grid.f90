@@ -15,9 +15,7 @@ module mqc_dft_grid
    !! weights so it cannot be applied twice.
    !!
    !! Grid size follows a `level` from 0 to 9, with radial and angular counts
-   !! chosen per element period. These are the same tables PySCF uses, which is
-   !! what makes a level-for-level comparison meaningful. Level 3 is the usual
-   !! default and is the one a production calculation should start from.
+   !! chosen per element period. Level 3 is the default.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_lebedev, only: lebedev_grid
@@ -40,15 +38,12 @@ module mqc_dft_grid
    integer, parameter :: MAX_GRID_LEVEL = 9
    integer, parameter :: DEFAULT_GRID_LEVEL = 3
 
-   !> Pruning is on by default, as it is in every production DFT code. An
-   !> unpruned level-3 water grid is 52850 points against 20240 pruned, for the
-   !> same accuracy to well past where the functional itself is reliable.
    integer, parameter :: DEFAULT_PRUNE = PRUNE_NWCHEM
+      !! Angular pruning is on unless a caller asks for `PRUNE_NONE`.
 
-   !> Highest Z in each period, used to place an element in the level tables
    integer, parameter :: PERIOD_LAST_Z(N_PERIODS) = [2, 10, 18, 36, 54, 86, 118]
+      !! Highest Z in each period, used to place an element in the level tables
 
-   !> Radial shells per (level, period)
    integer, parameter :: RAD_GRIDS(MIN_GRID_LEVEL:MAX_GRID_LEVEL, N_PERIODS) = &
                          transpose(reshape([ &
                                            10, 15, 20, 30, 35, 40, 50, &
@@ -61,11 +56,8 @@ module mqc_dft_grid
                                            90, 135, 140, 150, 155, 160, 165, &
                                            100, 150, 155, 165, 170, 175, 180, &
                                            200, 200, 200, 200, 200, 200, 200], [N_PERIODS, MAX_GRID_LEVEL + 1]))
+      !! Radial shells per (level, period)
 
-   !> Lebedev points per (level, period)
-   !>
-   !> PySCF's table stores Lebedev degrees and maps them to point counts; these
-   !> are the point counts directly, since that is what `lebedev_grid` takes.
    integer, parameter :: ANG_POINTS(MIN_GRID_LEVEL:MAX_GRID_LEVEL, N_PERIODS) = &
                          transpose(reshape([ &
                                            50, 86, 110, 110, 110, 110, 110, &
@@ -79,6 +71,9 @@ module mqc_dft_grid
                                            1202, 1202, 1202, 1202, 1202, 1202, 1202, &
                                            1454, 1454, 1454, 1454, 1454, 1454, 1454], &
                                            [N_PERIODS, MAX_GRID_LEVEL + 1]))
+      !! Lebedev points per (level, period), as point counts rather than the
+      !! degrees the standard tables list, since that is what `lebedev_grid`
+      !! takes.
 
    type :: dft_grid_t
       !! A molecular quadrature: points, weights, and which atom made each point
@@ -87,17 +82,13 @@ module mqc_dft_grid
       real(dp), allocatable :: weights(:)    !! (n_points), full volume weight
       real(dp), allocatable :: quad_weights(:)
          !! (n_points), the radial times angular weight *before* the Becke
-         !! partition multiplies it in. Kept because a gradient needs the
-         !! partition weight and the quadrature weight separately -- the
-         !! partition depends on where the nuclei are and the quadrature does
-         !! not, so only one of the two carries a derivative. Recovering it by
-         !! dividing `weights` by the partition would divide by zero exactly
-         !! where the partition underflows.
+         !! partition multiplies it in. Only the partition carries a nuclear
+         !! derivative, so a gradient needs the two factors apart, and
+         !! recovering this by dividing `weights` by the partition would divide
+         !! by zero exactly where the partition underflows.
       integer, allocatable :: atom(:)        !! (n_points), owning atom
-      ! What the partition was built with. Recorded because a gradient has to
-      ! differentiate the same partition the energy integrated over, and a
-      ! caller reconstructing these from defaults would silently differentiate
-      ! a different one the moment the defaults changed.
+      ! What the partition was built with: a gradient has to differentiate the
+      ! same partition the energy integrated over.
       integer :: scheme = PARTITION_BECKE
       integer :: adjust = ADJUST_TREUTLER
       integer, allocatable :: numbers(:)     !! (n_atoms), Z, for the partition radii
@@ -147,9 +138,12 @@ contains
       !! Build the molecular grid
       !!
       !! `level` picks per-element sizes from the standard tables. `n_radial`
-      !! and `n_angular` override it for every atom, which is what a convergence
-      !! study wants; supplying one without the other is refused rather than
-      !! silently half-applied.
+      !! and `n_angular` override it for every atom; supplying one without the
+      !! other is refused rather than silently half-applied.
+      ! TODO(mqc): the override is still pruned. With the default
+      ! `PRUNE_NWCHEM` an explicit `n_angular` is the valence-zone order only,
+      ! so a convergence study asking for 302 points gets 50/86/266/302/266 by
+      ! zone unless it also passes `prune = PRUNE_NONE`.
       real(dp), intent(in) :: atom_coords(:, :)   !! (3, n_atoms), Bohr
       integer, intent(in) :: atomic_numbers(:)    !! Z per atom
       type(dft_grid_t), intent(out) :: grid
@@ -193,7 +187,7 @@ contains
 
       ! Size the whole grid first so it can be allocated once. With pruning the
       ! count is no longer nr*na: each shell carries its own order, and those
-      ! depend on the radii, so the radial mesh has to be built here as well.
+      ! depend on the radii, so the radial mesh is built here as well.
       total = 0
       do ia = 1, n_atoms
          call atom_sizes(atomic_numbers(ia), used_level, n_radial, n_angular, nr, na)
@@ -224,8 +218,7 @@ contains
 
          ! Shells sharing an order are not contiguous -- the outer zone repeats
          ! the order of the third -- so hold the last sphere built and reuse it
-         ! when the order does not change, rather than regenerating a 302-point
-         ! grid for every shell that wants one.
+         ! when the order does not change.
          cached_order = 0
          do i = 1, nr
             if (shell_order(i) /= cached_order) then

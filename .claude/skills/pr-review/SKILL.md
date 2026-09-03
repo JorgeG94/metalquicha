@@ -31,15 +31,16 @@ or they are not found:
 ```bash
 export PATH=$HOME/.venv/bin:$PATH
 CHANGED=$(git diff main...HEAD --name-only --diff-filter=d -- '*.f90' '*.F90')
-[ -n "$CHANGED" ] && python3 tools/lint/mqc_lint.py $CHANGED --allow-predoc
+[ -n "$CHANGED" ] && python3 tools/lint/mqc_lint.py $CHANGED
 [ -n "$CHANGED" ] && bash tools/lint/no_naked_mpi_or_blas.sh $CHANGED
 [ -n "$CHANGED" ] && fprettify --silent --diff -i 3 -l 122 $CHANGED
 fortitude check $CHANGED
 ```
 
 - **mqc_lint** owns comment markers (MQC001) and duplicated physical constants
-  (MQC002/MQC003). Run it exactly as the hook does, with `--allow-predoc`, or
-  you will report 300+ pre-existing `!>` blocks as new findings.
+  (MQC002/MQC003). Run it exactly as the hook does, which is now strict --
+  the predoc migration moved every `!>` block below its declaration, so there
+  is no longer a backlog to filter out.
 - **no_naked_mpi_or_blas.sh** owns direct MPI and direct BLAS/LAPACK — the
   portability rule with the sharpest edge. Do not re-check it by eye.
 - **fprettify** owns layout. Never comment on indentation or line breaks.

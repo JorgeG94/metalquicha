@@ -16,31 +16,24 @@ module mqc_libcint_dma
    !! between the points that tie. GAMESS has a Becke-grid alternative behind
    !! `BIGEXP`, which defaults to zero, so a default deck never reaches it.
    !!
-   !! **Why this needs primitive resolution, and what that costs.** The product
-   !! centre depends on the two exponents, so different primitives of the *same*
-   !! contracted shell pair can land on different expansion points. Assigning at
-   !! the shell-pair level would therefore give a different answer, not a rounder
-   !! one. So the density is transformed into an uncontracted primitive basis
-   !! first, the assignment is made there, and the moments are accumulated over
-   !! primitive pairs. `uncontract` builds that basis; it is the only real
-   !! machinery here.
+   !! **This needs primitive resolution.** The product centre depends on the two
+   !! exponents, so different primitives of the *same* contracted shell pair can
+   !! land on different expansion points, and assigning at the shell-pair level
+   !! gives a different answer. The density is therefore transformed into an
+   !! uncontracted primitive basis, the assignment made there, and the moments
+   !! accumulated over primitive pairs; `uncontract` builds that basis.
    !!
-   !! **Moments are raw Cartesian and electronic only.** Not traceless: GAMESS's
-   !! own quadrupole traces are nowhere near zero (water's oxygen comes to -12.55),
-   !! because the Buckingham conversion happens in whatever consumes the potential
-   !! and not in what writes it. And the nucleus enters the monopole alone -- the
-   !! dipole and above are the electrons' alone -- which is what makes the sum rule
-   !! below come out.
+   !! **Moments are raw Cartesian and electronic only.** Not traceless -- the
+   !! Buckingham conversion happens in whatever consumes the potential -- and the
+   !! nucleus enters the monopole alone, the dipole and above being the
+   !! electrons'.
    !!
    !! **The check that matters here is the sum rule.** Translate every distributed
    !! moment to a common origin, add, and the total molecular moments come back.
-   !! It is an exact identity, not an approximation, and it catches a partition
-   !! that loses density. What it does *not* catch is a wrong distribution or a
-   !! transposed component: a transposed quadrupole sums to a transposed total. So
-   !! it is necessary and not sufficient, and the comparison against a GAMESS
-   !! potential is what closes the gap -- the same lesson the distributed
-   !! polarizabilities taught, where the sum rule was blind to a transpose that a
-   !! per-point comparison found immediately.
+   !! It is an exact identity and it catches a partition that loses density. It
+   !! does *not* catch a wrong distribution or a transposed component -- a
+   !! transposed quadrupole sums to a transposed total -- so the comparison
+   !! against a GAMESS potential is what closes the gap.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -60,20 +53,20 @@ module mqc_libcint_dma
    public :: expansion_points
    public :: N_QUAD, N_OCT
 
-   !> Two expansion points count as tied when their squared distances to a
-   !> product centre agree to this, in Bohr^2. GAMESS's own tolerance.
+   ! Two expansion points count as tied when their squared distances to a
+   ! product centre agree to this, in Bohr^2. GAMESS's own tolerance.
    real(dp), parameter :: TIE_TOLERANCE = 1.0e-6_dp
 
-   !> Unique components of a Cartesian quadrupole and octopole.
+   ! Unique components of a Cartesian quadrupole and octopole.
    integer, parameter :: N_QUAD = 6
    integer, parameter :: N_OCT = 10
 
-   !> Component order for the packed quadrupole, as offsets into libcint's full
-   !> 3x3: `XX YY ZZ XY XZ YZ`, which is what a `.efp` carries.
+   ! Component order for the packed quadrupole, as offsets into libcint's full
+   ! 3x3: `XX YY ZZ XY XZ YZ`, which is what a `.efp` carries.
    integer, parameter :: QUAD_PACK(N_QUAD) = [1, 5, 9, 2, 3, 6]
 
-   !> And the octopole, `XXX YYY ZZZ XXY XXZ XYY YYZ XZZ YZZ XYZ`, as offsets into
-   !> the full 27 with z running fastest.
+   ! And the octopole, `XXX YYY ZZZ XXY XXZ XYY YYZ XZZ YZZ XYZ`, as offsets into
+   ! the full 27 with z running fastest.
    integer, parameter :: OCT_PACK(N_OCT) = [1, 14, 27, 2, 3, 5, 15, 9, 18, 6]
 
    type :: dma_result_t
@@ -95,6 +88,10 @@ contains
       !! Labels follow GAMESS: `A<nn><symbol>` for atoms in input order and
       !! `BO<hi><lo>` for the midpoint of atoms hi and lo, the higher index first.
       !! A midpoint carries no charge and no mass.
+      ! TODO(mqc): the bond label is written with `i0` for each index, so "BO123"
+      ! is ambiguous between atoms 12 and 3 and atoms 1 and 23.
+      ! `mqc_libcint_screening` reads it back one character per index and takes
+      ! the wrong atoms' radii past the ninth.
       integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: coords(:, :)         !! (3, natm), Bohr
       real(dp), allocatable, intent(out) :: points(:, :)
@@ -158,15 +155,15 @@ contains
       !! An uncontracted copy of the basis, and the map onto the contracted one
       !!
       !! One shell per (original shell, primitive), each with a single primitive
-      !! whose stored coefficient is 1 -- so libcint returns the bare primitive
+      !! whose stored coefficient is 1, so libcint returns the bare primitive
       !! integral and the contraction coefficients are applied here instead, where
       !! the assignment can see them.
       !!
       !! `transform` is `(n_ao, n_unc_ao)`, carrying the contraction coefficient
       !! that links each contracted basis function to each primitive one. A shell
-      !! with `nctr` contraction columns contributes `nctr` blocks of AOs and every
-      !! one of them draws on the same primitives, which is exactly why the map is
-      !! a matrix rather than an index list.
+      !! with `nctr` contraction columns contributes `nctr` blocks of AOs and all
+      !! of them draw on the same primitives, which is why the map is a matrix
+      !! rather than an index list.
       type(libcint_molecule_t), intent(in) :: mol
       type(libcint_molecule_t), intent(out) :: unc
       real(dp), allocatable, intent(out) :: transform(:, :)
@@ -234,13 +231,9 @@ contains
       end do
 
       ! Offsets and the AO count, in the same convention the original uses.
-      ! `n_unc + 1`, not `n_unc`: the convention `build_libcint_molecule` uses is that
-      ! the array carries one entry per shell plus the running total, and `max_block`
-      ! reads `shell_offset(ish + 1)` for every shell including the last. Allocating
-      ! only `n_unc` left that read one past the end -- which for water happened to
-      ! land on something harmless and for neon read about 47000, so the buffer it
-      ! sizes came out negative and the allocation failed. It had been wrong for every
-      ! molecule; only the value found there differed.
+      ! `n_unc + 1`, not `n_unc`: the array carries one entry per shell plus the
+      ! running total, and `max_block` reads `shell_offset(ish + 1)` for every
+      ! shell including the last, so a shorter array is read past its end.
       allocate (unc%shell_offset(n_unc + 1))
       unc%nao = 0
       do ish = 1, n_unc
@@ -363,10 +356,8 @@ contains
       ! The monopole needs no origin, so it is done once outside the point loop.
       !
       ! `mono` is one number per expansion point and every pair may hit any of
-      ! them, so this is the one loop here that genuinely reduces. A private
-      ! copy per thread merged once is the house pattern and costs `n_points`
-      ! doubles per thread, which is nothing -- an atomic per pair would cost
-      ! more than the pair.
+      ! them, so this is the one loop here that genuinely reduces. A private copy
+      ! per thread merged once costs `n_points` doubles per thread.
       !$omp parallel default(none) &
       !$omp    shared(n_unc, n_points, unc, n_owner, owner, d_prim, ovl, mono) &
       !$omp    private(iq, ip, dq, oq, du, ou, weight, pop, i, j, kk, k, mono_local)
@@ -407,17 +398,13 @@ contains
       ! a translation is one more place to get a binomial wrong.
       !
       ! **One point per thread, and nothing to reduce.** Each iteration writes
-      ! only column `k` of the four result arrays, so the accumulation that
-      ! makes the monopole loop above need a private copy simply does not arise
-      ! here. What is private is the integral storage: `multipole_matrices`
-      ! allocates dipole, quadrupole and octopole blocks over the *uncontracted*
-      ! basis for every point, and those are the largest thing in the routine.
+      ! only column `k` of the four result arrays. What is private is the integral
+      ! storage: `multipole_matrices` allocates dipole, quadrupole and octopole
+      ! blocks over the *uncontracted* basis for every point, which is the largest
+      ! thing in the routine.
       !
-      ! `error` is shared and cannot be written from a thread, so each records
-      ! its own failure and the report is assembled afterwards -- a failure
-      ! here means a basis the multipole code cannot integrate, which is the
-      ! same for every point, but reporting it once is still the caller's
-      ! contract.
+      ! `error` is shared and cannot be written from a thread, so each records its
+      ! own failure and the report is assembled afterwards.
       allocate (point_failed(n_points))
       point_failed = .false.
       !$omp parallel do default(none) schedule(dynamic) &
@@ -425,13 +412,10 @@ contains
       !$omp    private(k, dip, quad, oct, point_error, iq, ip, dq, oq, du, ou, &
       !$omp            weight, kk, i, j, mu, nu, c)
       do k = 1, n_points
-         ! **Cleared explicitly, not left to `private`.** A private copy of a
-         ! derived type is default-initialised in principle, but this one is
-         ! reused across the iterations a thread runs and every routine it is
-         ! handed to opens with `if (error%has_error()) return`. One failure
-         ! would silently condemn every later point on the same thread, and an
-         ! uninitialised copy condemns all of them -- which is exactly what a
-         ! thread-count-dependent failure looked like before this line existed.
+         ! **Cleared explicitly, not left to `private`.** The copy is reused
+         ! across the iterations a thread runs, and every routine it is handed to
+         ! opens with `if (error%has_error()) return`, so one failure would
+         ! silently condemn every later point on the same thread.
          call point_error%clear()
          call multipole_matrices(unc, result%points(:, k), 1, dip, point_error)
          if (.not. point_error%has_error()) then

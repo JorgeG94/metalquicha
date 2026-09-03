@@ -3,16 +3,12 @@ module mqc_libcint_bridge
    !! Turns a `physical_fragment_t` into a libcint molecule, runs RHF over it,
    !! and fills in the result the rest of the program reads.
    !!
-   !! The mirror of `mqc_cuest_bridge`, and the same shape on purpose: one
-   !! entry point taking the settings the method already assembled, so which
-   !! backend runs is a choice made in one place rather than a difference
-   !! spread through the method layer.
+   !! The mirror of `mqc_cuest_bridge`, and the same shape: one entry point
+   !! taking the settings the method already assembled.
    !!
    !! Caps are ordinary atoms here. A capped fragment arrives with its cap
-   !! hydrogens already in `element_numbers` and `coordinates`, and nothing
-   !! about the integrals cares which atoms were in the original molecule --
-   !! the redistribution of forces back onto the heavy atoms happens later and
-   !! elsewhere.
+   !! hydrogens already in `element_numbers` and `coordinates`; the
+   !! redistribution of forces back onto the heavy atoms happens elsewhere.
    use pic_logger, only: logger => global_logger
    use mqc_string_utils, only: int_to_text
    use pic_types, only: dp
@@ -75,48 +71,37 @@ module mqc_libcint_bridge
    public :: libcint_backend_available
    public :: xc_available
    public :: ecp_backend_available
-      !! Re-exported so a caller that cannot see `mqc_libcint_xc` -- anything
-      !! outside this backend, since the module is not compiled without it --
-      !! can still ask whether a functional can be evaluated. `mqc_version`
-      !! reports it, and `run_validation.py` skips the decks that need it.
+      !! Re-exported so a caller that cannot see `mqc_libcint_xc` can still ask
+      !! whether a functional can be evaluated.
 
    real(dp), parameter :: CI_TOLERANCE = 1.0e-11_dp
       !! Residual the CASCI Davidson is driven to on the CASCI-only path.
       !!
       !! The same number `mqc_libcint_mcscf` pins its own inner CASCI at, and
-      !! deliberately not a keyword. A CASCI *is* its CI energy -- there is
-      !! nothing downstream to absorb a loose solve the way a CASSCF macro-step
-      !! absorbs one -- so the only defensible setting is "tight", and 1e-11 on
-      !! a hundred-hartree total is inside what a threaded Fock build
-      !! reproduces.
+      !! deliberately not a keyword: a CASCI *is* its CI energy, so there is
+      !! nothing downstream to absorb a loose solve.
 
 contains
 
    pure function ecp_backend_available() result(available)
       !! Whether this build can evaluate an effective core potential
       !!
-      !! The ECP integrals are libfint's; libcint has none. A
-      !! `-DMQC_USE_LIBFINT=OFF` build therefore links and runs but returns a
-      !! zero potential, so this has to be askable from outside -- it is what
-      !! `run_validation.py` gates the ECP decks on, and the difference between
-      !! "not tested here" and "wrong by hundreds of Hartree".
+      !! The ECP integrals are libfint's; libcint has none, so a
+      !! `-DMQC_USE_LIBFINT=OFF` build links and runs but returns a zero
+      !! potential.
       logical :: available
       available = ECP_AVAILABLE
    end function ecp_backend_available
 
    function sapt_core_bytes(nao, want_sapt2) result(bytes)
-      !! Roughly what the SAPT caches will ask for at their peak
+      !! Roughly what the SAPT caches will ask for at their peak, in bytes
       !!
-      !! The dimer `eri` is the full `nao**4` -- no eightfold folding, because
-      !! every SAPT term addresses it as four indices -- and `eri_packed` is
-      !! another `n_pair**2` beside it, where `n_pair = nao(nao+1)/2`. That is
-      !! about `1.25 nao**4` before a term is evaluated.
-      !!
-      !! SAPT2 adds one more `n_pair**2`: `build_sapt2_cache` copies the packed
-      !! matrix to diagonalize it, and the copy is live while the original
-      !! still is. The three-index factors that come out of it are smaller and
-      !! not counted, so this errs low -- it is a floor on the requirement, not
-      !! an estimate of it.
+      !! The dimer `eri` is the full `nao**4` -- no eightfold folding, since
+      !! every SAPT term addresses it as four indices -- with `eri_packed` at
+      !! `n_pair**2` beside it, `n_pair = nao(nao+1)/2`. SAPT2 adds one more
+      !! `n_pair**2` for the copy `build_sapt2_cache` diagonalizes. Smaller
+      !! intermediates are not counted, so this is a floor rather than an
+      !! estimate.
       !!
       !! `real` throughout: `nao**4` at four hundred functions overflows a
       !! 32-bit integer, and the symptom would be a large basis quietly
@@ -136,9 +121,7 @@ contains
       !! Refuse a SAPT run whose stored integrals cannot fit in memory
       !!
       !! Where memory cannot be read -- anything that is not Linux -- this says
-      !! nothing rather than guessing. A wrong refusal here is worse than no
-      !! refusal: the calculation is possible on the machine and the message
-      !! would claim otherwise.
+      !! nothing rather than guessing.
       integer, intent(in) :: nao
       logical, intent(in) :: want_sapt2
       type(error_t), intent(inout) :: error
@@ -163,21 +146,16 @@ contains
    pure function reuse_scf_fit(settings) result(reuse)
       !! Whether the SCF should hand its fitted tensor to the correlated step
       !!
-      !! A fitted SCF followed by a fitted MP2 was building the same three-
-      !! centre integrals twice -- four hundred million of them at 560
-      !! functions. It need not build them even once more: the MO transform
-      !! acts on the pair index and the metric on the auxiliary one, so they
-      !! commute and the SCF's *fitted* tensor transforms into exactly the
-      !! tensor the correlation step would have built. See `build_df_mo_block`.
+      !! The MO transform acts on the pair index and the metric on the
+      !! auxiliary one, so they commute and the SCF's fitted tensor transforms
+      !! into exactly the tensor the correlation step would have built. See
+      !! `build_df_mo_block`.
       !!
-      !! Both halves have to be fitted for the question to arise, and they are
-      !! then necessarily the same auxiliary basis: `model.aux_basis` is the
-      !! only place a fitting set is named, so there is no deck that fits both
-      !! halves with different ones. If that ever stops being true this has to
-      !! start comparing the two basis names.
-      !!
-      !! Restricted only, and MP2 only, because those are the paths wired to
-      !! accept it. Carrying it further is plumbing rather than a new idea.
+      !! Both halves have to be fitted, and are then necessarily the same
+      !! auxiliary basis: `model.aux_basis` is the only place a fitting set is
+      !! named. **If that ever stops being true this has to start comparing the
+      !! two basis names.** Restricted and MP2 only -- those are the paths
+      !! wired to accept it.
       type(cuest_scf_settings_t), intent(in) :: settings
       logical :: reuse
 
@@ -190,9 +168,8 @@ contains
       !!
       !! Computed in `real` rather than integer arithmetic: n^4 at four hundred
       !! functions overflows a 32-bit integer, and the symptom of that would be
-      !! a large basis quietly deciding it fitted.
-      !!
-      !! Not `pure` any more: it reads the machine.
+      !! a large basis quietly deciding it fitted. Not `pure`: it reads the
+      !! machine.
       integer, intent(in) :: nao
       logical :: fits
       real(dp) :: available, budget
@@ -212,8 +189,7 @@ contains
       !!
       !! MemAvailable rather than MemFree: free memory on a warm machine is
       !! almost nothing, because the kernel has spent it on page cache it will
-      !! hand back on demand. MemFree would refuse to store integrals on a
-      !! machine with plenty to spare.
+      !! hand back on demand.
       real(dp) :: bytes
       integer :: unit, stat
       character(len=MAX_LINE_LENGTH) :: line
@@ -244,15 +220,8 @@ contains
                                   basis_name, scheme, total_charge, charges, error)
       !! Atomic charges from an RHF density, by Mulliken or CHELPG
       !!
-      !! Here rather than in `src/interface/` for the reason every other entry in
-      !! this file is: the molecule builder, the SCF and both partition schemes
-      !! live in the CPU backend. A C API reaching for them directly compiles
-      !! under CMake with the backend on and nothing else -- not the stub build,
-      !! and not FPM, which only sees `src/` and `app/`.
-      !!
       !! Closed shell only; an odd electron count is refused rather than paired
-      !! up, because a caller fragmenting a radical needs to know this cannot
-      !! answer for it.
+      !! up.
       use pic_types, only: dp
       use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
       use mqc_libcint_charges, only: mulliken_charges, chelpg_charges
@@ -270,11 +239,9 @@ contains
       real(dp), parameter :: SCF_ENERGY_TOL = 1.0e-9_dp
       real(dp), parameter :: SCF_DENSITY_TOL = 1.0e-7_dp
       real(dp), parameter :: SCF_GRAD_TOL = 1.0e-7_dp
-         !! Stated rather than derived, because what this routine wants is the
-         !! *density* -- it partitions it into charges. `sqrt(SCF_ENERGY_TOL)`
-         !! would be 3.2e-5, and the density error goes as the commutator
-         !! rather than its square. Matches the density threshold that used to
-         !! gate convergence here.
+         !! Stated rather than derived from `SCF_ENERGY_TOL`, because what this
+         !! routine wants is the *density* it partitions into charges, and the
+         !! density error goes as the commutator rather than its square.
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
@@ -318,14 +285,8 @@ contains
                               coordinates, terms, error)
       !! The EFP2 interaction energy of a set of fragments the deck has placed
       !!
-      !! Here rather than in the driver for the same reason `run_libcint_makefp` is:
-      !! every module this needs lives in the CPU backend, so a driver reaching for
-      !! them directly does not compile in a build without one. The stub beside this
-      !! declines with the same signature.
-      !!
-      !! `terms` comes back as plain numbers rather than a derived type, because such
-      !! a type would have to exist on both sides of that gate and there is nothing
-      !! for it to hold that six reals do not.
+      !! Here rather than in the driver because every module it needs lives in
+      !! the CPU backend; the stub beside this declines with the same signature.
       use pic_types, only: dp
       use mqc_program_limits, only: N_EFP_TERMS
       use mqc_efp_read, only: efp_fragment_t, read_efp_potential
@@ -393,14 +354,8 @@ contains
                                 charge_a, charge_b, terms, error)
       !! SAPT0 between two monomers, as named physical terms
       !!
-      !! Here rather than in the driver for the reason `run_libcint_makefp` is:
-      !! every module this needs lives in the CPU backend, so a driver reaching
-      !! for them directly would not compile without one. The stub beside this
-      !! declines with the same signature.
-      !!
-      !! `terms` crosses that boundary as plain numbers rather than
-      !! `sapt_terms_t`, because the type would have to exist on both sides of a
-      !! gate whose whole purpose is that one side has none of this compiled.
+      !! Here rather than in the driver because every module it needs lives in
+      !! the CPU backend; the stub beside this declines with the same signature.
       use pic_types, only: dp
       use mqc_program_limits, only: N_SAPT_TERMS
       use mqc_sapt, only: sapt_molecules_t, build_sapt_molecules, sapt_terms_t, &
@@ -411,8 +366,7 @@ contains
       character(len=*), intent(in) :: basis_name
       integer, intent(in) :: charge_a, charge_b
          !! The monomers' own charges. Required rather than optional: a caller
-         !! that forgets them gets a neutral monomer and a wrong number, which
-         !! is the one failure mode worth making impossible to write.
+         !! that forgets them gets a neutral monomer and a wrong number.
       real(dp), intent(out) :: terms(N_SAPT_TERMS)
          !! Ordered by `SAPT_TERM_NAMES`
       type(error_t), intent(inout) :: error
@@ -495,9 +449,9 @@ contains
                                  allow_crap_response, response_batch)
       !! Build an effective fragment potential and write it
       !!
-      !! Here rather than in the driver so the driver needs no knowledge of whether
-      !! this build has an integral backend -- the stub next to it declines with the
-      !! same signature.
+      !! Here rather than in the driver so the driver needs no knowledge of
+      !! whether this build has an integral backend; the stub next to it
+      !! declines with the same signature.
       use pic_types, only: dp
       use mqc_efp_potential, only: efp_potential_t, make_efp_potential, &
                                    write_efp_potential
@@ -520,37 +474,33 @@ contains
          !! SCF thresholds, present only when the deck named them. Absent leaves
          !! `make_efp_potential` on the tighter pair a fragment potential needs.
       type(scf_numerics_t), intent(in), optional :: scf_in
-         !! The deck's `keywords.scf`, for the settings this path used to drop:
-         !! the level shift, accelerator, DIIS subspace, linear-dependence
-         !! threshold and incremental Fock building.
+         !! The deck's `keywords.scf`: the level shift, accelerator, DIIS
+         !! subspace, linear-dependence threshold and incremental Fock building.
       integer, intent(in), optional :: max_iter_in
          !! `keywords.scf.maxiter`, present only when the deck named it.
       real(dp), intent(in), optional :: grad_tol
          !! `keywords.scf.gradient_tolerance`, present only when the deck named
-         !! it. It was not forwarded here at all before, so a deck that stated
-         !! the commutator threshold on a MakeFP run was ignored outright.
+         !! it.
       real(dp), intent(in), optional :: vdwscl
+         !! The screening grid's van der Waals scale. This and the three below
+         !! are the `keywords.efp` group: forwarded, not read here.
       real(dp), intent(in), optional :: dynamic_tol
+         !! Tolerance of the dynamic response solve.
       integer, intent(in), optional :: dynamic_maxiter
+         !! Iteration cap on that solve.
       integer, intent(in), optional :: response
+         !! Which route that solve takes.
       logical, intent(in), optional :: allow_crap_response
          !! Accept an unconverged response instead of refusing. The potential
          !! is wrong; see `efp_config_t`.
       integer, intent(in), optional :: response_batch
          !! Densities per integral pass. Tuning only; the answer is unchanged.
-         !! Accept an unconverged response instead of refusing. See
-         !! `efp_config_t`; the potential is wrong when this is on.
-         !! The `keywords.efp` group: the screening grid's van der Waals scale, and
-         !! the tolerance, iteration cap and route of the dynamic response solve.
-         !! Forwarded and not read here, the same as everything else in this list.
 
       type(efp_potential_t) :: pot
 
-      ! One call, not one per combination of present arguments. An absent optional
-      ! dummy passed on as an actual argument arrives absent at the other end, which
-      ! is what `charge`, `verbose` and `guess` were already relying on; `aux_basis`
-      ! was branched around for no reason it needed, and four optionals would have
-      ! meant sixteen branches to keep saying the same thing.
+      ! One call, not one per combination of present arguments: an absent
+      ! optional dummy passed on as an actual argument arrives absent at the
+      ! other end.
       call make_efp_potential(atomic_numbers, element_symbols, coordinates, &
                               basis_name, name, pot, error, charge=charge, &
                               verbose=verbose, aux_basis=aux_basis, guess=guess, &
@@ -595,8 +545,7 @@ contains
       type(scf_numerics_t), intent(in) :: scf_drive
          !! How each fragment SCF is driven. A `scf_numerics_t` rather than more
          !! scalars: it lives in `mqc_config_types`, not in this backend, so the
-         !! layer above can name it without being able to compile the backend --
-         !! which is the constraint the scalar list above exists to satisfy.
+         !! layer above can name it without being able to compile the backend.
       character(len=*), intent(in) :: bond_breaking
       real(dp), intent(in) :: cap_scale
       real(dp), intent(out) :: energy
@@ -646,15 +595,13 @@ contains
       logical, intent(in), optional :: want_gradient
       logical, intent(in), optional :: want_hessian
          !! Ask for the analytic Hessian. **Not a promise that one comes back.**
-         !! The conditions it needs are known here and not by the caller, so a
-         !! request this routine cannot honour leaves `result%has_hessian`
-         !! false and sets no error -- the caller is expected to fall back to
-         !! finite differences, which is a correct answer rather than a failure.
+         !! A request this routine cannot honour leaves `result%has_hessian`
+         !! false and sets no error; the caller is expected to fall back to
+         !! finite differences.
 
       ! `aux` and `xc` are targets because the gradient takes both as optional
       ! arguments, and a disassociated pointer is how "this SCF fitted nothing"
-      ! and "this SCF had no functional" are said without four spellings of the
-      ! same call.
+      ! and "this SCF had no functional" are said.
       type(libcint_molecule_t) :: mol, corr_aux
       type(libcint_molecule_t), target :: aux
       type(libcint_molecule_t), pointer :: aux_arg
@@ -684,8 +631,7 @@ contains
       type(timer_type) :: grad_clock
       real(dp), allocatable :: scf_b_ao(:, :)
          !! The SCF's fitted tensor, taken over rather than freed when a fitted
-         !! correlated step follows and would otherwise rebuild the integrals
-         !! and refit them. See `reuse_scf_fit` for when that is.
+         !! correlated step follows. See `reuse_scf_fit` for when that is.
       logical :: keep_fit
 
       character(len=MAX_LINE_LENGTH) :: line
@@ -707,49 +653,26 @@ contains
          result%has_error = .true.
          return
       end if
-      ! An MP2 gradient is not refused here any more, frozen core or not.
-      ! Four combinations of what is fitted, each a different energy with a
-      ! different gradient, and all four implemented. Exact reference with
-      ! exact correlation is `libcint_mp2_gradient`; exact reference with
-      ! fitted correlation is an `ri-mp2` deck and is
-      ! `libcint_ri_mp2_gradient`. Adding `keywords.scf.density_fitting` to
-      ! either fits the reference too, which moves the response operator,
-      ! both potentials built from the relaxed density, and the reference's
-      ! two-electron derivative term onto the auxiliary basis.
-      !
-      ! What that last pair does *not* do is make the conventional gradient
-      ! cheap: its two-particle density stays four-index and contracts
-      ! against four-centre derivatives whatever the reference fitted. It
-      ! makes it consistent, which is the point -- differentiating an exact
-      ! reference under a fitted SCF is the derivative of an energy nothing
-      ! computed.
-      !
-      ! A frozen core used to be refused here, fronting all four routines at
-      ! once, because neither assembly built the blocks it brings. Both do
-      ! now: the amplitudes and the two-particle density span the active
-      ! occupied space, and the relaxed density gains an occupied-frozen
-      ! block resolved directly from the Lagrangian. So a default deck --
-      ! `freeze_core` is on by default -- gets the gradient of the energy it
-      ! computed; the frozen count is resolved in the MP2 block below and
-      ! passed to whichever routine the deck selects. (No virtual-frozen
-      ! block ever existed to build, whatever the old message said:
-      ! `n_frozen_core` freezes leading core orbitals and no virtuals.)
+      ! An MP2 gradient is never refused here, frozen core or not. Four
+      ! combinations of what is fitted, each a different energy with a
+      ! different gradient, and all four implemented: exact reference with
+      ! exact correlation is `libcint_mp2_gradient`, exact reference with
+      ! fitted correlation is an `ri-mp2` deck and `libcint_ri_mp2_gradient`,
+      ! and `keywords.scf.density_fitting` on either fits the reference too.
+      ! The frozen count is resolved in the MP2 block below and passed to
+      ! whichever routine the deck selects.
 
-      ! Same rule the GPU backend applies, so a deck does not change meaning
-      ! when it moves between them: an odd electron count or a multiplicity
-      ! above one has no restricted solution to find, whatever the keyword says.
+      ! Same rule the GPU backend applies: an odd electron count or a
+      ! multiplicity above one has no restricted solution to find, whatever the
+      ! keyword says.
       unrestricted = (fragment%multiplicity /= 1) .or. (mod(fragment%nelec, 2) /= 0) &
                      .or. settings%unrestricted
 
-      ! Continuum solvation on this backend is an *energy*: the surface
-      ! charges enter every SCF iteration and the total. What does not exist is
-      ! their derivative -- the cavity moves with the nuclei and the charges
-      ! respond -- so an analytic gradient would come back converged, plausible
-      ! and missing the solvent's pull on every atom. And anything that runs
-      ! further calculations on top of the solvated reference -- correlation,
-      ! the Fukui ions -- needs its own decision about the continuum, which
-      ! none of them has yet. Each combination is refused by name rather than
-      ! run in a quietly mixed phase.
+      ! Continuum solvation on this backend is an *energy*: the surface charges
+      ! enter every SCF iteration and the total, but their derivative does not
+      ! exist here, so an analytic gradient would come back converged,
+      ! plausible and missing the solvent's pull on every atom. Each
+      ! combination is refused by name rather than run in a quietly mixed phase.
       if (settings%pcm%enabled) then
          if (do_gradient) then
             call result%error%set(ERROR_VALIDATION, "the PCM nuclear gradient is not "// &
@@ -771,19 +694,12 @@ contains
             result%has_error = .true.
             return
          end if
-         ! The Fukui ions used to be refused here, because they were solved in
-         ! the gas phase and differenced against a solvated neutral -- an IP
-         ! across two different physics, and wrong by roughly the solvation
-         ! energy of a charged species, which is the size of the answer. They
-         ! now take the same continuum the neutral did, so the refusal is gone
-         ! rather than the reasoning: it was right, and what changed is that
-         ! `fukui_indices` carries `pcm` through to both of them.
-         !
-         ! Equilibrium solvation in all three states, so what comes out is the
+         ! The Fukui ions take the same continuum the neutral did, and it is
+         ! equilibrium solvation in all three states, so what comes out is the
          ! adiabatic quantity -- the solvent relaxes around each charge state.
          ! A vertical IP would freeze the slow polarisation at the neutral's
-         ! value and let only the fast part respond, which needs an optical
-         ! dielectric `pcm_config_t` does not carry.
+         ! value, which needs an optical dielectric `pcm_config_t` does not
+         ! carry.
          if (settings%bonding_energy) then
             call result%error%set(ERROR_VALIDATION, "the bonding energy decomposition "// &
                                   "rebuilds its atom energies from gas-phase operators "// &
@@ -803,11 +719,10 @@ contains
          return
       end if
 
-      ! Refused rather than quietly downgraded, on the same principle as the
-      ! unrestricted density fitting above. An unrestricted reference reaches the
-      ! spin-orbital path, which carries its own alpha and beta transform; the
-      ! fitted route does not, because `b_vv` has no spin blocks and would return
-      ! the restricted answer built from the alpha orbitals alone.
+      ! An unrestricted reference reaches the spin-orbital path, which carries
+      ! its own alpha and beta transform; the fitted route does not, because
+      ! `b_vv` has no spin blocks and would return the restricted answer built
+      ! from the alpha orbitals alone.
       if (settings%run_cc .and. unrestricted .and. settings%corr_density_fitting) then
          call result%error%set(ERROR_VALIDATION, "density-fitted coupled cluster needs "// &
                                "a restricted reference: the fitted three-index block has "// &
@@ -817,14 +732,10 @@ contains
          return
       end if
 
-      ! And MP2 for the same reason, which it did not used to be. The transform
-      ! takes one set of orbitals and an occupied count, so an unrestricted
-      ! reference gave it the alpha orbitals and `nelec/2` -- which for an odd
-      ! electron count truncates. OH in sto-3g came back as a converged
-      ! -74.416097 computed over three doubly-occupied orbitals instead of nine
-      ! electrons, with nothing in the output to say which. It is the same defect
-      ! the double-hybrid guard below refuses, and it is worse here because MP2 is
-      ! asked for directly.
+      ! And MP2 for the same reason. The transform takes one set of orbitals
+      ! and an occupied count, so an unrestricted reference would give it the
+      ! alpha orbitals and `nelec/2`, which for an odd electron count
+      ! truncates and returns a converged energy over the wrong occupation.
       if (settings%run_mp2 .and. unrestricted) then
          call result%error%set(ERROR_VALIDATION, "MP2 on the CPU backend needs a "// &
                                "restricted reference: the four-index transform takes one "// &
@@ -855,14 +766,13 @@ contains
          return
       end if
 
-      ! The electrons the SCF actually solves for. An ECP replaced the core,
-      ! so they are not there to be solved for -- and `fragment` cannot know
-      ! that, because it is built before any basis or potential is read.
+      ! The electrons the SCF actually solves for: an ECP replaced the core, and
+      ! `fragment` cannot know that, being built before any basis or potential
+      ! is read.
       !
-      ! Every use below this point is the valence count. The parity test
-      ! further up is not, and does not need to be: a core is a closed shell,
-      ! so `core_electrons` is always even and the choice between RHF and UHF
-      ! is the same either way.
+      ! Every use below this point is the valence count. The parity test further
+      ! up is not, and does not need to be: a core is a closed shell, so
+      ! `core_electrons` is always even.
       nelec = fragment%nelec - sum(mol%core_electrons)
       if (nelec < 0) then
          call result%error%set(ERROR_VALIDATION, "the effective core potential "// &
@@ -872,10 +782,9 @@ contains
          return
       end if
 
-      ! The SCF banner below reports the basis but not who it is solving for:
-      ! a charged or open-shell fragment reads identically to a neutral one
-      ! without this, which is exactly the case a fragmented run most needs to
-      ! see. Same integers the breakdown CSV carries.
+      ! The SCF banner below reports the basis but not who it is solving for,
+      ! so a charged or open-shell fragment would read identically to a neutral
+      ! one. Same integers the breakdown CSV carries.
       call logger%verbose("charge "//int_to_text(fragment%charge)// &
                           ", multiplicity "//int_to_text(fragment%multiplicity)// &
                           ", electrons "//int_to_text(nelec))
@@ -885,9 +794,9 @@ contains
 
       ! ---- Kohn-Sham or Hartree-Fock? ---------------------------------------
       !
-      ! A named functional is the whole difference. Nothing else about this
-      ! routine changes: the SCF takes the context as one optional argument, so
-      ! Hartree-Fock is the case where there is no functional to build one from.
+      ! A named functional is the whole difference: the SCF takes the context as
+      ! one optional argument, so Hartree-Fock is the case where there is no
+      ! functional to build one from.
       kohn_sham = len_trim(settings%functional) > 0
       if (kohn_sham) then
          if (.not. xc_available()) then
@@ -900,8 +809,7 @@ contains
          end if
          ! Spin-polarised exactly when the SCF is. libxc fixes the spin channel
          ! when a functional is initialised, so this cannot be decided later by
-         ! whoever evaluates the potential -- and the two evaluators refuse the
-         ! wrong kind of context rather than reading it with the wrong stride.
+         ! whoever evaluates the potential.
          call xc_context_create(mol, trim(settings%functional), xc, error, &
                                 level=settings%grid_level, polarized=unrestricted, &
                                 nlc_level=settings%nlc_grid_level, &
@@ -913,13 +821,6 @@ contains
             call mol%destroy()
             return
          end if
-         ! A double hybrid on an open shell would need an unrestricted MP2, and the
-         ! perturbative term below is written over restricted orbitals. Refused
-         ! here rather than downstream, because downstream it would not fail: it
-         ! would take the alpha orbitals for a closed-shell set, pair them with
-         ! themselves and return a plausible number. The Kohn-Sham half of the
-         ! functional is unrestricted and correct, which is exactly what makes the
-         ! total convincing.
          if (settings%verbose) then
             write (line, "(a,a,a,i0)") "  functional: ", trim(settings%functional), ", grid level ", settings%grid_level
             call logger%info(trim(line))
@@ -944,9 +845,13 @@ contains
       ! ---- which initial guess? ---------------------------------------------
       call parse_accelerator_name(settings%accelerator, accel_kind, accel_ok)
       ! The convergence rule, assembled once per run rather than at each SCF
-      ! call. A metric the deck misspells is refused here, before any integral
-      ! is computed, and named -- silently falling back to the default would be
-      ! the same class of bug as dropping the setting.
+      ! call. A metric the deck misspells is refused here and named, rather than
+      ! silently falling back to the default.
+      !
+      ! TODO(mqc): this refusal and the accelerator one below return without
+      ! `mol%destroy()`, and without `xc%destroy()` on a Kohn-Sham run, where
+      ! every other error path in this routine destroys both. The matching pair
+      ! in `run_libcint_mcscf` leaks `mol` the same way.
       call parse_convergence_metric(settings%convergence_metric, scf_conv%metric, conv_ok)
       if (.not. conv_ok) then
          call result%error%set(ERROR_VALIDATION, "keywords.scf.convergence_metric '"// &
@@ -958,10 +863,9 @@ contains
       scf_conv%tolerance = settings%energy_tol
       scf_conv%gradient_tolerance = settings%grad_tol
       ! The energy metric is the weakest of the three and unsafe with an
-      ! accelerator that INTERPOLATES: EDIIS on water/6-31G holds dE at 1e-13
-      ! while the commutator sits at 1.1e-2, and stopping there lands 5.8e-5
-      ! hartree from the answer. Measured, not estimated. Said once, here,
-      ! rather than refused -- the user named the metric and gets it.
+      ! accelerator that interpolates: dE can sit at 1e-13 while the commutator
+      ! is still at 1e-2. Warned once rather than refused -- the user named the
+      ! metric and gets it.
       if (scf_conv%metric == CONV_METRIC_ENERGY .and. accel_kind /= ACCEL_DIIS) then
          call logger%warning("  convergence_metric is 'energy' and the accelerator "// &
                              "interpolates. An interpolating scheme can stall with a "// &
@@ -999,8 +903,7 @@ contains
             return
          end if
          ! How the rungs are driven comes from the deck, the same as the target
-         ! SCF's. Only `maxiter` and `tolerance` stay per-rung -- those differ
-         ! by rung on purpose; the rest is a property of the calculation.
+         ! SCF's. Only `maxiter` and `tolerance` stay per-rung.
          ladder_scf%level_shift = settings%level_shift
          ladder_scf%linear_dependence = settings%linear_dependence
          ladder_scf%use_diis = settings%use_diis
@@ -1012,20 +915,17 @@ contains
                                  guess_error, verbose=settings%verbose, &
                                  scf_in=ladder_scf)
          if (guess_error%has_error()) then
-            ! The same reasoning the atomic guess uses: a guess that cannot be
-            ! built is a reason to start somewhere else, not to fail the
-            ! calculation. Loud, because the run is now doing something other
-            ! than what the deck asked for.
+            ! A guess that cannot be built is a reason to start somewhere else,
+            ! not to fail the calculation. Loud, because the run is now doing
+            ! something other than what the deck asked for.
             call logger%warning("basis projection guess: "//guess_error%get_message()// &
                                 " -- falling back to sad")
             guess_kind = SCF_GUESS_SAD
             if (allocated(guess_total)) deallocate (guess_total)
             ! Cleared, because `build_atomic_guess` takes its error `inout` and
-            ! does not reset it. Left set, the check after that call sees this
-            ! failure rather than the atomic guess's own, and the SAD fallback
-            ! this line just chose is discarded for GWH -- a second fallback the
-            ! deck did not ask for, reported with this message rather than one
-            ! of its own.
+            ! does not reset it. Left set, the check after that call would see
+            ! this failure rather than the atomic guess's own and fall back a
+            ! second time.
             call guess_error%clear()
          end if
       end if
@@ -1034,12 +934,9 @@ contains
          call build_atomic_guess(mol, guess_kind, guess_a, guess_b, guess_error)
          if (guess_error%has_error()) then
             ! A free atom that will not converge is a reason to start somewhere
-            ! else, not to fail a molecular calculation -- the guess is a
-            ! convergence aid and cannot change what the SCF converges *to*
-            ! except by changing which solution it finds. That exception is why
-            ! this is a warning and not silence: an open-shell system really can
-            ! land on a different state from a different starting point, and a
-            ! quietly substituted guess would be a quietly different answer.
+            ! else, not to fail a molecular calculation. A warning and not
+            ! silence, because an open-shell system really can land on a
+            ! different state from a different starting point.
             call logger%warning("initial guess: "//guess_error%get_message()// &
                                 " -- falling back to gwh")
             guess_kind = SCF_GUESS_GWH
@@ -1052,17 +949,14 @@ contains
          end if
       end if
 
-      ! Reported rather than inferred from the iteration count. Which guess ran is
-      ! the first thing worth knowing about an SCF that took longer than expected,
-      ! and after a fallback it is the only place the substitution is visible.
+      ! After a fallback this is the only place the substitution is visible.
       call logger%verbose("initial guess: "//guess_display_name(guess_kind))
 
       ! ---- the continuum, once per geometry ---------------------------------
       !
       ! Built here because this is the first point where the molecule exists;
       ! the SCF then solves the surface charges against each iteration's
-      ! density. The banner mirrors the cuEST driver's, so a run reads the same
-      ! on either backend.
+      ! density. The banner mirrors the cuEST driver's.
       if (settings%pcm%enabled) then
          call pcm_ctx%build(mol, fragment%element_numbers, settings%pcm, error)
          if (error%has_error()) then
@@ -1080,10 +974,9 @@ contains
          call logger%info(trim(line))
       end if
 
-      ! Density fitting is asked for, not inferred. aux_basis_set carries a
+      ! Density fitting is asked for, not inferred: `aux_basis_set` carries a
       ! default, so treating its presence as the request would mean every
-      ! calculation quietly fitted -- and the difference is 5e-5 Hartree, large
-      ! enough to matter and small enough to look like convergence noise.
+      ! calculation quietly fitted.
       if (settings%density_fitting) then
          ! The auxiliary set follows the orbital set: a ghost centre carries
          ! fitting functions too, or the fitted Coulomb would see a different
@@ -1100,10 +993,9 @@ contains
             return
          end if
 
-         ! Refused here rather than deeper down, because this is the only place
-         ! that knows both basis set *names* -- and a name is what has to change
-         ! to fix it. 6-31G* is Cartesian while every JKFIT set is spherical, so
-         ! this is the pairing a deck lands on most easily.
+         ! Refused here because this is the only place that knows both basis set
+         ! *names*, and a name is what has to change to fix it. 6-31G* is
+         ! Cartesian while every JKFIT set is spherical.
          if (mol%cartesian .neqv. aux%cartesian) then
             call result%error%set(ERROR_VALIDATION, "density fitting: the orbital basis '"// &
                                   trim(settings%basis_set)//"' is "// &
@@ -1118,10 +1010,9 @@ contains
             return
          end if
 
-         ! Whether to carry the three-centre integrals out of the SCF. They
-         ! cost a full copy of the tensor to keep, and nothing at all if the
-         ! run ends at the reference -- so it is asked for only when something
-         ! downstream will transform them.
+         ! Whether to carry the three-centre integrals out of the SCF. They cost
+         ! a full copy of the tensor to keep, so it is asked for only when
+         ! something downstream will transform them.
          keep_fit = reuse_scf_fit(settings)
          if (keep_fit) then
             call run_libcint_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
@@ -1156,27 +1047,13 @@ contains
                               grad_tol=settings%grad_tol, convergence=scf_conv)
       else
          ! Store the integrals when they fit, rather than rebuilding every
-         ! quartet at every iteration.
+         ! quartet at every iteration. The threshold is memory alone: the stored
+         ! tensor holds the same integrals the direct build would have computed.
          !
-         ! A direct build costs the same on iteration twelve as on iteration one
-         ! -- the screening is on the basis and the density, and neither gets
-         ! much smaller -- so a twelve-iteration SCF evaluates the same million
-         ! shell quartets twelve times. Storing them turns every iteration after
-         ! the first into a contraction that is memory-bound rather than
-         ! integral-bound: 1.92 s to 0.07 s on the case this was measured on,
-         ! and the SCF as a whole from 25.6 s to 3.7 s.
-         !
-         ! The threshold is memory, because that is the only thing that makes
-         ! this the wrong choice. It is not a fidelity trade like density
-         ! fitting: the stored tensor holds the same integrals the direct build
-         ! would have computed, and the energy agrees to 1e-11.
-         !
-         ! Range separation is the one exception, and it is a refusal rather
-         ! than a preference: the SCF *errors out* on an in-core tensor with an
+         ! Range separation is the exception, and a refusal rather than a
+         ! preference -- the SCF errors out on an in-core tensor with an
          ! attenuated kernel, because the tensor is built for the full Coulomb
-         ! one and the long-range exchange would be silently missing. Deciding
-         ! that here keeps a functional like wB97X working -- it would otherwise
-         ! have started failing the moment this became the default.
+         ! one and the long-range exchange would be silently missing.
          call run_libcint_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
                               settings%density_tol, settings%verbose, scf, error, &
                               diis_vectors=diis_size, guess=guess_kind, &
@@ -1196,8 +1073,7 @@ contains
       end if
 
       ! Same policy as every other backend: a non-converged SCF is refused
-      ! unless the run asked to keep it, because its energy has the right
-      ! magnitude and nothing downstream can tell.
+      ! unless the run asked to keep it.
       if (scf%converged) then
          result%scf_status = SCF_CONVERGED
       else
@@ -1223,14 +1099,12 @@ contains
 
       ! ---- analyses asked for alongside the energy ---------------------------
       !
-      ! Run here, on the converged orbitals, because this is where they exist.
-      ! A failure is reported and then dropped rather than propagated: the
-      ! energy above is correct and already stored, and an analysis that cannot
-      ! run -- an element the minimal basis does not cover, an open shell the
-      ! construction is not written for -- is not a reason to throw it away.
-      ! Where the molecule reacts, by difference in the electron count. Two
-      ! further SCFs on the same `mol`, so the ions see the same geometry and
-      ! the same basis functions by construction.
+      ! Run here, on the converged orbitals. A failure is reported and then
+      ! dropped rather than propagated: the energy above is correct and already
+      ! stored.
+      !
+      ! The Fukui analysis below is two further SCFs on the same `mol`, so the
+      ! ions see the same geometry and basis functions by construction.
       if (allocated(settings%fukui_population)) then
          block
             use mqc_libcint_fukui, only: fukui_result_t, fukui_indices, print_fukui_report
@@ -1246,18 +1120,15 @@ contains
             type(libcint_molecule_t), pointer :: fukui_aux_arg
             logical :: fukui_fitted
 
-            ! Zero unless this is a Kohn-Sham run with a perturbative term.
-            ! `xc` is only built when kohn_sham, so reading its fraction
-            ! unconditionally would read an uninitialised context on a
-            ! Hartree-Fock run.
+            ! Zero unless this is a Kohn-Sham run with a perturbative term:
+            ! `xc` is only built when `kohn_sham`, so reading its fraction
+            ! unconditionally would read an uninitialised context.
             fukui_pt2 = 0.0_dp
             if (kohn_sham) fukui_pt2 = xc%pt2_fraction
 
-            ! Fitted exactly when the energy's own PT2 term is fitted. The
-            ! alternative -- Fukui always exact, the energy fitted when asked --
-            ! would print an IP beside a total energy that used a different
-            ! correlation treatment, and the difference between them would look
-            ! like a property of the molecule.
+            ! Fitted exactly when the energy's own PT2 term is fitted, so the
+            ! IP and the total energy do not come from different correlation
+            ! treatments.
             fukui_fitted = fukui_pt2 /= 0.0_dp .and. settings%aux_basis_named
             if (fukui_fitted) then
                call correlation_aux_basis(settings, fragment, symbols, fukui_aux, fukui_error)
@@ -1268,9 +1139,8 @@ contains
                   call fukui_error%clear()
                end if
             end if
-            ! Absent rather than empty when unfitted. A disassociated pointer
-            ! passed to an optional dummy is not present, which is the same
-            ! idiom `xc_arg` uses a few hundred lines up.
+            ! Absent rather than empty when unfitted: a disassociated pointer
+            ! passed to an optional dummy is not present.
             fukui_aux_arg => null()
             if (fukui_fitted) fukui_aux_arg => fukui_aux
 
@@ -1287,8 +1157,7 @@ contains
             ! Read straight across. The fallback to the neutral's settings
             ! happened in the reader, which seeded these from `keywords.scf`
             ! before the deck was consulted, so there is nothing to resolve
-            ! here and no sentinel to test. This block used to do that
-            ! arithmetic three times, once per hand-picked field.
+            ! here and no sentinel to test.
             !
             ! What is left here is spelling, not policy: two strings the deck
             ! writes and the SCF wants as integers, and the one field whose
@@ -1480,13 +1349,10 @@ contains
          ! A double hybrid's energy is the Kohn-Sham part plus a scaled PT2
          ! correlation, and the call below differentiates only the first. The
          ! second is added afterwards, once the reference gradient exists --
-         ! see the block after this one. What is still refused there is the
-         ! combination this cannot do, rather than the whole functional.
-         !
-         ! Left unchecked entirely, this used to return the hybrid's gradient
-         ! against the double hybrid's energy: on water/cc-pVDZ 0.011 against a
-         ! true 0.016, right in shape, wrong by a third, with nothing in the
-         ! output to say which of the two numbers the other belonged to.
+         ! see the block after this one. What is refused here is the
+         ! combination that cannot be assembled, rather than the whole
+         ! functional: unchecked, this returns the hybrid's gradient against
+         ! the double hybrid's energy, right in shape and wrong by a third.
          if (kohn_sham .and. xc%pt2_fraction /= 0.0_dp) then
             if (unrestricted) then
                call result%error%set(ERROR_VALIDATION, "a double hybrid gradient over "// &
@@ -1516,20 +1382,18 @@ contains
                call mol%destroy()
                return
             end if
-            ! A fitted reference used to be refused here. It is not any more:
-            ! the perturbative term's response equations are solved with the
-            ! operator the SCF actually used, and its two-electron derivative
-            ! term comes off the auxiliary basis. What still holds is that the
-            ! *correlation* is exact either way -- a double hybrid's PT2 term is
-            ! a conventional MP2, and in a gradient run it stays one.
+            ! A fitted reference is allowed: the perturbative term's response
+            ! equations are solved with the operator the SCF used, and its
+            ! two-electron derivative term comes off the auxiliary basis. The
+            ! *correlation* is exact either way -- a double hybrid's PT2 term
+            ! is a conventional MP2, and in a gradient run it stays one.
             !
-            ! A frozen core, by contrast, is still refused -- and no longer
-            ! because the blocks are missing: the MP2 gradient routines
-            ! underneath build them, and a plain MP2 deck takes them. This
-            ! assembly never passes the frozen count, and the occupied-frozen
-            ! resolution has been validated over a Hartree-Fock reference
-            ! only, not against a Kohn-Sham operator with its kernel in the
-            ! response.
+            ! A frozen core is refused, though the MP2 gradient routines
+            ! underneath do build the blocks it needs and a plain MP2 deck
+            ! takes them. This assembly never passes the frozen count, and the
+            ! occupied-frozen resolution has been validated over a
+            ! Hartree-Fock reference only, not against a Kohn-Sham operator
+            ! with its kernel in the response.
             if (settings%freeze_core .and. settings%n_frozen_core /= 0) then
                call result%error%set(ERROR_VALIDATION, "a double hybrid gradient is "// &
                                      "all-electron: the perturbative term's gradient "// &
@@ -1600,8 +1464,7 @@ contains
       !
       ! A functional carrying VV10 takes this path too: `ks_hessian` carries
       ! the non-local term's second derivative, Fock derivative and response
-      ! kernel, so a `-V` functional no longer falls back to the
-      ! semi-numerical path.
+      ! kernel, so a `-V` functional needs no semi-numerical fallback.
       !
       ! Hydrogen caps are excluded for a different reason: the shapes match and
       ! the numbers would be right, but a capped fragment's second derivatives
@@ -1869,16 +1732,12 @@ contains
 
             ! ---- the analytic Hessian, where it applies ------------------
             !
-            ! The same positive-list shape as the reference gate above, for
-            ! the same reason: everything not on the list would return a
-            ! plausible, converged, wrong matrix rather than fail loudly. A
+            ! A positive list, because everything not on it would return a
+            ! plausible, converged, wrong matrix rather than fail loudly: a
             ! restricted reference over exact integrals, unscaled MP2,
-            ! all-electron or frozen-core -- the core count flows straight
-            ! into `mp2_correlation_hessian`, whose Phase 2 rotations
-            ! (the Brillouin rewrite of `U^X`, the pair augmentation and the
-            ! Sylvester core<->active derivative) carry it, so an ordinary
-            ! `freeze_core` deck now takes this path instead of central
-            ! differences.
+            ! all-electron or frozen-core. The core count flows straight into
+            ! `mp2_correlation_hessian`, so an ordinary `freeze_core` deck takes
+            ! this path rather than central differences.
             if (do_hessian .and. .not. unrestricted &
                 .and. .not. settings%density_fitting &
                 .and. .not. settings%corr_density_fitting &
@@ -1894,8 +1753,7 @@ contains
                   ! The correlation block plus the reference's AO-dependent
                   ! skeleton come from one shared integral sweep; the
                   ! reference's CPHF response and the nuclear repulsion
-                  ! complete the total, which is `rhf_hessian`'s own split
-                  ! (the assembly test holds the identity at 2.5e-14).
+                  ! complete the total, which is `rhf_hessian`'s own split.
                   call mp2_correlation_hessian(mol, scf%orbitals, &
                                                scf%orbital_energies, scf%density, &
                                                scf%n_occupied, frozen, hcorr, href, error)
@@ -1956,9 +1814,8 @@ contains
             real(dp) :: cc_mp2, cc_singles, cc_doubles, cc_triples
 
             ! The same frozen-core rule the MP2 block applies, deliberately
-            ! duplicated rather than hoisted: the two blocks are independent, and
-            ! a shared local would silently couple them if one ever wanted a
-            ! different count.
+            ! duplicated rather than hoisted: the two blocks are independent.
+            !
             frozen = settings%n_frozen_core
             if (frozen < 0) then
                if (ecp_refuses_auto_frozen_core(mol%core_electrons, error)) then
@@ -1973,10 +1830,8 @@ contains
 
             ! Which formulation. Both are exact for a closed shell and agree to
             ! machine precision -- that identity is asserted by
-            ! test_mqc_libcint_rcc -- so this chooses how the same number is
-            ! computed, not which number. Spatial by default because it is
-            ! smaller and faster; the spin-orbital path is what a doubtful
-            ! result gets checked against.
+            ! `test_mqc_libcint_rcc` -- so this chooses how the same number is
+            ! computed, not which number.
             spin_adapted = settings%cc_spin_adapted
             ! Not a preference when the reference is unrestricted. The
             ! spin-adapted formulation is derived for a closed shell and has no
@@ -2058,18 +1913,15 @@ contains
                cc_converged = cc%converged
             end if
 
-            ! energy_t sums scf + mp2%total() + cc%total(), so only the components
-            ! go in. All three are filled rather than a lumped correlation energy:
-            ! a total cannot be taken apart afterwards, and the singles/doubles
-            ! split is what says whether the T1 amplitudes are doing anything.
+            ! `energy_t` sums scf + mp2%total() + cc%total(), so only the
+            ! components go in, and all three separately rather than a lumped
+            ! correlation energy.
             result%energy%cc%singles = cc_singles
             result%energy%cc%doubles = cc_doubles
             result%energy%cc%triples = cc_triples
             if (settings%verbose) then
-               ! Which formulation ran is said out loud. The two agree to
-               ! machine precision, so nothing in the numbers below would
-               ! otherwise reveal it -- and it is exactly what someone
-               ! comparing a timing or a memory figure needs to know.
+               ! Which formulation ran is said out loud: the two agree to
+               ! machine precision, so nothing in the numbers below reveals it.
                if (spin_adapted) then
                   call logger%info("  CCSD: spin-adapted (spatial orbitals)")
                else
@@ -2097,10 +1949,9 @@ contains
 
       ! ---- a double hybrid's perturbative term -------------------------------
       !
-      ! Part of the functional, not a correction on top of it, and the reason this
-      ! cannot be left to the caller: a deck asking for B2PLYP that received only
-      ! the Kohn-Sham part would get a converged energy 65 mHartree wrong, which is
-      ! the exact shape of failure this backend is built to refuse.
+      ! Part of the functional, not a correction on top of it: a deck asking for
+      ! B2PLYP that received only the Kohn-Sham part would get a converged energy
+      ! that is wrong by tens of millihartree.
       if (kohn_sham) then
          if (xc%pt2_fraction /= 0.0_dp) then
             block
@@ -2120,32 +1971,18 @@ contains
                end if
                if (.not. settings%freeze_core) dh_frozen = 0
 
-               ! Fitted when the deck *named* an auxiliary basis, exact otherwise
-               ! -- and `named` rather than merely present, because
+               ! Fitted when the deck *named* an auxiliary basis, exact
+               ! otherwise -- `named` rather than merely present, because
                ! `scf_config_t%aux_basis_set` carries a default that cuEST needs
-               ! and every deck therefore has one. Testing for its presence
-               ! fitted this term with a JKFIT set nobody asked for.
+               ! and every deck therefore has one.
                !
-               ! The reference implementations of these functionals are
-               ! density-fitted, so fitting is the comparable choice rather than
-               ! a compromise -- but a deck that named no auxiliary basis should
-               ! get an answer rather than a refusal, and the conventional
-               ! transform is the more accurate of the two anyway.
-               !
-               ! **A gradient run makes the same choice**, which it did not used
-               ! to. The gradient below is assembled by whichever routine matches:
-               ! `libcint_ri_mp2_gradient` differentiates the fitted correlation,
-               ! `libcint_mp2_gradient` the exact one. Before the fitted one knew
-               ! about functionals, a gradient run had to drop back to exact
-               ! integrals to stay consistent with its own gradient -- which left
-               ! an `Energy` run and a `Gradient` run of one deck reporting
-               ! different energies, and left the expensive `n^4` two-particle
-               ! density in the one place fitting was supposed to remove it.
-               ! Four routines rather than two, because the reference decides
-               ! the correlation treatment as much as the auxiliary basis does.
-               ! `nelec/2` is not an occupied count for an open shell,
-               ! so the unrestricted calls take the SCF's own per-spin counts
-               ! rather than deriving one.
+               ! The gradient below makes the same choice, so that an `Energy`
+               ! run and a `Gradient` run of one deck report the same energy:
+               ! `libcint_ri_mp2_gradient` differentiates the fitted
+               ! correlation, `libcint_mp2_gradient` the exact one. `nelec/2` is
+               ! not an occupied count for an open shell, so the unrestricted
+               ! calls take the SCF's own per-spin counts rather than deriving
+               ! one.
                if (settings%aux_basis_named) then
                   call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
                   if (error%has_error()) then
@@ -2188,8 +2025,7 @@ contains
                end if
 
                ! Scaled here and stored already scaled, in the field `total` adds
-               ! beside the SCF rather than in `mp2` -- see `energy_t`. Putting it in
-               ! `mp2` would double count the moment a deck asked for MP2 as well.
+               ! beside the SCF rather than in `mp2` -- see `energy_t`.
                result%energy%dh_pt2 = xc%pt2_fraction*dh_mp2%correlation
                if (settings%verbose) then
                   write (line, "(a,f6.3,a,f20.12)") "  double hybrid: PT2 x", xc%pt2_fraction, " = ", result%energy%dh_pt2
@@ -2203,30 +2039,26 @@ contains
                ! only the first half is variational: the reference gradient
                ! needs no response, and this one is almost entirely response.
                !
-               ! **The gradient follows the energy**, on both axes. Fitted
+               ! The gradient follows the energy on both axes: fitted
                ! correlation is differentiated by `libcint_ri_mp2_gradient` and
-               ! exact correlation by `libcint_mp2_gradient`; a fitted reference
-               ! is differentiated as fitted by either. Every other branch in
-               ! this file exists to keep those two in step, and this is the one
-               ! that used to be out of step: the fitted correlation gradient
-               ! knew nothing about functionals, so a double hybrid had to take
-               ! the exact transform whatever the deck asked for.
+               ! exact correlation by `libcint_mp2_gradient`, and a fitted
+               ! reference is differentiated as fitted by either.
                !
-               ! What that cost was not accuracy but scale. The exact assembly
-               ! forms a dense `n_ao^4` two-particle density, which is the
-               ! ceiling fitting exists to remove, and it was still there in the
-               ! one place a double hybrid needs it gone.
+               ! `nelec/2` is an occupied count at both calls because an open
+               ! shell cannot reach them: the reference gradient block above
+               ! refuses an unrestricted double hybrid, and an `mp2` deck that
+               ! would bypass that block is refused unrestricted earlier still.
+               ! The energy a few lines up has no such gate and branches to
+               ! `run_libcint_ump2` instead.
                if (do_gradient) then
                   block
                      real(dp), allocatable :: dh_grad(:, :)
                      type(libcint_molecule_t), target :: dh_aux
                      type(libcint_molecule_t), pointer :: dh_aux_arg
 
-                     ! One auxiliary basis, serving whichever halves are fitted.
-                     ! Rebuilt here for the reason the MP2 branch rebuilds its
-                     ! own: the SCF's copy was destroyed above, and each branch
-                     ! owning one means no error return in between has to
-                     ! remember it.
+                     ! One auxiliary basis, serving whichever halves are
+                     ! fitted. Rebuilt here because the SCF's copy was destroyed
+                     ! above.
                      dh_aux_arg => null()
                      if (settings%aux_basis_named .or. settings%density_fitting) then
                         call correlation_aux_basis(settings, fragment, symbols, dh_aux, error)
@@ -2360,21 +2192,14 @@ contains
    subroutine resolve_active_space(settings, fragment, n_ao, space, error)
       !! Turn the deck's active space into the four integers the CI needs
       !!
-      !! Everything refusable about a CASSCF request is refusable here, before a
-      !! single integral is computed, and that is deliberate: an active space is
-      !! four small integers that either describe a valid CI problem or do not,
-      !! and finding out that they do not after an SCF has run is a waste of the
-      !! SCF and a worse error message.
+      !! Everything refusable about a CASSCF request is refusable here, before
+      !! a single integral is computed.
       !!
       !! **The spin split comes from the molecular multiplicity, not from a
-      !! keyword.** `n_active_electrons` says how many electrons the CI
-      !! distributes; the multiplicity says how they are distributed between
-      !! the spin channels. Every inactive orbital is doubly occupied and so
-      !! contributes nothing to Ms, which means the whole of the molecule's
-      !! excess alpha population has to sit in the active space -- so
-      !! `n_alpha - n_beta = multiplicity - 1` exactly. A separate keyword for
-      !! this would be a second place to say the same thing, and the two could
-      !! disagree.
+      !! keyword.** Every inactive orbital is doubly occupied and contributes
+      !! nothing to Ms, so the whole of the molecule's excess alpha population
+      !! sits in the active space: `n_alpha - n_beta = multiplicity - 1`
+      !! exactly.
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       integer, intent(in) :: n_ao
@@ -2389,11 +2214,8 @@ contains
       n_active_electrons = settings%mcscf%n_active_electrons
       n_active = settings%mcscf%n_active_orbitals
 
-      ! An unset active space is the one mistake worth naming in full, because
-      ! it is what a first CASSCF deck gets wrong and there is no sensible
-      ! default to fall back on: "all the valence orbitals" is a different
-      ! number for every molecule, and guessing one would produce a converged
-      ! energy for a calculation nobody asked for.
+      ! There is no sensible default to fall back on: "all the valence
+      ! orbitals" is a different number for every molecule.
       if (n_active_electrons <= 0 .or. n_active <= 0) then
          call error%set(ERROR_VALIDATION, "a multiconfigurational method needs an "// &
                         "active space, and this deck has none. Set "// &
@@ -2428,10 +2250,9 @@ contains
       end if
 
       ! Every electron the active space does not hold is in a doubly occupied
-      ! orbital, so the inactive count follows from the electron count and does
-      ! not normally have to be said. It is settable because a deck may want to
-      ! freeze more orbitals than the arithmetic gives -- but then the electrons
-      ! have to add up, which is what the second branch checks.
+      ! orbital, so the inactive count follows from the electron count. It is
+      ! settable because a deck may want to freeze more orbitals than the
+      ! arithmetic gives, and then the electrons still have to add up.
       closed_shell_electrons = fragment%nelec - n_active_electrons
       if (settings%mcscf%n_inactive_orbitals < 0) then
          if (closed_shell_electrons < 0 .or. mod(closed_shell_electrons, 2) /= 0) then
@@ -2474,20 +2295,18 @@ contains
    subroutine run_libcint_mcscf(settings, fragment, result, want_gradient)
       !! CASSCF, or CASCI on the reference orbitals, for one fragment
       !!
-      !! Three steps, and the middle one is the reason this is not just a call
-      !! into `mqc_libcint_mcscf`: a closed-shell SCF supplies the orbitals the
-      !! active space is carved out of. CASSCF then moves them and CASCI does
-      !! not, which is the only difference between the two -- same wavefunction,
-      !! same active space, same CI solver.
+      !! A closed-shell SCF supplies the orbitals the active space is carved
+      !! out of. CASSCF then moves them and CASCI does not, which is the only
+      !! difference between the two -- same wavefunction, same active space,
+      !! same CI solver.
       !!
       !! **The reference is restricted, and an open-shell molecule is refused
       !! rather than run unrestricted.** The active-space integrals are built
-      !! from one set of orbitals with an inactive count, exactly as the MP2
-      !! transform is, so alpha and beta orbital sets have nowhere to go. That
-      !! is a restriction on the *reference*, not on the state: a triplet with
-      !! an even electron count is perfectly reachable here, because the
-      !! multiplicity enters through the CI's alpha and beta string counts and
-      !! not through the SCF.
+      !! from one set of orbitals with an inactive count, so alpha and beta
+      !! orbital sets have nowhere to go. That is a restriction on the
+      !! *reference*, not on the state: a triplet with an even electron count is
+      !! reachable, because the multiplicity enters through the CI's alpha and
+      !! beta string counts.
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
@@ -2503,9 +2322,7 @@ contains
       type(casci_result_t) :: casci
       type(valence_wavefunction_t) :: converged
          !! Offered to the bonding analysis, which takes it up only if it is
-         !! over the full valence space. Filled unconditionally because filling
-         !! it is four assignments and deciding whether it qualifies is not this
-         !! layer's job.
+         !! over the full valence space. Filled unconditionally.
       type(error_t) :: error
       type(error_t) :: analysis_error
       real(dp), allocatable :: ieda_atom(:), ieda_free(:)
@@ -2530,14 +2347,10 @@ contains
          return
       end if
 
-      ! Refused here rather than skipped after the fact, and refused before the
-      ! CASSCF rather than after it. A deck that asked for charges and got a
-      ! silent run has been told nothing, and would reasonably read the absence
-      ! as "no charges to report"; making it wait for a converged active space
-      ! first would be worse still. The 1-RDM this path produces is in the MO
-      ! basis over orbitals with fractional occupation, so the AO density both
-      ! partition schemes want has to be assembled -- which is work, not an
-      ! oversight.
+      ! Refused rather than skipped after the fact, and before the CASSCF rather
+      ! than after it. The 1-RDM this path produces is in the MO basis over
+      ! orbitals with fractional occupation, so the AO density both partition
+      ! schemes want would have to be assembled first.
       if (allocated(settings%charges_scheme)) then
          call result%error%set(ERROR_VALIDATION, "atomic charges (properties.charges) "// &
                                "are not implemented for a multiconfigurational wave "// &
@@ -2577,8 +2390,8 @@ contains
       end if
 
       ! Before the SCF, so a malformed active space costs nothing to discover.
-      ! Skipped when AVAS is choosing: the counts do not exist yet and cannot,
-      ! since the selection needs converged orbitals to project.
+      ! Skipped when AVAS is choosing: the selection needs converged orbitals to
+      ! project, so the counts do not exist yet.
       use_avas = allocated(settings%mcscf%avas_orbitals)
       use_valence = settings%mcscf%full_valence
       if (.not. use_avas .and. .not. use_valence) then
@@ -2603,14 +2416,15 @@ contains
 
       ! The reference SCF is an SCF, so it answers to `keywords.scf` like any
       ! other. Parsing here rather than trusting the caller is what makes a
-      ! misspelling a refusal instead of a silent fall back to DIIS: the name
-      ! reaches this routine whatever it says, and nothing downstream would
-      ! report that a requested accelerator had not been used.
+      ! misspelling a refusal instead of a silent fall back to DIIS.
       call parse_accelerator_name(settings%accelerator, accel_kind, accel_ok)
       ! The convergence rule, assembled once per run rather than at each SCF
-      ! call. A metric the deck misspells is refused here, before any integral
-      ! is computed, and named -- silently falling back to the default would be
-      ! the same class of bug as dropping the setting.
+      ! call. A metric the deck misspells is refused here and named, rather than
+      ! silently falling back to the default.
+      !
+      ! TODO(mqc): this refusal and the accelerator one below return without
+      ! `mol%destroy()`, where every other error path in this routine destroys
+      ! it. The matching pair in `run_libcint_hf` leaks `xc` as well.
       call parse_convergence_metric(settings%convergence_metric, scf_conv%metric, conv_ok)
       if (.not. conv_ok) then
          call result%error%set(ERROR_VALIDATION, "keywords.scf.convergence_metric '"// &
@@ -2622,10 +2436,9 @@ contains
       scf_conv%tolerance = settings%energy_tol
       scf_conv%gradient_tolerance = settings%grad_tol
       ! The energy metric is the weakest of the three and unsafe with an
-      ! accelerator that INTERPOLATES: EDIIS on water/6-31G holds dE at 1e-13
-      ! while the commutator sits at 1.1e-2, and stopping there lands 5.8e-5
-      ! hartree from the answer. Measured, not estimated. Said once, here,
-      ! rather than refused -- the user named the metric and gets it.
+      ! accelerator that interpolates: dE can sit at 1e-13 while the commutator
+      ! is still at 1e-2. Warned once rather than refused -- the user named the
+      ! metric and gets it.
       if (scf_conv%metric == CONV_METRIC_ENERGY .and. accel_kind /= ACCEL_DIIS) then
          call logger%warning("  convergence_metric is 'energy' and the accelerator "// &
                              "interpolates. An interpolating scheme can stall with a "// &
@@ -2916,12 +2729,9 @@ contains
       !! The nuclear gradient of a converged CASSCF, onto the result
       !!
       !! Refused rather than approximated when the optimisation did not
-      !! converge. The formula differentiates a *stationary* energy: away from a
-      !! stationary point the orbital-response terms it omits are not zero, and
-      !! what comes back is a plausible vector that is the derivative of
-      !! nothing. `casscf_result_t` says the same thing about its densities,
-      !! which on an unconverged run are one orbital step behind the orbitals
-      !! they are reported beside.
+      !! converge. The formula differentiates a *stationary* energy, so away
+      !! from a stationary point the orbital-response terms it omits are not
+      !! zero.
       type(cuest_scf_settings_t), intent(in) :: settings
       type(libcint_molecule_t), intent(in) :: mol
       type(casscf_result_t), intent(in) :: casscf
@@ -2962,11 +2772,9 @@ contains
                                   pair_energy, pair_classical, formation_energy)
       !! Put the energy decomposition on the result, if there is one
       !!
-      !! Written once and called from both analysis sites, because the two
-      !! differ only in which wave function they analysed. Nothing happens when
-      !! the decomposition did not run: `energy_decomposition` is off by
-      !! default and the arrays come back unallocated, which is what tells
-      !! "not asked for" from "came out zero".
+      !! Nothing happens when the decomposition did not run:
+      !! `energy_decomposition` is off by default and the arrays come back
+      !! unallocated, which is what tells "not asked for" from "came out zero".
       type(calculation_result_t), intent(inout) :: result
       real(dp), intent(in), allocatable :: atom_energy(:), free_atom_energy(:)
       real(dp), intent(in), allocatable :: pair_energy(:, :), pair_classical(:, :)
@@ -2994,28 +2802,14 @@ contains
       !! Build the auxiliary basis the correlation step will fit with
       !!
       !! Whatever the deck names is used, including sets that have no business
-      !! fitting a (ia|jb) block -- a JKFIT set is fitted for the Coulomb and
-      !! exchange matrices and will give a correlation energy whose error is
-      !! not the RI error it is supposed to be. That is a warning rather than a
-      !! refusal: someone comparing against another program's default, or
-      !! probing how bad it gets, has a real reason to ask for it, and the run
-      !! is not wrong so much as poorly fitted.
+      !! fitting a `(ia|jb)` block: a JKFIT set gives a correlation energy whose
+      !! error is not the RI error it is supposed to be. A warning rather than a
+      !! refusal.
       !!
-      !! `model.aux_basis` is the only place an auxiliary basis is named. It used
-      !! to be settable under `keywords.correlation` as well, which meant two
-      !! places for one thing and a silent preference between them; a basis set
-      !! belongs beside the orbital basis it fits.
-      !!
-      !! So a run that fits both the reference and the correlation uses one set for
-      !! both, which is fine in that direction: a RIFIT set fitting J and K is
-      !! ordinary practice. It is worth about 1.7 mHartree on a total energy here
-      !! against exact J and K -- measured, and largely cancelling in any relative
-      !! quantity, which is why it is a reasonable thing to do rather than a
-      !! compromise.
-      !!
-      !! The other direction is the one to catch, and the warning below is for it: a
-      !! JKFIT set fitting a (ia|jb) block gives a correlation energy whose error is
-      !! not the RI error it is supposed to be.
+      !! `model.aux_basis` is the only place an auxiliary basis is named, so a
+      !! run that fits both the reference and the correlation uses one set for
+      !! both. That direction is ordinary practice; a JKFIT set fitting
+      !! correlation is the one to catch.
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       character(len=*), intent(in) :: symbols(:)
@@ -3046,11 +2840,9 @@ contains
       !! How many orbitals a frozen core leaves out, summed over the atoms
       !!
       !! The count per element is the number of filled shells below the valence
-      !! one: none for H and He, the 1s for Li through Ne, and so on. This is
-      !! the same convention PySCF and most others use by default, which is the
-      !! point -- an energy computed with a different core is not comparable to
-      !! a published one, and the difference is millihartrees rather than
-      !! anything that looks like a bug.
+      !! one: none for H and He, the 1s for Li through Ne, and so on -- the same
+      !! convention PySCF and most others use by default. An energy computed
+      !! with a different core is not comparable to a published one.
       integer, intent(in) :: atomic_numbers(:)
       integer :: n_core
 
@@ -3077,9 +2869,7 @@ contains
       !! A fragment's ghost mask, or all-false when it has none
       !!
       !! `is_ghost` is unallocated on every fragment an ordinary expansion
-      !! builds, and passing an unallocated array to an optional dummy is an
-      !! absent argument -- which would be fine, except three call sites would
-      !! each need the same conditional. This says it once.
+      !! builds, so this saves three call sites the same conditional.
       type(physical_fragment_t), intent(in) :: fragment
       logical :: ghost(fragment%n_atoms)
 

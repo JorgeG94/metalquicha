@@ -1,3 +1,4 @@
+! TODO(mqc): do we need this?
 !! Command line argument parsing for metalquicha
 module mqc_cli_parser
    !! Handles parsing of command line options including geometry files,
@@ -89,7 +90,7 @@ contains
 
    end subroutine parse_command_line
 
-   !> Print usage information
+   !! Print usage information
    subroutine print_usage()
       character(len=256) :: prog_name
       integer :: stat
@@ -113,7 +114,7 @@ contains
 
    end subroutine print_usage
 
-   !> Clean up CLI args
+   !! Clean up CLI args
    subroutine cli_args_destroy(this)
       class(cli_args_type), intent(inout) :: this
       if (allocated(this%xyz_file)) deallocate (this%xyz_file)

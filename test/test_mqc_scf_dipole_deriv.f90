@@ -40,60 +40,60 @@ module test_mqc_scf_dipole_deriv
                            0.0_dp, 1.756000_dp, -0.454300_dp], [3, 3])
    integer, parameter :: WATER_NELEC = 10
    character(len=*), parameter :: BASIS = "6-31g"
-   !> The 7-point O(h^6) stencil the rest of this repository's derivative
-   !> checks use, and for the reason they use it. A plain central difference
-   !> was tried here first and has a floor near 1e-7 on this quantity: 2.22e-07
-   !> at h = 1e-3, 1.19e-07 at 5e-4, then *back up* to 7.67e-07 at 2.5e-4 as
-   !> round-off overtakes truncation. That floor is thick enough to hide a real
-   !> error, so it is not a tolerance worth setting.
-   !> One column, as `test_mqc_mp2_hessian_fd` takes one: six converged
-   !> gradients prove the derivation as well as fifty-four would, and the full
-   !> matrix is covered against PySCF without displacing anything.
    integer, parameter :: PERT_ATOM = 1
+      !! The 7-point O(h^6) stencil the rest of this repository's derivative
+      !! checks use, and for the reason they use it. A plain central difference
+      !! was tried here first and has a floor near 1e-7 on this quantity: 2.22e-07
+      !! at h = 1e-3, 1.19e-07 at 5e-4, then *back up* to 7.67e-07 at 2.5e-4 as
+      !! round-off overtakes truncation. That floor is thick enough to hide a real
+      !! error, so it is not a tolerance worth setting.
+      !! One column, as `test_mqc_mp2_hessian_fd` takes one: six converged
+      !! gradients prove the derivation as well as fifty-four would, and the full
+      !! matrix is covered against PySCF without displacing anything.
    integer, parameter :: PERT_CART = 3
 
    real(dp), parameter :: STEP = 2.0e-3_dp
 
-   !> PySCF's own analytic `d mu_a / dR_(X,b)`, `(3, 9)` with the Cartesian
-   !> index fastest, water/6-31G about the nuclear centroid.
-   !>
-   !> **Assembled from PySCF primitives rather than taken from a PySCF
-   !> routine**, because there is not one: `pyscf.prop.infrared` is a separate
-   !> package and is not installed here. What is used is PySCF's `int1e_irp`
-   !> through libcint and its coupled-perturbed solve in `pyscf.hessian`, put
-   !> together the way this repository puts its own together.
-   !>
-   !> So this is independent in *code* and not in *derivation* -- a wrong
-   !> formula would be wrong identically on both sides. That half is what
-   !> `column_differences_the_dipole` is for: it knows nothing about the
-   !> formula, only about the converged dipole. The two together are the pair
-   !> worth having, one saying the physics is right and the other saying the
-   !> implementation is, at a precision no finite difference reaches.
    real(dp), parameter :: PYSCF_HF(3, 9) = transpose(reshape([ &
       -9.322692995854e-01_dp, -1.897276338758e-16_dp, -8.157149066743e-17_dp, 4.661036045585e-01_dp, 2.711586012525e-17_dp, 6.469395321244e-17_dp, 4.661656950269e-01_dp, 1.626117737506e-16_dp, 1.687753745499e-17_dp, &
       2.164412485395e-16_dp, -4.252399592844e-01_dp, 5.401963535989e-02_dp, -5.366410207491e-17_dp, 3.422515533543e-01_dp, -2.520011370934e-02_dp, -1.627771464646e-16_dp, 8.298840593013e-02_dp, -2.881952165054e-02_dp, &
       -6.507053263866e-16_dp, 5.413253152013e-02_dp, -4.530989731287e-01_dp, 5.937490087651e-16_dp, -9.596935101097e-02_dp, 9.690371397993e-02_dp, 5.695631762138e-17_dp, 4.183681949083e-02_dp, 3.561952591488e-01_dp], [9, 3]))
+      !! PySCF's own analytic `d mu_a / dR_(X,b)`, `(3, 9)` with the Cartesian
+      !! index fastest, water/6-31G about the nuclear centroid.
+      !!
+      !! **Assembled from PySCF primitives rather than taken from a PySCF
+      !! routine**, because there is not one: `pyscf.prop.infrared` is a separate
+      !! package and is not installed here. What is used is PySCF's `int1e_irp`
+      !! through libcint and its coupled-perturbed solve in `pyscf.hessian`, put
+      !! together the way this repository puts its own together.
+      !!
+      !! So this is independent in *code* and not in *derivation* -- a wrong
+      !! formula would be wrong identically on both sides. That half is what
+      !! `column_differences_the_dipole` is for: it knows nothing about the
+      !! formula, only about the converged dipole. The two together are the pair
+      !! worth having, one saying the physics is right and the other saying the
+      !! implementation is, at a precision no finite difference reaches.
 
-   !> The same at B3LYP, **on a level-7 grid**, and the level is the point.
-   !> Against PySCF at level 5 this lands 1.49e-04 apart and at level 7 it is
-   !> 3.73e-08 -- a factor of four thousand for two refinements, which is the
-   !> two codes' quadratures differing rather than the derivative. A test at
-   !> level 5 would need a 1e-3 bound and would prove nothing.
    real(dp), parameter :: PYSCF_KS(3, 9) = transpose(reshape([ &
       -8.714634688830e-01_dp, -5.772849780286e-17_dp, -2.158916310143e-16_dp, 4.356968462644e-01_dp, 4.135566907787e-17_dp, 1.655671191805e-16_dp, 4.357666103563e-01_dp, -1.288656863473e-17_dp, 5.561266005859e-17_dp, &
       -2.523098133985e-16_dp, -2.909840396750e-01_dp, 6.903060749963e-02_dp, 9.841889239141e-19_dp, 3.029711715825e-01_dp, -4.775041067811e-02_dp, 2.061008687331e-16_dp, -1.198713361976e-02_dp, -2.128019242858e-02_dp, &
       -2.388844393797e-17_dp, 6.915066873745e-02_dp, -3.266422555407e-01_dp, -1.369474381003e-16_dp, -1.028342714492e-01_dp, 5.828927547819e-03_dp, -7.969224953476e-17_dp, 3.368360691565e-02_dp, 3.208133225513e-01_dp], [9, 3]))
+      !! The same at B3LYP, **on a level-7 grid**, and the level is the point.
+      !! Against PySCF at level 5 this lands 1.49e-04 apart and at level 7 it is
+      !! 3.73e-08 -- a factor of four thousand for two refinements, which is the
+      !! two codes' quadratures differing rather than the derivative. A test at
+      !! level 5 would need a 1e-3 bound and would prove nothing.
    integer, parameter :: KS_GRID_LEVEL = 7
 
-   !> The same at Hartree-Fock on **6-31G***, which is where `l = 2` enters.
-   !> Cartesian in our convention, so 6d. Nothing else in this file reaches a d
-   !> function, and both the component layout and the assembly underneath were
-   !> wrong at s and p before they were measured, so neither is taken on trust
-   !> here.
    real(dp), parameter :: PYSCF_HF_D(3, 9) = transpose(reshape([ &
       -7.891501532599e-01_dp, 2.099238493154e-16_dp, 2.040924995416e-16_dp, 3.945559076098e-01_dp, -9.280084835285e-18_dp, -2.070202645103e-16_dp, 3.945942456500e-01_dp, -2.006437644801e-16_dp, 2.927764968698e-18_dp, &
       -5.755266533450e-16_dp, -4.777531502625e-01_dp, 3.207177071903e-02_dp, 5.182133519400e-17_dp, 3.195688419636e-01_dp, -1.576429940788e-02_dp, 5.237053181510e-16_dp, 1.581843082990e-01_dp, -1.630747131115e-02_dp, &
       1.483046759390e-17_dp, 3.217310415450e-02_dp, -4.942485656217e-01_dp, 1.870192737331e-16_dp, -5.811966754130e-02_dp, 1.664107959184e-01_dp, -2.018497413269e-16_dp, 2.594656338679e-02_dp, 3.278377697033e-01_dp], [9, 3]))
+      !! The same at Hartree-Fock on **6-31G***, which is where `l = 2` enters.
+      !! Cartesian in our convention, so 6d. Nothing else in this file reaches a d
+      !! function, and both the component layout and the assembly underneath were
+      !! wrong at s and p before they were measured, so neither is taken on trust
+      !! here.
    character(len=*), parameter :: BASIS_D = "6-31g*"
 
 contains
@@ -113,8 +113,8 @@ contains
                   ]
    end subroutine collect_mqc_scf_dipole_deriv_tests
 
-   !> The converged dipole at one geometry, about a fixed origin
    subroutine dipole_at(coords, functional, origin, mu, err, ok)
+      !! The converged dipole at one geometry, about a fixed origin
       real(dp), intent(in) :: coords(3, 3)
       character(len=*), intent(in) :: functional
       real(dp), intent(in) :: origin(3)
@@ -328,18 +328,18 @@ contains
                  "the dipole derivative does not sum to the molecular charge")
    end subroutine against_pyscf
 
-   !> How exactly the columns are expected to sum, which differs between the two
-   !>
-   !> Hartree-Fock has no quadrature in it, so the sum rule is an identity among
-   !> integrals: measured 8.99e-15, held at machine precision, and a term left
-   !> on the wrong atom cannot hide anywhere near that.
-   !>
-   !> Kohn-Sham is limited by the grid instead -- 3.68e-08 at level 7, the same
-   !> order as this repository's entire disagreement with PySCF on the same
-   !> matrix, which is what says the two share a cause. Holding it at the
-   !> Hartree-Fock bound would make it a check on the quadrature rather than on
-   !> the assembly.
    pure function sum_rule_tol(functional) result(tol)
+      !! How exactly the columns are expected to sum, which differs between the two
+      !!
+      !! Hartree-Fock has no quadrature in it, so the sum rule is an identity among
+      !! integrals: measured 8.99e-15, held at machine precision, and a term left
+      !! on the wrong atom cannot hide anywhere near that.
+      !!
+      !! Kohn-Sham is limited by the grid instead -- 3.68e-08 at level 7, the same
+      !! order as this repository's entire disagreement with PySCF on the same
+      !! matrix, which is what says the two share a cause. Holding it at the
+      !! Hartree-Fock bound would make it a check on the quadrature rather than on
+      !! the assembly.
       character(len=*), intent(in) :: functional
       real(dp) :: tol
 
@@ -350,8 +350,8 @@ contains
       end if
    end function sum_rule_tol
 
-   !> `d mu / dR` at the reference geometry, nothing displaced
    subroutine derivative(functional, basis, ddip, err, ok)
+      !! `d mu / dR` at the reference geometry, nothing displaced
       character(len=*), intent(in) :: functional, basis
       real(dp), allocatable, intent(out) :: ddip(:, :)
       type(error_t), intent(inout) :: err

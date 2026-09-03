@@ -7,8 +7,8 @@ module test_mqc_diis
    use mqc_ediis, only: simplex_quadratic_min, ediis_coefficients, adiis_coefficients
    implicit none
 
-   !> How far the ring-buffer extrapolation may sit from the reference one.
-   !> Not zero: see test_vs_reference. Observed rounding is 1.3e-16 relative.
+   !! How far the ring-buffer extrapolation may sit from the reference one.
+   !! Not zero: see test_vs_reference. Observed rounding is 1.3e-16 relative.
    real(dp), parameter :: REFERENCE_TOL = 1.0e-12_dp
    private
 

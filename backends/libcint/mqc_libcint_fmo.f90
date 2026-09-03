@@ -36,15 +36,9 @@ module mqc_libcint_fmo
    !!     esp = "ptc",   expansion = "mbe"   electrostatically embedded MBE
    !!     esp = "none",  expansion = "mbe"   plain MBE
    !!
-   !! Keeping the axes apart matters because point charges alone do not make a
-   !! calculation EE-MBE. ESP-PTC under the FMO expansion is still FMO -- it
-   !! carries internal energies and the response term -- and it is a genuinely
-   !! different quantity, by
+   !! Point charges alone do not make a calculation EE-MBE: ESP-PTC under the
+   !! FMO expansion is still FMO, and differs from EE-MBE by
    !! `Tr(D_I u_I) + Tr(D_J u_J) - Tr((D_I+D_J) u_IJ)`, which does not vanish.
-   !! On water trimers the two land within about 15% of each other's error, so
-   !! nothing loud goes wrong if they are confused; they are simply not the same
-   !! method, and `expansion` exists so that either can be asked for by name.
-   !! See `validation/sweep_fmo`.
    !!
    !! **The energy.** With `E'` an internal energy -- the fragment's own energy
    !! with its polarised density, not counting its interaction with the field --
@@ -59,44 +53,36 @@ module mqc_libcint_fmo
    !! expression, neither being written down anywhere. `dD_S` is the n-mer's
    !! density less its members' densities laid side by side.
    !!
-   !! The response belongs inside the recursion. Left outside it, a pair's
-   !! response is never cancelled by a trimer containing that pair, and the
-   !! total misses exactness by precisely the sum of them -- invisible at level
-   !! two, where nothing contains a pair.
+   !! **The response term belongs inside the recursion.** Left outside it, a
+   !! pair's response is never cancelled by a trimer containing that pair, and
+   !! the total misses exactness by precisely the sum of them -- invisible at
+   !! level two, where nothing contains a pair.
    !!
    !! **Level `n` on `n` fragments is not an approximation.** The corrections
-   !! telescope to the supermolecular energy, the same way FMO2 on two fragments
-   !! does. `check_fmo` climbs the ladder and ends on that equality rather than
-   !! on a tolerance, which is what pins the many-body coefficients down: a
-   !! wrong one still looks plausible at level two and cannot survive being
-   !! asked to cancel exactly.
+   !! telescope to the supermolecular energy. `check_fmo` climbs the ladder and
+   !! ends on that equality rather than on a tolerance, which is what pins the
+   !! many-body coefficients down.
    !!
    !! **Whole molecules by default, and a covalent cut has to be asked for.**
-   !! `bond_breaking = "none"` refuses a partition that severs a bond rather
-   !! than answering it; `"afo"` detaches the bond with an adjusted frozen
-   !! orbital instead, and is restricted to `esp = "none"` for now.
+   !! `bond_breaking = "none"` refuses a partition that severs a bond;
+   !! `"afo"` detaches it with an adjusted frozen orbital instead, and is
+   !! restricted to `esp = "none"` for now. The refusal is not a formality: cut
+   !! an even number of bonds per fragment -- a ring, a double bond -- and every
+   !! electron count stays even, so nothing else objects, and cyclopropane split
+   !! into three CH2 comes back 0.28 Hartree low. Connectivity is therefore
+   !! checked directly, with the criterion [[mqc_bond_perception]] uses
+   !! everywhere else.
    !!
-   !! The refusal is not a formality, which is why it stayed the default.
-   !! Cutting a single bond leaves both fragments with an odd electron count,
-   !! which the closed-shell check would catch on its own; but cut an even
-   !! number per fragment -- a ring, a double bond -- and every count stays
-   !! even. Cyclopropane split into three CH2 used to come back 0.28 Hartree
-   !! low, which is 176 kcal/mol in the shape of an answer. Connectivity is
-   !! therefore checked directly, with the criterion [[mqc_bond_perception]]
-   !! uses everywhere else.
-   !!
-   !! When a bond *is* detached, the orbital that stands in for it comes from
+   !! When a bond *is* detached, the orbital standing in for it comes from
    !! [[mqc_libcint_afo]] and is held by [[mqc_fock_projector]]. What belongs
-   !! here is only the assembly: `assemble_group` decides a group's boundaries
-   !! from its own members, every time, because a bond cut between two monomers
-   !! is whole again inside the dimer holding both ends. Inheriting that
-   !! decision from the members instead is what made an earlier capped version
-   !! 11 Hartree wrong.
+   !! here is the assembly: **`assemble_group` decides a group's boundaries from
+   !! its own members, every time**, because a bond cut between two monomers is
+   !! whole again inside the dimer holding both ends. Inheriting that decision
+   !! from the members is what made an earlier capped version 11 Hartree wrong.
    !!
    !! **Cost.** There are C(N,n) n-mers, so level three on twenty fragments is
-   !! 1140 SCFs against 190 for level two. Nothing here refuses a high level --
-   !! the expansion is generic and a cap would be arbitrary -- but the binomial
-   !! is the whole story and it is not gentle.
+   !! 1140 SCFs against 190 for level two. No level is refused, but the binomial
+   !! is the whole story.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger, verbose_level, debug_level, info_level
    use pic_io, only: to_char
@@ -143,59 +129,34 @@ module mqc_libcint_fmo
          !! `"none"` removes the embedding, leaving a plain many-body expansion
          !! -- the baseline that says what embedding buys.
          !!
-         !! **Measured** against supermolecular RHF on stacked water clusters
-         !! (`validation/sweep_fmo`), 5 monomers, error in Hartree:
-         !!
-         !!     O-O sep    exact ESP    ptc-mulliken   ptc-chelpg    no embed
-         !!     2.70 A     -4.9e-04       7.1e-05      -2.1e-04      3.7e-03
-         !!     2.90 A     -1.1e-04       2.0e-04      -3.1e-05      2.9e-03
-         !!     3.20 A     -1.0e-06       1.6e-04       1.3e-05      1.9e-03
-         !!     4.00 A      8.6e-07       2.6e-05       1.1e-06      4.6e-04
-         !!     6.00 A      1.0e-12       9.1e-07       8.1e-10      3.7e-05
-         !!     9.00 A      1.7e-13       8.1e-08       2.0e-10      3.4e-06
-         !!
-         !! Read the last two rows first. Once the fragments are far enough
-         !! apart that exchange and charge transfer between them have died --
-         !! while the electrostatic field very much has not -- FMO2 with the
-         !! exact ESP is *exact*, to 1e-13. Nothing but a correct embedding
-         !! operator does that. The point-charge variants plateau five orders of
-         !! magnitude short and stay there however far the fragments are moved,
-         !! because what is left is the charge approximation itself.
-         !!
-         !! The short-separation rows read the other way, and the temptation is
-         !! to conclude point charges are better there. They are not. The exact
-         !! ESP's error at 2.70 A is the genuine three-body term, which FMO2
-         !! does not contain and no embedding can supply; it is negative at
-         !! every separation and shrinks monotonically as that term dies. The
-         !! point-charge error has the opposite sign over part of the range, so
-         !! it partly cancels against the three-body term, and near contact the
-         !! cancellation flatters it. That is luck, not accuracy -- and it is
-         !! not something to rely on, because the two errors have no reason to
-         !! stay matched for a different system.
+         !! Measured on stacked water clusters (`validation/sweep_fmo`): once
+         !! the fragments are far enough apart that exchange and charge transfer
+         !! have died, FMO2 with the exact ESP reproduces supermolecular RHF to
+         !! 1e-13, while the point-charge variants plateau about five orders
+         !! short however far the fragments are moved. **Near contact the
+         !! point-charge error can look smaller**, because it takes the opposite
+         !! sign to the three-body term FMO2 omits and partly cancels against
+         !! it; that is luck, and does not carry to another system.
       character(len=16) :: bond_breaking = "none"
          !! How a cut covalent bond is represented.
          !!
          !! `"none"` refuses a partition that cuts one, naming the two atoms
-         !! and the two fragments they were put in. That is the default and
-         !! it is not a formality: cutting an even number of bonds per
-         !! fragment leaves every electron count even, so nothing else
-         !! objects, and cyclopropane split into three CH2 used to come back
-         !! 0.28 Hartree low.
+         !! and the two fragments they were put in. The default, and not a
+         !! formality: cutting an even number of bonds per fragment leaves every
+         !! electron count even, so nothing else objects, and cyclopropane split
+         !! into three CH2 comes back 0.28 Hartree low.
          !!
          !! `"afo"` detaches the bond with an adjusted frozen orbital. A model
          !! system around the bond is solved and localized, the orbital on the
          !! bond is reduced to the detached atom's own functions, and that
-         !! hybrid is then frozen -- empty in the fragment that gets nothing of
-         !! the bond, occupied in the one that gets all of it. See
+         !! hybrid is frozen -- empty in the fragment that gets nothing of the
+         !! bond, occupied in the one that gets all of it. See
          !! [[mqc_libcint_afo]].
          !!
-         !! Only sound without an embedding field so far, so `"afo"` requires
-         !! `esp = "none"` and says so. A frozen orbital and a field both
-         !! describe the bond region -- the field already supplies the
-         !! neighbour's nucleus and density where the orbital supplies the
-         !! bond -- so the detached atom's share has to come out of the field
-         !! first. That is clean for point charges and not defined for an
-         !! exact density.
+         !! **`"afo"` requires `esp = "none"`.** A frozen orbital and a field
+         !! both describe the bond region, so the detached atom's share would
+         !! have to come out of the field first; that is clean for point charges
+         !! and not defined for an exact density.
       real(dp) :: cap_scale = 1.0_dp
          !! Where a hydrogen cap sits along the bond it closes, for the
          !! many-body path; see [[mqc_physical_fragment]]. Not used by
@@ -206,38 +167,21 @@ module mqc_libcint_fmo
          !! theory the long-range part is evaluated at.
          !!
          !! `"mulliken"` -- point charges from Mulliken populations. The
-         !! default, and what production FMO codes use. The approximation being
-         !! made is specifically a population one: the distant fragment's
-         !! `sum_ls D_ls (mn|ls)` is replaced by its atomic populations, and
-         !! Mulliken populations are what that term reduces to.
+         !! default, and what production FMO codes use. The approximation is
+         !! specifically a population one: the distant fragment's
+         !! `sum_ls D_ls (mn|ls)` is replaced by its atomic populations, which
+         !! is what that term reduces to.
          !!
-         !! `"chelpg"` -- point charges from an ESP fit. Production FMO codes
-         !! do not use these and the choice is not a studied one, so what
-         !! follows is a measurement rather than a citation.
-         !!
-         !! At long separation, where the point-charge approximation is the
-         !! *only* error left -- no three-body term to cancel against -- CHELPG
-         !! is better than Mulliken by one to two orders of magnitude
-         !! (`validation/sweep_fmo`, error against supermolecular RHF, Hartree):
-         !!
-         !!     3 waters at 9 A     mulliken 2.50e-08    chelpg -5.53e-10
-         !!     5 waters at 9 A     mulliken 1.05e-07    chelpg  1.33e-08
-         !!
-         !! That regime is exactly the one the far field operates in, so the
-         !! signal is on point and in the direction the charges themselves
-         !! predict: CHELPG is fitted to reproduce a potential, and reproducing
-         !! a potential is the job. Near contact the comparison is muddied by
-         !! cancellation against the three-body term and should not be read.
-         !!
-         !! Measured on stacked water clusters in one basis. Promising, not
-         !! established -- if it matters to a result, check it there.
+         !! `"chelpg"` -- point charges from an ESP fit. Production FMO codes do
+         !! not use these. At long separation, where the point-charge
+         !! approximation is the only error left, CHELPG beats Mulliken by one
+         !! to two orders of magnitude (`validation/sweep_fmo`) -- measured on
+         !! stacked water clusters in one basis, so promising rather than
+         !! established.
          !!
          !! `"ignore"` -- distant fragments contribute nothing at all, nuclei
-         !! included. Not an approximation to the field so much as a decision
-         !! not to have one past the cutoff, which makes it the honest way to
-         !! ask what the long-range field is worth: set the cutoff where you
-         !! mean to and compare. It is also the cheapest, since no charges need
-         !! computing and no integrals evaluating for the distant atoms.
+         !! included. The cheapest, since no charges are computed and no
+         !! integrals evaluated for the distant atoms.
          !!
          !! Read whenever any fragment is distant -- so with `esp = "ptc"`,
          !! which makes all of them distant, and with `esp = "exact"` for those
@@ -246,61 +190,36 @@ module mqc_libcint_fmo
          !! Where the exact ESP gives way to point charges, as a unitless
          !! separation. Read only when `esp = "exact"`.
          !!
-         !! FMO does not evaluate the four-index Coulomb term between every
-         !! pair of fragments. Beyond a separation it approximates the distant
-         !! fragment's electron density by its atomic populations, which is what
-         !! makes the method scale: the exact term is needed only within a
-         !! neighbourhood, so the cost per fragment stops growing once the
-         !! system is larger than that neighbourhood.
+         !! Beyond this separation the distant fragment's electron density is
+         !! approximated by its atomic populations rather than entering the
+         !! four-index Coulomb term, which is what makes the method scale: the
+         !! exact term is needed only within a neighbourhood, so the cost per
+         !! fragment stops growing once the system is larger than that.
          !!
-         !! The separation is measured the way FMO measures it -- the smallest
-         !! interatomic distance between the two fragments, divided by the sum
-         !! of the two atoms' van der Waals radii:
+         !! The separation is FMO's -- the smallest interatomic distance between
+         !! the two fragments, over the sum of those two atoms' van der Waals
+         !! radii:
          !!
          !!     R_IJ = min over A in I, B in J of |R_A - R_B| / (vdw_A + vdw_B)
          !!
-         !! so it is a contact distance rather than a centre-of-mass one, and a
-         !! large flat fragment does not count as far away merely because its
-         !! middle is. The 2.0 default is GAMESS's RESPPC.
+         !! so it is a contact distance and not a centre-of-mass one. The 2.0
+         !! default is GAMESS's RESPPC.
          !!
          !! Negative disables the approximation and makes every fragment exact.
          !! Zero makes every fragment distant, which is then identical to
-         !! `esp = "ptc"` -- and is asserted to be, in `check_fmo`, since the
-         !! two paths reach it by quite different routes.
-         !!
-         !! **What the default costs**, against the same calculation with the
-         !! approximation off (`validation/sweep_fmo`, 5 waters, Hartree):
-         !!
-         !!     O-O sep    RESPPC = 2      no cutoff
-         !!     2.70 A     -4.90e-04      -4.93e-04     nothing is beyond it yet
-         !!     2.90 A     -1.08e-04      -1.11e-04
-         !!     3.20 A      1.23e-05      -1.03e-06     it starts to bite
-         !!     4.00 A      2.51e-06       8.64e-07
-         !!     6.00 A     -1.81e-08       1.36e-12     fully engaged
-         !!     9.00 A      8.07e-08       1.71e-13
-         !!
-         !! Read as ratios that looks alarming -- five orders of magnitude at
-         !! 9 Angstrom. Read as energies it is the approximation working as
-         !! designed: where the cutoff costs most in relative terms, the
-         !! absolute error it leaves is 8e-08 Hartree, which is five hundredths
-         !! of a millikcal and nothing at all. Where the error is large enough
-         !! to matter, near contact, the cutoff has not engaged and costs
-         !! nothing. Precision is being given up precisely where precision is
-         !! not the binding constraint, which is the whole bargain.
+         !! `esp = "ptc"` -- and is asserted to be, in `check_fmo`.
       integer :: level = 2
          !! How many fragments at a time. Two is FMO2, three is FMO3, and the
          !! expansion is truncated there.
          !!
          !! The cost is the binomial: with N fragments there are C(N,n) n-mers,
-         !! so level 3 on twenty fragments is 1140 SCFs against 190 for level 2,
-         !! and level 7 is not a good idea on anything. It is allowed because
-         !! the expansion is generic and refusing it would be arbitrary, not
-         !! because it is advisable.
+         !! so level 3 on twenty fragments is 1140 SCFs against 190 for level 2.
+         !! No level is refused, which is not the same as any level being
+         !! advisable.
          !!
          !! Level equal to the fragment count is the whole expansion and so is
-         !! exact -- the corrections telescope to the supermolecular energy.
-         !! That is a useful thing to be able to ask for, and `check_fmo`
-         !! asserts it at every level a small system allows.
+         !! exact -- the corrections telescope to the supermolecular energy, and
+         !! `check_fmo` asserts it at every level a small system allows.
       character(len=16) :: expansion = "fmo"
          !! How the fragment energies are assembled into a total. Orthogonal to
          !! `esp`, which decides what field they were computed in, because the
@@ -320,15 +239,12 @@ module mqc_libcint_fmo
          !! with no internal-energy subtraction and no response term. The two
          !! differ by Tr(D_I u_I) + Tr(D_J u_J) - Tr((D_I+D_J) u_IJ), which does
          !! not vanish: `u_I` is the field on I from everything including J,
-         !! while `u_IJ` excludes both. So these are different methods and not
-         !! two spellings of one.
+         !! while `u_IJ` excludes both.
          !!
-         !! A caveat that belongs to EE-MBE rather than to this implementation:
-         !! in the pair difference, the point-charge I-J interaction is removed
-         !! twice -- once with `E_I`, which was embedded in J's charges, and
-         !! once with `E_J` -- while the dimer supplies the real one. That is
-         !! inherent to the expansion, not a defect here, and it is part of why
-         !! FMO carries internal energies instead.
+         !! A caveat belonging to EE-MBE rather than to this implementation: in
+         !! the pair difference the point-charge I-J interaction is removed
+         !! twice, once with `E_I` and once with `E_J`, while the dimer supplies
+         !! the real one.
       integer :: max_outer = 50
          !! Cap on the outer (monomer) SCF
       real(dp) :: outer_tol = 1.0e-7_dp
@@ -337,19 +253,14 @@ module mqc_libcint_fmo
          !! made of, and rather than the charges because with `esp = "exact"`
          !! there are no charges in the loop to converge.
       type(scf_numerics_t) :: scf
-         !! How each fragment SCF is driven. The three fields below stay
-         !! per-fragment -- a fragment is a smaller problem and gets its own
-         !! budget and tolerances -- but the accelerator, DIIS subspace, level
-         !! shift and linear-dependence threshold are properties of the
-         !! calculation, and none of them reached a fragment before.
+         !! How each fragment SCF is driven.
+         !!
          !! **Only the drive settings here are read** -- the accelerator, DIIS
          !! subspace, level shift, linear-dependence threshold and incremental
          !! Fock switch. Its `max_iter`, `energy_tol` and `density_tol` are
-         !! NOT: the three bare fields below are, and they are passed
-         !! positionally so they win. Two declarations of one concept in one
-         !! type is a trap, and this comment is the guard rail until the bare
-         !! three are folded in -- which cannot happen until their deliberately
-         !! tighter values have somewhere else to live.
+         !! **not**: the three bare fields below are, and they are passed
+         !! positionally so they win. A fragment is a smaller problem and gets
+         !! its own, deliberately tighter, budget.
       integer :: scf_max_iter = 100
       real(dp) :: scf_energy_tol = 1.0e-9_dp
       real(dp) :: scf_density_tol = 1.0e-7_dp
@@ -368,15 +279,14 @@ module mqc_libcint_fmo
       real(dp), allocatable :: charges(:)            !! Mulliken, for reporting only
    end type fmo_result_t
 
-   !> One fragment, and its place in the whole
    type :: fragment_t
-      !! What persists between passes, and nothing that does not
+      !! One fragment: what persists between passes, and nothing that does not
       !!
-      !! No molecule and no Schwarz bounds. Those are heavy, they are rebuilt
-      !! from the geometry wherever they are needed, and holding them would mean
-      !! materialising every fragment up front -- a serial bottleneck, and once
-      !! this is distributed, the very objects that must not cross a wire. What
-      !! stays is small: a density, an energy, a few indices.
+      !! No molecule and no Schwarz bounds. Those are heavy and are rebuilt from
+      !! the geometry wherever they are needed; holding them would mean
+      !! materialising every fragment up front, and they are the objects that
+      !! must not cross a wire. What stays is small: a density, an energy, a few
+      !! indices.
       integer :: nao = 0                         !! size of its basis, for block layout
       real(dp), allocatable :: density(:, :)
       real(dp), allocatable :: charges(:)        !! computed while its molecule was in hand
@@ -388,18 +298,17 @@ module mqc_libcint_fmo
       real(dp) :: energy_total = 0.0_dp          !! as the SCF reported it, with the field
       integer :: nelec = 0
       integer :: n_caps = 0
-         !! Hydrogen caps closing cut bonds, held at the end of `z`, `sym`
-         !! and `xyz` and deliberately absent from `atoms`. `atoms` maps a
-         !! fragment's entries back onto the system and a cap answers to no
-         !! system atom, so it must not appear there -- it is used as a
-         !! scatter index in several places and a zero would write outside
-         !! the array. The consequence is that `size(atoms)` counts real
-         !! atoms and `size(z)` counts what the SCF actually sees.
+         !! Hydrogen caps closing cut bonds, held at the end of `z`, `sym` and
+         !! `xyz` and deliberately absent from `atoms`: a cap answers to no
+         !! system atom, and `atoms` is used as a scatter index. So
+         !! `size(atoms)` counts real atoms and `size(z)` counts what the SCF
+         !! sees.
       integer, allocatable :: near(:)            !! fragments close enough for the exact term
    end type fragment_t
 
-   !> Everything the system's cut bonds imply, worked out once
    type :: afo_context_t
+      !! Everything the system's cut bonds imply, worked out once
+      !!
       !! Built before any fragment is solved, because a hybrid is a property of
       !! the bond and its surroundings and not of whoever is being solved. One
       !! model system per cut bond, whatever the fragment count.
@@ -413,8 +322,8 @@ module mqc_libcint_fmo
          !! not own, so its symbol cannot come from any fragment.
    end type afo_context_t
 
-   !> One n-mer as it will be handed to an SCF, boundaries included
    type :: group_t
+      !! One n-mer as it will be handed to an SCF, boundaries included
       integer :: n_real = 0    !! Atoms the group owns; ghosts follow them
       integer :: nelec = 0     !! With the boundary shift already applied
       integer, allocatable :: z(:)
@@ -427,13 +336,14 @@ module mqc_libcint_fmo
       integer, allocatable :: cut_of(:)    !! Which system cut each boundary is
    end type group_t
 
-   !> Where a frozen virtual is held, in Hartree.
-   !>
-   !> Modest on purpose. The blocks are decoupled rather than penalised, so this
-   !> has only to lift the frozen virtuals clear of the occupied manifold, and a
-   !> larger one costs precision -- the back transform spreads it over every
-   !> element, leaving the unfrozen block clean only to about `shift * epsilon`.
    real(dp), parameter :: AFO_SHIFT = 1.0e3_dp
+      !! Where a frozen virtual is held, in Hartree.
+      !!
+      !! Modest on purpose. The blocks are decoupled rather than penalised, so
+      !! this has only to lift the frozen virtuals clear of the occupied
+      !! manifold, and a larger one costs precision -- the back transform
+      !! spreads it over every element, leaving the unfrozen block clean only to
+      !! about `shift * epsilon`.
 
 contains
 
@@ -441,11 +351,11 @@ contains
       !! Run FMO2 over a system already partitioned into whole molecules
       !!
       !! `owner(i)` is the fragment index of atom `i`, numbered 1..n_frag with
-      !! no gaps -- which is what `connected_components` in
-      !! [[mqc_bond_perception]] produces. Coordinates are Bohr.
+      !! no gaps -- what `connected_components` in [[mqc_bond_perception]]
+      !! produces. Coordinates are Bohr.
       !!
-      !! Two phases, and they are the two the distributed path hands out: the
-      !! monomers, iterated to self-consistency, then the pairs once.
+      !! Two phases, which are the two the distributed path hands out: the
+      !! monomers, iterated to self-consistency, then the n-mers once.
       integer, intent(in) :: atomic_numbers(:)
       character(len=2), intent(in) :: symbols(:)
       real(dp), intent(in) :: coordinates(:, :)
@@ -456,8 +366,7 @@ contains
       type(comm_t), intent(in), optional :: comm
          !! Spread the fragment work over these ranks. Every rank runs this same
          !! routine on the same geometry and assembles only what it is given, so
-         !! nothing heavy is ever sent -- only the densities and energies that
-         !! the next pass genuinely needs, which are small.
+         !! only densities and energies are ever sent.
 
       type(fragment_t), allocatable :: frag(:)
       type(afo_context_t) :: afo
@@ -498,18 +407,15 @@ contains
       ! `response_sum` is inside `pair_sum` already; it is reported, not added.
       res%energy = res%monomer_sum + res%pair_sum
 
-      ! Reported, not used. What the fragments look like once the field has
-      ! settled is the first thing to look at when a number seems wrong.
+      ! Reported, not used.
       call report_charges(frag, n_frag, n_atoms, res%charges, error)
       if (error%has_error()) return
 
       res%converged = res%converged .and. all_converged
       if (.not. all_converged) then
          ! Refused unless the deck said otherwise. `allow_crap_scf` means the
-         ! same here as everywhere else -- keep a total built partly from
-         ! unconverged pieces, as a result to follow up rather than to trust --
-         ! and it was not reaching this path at all, so a fragmented job that a
-         ! deck had explicitly allowed to finish was refused anyway.
+         ! same here as everywhere else: keep a total built partly from
+         ! unconverged pieces, as a result to follow up rather than to trust.
          if (.not. opts%scf%allow_crap_scf) then
             call error%set(ERROR_VALIDATION, "fmo: at least one fragment SCF did not "// &
                            "converge, so the total is not trustworthy. Set "// &
@@ -525,21 +431,15 @@ contains
    subroutine fmo_guess_kind(opts, kind)
       !! The deck's initial guess for a fragment SCF, as an `SCF_GUESS_*` kind
       !!
-      !! Fragment SCFs never received one: `keywords.scf.guess` reached the
-      !! expansion and stopped there, so every fragment used whatever the SCF
-      !! resolves for itself no matter what the deck asked for.
-      !!
-      !! Absent rather than a value when the deck said nothing. `auto` means
-      !! "the backend picks", and forwarding a resolved kind for it would pin
-      !! the choice here instead -- a behaviour change for every deck that
-      !! never mentioned a guess. An unparseable spelling falls back the same
-      !! way: a guess is a starting point, and refusing a whole fragmented
+      !! **Comes back unallocated when the deck said nothing**, so that it
+      !! arrives absent at `run_libcint_rhf`'s optional `guess` and the backend
+      !! still picks. `auto` and an unparseable spelling both fall back that
+      !! way; a guess is a starting point, and refusing a whole fragmented
       !! calculation over one is out of proportion.
       !!
       !! A subroutine filling a local, not a function: an unallocated
-      !! allocatable VARIABLE arrives absent at an optional dummy, but the same
-      !! thing as a function RESULT segfaults -- found the hard way, on
-      !! check_fmo_mpi.
+      !! allocatable *variable* arrives absent at an optional dummy, where the
+      !! same thing as a function *result* segfaults.
       use mqc_libcint_atomic_guess, only: parse_guess_name
       use mqc_libcint_rhf, only: SCF_GUESS_SAD, SCF_GUESS_SAC, SCF_GUESS_PROJ
       type(fmo_options_t), intent(in) :: opts
@@ -574,11 +474,9 @@ contains
    subroutine open_fragment(frag_z, frag_sym, frag_xyz, opts, mol, bounds, error, ghost)
       !! A fragment's molecule and Schwarz bounds, built from its geometry
       !!
-      !! Called wherever one is needed and discarded straight after. That is the
-      !! opposite of caching them, and deliberately: the basis set behind
-      !! `build_libcint_molecule` is itself cached, so what remains is arithmetic
-      !! that parallelises, where a cache of molecules is memory that has to be
-      !! filled serially and cannot be shared between ranks anyway.
+      !! Called wherever one is needed and discarded straight after, rather than
+      !! cached: the basis set behind `build_libcint_molecule` is itself cached,
+      !! so what remains is arithmetic that parallelises.
       integer, intent(in) :: frag_z(:)
       character(len=2), intent(in) :: frag_sym(:)
       real(dp), intent(in) :: frag_xyz(:, :)
@@ -644,13 +542,10 @@ contains
          call refuse_severed_bonds(z, coords, owner, n_atoms, error)
          if (error%has_error()) return
       else if (opts%bond_breaking == "afo") then
-         ! Adjusted frozen orbitals. Restricted to the unembedded expansion for
-         ! now, and that ordering is deliberate rather than incidental: a frozen
-         ! orbital and an embedding field both describe the bond region, and the
-         ! detached atom's share has to come out of the field before the two can
-         ! be used together. Getting the fragmentation right first, where there
-         ! is no field to double count against, is what the caps attempt should
-         ! have done.
+         ! Adjusted frozen orbitals, restricted to the unembedded expansion: a
+         ! frozen orbital and an embedding field both describe the bond region,
+         ! so the detached atom's share has to come out of the field before the
+         ! two can be used together.
          if (opts%esp /= "none") then
             call error%set(ERROR_VALIDATION, "fmo: bond_breaking='afo' is implemented "// &
                            "for esp='none' only. A frozen orbital and an embedding "// &
@@ -680,11 +575,10 @@ contains
          frag(f)%sym = symbols(frag(f)%atoms)
          frag(f)%xyz = coords(:, frag(f)%atoms)
          frag(f)%nelec = sum(frag(f)%z)
-         ! A detached bond moves an electron between the two fragments it joins:
-         ! the end that gets nothing of it is one short, the end that gets all
-         ! of it is one over. Applied here so the closed-shell check below sees
-         ! the count the fragment will actually be solved with -- ethane split
-         ! into two methyls is 9 and 9 before this and 8 and 10 after it.
+         ! A detached bond moves an electron between the two fragments it
+         ! joins. Applied here so the closed-shell check below sees the count
+         ! the fragment will actually be solved with -- ethane split into two
+         ! methyls is 9 and 9 before this and 8 and 10 after it.
          if (afo%active) then
             frag(f)%nelec = frag(f)%nelec + group_electron_shift(afo%cuts, afo%n_cuts, [f])
          end if
@@ -694,9 +588,8 @@ contains
             return
          end if
 
-         ! Built only to learn how many basis functions it has, which the
-         ! block layout needs everywhere, then dropped. Every rank can work this
-         ! out for itself without asking anyone.
+         ! Built only to learn how many basis functions it has, which the block
+         ! layout needs everywhere, then dropped.
          block
             type(libcint_molecule_t) :: probe
             real(dp), allocatable :: probe_bounds(:, :)
@@ -724,28 +617,21 @@ contains
       !! solved, so this runs before any fragment does and costs one small SCF
       !! per cut bond however many fragments and n-mers there turn out to be.
       !!
-      !! **Solved on one rank and shared, rather than everywhere.** The cost is
-      !! not the reason -- a model system is a dozen atoms and its SCF is
-      !! milliseconds, so recomputing it per rank wastes nothing anybody misses.
-      !! The reason is that every rank has to end up with *bit-identical*
-      !! hybrids. Each rank freezes orbitals in the fragments it owns and the
-      !! energies are summed by an allreduce, so ranks that froze subtly
-      !! different orbitals contribute from subtly different methods and the sum
-      !! is quietly wrong -- no crash, nothing in the log.
+      !! **Solved on one rank and shared, rather than everywhere**, so that every
+      !! rank ends up with bit-identical hybrids. Ranks that froze subtly
+      !! different orbitals would contribute from subtly different methods to an
+      !! allreduced sum -- no crash, nothing in the log. Recomputing would very
+      !! probably agree: unequal `OMP_NUM_THREADS` reassociates the BLAS
+      !! reductions, and localization is a discrete choice on top of continuous
+      !! data, so near-degenerate Jacobi pair gains can flip on a rounding
+      !! difference and give a different localized set rather than a perturbed
+      !! one.
       !!
-      !! Recomputing would very probably agree, and "very probably" is the
-      !! problem. Two things could separate ranks: unequal `OMP_NUM_THREADS`
-      !! reassociates the BLAS reductions under the SCF, and the localization is
-      !! a *discrete* choice on top of continuous data -- Jacobi sweeps take the
-      !! largest pair gain, and near-degenerate gains on the symmetric little
-      !! molecules model systems tend to be can flip on a rounding difference
-      !! and give a different localized set rather than a perturbed one.
-      !!
-      !! **The failure path has to go through the collectives, not around
-      !! them.** A leader that hits an error and returns leaves every other rank
-      !! blocked forever at a reduction nobody reaches. So the leader records
-      !! what went wrong as integers, every rank reduces them, and every rank
-      !! reconstructs the same message from the result.
+      !! **The failure path goes through the collectives, not around them.** A
+      !! leader that hits an error and returns leaves every other rank blocked
+      !! forever at a reduction nobody reaches, so the leader records what went
+      !! wrong as integers, every rank reduces them, and every rank reconstructs
+      !! the same message.
       integer, intent(in) :: z(:)
       character(len=2), intent(in) :: symbols(:)
       real(dp), intent(in) :: coords(:, :)
@@ -795,10 +681,6 @@ contains
       end do
 
       afo_opts%basis = opts%basis
-      ! The rest of it, which was never copied. `afo_options_t` has carried
-      ! these three fields all along and this line set only the basis, so the
-      ! model system a cut bond's frozen orbital is localized from converged on
-      ! that type's defaults no matter what the run was told.
       afo_opts%scf_max_iter = opts%scf_max_iter
       afo_opts%scf_energy_tol = opts%scf_energy_tol
       afo_opts%scf_density_tol = opts%scf_density_tol
@@ -868,11 +750,9 @@ contains
    subroutine afo_failure(cut, kind, n_on_bond, local, error)
       !! The same message on every rank, rebuilt from the reduced status
       !!
-      !! `local` carries the lead rank's own error text and is the better
-      !! message where it exists, but it exists only on that rank. So the text
-      !! is reconstructed from integers that every rank has, and the leader's
-      !! own message is appended where it has one -- identical failures
-      !! everywhere, with detail where detail is available.
+      !! `local` carries the lead rank's own error text, which exists only on
+      !! that rank, so the message is reconstructed from integers every rank has
+      !! and the leader's own text is logged where it has any.
       type(severed_bond_t), intent(in) :: cut
       integer, intent(in) :: kind, n_on_bond
       type(error_t), intent(inout) :: local
@@ -904,15 +784,14 @@ contains
    subroutine assemble_group(frag, members, afo, z, coords, group, error)
       !! One n-mer's geometry, electron count and boundaries
       !!
-      !! The members end to end, then any ghosts they need. Ghosts go last on
-      !! purpose: every member keeps the contiguous run of basis functions the
-      !! block bookkeeping everywhere else assumes, and what is new sits past
-      !! the end of it.
+      !! The members end to end, then any ghosts they need. **Ghosts go last**,
+      !! so every member keeps the contiguous run of basis functions the block
+      !! bookkeeping everywhere else assumes.
       !!
       !! The boundary set comes from `cuts_outside_group`, computed from this
       !! group's own members every time. A bond cut between two monomers is
       !! whole inside the dimer that holds both, so that dimer has no boundary
-      !! there -- and inheriting one from its members is the mistake that cost
+      !! there; inheriting one from its members is the mistake that cost
       !! 11 Hartree when this was tried with caps.
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: members(:)
@@ -944,13 +823,9 @@ contains
             ! else's, so its functions have to be brought in without its nucleus.
             if (any(members == afo%cuts(c)%frag_a)) cycle
             ! Counted once per *atom*, not once per boundary. One atom can be
-            ! the detached end of two bonds -- a middle carbon numbered below
-            ! both its neighbours -- and a group holding the far end of both
-            ! would otherwise bring it in twice. Two copies of one atom's
-            ! functions make the overlap exactly singular; the canonical
-            ! orthogonalisation absorbs that, so the answer survives, but it
-            ! survives by leaning on a linear-dependence threshold instead of
-            ! by being right.
+            ! the detached end of two bonds, and a group holding the far end of
+            ! both would otherwise bring it in twice -- two copies of one atom's
+            ! functions make the overlap exactly singular.
             if (ghosted(afo%cuts(c)%atom_a)) cycle
             ghosted(afo%cuts(c)%atom_a) = .true.
             n_ghost = n_ghost + 1
@@ -999,8 +874,7 @@ contains
             ! We own the attached end and get all of the bond: bring the
             ! detached atom's functions in as a ghost and hold its hybrid full.
             ! One copy per atom -- a second boundary on the same detached atom
-            ! puts its hybrid on the copy already there, where the two are
-            ! different orbitals of one atom and independent for that reason.
+            ! puts its hybrid on the copy already there.
             group%occupied(i) = .true.
             if (ghosted(bda)) then
                slot = slot_of(bda)
@@ -1063,22 +937,14 @@ contains
    subroutine refuse_severed_bonds(z, coords, owner, n_atoms, error)
       !! Refuse a partition that cuts a covalent bond
       !!
-      !! This method has no way to represent a cut bond -- no adjusted fragment
-      !! orbitals, no hybrid orbital projection, no caps -- so a fragment with a
-      !! dangling valence is not an approximation it makes, it is a question it
-      !! cannot be asked.
+      !! Checked explicitly because the failure is quiet in exactly the cases
+      !! that matter: cutting a single bond leaves both fragments with an odd
+      !! electron count, which the closed-shell check catches by accident, but
+      !! cut an even number per fragment -- a ring, a double bond -- and every
+      !! count stays even. Cyclopropane split into three CH2 comes back
+      !! 0.28 Hartree low.
       !!
-      !! Worth checking explicitly rather than trusting, because the failure is
-      !! quiet in exactly the cases that matter. Cutting a single bond leaves
-      !! both fragments with an odd electron count, and the closed-shell check
-      !! catches that by accident. Cut an even number per fragment -- a ring, a
-      !! double bond -- and every count stays even, nothing objects, and the
-      !! answer is wrong by a large margin: cyclopropane split into three CH2
-      !! comes back 0.28 Hartree low, which is 176 kcal/mol and looks like a
-      !! number rather than a mistake.
-      !!
-      !! The criterion is the one [[mqc_bond_perception]] uses everywhere else,
-      !! reused rather than restated so the two cannot drift.
+      !! The criterion is the one [[mqc_bond_perception]] uses everywhere else.
       integer, intent(in) :: z(:)
       real(dp), intent(in) :: coords(:, :)
       integer, intent(in) :: owner(:)
@@ -1095,8 +961,7 @@ contains
       call connected_components(geom, component, n_components)
 
       ! A covalently connected group spanning two fragments is a severed bond.
-      ! Reported by naming one offending pair rather than counting them: the
-      ! first one is enough to see what was done wrong.
+      ! One offending pair is named rather than all of them.
       do i = 1, n_atoms
          do j = i + 1, n_atoms
             if (component(i) /= component(j)) cycle
@@ -1117,8 +982,7 @@ contains
       !!
       !! With `esp = "ptc"` every fragment is distant by construction, which is
       !! a cutoff of zero -- so the two ways of asking for an all-point-charge
-      !! embedding meet here rather than in two separate code paths that could
-      !! drift apart.
+      !! embedding meet here rather than in two code paths.
       type(fmo_options_t), intent(in) :: opts
       real(dp) :: r
 
@@ -1130,8 +994,7 @@ contains
    subroutine all_charges(frag, n_frag, n_atoms, opts, q_all, error)
       !! One partial charge per atom, from the fragment densities on hand
       !!
-      !! Needed whenever any fragment is distant enough to be approximated,
-      !! which under the default `resppc` is most of them in a large system.
+      !! Needed whenever any fragment is distant enough to be approximated.
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: n_frag, n_atoms
       type(fmo_options_t), intent(in) :: opts
@@ -1146,8 +1009,7 @@ contains
       ! CHELPG they are not cheap enough to compute on the off chance.
       if (opts%far_field == "ignore") return
       ! Taken from what each fragment recorded while its molecule existed, not
-      ! recomputed -- rebuilding every fragment just to re-derive charges it
-      ! already knows would undo the point of building on demand.
+      ! recomputed.
       do f = 1, n_frag
          if (.not. allocated(frag(f)%charges)) cycle
          ! Only the real atoms map back. A cap's charge belongs to no atom
@@ -1161,17 +1023,14 @@ contains
                                  n_frag, inside, z, coords, q_all, opts, u, error)
       !! The field the atoms marked `inside` sit in, over `mol`'s basis
       !!
-      !! Works for a monomer and a dimer alike -- `inside` and `near` are what
-      !! change. Comes back unallocated when there is no field, which is how the
-      !! caller knows the SCF energy needs no correction.
+      !! Works for any n-mer -- `inside` and `near` are what change. **Comes
+      !! back unallocated when there is no field**, which is how the caller
+      !! knows the SCF energy needs no correction.
       !!
-      !! Two kinds of outside atom contribute, and the split is what `resppc`
-      !! decides. A near fragment gives its bare nuclei here and its electrons
-      !! through the exact Coulomb operator below. A distant one gives a single
-      !! partial charge per atom, which already carries both -- that is what
-      !! `q_A = Z_A - population_A` means, and why the point-charge form is an
-      !! approximation to the electron term alone rather than to the whole
-      !! interaction.
+      !! Two kinds of outside atom contribute, and `resppc` decides the split. A
+      !! near fragment gives its bare nuclei here and its electrons through the
+      !! exact Coulomb operator below; a distant one gives a single partial
+      !! charge per atom, which carries both, since `q_A = Z_A - population_A`.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: group_z(:)
       character(len=2), intent(in) :: group_sym(:)
@@ -1202,9 +1061,8 @@ contains
          is_near(frag(near(k))%atoms) = .true.
       end do
 
-      ! Distant atoms drop out entirely when they are being ignored, so the
-      ! integrals for them are never evaluated rather than evaluated and scaled
-      ! by nothing.
+      ! Distant atoms drop out entirely when they are being ignored, so their
+      ! integrals are never evaluated rather than evaluated and scaled by zero.
       allocate (points(3, n_out), weight(n_out))
       g = 0
       do i = 1, n_atoms
@@ -1219,9 +1077,8 @@ contains
          end if
       end do
 
-      ! Nothing near and nothing distant that counts: there is no field, and
-      ! saying so with an unallocated result spares the caller a zero matrix it
-      ! would have to add to everything anyway.
+      ! Nothing near and nothing distant that counts: no field, said with an
+      ! unallocated result rather than a zero matrix.
       if (g == 0 .and. size(near) == 0) return
 
       allocate (u(mol%nao, mol%nao), source=0.0_dp)
@@ -1245,10 +1102,6 @@ contains
    subroutine nmer_term(frag, n_frag, members, z, coords, q_all, opts, afo, &
                         e_internal, e_resp, all_converged, error)
       !! One n-mer, in the field of every fragment outside it
-      !!
-      !! The pair case generalised: nothing here knew that a group was two
-      !! fragments except the block bookkeeping, and that was always a running
-      !! offset rather than a front half and a back half.
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: n_frag
       integer, intent(in) :: members(:)
@@ -1272,8 +1125,8 @@ contains
       integer :: m, at, nao_m, expect, nelec
       logical :: held
 
-      ! The n-mer's geometry, its fragments end to end in the order given, and
-      ! then whatever ghosts its own boundaries call for.
+      ! The n-mer's geometry: its fragments end to end in the order given, then
+      ! whatever ghosts its own boundaries call for.
       expect = 0
       do m = 1, size(members)
          expect = expect + frag(members(m))%nao
@@ -1288,12 +1141,10 @@ contains
       if (error%has_error()) return
 
       ! libcint orders functions by atom and the atoms went in fragment by
-      ! fragment, so each member owns a contiguous run. Worth checking rather
-      ! than assuming: a silent mismatch would be a plausible wrong answer
-      ! rather than a failure.
-      ! The members' functions must still be the leading block, whatever ghosts
-      ! follow them. Counted over the real atoms rather than compared against
-      ! `mol%nao`, which now includes the ghosts.
+      ! fragment, so each member owns a contiguous run and the members' block
+      ! leads, whatever ghosts follow. Checked rather than assumed: a silent
+      ! mismatch would be a plausible wrong answer rather than a failure.
+      ! Counted over the real atoms, not against `mol%nao`, which counts ghosts.
       allocate (ao_off(mol%natm), ao_count(mol%natm))
       call atom_ao_blocks(mol, ao_off, ao_count)
       if (sum(ao_count(:group%n_real)) /= expect) then
@@ -1370,9 +1221,9 @@ contains
       !! Which fragments outside `group` are close enough to need the exact term
       !!
       !! FMO's separation measure: the smallest interatomic distance between the
-      !! two fragments, over the sum of those two atoms' van der Waals radii.
-      !! Contact distance, not centre-to-centre, so an extended fragment counts
-      !! as near if any part of it is.
+      !! two fragments, over the sum of those two atoms' van der Waals radii --
+      !! a contact distance, so an extended fragment counts as near if any part
+      !! of it is.
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: n_frag
       integer, intent(in) :: group(:)
@@ -1432,11 +1283,10 @@ contains
       !! The exact Coulomb operator of the near fragments, on the group's basis
       !!
       !! Built over a molecule holding the group and its near neighbours only,
-      !! with the group's own density zeroed -- so what comes back on the
-      !! group's block is `sum_{K near} sum_{ls in K} D^K_ls (mn|ls)` and
-      !! nothing else. No subtraction, and no dependence on the size of the
-      !! system beyond the neighbourhood, which is the point of having a cutoff
-      !! at all.
+      !! with the group's own density zeroed, so what comes back on the group's
+      !! block is `sum_{K near} sum_{ls in K} D^K_ls (mn|ls)` and nothing else.
+      !! No subtraction, and no dependence on the system beyond the
+      !! neighbourhood.
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: group_z(:)
       character(len=2), intent(in) :: group_sym(:)
@@ -1503,10 +1353,8 @@ contains
       !! One monomer: build it, field it, solve it, read its charges, drop it
       !!
       !! The whole of a fragment's work for one outer pass, and the unit a rank
-      !! would be handed. Its molecule exists only inside this call, which is
-      !! what lets the caller hold nothing heavy and lets two ranks do two
-      !! fragments without sharing anything but the geometry they both started
-      !! with.
+      !! is handed. Its molecule exists only inside this call, so the caller
+      !! holds nothing heavy and two ranks share nothing but the geometry.
       type(fragment_t), intent(inout) :: frag(:)
       integer, intent(in) :: n_frag, which
       integer, intent(in) :: z(:)
@@ -1517,9 +1365,9 @@ contains
       logical, intent(inout) :: all_converged
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: bare
-         !! Solve it in vacuum. True only for the very first pass, which has no
-         !! field to be solved against because no fragment has a density yet --
-         !! the field is what the passes after it are for.
+         !! Solve it in vacuum. True only for the very first pass, where no
+         !! fragment has a density yet and so there is no field to solve
+         !! against.
 
       type(libcint_molecule_t) :: mol
       type(group_t) :: group
@@ -1531,8 +1379,8 @@ contains
       isolated = .false.
       if (present(bare)) isolated = bare
 
-      ! A monomer is a group of one, and goes through the same assembly as an
-      ! n-mer so that its boundaries are decided the same way.
+      ! A monomer is a group of one, through the same assembly as an n-mer so
+      ! that its boundaries are decided the same way.
       call assemble_group(frag, [which], afo, z, coords, group, error)
       if (error%has_error()) return
 
@@ -1557,12 +1405,11 @@ contains
 
       ! A fragment carrying ghosts was solved in a bigger basis than it owns,
       ! and everything downstream indexes its density by `nao`, which counts
-      ! only its own atoms. Ghosts are appended last, so the block it owns is
-      ! the leading corner; keeping that keeps `d_split` and the block layout
-      ! valid. The ghost block is dropped rather than stored, which is sound
-      ! while this is restricted to `esp = "none"` -- nothing reads a monomer
-      ! density there. An embedded version will want the whole thing, and will
-      ! have to widen the layout rather than truncate here.
+      ! only its own atoms. Ghosts are appended last, so the owned block is the
+      ! leading corner.
+      ! TODO(mqc): the ghost block is dropped rather than stored. Sound only
+      ! while ghosts imply `esp = "none"`, where nothing reads a monomer
+      ! density; an embedded version has to widen the layout instead.
       if (size(frag(which)%density, 1) /= frag(which)%nao) then
          frag(which)%density = frag(which)%density(:frag(which)%nao, :frag(which)%nao)
       end if
@@ -1582,10 +1429,8 @@ contains
       !! the densities and the field they make agree.
       !!
       !! Every fragment within a pass is independent -- they all read the
-      !! previous pass's densities, none reads this pass's -- so a pass is a
-      !! bag of independent tasks with a barrier after it. That is the shape a
-      !! distributed version needs: hand the pass out, wait, share the
-      !! densities, decide whether to go again.
+      !! previous pass's densities, none reads this pass's -- so a pass is a bag
+      !! of tasks with a barrier after it.
       type(fragment_t), intent(inout) :: frag(:)
       integer, intent(in) :: n_frag
       integer, intent(in) :: z(:)
@@ -1627,9 +1472,8 @@ contains
          call all_charges(frag, n_frag, size(z), opts, q_all, error)
          if (error%has_error()) return
 
-         ! Independent within a pass: every fragment reads the densities the
-         ! last pass left and none reads this pass's, so who computes which is
-         ! free. The exchange after is the barrier.
+         ! Independent within a pass, so who computes which is free. The
+         ! exchange after is the barrier.
          do i = 1, n_frag
             if (.not. mine(i, comm)) cycle
             call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, afo, &
@@ -1659,9 +1503,9 @@ contains
    subroutine calculate_polymers(frag, n_frag, z, coords, opts, afo, res, all_converged, error, comm)
       !! Every n-mer from pairs up to the truncation level
       !!
-      !! Independent of each other and of everything else once the monomers have
-      !! settled, so one bag of tasks with no barrier inside it -- and the
-      !! expensive part, since the count is C(N,n) rather than N.
+      !! Independent of each other once the monomers have settled, so one bag of
+      !! tasks with no barrier inside it -- and the expensive part, the count
+      !! being C(N,n) rather than N.
       !!
       !! **The correction each n-mer contributes** is its internal energy less
       !! everything its own subsets already accounted for:
@@ -1669,17 +1513,14 @@ contains
       !!     dE_S = E'_S - sum over proper non-empty subsets T of S of dE_T
       !!
       !! which unrolls to `E'_IJ - E'_I - E'_J` for a pair and to the usual
-      !! three-body expression for a trimer, without either being written down.
-      !! Summing dE over every subset up to the level *is* the truncated
-      !! expansion, so the total is one sum and not a per-level formula. When
-      !! the level reaches the fragment count the corrections telescope and the
-      !! result is the supermolecular energy exactly.
+      !! three-body expression for a trimer. Summing dE over every subset up to
+      !! the level *is* the truncated expansion, so the total is one sum and not
+      !! a per-level formula, and when the level reaches the fragment count the
+      !! corrections telescope to the supermolecular energy exactly.
       !!
-      !! The response term of an n-mer is part of that n-mer's correction and so
-      !! sits inside the recursion. Left outside it, a pair's response would
-      !! never be cancelled by the trimer containing it, and the total would
-      !! miss exactness by exactly the sum of them -- which is how this was
-      !! found. `response_sum` is reported separately but is not added again.
+      !! An n-mer's response term is part of that n-mer's correction and sits
+      !! inside the recursion; `response_sum` is reported separately but is not
+      !! added again.
       type(fragment_t), intent(inout) :: frag(:)
       integer, intent(in) :: n_frag
       integer, intent(in) :: z(:)
@@ -1706,16 +1547,16 @@ contains
       call enumerate_terms(n_frag, level, terms, term_size, n_terms)
       allocate (correction(n_terms), source=0.0_dp)
 
-      ! Count the n-mers (size >= 2) so the progress below has a denominator: the
-      ! monomers are already solved, so they are not part of this phase's work.
+      ! Count the n-mers (size >= 2) so the progress below has a denominator;
+      ! the monomers are already solved.
       n_nmers = count(term_size(1:n_terms) >= 2)
       if (is_leader(comm)) then
          call logger%info("  fmo: "//to_char(n_nmers)//" n-mers up to level "// &
                           to_char(level))
       end if
 
-      ! Monomers are level one and already solved; their correction is just
-      ! their energy, which is what the recursion below subtracts against.
+      ! Monomers are level one and already solved; their correction is their
+      ! energy, which is what the recursion below subtracts against.
       do t = 1, n_terms
          if (term_size(t) /= 1) cycle
          if (opts%expansion == "mbe") then
@@ -1730,9 +1571,8 @@ contains
          if (term_size(t) < 2) cycle
          task = task + 1
 
-         ! Coarse progress at info level so a long n-mer sweep shows movement
-         ! without the per-SCF detail. On the loop index, not the owned subset, so
-         ! it advances smoothly; leader-guarded so it prints once under MPI.
+         ! Coarse progress at info level. On the loop index, not the owned
+         ! subset, so it advances smoothly; leader-guarded so it prints once.
          if (is_leader(comm)) then
             if (mod(task, max(1, n_nmers/10)) == 0 .or. task == n_nmers) then
                call logger%info("  fmo: n-mer "//to_char(task)//"/"//to_char(n_nmers))
@@ -1744,12 +1584,10 @@ contains
          call nmer_term(frag, n_frag, terms(1:term_size(t), t), z, coords, q_all, &
                         opts, afo, e_internal, e_resp, all_converged, error)
          if (error%has_error()) return
-         ! The response goes inside the correction, not alongside it. A larger
+         ! The response goes inside the correction, not alongside it: a larger
          ! n-mer subtracts its subsets' corrections whole, so a response left
-         ! outside the recursion never gets cancelled and survives into a total
-         ! that should have telescoped exactly. At level two nothing contains a
-         ! pair so the two placements agree, which is why this only shows up
-         ! once there are trimers.
+         ! outside the recursion is never cancelled. At level two nothing
+         ! contains a pair, so the two placements agree there.
          correction(t) = e_internal + e_resp
          res%response_sum = res%response_sum + e_resp
       end do
@@ -1899,9 +1737,8 @@ contains
    function mine(task, comm) result(owned)
       !! Whether this rank owns a task, round robin
       !!
-      !! Static rather than handed out on demand, because FMO's tasks are all
-      !! much of a size -- every monomer is one fragment, every pair is two --
-      !! so the imbalance a task server exists to absorb is not there to absorb.
+      !! Static rather than handed out on demand: FMO's tasks are all much of a
+      !! size, so there is no imbalance for a task server to absorb.
       integer, intent(in) :: task
       type(comm_t), intent(in), optional :: comm
       logical :: owned
@@ -1914,12 +1751,10 @@ contains
    function is_leader(comm) result(leads)
       !! Whether this rank should emit the run's shared log lines
       !!
-      !! The outer-convergence and progress lines report reduced totals, so they
-      !! are identical on every rank -- without this each rank prints its own copy
-      !! and the log comes back interleaved N times under MPI. The per-fragment
-      !! SCF tables are deliberately *not* gated this way: each rank solves a
-      !! different set of fragments, so letting every rank print its own is the
-      !! point. Absent `comm` is a single rank, which always leads.
+      !! The outer-convergence and progress lines report reduced totals and are
+      !! identical on every rank. The per-fragment SCF tables are deliberately
+      !! *not* gated this way, since each rank solves a different set. Absent
+      !! `comm` is a single rank, which always leads.
       type(comm_t), intent(in), optional :: comm
       logical :: leads
 
@@ -1933,9 +1768,8 @@ contains
       !!
       !! The individual monomer and n-mer SCFs are the finest thing this method
       !! prints and there are a great many of them, so they sit at the deepest
-      !! level. Gating on the logger level rather than a threaded flag keeps the
-      !! decision in one place and matches how the MBE path decides the same.
-      !TODO: replace debug_level with verbose_level once pic defines large_info;
+      !! level.
+      ! TODO(mqc): replace debug_level with verbose_level once pic defines large_info;
       !      the outer convergence (see calculate_monomers) drops to large_info at
       !      the same time, so inner SCF and outer stay one level apart.
       logical :: show
@@ -1948,12 +1782,12 @@ contains
    function show_outer(comm) result(show)
       !! Whether to print the FMO outer-loop (monomer SCF) convergence table
       !!
-      !! Leader-guarded -- the monomer sum is a reduced total, identical on every
-      !! rank -- and gated at verbose: one level above the info progress lines and
-      !! one below the debug per-fragment SCF tables. The level travels in this
-      !! flag rather than in the logger call because the shared table frame
-      !! (convergence_header/footer) prints through logger%info for every table.
-      !TODO: replace verbose_level with large_info once pic defines it, so the
+      !! Leader-guarded -- the monomer sum is a reduced total -- and gated at
+      !! verbose: one level above the info progress lines and one below the debug
+      !! per-fragment SCF tables. The level travels in this flag rather than in
+      !! the logger call because the shared table frame prints through
+      !! `logger%info`.
+      ! TODO(mqc): replace verbose_level with large_info once pic defines it, so the
       !      outer table sits just below the inner SCF tables (see show_inner_scf).
       type(comm_t), intent(in), optional :: comm
       logical :: show
@@ -1966,9 +1800,8 @@ contains
    subroutine fmo_outer_row(show, iter, monomer_sum, change)
       !! One outer iteration's line: the monomer energy sum and how far it moved
       !!
-      !! The FMO loop's row for the shared convergence table -- the SCF row minus
-      !! the DIIS depth and per-iteration timings an outer loop has no analogue
-      !! for. The frame around it is convergence_header/convergence_footer.
+      !! The FMO loop's row for the shared convergence table; the frame around it
+      !! is `convergence_header`/`convergence_footer`.
       logical, intent(in) :: show
       integer, intent(in) :: iter
       real(dp), intent(in) :: monomer_sum, change
@@ -1984,9 +1817,9 @@ contains
       !! Share what each rank computed this pass with every other
       !!
       !! A sum-reduce over buffers that are zero where a rank computed nothing,
-      !! which makes it a gather without needing displacements for fragments of
-      !! different sizes. Densities, energies and charges only -- small, and the
-      !! only things the next pass reads.
+      !! which makes it a gather needing no displacements for fragments of
+      !! different sizes. Densities, energies and charges only -- the things the
+      !! next pass reads.
       type(fragment_t), intent(inout) :: frag(:)
       integer, intent(in) :: n_frag
       type(comm_t), intent(in), optional :: comm
@@ -2010,13 +1843,11 @@ contains
             buf(at + n + 1) = frag(f)%energy
             buf(at + n + 2) = frag(f)%energy_total
             if (allocated(frag(f)%charges)) then
-               ! Sliced, as `all_charges` slices. A fragment solved with ghosts
+               ! Sliced, as `all_charges` slices: a fragment solved with ghosts
                ! has a charge per atom of the molecule it saw, which is more
                ! than the atoms it owns, and the buffer is laid out by the
-               ! latter. Unreachable while a detached bond forces `esp="none"`
-               ! and no charges are computed at all, and left defensive because
-               ! the assignment would otherwise be a shape mismatch the moment
-               ! that restriction lifts.
+               ! latter. Defensive while a detached bond forces `esp = "none"`
+               ! and no charges are computed at all.
                buf(at + n + 3:at + n + 2 + size(frag(f)%atoms)) = &
                   frag(f)%charges(1:size(frag(f)%atoms))
             end if
@@ -2104,9 +1935,8 @@ contains
    subroutine fragment_charges(mol, density, scheme, q, error)
       !! Atomic charges for a fragment whose density is already converged
       !!
-      !! Taken while the molecule is in hand rather than rebuilt for it later:
-      !! the overlap and the ESP grid both need it, and it is about to be thrown
-      !! away.
+      !! Taken while the molecule is in hand: the overlap and the ESP grid both
+      !! need it, and it is about to be thrown away.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
       character(len=*), intent(in) :: scheme

@@ -28,16 +28,16 @@ module test_mqc_counterpoise
 
    real(dp), parameter :: ANG = 1.8897261254578281_dp
 
-   !> Two waters, 3 Angstrom apart along x. Far enough that the interaction is
-   !> small and close enough that each borrows the other's functions.
+   !! Two waters, 3 Angstrom apart along x. Far enough that the interaction is
+   !! small and close enough that each borrows the other's functions.
    real(dp), parameter :: SEP = 3.0_dp
 
    integer, parameter :: N_ATOMS = 6
    integer, parameter :: N_MONOMER = 3
 
-   !> SAPT's counterpoise-corrected supermolecular Hartree-Fock interaction
-   !> energy for this dimer in 6-31G, reached through the dimer-centred basis
-   !> and none of this code. An outside number, not one this program printed.
+   !! SAPT's counterpoise-corrected supermolecular Hartree-Fock interaction
+   !! energy for this dimer in 6-31G, reached through the dimer-centred basis
+   !! and none of this code. An outside number, not one this program printed.
    real(dp), parameter :: SAPT_E_INT_HF = 0.009315543671_dp
 
 contains

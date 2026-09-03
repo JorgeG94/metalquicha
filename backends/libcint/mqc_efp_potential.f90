@@ -2,33 +2,28 @@
 module mqc_efp_potential
    !! `RUNTYP=MAKEFP`: a geometry and a basis name in, a `.efp` file out.
    !!
-   !! Each parameter block already had a `validation/check_*` program computing it
-   !! and dumping it for comparison against GAMESS's printed numbers. This is the
-   !! assembly -- the SCF, the localization, the multipoles, the static and dynamic
-   !! polarizabilities, the projection data and both screening fits, written as one
-   !! file -- and it is where a run turns into a fragment someone else can use.
+   !! The assembly: the SCF, the localization, the multipoles, the static and
+   !! dynamic polarizabilities, the projection data and both screening fits,
+   !! written as one file. Each block has a `validation/check_*` program of its
+   !! own that compares it against GAMESS's printed numbers.
    !!
-   !! **All seventeen sections GAMESS's reader recognises are written**, so the
-   !! potential is complete: electrostatics to octupole with charge-penetration
-   !! screening, polarization, exchange repulsion, dispersion through `E6`, `E7` and
-   !! `E8`, and charge transfer. Seventeen and not eighteen because `CTFOK` is a
-   !! *subsection* of `CTVEC` rather than a section: GAMESS accepts it only directly
-   !! behind one and aborts on a standalone one, so the two share a `STOP`.
+   !! **All seventeen sections GAMESS's reader recognises are written**:
+   !! electrostatics to octupole with charge-penetration screening, polarization,
+   !! exchange repulsion, dispersion through `E6`, `E7` and `E8`, and charge
+   !! transfer. Seventeen and not eighteen because `CTFOK` is a *subsection* of
+   !! `CTVEC` rather than a section -- GAMESS accepts it only directly behind one
+   !! and aborts on a standalone one, so the two share a `STOP`.
    !!
-   !! **The formats target GAMESS's reader, not byte-identity with its writer.** The
-   !! test that matters is whether GAMESS accepts the file and agrees with the
-   !! energies it computes from it, which `tools/efp_validation/dimer_energy.py`
-   !! asks: every term agrees, exchange repulsion and charge transfer exactly and the
-   !! rest between 1e-10 and 2e-07.
+   !! **The formats target GAMESS's reader, not byte-identity with its writer.**
+   !! What is checked is that GAMESS accepts the file and agrees with the energies
+   !! it computes from it; `tools/efp_validation/dimer_energy.py` asks that.
    !!
-   !! **`LMOQQPOL` is the one block validated by its energy rather than its values.**
-   !! Our per-orbital tensors differ from GAMESS's written ones by up to 0.162, and
-   !! deliberately so: our response summed over the orbitals reproduces GAMESS's own
-   !! *molecular* quadrupole-quadrupole polarizability -- which
-   !! `$MAKEFP MOLPOL=.TRUE.` writes with no translation applied -- to 1.6e-05, while
-   !! its written per-orbital block misses that same tensor by 1.98e-02. The
-   !! difference is confined to the part antisymmetric under exchanging the two index
-   !! pairs, which cancels on summing, and it moves the interaction energy by 2e-07.
+   !! **`LMOQQPOL` is the one block validated by its energy rather than its
+   !! values.** Its per-orbital tensors differ from GAMESS's written ones, in the
+   !! part antisymmetric under exchanging the two index pairs, which cancels on
+   !! summing: the response summed over orbitals reproduces GAMESS's own
+   !! *molecular* quadrupole-quadrupole polarizability more closely than its own
+   !! written per-orbital block does.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -62,75 +57,71 @@ module mqc_efp_potential
    public :: efp_potential_t
    public :: make_efp_potential
    public :: write_efp_potential
-   ! Exposed so a reader can invert it. The printed contraction coefficients carry
-   ! this factor, and recovering the raw ones is an exact division by it.
+   ! Exposed so a reader can invert it: the printed contraction coefficients
+   ! carry this factor, and recovering the raw ones is an exact division by it.
    public :: gamess_primitive_norm
    public :: from_gamess_ao_order
-   ! Its inverse, for anything that changes an orbital and must hand the result back
-   ! to a fragment still storing GAMESS's order. Rotation is the first such caller.
+   ! Its inverse, for anything that changes an orbital and must hand the result
+   ! back to a fragment still storing GAMESS's order.
    public :: to_gamess_ao_order
    public :: frozen_core
 
-   !> Longest line any section emits, with room to spare.
    integer, parameter :: MAX_LINE = 160
+      !! Longest line any section emits, with room to spare.
 
    real(dp), parameter :: MAKEFP_DENSITY_TOL = 1.0e-8_dp
-   !! What a fragment potential is fitted at, and this routine's default for
-   !! both the density threshold and the commutator gate derived from it.
-   !! Named because the warning below has to compare against the same number
-   !! -- written twice, they drift, and the drift is silent.
+      !! What a fragment potential is fitted at, and this module's default for
+      !! both the density threshold and the commutator gate derived from it.
+      !! Named because the warning below compares against the same number.
 
-   !> Flattened extents of the Cartesian tensors the polarizability blocks carry:
-   !> a pair of directions, a triple, and a quadruple. Nine is also the number of
-   !> slots GAMESS writes a polarizability in, those being the same thing.
    integer, parameter :: N_CART_PAIR = 9
+      !! Flattened extents of the Cartesian tensors the polarizability blocks
+      !! carry: a pair of directions, a triple, and a quadruple. Nine is also the
+      !! number of slots GAMESS writes a polarizability in.
    integer, parameter :: N_CART_TRIPLE = 27
    integer, parameter :: N_CART_QUAD = 81
 
-   !> Components in a Cartesian d and f shell.
    integer, parameter :: N_CART_D = 6
+      !! Components in a Cartesian d and f shell.
    integer, parameter :: N_CART_F = 10
 
-   !> Row and column of each of GAMESS's nine polarizability slots. The
-   !> off-diagonal triples are the transpose of what its labels suggest; that was
-   !> measured in `validation/check_distributed_polarizability.py` rather than
-   !> assumed, and it is the one convention here that a symmetric test tensor
-   !> would not have caught.
-   !>
-   !> It is also the transpose of what `efinp.src:7552-7561` writes, and that is not a
-   !> conflict: GAMESS indexes the tensor `(field, dipole)` where this code indexes it
-   !> `(dipole, field)`, so both put the same number in slot 4 and the files agree. See
-   !> the longer note on `POL_ROW` in `mqc_efp_read`, which carries the measurement.
    integer, parameter :: POL_ROW(N_CART_PAIR) = [1, 2, 3, 2, 3, 3, 1, 1, 2]
+      !! Row and column of each of GAMESS's nine polarizability slots. **The
+      !! off-diagonal triples are the transpose of what its labels suggest**,
+      !! measured in `validation/check_distributed_polarizability.py` -- the one
+      !! convention here that a symmetric test tensor would not have caught.
+      !!
+      !! Also the transpose of what `efinp.src:7552-7561` writes, which is not a
+      !! conflict: GAMESS indexes the tensor `(field, dipole)` where this code
+      !! indexes it `(dipole, field)`, so both put the same number in slot 4. See
+      !! the note on `POL_ROW` in `mqc_efp_read`, which carries the measurement.
    integer, parameter :: POL_COL(N_CART_PAIR) = [1, 2, 3, 1, 1, 2, 2, 3, 3]
 
-   !> libcint's index for each of GAMESS's six Cartesian d slots, and the
-   !> normalization between the two codes' d functions. Both established in
-   !> `validation/check_projection.py` against GAMESS's own coefficients.
-   !> libcint's full-Cartesian quadrupole slots, which run xx,xy,xz,yx,...,zz.
    integer, parameter :: QXX = 1, QXY = 2, QXZ = 3, QYX = 4, QYY = 5
    integer, parameter :: QYZ = 6, QZX = 7, QZY = 8, QZZ = 9
+      !! libcint's full-Cartesian quadrupole slots, which run xx,xy,xz,yx,...,zz.
 
    integer, parameter :: D_FROM_LIBCINT(N_CART_D) = [1, 4, 6, 2, 3, 5]
    real(dp), parameter :: D_NORMALIZATION = 1.585330892_dp
+      !! libcint's index for each of GAMESS's six Cartesian d slots, and the
+      !! normalization between the two codes' d functions. Both established in
+      !! `validation/check_projection.py` against GAMESS's own coefficients.
 
-   !> The same for the ten Cartesian f slots, read off GAMESS's own coefficients in
-   !> `validation/check_projection` and solved for in its Python half. Derived rather
-   !> than reasoned about, exactly as the d map was.
-   !>
-   !> The molecule has to be in a frame with no zero coordinate for this to be
-   !> solvable at all: planar water puts an exact zero in every function with an odd
-   !> power of y, and a slot that is zero on both sides admits any scale factor. A
-   !> first attempt in the planar frame returned a map that looked plausible, sent
-   !> four different GAMESS slots to the same one of ours, and was wrong.
    integer, parameter :: F_FROM_LIBCINT(N_CART_F) = [1, 7, 10, 2, 3, 4, 8, 6, 9, 5]
    real(dp), parameter :: F_NORMALIZATION = 1.339849174_dp
+      !! The same for the ten Cartesian f slots, read off GAMESS's own
+      !! coefficients in `validation/check_projection` and solved for there.
+      !!
+      !! **The molecule has to be in a frame with no zero coordinate for this to
+      !! be solvable at all**: planar water puts an exact zero in every function
+      !! with an odd power of y, and a slot that is zero on both sides admits any
+      !! scale factor, so a plausible-looking map can send several GAMESS slots
+      !! to one of ours.
 
-   !> Which of the three normalization classes each GAMESS f slot belongs to. The
-   !> measured scales come out as `F_NORMALIZATION` divided by one of 1, sqrt(5) and
-   !> sqrt(15) -- the ratios are exact to eight figures, so they are written as the
-   !> square roots rather than as the fitted decimals.
    integer, parameter :: F_CLASS(N_CART_F) = [1, 1, 1, 2, 2, 2, 2, 2, 2, 3]
+      !! Which of the three normalization classes each GAMESS f slot belongs to.
+      !! The measured scales come out as `F_NORMALIZATION` divided by one of 1,
+      !! sqrt(5) and sqrt(15), exact to eight figures.
 
    type :: efp_potential_t
       !! Every parameter a `.efp` carries that we can compute
@@ -143,9 +134,9 @@ module mqc_efp_potential
       integer :: n_lmo = 0        !! Valence localized orbitals
       integer :: multiplicity = 1
       real(dp) :: vdwscl = DEFAULT_VDW_SCALE
-         !! The screening grid's van der Waals scale, and now the grid's as well
-         !! as the header's -- `fit_screening` is handed this rather than reading
-         !! the default for itself.
+         !! The screening grid's van der Waals scale. `fit_screening` is handed
+         !! this rather than reading the default for itself, so the grid and the
+         !! written header agree.
       character(len=8), allocatable :: labels(:)      !! `A01O`, `BO21`, ...
       real(dp), allocatable :: points(:, :)           !! (3, n_points), Bohr
       real(dp), allocatable :: mass(:)                !! amu, zero at a midpoint
@@ -165,9 +156,7 @@ module mqc_efp_potential
          !! `(3, 3, 3, 3, n_lmo, n_freq)`, after the write-time translation.
       real(dp), allocatable :: dipquad(:, :, :, :, :)
          !! `(3, 3, 3, n_lmo, n_freq)` as `A'(a,b,c)`, **after** the write-time
-         !! translation to each centroid. Post-shift because that is the form the
-         !! file carries and the shift needs the dipole-dipole tensors, so keeping
-         !! the pre-shift tensor would mean carrying its inputs too.
+         !! translation to each centroid, which is the form the file carries.
       real(dp), allocatable :: frequencies(:)         !! Imaginary, a.u.
       real(dp), allocatable :: fock_lmo(:, :)         !! (n_lmo, n_lmo)
       real(dp), allocatable :: orbitals(:, :)         !! LMOs in GAMESS's AO order
@@ -228,12 +217,11 @@ contains
                                  response_batch)
       !! The whole pipeline: SCF, localization, and every parameter block
       !!
-      !! The order is forced by what depends on what. The SCF gives the density
-      !! the multipoles are taken from and the orbitals everything else needs;
+      !! The order is forced by what depends on what: the SCF gives the density
+      !! the multipoles are taken from and the orbitals everything else needs,
       !! localization gives the centres the polarizabilities and the exchange
-      !! repulsion data are expressed on; the multipoles have to exist before the
-      !! screening can be fitted, because what screening fits is the error the
-      !! *damped multipole* potential makes against the quantum one.
+      !! repulsion data sit on, and the screening is fitted last because what it
+      !! fits is the error the *damped multipole* potential makes.
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in) :: coordinates(:, :)    !! (3, natm), Bohr
@@ -242,9 +230,8 @@ contains
       type(efp_potential_t), intent(out) :: pot
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: charge
-         !! Net charge. Ignoring it is not a small error: the electron count comes out
-         !! wrong, and for a cation it comes out odd, so a closed-shell reference is
-         !! refused outright. Ionic-liquid fragments are the obvious case.
+         !! Net charge. Ignoring it makes the electron count wrong, and odd for a
+         !! cation, so a closed-shell reference is then refused outright.
       integer, intent(in), optional :: n_core
          !! Orbitals excluded from the localized set. Default is the standard
          !! frozen core, which is what MAKEFP uses: its polarizable points and
@@ -252,59 +239,45 @@ contains
       real(dp), intent(in), optional :: vdwscl
          !! `keywords.efp.vdw_scale`. Where the innermost layer of the screening
          !! grid sits, as a fraction of a van der Waals radius, and what the
-         !! written `SCREEN`/`SCREEN2` headers report having used. Those were two
-         !! separate numbers that happened to be equal until this could be set:
-         !! the header took this and the grid took the module default, so a
-         !! potential built with any other value described a grid it had not used.
+         !! written `SCREEN`/`SCREEN2` headers report having used. One number for
+         !! both.
       logical, intent(in), optional :: verbose
       character(len=*), intent(in), optional :: guess
          !! Initial-guess name from the deck (`keywords.guess.type`). Default is
          !! "auto", which resolves to SAD on this backend -- the same guess the
-         !! Energy driver uses. Without it MAKEFP ran the core guess: a system the
-         !! Energy driver converged in ten iterations did not converge in two
-         !! hundred here, and the guess was the whole of the difference.
+         !! Energy driver uses.
       character(len=*), intent(in), optional :: aux_basis
-         !! Fit the dynamic response rather than building its Hessian exactly. That
-         !! build is `n_ov` Fock builds and is most of what a potential costs; fitted,
-         !! it is two matrix products. The approximation is real and is measured by
-         !! `validation/check_df_hessian`, so this is asked for rather than inferred.
+         !! Fit the dynamic response rather than building its Hessian exactly.
+         !! That build is `n_ov` Fock builds and is most of what a potential
+         !! costs; fitted, it is two matrix products. **The approximation is real
+         !! and is measured by `validation/check_df_hessian`**, so it is asked for
+         !! rather than inferred.
          !!
-         !! The auxiliary basis must match the orbital basis in angular form, which
-         !! `build_df_mo_block` checks: libcint builds all three centres of a fitting
-         !! integral in one form. In practice that means a Cartesian Pople orbital
-         !! basis has no usable fitting set here, since the ones on hand are spherical.
+         !! The auxiliary basis must match the orbital basis in angular form,
+         !! which `build_df_mo_block` checks: libcint builds all three centres of
+         !! a fitting integral in one form.
       real(dp), intent(in), optional :: energy_tol, density_tol
+         !! SCF convergence thresholds. Present only when a deck named
+         !! `keywords.scf.tolerance` / `keywords.scf.density_tolerance`; absent,
+         !! the tight defaults at the SCF call stand.
       type(scf_numerics_t), intent(in), optional :: scf_in
          !! The deck's `keywords.scf`, for every setting this routine has no
          !! opinion about: the level shift, the accelerator, the DIIS subspace,
-         !! the linear-dependence threshold and incremental Fock building.
-         !!
-         !! **These were not reaching the SCF at all.** The call below passed
-         !! seven arguments and named none of them, so a MakeFP deck that set
-         !! `incremental_fock: false` to chase a stalling run, or a
-         !! `linear_dependence_threshold` to drop a near-singular function, was
-         !! read, validated and then dropped on the floor. Absent leaves the
-         !! SCF's own defaults, which is what the test callers want.
+         !! the linear-dependence threshold and incremental Fock building. Absent
+         !! leaves the SCF's own defaults.
       integer, intent(in), optional :: max_iter_in
          !! `keywords.scf.maxiter`, present only when the deck named it. The 200
-         !! below is this routine's own, and deliberately larger than the shared
-         !! default of 100 -- a fragment potential is converged tightly and gets
-         !! a budget to match -- so a silent deck must not be cut back to 100.
+         !! below is this routine's own, deliberately larger than the shared
+         !! default of 100 because a fragment potential is converged tightly.
       real(dp), intent(in), optional :: grad_tol_in
          !! `keywords.scf.gradient_tolerance`, present only when the deck named
-         !! it. Wins outright over everything below -- a deck that states the
-         !! commutator threshold is stating the one this routine otherwise
-         !! decides for itself.
-         !! SCF convergence thresholds. Present only when a deck named
-         !! `keywords.scf.tolerance` / `keywords.scf.density_tolerance`; absent,
-         !! the defaults just below stand. See the comment at the SCF call for why
-         !! they are not the shared 1e-6.
+         !! it. Wins outright over the rules at the SCF call below.
       real(dp), intent(in), optional :: dynamic_tol
-         !! `keywords.efp.dynamic_tolerance`. What the frequency-dependent response
-         !! solve converges its residual to. Alone among the EFP keys this one moves
-         !! the numbers in the file rather than the route to them: the dynamic
-         !! polarizabilities, and every dispersion energy taken from them, are only
-         !! as converged as this says.
+         !! `keywords.efp.dynamic_tolerance`. What the frequency-dependent
+         !! response solve converges its residual to. **Alone among the EFP keys
+         !! this one moves the numbers in the file rather than the route to
+         !! them**: the dynamic polarizabilities, and every dispersion energy
+         !! taken from them, are only as converged as this says.
       logical, intent(in), optional :: allow_crap_response
          !! `keywords.efp.allow_crap_response`. Accept whatever the response
          !! solve reached. The potential is wrong; see `efp_config_t`.
@@ -361,20 +334,15 @@ contains
       ! is not consistent about Pople sets -- 6-31G* declares its d Cartesian
       ! while 6-311++G(3df,3pd) declares its d and f spherical -- and
       ! `build_libcint_molecule` follows the declaration unless told otherwise.
-      ! For every other driver that is the right default and the caller decides.
-      ! Here there is nothing to decide: the potential this writes is read back
-      ! by GAMESS, whose ISPHER default is -1, and the AO ordering map in
-      ! `from_gamess_ao_order` is a Cartesian map. Reading the basis spherically
-      ! would emit a potential whose function count the reader disagrees with.
+      ! Here there is nothing to decide: the potential is read back by GAMESS,
+      ! whose ISPHER default is -1, and the AO ordering map in
+      ! `from_gamess_ao_order` is a Cartesian map. It is also what lets an f
+      ! basis work at all.
       !
-      ! This is also what lets an f basis work at all. The ordering map handles
-      ! Cartesian s, p, d and f and refuses g; declared spherically, a set with
-      ! f shells was refused by `check_angular_form` before it got that far.
-      ! **Before the molecule, the basis and the guess.** A misspelled
-      ! accelerator is a deck error, and a deck error should cost nothing: with
-      ! the default "auto" guess this routine builds a SAD density from
-      ! free-atom SCFs first, so validating afterwards meant paying for every
-      ! one of them before saying the word was wrong.
+      ! **The accelerator name is validated before the molecule, the basis and
+      ! the guess.** With the default "auto" guess this routine builds a SAD
+      ! density from free-atom SCFs first, so validating afterwards meant paying
+      ! for every one of them before saying the word was wrong.
       if (present(scf_in)) then
          call parse_accelerator_name(scf_in%accelerator, accel_kind, accel_ok)
          if (.not. accel_ok) then
@@ -396,18 +364,15 @@ contains
 
       if (present(aux_basis)) then
          ! Read the fitting set in whatever angular form the orbital basis is in.
-         ! libcint builds all three centres of a fitting integral in one form, so the
-         ! two have to agree -- and the writer needs the orbital basis Cartesian,
-         ! while every fitting set on hand is declared spherical. Without this the
-         ! fitted path and a written potential are mutually exclusive.
+         ! libcint builds all three centres of a fitting integral in one form, so
+         ! the two have to agree -- and the writer needs the orbital basis
+         ! Cartesian, while every fitting set on hand is declared spherical.
          !
          ! Legitimate because an auxiliary basis is a fitting space, not a
-         ! wavefunction: taking the Cartesian components of the same primitives
-         ! enlarges that space rather than changing what is being fitted. It does
-         ! make the space redundant -- the Cartesian d shells carry an s contaminant
-         ! that duplicates the aux s functions -- so the metric is more nearly
-         ! singular than it would otherwise be, and what that costs is measured in
-         ! `validation/check_df_hessian` rather than assumed.
+         ! wavefunction. It does make the space redundant -- the Cartesian d
+         ! shells carry an s contaminant that duplicates the aux s functions --
+         ! so the metric is more nearly singular, and what that costs is measured
+         ! in `validation/check_df_hessian`.
          call build_libcint_molecule(atomic_numbers, element_symbols, coordinates, &
                                      aux_basis, aux, error, &
                                      force_cartesian=mol%cartesian)
@@ -433,10 +398,8 @@ contains
          return
       end if
 
-      ! Honour the deck's guess, the same as the Energy path: MAKEFP passing no
-      ! guess meant the core guess, which on anything larger than a few atoms does
-      ! not converge in 200 iterations where SAD converges in ten. `guess_total`
-      ! is left unallocated for core/gwh and the SCF reads it only for the atomic
+      ! Honour the deck's guess, the same as the Energy path. `guess_total` is
+      ! left unallocated for core/gwh and the SCF reads it only for the atomic
       ! guesses, so passing it unconditionally is safe.
       guess_name = "auto"
       if (present(guess)) guess_name = guess
@@ -447,68 +410,36 @@ contains
       end if
       if (talk) call logger%info("  initial guess: "//guess_display_name(guess_kind))
 
-      ! `talk` (the makefp verbosity, true for a real run from the driver) rather
-      ! than a hardcoded .false.: the SCF that builds the potential is the main
-      ! computation here, so its iteration table belongs alongside the stage
-      ! timings this routine already prints, not hidden a level down.
-      !
       ! 1e-10 energy / 1e-8 density *when the deck does not say otherwise*: the
-      ! density is what the multipoles and the response are taken from, and 1e-8 is
-      ! tight enough that the potential does not move in any digit it reports. The
-      ! energy keeps the 100:1 ratio the rest of the code uses (SCF_ENERGY_TOL /
-      ! SCF_DENSITY_TOL), so the density is the binding criterion -- by the time it
-      ! reaches 1e-8 the energy is already past 1e-12. The old 1e-12 / 1e-10 chased
-      ! digits below what a fragment potential can carry and cost several iterations
-      ! doing it.
+      ! density is what the multipoles and the response are taken from, and 1e-8
+      ! is tight enough that the potential does not move in any digit it reports.
+      ! The energy keeps the 100:1 ratio the rest of the code uses, so the
+      ! density is the binding criterion. Name the key and it is honoured; leave
+      ! it alone and the tight pair stands.
       !
-      ! These were literals here, which meant a deck's `keywords.scf.tolerance` was
-      ! read, validated, carried through the adapter and then silently dropped on
-      ! this one path while working everywhere else. A default worth keeping is not
-      ! a reason to ignore an instruction: name the key and it is honoured, leave it
-      ! alone and the tight pair stands.
-      !
-      ! `aux` present means density-fit the SCF too, not just the response: the
-      ! `scf.density_fitting` flag now fits both stages against the one auxiliary
-      ! basis, the same as the key does on the Energy path. Absent, the SCF is
-      ! exact.
+      ! `aux` present means density-fit the SCF too, not just the response.
       e_tol = 1.0e-10_dp
       d_tol = MAKEFP_DENSITY_TOL
       if (present(energy_tol)) e_tol = energy_tol
       if (present(density_tol)) d_tol = density_tol
-      ! **The commutator threshold is stated, not derived, and this routine is
-      ! why the argument exists.** Everything a fragment potential carries is
-      ! fitted to the SCF *density* -- the multipoles, the polarizabilities,
-      ! the screening -- and the density's error goes as the commutator, where
-      ! the energy's goes as its square. `sqrt(e_tol)` would be 1e-5 and the
-      ! multipoles drift off their GAMESS references.
+      ! **The commutator threshold is stated, not derived.** Everything a
+      ! fragment potential carries is fitted to the SCF *density* -- the
+      ! multipoles, the polarizabilities, the screening -- and the density's
+      ! error goes as the commutator where the energy's goes as its square, so
+      ! `sqrt(e_tol)` would be 1e-5 and the multipoles drift off their GAMESS
+      ! references. Tightening `e_tol` instead would need 1e-16, below what a
+      ! molecular energy resolves.
       !
-      ! It cannot be had by tightening `e_tol` instead: matching this through
-      ! `sqrt` would need 1e-16, below what a molecular energy resolves, and
-      ! then nothing converges at all. Measured: every EFP test fails.
+      ! A convergence measure the user names is the measure that decides:
       !
-      ! `d_tol` is what used to gate convergence here, so asking the commutator
-      ! for the same number keeps the potentials exactly as tight as they were.
+      !   * `gradient_tolerance` named -- it is the commutator threshold.
+      !   * `density_tolerance` named -- the commutator follows it.
+      !   * only `tolerance` named -- derive it as every other SCF here does,
+      !     `sqrt(e_tol)`, so that loosening the energy loosens the run.
+      !   * nothing named -- the tight pair stands.
       !
-      ! **But only while the deck is silent.** Holding the commutator at 1e-8
-      ! whatever the deck said made a named `tolerance` almost inert: the energy
-      ! gate was met at iteration 13 of a run that stopped at 26, because the
-      ! threshold actually holding it open was one the deck never mentioned and
-      ! the table never printed. A convergence measure the user names is the
-      ! measure that decides, so:
-      !
-      !   * `gradient_tolerance` named -- it is the commutator threshold, and
-      !     nothing here has an opinion to add.
-      !   * `density_tolerance` named -- the commutator follows it, which is
-      !     the same rule as before and now their number rather than ours.
-      !   * only `tolerance` named -- derive it the way every other SCF in this
-      !     code does, `sqrt(e_tol)`, so that loosening the energy actually
-      !     loosens the run.
-      !   * nothing named -- the tight pair stands, unchanged.
-      !
-      ! The third case is the one that costs something, and it is warned about
-      ! rather than overridden. `sqrt(1e-6)` is 1e-3, where the multipoles drift
-      ! off their GAMESS references; a potential built that way is a draft. That
-      ! is the user's call to make, but not one to make unknowingly.
+      ! The third case is warned about rather than overridden: `sqrt(1e-6)` is
+      ! 1e-3, where the multipoles drift off their references.
       g_tol = d_tol
       if (present(grad_tol_in)) then
          g_tol = grad_tol_in
@@ -527,11 +458,7 @@ contains
                              "keywords.scf.density_tolerance or "// &
                              "gradient_tolerance to set it directly.")
       end if
-      ! Everything the deck said about how an SCF runs, forwarded. This call
-      ! used to pass seven arguments and hardcode the iteration cap, so
-      ! `incremental_fock`, `level_shift`, `linear_dependence`, `accelerator`,
-      ! `diis_size` and `maxiter` were read from the deck, validated, and then
-      ! never reached the only SCF a MakeFP run performs.
+      ! Everything the deck said about how an SCF runs, forwarded.
       n_iter = 200
       if (present(max_iter_in)) n_iter = max_iter_in
       scf_diis = 8
@@ -547,17 +474,15 @@ contains
          incr = scf_in%incremental_fock
          ! Parsed again rather than re-derived: the spelling was already
          ! validated at the top of this routine, so `accel_ok` cannot be false
-         ! here. Kept as one call so there is a single place that knows how a
-         ! name becomes a kind.
+         ! here.
          call parse_accelerator_name(scf_in%accelerator, accel_kind, accel_ok)
       end if
       ! Echoed before the SCF runs, so a deck that set something and saw no
-      ! effect can be checked against what arrived rather than against the
-      ! source. This path dropped six settings silently; the block is the
-      ! cheapest guard against a seventh.
-      ! Assembled whether or not it is printed, because this is now what the
-      ! SCF is GIVEN and not merely what gets reported. A configuration echoed
-      ! but not passed would be the very failure this echo exists to catch.
+      ! effect can be checked against what arrived.
+      !
+      ! Assembled whether or not it is printed, because this is what the SCF is
+      ! *given* and not merely what gets reported -- a configuration echoed but
+      ! not passed would be the failure this echo exists to catch.
       echo = scf_numerics_t()
       if (present(scf_in)) echo = scf_in
       echo%max_iter = n_iter
@@ -568,9 +493,8 @@ contains
       echo%level_shift = shift
       echo%linear_dependence = lindep
       echo%incremental_fock = incr
-      ! The resolved guess, not the deck spelling. `build_restricted_guess` has
-      ! already turned "auto" into a real choice by this point, and echoing
-      ! "auto" would name the request rather than the run.
+      ! The resolved guess, not the deck spelling: echoing "auto" would name the
+      ! request rather than the run.
       echo%guess = guess_display_name(guess_kind)
       if (talk) call print_scf_config(echo, "MAKEFP SCF")
       if (present(aux_basis)) then
@@ -664,19 +588,15 @@ contains
 
       allocate (pot%frequencies(N_CASIMIR_POLDER))
       pot%frequencies = casimir_polder_frequencies()
-      ! One Hessian for all three dynamic blocks. It depends on the reference alone,
-      ! so rebuilding it per block is three identical builds -- 55 seconds each at 115
-      ! orbitals, which was most of the potential's cost.
-      ! Only this call can build the Hessian: it is the first of the three, and the
-      ! two blocks after it are handed the built one and reuse it. So this is the one
-      ! place the auxiliary basis has to reach, and an optional dummy cannot be passed
-      ! conditionally from a local -- hence the branch rather than one call.
+      ! One Hessian for all three dynamic blocks: it depends on the reference
+      ! alone, so rebuilding it per block would be three identical builds. Only
+      ! this call can build it -- the two blocks after are handed the built one --
+      ! so this is the one place the auxiliary basis has to reach, and an optional
+      ! dummy cannot be passed conditionally from a local, hence the branch.
       !
-      ! Ahead of the static block, which used to come first. The static response is
-      ! `(A+B) U = -h`, the same operator these blocks build, so once it exists the
-      ! static solve is a factorization rather than a conjugate-gradient run --
-      ! forty seconds of the hundred a tripeptide took, for a result that agrees to
-      ! thirteen digits.
+      ! Ahead of the static block. The static response is `(A+B) U = -h`, the same
+      ! operator these blocks build, so once it exists the static solve is a
+      ! factorization rather than a conjugate-gradient run.
       if (present(aux_basis)) then
          call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
                                       shared_hessian, error, progress=talk, aux=aux, &
@@ -736,13 +656,12 @@ contains
          return
       end if
 
-      ! The charge-transfer basis. `CTVEC` has two forms in GAMESS and this is the
-      ! second: with `$MAKEFP CTVVO=.FALSE.` it writes the whole canonical MO
-      ! matrix and the header `CTVEC NA NUM` -- the branch GAMESS labels CMO -- where
-      ! its default path writes `NOCC` occupied orbitals plus a set of
-      ! quasi-atomic valence virtuals built by `VVOS`. The canonical form needs no
-      ! extra machinery and is what GAMESS itself recommends when the valence
-      ! virtuals cannot be formed -- "PLEASE TRY IT AGAIN WITH CANONICAL ORBITALS".
+      ! The charge-transfer basis, in the canonical form: `$MAKEFP CTVVO=.FALSE.`
+      ! writes the whole canonical MO matrix under the header `CTVEC NA NUM`,
+      ! where GAMESS's default path writes `NOCC` occupied orbitals plus
+      ! quasi-atomic valence virtuals from `VVOS`. The canonical form needs no
+      ! extra machinery and is what GAMESS recommends when the valence virtuals
+      ! cannot be formed.
       call to_gamess_ao_order(mol, scf%orbitals, pot%canonical, error)
       if (error%has_error()) then
          call mol%destroy()
@@ -760,11 +679,11 @@ contains
       ! --- charge penetration screening ----------------------------------------
       ! Last, because it is fitted to the error the multipoles above make.
       !
-      ! One grid and one quantum potential for both damping forms. They are fitted
-      ! to the same target and differ only in the damping term of the objective, so
-      ! the first fit hands its target to the second rather than the second building
-      ! an identical one. Building it is nearly the whole cost: the grid runs to
-      ! tens of thousands of points and each needs an integral over every shell pair.
+      ! One grid and one quantum potential for both damping forms: they are fitted
+      ! to the same target and differ only in the damping term, so the first fit
+      ! hands its target to the second. Building the target is nearly the whole
+      ! cost -- tens of thousands of grid points, each needing an integral over
+      ! every shell pair.
       call fit_screening(mol, scf%density, dma, atomic_numbers, SCREEN_EXPONENTIAL, &
                          alpha, error, target=screen_target, residual=rms_exp, &
                          vdw_scale=pot%vdwscl)
@@ -806,10 +725,8 @@ contains
       !!
       !! Three conventions here were established by
       !! `validation/check_dipquad_sumrule`, which pins them by structure rather
-      !! than by fitting -- see its docstring and the record in
-      !! `mqc_libcint_cphf`. Getting any one of them wrong leaves a tensor that
-      !! passes every internal check and disagrees with GAMESS, which is what
-      !! happened for a long time.
+      !! than by fitting. **Getting any one of them wrong leaves a tensor that
+      !! passes every internal check and disagrees with GAMESS.**
       !!
       !!   * **The quadrupole measures and the dipole drives**, both expanded about
       !!     the centre of mass, and the quadrupole is the traceless Buckingham
@@ -818,9 +735,7 @@ contains
       !!     response operator; summed over orbitals they agree.
       !!   * **The write-time translation to each centroid**, `DQSHIFT`, whose
       !!     `delta_bc` term takes the dipole-dipole tensor **transposed**:
-      !!     `alpha(a,d)`, not `alpha(d,a)` as the rest of the formula reads. That
-      !!     transpose is the whole of what used to be a 14% discrepancy; with it
-      !!     the block agrees to 8.9e-05, which is GAMESS's own precision.
+      !!     `alpha(a,d)`, not `alpha(d,a)` as the rest of the formula reads.
       !!   * **The dipole-dipole tensor in the shift is the dynamic one at the same
       !!     frequency**, not the static one.
       type(libcint_molecule_t), intent(in) :: mol
@@ -835,14 +750,13 @@ contains
       type(libcint_molecule_t), intent(in), optional :: aux
          !! Fit the Hessian rather than build it exactly; passed straight through.
       integer, intent(in), optional :: max_iter
+         !! This and the four below are the `keywords.efp` settings the response
+         !! solve reads, passed straight through. Absent here means absent there,
+         !! which leaves the solver on its own defaults.
       real(dp), intent(in), optional :: tol
       integer, intent(in), optional :: route
       logical, intent(in), optional :: allow_unconverged
       integer, intent(in), optional :: batch
-         !! The three `keywords.efp` settings the response solve reads, passed
-         !! straight through. Absent here means absent there, which leaves the
-         !! solver on its own defaults -- so a deck with no `efp` block reaches it
-         !! exactly as it did before there was one.
 
       real(dp), allocatable :: dip(:, :, :), quad(:, :, :), buck(:, :, :)
       real(dp), allocatable :: both(:, :, :), all_blocks(:, :, :, :)
@@ -864,9 +778,9 @@ contains
       call multipole_matrices(mol, com, 2, quad, error)
       if (error%has_error()) return
 
-      ! The traceless Buckingham quadrupole, as GAMESS builds it
-      ! -- the traceless Buckingham form -- kept as all nine Cartesian slots so that no expansion
-      ! of six unique values into nine has to be guessed at.
+      ! The traceless Buckingham quadrupole, as GAMESS builds it, kept as all nine
+      ! Cartesian slots so that no expansion of six unique values into nine has to
+      ! be guessed at.
       allocate (buck(mol%nao, mol%nao, 9))
       buck(:, :, QXX) = 0.5_dp*(2.0_dp*quad(:, :, QXX) - quad(:, :, QYY) &
                                 - quad(:, :, QZZ))
@@ -881,32 +795,20 @@ contains
       buck(:, :, QZX) = buck(:, :, QXZ)
       buck(:, :, QZY) = buck(:, :, QYZ)
 
-      ! All three dynamic blocks from one solve.
-      !
-      ! They are three contractions of one response, not three responses: the
-      ! dipole-dipole block measures and drives with `dip`, the mixed one measures
-      ! with `buck` and drives with `dip`, and the quadrupole one uses `buck` both
-      ! sides. So the *driving* operators are `dip` and `buck` together -- twelve of
-      ! them -- and every block is a slice of the twelve-by-twelve result.
-      !
-      ! Run as three calls this cost three sets of twelve factorizations of the same
-      ! shifted matrix, differing only in which right-hand sides came along. Two
-      ! thirds of that was redundant, and at 8350 pairs a factorization is eleven
-      ! seconds on one core.
-      !
-      ! The dipole-dipole slice is what `distributed_dynamic_polarizability` used to
-      ! return, which is the same projection with `measure` and `respond` both
-      ! `dip` -- so it is computed here now and the separate call is gone.
+      ! All three dynamic blocks from one solve: they are three contractions of
+      ! one response, not three responses. The dipole-dipole block measures and
+      ! drives with `dip`, the mixed one measures with `buck` and drives with
+      ! `dip`, and the quadrupole one uses `buck` on both sides -- so the driving
+      ! operators are `dip` and `buck` together, twelve of them, and every block
+      ! is a slice of the twelve-by-twelve result.
       n_both = 3 + size(buck, 3)
       allocate (both(mol%nao, mol%nao, n_both))
       both(:, :, 1:3) = dip
       both(:, :, 4:n_both) = buck
 
-      ! One call rather than one per combination of present arguments: `aux` here is
-      ! an optional dummy, not a local, and an absent one passed on as an actual
-      ! argument arrives absent at the other end -- which is what `n_core` and
-      ! `progress` in this same call were already relying on. The branch was never
-      ! needed, and with four optionals it would have been sixteen of them.
+      ! One call rather than one per combination of present arguments: `aux` here
+      ! is an optional dummy, not a local, and an absent one passed on as an actual
+      ! argument arrives absent at the other end.
       call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
                                      pot%n_occ, pot%frequencies, both, both, &
                                      all_blocks, centroids, error, n_core=core, &
@@ -954,11 +856,10 @@ contains
       end do
 
       ! --- the quadrupole-quadrupole block ------------------------------------
-      ! Same operator on both sides, and the factor is 1/3 rather than 1: `LQQPOL`
-      ! carries a factor of a third that the dipole-quadrupole one does not. Confirmed
-      ! against GAMESS's own molecular `QUAD-QUAD POLARIZABILITY`, which
-      ! `$MAKEFP MOLPOL=.TRUE.` writes with no translation applied: our response
-      ! summed over the orbitals and divided by three reproduces it to 1.5e-05.
+      ! Same operator on both sides, and the factor is 1/3 rather than 1:
+      ! `LQQPOL` carries a factor of a third that the dipole-quadrupole one does
+      ! not. Confirmed against GAMESS's own molecular `QUAD-QUAD POLARIZABILITY`,
+      ! which `$MAKEFP MOLPOL=.TRUE.` writes with no translation applied.
       allocate (qq(size(buck, 3), size(buck, 3), pot%n_lmo, n_freq))
       qq = all_blocks(4:n_both, 4:n_both, :, :)
       deallocate (all_blocks)
@@ -1029,6 +930,9 @@ contains
 
    pure function frozen_core(atomic_numbers) result(n)
       !! The standard frozen core, which is the set MAKEFP excludes
+      ! TODO(mqc): disagrees with `core_orbital_count` in `mqc_libcint_bridge`
+      ! above xenon -- that one adds the 4d 5s 5p shells for Z > 54 where this
+      ! stays at 18 -- and both are documented as the standard frozen core.
       integer, intent(in) :: atomic_numbers(:)
       integer :: n
       integer :: i, z
@@ -1051,17 +955,10 @@ contains
    subroutine report(stage, what, talk)
       !! Seconds for the stage just finished, then restart the clock
       !!
-      !! Printed by the emitter rather than only by a test harness: a fragment of any
-      !! size takes long enough that "where did that go" is a question the program
-      !! should answer without being rebuilt. At 115 orbitals the dynamic response is
-      !! 88% of the run and everything else is under four seconds, but that split
-      !! moves with the fragment -- the localization is quadratic in the occupied
-      !! count and the multipoles work over primitive pairs, so neither can be
-      !! assumed small for something larger.
-      !!
-      !! `pic_timer` rather than `system_clock` directly: it uses the OpenMP clock
-      !! when PIC is built with OpenMP, which is what a threaded stage wants, and it
-      !! is what the rest of this codebase already times with.
+      !! The dynamic response dominates a mid-sized fragment, but the split moves
+      !! with the fragment: the localization is quadratic in the occupied count
+      !! and the multipoles work over primitive pairs, so neither can be assumed
+      !! small for something larger.
       type(timer_type), intent(inout) :: stage
       character(len=*), intent(in) :: what
       logical, intent(in) :: talk
@@ -1079,16 +976,17 @@ contains
    subroutine check_angular_form(mol, error)
       !! Refuse a basis whose angular form this cannot write
       !!
-      !! **The ordering map is Cartesian s, p and d, and both codes have to agree on
-      !! that.** GAMESS defaults ISPHER = -1, Cartesian, which is what a Pople set
-      !! wants -- the Basis Set Exchange declares 6-31G*'s d Cartesian too, so the
-      !! validated path lines up without either side being asked.
+      !! **The ordering map is Cartesian s, p, d and f, and both codes have to
+      !! agree on that.** GAMESS defaults ISPHER = -1, Cartesian, which is what a
+      !! Pople set wants.
       !!
-      !! A Dunning or def2 set is not simply unsupported: BSE declares those
-      !! spherical and GAMESS will not run them Cartesian, so both sides would agree
-      !! on spherical. What is missing is the spherical ordering map and `ISPHER=1`
-      !! in the deck, not the possibility. Emitting 58 orbitals where the reader
-      !! expands 65 would be rejected or read as nonsense, so it is refused.
+      !! A Dunning or def2 set is not simply unsupported: the Basis Set Exchange
+      !! declares those spherical and GAMESS will not run them Cartesian, so both
+      !! sides would agree on spherical. What is missing is the spherical ordering
+      !! map and `ISPHER=1` in the deck.
+      ! TODO(mqc): the message below still says only s, p and d are mapped, while
+      ! `to_gamess_ao_order` has mapped Cartesian f since `F_FROM_LIBCINT` was
+      ! added and refuses only g and higher.
       type(libcint_molecule_t), intent(in) :: mol
       type(error_t), intent(inout) :: error
 
@@ -1096,8 +994,8 @@ contains
       logical :: has_high_l
 
       ! Only an issue if there is actually a shell it applies to: s and p are the
-      ! same either way, so 6-31G* on hydrogen alone is not a spherical basis in any
-      ! sense that matters, and refusing it was wrong.
+      ! same either way, so 6-31G* on hydrogen alone is not a spherical basis in
+      ! any sense that matters.
       has_high_l = .false.
       do ish = 1, mol%nbas
          if (mol%bas(LIBCINT_ANG_OF, ish) >= 2) has_high_l = .true.
@@ -1114,11 +1012,9 @@ contains
    subroutine from_gamess_ao_order(mol, mapped, coefficients, error)
       !! The inverse of `to_gamess_ao_order`
       !!
-      !! A potential stores its orbitals in GAMESS's AO order, so anything that reads
-      !! one back and wants to use it with our own integrals has to undo the
-      !! permutation and the normalization. Written here, beside the forward map, so
-      !! the two cannot drift: a permutation inverted in another file is a permutation
-      !! that gets out of step the next time this one changes.
+      !! A potential stores its orbitals in GAMESS's AO order, so anything reading
+      !! one back for use with our own integrals has to undo the permutation and
+      !! the normalization.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: mapped(:, :)
       real(dp), allocatable, intent(out) :: coefficients(:, :)
@@ -1162,9 +1058,8 @@ contains
    subroutine to_gamess_ao_order(mol, coefficients, mapped, error)
       !! Orbital coefficients in the AO order and normalization GAMESS reads
       !!
-      !! Only the Cartesian d shells move. Our s and p already agree, including
-      !! the interleaving inside a shared-exponent `L` shell, which is why the
-      !! projection data was accepted as-is once the d block was fixed.
+      !! Only the Cartesian d and f shells move. Our s and p already agree,
+      !! including the interleaving inside a shared-exponent `L` shell.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coefficients(:, :)
       real(dp), allocatable, intent(out) :: mapped(:, :)
@@ -1199,10 +1094,8 @@ contains
             end do
          else if (l >= 2) then
             ! g and up need their own permutation and normalizations against
-            ! GAMESS's ordering, derived the way the d and f ones were: read off its
-            ! own printed coefficients for a basis that has them. Fifteen Cartesian
-            ! components with several normalization classes, so guessing is worse
-            ! than usual here.
+            ! GAMESS's ordering, derived the way the d and f ones were: read off
+            ! its own printed coefficients for a basis that has them.
             call error%set(ERROR_VALIDATION, &
                            "makefp: this basis has g functions or higher, and only "// &
                            "Cartesian s, p, d and f are mapped to GAMESS's ordering "// &
@@ -1216,13 +1109,12 @@ contains
                                      basis_name, lines, error)
       !! `PROJECTION BASIS SET`, in GAMESS's columns and its normalization
       !!
-      !! Two things here are GAMESS's conventions rather than ours. Shells are
-      !! named the way it names them, including `L` for a shared-exponent sp pair,
-      !! because that is what its reader expects -- our own reader emits one shell
-      !! per coefficient column, so an `L` has to be recognised by finding an s
-      !! and a p over identical exponents. And the printed coefficient has the
-      !! primitive normalization folded in, which is the factor
-      !! `gamess_primitive_norm` supplies.
+      !! Two conventions are GAMESS's rather than ours. Shells are named the way
+      !! it names them, including `L` for a shared-exponent sp pair -- our own
+      !! reader emits one shell per coefficient column, so an `L` has to be
+      !! recognised by finding an s and a p over identical exponents. And the
+      !! printed coefficient has the primitive normalization folded in, which is
+      !! the factor `gamess_primitive_norm` supplies.
       !!
       !! The primitive counter runs across the whole file rather than restarting
       !! per atom.
@@ -1255,9 +1147,9 @@ contains
       do iatom = 1, natm
          valence = atomic_numbers(iatom) - frozen_core([atomic_numbers(iatom)])*2
          ! Ten wide here, where COORDINATES uses eight -- what MAKEFP writes, and
-         ! the two sections genuinely differ. Written as A8 then two blanks
-         ! rather than A10, because A10 on an eight-character string pads on the
-         ! left and would indent the label instead of the number.
+         ! the two sections genuinely differ. Written as A8 then two blanks rather
+         ! than A10, because A10 on an eight-character string pads on the left and
+         ! would indent the label instead of the number.
          write (text, "(A8,A2,3F15.10,F7.1)") labels(iatom), "  ", &
             points(:, iatom), real(valence, dp)
          n = n + 1
@@ -1435,7 +1327,7 @@ contains
             ! Only the first point of a block carries the frequency, which is how
             ! MAKEFP writes it: the stamp opens a block rather than labelling a
             ! point. GAMESS's reader tolerates one per point, but a parser keying
-            ! on the stamp -- ours included -- then sees every point as a new
+            ! on the stamp -- ours included -- would then see every point as a new
             ! block.
             if (k == 1) then
                call write_tensor_point(unit, label, pot%centroids(:, k), tensor, &
@@ -1525,16 +1417,6 @@ contains
       end do
       write (unit, "(A)") " STOP"
 
-      ! CTFOK is deliberately not written, and cannot be. It is not a top-level
-      ! section but a *subsection of* CTVEC: GAMESS's reader looks for it only
-      ! immediately after reading a CTVEC block, and a standalone one falls through
-      ! its keyword dispatcher to an abort. So writing the occupied orbital energies without CTVEC does
-      ! not produce a file with one more section in it -- it produces a file
-      ! GAMESS refuses to read at all. They are kept in the potential type
-      ! against CTVEC being solved, and `pot%eps_occ` is what to emit then.
-
-      ! Beta is frozen at one, as MAKEFP freezes it: its ICFIX flag fixes the
-      ! prefactor and fits the exponent alone.
       ! Charge transfer, in the canonical-orbital form: the header carries the
       ! occupied count and the number of vectors, then the whole MO matrix in the
       ! same five-to-a-line layout the projection wavefunction uses. `CTFOK` is a
@@ -1547,6 +1429,8 @@ contains
       call write_values(unit, pot%eps_occ, 16, 10, 4)
       write (unit, "(A)") " STOP"
 
+      ! Beta is frozen at one, as MAKEFP freezes it: its ICFIX flag fixes the
+      ! prefactor and fits the exponent alone.
       write (unit, "(A,F8.3,A)") "SCREEN2      (FROM VDWSCL=", pot%vdwscl, ")"
       do i = 1, pot%n_points
          write (unit, "(1X,A8,2F14.9)") pot%labels(i), 1.0_dp, pot%screen2(i)

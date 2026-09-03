@@ -2,14 +2,13 @@
 module mqc_libcint_ao_data
    !! libcint's own `g_trans_cart2sph` table, for angular momenta up to l = 4.
    !!
-   !! Transcribed rather than re-derived, because the transform has to be
-   !! *libcint's* and not merely a correct one: the integrals are built with these
-   !! coefficients, and a basis function evaluated with a different-but-valid
+   !! Transcribed rather than re-derived: the transform has to be *libcint's* and
+   !! not merely a correct one, since the integrals are built with these
+   !! coefficients and a basis function evaluated in a different-but-valid
    !! convention is a different basis. A permutation or a sign here converges just
    !! as prettily and gives a wrong energy.
    !!
-   !! Three things make the C table unsafe to read casually, all of which cost an
-   !! attempt before this was right:
+   !! Three things make the C table unsafe to read casually:
    !!
    !!   * it carries **two p orderings** behind `#ifdef PYPZPX`, so a text scrape
    !!     picks up both and every later block shifts;
@@ -18,25 +17,26 @@ module mqc_libcint_ao_data
    !!   * **s and p normalisation is factored out** of the table into
    !!     `CINTcommon_fac_sp`, so the 1s and 0s below are not the whole transform.
    !!
-   !! Validated on extraction: 19176 coefficients total, matching the
-   !! sum over l of (2l+1)(l+1)(l+2)/2; l = 0 is 1; l = 1 is the px/py/pz
-   !! identity; l = 2 reproduces the d solid harmonics derived independently.
+   !! Checked on extraction: the full C table scrapes to 19176 coefficients, the
+   !! sum of (2l+1)(l+1)(l+2)/2 over every l it carries, of which the 245 for
+   !! l <= 4 are kept here. l = 0 is 1; l = 1 is the px/py/pz identity; l = 2
+   !! reproduces the d solid harmonics derived independently.
    use pic_types, only: dp
    implicit none
    private
 
    public :: C2S_LMAX, c2s_block, common_fac_sp
 
-   !> Highest angular momentum this table covers. Beyond it the caller must be
-   !> refused rather than silently given wrong functions.
+   ! Highest angular momentum this table covers. Beyond it the caller must be
+   ! refused rather than silently given wrong functions.
    integer, parameter :: C2S_LMAX = 4
 
-   !> Row offsets into `C2S`, one per l. Each block is (2l+1) by (l+1)(l+2)/2,
-   !> spherical row-major over Cartesian columns.
+   ! Row offsets into `C2S`, one per l. Each block is (2l+1) by (l+1)(l+2)/2,
+   ! spherical row-major over Cartesian columns.
    integer, parameter :: N_OFFSETS = C2S_LMAX + 2
    integer, parameter :: C2S_OFFSET(0:N_OFFSETS - 1) = [0, 1, 10, 40, 110, 245]
 
-   !> Total coefficients over l = 0..C2S_LMAX, i.e. sum of (2l+1)(l+1)(l+2)/2.
+   ! Total coefficients over l = 0..C2S_LMAX, i.e. sum of (2l+1)(l+1)(l+2)/2.
    integer, parameter :: N_C2S = 245
 
    real(dp), parameter :: C2S(N_C2S) = [ &

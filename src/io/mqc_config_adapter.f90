@@ -1,7 +1,7 @@
 !! Adapter module to convert mqc_config_t to internal driver structures
-!! This module provides a bridge between the .mqc file format and the driver backend
 module mqc_config_adapter
-   !! Provides conversion utilities from mqc_config_t to driver-compatible structures
+   !! Converts a parsed input deck into the structures the driver and the
+   !! methods read: `driver_config_t` and `system_geometry_t`.
    use pic_types, only: dp, int32
    use mqc_config_types, only: mqc_config_t
    use mqc_physical_fragment, only: system_geometry_t, to_bohr
@@ -32,8 +32,8 @@ module mqc_config_adapter
    public :: check_fragment_overlap  !! Check for overlapping fragments (for testing)
    public :: check_counterpoise_support  !! Refuse a counterpoise this expansion cannot honour
 
-   !! Runtime configuration for driver (internal use only)
    type :: driver_config_t
+      !! Runtime configuration for the driver (internal use only)
       ! Core calculation settings
       integer(int32) :: calc_type   !! Calculation type constant
 
@@ -70,12 +70,16 @@ module mqc_config_adapter
       type(hessian_keywords_t) :: hessian  !! Hessian calculation keywords
       type(aimd_keywords_t) :: aimd        !! AIMD calculation keywords
       type(optimizer_settings_t) :: optimization  !! Geometry optimization keywords
+      ! TODO(mqc): `scf` is written by `config_to_driver` and read nowhere in
+      ! the tree; every backend takes its SCF settings from
+      ! `method_config%scf`. Two structures named scf, one of them wired up.
       type(scf_keywords_t) :: scf          !! SCF calculation keywords
 
-      !> The effective fragment potential describing each fragment, in fragment
-      !> order and empty where a fragment carries none. Fixed-length because this is
-      !> a flat array of paths and a deferred-length one cannot be.
       character(len=256), allocatable :: fragment_potentials(:)
+         !! The effective fragment potential describing each fragment, in
+         !! fragment order and empty where a fragment carries none. Fixed-length
+         !! because this is a flat array of paths and a deferred-length one
+         !! cannot be.
 
       ! Output control
       logical :: skip_json_output = .false.  !! Skip JSON output for large calculations
@@ -96,17 +100,15 @@ contains
       integer, intent(in), optional :: node_rank  !! Node-local MPI rank, for GPU binding
       type(error_t), intent(inout), optional :: error
          !! Refuses a setting spelled in a way this program does not know.
-         !! Optional so that the callers which cannot fail -- the tests, the
-         !! session, the multi-molecule loop -- are unchanged; an unrecognised
-         !! spelling still reaches `run_geometry_optimization`, which refuses
-         !! it there rather than optimizing in whatever the default was.
+         !! Optional, so the callers which cannot fail are unchanged; an
+         !! unrecognised spelling then reaches `run_geometry_optimization`,
+         !! which refuses it there.
       integer, intent(in), optional :: n_fragments
          !! How many fragments the system actually has, when the config does
-         !! not say. A settings-only document -- the form a session broadcasts
-         !! -- carries no molecules, so its own `nfrag` is 0, and the rule
-         !! below would read that as "unfragmented" and quietly compute the
-         !! whole system as one piece. It converges and it looks right. Pass
-         !! the count from wherever the geometry came from instead.
+         !! not say. A settings-only document carries no molecules, so its own
+         !! `nfrag` is 0, and the rule below would read that as "unfragmented"
+         !! and compute the whole system as one piece -- which converges and
+         !! looks right. Pass the count from wherever the geometry came from.
 
       integer :: nfrag_to_use
 
@@ -232,8 +234,6 @@ contains
       ! Set calculation-specific keywords
       driver_config%hessian%displacement = mqc_config%hessian_displacement
       ! ...and to the method, which is what actually runs the displacements.
-      ! Setting only the line above left the deck's value in a field nothing
-      ! downstream read.
       driver_config%method_config%hessian_displacement = mqc_config%hessian_displacement
       driver_config%hessian%temperature = mqc_config%hessian_temperature
       driver_config%hessian%pressure = mqc_config%hessian_pressure
@@ -263,11 +263,8 @@ contains
       driver_config%scf%max_iterations = mqc_config%scf_maxiter
       driver_config%scf%convergence_threshold = mqc_config%scf_tolerance
       ! And again into the method's own SCF settings, which is the copy every
-      ! backend actually reads -- `configure_hf` takes max_iter and the
-      ! tolerances from `method_config%scf`, and the xTB calculator now does
-      ! too. Only `driver_config%scf` was being filled, so a deck asking for
-      ! more iterations or a tighter threshold got the hardcoded defaults and
-      ! no complaint. Two structures named scf, one of them wired up.
+      ! backend actually reads -- `configure_hf` and the xTB calculator both
+      ! take max_iter and the tolerances from `method_config%scf`.
       driver_config%method_config%scf%max_iter = mqc_config%scf_maxiter
       driver_config%method_config%scf%max_iter_set = mqc_config%scf_maxiter_set
       driver_config%method_config%scf%energy_convergence = mqc_config%scf_tolerance
@@ -286,18 +283,14 @@ contains
       end if
       driver_config%method_config%scf%linear_dependence = mqc_config%scf_linear_dependence
       ! Carry across whether the deck actually named them, not just what they
-      ! came out as. A caller whose own default is stricter than the shared one
-      ! -- MAKEFP -- cannot otherwise tell "the user wants 1e-6" from "nobody
-      ! said anything", because both arrive here as 1e-6.
+      ! came out as: MAKEFP, whose own default is stricter, cannot otherwise
+      ! tell "the user wants 1e-6" from "nobody said anything".
       driver_config%method_config%scf%energy_convergence_set = mqc_config%scf_tolerance_set
       driver_config%method_config%scf%density_convergence_set = &
          mqc_config%scf_density_tolerance_set
-      ! The MAKEFP group. No presence flags here, unlike the two SCF tolerances
-      ! above: those exist because MAKEFP holds a stricter default of its own and
-      ! has to tell "the deck asked for the shared default" from "the deck said
-      ! nothing". These four have one default each, named once in
-      ! `mqc_calculation_defaults` and read by both the deck and the solver, so a
-      ! silent deck carries the solver's own number back to it.
+      ! The MAKEFP group. No presence flags here: these have one default each,
+      ! named once in `mqc_calculation_defaults` and read by both the deck and
+      ! the solver, so a silent deck carries the solver's own number back to it.
       driver_config%method_config%efp%dynamic_tolerance = mqc_config%efp_dynamic_tolerance
       driver_config%method_config%efp%dynamic_maxiter = mqc_config%efp_dynamic_maxiter
       driver_config%method_config%efp%allow_crap_response = mqc_config%efp_allow_crap_response
@@ -378,8 +371,7 @@ contains
       driver_config%method_config%cc%spin_adapted = mqc_config%cc_spin_adapted
       ! The method name settles the triples unless a deck said otherwise:
       ! "ccsd(t)" and "ccsd" are separate method types, so the distinction
-      ! survives the parse and does not have to be recovered from the spelling
-      ! the way RI does.
+      ! survives the parse, unlike RI.
       driver_config%method_config%cc%include_triples = &
          (mqc_config%method == METHOD_TYPE_CCSD_T)
       if (mqc_config%cc_triples_set) then
@@ -437,11 +429,9 @@ contains
    subroutine set_optimization_vocabulary(mqc_config, driver_config, error)
       !! Turn the two spelled optimization settings into constants
       !!
-      !! Kept out of the reader on purpose: the reader's job is to get the
-      !! document's values into the config, and the vocabulary of what those
-      !! values may say belongs with the type that holds the constants. An
-      !! unrecognised spelling is refused here by name, which is the only place
-      !! that still has the string the user typed.
+      !! The vocabulary lives with the type that holds the constants rather
+      !! than in the reader. An unrecognised spelling is refused here by name,
+      !! this being the last place that still has the string the user typed.
       use pic_io, only: to_char
       type(mqc_config_t), intent(in) :: mqc_config
       type(driver_config_t), intent(inout) :: driver_config
@@ -494,12 +484,10 @@ contains
          end if
       end if
 
-      ! Parsed into a local and only then stored, which the siblings above do
-      ! not need to do: `error` is optional, and the callers that omit it -- the
-      ! session, the tests -- would otherwise carry the parse failure into the
+      ! Parsed into a local and only then stored: `error` is optional, and a
+      ! caller that omits it would otherwise carry the parse failure into the
       ! driver, where a sentinel below OPT_TARGET_MINIMUM reads as "not a
-      ! saddle" and runs a minimisation. Refusing without `error` still has to
-      ! leave the default behind rather than a value nothing recognises.
+      ! saddle" and runs a minimisation.
       if (allocated(mqc_config%opt_target)) then
          want = target_from_string(mqc_config%opt_target)
          if (want < OPT_TARGET_MINIMUM) then
@@ -534,9 +522,9 @@ contains
       end if
 
       ! The path keywords describe a band, and a band needs two structures. A
-      ! deck that sets images or a spring without an endpoint has described
-      ! something it did not supply, and running the ordinary single-structure
-      ! optimization would silently do different work from the one asked for.
+      ! deck that sets images or a spring without an endpoint would otherwise
+      ! get the ordinary single-structure optimization, which is different work
+      ! from the one asked for.
       if (.not. allocated(driver_config%optimization%endpoint)) then
          if (mqc_config%opt_n_images > 0 .or. allocated(mqc_config%opt_neb_ends) .or. &
              mqc_config%opt_neb_spring >= 0.0_dp) then
@@ -591,9 +579,8 @@ contains
       driver_config%optimization%connect_distort = mqc_config%opt_connect_distort
 
       ! Following a saddle downhill needs a saddle to follow. Asked for
-      ! alongside a minimisation it describes something that cannot happen, and
-      ! running the minimisation and ignoring the request would report success
-      ! for half of what the deck asked.
+      ! alongside a minimisation, running it anyway would report success for
+      ! half of what the deck asked.
       if (mqc_config%opt_connect .and. &
           driver_config%optimization%target /= OPT_TARGET_SADDLE) then
          if (present(error)) then
@@ -607,10 +594,9 @@ contains
 
       ! A connect run does not stop at the saddle -- it carries on downhill
       ! twice -- so the geometry it finishes with is the second minimum. A
-      ! Hessian there describes that minimum and reports, correctly and
-      ! uselessly, that it has no imaginary frequencies. Refused rather than
-      ! run, because the output would read as the saddle having been checked
-      ! and failed.
+      ! Hessian there describes that minimum and reports, correctly, that it
+      ! has no imaginary frequencies, which would read as the saddle having
+      ! been checked and failed.
       if (mqc_config%opt_connect .and. mqc_config%opt_hess_end) then
          if (present(error)) then
             call error%set(ERROR_VALIDATION, &
@@ -625,11 +611,9 @@ contains
 
       ! A saddle is not something every algorithm can look for. Steepest
       ! descent and the quasi-Newton minimisers go downhill by construction and
-      ! will report a minimum however the target is spelled, so asking them for
-      ! a saddle is a deck that cannot be satisfied rather than one that will
-      ! be satisfied slowly. Refused rather than silently switched: choosing an
-      ! optimizer on the user's behalf is how a run ends up being something
-      ! other than what was asked for.
+      ! report a minimum however the target is spelled, so asking them for a
+      ! saddle is a deck that cannot be satisfied. Refused rather than silently
+      ! switched to one that can.
       if (driver_config%optimization%target == OPT_TARGET_SADDLE) then
          ! The dimer finds a saddle by construction -- it inverts the force
          ! along the softest direction -- so the algorithm beside it is only
@@ -662,16 +646,11 @@ contains
          end if
          ! Cartesian P-RFO maximises along the lowest eigenvalue, and in
          ! Cartesian coordinates the lowest six are translations and rotations.
-         ! It follows one of those instead of the reaction mode and wanders. On
-         ! the HCN-HNC saddle that is 60 steps without converging in Cartesians
-         ! and four in DLC, from the same guess and the same Hessian.
-         ! Warned rather than refused, because a Cartesian saddle search is a
-         ! deck that can be satisfied -- from a guess close enough that the
-         ! reaction mode is already the lowest eigenvalue -- where a downhill
-         ! algorithm is one that cannot. But Cartesian is the default
-         ! coordinate system, so a deck that simply never mentioned coordinates
-         ! lands here, which is why the warning says what it will cost rather
-         ! than only what it is.
+         ! It follows one of those instead of the reaction mode and wanders.
+         ! Warned rather than refused: from a guess close enough that the
+         ! reaction mode is already the lowest eigenvalue this can be
+         ! satisfied, where a downhill algorithm cannot. Cartesian is also the
+         ! default, so a deck that never mentioned coordinates lands here.
          if (driver_config%optimization%coordinates == OPT_COORDS_CARTESIAN .and. &
              driver_config%optimization%saddle_method == SADDLE_METHOD_PRFO .and. &
              driver_config%optimization%zero_modes < 0) then
@@ -699,9 +678,8 @@ contains
       !! Gather the constrained coordinates into the optimizer's own type
       !!
       !! The reader has already checked that each type is one this program
-      !! knows and that its atom count matches, so this only rearranges: two
-      !! parallel arrays, which is what a flat config can hold, into one array
-      !! of records, which is what the engine wants to iterate.
+      !! knows and that its atom count matches, so this only rearranges the two
+      !! parallel arrays into the one array of records the engine iterates.
       type(mqc_config_t), intent(in) :: mqc_config
       type(driver_config_t), intent(inout) :: driver_config
 
@@ -726,18 +704,17 @@ contains
       !! read neither, and each fails differently:
       !!
       !!   * **GMBE** and **FMO/EE-MBE** build their own term lists and never
-      !!     call `generate_mbe_term_list`, so the setting is simply not seen.
-      !!     The answer that comes back is a valid uncorrected one, which is
-      !!     the worst kind of wrong -- it is the number the deck asked this
-      !!     program *not* to produce, and nothing about it says so.
+      !!     call `generate_mbe_term_list`, so the setting is not seen and the
+      !!     answer is a valid uncorrected one -- the number the deck asked
+      !!     this program *not* to produce, with nothing about it saying so.
       !!   * the **xTB and EFP** paths take `element_numbers` as the atom list
       !!     and never consult `is_ghost`, so a ghosted monomer is computed as
       !!     though its ghost centres were nuclei, against an electron count
-      !!     derived without them. That is not an approximation, it is a
-      !!     different molecule with the wrong charge.
+      !!     derived without them. That is a different molecule with the wrong
+      !!     charge, not an approximation.
       !!
-      !! An unrecognised spelling is refused for the same reason `none` cannot
-      !! be told from a typo once it reaches the term list.
+      !! An unrecognised spelling is refused too: once it reaches the term list
+      !! it cannot be told from `none`.
       type(driver_config_t), intent(in) :: driver_config
       type(error_t), intent(inout) :: error
 
@@ -789,9 +766,9 @@ contains
    subroutine copy_fragment_potentials(mqc_config, driver_config, molecule_index)
       !! The per-fragment potential paths, in fragment order
       !!
-      !! Left unallocated when no fragment carries one, so the driver can tell "not an
-      !! EFP calculation" from "an EFP calculation whose potentials are all blank"
-      !! without a second flag.
+      !! Left unallocated when no fragment carries one, so the driver can tell
+      !! "not an EFP calculation" from "an EFP calculation whose potentials are
+      !! all blank" without a second flag.
       type(mqc_config_t), intent(in) :: mqc_config
       type(driver_config_t), intent(inout) :: driver_config
       integer, intent(in), optional :: molecule_index
@@ -916,6 +893,7 @@ contains
       type(error_t), intent(out) :: error
       integer, intent(in), optional :: molecule_index  !! Which molecule to use (for multi-molecule mode)
 
+      ! TODO(mqc): `i` is dead here.
       integer :: i
       logical :: use_angstrom
 
@@ -961,10 +939,10 @@ contains
       end if
 
       ! Set after both branches so it survives either path. A capping convention
-      ! belongs to the run rather than to a fragment, and every fragment built
-      ! from this geometry inherits it -- which is what keeps a cut bond capped
-      ! the same way in a monomer and in the dimer that contains it, and so keeps
-      ! the cap contributions cancelling through the expansion.
+      ! belongs to the run rather than to a fragment: every fragment built from
+      ! this geometry inherits it, which is what caps a cut bond the same way in
+      ! a monomer and in the dimer containing it, so the cap contributions
+      ! cancel through the expansion.
       sys_geom%cap_scale = mqc_config%cap_scale
 
    end subroutine config_to_system_geometry
@@ -1170,7 +1148,10 @@ contains
 
    subroutine check_fragment_overlap(fragments, nfrag, error)
       !! Check if any atoms appear in multiple fragments
-      !! This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment sizes
+      ! TODO(mqc): every pair of fragments against every pair of their atoms,
+      ! so `O(nfrag^2 * natoms_per_frag^2)` and not the `O(nfrag *
+      ! natoms_per_frag^2)` this used to claim. A single pass marking each atom
+      ! with the fragment that owns it is linear in the atom count.
       use mqc_config_types, only: input_fragment_t
       use pic_io, only: to_char
 

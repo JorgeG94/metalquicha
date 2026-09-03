@@ -39,8 +39,8 @@ module test_mqc_mp2_hessian_skeleton
 
    public :: collect_mqc_mp2_hessian_skeleton_tests
 
-   !> pycc's pinned case: water/6-31G, bohr, frame pinned -- the geometry every
-   !> unit of the ladder gates on (`test_mqc_mp2_hessian_fd` holds the same).
+   !! pycc's pinned case: water/6-31G, bohr, frame pinned -- the geometry every
+   !! unit of the ladder gates on (`test_mqc_mp2_hessian_fd` holds the same).
    integer, parameter :: WATER_Z(3) = [8, 1, 1]
    character(len=2), parameter :: WATER_SYM(3) = ["O ", "H ", "H "]
    real(dp), parameter :: WATER(3, 3) = reshape( &
@@ -60,9 +60,9 @@ contains
                   ]
    end subroutine collect_mqc_mp2_hessian_skeleton_tests
 
-   !> Everything the skeleton needs, from one SCF and one gradient call: the
-   !> effective two-particle density rebuilt the way the gradient builds its
-   !> own pieces, and both skeleton blocks.
+   !! Everything the skeleton needs, from one SCF and one gradient call: the
+   !! effective two-particle density rebuilt the way the gradient builds its
+   !! own pieces, and both skeleton blocks.
    subroutine skeleton_at(n_frozen, mol, scf, hess_corr, hess_ref, err)
       integer, intent(in) :: n_frozen
       type(libcint_molecule_t), intent(out) :: mol
@@ -101,16 +101,16 @@ contains
                                 scf%orbital_energies, n_o, hess_corr, hess_ref, err)
    end subroutine skeleton_at
 
-   !> Gate 1.3b: the reference skeleton this sweep deposits, plus the nuclear
-   !> repulsion and the response `rhf_hessian` itself would add, equals
-   !> `rhf_hessian` -- so the second-derivative integrals can be generated once
-   !> for both densities without the five duplicated deposit lines diverging.
-   !>
-   !> 1e-13 and not 1e-16: the two-electron walks differ (`hess_2e_contract`
-   !> restricts the ket pair and doubles, this sweep runs every ordering), and
-   !> two summation orders round differently. Measured 3.8e-14 when this
-   !> landed. The one-electron deposits, by contrast, are statement-for-
-   !> statement the same and contribute nothing at this tolerance.
+   !! Gate 1.3b: the reference skeleton this sweep deposits, plus the nuclear
+   !! repulsion and the response `rhf_hessian` itself would add, equals
+   !! `rhf_hessian` -- so the second-derivative integrals can be generated once
+   !! for both densities without the five duplicated deposit lines diverging.
+   !!
+   !! 1e-13 and not 1e-16: the two-electron walks differ (`hess_2e_contract`
+   !! restricts the ket pair and doubles, this sweep runs every ordering), and
+   !! two summation orders round differently. Measured 3.8e-14 when this
+   !! landed. The one-electron deposits, by contrast, are statement-for-
+   !! statement the same and contribute nothing at this tolerance.
    subroutine reference_matches(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -151,12 +151,12 @@ contains
       call mol%destroy()
    end subroutine reference_matches
 
-   !> `d2E/dA dB = d2E/dB dA` with the transposed Cartesian pair. The two
-   !> elements are assembled from different derivative placements -- `ipvip1`
-   !> on one ordering against `ipvip1` on another, `ip1ip2` against its
-   !> ket-swapped evaluation -- so this checks the deposit map, not a symmetry
-   !> the loop enforces. Measured ~1e-15 all-electron and frozen-core; the
-   !> tolerance leaves room for integral rounding, not for a wrong deposit.
+   !! `d2E/dA dB = d2E/dB dA` with the transposed Cartesian pair. The two
+   !! elements are assembled from different derivative placements -- `ipvip1`
+   !! on one ordering against `ipvip1` on another, `ip1ip2` against its
+   !! ket-swapped evaluation -- so this checks the deposit map, not a symmetry
+   !! the loop enforces. Measured ~1e-15 all-electron and frozen-core; the
+   !! tolerance leaves room for integral rounding, not for a wrong deposit.
    subroutine pair_symmetric(error)
       type(error_type), allocatable, intent(out) :: error
 

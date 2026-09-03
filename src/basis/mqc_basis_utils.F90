@@ -7,26 +7,6 @@
 #endif
 module mqc_basis_utils
    !! Normalizes basis set names and locates the JSON file that defines them.
-   !!
-   !! A normalized name is exactly the name the Basis Set Exchange uses:
-   !! lowercase, with `*` written `_st_` and everything else -- `+`,
-   !! parentheses, commas -- left alone. So def2-SV(P) becomes def2-sv(p) and
-   !! 6-31G** becomes 6-31g_st__st_.
-   !!
-   !! Deferring to BSE rather than inventing a scheme is what makes the whole
-   !! catalogue addressable. An earlier version flattened harder -- parentheses
-   !! and commas dropped, `*` to `s`, `+` to `p` -- which collapsed def2-SV(P)
-   !! onto def2-SVP and def2-SV(P)-RIFIT onto def2-SVP-RIFIT: four real basis
-   !! sets, two filenames. It also meant the extracted files had to be renamed
-   !! out of their bundle names, so the mapping had to be kept in step in two
-   !! languages. Now the file on disk carries its BSE name and there is nothing
-   !! to keep in step.
-   !!
-   !! Basis sets are Basis Set Exchange JSON only. The Gaussian94 (`.gbs`) and
-   !! GAMESS ($DATA `.txt`) readers were removed: BSE JSON keeps a combined
-   !! shell's coefficient sets separate, so SP shells split cleanly with no
-   !! `uncontract_spdf=1` download flag, it carries ECP data in the same file,
-   !! and one format means one parser to trust.
    use mqc_error, only: error_t, ERROR_IO
    implicit none
    private
@@ -50,14 +30,6 @@ contains
       !!   * -> _st_   (the only character BSE escapes, being awkward in a filename)
       !!   spaces dropped
       !!   everything else kept, `+` and parentheses included
-      !!
-      !! Examples:
-      !!   6-31G*       -> 6-31g_st_
-      !!   6-311++G**   -> 6-311++g_st__st_
-      !!   6-311G(d,p)  -> 6-311g(d,p)
-      !!   def2-SV(P)   -> def2-sv(p)
-      !!   def2-SVP     -> def2-svp
-      !!   cc-pVDZ      -> cc-pvdz
       character(len=*), intent(in) :: basis_name
       character(len=:), allocatable :: normalized
       integer :: i, out_pos, code
@@ -96,12 +68,8 @@ contains
       !!
       !! 1. every entry of $MQC_BASIS_PATH, colon-separated
       !! 2. ./basis_sets, so a run from the source tree works with no setup
-      !! 3. the basis_sets/ of the tree this binary was configured from
-      !!
-      !! Three because each covers a case the others do not: the variable lets
-      !! a user point at their own collection, the relative path is what the
-      !! test suite and the validation scripts rely on, and the compiled-in
-      !! default is what makes `mqc` work from an arbitrary directory.
+      !! 3. the basis_sets/ of the tree this binary was configured from, absent
+      !!    in an fpm build, which has no configure step to learn it
       character(len=:), allocatable :: directories(:)
 
       character(len=MAX_PATH) :: env_value

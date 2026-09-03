@@ -15,11 +15,10 @@ module mqc_dft_partition
    !!    P_A(r) = prod_{B /= A} s(nu_AB),   w_A = P_A / sum_C P_C
    !!
    !! Two cutoffs are offered. Becke's is three iterations of p(x) = x(3-x^2)/2,
-   !! which is smooth everywhere and non-zero everywhere -- so every atom
-   !! contributes at every point, and the cost is unavoidably natoms^2 per
-   !! point. Stratmann's [CPL 257, 213 (1996)] is a degree-5 polynomial that
-   !! reaches exactly +-1 at |mu| >= a, so distant pairs contribute exactly 0 or
-   !! 1 and can be skipped. That is what makes large systems affordable.
+   !! smooth and non-zero everywhere, so every atom contributes at every point.
+   !! Stratmann's [CPL 257, 213 (1996)] is a degree-5 polynomial reaching
+   !! exactly +-1 at |mu| >= a, so a distant pair contributes exactly 0 or 1 and
+   !! could be skipped.
    !!
    !! `nu` is `mu` after an adjustment for the two atoms having different sizes,
    !! so that the cell boundary sits between them rather than halfway. Becke's
@@ -44,23 +43,23 @@ module mqc_dft_partition
    public :: becke_cutoff_second_derivative, stratmann_cutoff_second_derivative
    public :: partition_scheme_name
 
-   !> Cutoff profile
+   ! Cutoff profile
    integer, parameter :: PARTITION_BECKE = 1     !! Three iterations of p(x), smooth everywhere
    integer, parameter :: PARTITION_STRATMANN = 2  !! Degree-5 with a hard cutoff, screenable
 
-   !> Atomic size adjustment
+   ! Atomic size adjustment
    integer, parameter :: ADJUST_NONE = 0      !! All atoms the same size
    integer, parameter :: ADJUST_BECKE = 1     !! Bragg radii
    integer, parameter :: ADJUST_TREUTLER = 2  !! Square roots of the Bragg radii
 
-   !> Stratmann's cutoff parameter, eq. 14
    real(dp), parameter :: STRATMANN_A = 0.64_dp
+      !! Stratmann's cutoff parameter, eq. 14
 
-   !> Becke's clamp on the size-adjustment shift
    real(dp), parameter :: MAX_ADJUST = 0.5_dp
+      !! Becke's clamp on the size-adjustment shift
 
-   !> Guards the ratio when a radius is zero (a ghost atom)
    real(dp), parameter, public :: TINY_RADIUS = 1.0e-200_dp
+      !! Guards the ratio when a radius is zero (a ghost atom)
 
    integer, parameter :: N_DIM = 3
 
@@ -88,6 +87,10 @@ contains
       !! The returned weight is w_owner(r): the fraction of the integrand at
       !! that point assigned to the atom whose atomic grid produced it. Multiply
       !! it by the point's radial and angular weight to get its contribution.
+      ! TODO(mqc): neither this loop nor `becke_partition_derivatives` skips a
+      ! pair under `PARTITION_STRATMANN`, where the cutoff is exactly 0 or 1
+      ! beyond |nu| >= STRATMANN_A. Both are unconditionally n_atoms^2 per
+      ! point, which is the screening the module header credits the scheme with.
       real(dp), intent(in) :: points(:, :)       !! (3, n_points), Bohr
       real(dp), intent(in) :: atom_coords(:, :)  !! (3, n_atoms), Bohr
       integer, intent(in) :: atomic_numbers(:)   !! Z per atom, for the radii
@@ -161,9 +164,8 @@ contains
                end if
 
                ! s is the fraction going to i; the complement goes to j. Doing
-               ! both here halves the work and keeps the pair symmetric by
-               ! construction, so the weights cannot fail to sum to 1 through
-               ! an asymmetry in nu.
+               ! both here keeps the pair symmetric by construction, so the
+               ! weights cannot fail to sum to 1 through an asymmetry in nu.
                cell(i) = cell(i)*s
                cell(j) = cell(j)*(1.0_dp - s)
             end do
@@ -185,23 +187,20 @@ contains
       !! dP_k/dR_A at fixed grid points, as (3, n_atoms, n_points)
       !!
       !! The partition weight depends on every nuclear position, so moving any
-      !! atom changes the weight of every point -- including points owned by
-      !! other atoms. That is the whole content of the "grid response" term in
-      !! a DFT gradient, and omitting it leaves a gradient that looks entirely
-      !! reasonable and disagrees with finite differences at about 1e-4.
+      !! atom changes the weight of every point, including points owned by other
+      !! atoms. That is the "grid response" term of a DFT gradient.
       !!
-      !! **The grid points are held fixed here.** Points move with the atom that
-      !! owns them, but that motion is a separate contribution which the caller
-      !! adds; mixing the two into one routine would make neither checkable.
+      !! **The grid points are held fixed here.** Points also move with the atom
+      !! that owns them; that is a separate contribution the caller adds.
       !!
-      !! The cell functions are differentiated by carrying the derivative
-      !! through the product alongside the value, rather than as a logarithmic
-      !! derivative summed at the end. The log form needs a division by each
-      !! cutoff factor, and those legitimately reach zero far from the molecule
-      !! -- where the value underflows to zero but the derivative does not, so
-      !! the quotient is 0/0 exactly where a guard would have to guess. Carrying
-      !! both costs an extra factor of the atom count and cannot divide by
-      !! anything.
+      !! The derivative is carried through the cell product alongside the value
+      !! rather than as a logarithmic derivative summed at the end: the log form
+      !! divides by each cutoff factor, and those reach zero far from the
+      !! molecule where the derivative does not, so the quotient is 0/0 exactly
+      !! where a guard would have to guess.
+      ! TODO(mqc): unlike `becke_partition_weights`, this checks neither
+      ! `size(owner)` nor `size(dweights)` against the point count and does not
+      ! bound `owner`, yet indexes `dcell(:, a, owner(k))`.
       real(dp), intent(in) :: points(:, :)       !! (3, n_points), Bohr
       real(dp), intent(in) :: atom_coords(:, :)  !! (3, n_atoms), Bohr
       integer, intent(in) :: atomic_numbers(:)   !! Z per atom, for the radii
@@ -249,22 +248,12 @@ contains
          end do
       end do
 
-      ! One thread per grid point.
-      !
-      ! Every iteration reads the geometry and writes its own `dweights(:, :, k)`,
-      ! so the points are independent and nothing is reduced. What is not
-      ! independent is the scratch -- `cell` and `dcell` are rebuilt per point --
-      ! so those move inside the region for each thread to allocate its own.
-      ! `shift` and `inv_distance` depend only on the nuclei and stay shared.
-      !
-      ! This is the grid-response term of a density functional gradient, and it
-      ! was 100 s of CPU on twenty waters while this file had no OpenMP in it at
-      ! all. `dcell` is the only sizeable copy, three by the atom count squared:
-      ! 86 kB for twenty waters, so sixteen threads cost under two megabytes.
-      !
-      ! `schedule(static)`, unlike the quadrature loops: every point costs the
-      ! same `n_atoms` squared wherever it sits, so there is nothing for dynamic
-      ! scheduling to balance and its bookkeeping would be pure overhead.
+      ! One thread per grid point. Every iteration writes its own
+      ! `dweights(:, :, k)`, so nothing is reduced; the per-point scratch `cell`
+      ! and `dcell` is allocated inside the region so each thread gets its own,
+      ! while `shift` and `inv_distance` depend only on the nuclei and stay
+      ! shared. `schedule(static)` because every point costs the same n_atoms
+      ! squared wherever it sits.
       !$omp parallel default(none) &
       !$omp    shared(points, atom_coords, owner, scheme, dweights, shift, &
       !$omp           inv_distance, n_points, n_atoms) &

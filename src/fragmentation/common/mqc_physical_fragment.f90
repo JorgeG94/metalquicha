@@ -1,10 +1,7 @@
-!! This file contains all routines and types to represent a "physical" fragment or molecule
-!! i.e., with atomic coordinates, element types, electronic properties, etc.
+!! Physical fragment and whole-system geometry types
 module mqc_physical_fragment
-   !! Physical molecular fragment representation and geometry handling
-   !!
-   !! Provides data structures and utilities for managing molecular fragments
-   !! with atomic coordinates, electronic properties, and geometric operations.
+   !! Fragments as the QC methods see them, the system they are cut from, and
+   !! the redistribution of cap derivatives back onto the atoms a cap replaces.
    use pic_types, only: dp, default_int
    use mqc_geometry, only: geometry_type
    use mqc_xyz_reader, only: read_xyz_file
@@ -25,7 +22,8 @@ module mqc_physical_fragment
    public :: build_fragment_from_atom_list  !! Build fragment from explicit atom indices (for intersections)
    public :: check_duplicate_atoms      !! Validate fragment has no overlapping atoms
    public :: check_system_geometry      !! Validate the whole system before any work starts
-   ! TODO: in theory there should be a nice way to redistribute for a general matrix of any shape, need to think about this!
+   ! TODO(mqc): one redistribution for an array of any rank, rather than the
+   ! three near-identical routines below.
    public :: redistribute_cap_gradients  !! Redistribute hydrogen cap gradients to original atoms
    public :: redistribute_cap_hessian    !! Redistribute hydrogen cap Hessian to original atoms
    public :: redistribute_cap_dipole_derivatives  !! Redistribute hydrogen cap dipole derivatives to original atoms
@@ -33,10 +31,7 @@ module mqc_physical_fragment
    public :: calculate_monomer_distance  !! Calculate minimal distance between monomers in a fragment
 
    type :: bond_t
-      !! Bond definition with atom indices, order, and broken status
-      !!
-      !! Represents a chemical bond in the molecular system, used for
-      !! hydrogen capping when fragments have broken covalent bonds.
+      !! A bond between two system atoms, and whether a partition cut it
       integer :: atom_i = 0        !! First atom index (0-indexed)
       integer :: atom_j = 0        !! Second atom index (0-indexed)
       integer :: order = 1         !! Bond order (1=single, 2=double, 3=triple)
@@ -44,10 +39,7 @@ module mqc_physical_fragment
    end type bond_t
 
    type :: physical_fragment_t
-      !! Physical molecular fragment with atomic coordinates and properties
-      !!
-      !! Represents a molecular fragment containing atomic positions, element types,
-      !! electronic structure information, and basis set data for quantum calculations.
+      !! One fragment as a QC method sees it: geometry, electron count, basis
       integer :: n_atoms  !! Number of atoms in this fragment
       integer, allocatable :: element_numbers(:)     !! Atomic numbers (Z values)
       real(dp), allocatable :: coordinates(:, :)     !! Cartesian coordinates (3, n_atoms) in Bohr
@@ -65,23 +57,16 @@ module mqc_physical_fragment
          !! 0-based like `cap_replaces_atom`. Needed only to differentiate: the
          !! cap sits on the line between the two, so both ends move it.
       real(dp) :: cap_scale = 1.0_dp
-         !! Where each cap sits along its cut bond, `R_H = R_kept + s (R_gone - R_kept)`.
-         !! One value for the fragment rather than per cap: it is a convention,
-         !! not a property of a particular bond.
+         !! Where each cap sits along its cut bond,
+         !! `R_H = R_kept + s (R_gone - R_kept)`. One value for the fragment.
 
       ! Gradient redistribution support
       integer, allocatable :: local_to_global(:)  !! Map fragment atom index to system atom index (size: n_atoms - n_caps)
       logical, allocatable :: is_ghost(:)
          !! Which atoms carry basis functions but no nucleus and no electrons
          !! (size: n_atoms). Unallocated means none, which is every fragment a
-         !! plain expansion builds.
-         !!
-         !! This is what a counterpoise-corrected term is made of: a monomer
-         !! computed in the *pair's* basis, so that the basis-set superposition
-         !! error which inflates the pair cancels out of the difference instead
-         !! of being absorbed into it. `charge`, `nelec` and `multiplicity` count
-         !! the real atoms only -- whoever builds the fragment owns that, since
-         !! only they know which atoms they meant.
+         !! plain expansion builds. `charge`, `nelec` and `multiplicity` count
+         !! the real atoms only.
 
       ! Fragment distance (for screening)
       real(dp) :: distance = 0.0_dp  !! Minimal atomic distance between monomers in fragment (Angstrom, 0 for monomers)
@@ -95,10 +80,7 @@ module mqc_physical_fragment
    end type physical_fragment_t
 
    type :: system_geometry_t
-      !! Complete molecular system geometry for fragment-based calculations
-      !!
-      !! Contains the full atomic structure of a molecular cluster organized
-      !! by monomers for efficient fragment generation and MBE calculations.
+      !! The whole system, laid out by monomer, that fragments are cut from
       integer :: n_monomers        !! Number of monomer units in system
       integer :: atoms_per_monomer  !! Atoms in each monomer (0 if variable-sized)
       integer :: total_atoms       !! Total number of atoms
@@ -118,25 +100,16 @@ module mqc_physical_fragment
       ! Connectivity information for hydrogen capping
       type(bond_t), allocatable :: bonds(:)  !! Bond connectivity (for H-capping broken bonds)
       real(dp) :: cap_scale = 1.0_dp
-         !! Where a cap sits along the bond it closes, carried here for the same
-         !! reason `bonds` is: every fragment built from this geometry has to cap
-         !! the same way, and the builders already take the geometry. Threading
-         !! it as an argument instead would touch every call site to say the same
-         !! thing.
+         !! Where a cap sits along the bond it closes; copied to every fragment
+         !! built from this geometry, for the same reason `bonds` is carried here.
 
       ! 256 characters a path, matching `driver_config_t%fragment_potentials`,
       ! which is where these are copied to.
       character(len=256), allocatable :: fragment_potentials(:)
          !! One effective fragment potential file per fragment, in fragment
          !! order, or unallocated when this is an ordinary quantum system.
-         !!
-         !! A deck names these in its `molecules` block and they reach the
-         !! driver through the config, never through here. This field exists
-         !! for the callers that have no deck: the C and Python interfaces send
-         !! a settings document with no molecules in it, so a potential named
-         !! there would have nowhere to travel. It rides with the geometry
-         !! because that is what the atoms it is placed on ride with -- a
-         !! potential separated from its fragment's atom list means nothing.
+         !! For the callers with no deck -- the C and Python interfaces send no
+         !! `molecules` block for a potential to travel in.
    contains
       procedure :: destroy => system_destroy  !! Memory cleanup
    end type system_geometry_t
@@ -158,7 +131,7 @@ contains
    end function to_bohr
 
    subroutine initialize_system_geometry(full_geom_file, monomer_file, sys_geom, error)
-      !! Read full geometry and monomer template, initialize system_geometry_t
+      !! Read full geometry and monomer template into a `system_geometry_t`
       character(len=*), intent(in) :: full_geom_file, monomer_file
       type(system_geometry_t), intent(out) :: sys_geom
       type(error_t), intent(out) :: error
@@ -172,8 +145,8 @@ contains
          return
       end if
 
-      ! Read monomer template
-      ! this will be changed once we have a proper input file parsing
+      ! TODO(mqc): predates the JSON deck; a monomer template read from a
+      ! second xyz is not how any current input describes a partition.
       call read_xyz_file(monomer_file, monomer_geom, error)
       if (error%has_error()) then
          call error%add_context("mqc_physical_fragment:initialize_system_geometry")
@@ -194,7 +167,7 @@ contains
 
       sys_geom%n_monomers = sys_geom%total_atoms/sys_geom%atoms_per_monomer
 
-      ! TODO JORGE: this can be a sys_geom%allocate()
+      ! TODO(mqc): this can be a sys_geom%allocate()
       allocate (sys_geom%element_numbers(sys_geom%total_atoms))
       allocate (sys_geom%coordinates(3, sys_geom%total_atoms))
 
@@ -203,7 +176,7 @@ contains
       end do
 
       ! Store coordinates in Bohr (convert from Angstroms)
-      ! TODO JORGE: need a way to handle units
+      ! TODO(mqc): need a way to handle units
       sys_geom%coordinates = to_bohr(full_geom%coords)
 
       call full_geom%destroy()
@@ -292,14 +265,10 @@ contains
    end subroutine add_hydrogen_caps
 
    subroutine build_fragment_core(sys_geom, monomer_indices, fragment, error, bonds)
-      !! Build a fragment on-the-fly from monomer indices with hydrogen capping for broken bonds
+      !! Build a fragment from monomer indices, capping any bond it cut
       !!
-      !! Extracts atoms from specified monomers and adds hydrogen caps where bonds are broken.
-      !! Caps are always added at the end of the atom list.
-      !! Supports both fixed-size (identical monomers) and variable-sized fragments.
-      !!
-      !! Example: monomer_indices = [1, 3, 5] extracts waters 1, 3, and 5
-      !!          If connectivity shows broken bonds, hydrogens are capped at positions of missing atoms
+      !! Caps go at the end of the atom list. Handles both fixed-size monomers
+      !! and an explicit variable-sized partition.
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: monomer_indices(:)
       type(physical_fragment_t), intent(out) :: fragment
@@ -428,21 +397,10 @@ contains
    subroutine build_fragment_from_indices(sys_geom, signed_indices, fragment, error, bonds)
       !! Build a fragment from monomer indices, ghosting any that are negative
       !!
-      !! `signed_indices` carries the sign as the distinction: a positive entry
-      !! is a real monomer, a negative one is present as ghost centres. The
-      !! geometry is the union either way, which is exactly what a
-      !! counterpoise-corrected term needs -- monomer A computed in the basis of
-      !! the pair AB, so that the superposition error inflating AB appears on
-      !! both sides of the difference and cancels.
-      !!
-      !! The sign rather than a second array because the index vector is what
-      !! already crosses the wire, and its length is already sent. A separate
-      !! ghost mask would mean a sixth message in a five-message payload whose
-      !! correctness rests on per-source ordering -- a change that deadlocks
-      !! rather than fails if it is applied to the sender and not the receiver.
-      !!
-      !! All-positive input is exactly `build_fragment_from_indices`, which is
-      !! what every task that exists today sends.
+      !! A positive entry is a real monomer, a negative one contributes ghost
+      !! centres; the geometry is the union either way, which is what a
+      !! counterpoise-corrected term needs. All-positive input is exactly
+      !! `build_fragment_core`.
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: signed_indices(:)
       type(physical_fragment_t), intent(out) :: fragment
@@ -461,11 +419,9 @@ contains
       n_real = count(signed_indices > 0)
       if (n_real == size(signed_indices)) return   ! nothing ghosted
 
-      ! Mark the ghosted monomers' atoms. `build_fragment_from_indices` lays the
-      ! atoms out monomer by monomer in the order given, and appends any caps at
-      ! the end, so walking the same order finds them. Caps stay real: a cap
-      ! stands in for a bond this fragment cut, which is a property of the
-      ! fragment rather than of the monomer it replaces.
+      ! Mark the ghosted monomers' atoms. `build_fragment_core` lays the atoms
+      ! out monomer by monomer in the order given and appends caps at the end,
+      ! so walking the same order finds them. Caps stay real.
       allocate (fragment%is_ghost(fragment%n_atoms))
       fragment%is_ghost = .false.
       first = 1
@@ -502,22 +458,10 @@ contains
    pure subroutine fragment_charge_multiplicity(sys_geom, monomer_indices, charge, multiplicity)
       !! Total charge and spin multiplicity of the fragment these monomers form
       !!
-      !! Explicit partition: the charge is the sum of the constituent monomer
-      !! charges, and the unpaired-electron count sums the same way. Taking
-      !! `sys_geom%multiplicity` for the composite instead is wrong the moment
-      !! spin is localised rather than spread: give one monomer of a neutral
-      !! cluster a +1 charge and a doublet, and every neutral dimer would
-      !! inherit the doublet too, then fail as an even electron count with one
-      !! unpaired electron -- which is also why a charged MBE could not be run.
-      !!
-      !! Summing unpaired counts is high-spin coupling. For the case this
-      !! serves -- one open-shell monomer among closed shells -- there is
-      !! nothing to choose: the composite's spin is that monomer's. Two or more
-      !! open-shell monomers take the highest multiplet, a choice a low-spin
-      !! state overrides by giving the fragment its own multiplicity.
-      !!
-      !! With no explicit partition (fixed-size monomers) it is the
-      !! whole-system charge and multiplicity, as the caller had before.
+      !! With an explicit partition, monomer charges sum and unpaired-electron
+      !! counts sum with them -- high-spin coupling, which a low-spin state
+      !! overrides by giving the fragment its own multiplicity. With fixed-size
+      !! monomers it is the whole-system charge and multiplicity.
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: monomer_indices(:)
       integer, intent(out) :: charge, multiplicity
@@ -540,13 +484,9 @@ contains
    end subroutine fragment_charge_multiplicity
 
    subroutine build_fragment_from_atom_list(sys_geom, atom_indices, n_atoms, fragment, error, bonds)
-      !! Build a fragment from explicit atom list (for GMBE intersection fragments)
+      !! Build a fragment from explicit atom indices, for GMBE intersections
       !!
-      !! Similar to build_fragment_from_indices but takes atom indices directly instead of
-      !! monomer indices. Used for building intersection fragments in GMBE calculations.
-      !! Intersection fragments are ALWAYS NEUTRAL (charge=0, multiplicity=1).
-      !!
-      !! Example: atom_indices = [3, 4, 5] builds fragment from atoms 3, 4, 5 of the system
+      !! Intersection fragments are always neutral singlets.
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: atom_indices(:)  !! 0-indexed atom indices
       integer, intent(in) :: n_atoms          !! Number of atoms in list
@@ -583,9 +523,8 @@ contains
          call add_hydrogen_caps(atom_indices(1:n_atoms), bonds, sys_geom, fragment, n_atoms)
       end if
 
-      ! Intersection fragments are ALWAYS NEUTRAL
-      ! Rationale: For polypeptides, intersections are backbone atoms;
-      ! charged side chains are in non-overlapping regions
+      ! Always neutral: in a polypeptide the intersections are backbone atoms,
+      ! and charged side chains fall in the non-overlapping regions.
       fragment%charge = 0
       fragment%multiplicity = 1
       call fragment%compute_nelec()
@@ -606,13 +545,9 @@ contains
       !!
       !!     R_H = R_kept + s (R_gone - R_kept)
       !!
-      !! so `dR_H/dR_gone = s` and `dR_H/dR_kept = 1 - s`. Redistributing by
-      !! those two weights is the chain rule exactly, not an approximation to it,
-      !! and the same two weights serve the gradient and the Hessian.
-      !!
-      !! At `s = 1` this returns weight 1 on the removed atom and 0 on the other,
-      !! which is the rule this program used before the scale existed -- so the
-      !! default reproduces the old numbers rather than merely resembling them.
+      !! so `dR_H/dR_gone = s` and `dR_H/dR_kept = 1 - s` -- the chain rule
+      !! exactly, and the same two weights serve the gradient and the Hessian.
+      !! At `s = 1` all the weight is on the removed atom.
       type(physical_fragment_t), intent(in) :: fragment
       integer, intent(in) :: i_cap
       integer, intent(out) :: idx(2)   !! 1-based system atom indices
@@ -629,23 +564,10 @@ contains
    end subroutine cap_targets
 
    subroutine redistribute_cap_gradients(fragment, fragment_gradient, system_gradient, scale)
-      !! Redistribute hydrogen cap gradients to original atoms
+      !! Accumulate a fragment gradient into the system gradient
       !!
-      !! This subroutine handles gradient redistribution for fragments with hydrogen caps.
-      !! Hydrogen caps are virtual atoms added at broken bonds - their gradients represent
-      !! forces at the bond breakpoint and must be transferred to the original atoms they replace.
-      !!
-      !! Algorithm:
-      !!   1. For real atoms (indices 1 to n_atoms - n_caps):
-      !!      Accumulate gradient to system using local_to_global mapping
-      !!   2. For hydrogen caps (indices n_atoms - n_caps + 1 to n_atoms):
-      !!      Add cap gradient to the original atom it replaces (from cap_replaces_atom)
-      !!
-      !! Example:
-      !!   Fragment: [C, C, H_cap] where H_cap replaces atom 5 in system
-      !!   Fragment gradient: [(3,1), (3,2), (3,3)]
-      !!   - Atoms 1,2: accumulate to system using local_to_global
-      !!   - Atom 3 (cap): add gradient to system atom 5 (cap_replaces_atom(1) + 1)
+      !! Real atoms go through `local_to_global`; each cap is split between the
+      !! two atoms that move it, by the weights `cap_targets` returns.
       type(physical_fragment_t), intent(in) :: fragment
       real(dp), intent(in) :: fragment_gradient(:, :)   !! (3, n_atoms_fragment)
       real(dp), intent(inout) :: system_gradient(:, :)  !! (3, n_atoms_system)
@@ -688,21 +610,11 @@ contains
    end subroutine redistribute_cap_gradients
 
    subroutine redistribute_cap_hessian(fragment, fragment_hessian, system_hessian, scale)
-      !! Redistribute hydrogen cap Hessian to original atoms
+      !! Accumulate a fragment Hessian into the system Hessian
       !!
-      !! This subroutine handles Hessian redistribution for fragments with hydrogen caps.
-      !! The Hessian is a rank-2 tensor (3N × 3N) representing second derivatives of energy
-      !! with respect to atomic coordinates. Similar to gradient redistribution, cap contributions
-      !! must be transferred to the original atoms they replace.
-      !!
-      !! Algorithm:
-      !!   1. For real atoms (indices 1 to n_atoms - n_caps):
-      !!      Accumulate Hessian blocks to system using local_to_global mapping for both dimensions
-      !!   2. For hydrogen caps (indices n_atoms - n_caps + 1 to n_atoms):
-      !!      Add cap Hessian blocks (row and column) to the original atom it replaces
-      !!
-      !! Note: Hessian is stored as a flattened 2D array (3*n_atoms, 3*n_atoms)
-      !!       where rows and columns are grouped by atoms (x,y,z for atom 1, then x,y,z for atom 2, etc.)
+      !! As `redistribute_cap_gradients`, but the chain rule applies to both
+      !! indices, so a cap-cap block spreads over four atom pairs. Rows and
+      !! columns are grouped by atom: x, y, z for atom 1, then atom 2, and so on.
       type(physical_fragment_t), intent(in) :: fragment
       real(dp), intent(in) :: fragment_hessian(:, :)   !! (3*n_atoms_fragment, 3*n_atoms_fragment)
       real(dp), intent(inout) :: system_hessian(:, :)  !! (3*n_atoms_system, 3*n_atoms_system)
@@ -810,15 +722,10 @@ contains
    end subroutine redistribute_cap_hessian
 
    subroutine redistribute_cap_dipole_derivatives(fragment, fragment_dipole_derivs, system_dipole_derivs, scale)
-      !! Redistribute hydrogen cap dipole derivatives to original atoms
+      !! Accumulate fragment dipole derivatives into the system's
       !!
-      !! Dipole derivatives have shape (3, 3*N_atoms) where each column corresponds to
-      !! the derivative of the 3 dipole components w.r.t. one Cartesian coordinate.
-      !! The mapping is similar to the column dimension of the Hessian.
-      !!
-      !! Algorithm:
-      !!   1. For real atoms: accumulate to system using local_to_global mapping
-      !!   2. For hydrogen caps: add to the original atom the cap replaces
+      !! Shape (3, 3*n_atoms): one column per Cartesian coordinate, mapped like
+      !! the column dimension of the Hessian.
       type(physical_fragment_t), intent(in) :: fragment
       real(dp), intent(in) :: fragment_dipole_derivs(:, :)   !! (3, 3*n_atoms_fragment)
       real(dp), intent(inout) :: system_dipole_derivs(:, :)  !! (3, 3*n_atoms_system)
@@ -882,28 +789,15 @@ contains
    subroutine check_system_geometry(sys_geom, error)
       !! Refuse a geometry with two atoms in the same place, before anything runs
       !!
-      !! The per-fragment check catches this eventually, and eventually is the
-      !! problem. In a fragmented run a duplicated atom surfaces only when some
-      !! fragment containing both copies is built -- which may be a long way
-      !! into a million-term expansion, on whichever rank happened to draw that
-      !! term. Worse, if the two copies land in different monomers and distance
-      !! screening drops the dimer that would have paired them, no fragment ever
-      !! sees them and the run completes on a geometry nobody meant.
+      !! The per-fragment check finds this only once some fragment holding both
+      !! copies is built, and distance screening can drop that fragment
+      !! entirely. A duplicated atom also changes the electron count, so every
+      !! number afterwards is wrong rather than merely unconverged.
       !!
-      !! An atom pasted twice is the ordinary cause and it changes the electron
-      !! count, so every number afterwards is wrong rather than merely
-      !! unconverged. Cheap to find, expensive to discover late, and the first
-      !! thing worth doing.
-      !!
-      !! **Sorted and swept rather than compared pairwise.** A million-atom
-      !! system has 5e11 pairs, which is not a check anyone would leave switched
-      !! on. Sorting along the widest axis and comparing only atoms within the
-      !! threshold of each other on that axis is `O(N log N)`, and the axis is
-      !! chosen by extent rather than fixed so that a molecule lying flat in a
-      !! plane -- where a fixed axis would put every atom in one bucket and
-      !! recover the quadratic cost -- is spread out instead. That choice is
-      !! about cost and not about correctness: a degenerate axis makes the sweep
-      !! compare every pair, which is slow and still right.
+      !! Sorted along the widest axis and swept, `O(N log N)` where the pairwise
+      !! comparison would be 5e11 pairs at a million atoms. The axis is chosen
+      !! by extent so a planar molecule does not fall back to quadratic; that is
+      !! a cost choice, not a correctness one.
       use pic_sorting, only: sort_index
       use pic_types, only: int_index
       use pic_io, only: to_char
@@ -919,6 +813,9 @@ contains
       real(dp) :: extent(3)
       real(dp) :: lo, hi, separation
       integer :: n, axis, widest, i, j, a, b
+      ! TODO(mqc): the same threshold as `MIN_ATOM_DISTANCE`, which this module
+      ! already imports and `check_duplicate_atoms` uses. Two spellings of one
+      ! constant, which is what MQC002 exists to prevent.
       real(dp), parameter :: MIN_SEPARATION = 0.01_dp   !! Bohr, as the fragment check uses
 
       n = sys_geom%total_atoms
@@ -967,9 +864,16 @@ contains
    end subroutine check_system_geometry
 
    subroutine check_duplicate_atoms(fragment, error)
-      !! Validate that fragment has no spatially overlapping atoms
-      !! Checks if any two atoms are too close together (< 0.01 Bohr)
-      !! This catches bugs in geometry construction or fragment building
+      !! Refuse a fragment with two atoms closer than `MIN_ATOM_DISTANCE`
+      !!
+      !! Non-cap atoms only: a cap sits on the bond it closes, so it is
+      !! legitimately close to the atom it replaces.
+      ! TODO(mqc): pairwise, where `check_system_geometry` sorts and sweeps for
+      ! the same test. Called once per fragment, so the quadratic cost lands on
+      ! every term of the expansion.
+      ! TODO(mqc): sets the error *and* logs it, on every rank. The message the
+      ! caller prints on rank zero gets buried under one copy per rank -- the
+      ! reason `check_system_geometry` deliberately sets without logging.
       use pic_logger, only: logger => global_logger
       use pic_io, only: to_char
 
@@ -979,7 +883,6 @@ contains
       integer :: i, j, n_atoms
       real(dp) :: distance, dx, dy, dz
 
-      ! Only check non-cap atoms (caps can be close to replaced atoms)
       n_atoms = fragment%n_atoms - fragment%n_caps
 
       if (n_atoms < 2) return
@@ -1086,10 +989,9 @@ contains
    end subroutine system_destroy
 
    pure function calculate_monomer_distance(sys_geom, monomer_indices) result(min_distance)
-      !! Calculate minimal atomic distance between monomers in a fragment
-      !! For single monomer (size 1), returns 0.0
-      !! For multi-monomer fragments, returns minimal distance between atoms in different monomers
-      !! Result is in Angstrom
+      !! Closest approach between any two different monomers, in Angstrom
+      !!
+      !! Zero for a single monomer. This is what distance screening cuts on.
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: monomer_indices(:)
       real(dp) :: min_distance

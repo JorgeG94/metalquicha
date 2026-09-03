@@ -1,7 +1,7 @@
 !! Analytic nuclear gradients for the cuEST-backed SCF
 module mqc_cuest_gradient
-   !! Assembles the closed-shell SCF nuclear gradient from cuEST's derivative
-   !! entry points.
+   !! Assembles the SCF nuclear gradient, restricted or unrestricted, from
+   !! cuEST's derivative entry points.
    !!
    !! For a converged SCF the gradient is
    !!
@@ -21,14 +21,11 @@ module mqc_cuest_gradient
    !! One approximation is inherited from the engine: J and K are density
    !! fitted, so the gradient carries the derivative of the fitting error too.
    !!
-   !! The XC term is complete. cuestXCDerivativeRKSCompute returns the whole
-   !! derivative for a built-in functional, grid-weight (Becke partition)
-   !! terms included -- the separate cuestXCGridDerivativeCompute exists for
-   !! the user-supplied-functional path, where the caller evaluates the XC
-   !! energy density itself and has to hand the per-grid-point contributions
-   !! back. Verified numerically: validation/check_gradient agrees with
-   !! central finite differences to 3e-8 Ha/Bohr for PBE0, the same noise
-   !! floor as Hartree-Fock, which a missing weight term would not do.
+   !! The XC term is complete: `cuestXCDerivativeRKSCompute` returns the whole
+   !! derivative for a built-in functional, grid-weight (Becke partition) terms
+   !! included. The separate `cuestXCGridDerivativeCompute` is for the
+   !! user-supplied-functional path, where the caller evaluates the XC energy
+   !! density itself and hands the per-grid-point contributions back.
    use pic_types, only: dp
    use mqc_nuclear_repulsion, only: add_nuclear_repulsion_gradient
    use pic_blas_interfaces, only: pic_gemm
@@ -45,9 +42,8 @@ contains
    subroutine nuclear_repulsion_gradient(atomic_numbers, coordinates, gradient)
       !! Gradient of the point-charge nuclear repulsion, Hartree/Bohr
       !!
-      !! Overwrites, where the shared routine accumulates -- this caller wants
-      !! the nuclear term on its own, so the zeroing is done here rather than
-      !! hidden in a shared routine every other caller would have to undo.
+      !! Overwrites, where the shared `add_nuclear_repulsion_gradient`
+      !! accumulates.
       integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: coordinates(:, :)  !! (3, n_atoms), Bohr
       real(dp), intent(out) :: gradient(:, :)    !! (3, n_atoms)
@@ -89,7 +85,7 @@ contains
    end subroutine energy_weighted_density
 
    subroutine compute_scf_gradient(system, atomic_numbers, coordinates, scf, gradient, error)
-      !! Total analytic gradient for a converged closed-shell SCF
+      !! Total analytic gradient for a converged SCF, restricted or unrestricted
       type(cuest_system_t), intent(inout) :: system   !! Live cuEST objects, same geometry
       integer, intent(in) :: atomic_numbers(:)        !! Z per atom
       real(dp), intent(in) :: coordinates(:, :)       !! (3, n_atoms), Bohr
@@ -104,10 +100,8 @@ contains
       ! A VV10 gradient is not the semilocal gradient. cuestXCDerivativeRKSCompute
       ! returns the derivative of the semilocal part; the non-local term has its
       ! own entry point, cuestNonlocalXCDerivativeRKSCompute, which this does not
-      ! call. Refused rather than omitted, because omitting it survives every
-      ! check a user can make -- the SCF converges, the energy is right, and the
-      ! forces are quietly wrong, so an optimisation walks to the wrong minimum.
-      ! This is the same refusal the CPU path makes, for the same reason.
+      ! call. Refused rather than omitted, as on the CPU path: a gradient missing
+      ! it converges, reports the right energy, and walks to the wrong minimum.
       if (system%has_nlc) then
          call error%set(ERROR_VALIDATION, "this functional carries a non-local "// &
                         "correlation term (VV10), whose contribution to the nuclear "// &
@@ -174,10 +168,8 @@ contains
 
       ! ---- continuum solvation (no-op without a cavity) ---------------------
       !
-      ! Last, and from the total density: the cavity couples to the whole
-      ! electron density, not to one spin channel, which is why this is one call
-      ! for both the restricted and unrestricted paths where the two above are
-      ! two.
+      ! From the total density: the cavity couples to the whole electron
+      ! density, not to one spin channel, so this is one call on both paths.
       call system%gradient_pcm(scf%density, term, error)
       if (.not. error%has_error()) gradient = gradient + term
 

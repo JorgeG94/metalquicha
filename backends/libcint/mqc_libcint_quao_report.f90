@@ -1,28 +1,22 @@
 !! What the quasi-atomic orbitals turn out to be, and the table that says so
 module mqc_libcint_quao_report
    !! The construction in `mqc_libcint_quao` produces a set of orbitals, one per
-   !! atom, and a matrix of populations and bond orders. It does not say which
-   !! orbital is a sigma bond and which is a lone pair, and without that the
-   !! output is a numbered matrix that has to be read by hand against a picture
-   !! of the molecule. This module assigns those labels and prints the report
-   !! GAMESS prints -- every orbital pair with a kinetic bond order above a
-   !! threshold, sorted by magnitude, each end annotated with its atom, its
-   !! occupation, the atom it is bonded to, and what kind of orbital it is.
+   !! atom, and a matrix of populations and bond orders, but does not say which
+   !! orbital is a sigma bond and which is a lone pair. This module assigns
+   !! those labels and prints the report: each orbital pair above a threshold,
+   !! sorted by magnitude, annotated with its atom, occupation, bonding partner
+   !! and kind.
    !!
-   !! **Every label here is empirical.** Nothing in Papers I or II defines a
-   !! sigma orbital; the classification is a set of thresholds on occupations,
-   !! bond orders and directions, chosen by the reference implementation to
-   !! reproduce what a chemist would say. They are reproduced rather than
-   !! reinvented -- `LOCAL_ORIENBOS_ASSIGN_ORBTYP` in GAMESS's `locsvd.src`, with
-   !! its `BOTOL` array -- so that a disagreement with GAMESS is a disagreement
-   !! about the wave function rather than about where a threshold was put. The
-   !! numbers themselves carry no theory and should not be treated as if they
-   !! do: an orbital half a percent the wrong side of `TOL_LONE_PAIR_OCC` is not
-   !! a different orbital, it is a different label on the same orbital.
+   !! **Every label here is empirical.** Nothing defines a sigma orbital; the
+   !! classification is a set of thresholds on occupations, bond orders and
+   !! directions, taken from `LOCAL_ORIENBOS_ASSIGN_ORBTYP` in GAMESS's
+   !! `locsvd.src` and its `BOTOL` array. An orbital half a percent the wrong
+   !! side of `TOL_LONE_PAIR_OCC` is not a different orbital, it is a different
+   !! label on the same one.
    !!
    !! The quantities being labelled -- populations, bond orders, kinetic bond
-   !! orders -- are not empirical at all, and are validated against GAMESS to
-   !! 1e-6 in `test/test_mqc_quao.f90`. It is worth keeping the two apart.
+   !! orders -- are not empirical, and are validated against GAMESS to 1e-6 in
+   !! `test/test_mqc_quao.f90`.
    use pic_types, only: dp
    use pic_io, only: to_char
    use pic_logger, only: logger => global_logger
@@ -67,8 +61,7 @@ module mqc_libcint_quao_report
       !! `TOLNV`. Occupation below which an orbital is empty for labelling
       !! purposes.
    real(dp), parameter :: TOL_PRINT = 1.0e-3_dp
-      !! `TOLDEN`. Rows below this in magnitude are not printed. A formyl
-      !! chloride table stops after 27 of its 78 orbital pairs.
+      !! `TOLDEN`. Rows below this in magnitude are not printed.
 
    ! Column widths for the report, so the header and the rows cannot drift
    ! apart. Every field is written into a substring of exactly this length.
@@ -127,11 +120,11 @@ contains
                                           atomic_numbers, coordinates, labels, error)
       !! Classify every quasi-atomic orbital
       !!
-      !! Three things have to be known before a label can be put on an orbital:
-      !! its occupation, which the construction already produced; which way it
-      !! points, which needs second-moment integrals; and how much s and p
-      !! character it has, which needs the projection back onto the free-atom
-      !! orbitals. This assembles all three and then applies GAMESS's rules.
+      !! Three things go into a label: the occupation, which the construction
+      !! already produced; which way the orbital points, which needs
+      !! second-moment integrals; and how much s and p character it has, which
+      !! needs the projection back onto the free-atom orbitals. Refused unless
+      !! `quao` is oriented.
       type(quao_result_t), intent(in) :: quao
       type(libcint_molecule_t), intent(in) :: mol
          !! The orbital basis the SCF ran in, for the multipole integrals
@@ -169,18 +162,15 @@ contains
       !!
       !!     M_ab = < i | (r - R)_a (r - R)_b | i >
       !!
-      !! diagonalized; the eigenvector of the largest eigenvalue is the direction
-      !! the orbital sticks out in. For a p-like orbital that is unambiguous and
-      !! for an s-like one it is noise -- which does not matter, because the only
-      !! consumer is the sigma/pi test and s-like orbitals are classified as lone
-      !! pairs before it runs.
+      !! diagonalized; the eigenvector of the largest eigenvalue is the
+      !! direction the orbital sticks out in. For an s-like orbital it is
+      !! noise, which does not matter: the only consumer is the sigma/pi test,
+      !! and s-like orbitals are classified as lone pairs before it runs.
       !!
-      !! GAMESS gets the same axis from the electronic quadrupole moment, whose
-      !! eigenvectors are the same as this tensor's -- a traceless quadrupole is
-      !! `3M - tr(M)` and subtracting a multiple of the identity does not move an
-      !! eigenvector. It arrives at the *smallest* eigenvalue rather than the
-      !! largest because the electron charge is negative, which in its source
-      !! costs three separate sign flips. This is the same statement without them.
+      !! GAMESS's axis, from the electronic quadrupole moment, is the same one:
+      !! a traceless quadrupole is `3M - tr(M)`, and subtracting a multiple of
+      !! the identity does not move an eigenvector. It takes the *smallest*
+      !! eigenvalue there because the electron charge is negative.
       !!
       !! One dipole and one quadrupole build, not one per atom: the moment about
       !! `R` follows from the moments about a common origin by
@@ -202,7 +192,7 @@ contains
       natm = size(coordinates, 2)
 
       ! The centroid, so the shifted terms stay the size of the molecule rather
-      ! than the size of whatever coordinate frame the input happened to use.
+      ! than of whatever coordinate frame the input used.
       do a = 1, 3
          origin(a) = sum(coordinates(a, :))/real(natm, dp)
       end do
@@ -259,13 +249,12 @@ contains
       !! quasi-atomic orbital onto the orthogonalized minimal basis, keep the
       !! components on the atom it belongs to, and bin the squares by angular
       !! momentum. The result is normalized within the atom, so it reports the
-      !! *shape* of the orbital and not how atomic it is -- that second number is
-      !! `quao%atomic_character` and is a different question.
+      !! *shape* of the orbital and not how atomic it is -- that second number
+      !! is `quao%atomic_character`.
       !!
-      !! The dominant momentum is what separates an s lone pair from a p one in
-      !! the report, and that distinction is the whole chemical content of the
-      !! label: a p lone pair points somewhere and can conjugate, an s one does
-      !! not and cannot.
+      !! The dominant momentum separates an s lone pair from a p one in the
+      !! report: a p lone pair points somewhere and can conjugate, an s one
+      !! does not.
       type(quao_result_t), intent(in) :: quao
       type(libcint_molecule_t), intent(in) :: aambs
       real(dp), intent(in) :: mixed(:, :)
@@ -340,12 +329,10 @@ contains
       !! 5. Anything left near single occupancy is a radical.
       !! 6. Everything else is sorted by occupation alone.
       !!
-      !! **Sigma versus pi is decided by geometry, not by symmetry.** The test is
-      !! the angle between the orbital's own axis and the line joining the two
-      !! atoms, averaged over the two ends of the bond. That is why it needs the
-      !! second moments, and why it says something even in a molecule with no
-      !! symmetry at all -- where "sigma" and "pi" are not group-theoretic labels
-      !! and cannot be assigned by any exact criterion.
+      !! **Sigma versus pi is decided by geometry, not by symmetry.** The test
+      !! is the angle between the orbital's own axis and the line joining the
+      !! two atoms, averaged over the two ends of the bond, so it says something
+      !! even in a molecule with no symmetry at all.
       type(quao_result_t), intent(in) :: quao
       integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: coordinates(:, :)
@@ -448,11 +435,8 @@ contains
       end do
 
       ! ---- and who each bonding orbital is bonded to ------------------------
-      ! Only the types that describe an interaction get a partner recorded. A
-      ! lone pair keeps its parentheses empty even when it appears in a strong
-      ! bond, which is the point: the report then shows a large bond order
-      ! between an orbital that is bonded and one that is not, which is what
-      ! delocalization looks like from here.
+      ! Only the types that describe an interaction get a partner recorded; see
+      ! `add_partner`.
       do k = 1, n_strong
          ib = order(k)
          call add_partner(labels, bond_i(ib), bond_j(ib))
@@ -482,12 +466,11 @@ contains
    pure function skip_direction_test(atomic_number) result(skip)
       !! Whether an atom's orbitals are left unclassified
       !!
-      !! The d block, in GAMESS's `LOCAL_ORIENBOS_SKIP`. A transition metal's
-      !! bonding orbitals are d-heavy and a d orbital's second moment does not
-      !! point along a bond in the way a p orbital's does -- a d(z^2) lobe and a
-      !! d(xy) cloverleaf give quite different axes for orbitals doing the same
-      !! job -- so sigma and pi are not assigned there at all rather than
-      !! assigned wrongly. Those orbitals appear in the table with no type.
+      !! The d block, in GAMESS's `LOCAL_ORIENBOS_SKIP`. A d orbital's second
+      !! moment does not point along a bond the way a p orbital's does -- a
+      !! d(z^2) lobe and a d(xy) cloverleaf give different axes for orbitals
+      !! doing the same job -- so sigma and pi are not assigned there at all,
+      !! and those orbitals appear in the table with no type.
       integer, intent(in) :: atomic_number
       logical :: skip
 
@@ -508,10 +491,9 @@ contains
          labels%partner(iorb, labels%partner_count(iorb)) = jorb
       case default
          ! A lone pair, a radical or an empty orbital keeps its list empty even
-         ! when it appears in a strong bond. That is deliberate rather than an
-         ! omission: the report then shows a large bond order between an orbital
-         ! that is bonded and one that is not, which is what delocalization looks
-         ! like from here.
+         ! when it appears in a strong bond. The report then shows a large bond
+         ! order between an orbital that is bonded and one that is not, which is
+         ! what delocalization looks like from here.
       end select
    end subroutine add_partner
 
@@ -542,19 +524,13 @@ contains
       !! The label the report prints
       !!
       !! Lower case and spelled out rather than GAMESS's `SIGMA`, `PLP`,
-      !! `NVMOD`. The originals are its internal codes and read as shouting in a
-      !! table; `p-lone` says what `PLP` means without a legend, which matters
-      !! because the legend is in a paper rather than in the output.
+      !! `NVMOD`, which are its internal codes.
       !!
       !! `dominant_l` only matters for the lone-pair types, where it is the
-      !! difference between an s lone pair and a p one -- chemically the whole
-      !! content of the label, since a p lone pair points somewhere and can
-      !! conjugate and an s one does not and cannot.
+      !! difference between an s lone pair and a p one.
       !!
-      !! GAMESS prints nothing at all for the types past PI, and prints its
-      !! no-partner marker `NWB   0` for the unclassified ones. Both are given
-      !! names here: a blank column in a table means the code forgot, and there
-      !! is no way to tell that from an orbital that genuinely has no type.
+      !! Every type has a name, including the ones GAMESS leaves blank: a blank
+      !! column cannot be told from an orbital that genuinely has no type.
       integer, intent(in) :: orbital_type
       integer, intent(in) :: dominant_l
       character(len=10) :: name
@@ -609,30 +585,18 @@ contains
                                 element_symbols, n_core, kinetic_bond_order, threshold)
       !! The bonding picture, grouped by what each number means
       !!
-      !! **Not GAMESS's layout.** That one is faithful to its own internals: one
-      !! row per orbital *pair*, with every column duplicated under an `I` and a
-      !! `J` heading, 120 characters wide. It presents a pair as two independent
-      !! orbital descriptions when the pair is the unit of meaning, and it puts
-      !! a covalent bond and a lone pair leaking into an antibond in the same
-      !! list, distinguishable only by reading four columns and knowing what
-      !! `NWB   0` means.
-      !!
-      !! So the same information is regrouped into three blocks that answer
-      !! three different questions. **Bonds** are pairs where both ends are
+      !! **Not GAMESS's layout**, which is one row per orbital pair with every
+      !! column duplicated under an `I` and a `J` heading. The same information
+      !! is regrouped into three blocks. **Bonds** are pairs where both ends are
       !! bonding orbitals pointing at each other -- the covalent skeleton, one
-      !! row per bond rather than per orbital. **Delocalization** is everything
-      !! else above threshold, which is where a lone pair donates into a bond;
-      !! chemically it is a different phenomenon and it reads as one here.
-      !! **Orbitals** is the per-orbital table, with the hybridisation folded in
-      !! rather than printed separately.
+      !! row per bond. **Delocalization** is everything else above threshold,
+      !! where a lone pair donates into a bond. **Orbitals** is the per-orbital
+      !! table, with the hybridisation folded in.
       !!
-      !! Sorted on the kinetic bond order rather than the bond order, in both
-      !! interaction blocks. A bond order is a population and says how much
-      !! density two orbitals share; the kinetic bond order is an energy and
-      !! says what that sharing is worth. They disagree about ordering more
-      !! often than one would expect -- in formyl chloride the C-Cl bond order
-      !! beats the C-H one and its kinetic bond order beats it by more than
-      !! twice as much, because the C-H kinetic integral is smaller.
+      !! Both interaction blocks are sorted on the kinetic bond order rather
+      !! than the bond order: a bond order is a population and says how much
+      !! density two orbitals share, the kinetic bond order is an energy and
+      !! says what that sharing is worth. The two disagree about ordering.
       logical, intent(in) :: verbose
       type(quao_result_t), intent(in) :: quao
       type(quao_labels_t), intent(in) :: labels
@@ -643,17 +607,15 @@ contains
       integer, intent(in) :: n_core
          !! Chemical-core orbitals, which the construction never sees. Added to
          !! every printed orbital index so the numbering matches the molecular
-         !! orbitals it came from -- and matches GAMESS, which does the same.
+         !! orbitals it came from, as GAMESS's does.
       real(dp), intent(in), optional :: kinetic_bond_order(:, :)
          !! Paper II eq (2), in kcal/mol. Shown as the headline energy when
-         !! present because that is the scale the empirical factor of a tenth
-         !! exists to reach: numbers comparable with tabulated bond energies,
-         !! rather than hartree.
+         !! present, that being the scale comparable with tabulated bond
+         !! energies.
       real(dp), intent(in), optional :: threshold
          !! kcal/mol. Pairs weaker than this are counted and not printed.
-         !! Requires `kinetic_bond_order` to be present, since that is the
-         !! quantity it is a threshold on; without it the hartree cutoff below
-         !! is all there is.
+         !! Ignored without `kinetic_bond_order`, that being the quantity it is
+         !! a threshold on; the `TOL_PRINT` hartree floor is then all there is.
 
       real(dp), allocatable :: magnitude(:), occupation(:)
       integer, allocatable :: pair_i(:), pair_j(:), order(:)
@@ -666,9 +628,8 @@ contains
 
       if (.not. verbose) return
       n = quao%n_quao
-      ! A threshold on the kcal/mol quantity needs that quantity; asked for
-      ! without it, there is nothing to compare against and the hartree floor
-      ! is what filters.
+      ! A threshold on the kcal/mol quantity needs that quantity; without it
+      ! the hartree floor is what filters.
       cutoff = 0.0_dp
       if (present(threshold) .and. present(kinetic_bond_order)) cutoff = threshold
 
@@ -700,9 +661,8 @@ contains
          energy = interference(i, j)
          if (present(kinetic_bond_order)) energy = kinetic_bond_order(i, j)
          ! Assigned to fixed-length buffers rather than written with an `a16`
-         ! edit descriptor: that pads a short string on the *left*, so every
-         ! label right-justifies and a column of "C 1 - O 2" and "C 1 - Cl 3"
-         ! comes out ragged. Assignment pads on the right.
+         ! edit descriptor: that pads a short string on the *left*, so the
+         ! column comes out ragged. Assignment pads on the right.
          field_a = trim(left)//" - "//trim(right)
          field_b = quao_type_name(labels%orbital_type(i), labels%dominant_l(i))
          write (line, "(4x,a18,a11,f10.4,f11.2,i7,a,i0)") field_a, field_b, &
@@ -730,8 +690,7 @@ contains
          end if
          printed = printed + 1
          ! Donor first, decided by occupation rather than by index: the arrow
-         ! only means something if the fuller orbital is the one giving. Taking
-         ! the pair in storage order would point half of them backwards.
+         ! only means something if the fuller orbital is the one giving.
          if (quao%population_bond_order(i, i) >= quao%population_bond_order(j, j)) then
             call interaction_text(quao, labels, element_symbols, i, left)
             call interaction_text(quao, labels, element_symbols, j, right)
@@ -803,10 +762,10 @@ contains
    pure function is_bond(quao, labels, i, j) result(bond)
       !! Whether a pair is a covalent bond rather than a delocalization
       !!
-      !! Both ends must be bonding orbitals, and each must name the other's atom
-      !! as what it is bonded to. A lone pair overlapping a bond fails the first
-      !! test; two bonding orbitals on the same atom, or on atoms that are not
-      !! bonded to each other, fail the second.
+      !! Both ends must be bonding orbitals, and each must name the other's
+      !! atom as what it is bonded to. A lone pair overlapping a bond fails the
+      !! first test; two bonding orbitals on atoms that are not bonded to each
+      !! other fail the second.
       type(quao_result_t), intent(in) :: quao
       type(quao_labels_t), intent(in) :: labels
       integer, intent(in) :: i, j
@@ -876,8 +835,8 @@ contains
       !! "O 2 PLP" or "C 1-Cl 3" -- one end of a delocalization, said in words
       !!
       !! A lone pair is named by its atom and kind; a bonding orbital by the
-      !! bond it belongs to, because that is what is accepting the density and
-      !! naming only the atom would lose which of its bonds.
+      !! bond it belongs to, since naming only the atom would lose which of its
+      !! bonds is accepting the density.
       type(quao_result_t), intent(in) :: quao
       type(quao_labels_t), intent(in) :: labels
       character(len=*), intent(in) :: element_symbols(:)
@@ -901,6 +860,10 @@ contains
 
    subroutine start_row(line, pos, first, second)
       !! Blank the line and lay down the two leading numbers
+      ! TODO(mqc): neither `start_row` nor `append_orbital` is called from
+      ! anywhere -- `print_quao_report` writes its rows with whole-line format
+      ! statements instead -- so both, and the five `WIDTH_*` parameters that
+      ! exist only for them, are dead.
       character(len=*), intent(out) :: line
       integer, intent(out) :: pos
       real(dp), intent(in) :: first, second
@@ -914,10 +877,9 @@ contains
                              with_occupation)
       !! One orbital's columns: index, occupation, atom, partners, type
       !!
-      !! The cursor is carried rather than recovered with `len_trim`, because a
-      !! fixed-width field that ends in blanks -- which the orbital type usually
-      !! does -- cannot be found again that way, and the columns after it drift
-      !! by however long the last label happened to be.
+      !! The cursor is carried rather than recovered with `len_trim`: a
+      !! fixed-width field ending in blanks cannot be found again that way, and
+      !! the columns after it would drift.
       character(len=*), intent(inout) :: line
       integer, intent(inout) :: pos
       type(quao_result_t), intent(in) :: quao
@@ -950,8 +912,7 @@ contains
       pos = pos + WIDTH_ATOM
 
       ! The atoms this orbital is bonded to. Overflows its column when an
-      ! orbital has three or more partners, which is rare and is better than
-      ! truncating the list.
+      ! orbital has three or more partners, rather than truncating the list.
       if (labels%partner_count(iorb) == 0) then
          partners = "(  --  )"
       else

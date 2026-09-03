@@ -1,8 +1,7 @@
 !! GMBE (Generalized Many-Body Expansion) utilities for overlapping fragments
 module mqc_gmbe_utils
-   !! Provides functions for computing fragment intersections, generating k-way
-   !! intersections, and enumerating PIE (Principle of Inclusion-Exclusion) terms
-   !! for GMBE calculations with overlapping molecular fragments.
+   !! Fragment intersections, k-way intersections, and the PIE (principle of
+   !! inclusion-exclusion) term list a GMBE expansion evaluates.
    use pic_types, only: default_int, int32, int64, dp
    use pic_logger, only: logger => global_logger, info_level
    use pic_io, only: to_char
@@ -26,22 +25,10 @@ contains
 
    function find_fragment_intersection(frag1_atoms, n1, frag2_atoms, n2, &
                                        intersection, n_intersect) result(has_intersection)
-      !! Find shared atoms between two fragments (for GMBE with overlapping fragments)
+      !! Atoms shared by two fragments, in fragment 1's order
       !!
-      !! This function identifies atoms that appear in both fragments, which is essential
-      !! for computing intersection-corrected energies in GMBE.
-      !!
-      !! Algorithm: O(n1 * n2) brute-force comparison
-      !! - Loop through all atoms in fragment 1
-      !! - For each atom, check if it appears in fragment 2
-      !! - Collect all shared atoms
-      !!
-      !! Returns:
-      !!   .true. if fragments share at least one atom, .false. otherwise
-      !!
-      !! Output:
-      !!   intersection - allocatable array containing shared atom indices
-      !!   n_intersect - number of shared atoms
+      !! `.true.` when they share at least one atom. `intersection` is left
+      !! unallocated when they share none, and `n_intersect` is zero. `O(n1*n2)`.
       integer, intent(in) :: frag1_atoms(:)  !! Atom indices in fragment 1 (0-indexed)
       integer, intent(in) :: n1              !! Number of atoms in fragment 1
       integer, intent(in) :: frag2_atoms(:)  !! Atom indices in fragment 2 (0-indexed)
@@ -86,17 +73,18 @@ contains
 
    subroutine generate_intersections(sys_geom, monomers, polymers, n_monomers, max_intersection_level, &
                                      intersections, intersection_sets, intersection_levels, n_intersections)
-      !! Generate all k-way intersections for k=2 to min(max_intersection_level, n_monomers)
+      !! All k-way intersections, k = 2 to min(`max_intersection_level`, `n_monomers`)
       !!
-      !! For a system with overlapping fragments, this computes k-way intersections
-      !! following the inclusion-exclusion principle for GMBE.
-      !! The max_intersection_level parameter controls the maximum depth to avoid combinatorial explosion.
-      !!
-      !! Algorithm:
-      !! - For each k from 2 to min(max_intersection_level, n_monomers):
-      !!   - Generate all C(n_monomers, k) combinations
-      !!   - For each combination, compute intersection of all k fragments
-      !!   - Store non-empty intersections with their level k
+      !! `max_intersection_level` caps the depth, which is what keeps the
+      !! enumeration from blowing up. The three output arrays are left
+      !! unallocated when there are no intersections.
+      ! TODO(mqc): `max_intersections = 2**n_monomers - n_monomers - 1` below
+      ! overflows a default integer at 31 monomers and asks for an impossible
+      ! allocation long before that. `generate_intersections_from_atom_lists`
+      ! sizes its scratch the same way.
+      ! TODO(mqc): `temp_intersection`, `current_intersection`, `temp_n_intersect`,
+      ! `current_n_intersect`, `has_intersection` and `i` are declared and never
+      ! used here.
       use mqc_physical_fragment, only: system_geometry_t
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: monomers(:)           !! Monomer indices
@@ -532,15 +520,12 @@ contains
 
    subroutine gmbe_enumerate_pie_terms(sys_geom, primaries, n_primaries, polymer_level, max_k_level, &
                                        pie_atom_sets, pie_coefficients, n_pie_terms, error, initial_max_terms)
-      !! Enumerate all unique intersections via DFS and accumulate PIE coefficients
-      !! This implements the GMBE(N) algorithm with inclusion-exclusion principle
+      !! The unique intersections of a set of primaries, with their PIE coefficients
       !!
-      !! Algorithm:
-      !! 1. For each primary i, start DFS with clique=[i]
-      !! 2. Recursively grow cliques by adding overlapping primaries
-      !! 3. For each clique of size k, compute intersection and add PIE coefficient:
-      !!    coefficient = (+1) if k odd, (-1) if k even
-      !! 4. Accumulate coefficients for each unique atom set
+      !! A clique of k overlapping primaries contributes `(-1)**(k+1)` to the
+      !! coefficient of its intersection, and coefficients accumulate per unique
+      !! atom set. `pie_atom_sets` and `pie_coefficients` are left unallocated
+      !! when there are no terms.
       use mqc_physical_fragment, only: system_geometry_t
 
       type(system_geometry_t), intent(in) :: sys_geom
@@ -818,7 +803,12 @@ contains
    end subroutine grow_pie_storage
 
    pure function atom_sets_equal(set1, set2, n_atoms) result(equal)
-      !! Check if two atom sets are equal (assuming sorted)
+      !! Whether two atom sets agree over their first `n_atoms` entries
+      !!
+      !! Both must be in the same order; the caller supplies the length.
+      ! TODO(mqc): a prefix comparison, not an equality test. A stored set
+      ! longer than `n_atoms` whose leading entries match reports equal, so
+      ! `dfs_pie_accumulate` can fold two different PIE terms into one.
       integer, intent(in) :: set1(:), set2(:)
       integer, intent(in) :: n_atoms
       logical :: equal

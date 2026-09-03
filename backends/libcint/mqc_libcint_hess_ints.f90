@@ -3,18 +3,9 @@ module mqc_libcint_hess_ints
    !! What an analytic Hessian needs from the integral library, and nothing else.
    !!
    !! **These come from libfint's native modules rather than through the
-   !! `libcint_fortran` compatibility layer.** That layer exists so the code
-   !! written against libcint's C ABI kept working when the backend swapped, and
-   !! it deliberately exposes only the surface that code used -- first
-   !! derivatives and below. Nothing here has that history to preserve, so it
-   !! calls the Fortran directly and gets the better interface for it: a
-   !! `cint_ws` workspace instead of a hand-sized cache, a logical result
-   !! instead of a return code, and no C optimizer lifecycle to leak.
-   !!
-   !! The consequence is that analytic Hessians are available only in a libfint
-   !! build, which is the default. A libcint build has no way to reach these
-   !! entry points without a `bind(C)` declaration per integral, and keeps the
-   !! finite-difference path instead.
+   !! `libcint_fortran` compatibility layer**, which exposes first derivatives
+   !! and below only. So analytic Hessians are available in a libfint build --
+   !! the default -- and a libcint build keeps the finite-difference path.
    !!
    !! **Both orderings of every derivative are needed, and they are different
    !! integrals.** `ipipovlp` puts both derivatives on the bra centre;
@@ -70,15 +61,10 @@ module mqc_libcint_hess_ints
       !! Estimated contribution below which a differentiated quartet is dropped.
       !!
       !! The same number the SCF gradient screens its differentiated quartets
-      !! at, and for the same reason it gives: the bound is an *estimate*, not
-      !! a rigorous Cauchy-Schwarz one, because differentiating brings a factor
-      !! of `2 alpha r` down from the exponential and the standard bound says
-      !! nothing about it. What stands in for it is `2 sqrt(alpha_max)` per
-      !! differentiation -- twice over here, since these are second
-      !! derivatives.
-      !!
-      !! Measured on a water dimer in cc-pVDZ against the same Hessian computed
-      !! with no screening at all; see the commit that added this for the table.
+      !! at. The bound is an *estimate*, not a rigorous Cauchy-Schwarz one:
+      !! differentiating brings a factor of `2 alpha r` down from the
+      !! exponential, and what stands in for it is `2 sqrt(alpha_max)` per
+      !! differentiation, twice over for a second derivative.
 
    integer, parameter :: N_COMPONENTS = 9
       !! Every one of these is a 3x3 Cartesian block per shell pair, laid out by
@@ -100,9 +86,8 @@ contains
 
       real(dp), allocatable :: buf(:)
       ! The native entry points take `atm` and `bas` flat, where the
-      ! compatibility layer took them shaped. Flattened once here rather than
-      ! per shell pair: it is a few hundred integers against a loop that runs
-      ! `nbas^2` times.
+      ! compatibility layer took them shaped. Flattened once rather than per
+      ! shell pair.
       integer, allocatable :: atm_flat(:), bas_flat(:)
       integer :: dims(0:3), shls(0:1)
       integer :: ish, jsh, di, dj, io, jo, i, j, comp, mx
@@ -111,9 +96,8 @@ contains
       if (error%has_error()) return
 
       ! **The dispatch below ends in a `case default`**, so an unrecognised
-      ! selector would silently return whichever integral that branch names --
-      ! a real integral, of the right shape, and the wrong one. Checked here
-      ! instead of letting the fallthrough decide.
+      ! selector would silently return a real integral of the right shape and
+      ! the wrong kind. Checked here instead.
       if (which < HESS_OVLP_II .or. which > HESS_NUC_IJ) then
          call error%set(ERROR_VALIDATION, "unknown one-electron second-derivative "// &
                         "selector; expected one of the HESS_* constants.")
@@ -125,11 +109,9 @@ contains
          mx = max(mx, shell_dim(mol%cartesian, ish - 1, mol%bas))
       end do
 
-      ! Flat and indexed by hand, for the reason the gradient driver gives: the
-      ! library packs a block with the *actual* shell dimensions, so a rank-3
-      ! buffer declared at the largest shell has the wrong strides for every
-      ! smaller one -- invisible in a basis of s functions and wrong everywhere
-      ! else.
+      ! Flat and indexed by hand: the library packs a block with the *actual*
+      ! shell dimensions, so a rank-3 buffer declared at the largest shell has
+      ! the wrong strides for every smaller one.
       allocate (buf(mx*mx*N_COMPONENTS))
       atm_flat = reshape(mol%atm, [size(mol%atm)])
       bas_flat = reshape(mol%bas, [size(mol%bas)])
@@ -222,16 +204,15 @@ contains
       !!
       !! The nuclear attraction second derivative splits three ways, and only
       !! one of the three is `int1e_ipipnuc`. Moving atom `A` moves the basis
-      !! functions centred on it -- that is the `ipipnuc`/`ipnucip` part, which
-      !! carries the sum over **all** nuclei and their charges. It also moves
-      !! the nucleus itself, and the electrons feel that through the origin of
+      !! functions centred on it -- the `ipipnuc`/`ipnucip` part, which carries
+      !! the sum over **all** nuclei and their charges -- and it moves the
+      !! nucleus itself, which the electrons feel through the origin of
       !! `1/|r-R_A|` alone. Those cross and diagonal terms need the operator
       !! pinned to one atom at a time, which is what `rinv` is for.
       !!
-      !! Returned **unscaled**, exactly as `iprinv_deriv_at` returns the first
+      !! Returned **unscaled**, as `iprinv_deriv_at` returns the first
       !! derivative: the charge and the sign of the electron-nucleus attraction
-      !! are the caller's, because the caller is also the one that knows which
-      !! of the three terms it is assembling.
+      !! are the caller's.
       !!
       !! `env` is copied so the origin can be moved without touching a molecule
       !! that other threads share.
@@ -318,17 +299,14 @@ contains
       !! One second-derivative two-electron integral over the whole basis
       !!
       !! Returns `(n_ao, n_ao, n_ao, n_ao, 9)`, which is `n_ao^4` nine times
-      !! over and is why this exists as a first correct implementation rather
-      !! than a usable one. The Hessian contracts these against densities the
-      !! moment they are built, so nothing needs the whole array at once; a
-      !! shell-driven contraction is the obvious next step and would change
-      !! nothing above it.
+      !! over. `hess_2e_contract` is the same integrals contracted as they are
+      !! computed, and is what a Hessian of any size uses.
       !!
       !! **The three selectors are three genuinely different integrals**, not
       !! one integral indexed three ways. `ipip1` puts both derivatives on the
       !! first centre, `ipvip1` puts one each on the bra pair, and `ip1ip2`
-      !! puts one on the bra and one on the ket. Translational invariance is
-      !! what relates them, and it relates them only if all three are present.
+      !! puts one on the bra and one on the ket. Translational invariance
+      !! relates them only if all three are present.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: which
       real(dp), allocatable, intent(out) :: eri(:, :, :, :, :)
@@ -343,9 +321,8 @@ contains
 
       if (error%has_error()) return
 
-      ! Same reason as the one-electron driver: the dispatch has a
-      ! `case default` and an unrecognised selector would come back as a
-      ! plausible wrong integral rather than as an error.
+      ! As in the one-electron driver: the dispatch has a `case default`, so an
+      ! unrecognised selector would come back as a plausible wrong integral.
       if (which < HESS_ERI_II .or. which > HESS_ERI_IK) then
          call error%set(ERROR_VALIDATION, "unknown two-electron second-derivative "// &
                         "selector; expected one of the HESS_ERI_* constants.")
@@ -448,13 +425,10 @@ contains
       !! `int2e_ip1` over the whole basis, as `(n_ao, n_ao, n_ao, n_ao, 3)`
       !!
       !! The first derivative with the nabla on the bra's first index. The
-      !! gradient contracts this on the fly and never materialises it, which is
-      !! the right thing there; the Hessian's per-atom perturbation needs the
-      !! same integrals summed over four different index positions per atom, so
-      !! having the array is what makes that assembly readable.
-      !!
-      !! Same `n_ao^4` caveat as the second derivatives next door: correct
-      !! first, contracted on the fly once it matters.
+      !! gradient contracts this on the fly and never materialises it; the
+      !! Hessian's per-atom perturbation needs the same integrals summed over
+      !! four index positions per atom, which the array makes readable at the
+      !! cost of `n_ao^4`. `h1_contract` is the contracted form.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), allocatable, intent(out) :: eri(:, :, :, :, :)
       type(error_t), intent(inout) :: error
@@ -531,9 +505,7 @@ contains
       !! Same numbers `hess_2e_block` produces and never the same array. Each
       !! shell quartet is evaluated into a buffer, deposited into the Hessian,
       !! and forgotten, so the memory is one quartet rather than `nao^4` times
-      !! nine times three. That is the difference between a routine that works
-      !! on water and one that works: at 24 basis functions the arrays are
-      !! 72 MB, at 50 they are 1.3 GB, and the growth is what it looks like.
+      !! nine times three.
       !!
       !! **The deposit rules are the same three the assembly derives**, with
       !! the same 4, 4 and 8 from folding the sixteen index pairs against a
@@ -598,9 +570,8 @@ contains
          end do
       end do
 
-      ! Hoisted out of the quartet loop: `shell_dim` reads `bas` and the
-      ! offsets walk it, and both are the same answer every one of `nbas^4`
-      ! times round.
+      ! Hoisted out of the quartet loop: both are the same answer every one of
+      ! `nbas^4` times round.
       allocate (sh_dim(mol%nbas), sh_off(mol%nbas))
       mx = 0
       do ish = 1, mol%nbas
@@ -615,18 +586,15 @@ contains
 
       ! ---- what a quartet can contribute, before computing it ---------------
       !
-      ! Two factors, and only one of them is rigorous. `bounds` is the Schwarz
-      ! bound on the undifferentiated quartet, which is exact. `sa` stands in
-      ! for what differentiation does: it brings a factor of `2 alpha r` down
-      ! from the exponential, and with `r` of order `1/sqrt(alpha)` that is
-      ! about `2 sqrt(alpha_max)` per derivative -- an estimate, taken twice
-      ! here because these are second derivatives. That is why the tolerance
-      ! carries margin rather than being set at the accuracy wanted.
+      ! Two factors, and only one of them is rigorous. `bounds` is the exact
+      ! Schwarz bound on the undifferentiated quartet. `sa` stands in for what
+      ! differentiation does -- a factor of `2 alpha r` from the exponential,
+      ! about `2 sqrt(alpha_max)` per derivative and taken twice here -- which
+      ! is why `HESS_SCREEN_TOL` carries margin.
       !
-      ! `dsh` bounds the contraction weight. A quartet whose integrals are
+      ! `dsh` bounds the contraction weight: a quartet whose integrals are
       ! large contributes nothing if every density element it multiplies is
-      ! negligible, and by the time a Hessian runs the density is converged and
-      ! most of them are.
+      ! negligible.
       tol = HESS_SCREEN_TOL
       if (present(screen_tol)) tol = screen_tol
       call schwarz_bounds(mol, bounds, error)
@@ -644,8 +612,8 @@ contains
       end do
 
       ! One accumulator per thread, merged once at the end. The Hessian is
-      ! `9*natm^2` doubles -- small enough that a private copy costs nothing and
-      ! an atomic update per quartet would cost everything.
+      ! `9*natm^2` doubles, so a private copy costs nothing where an atomic
+      ! update per quartet would cost everything.
       !$omp parallel default(none) &
       !$omp shared(kx, jx, env_use, mol, density, hess, owner, sh_dim, sh_off, atm_flat, bas_flat, &
       !$omp        mx, natm, n_pairs, error, bounds, dsh, sa, tol) &
@@ -671,21 +639,17 @@ contains
             ko = sh_off(ksh)
             ! **Only the ket pair is restricted, and only two of the three
             ! integrals get to use it.** `ipip1` and `ipvip1` leave the ket
-            ! untouched, so `(kl)` and `(lk)` are the same integral; the weight
-            ! is the same too, since the contraction weight is symmetric under
-            ! that swap, and so is the atom pair each deposits into. Those two
-            ! orderings therefore contribute identically and one call covers
-            ! both.
+            ! untouched, so `(kl)` and `(lk)` are the same integral, carry the
+            ! same weight and deposit into the same atom pair; one call covers
+            ! both orderings.
             !
-            ! `ip1ip2` does not get that. Its second derivative sits on the
+            ! `ip1ip2` does not get that: its second derivative sits on the
             ! *first* ket index, so swapping `k` and `l` moves the derivative
-            ! to a different atom -- a different integral depositing into a
-            ! different pair. Both orderings are computed.
+            ! to a different atom. Both orderings are computed.
             !
-            ! Net: four calls per restricted quartet where the full loop made
-            ! six, and no permutation of the bra is available at all, because
-            ! `ipip1` distinguishes its two bra indices and `ip1ip2`
-            ! distinguishes bra from ket.
+            ! No permutation of the bra is available at all, `ipip1`
+            ! distinguishing its two bra indices and `ip1ip2` distinguishing
+            ! bra from ket.
             do lsh = 1, ksh
                dl = sh_dim(lsh)
                lo = sh_off(lsh)
@@ -778,13 +742,11 @@ contains
       !!
       !! What `hess_2e_contract` is to a separable density, this is to one that
       !! is not: the MP2 Hessian's effective two-particle density has bra-ket
-      !! symmetry and nothing else, so the eightfold folding that collapses the
-      !! sixteen derivative placements to weights of 4, 4 and 8 does not apply.
-      !! The general fold does, and it is the same derivation run without the
-      !! symmetry: reindex each of the sixteen ordered placements so its
-      !! derivative sits on the slot the integral differentiates, and the loop
-      !! over every quartet in every order turns each into a weight built from
-      !! the density's permutation orbit --
+      !! symmetry and nothing else, so the eightfold folding to weights of 4, 4
+      !! and 8 does not apply. The general fold reindexes each of the sixteen
+      !! ordered placements so its derivative sits on the slot the integral
+      !! differentiates, and the loop over every quartet in every order turns
+      !! each into a weight built from the density's permutation orbit --
       !!
       !!     w4 = G(m,n,l,s) + G(n,m,l,s) + G(l,s,m,n) + G(l,s,n,m)
       !!     w8 = w4 + G(m,n,s,l) + G(n,m,s,l) + G(s,l,m,n) + G(s,l,n,m)
@@ -794,11 +756,9 @@ contains
       !! weights collapse to `4 G` and `8 G`, which is the check that this is
       !! `hess_2e_contract`'s rule and not a fourth one.
       !!
-      !! **The SCF reference rides the same sweep.** These integrals are the
-      !! dominant cost of a correlated Hessian and the reference needs the same
-      !! ones against its separable density, so both densities deposit from
-      !! each buffer -- the reference with the closed-form 4/4/8 weights --
-      !! and the integrals are generated once. `hess_corr` and `hess_ref` are
+      !! **The SCF reference rides the same sweep.** Both densities deposit
+      !! from each buffer -- the reference with the closed-form 4/4/8 weights
+      !! -- so the integrals are generated once. `hess_corr` and `hess_ref` are
       !! accumulated into, matching `hess_2e_contract`.
       !!
       !! No ket restriction: `hess_2e_contract` halves its ket loop because a
@@ -806,10 +766,8 @@ contains
       !! general density grants no such thing.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: gamma(:, :, :, :)
-         !! Chemist ordered `(mn|ls)` slot layout, bra-ket symmetric -- the
-         !! effective two-particle density as `build_effective_2pdm_ao` hands
-         !! it over. Bra-ket symmetry is assumed by nothing below; it is
-         !! simply what the caller has.
+         !! Chemist ordered `(mn|ls)` slot layout, as `build_effective_2pdm_ao`
+         !! hands it over. Nothing below assumes its bra-ket symmetry.
       real(dp), intent(in) :: dref(:, :)
          !! The reference's separable AO density, factor of two included.
       integer, intent(in) :: owner(:)   !! Owning atom per AO, 1-based
@@ -855,11 +813,9 @@ contains
       n_pairs = mol%nbas*mol%nbas
 
       ! Screened as `hess_2e_contract` screens, with the weight bound adapted:
-      ! the reference's Coulomb-and-exchange bound is the same, and the
-      ! general density's orbit weights are bounded by per-shell-pair maxima
-      ! of `|gamma|` over its leading pair -- each orbit term places one of
-      ! the quartet's pairs in the leading slots, so four block maxima cover
-      ! `w4` and twice that covers `w8`.
+      ! the general density's orbit weights are bounded by per-shell-pair
+      ! maxima of `|gamma|` over its leading pair, four block maxima covering
+      ! `w4` and twice that covering `w8`.
       tol = HESS_SCREEN_TOL
       if (present(screen_tol)) tol = screen_tol
       kx = 1.0_dp
@@ -985,21 +941,20 @@ contains
       !! The skeleton derivative Fock for **every** atom, in one pass
       !!
       !! `make_h1_atom` builds one atom's `dF/dR` from a stored `int2e_ip1`
-      !! array, which costs `nao^4` of memory and another `nao^4` of work per
-      !! atom. This walks the shell quartets once and deposits into whichever
-      !! atom each quartet's differentiated index belongs to, so the `natm`
-      !! disappears from the work and the array disappears entirely.
+      !! array, at `nao^4` of memory and another `nao^4` of work per atom. This
+      !! walks the shell quartets once and deposits into whichever atom each
+      !! quartet's differentiated index belongs to, so the `natm` leaves the
+      !! work and the array is not needed.
       !!
-      !! **The eight terms become seven deposits, and that is not a lost one.**
-      !! `make_h1_atom` names each term by permuting an index into first place
-      !! and indexing the stored array accordingly. Here the permuted orderings
-      !! are *other quartets*, which the loop visits anyway, so each term is
-      !! rewritten in the one ordering the buffer has. Two of the Coulomb terms
-      !! land on the same element with weights `d(i,j)` and `d(j,i)`, which are
-      !! equal, so they are written once with a two.
+      !! **The eight terms become seven deposits, and none is lost.** The
+      !! permuted orderings `make_h1_atom` indexes for are *other quartets*,
+      !! which this loop visits anyway, so each term is rewritten in the one
+      !! ordering the buffer has. Two of the Coulomb terms land on the same
+      !! element with the equal weights `d(i,j)` and `d(j,i)`, so they are
+      !! written once with a two.
       !!
-      !! Checked against `make_h1_atom` element by element in the test suite --
-      !! that routine stays as the readable statement of what this computes.
+      !! Checked against `make_h1_atom` element by element in the test suite,
+      !! that routine staying as the readable statement of what this computes.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
       real(dp), allocatable, intent(out) :: h1(:, :, :, :)   !! (nao, nao, 3, natm)
@@ -1052,15 +1007,13 @@ contains
       end do
 
       ! **The fused-sp view where the molecule has one.** `int2e_ip1` is one of
-      ! the two drivers libfint carries an L shell through -- the same table
-      ! the gradient's two-electron derivative takes, for the same
-      ! 6-31G-shaped reason. `hess_2e_contract` above must *not* do this:
-      ! `ipip1`, `ipvip1` and `ip1ip2` behave as though L shells did not exist
-      ! and would read a fused entry as a p shell over the s coefficients --
-      ! not an error, a silently wrong integral.
+      ! the two drivers libfint carries an L shell through. `hess_2e_contract`
+      ! above must *not* do this: `ipip1`, `ipvip1` and `ip1ip2` behave as
+      ! though L shells did not exist and would read a fused entry as a p shell
+      ! over the s coefficients -- not an error, a silently wrong integral.
       !
       ! A fused shell's AO order is its split shells' order, so `owner` and the
-      ! density are indexed exactly as before and the deposits need no map.
+      ! density are indexed as before and the deposits need no map.
       call eri_shell_table(mol, tab)
       mx = tab%block_max
 
@@ -1068,9 +1021,7 @@ contains
       ! disturbing the table every other caller shares. **From `tab%env` and
       ! not `mol%env`**: this loop walks the fused-sp view, whose `bas` points
       ! into its own `env`, so a copy of the molecule's is the wrong array to
-      ! hand the integral. It was also made before `tab` existed and then never
-      ! passed to a call, so the omega was set on an array nothing read and the
-      ! long-range pass quietly returned full-range integrals.
+      ! hand the integral.
       allocate (env_use(0:size(tab%env) - 1), source=tab%env)
       if (present(omega)) env_use(LIBCINT_PTR_RANGE_OMEGA) = omega
 
@@ -1102,11 +1053,10 @@ contains
       allocate (h1(nao, nao, 3, natm))
       h1 = 0.0_dp
 
-      ! A private accumulator per thread is `nao^2 * 3 * natm` doubles, which
-      ! is the same size as the answer. That is affordable at the sizes this
-      ! runs at and is the thing to revisit first if it stops being: the
-      ! alternative is an atomic per deposit, and there are seven per buffer
-      ! element.
+      ! A private accumulator per thread is `nao^2 * 3 * natm` doubles, the
+      ! same size as the answer. The first thing to revisit if the memory stops
+      ! being affordable; the alternative is an atomic per deposit, and there
+      ! are seven per buffer element.
       !$omp parallel default(none) &
       !$omp shared(kx, jx, env_use, mol, density, h1, owner, tab, atm_flat, bas_flat, &
       !$omp        mx, nao, natm, n_pairs, bq, dsh, sa, tol) &

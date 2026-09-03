@@ -43,10 +43,10 @@ module test_mqc_mp2_hessian_assembly
 
    public :: collect_mqc_mp2_hessian_assembly_tests
 
-   !> pycc's pinned case: water/6-31G, bohr, frame pinned -- the geometry the
-   !> whole ladder gates on, and its asymmetric companion. The asymmetric one
-   !> is not decoration: pycc record a CCSD ket-swap bug the symmetric
-   !> geometry masked, and an SCF bug visible only under C2v.
+   !! pycc's pinned case: water/6-31G, bohr, frame pinned -- the geometry the
+   !! whole ladder gates on, and its asymmetric companion. The asymmetric one
+   !! is not decoration: pycc record a CCSD ket-swap bug the symmetric
+   !! geometry masked, and an SCF bug visible only under C2v.
    integer, parameter :: WATER_Z(3) = [8, 1, 1]
    character(len=2), parameter :: WATER_SYM(3) = ["O ", "H ", "H "]
    real(dp), parameter :: WATER(3, 3) = reshape( &
@@ -73,7 +73,7 @@ contains
                   ]
    end subroutine collect_mqc_mp2_hessian_assembly_tests
 
-   !> One SCF and the full assembly at a given geometry.
+   !! One SCF and the full assembly at a given geometry.
    subroutine assembly_at(coords, mol, scf, hess_corr, hess_ref, err)
       real(dp), intent(in) :: coords(:, :)
       type(libcint_molecule_t), intent(out) :: mol
@@ -92,13 +92,13 @@ contains
                                    hess_corr, hess_ref, err)
    end subroutine assembly_at
 
-   !> The guard: the reference block the assembly produces, completed the way
-   !> its caller completes it (nuclear repulsion plus the delegated CPHF
-   !> response), equals standalone `rhf_hessian`. Unit 1.3 measured 2.5e-14
-   !> for the bare sweep; this re-earns it through the full assembly, where a
-   !> quiet edit to the duplicated deposits would otherwise surface only as an
-   !> unattributable total-Hessian error. 1e-13 and not tighter because the
-   !> two two-electron walks sum in different orders.
+   !! The guard: the reference block the assembly produces, completed the way
+   !! its caller completes it (nuclear repulsion plus the delegated CPHF
+   !! response), equals standalone `rhf_hessian`. Unit 1.3 measured 2.5e-14
+   !! for the bare sweep; this re-earns it through the full assembly, where a
+   !! quiet edit to the duplicated deposits would otherwise surface only as an
+   !! unattributable total-Hessian error. 1e-13 and not tighter because the
+   !! two two-electron walks sum in different orders.
    subroutine reference_matches(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -134,13 +134,13 @@ contains
       call mol%destroy()
    end subroutine reference_matches
 
-   !> Gate 1.9c at both geometries: `H = H^T` element for element, and every
-   !> Cartesian direction's sum over either atom index vanishing. Neither is
-   !> imposed anywhere -- the (X, Y) and (Y, X) elements assemble the response
-   !> from different perturbations' solves, and the sum rule runs through
-   !> every group including both Z-vector solves. Measured 6.0e-15 / 3.2e-15
-   !> at one thread; the tolerance leaves room for integral rounding, not for
-   !> a misplaced term.
+   !! Gate 1.9c at both geometries: `H = H^T` element for element, and every
+   !! Cartesian direction's sum over either atom index vanishing. Neither is
+   !! imposed anywhere -- the (X, Y) and (Y, X) elements assemble the response
+   !! from different perturbations' solves, and the sum rule runs through
+   !! every group including both Z-vector solves. Measured 6.0e-15 / 3.2e-15
+   !! at one thread; the tolerance leaves room for integral rounding, not for
+   !! a misplaced term.
    subroutine symmetric_and_translates(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -206,15 +206,15 @@ contains
                  "the assembly did not evaluate: "//err%get_message())
    end subroutine symmetric_and_translates
 
-   !> The frozen-core assembly earns the same symmetries the all-electron
-   !> one does: `H = H^T` across the mixed second derivatives, and rigid
-   !> translation summing every atom of a Cartesian pair to nothing. Weak
-   !> alone -- the cross-code element-wise gates (pycc's frozen-core
-   !> `H_correlation`, both geometries, ~6e-12) ran when Phase 2 landed and
-   !> live in the commit messages; the finite-difference tie-out is
-   !> `test_mqc_mp2_hessian_fd`'s frozen column. What this pins in-tree is
-   !> that neither symmetry drifts, on the same two geometries the
-   !> all-electron test walks.
+   !! The frozen-core assembly earns the same symmetries the all-electron
+   !! one does: `H = H^T` across the mixed second derivatives, and rigid
+   !! translation summing every atom of a Cartesian pair to nothing. Weak
+   !! alone -- the cross-code element-wise gates (pycc's frozen-core
+   !! `H_correlation`, both geometries, ~6e-12) ran when Phase 2 landed and
+   !! live in the commit messages; the finite-difference tie-out is
+   !! `test_mqc_mp2_hessian_fd`'s frozen column. What this pins in-tree is
+   !! that neither symmetry drifts, on the same two geometries the
+   !! all-electron test walks.
    subroutine frozen_core_symmetric(error)
       type(error_type), allocatable, intent(out) :: error
 

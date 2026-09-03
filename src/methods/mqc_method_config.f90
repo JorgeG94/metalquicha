@@ -1,8 +1,9 @@
 !! Unified configuration type for quantum chemistry method creation
 module mqc_method_config
-   !! Provides configuration types for all quantum chemistry methods.
-   !! Uses composition pattern: method_config_t contains nested config types
-   !! for each method family. The factory reads from the appropriate nested type.
+   !! Configuration types for every quantum chemistry method.
+   !!
+   !! `method_config_t` holds one nested config per method family, and the
+   !! factory reads from whichever one the method type names.
    use pic_types, only: int32, dp
    use mqc_program_limits, only: MAX_ORBITAL_LABEL_LEN
    use mqc_scf_types, only: guess_step_t, scf_numerics_t, deltascf_options_t
@@ -28,9 +29,7 @@ module mqc_method_config
    type :: scf_config_t
       !! Shared SCF settings for HF and DFT methods
       logical :: cartesian = .false.
-         !! `model.cartesian`; see `mqc_config_t`. Carried here rather than
-         !! beside the basis name because it reaches the backend by the same
-         !! route the rest of the SCF settings do.
+         !! `model.cartesian`; see `mqc_config_t`.
       integer :: max_iter = 100
          !! Maximum SCF iterations
       real(dp) :: energy_convergence = 1.0e-8_dp
@@ -41,11 +40,10 @@ module mqc_method_config
          !! `keywords.scf.gradient_tolerance` -- pyscf's `conv_tol_grad`.
          !!
          !! Zero means "not set", and the SCF then derives `sqrt(tolerance)`,
-         !! which is pyscf's own default. Set it when what you want from the
-         !! run is the *density* rather than the energy: the energy's error
-         !! goes as the commutator squared, the density's only as the
-         !! commutator, so the derived value bounds the second about three
-         !! orders more loosely than the first.
+         !! pyscf's own default. Set it when what you want from the run is the
+         !! *density* rather than the energy: the energy's error goes as the
+         !! commutator squared and the density's only as the commutator, so the
+         !! derived value bounds the second far more loosely than the first.
       real(dp) :: linear_dependence = 0.0_dp
          !! `keywords.scf.linear_dependence_threshold`. Overlap eigenvalues at
          !! or below this are dropped as linearly dependent. Raise it to shed
@@ -53,20 +51,12 @@ module mqc_method_config
          !! discard.
          !!
          !! Zero means "not set", and the orthogonaliser then uses
-         !! `LINEAR_DEPENDENCE_TOL`. A sentinel rather than spelling 1e-7
-         !! again here: this module would otherwise carry a second copy of a
-         !! constant that already exists in `mqc_scf_common`, which is the
-         !! arrangement that let the two backends drift apart the last time
-         !! -- see the note on `LINEAR_DEPENDENCE_TOL` itself. Zero is not a
-         !! meaningful cutoff on its own, so nothing is lost by spending it.
+         !! `LINEAR_DEPENDENCE_TOL` in `mqc_scf_common`. A sentinel rather than
+         !! a second copy of that constant.
       logical :: max_iter_set = .false.
-         !! Whether the deck named `keywords.scf.maxiter`.
-         !!
-         !! For the same reason the two convergence flags below exist: a path
-         !! whose own default differs from the shared one needs to tell "the
-         !! deck asked for 100" from "the deck said nothing". MakeFP is that
-         !! path -- it runs 200 iterations by default, and cutting a silent
-         !! deck back to 100 would be a regression dressed as a fix.
+         !! Whether the deck named `keywords.scf.maxiter`. A path whose own
+         !! default differs from the shared one -- MAKEFP, at 200 iterations --
+         !! needs to tell "the deck asked for 100" from "the deck said nothing".
       logical :: energy_convergence_set = .false.
       logical :: density_convergence_set = .false.
          !! Whether the deck named these, as opposed to inheriting them. A
@@ -87,28 +77,24 @@ module mqc_method_config
          !! Build each iteration's Fock matrix from the density *change* since
          !! the last full build, rather than from the density.
          !!
-         !! On by default: it is exact to the convergence threshold and several
-         !! times cheaper late in an SCF. False forces a full build every
-         !! iteration, which is what to reach for when an SCF misbehaves. The
-         !! incremental path accumulates a correction, so it is the first thing
-         !! to rule out when a run stalls or wanders -- and rebuilding the binary
-         !! to test that is not a debugging step anyone should have to take. It
-         !! is also the honest setting for timing a Fock build, since an
-         !! incremental one gets cheaper with every iteration.
+         !! On by default: exact to the convergence threshold and several times
+         !! cheaper late in an SCF. False forces a full build every iteration,
+         !! which is what to reach for when an SCF stalls or wanders, since the
+         !! incremental path accumulates a correction. It is also the honest
+         !! setting for timing a Fock build.
       character(len=32) :: accelerator = "diis"
-      character(len=32) :: convergence_metric = "standard"
          !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
          !! 'ediis'. The energy-based pair runs only while the error is large
-         !! and hands over to DIIS, so naming one asks for a different opening,
-         !! not a different endgame.
+         !! and hands over to DIIS below `ACCEL_SWITCH`, so naming one chooses a
+         !! different opening, not a different endgame.
+      character(len=32) :: convergence_metric = "standard"
+         !! `keywords.scf.convergence_metric`; see `mqc_scf_convergence`.
       character(len=32) :: guess = "auto"
          !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection',
          !! or 'auto'
          !!
-         !! 'auto' means the backend picks, because the best starting point
-         !! is a property of the backend rather than of the request: the CPU
-         !! path resolves it to 'sad', and cuEST to 'gwh', each having
-         !! measured its own. An explicit spelling always wins over both.
+         !! 'auto' lets the backend pick: the CPU path resolves it to 'sad'
+         !! and cuEST to 'gwh'. An explicit spelling wins over both.
       type(guess_step_t), allocatable :: guess_steps(:)
          !! The basis ladder for 'basis_set_projection', one entry per
          !! preliminary SCF in order. The target basis is the model's and is not
@@ -120,29 +106,25 @@ module mqc_method_config
          !! Needed for broken-symmetry singlets, and the cleanest check that
          !! the unrestricted code reduces to the restricted result.
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
+         !! Auxiliary (JKFIT) basis for the density-fitted J and K. Required,
+         !! not optional, for the cuEST backend, which exposes no conventional
+         !! four-index ERI path and so always fits.
       logical :: aux_basis_named = .false.
          !! Whether a deck actually asked for the set above, as opposed to
          !! inheriting the default.
          !!
-         !! The default is not optional -- cuEST is always density fitted and an
-         !! unset auxiliary basis fails there at run time -- which means
-         !! `len_trim(aux_basis_set) > 0` is true whether or not anyone asked,
-         !! and it cannot be used to decide anything. A double hybrid's
-         !! perturbative term did use it that way, and so fitted itself with a
-         !! JKFIT set nobody named: 3e-9 on water/STO-3G, and against exactly the
-         !! kind of auxiliary `correlation_aux_basis` warns about fitting an
-         !! (ia|jb) block with.
-         !! Auxiliary (JKFIT) basis for the density-fitted J and K.
-         !! Required, not optional, for the cuEST backend: cuEST exposes no
-         !! conventional four-index ERI path, so J/K are always fitted.
+         !! **`len_trim(aux_basis_set) > 0` cannot answer that**, because the
+         !! default is not optional: it is true whether or not anyone asked. A
+         !! double hybrid's perturbative term used it that way and so fitted
+         !! itself with a JKFIT set nobody named -- exactly the kind of
+         !! auxiliary `correlation_aux_basis` warns against for an (ia|jb) block.
       logical :: density_fitting = .false.
          !! Fit J and K against `aux_basis_set` on the CPU backend.
          !!
          !! Off by default, and only the CPU backend reads it: cuEST has no
-         !! four-index path, so it fits whether or not this is set. libcint has
-         !! both, so which one runs has to be asked for rather than inferred
-         !! from an auxiliary basis being present -- that name carries a
-         !! default, so inferring would mean every calculation silently fitted.
+         !! four-index path and fits whether or not this is set. libcint has
+         !! both, and `aux_basis_set` carries a default, so which one runs has
+         !! to be asked for rather than inferred from an auxiliary being present.
    end type scf_config_t
 
    !============================================================================
@@ -151,19 +133,14 @@ module mqc_method_config
    type :: efp_config_t
       !! What `keywords.efp` carries into a MAKEFP run
       !!
-      !! Its own group rather than more keys under `scf` because none of it is an
-      !! SCF setting: the SCF a potential runs is already configured by
-      !! `keywords.scf.tolerance` and `keywords.scf.density_tolerance`, which reach
-      !! it and must keep meaning only that. What is here belongs to the stages
-      !! after the SCF -- the response solve and the screening fit -- and those are
-      !! where a MAKEFP run spends its time.
+      !! None of it is an SCF setting: the SCF a potential runs is configured by
+      !! `keywords.scf`, and what is here belongs to the stages after it -- the
+      !! response solve and the screening fit.
       real(dp) :: dynamic_tolerance = DEFAULT_DYNAMIC_TOL
-         !! Residual target for the frequency-dependent response solve.
-         !!
-         !! The one setting in this group that changes the numbers written rather
-         !! than the route taken to them. The dynamic polarizabilities, and every
-         !! dispersion energy computed from them downstream, are converged to
-         !! whatever this says and no further.
+         !! Residual target for the frequency-dependent response solve. The one
+         !! setting in this group that changes the numbers written: the dynamic
+         !! polarizabilities, and every dispersion energy computed from them
+         !! downstream, are converged to this and no further.
       integer :: dynamic_maxiter = DEFAULT_DYNAMIC_MAXITER
          !! Iterations that solve gets per system before it declines to converge.
       integer :: response_batch = DEFAULT_RESPONSE_BATCH
@@ -176,11 +153,8 @@ module mqc_method_config
          !!
          !! Named after `allow_crap_scf` and meant as literally: the potential
          !! that comes out is wrong, and how wrong is not bounded by anything.
-         !! It exists because profiling wants a run that reaches every stage
-         !! without converging any of them -- `dynamic_maxiter: 1` with this on
-         !! is one pass through the whole pipeline -- and because a solve that
-         !! stalls on the last few systems is worth seeing the rest of rather
-         !! than losing entirely.
+         !! `dynamic_maxiter: 1` with this on is one pass through the whole
+         !! pipeline, which is what profiling wants.
       integer :: response = EFP_RESPONSE_AUTO
          !! Build the response operator, never build it, or decide on size.
       real(dp) :: vdw_scale = DEFAULT_VDW_SCALE
@@ -223,8 +197,7 @@ module mqc_method_config
    ! DFT Configuration (uses scf_config_t for SCF settings)
    !============================================================================
    type :: dft_config_t
-      !! Configuration for Kohn-Sham DFT method
-      !! Note: SCF settings (convergence, DIIS) come from scf_config_t
+      !! Configuration for Kohn-Sham DFT. SCF settings come from `scf_config_t`.
       character(len=32) :: functional = "b3lyp"
          !! XC functional: "lda", "pbe", "b3lyp", "m06-2x", etc.
 
@@ -232,15 +205,16 @@ module mqc_method_config
       character(len=16) :: grid_type = "medium"
          !! Grid quality: "coarse", "medium", "fine", "ultrafine"
       integer :: grid_level = 3
+         !! Standard grid tables, 0 to 9. Three is the usual production default.
       integer :: nlc_grid_level = -1
          !! `keywords.dft.nlc_grid_level`, the quadrature VV10's double integral
          !! uses. Separate from `grid_level` because the non-local term costs
-         !! the *product* of two grid sizes while everything else costs one, so
-         !! the level that is right for exchange is an order of magnitude too
-         !! expensive here. Negative means the backend's own default.
+         !! the *product* of two grid sizes while everything else costs one.
+         !! Negative means the backend's own default.
       real(dp) :: screening_tolerance = 1.0e-12_dp
+         !! AO value below which a shell is dropped from a grid block.
       integer :: block_size = -1
-         !! Standard grid tables, 0 to 9. Three is the usual production default.
+         !! Grid points per block; -1 keeps the backend default.
       integer :: radial_points = 75
          !! Radial grid points per atom
       integer :: angular_points = 302
@@ -275,10 +249,10 @@ module mqc_method_config
          !! Which continuum model the surface charges solve: "cpcm"
          !! (conductor-like, scale factor (eps-1)/eps) or "iefpcm" (the integral
          !! equation formalism, scale (eps-1)/(eps+1) with the D-matrix terms).
-         !! The two are different models with different energies -- water differs
-         !! by ~1% of the solvation energy -- so the choice is named, not
-         !! defaulted per backend. Only the CPU path reads it; cuEST's solver is
-         !! fixed and refuses "iefpcm" rather than substituting.
+         !! Two different models with different energies, so the choice is
+         !! named, not defaulted per backend. Only the CPU path reads it;
+         !! cuEST's solver is fixed and refuses "iefpcm" rather than
+         !! substituting.
       real(dp) :: dielectric = -1.0_dp
          !! Solvent dielectric. No solvent-name table on this path, on purpose:
          !! see `mqc_config_types`.
@@ -302,10 +276,9 @@ module mqc_method_config
       character(len=:), allocatable :: fukui_guess
          !! "neutral" (default) or "independent". See `mqc_config_t`.
       type(deltascf_options_t) :: fukui_scf
-         !! How the ion SCFs converge. Already resolved against
-         !! `keywords.scf` by the time it reaches here -- the reader seeds it
-         !! and the deck overwrites what it names -- so a consumer reads these
-         !! fields directly and never tests a sentinel.
+         !! How the ion SCFs converge. Already resolved against `keywords.scf`
+         !! by the time it reaches here, so a consumer reads these fields
+         !! directly and never tests a sentinel.
       character(len=:), allocatable :: charges_scheme
          !! Allocated when `properties.charges` asked for partial charges;
          !! "mulliken" or "chelpg". Unallocated means no charges, which is why
@@ -321,18 +294,6 @@ module mqc_method_config
    type, extends(scf_numerics_t) :: scf_options_t
       !! What every self-consistent-field method carries, defined once
       !!
-      !! **This exists because the copies drifted and one of them cost a bug.**
-      !! `hf_options_t` and `dft_options_t` each held these fields by hand,
-      !! and each had to be updated in three places -- the type, its
-      !! `configure_*` in the factory, and the `settings%... = options%...`
-      !! block in the method. Miss the third and a keyword is read from the
-      !! deck, passes the schema, reaches the config and is silently dropped:
-      !! that is what happened to `allow_crap_scf` on the Kohn-Sham path,
-      !! which was honoured for Hartree-Fock and ignored for DFT. The two
-      !! copies had also drifted in spelling -- `conv_tol` against
-      !! `energy_tol`, `density_fitting` against `use_density_fitting` -- for
-      !! fields meant to mean the same thing.
-      !!
       !! **The convergence knobs live one level down, in `scf_numerics_t`.**
       !! `max_iter`, the tolerances, the level shift, DIIS and the accelerator
       !! are inherited from there rather than declared here, so that a second
@@ -342,18 +303,15 @@ module mqc_method_config
       !! unchanged by that; the field is inherited, not moved away.
       !!
       !! Method options **extend** this rather than holding it as a component,
-      !! so `options%max_iter` keeps working and a method cannot forget a
-      !! field it does not own. Anything specific to one reference -- a
-      !! functional, a grid, coupled-cluster settings -- belongs in the
-      !! extending type, not here.
+      !! so a method cannot forget a field it does not own. Anything specific to
+      !! one reference -- a functional, a grid, coupled-cluster settings --
+      !! belongs in the extending type.
       !!
       !! **Adding a field here means adding it in two more places**:
       !! `configure_scf` in `mqc_method_factory`, which fills it from the deck,
       !! and `apply_scf_settings` in `mqc_cuest_iface`, which hands it to the
-      !! backend. `test/test_mqc_scf_options.f90` asserts the second of those
-      !! for every field, so add it there too -- a field nothing asserts is a
-      !! field that can go missing again, and the way it goes missing is
-      !! silently.
+      !! backend. `test/test_mqc_scf_options.f90` asserts the second for every
+      !! field, so add it there too.
       character(len=32) :: basis_set = "sto-3g"
          !! Orbital basis set name
       character(len=32) :: ecp_set = ""
@@ -371,11 +329,10 @@ module mqc_method_config
       logical :: density_fitting = .false.
          !! Fit J and K rather than computing exact integrals
       logical :: freeze_core = .true.
-         !! Matches `correlation_config_t`, which is where this is always
-         !! filled from. It read `.false.` while that read `.true.` -- harmless
-         !! while the copy happens, and a trap the moment anyone constructs
-         !! this type directly, in a test or a new call path.
-         !! Exclude core orbitals from a post-SCF correlation treatment
+         !! Exclude core orbitals from a post-SCF correlation treatment. Always
+         !! filled from `correlation_config_t`, whose default this must match:
+         !! a mismatch bites whenever this type is constructed directly, in a
+         !! test or a new call path.
       integer :: n_frozen_core = -1
          !! Core orbitals to freeze; -1 counts them from the elements
       character(len=16) :: backend = "auto"
@@ -387,17 +344,10 @@ module mqc_method_config
       real(dp) :: hessian_displacement = DEFAULT_DISPLACEMENT
          !! Step for a finite-difference Hessian, in Bohr.
          !!
-         !! Here because the method is what runs the displacements, and the
-         !! deck's value had no route to it: `keywords.hessian.displacement`
-         !! reached `driver_config%hessian` and stopped, so every
-         !! finite-difference Hessian ran at the default while the log printed
-         !! that default back as though it had been asked for.
+         !! Here because the method is what runs the displacements.
       type(pcm_config_t) :: pcm
-         !! Continuum solvation. A property of the reference rather than of
-         !! the functional, which is why it sits here: Hartree-Fock, DFT, MP2
-         !! and coupled cluster all reach the backend through an extending
-         !! type, and leaving it off one of them meant `keywords.pcm` was read,
-         !! validated and then silently dropped for that path.
+         !! Continuum solvation. A property of the reference rather than of the
+         !! functional, so every extending type inherits it.
       type(properties_config_t) :: properties
          !! Population analysis and other post-SCF properties
    end type scf_options_t
@@ -422,11 +372,9 @@ module mqc_method_config
          !! Move the orbitals as well as the CI coefficients.
          !!
          !! True is CASSCF, false is CASCI on whatever the reference SCF
-         !! produced. Both spellings parse to `METHOD_TYPE_MCSCF`, so by the
-         !! time a method is built the distinction no longer exists in the type
-         !! -- it is carried here instead, defaulted from the method name by the
-         !! reader and overridable by `keywords.mcscf.optimize_orbitals`. Same
-         !! arrangement as coupled cluster's triples.
+         !! produced. Both spellings parse to `METHOD_TYPE_MCSCF`, so the
+         !! distinction is carried here instead: defaulted from the method name
+         !! by the reader and overridable by `keywords.mcscf.optimize_orbitals`.
 
       ! State averaging
       integer :: n_states = 1
@@ -556,12 +504,6 @@ module mqc_method_config
    !============================================================================
    type :: method_config_t
       !! Master configuration containing all method-specific configs
-      !!
-      !! Usage:
-      !!   config%method_type = METHOD_TYPE_DFT
-      !!   config%basis_set = 'cc-pvdz'
-      !!   config%dft%functional = 'pbe0'
-      !!   config%dft%use_dispersion = .true.
 
       !----- Common settings (all ab-initio methods) -----
       integer(int32) :: method_type = METHOD_TYPE_UNKNOWN
@@ -585,9 +527,11 @@ module mqc_method_config
 
       !----- Shared configurations -----
       type(scf_config_t) :: scf
+         !! Shared SCF settings, used by HF, DFT and MCSCF
       type(pcm_config_t) :: pcm
+         !! Continuum solvation
       type(properties_config_t) :: properties
-         !! Shared SCF settings (used by HF and DFT)
+         !! Analyses to run once the wave function exists
       type(correlation_config_t) :: corr
          !! Shared correlation settings (used by MP2, CC, etc.)
 
@@ -620,10 +564,8 @@ contains
    end function xtb_has_solvation
 
    subroutine xtb_configure(this, use_cds, use_shift, dielectric, cpcm_nang, cpcm_rscale, solvent, solvation_model)
-      !! Configure XTB solvation settings from driver configuration
-      !!
-      !! Sets up all XTB-specific parameters and applies default solvation model
-      !! logic (alpb if solvent or dielectric is specified but no model given).
+      !! Set the XTB solvation parameters, defaulting the model to "alpb" when
+      !! a solvent or dielectric was given without one
       class(xtb_config_t), intent(inout) :: this
       logical, intent(in) :: use_cds             !! Include CDS non-polar terms
       logical, intent(in) :: use_shift           !! Include solution state shift
@@ -648,10 +590,7 @@ contains
    end subroutine xtb_configure
 
    subroutine xtb_get_solvation_info(this, info_lines, n_lines)
-      !! Get solvation configuration info for logging
-      !!
-      !! Returns array of info strings describing the solvation setup.
-      !! If no solvation is configured, n_lines = 0.
+      !! Describe the solvation setup for the log; `n_lines` is 0 for gas phase
       use pic_io, only: to_char
       class(xtb_config_t), intent(in) :: this
       character(len=128), intent(out) :: info_lines(4)  !! Up to 4 lines of info
@@ -686,7 +625,14 @@ contains
    end subroutine xtb_get_solvation_info
 
    subroutine config_reset(this)
-      !! Reset all configuration values to defaults
+      !! Reset configuration values to defaults
+      ! TODO(mqc): partial, despite the name. `ecp_set`, `backend`,
+      ! `device_rank`, most of `scf` (cartesian, guess, level_shift,
+      ! linear_dependence, unrestricted, allow_crap_scf, density_fitting,
+      ! accelerator, convergence_metric, incremental_fock,
+      ! gradient_convergence), `dft%grid_level` and its neighbours, `cc`'s
+      ! `spin_adapted`, and the whole of `pcm`, `properties` and `efp` are
+      ! never touched, so a reused `method_config_t` keeps them.
       class(method_config_t), intent(inout) :: this
 
       ! Common settings
@@ -781,10 +727,7 @@ contains
    end subroutine config_reset
 
    subroutine config_log_settings(this)
-      !! Log method-specific settings based on method type
-      !!
-      !! Dispatches to appropriate logging based on the configured method.
-      !! This allows the driver to log settings without knowing method details.
+      !! Log method-specific settings, so the driver need not know the details
       use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_HF, &
                                   METHOD_TYPE_DFT, METHOD_TYPE_MCSCF, method_type_to_string
       use pic_logger, only: logger => global_logger
@@ -810,29 +753,24 @@ contains
             call logger%info("  Functional:      "//trim(this%dft%functional))
          end if
          call logger%info("  Basis set:       "//trim(this%basis_set))
-         ! Only when it is actually fitting something. The aux basis has a
-         ! non-empty default, so printing it unconditionally told every exact run
-         ! it had an auxiliary basis it was not using -- which read as "this is
-         ! density-fitted" when it was not.
+         ! Only when it is actually fitting something: the aux basis has a
+         ! non-empty default, so printing it unconditionally reads as "this is
+         ! density-fitted" on a run that is not.
          if (this%scf%density_fitting) then
             call logger%info("  Density fitting: "//trim(this%scf%aux_basis_set))
          end if
-         ! The angular form is not reported here any more, and deliberately.
-         ! `use_spherical` is the flag cuEST builds its AO shells with, not a
-         ! statement about the basis: the basis file decides, through its
-         ! `function_type` entries, and 6-31G* is Cartesian whatever this says.
-         ! Printing this line beside a Cartesian basis claimed "spherical
-         ! (pure)" for a run that was not, which is the reporting half of the
-         ! bug it sat next to. The SCF prints the form it actually used, along
-         ! with the function count that distinguishes the two.
+         ! The angular form is deliberately not reported here. `use_spherical`
+         ! is the flag cuEST builds its AO shells with, not a statement about
+         ! the basis: the basis file decides through its `function_type`
+         ! entries, and 6-31G* is Cartesian whatever this says. The SCF prints
+         ! the form it actually used, with the function count that
+         ! distinguishes the two.
          if (this%method_type == METHOD_TYPE_DFT) then
             block
                character(len=80) :: grid_line
-               ! Reported as the level unless a deck overrode it with explicit
-               ! counts, because the level is what the CPU path actually uses --
-               ! printing "75 radial x 302" for a level-3 run was true of neither
-               ! backend and is the reporting half of a bug rather than a bug's
-               ! symptom. The counts still appear when they are the thing in force.
+               ! The level unless a deck overrode it with explicit counts,
+               ! because the level is what the CPU path actually uses. The
+               ! counts appear only when they are the thing in force.
                if (this%dft%radial_points > 0 .and. this%dft%angular_points > 0 &
                    .and. this%dft%grid_level < 0) then
                   write (grid_line, "(a,i0,a,i0)") "  XC grid:         ", &

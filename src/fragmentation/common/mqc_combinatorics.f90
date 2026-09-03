@@ -28,11 +28,9 @@ module mqc_combinatorics
 contains
 
    pure function get_nfrags(n_monomers, max_level) result(n_expected_fragments)
-      !! Calculate total number of fragments for given system size and max level
+      !! Total number of fragments for a system size and a maximum level
       !!
-      !! Computes the sum of binomial coefficients C(n,k) for k=1 to max_level,
-      !! representing all possible fragments from monomers to max_level-mers.
-      !! Uses int64 to handle large fragment counts that overflow int32.
+      !! The sum of `C(n, k)` for `k = 1` to `max_level`.
       integer(default_int), intent(in) :: n_monomers  !! Number of monomers in system
       integer(default_int), intent(in) :: max_level   !! Maximum fragment size
       integer(int64) :: n_expected_fragments     !! Total fragment count
@@ -67,8 +65,7 @@ contains
       !!
       !! The one-body term uses each monomer in its *own* basis, so the ghosted
       !! rows are auxiliary -- adding their deltas to the total as well would
-      !! count them twice. A negative entry is what marks them, which is the
-      !! same sign the fragment builder and the subset key already read.
+      !! count them twice. A negative entry is what marks them.
       integer(default_int), intent(in) :: row(:)
       logical :: aux
 
@@ -78,10 +75,8 @@ contains
    pure function real_count_of(row) result(n)
       !! How many of a row's monomers are real rather than ghosted
       !!
-      !! The subset recursion works over these: [1,-2] contains one real
-      !! monomer, so it has no proper subsets and its delta is its energy. Using
-      !! the full row size instead would send the recursion looking for subsets
-      !! that were never generated.
+      !! The subset recursion works over these: `[1,-2]` contains one real
+      !! monomer, so it has no proper subsets and its delta is its energy.
       integer(default_int), intent(in) :: row(:)
       integer(default_int) :: n
 
@@ -98,9 +93,8 @@ contains
       !! surviving into the total.
       !!
       !! So the key is the chosen monomers positive and *everything else in the
-      !! parent* negative. For the pair [1,2] choosing [1], that is [1,-2]. The
-      !! recursion, the hash table and the dispatch are untouched: a signed key
-      !! is just another key, and it sorts and hashes like any other.
+      !! parent* negative. For the pair `[1,2]` choosing `[1]`, that is
+      !! `[1,-2]`.
       integer, intent(in) :: fragment(:)   !! The parent's monomers, all positive
       integer, intent(in) :: n             !! How many of them
       integer, intent(in) :: chosen(:)     !! Positions within `fragment`, size k
@@ -129,14 +123,10 @@ contains
       !! How many monomers a polymer row names, padding excluded
       !!
       !! Rows are zero-padded to the widest fragment, so the size is the count
-      !! of non-zero entries. Written `/= 0` rather than `> 0` because a
-      !! negative entry is a monomer present as *ghost centres* -- its atoms and
-      !! basis functions without its nucleus -- which is a monomer the fragment
-      !! contains and must be sized for. `> 0` would drop it silently and hand
-      !! the SCF a smaller molecule than the row asked for.
-      !!
-      !! Here rather than repeated at each site because there were seventeen of
-      !! them, and one missed would be a wrong energy rather than a failure.
+      !! of non-zero entries. Non-zero and not positive: a negative entry is a
+      !! monomer present as *ghost centres* -- its atoms and basis functions
+      !! without its nucleus -- which the fragment contains and must be sized
+      !! for.
       integer(default_int), intent(in) :: row(:)
       integer(default_int) :: n
 
@@ -144,8 +134,10 @@ contains
    end function fragment_size_of
 
    recursive subroutine generate_fragment_list(monomers, max_level, polymers, count)
-      !! Generate all possible fragments (combinations of monomers) up to max_level
-      !! Uses int64 for count to handle large numbers of fragments that overflow int32.
+      !! Append every combination of 2 to `max_level` monomers to `polymers`
+      !!
+      !! Monomers are not generated here -- the caller writes those rows first
+      !! and passes their number in `count`, which this advances.
       integer(default_int), intent(in) ::  max_level
       integer(default_int), intent(in) :: monomers(:)
       integer(default_int), intent(inout) :: polymers(:, :)
@@ -159,8 +151,7 @@ contains
    end subroutine generate_fragment_list
 
    recursive subroutine combine(arr, n, r, out_array, count)
-      !! Generate all combinations of size r from array arr of size n
-      !! Uses int64 for count to handle large numbers of combinations that overflow int32.
+      !! Generate all combinations of size `r` from the first `n` of `arr`
       integer(default_int), intent(in) :: arr(:)
       integer(default_int), intent(in) :: n, r
       integer(default_int), intent(inout) :: out_array(:, :)
@@ -170,8 +161,7 @@ contains
    end subroutine combine
 
    recursive subroutine combine_util(arr, n, r, index, data, i, out_array, count)
-      !! Utility for generating combinations recursively
-      !! Uses int64 for count to handle large numbers of combinations that overflow int32.
+      !! One level of the combination recursion
       integer(default_int), intent(in) ::  n, r, index, i
       integer(default_int), intent(in) :: arr(:)
       integer(default_int), intent(inout) :: data(:), out_array(:, :)
@@ -191,8 +181,7 @@ contains
    end subroutine combine_util
 
    subroutine print_combos(out_array, count, max_len)
-      !! Print combinations stored in out_array
-      !! Uses int64 for count to handle large numbers of combinations that overflow int32.
+      !! Print the combinations held in `out_array`, one line each
       integer(default_int), intent(in) ::  max_len
       integer(default_int), intent(in) :: out_array(:, :)
       integer(int64), intent(in) :: count
@@ -201,9 +190,8 @@ contains
 
       character(len=MAX_LINE_LENGTH) :: line
 
-      ! Assembled in `line` and emitted once per combination. The non-advancing
-      ! writes this replaces built the row directly on the unit, which a logger
-      ! cannot do: a log record is a whole line or it is nothing.
+      ! Assembled in `line` and emitted once per combination: a log record is a
+      ! whole line or it is nothing.
       do i = 1_int64, count
          line = ""
          do j = 1, max_len
@@ -284,10 +272,9 @@ contains
    end function next_combination
 
    subroutine calculate_fragment_distances(polymers, fragment_count, sys_geom, distances)
-      !! Calculate minimal atomic distance for each fragment
-      !! For monomers (1-body), distance is 0.0
-      !! For n-mers (n >= 2), distance is the minimum distance between atoms
-      !! in different constituent monomers
+      !! Closest approach between different monomers, per fragment, in Angstrom
+      !!
+      !! Zero for a monomer row.
       use pic_types, only: dp
       use mqc_physical_fragment, only: system_geometry_t, to_angstrom
       integer(default_int), intent(in) :: polymers(:, :)

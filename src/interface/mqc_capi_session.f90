@@ -18,10 +18,6 @@ module mqc_capi_session
    !!     filesystem. Call `begin` first.
    !!   * **Anything after `end` runs only on rank 0.** Which is usually what
    !!     is wanted, but it is not obvious from reading the script.
-   !!
-   !! There is one session per process and it is held here rather than handed
-   !! out as a handle. MPI is process-wide, two of them would be a bug rather
-   !! than a feature, and a handle would imply otherwise.
    use, intrinsic :: iso_c_binding, only: c_int, c_char, c_null_char
    use pic_types, only: int32
    use mqc_session, only: mqc_session_t
@@ -46,9 +42,7 @@ contains
    function current_session() result(session)
       !! The live session, for Fortran code that needs its communicators
       !!
-      !! Not a C entry point -- `mqc_run` and anything else on this side of the
-      !! boundary needs the resources the session holds, and this is how they
-      !! reach them without another copy of the state.
+      !! Not a C entry point.
       type(mqc_session_t), pointer :: session
       session => the_session
    end function current_session
@@ -71,10 +65,9 @@ contains
    function mqc_session_end() result(status) bind(C, name="mqc_session_end")
       !! Release the workers and shut MPI down
       !!
-      !! Must be called. The workers are blocked waiting for exactly this, and
-      !! a caller that exits without it leaves every other rank in the job
-      !! hanging on a message that never arrives -- which on a batch system
-      !! means burning the wall clock rather than failing.
+      !! **Must be called.** The workers are blocked waiting for exactly this,
+      !! and a caller that exits without it leaves every other rank hanging on
+      !! a message that never arrives.
       integer(c_int) :: status
 
       type(error_t) :: error
@@ -103,10 +96,9 @@ contains
    function mqc_session_is_root() result(root) bind(C, name="mqc_session_is_root")
       !! Whether this is the rank the caller drives from
       !!
-      !! Always true where a caller can observe it, since no other rank returns
-      !! from `begin`. It exists so a script can assert that rather than assume
-      !! it, and so a Fortran caller -- which can reach the workers' path -- can
-      !! ask.
+      !! Always true where a C caller can observe it, since no other rank
+      !! returns from `begin`. A Fortran caller can reach the workers' path and
+      !! get false.
       integer(c_int) :: root
 
       root = 0_c_int

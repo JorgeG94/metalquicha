@@ -2,19 +2,9 @@
 module mqc_bcast
    !! Integer arrays and character strings, from rank 0 to everyone.
    !!
-   !! pic-mpi's `bcast` covers scalars and real arrays; integer arrays and
-   !! strings it only moves point to point. Those are exactly the shapes an
-   !! externally driven run needs to send its workers -- atomic numbers,
-   !! monomer partitions, bond lists, term lists, and the config as text -- so
-   !! they are built here from `send`/`recv` rather than left to each caller to
-   !! open-code.
-   !!
    !! **Linear, not a tree.** Rank 0 sends to every other rank in turn, which
-   !! is O(P) messages where a tree would be O(log P). That is deliberate for
-   !! now: this runs once per calculation, during setup, against fragment
-   !! evaluation that takes minutes to hours. It is the wrong shape if it ever
-   !! moves inside a loop, and the place to fix it is here rather than at every
-   !! call site.
+   !! is O(P) messages where a tree would be O(log P). Setup-time only; the
+   !! wrong shape if it ever moves inside a loop.
    !!
    !! Every routine is collective: all ranks call it, rank 0 supplies the data
    !! and the others receive it. A rank that skips one leaves the others
@@ -36,9 +26,9 @@ contains
    subroutine bcast_integer_array(comm, data, root)
       !! Send an integer array from `root` to every other rank
       !!
-      !! `data` is allocatable and is reallocated on the receiving ranks to
-      !! whatever arrived, so a caller does not have to agree on the size in
-      !! advance -- the length travels with the message.
+      !! The length travels with the message, and `data` is reallocated on the
+      !! receiving ranks to whatever arrived. An empty array arrives as
+      !! `size 0`, allocated.
       type(comm_t), intent(in) :: comm
       integer(int32), allocatable, intent(inout) :: data(:)
       integer(int32), intent(in) :: root
@@ -74,9 +64,8 @@ contains
    subroutine bcast_real_array(comm, data, root)
       !! Send a double array from `root` to every other rank
       !!
-      !! pic broadcasts real arrays already, but only into a buffer both sides
-      !! have sized. This carries the length too, so it matches the integer
-      !! form above and a caller can treat the two alike.
+      !! The length travels with the data, so the receiving ranks need not have
+      !! sized their buffer in advance.
       type(comm_t), intent(in) :: comm
       real(dp), allocatable, intent(inout) :: data(:)
       integer(int32), intent(in) :: root
@@ -97,10 +86,8 @@ contains
    subroutine bcast_string(comm, text, root)
       !! Send a deferred-length string from `root` to every other rank
       !!
-      !! pic moves no characters at all, so the text travels as its character
-      !! codes. That is crude, and fine: the only strings that go this way are
-      !! configuration documents of a few kilobytes, sent once. It would be the
-      !! wrong way to move anything large.
+      !! pic moves no characters, so the text travels as one integer per
+      !! character. The wrong way to move anything large.
       type(comm_t), intent(in) :: comm
       character(len=:), allocatable, intent(inout) :: text
       integer(int32), intent(in) :: root

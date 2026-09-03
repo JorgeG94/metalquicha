@@ -2,15 +2,9 @@
 module mqc_libcint_rhf
    !! Restricted Hartree-Fock over libcint integrals, in core.
    !!
-   !! The same algorithm the cuEST SCF runs -- canonical orthogonalisation,
-   !! DIIS on the FDS - SDF commutator, energy from the density -- written
-   !! against host arrays instead of device pointers. It is not a shared
-   !! implementation, and that is deliberate: the two agreeing is worth more
-   !! than the duplication costs, because agreement between two independent
-   !! codes is the only check the GPU path has ever had.
-   !!
-   !! `mqc_diis` is shared, though. That one is already backend-neutral and
-   !! there is nothing to learn from writing it twice.
+   !! Canonical orthogonalisation, DIIS on the FDS - SDF commutator, energy
+   !! from the density -- the same algorithm the cuEST SCF runs, written
+   !! against host arrays rather than device pointers.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm, pic_gemv, pic_syrk
    use pic_lapack_interfaces, only: pic_syev
@@ -36,39 +30,27 @@ module mqc_libcint_rhf
    implicit none
    private
 
-   !> First iteration the unrestricted SCF is allowed to extrapolate on.
-   !>
-   !> Extrapolating from the start converges an open-shell system to the wrong
-   !> state. The core guess gives alpha and beta the same spatial orbitals and
-   !> leaves degenerate shells degenerate, and DIIS combines Fock matrices
-   !> linearly -- so a history that begins symmetric stays symmetric, and the
-   !> iteration never reaches a solution that has to break it. OH in def2-SVP
-   !> converges tidily to -75.167538 that way, a sigma hole with its pi pair
-   !> intact to six digits, where the pi-hole ground state is -75.325108.
-   !>
-   !> Measured rather than chosen: on that case start=1 and 2 both give the
-   !> wrong state and every value from 3 to 14 gives the right one, in 14 to 16
-   !> iterations against the 14 the wrong answer took. Four is three there and
-   !> one spare, and the spare is free -- the whole range costs the same.
-   !>
-   !> This is why the restricted path has no such delay. It has no symmetry to
-   !> break, so the undamped iterations would buy it nothing.
    integer, parameter :: DEFAULT_UHF_DIIS_START = 4
+      !! First iteration the unrestricted SCF is allowed to extrapolate on.
+      !!
+      !! Extrapolating from the start converges an open-shell system to the
+      !! wrong state: a symmetric guess gives alpha and beta the same spatial
+      !! orbitals, DIIS combines Fock matrices linearly, and a history that
+      !! begins symmetric stays symmetric. The restricted path needs no such
+      !! delay, having no symmetry to break.
 
-   !> Which starting point the SCF is handed.
-   !>
-   !> Named here rather than in the atomic-guess module because that module
-   !> calls this one -- the free-atom solutions an atomic guess is built from
-   !> are themselves unrestricted SCFs -- and Fortran has no circular `use`.
-   !> cuEST splits them the same way and for the same reason.
+   ! Which starting point the SCF is handed. Named here rather than in the
+   ! atomic-guess module because that module calls this one -- the free-atom
+   ! solutions an atomic guess is built from are themselves unrestricted SCFs
+   ! -- and Fortran has no circular `use`.
    integer, parameter, public :: SCF_GUESS_CORE = 0   !! F = H
    integer, parameter, public :: SCF_GUESS_GWH = 1    !! Generalized Wolfsberg-Helmholz
    integer, parameter, public :: SCF_GUESS_SAC = 2    !! Superposed atomic coefficients
    integer, parameter, public :: SCF_GUESS_SAD = 3    !! Superposed atomic densities
    integer, parameter, public :: SCF_GUESS_PROJ = 4   !! Projected from a smaller basis
 
-   !> Buffer length for a formatted table line handed to the logger.
    integer, parameter :: LINE_LEN = 160
+      !! Buffer length for a formatted table line handed to the logger.
 
    public :: rhf_result_t
    public :: run_libcint_rhf
@@ -84,47 +66,24 @@ module mqc_libcint_rhf
       !!
       !!     G(D_n) = G(D_ref) + G(D_n - D_ref)
       !!
-      !! and the correction can be built from the density *change* rather than
-      !! the density. That is the whole point: `build_fock_direct` screens on the
-      !! largest density element a quartet will multiply, and once the SCF is
-      !! settling the change is orders of magnitude smaller than the density. The
-      !! same screening test then discards far more, and discards more of it with
-      !! every iteration -- which is the compounding the plain density weighting
-      !! could not give on its own.
+      !! and the correction is built from the density *change*. Since
+      !! `build_fock_direct` screens on the largest density element a quartet
+      !! multiplies, and the change shrinks as the SCF settles, the same
+      !! screening test discards more with every iteration.
       !!
-      !! Only the Coulomb and exchange part. The exchange-correlation potential is
-      !! not linear in the density and is rebuilt in full every iteration.
-      !!
-      !! **Kohn-Sham works and is checked, but gains little.** `g_ref` is captured
-      !! before the long-range exchange and before V_xc are added, so neither is
-      !! double counted, and `check_dft` agrees with PySCF to 1e-11 for a pure
-      !! functional, a hybrid and two range-separated ones through this path.
-      !! What it does not do is help much: for water in cc-pVDZ the quadrature is
-      !! 0.44 s of a 0.48 s SCF and the Fock build is too small to measure, so
-      !! this accelerates 8% of the run. The balance moves with size -- the
-      !! quadrature grows about linearly in the basis where the screened Fock
-      !! build tends toward quadratic -- but where they cross is not measured.
-      !! For a Kohn-Sham calculation the quadrature is the thing to look at.
+      !! Only the Coulomb and exchange part. The exchange-correlation potential
+      !! is not linear in the density and is rebuilt in full every iteration;
+      !! `g_ref` is captured before the long-range exchange and before V_xc are
+      !! added, so neither is double counted.
       !!
       !! **Both passes of a range-separated build are incremental**, and both
-      !! spins of an unrestricted one. The attenuated exchange is linear in the
-      !! density exactly as the full-kernel G is -- it is the same quartet loop
-      !! with `omega` set -- so it accumulates the same way, into its own
-      !! reference. It needs a separate one rather than sharing `g_ref` because
-      !! the two are different operators on the same density and only their sum
-      !! is ever wanted; keeping them apart is also what lets the energy be
-      !! taken before V_xc without either being double counted.
-      !!
-      !! Both channels share `since_reset` and `active`, so a full rebuild
-      !! re-syncs every reference at once. Staggering them would let one channel
-      !! carry fifteen iterations of accumulated rounding while the other had
-      !! just been rebuilt, and the error in the sum is what matters.
+      !! spins of an unrestricted one, each accumulating into its own
+      !! reference. All of them share `since_reset` and `active`, so a full
+      !! rebuild re-syncs every reference at once.
       !!
       !! **In an unrestricted SCF `d_ref`, `g_ref` and `g_ref_lr` are the alpha
-      !! channel** and the `_b` fields are beta. One state object belongs to one
-      !! SCF, which is restricted or unrestricted and never both, so the reuse
-      !! costs nothing -- but it does mean the plain names are not "the total"
-      !! on that path.
+      !! channel** and the `_b` fields are beta -- the plain names are not "the
+      !! total" on that path.
       real(dp), allocatable :: d_ref(:, :)   !! Density `g_ref` belongs to (alpha, if unrestricted)
       real(dp), allocatable :: g_ref(:, :)   !! Accumulated G, without H (alpha, if unrestricted)
       real(dp), allocatable :: g_ref_lr(:, :)
@@ -137,21 +96,14 @@ module mqc_libcint_rhf
       integer :: since_reset = 0             !! Iterations since the last full build
       integer :: full_builds = 0
          !! Full Fock builds performed, as opposed to updates from the density
-         !! change.
+         !! change. With incremental building on this is one plus a rebuild
+         !! every `INCREMENTAL_RESET` iterations; with it off, one per
+         !! iteration.
          !!
-         !! Counted so that `incremental_fock` can be TESTED. It is the one SCF
-         !! setting with no observable effect on any answer -- an incremental
-         !! build is exact to the convergence threshold, so the energy, the
-         !! iteration count and every property are identical either way, and
-         !! the only difference is how much work each build skips. That left
-         !! timing as the only probe, and timing is a poor thing to assert:
-         !! measured on this machine, an SCF small enough for a unit test shows
-         !! 0.000 s per build either way, and one large enough to separate them
-         !! costs ~9 seconds and varies with load.
-         !!
-         !! A count does not. With incremental building on, this is one plus a
-         !! rebuild every `INCREMENTAL_RESET` iterations; with it off it is one
-         !! per iteration.
+         !! Counted because it is the only observable difference the setting
+         !! makes: an incremental build is exact to the convergence threshold,
+         !! so the energy, the iteration count and every property come out
+         !! identical either way.
       integer :: updates = 0                 !! Builds from the density change
       logical :: active = .false.            !! Off until the first full build seeds it
    end type incremental_state_t
@@ -165,8 +117,7 @@ module mqc_libcint_rhf
       integer :: full_fock_builds = 0
          !! Fock matrices built in full, as opposed to updated from the density
          !! change. Equals `iterations` when `incremental_fock` is off, and one
-         !! plus a rebuild every sixteen iterations when it is on -- which is
-         !! how that setting is tested at all. See `incremental_state_t`.
+         !! plus a rebuild every `INCREMENTAL_RESET` iterations when it is on.
       integer :: incremental_updates = 0
          !! Fock matrices built from the density change. Zero when
          !! `incremental_fock` is off.
@@ -190,24 +141,16 @@ module mqc_libcint_rhf
       real(dp) :: pcm_charge = 0.0_dp          !! Total apparent surface charge
    end type rhf_result_t
 
-   !> Iterations between full rebuilds of the accumulated G.
-   !>
-   !> Incremental building adds a correction per iteration, so its rounding
-   !> accumulates where a full build's does not. Rebuilding periodically bounds
-   !> that. Sixteen is the usual choice and costs one full build in sixteen --
-   !> about 6% of the saving handed back for a drift that stays at the level of
-   !> the convergence threshold rather than growing past it.
    integer, parameter :: INCREMENTAL_RESET = 16
+      !! Iterations between full rebuilds of the accumulated G.
+      !!
+      !! An incremental build adds a correction per iteration, so its rounding
+      !! accumulates where a full build's does not; rebuilding every sixteenth
+      !! iteration keeps the drift at the level of the convergence threshold
+      !! for one full build in sixteen.
 
-   !> Stage labels, named once so the per-iteration column and the summary table
-   !> cannot drift apart, and so a caller can ask `clk%seconds_of(STAGE_FOCK)`.
-   !>
-   !> The split is by what a change would move. The Fock build is the integral
-   !> work and the only stage anything in `INTEGRALS_MQC.md` touches; the
-   !> diagonalisation is LAPACK and n^3 regardless; setup is the one-time 1e
-   !> integrals, screening bounds and guess. Reporting them apart is what makes
-   !> "the integrals got 20% faster" a statement about the integrals rather than
-   !> about the whole run.
+   ! Stage labels, named once so the per-iteration column and the summary table
+   ! cannot drift apart, and so a caller can ask `clk%seconds_of(STAGE_FOCK)`.
    character(len=*), parameter :: STAGE_SETUP = "setup (1e, bounds, guess)"
    character(len=*), parameter :: STAGE_FOCK = "Fock builds"
    character(len=*), parameter :: STAGE_DIAG = "diagonalisation"
@@ -220,17 +163,13 @@ contains
    subroutine screening_summary(verbose, stats)
       !! How much of the quartet space each screening test removed
       !!
-      !! From the last Fock build of the SCF, which is the converged one and so
-      !! the one whose density the screening will see for the rest of any
-      !! follow-on work.
+      !! From the last Fock build of the SCF, which is the converged one.
       !!
-      !! Split by cause because the two answer different questions. The Schwarz
-      !! count is a property of the basis and the geometry and does not move
-      !! between iterations; the density count is the extra reach that weighting
-      !! the bound by the density buys, and it is the only figure that a change
-      !! to the screening can move. Reported as counts rather than inferred from
-      !! wall time: on a shared node the run-to-run spread in seconds is larger
-      !! than the effect, and these are exactly reproducible.
+      !! Split by cause: the Schwarz count is a property of the basis and the
+      !! geometry and does not move between iterations, while the density count
+      !! is the extra reach that weighting the bound by the density buys, and
+      !! is the only figure a change to the screening can move. Counts rather
+      !! than seconds, because these are exactly reproducible.
       logical, intent(in) :: verbose
       type(direct_stats_t), intent(in) :: stats
 
@@ -251,9 +190,8 @@ contains
       write (line, "(a,i14,f9.1,a)") "    computed             ", stats%quartets_computed, &
          100.0_dp*real(stats%quartets_computed, dp)/real(stats%quartets_total, dp), " %"
       call logger%performance(trim(line))
-      ! One is perfect balance. This is the figure a work-ordering change has to
-      ! move, and unlike wall time it is a ratio inside one run, so a contended
-      ! node largely divides out of it.
+      ! One is perfect balance. A ratio inside one run, so a contended node
+      ! largely divides out of it.
       write (line, "(a,f14.4)") "    thread imbalance     ", stats%thread_imbalance
       call logger%performance(trim(line))
    end subroutine screening_summary
@@ -261,13 +199,11 @@ contains
    pure function scheme_now(accel, err_norm) result(scheme)
       !! Which accelerator runs this iteration
       !!
-      !! An energy-based scheme is named because the SCF is expected to
-      !! misbehave early; it hands over to DIIS once it no longer is. The
-      !! switch is on the error norm rather than an iteration count, so an SCF
-      !! that starts near its solution never pays for the interpolation.
-      !!
-      !! A caller that asked for DIIS gets DIIS at every norm, so the default
-      !! path runs through this line rather than around it.
+      !! An energy-based scheme runs while the error norm is above
+      !! `ACCEL_SWITCH` and hands over to DIIS below it -- on the norm rather
+      !! than an iteration count, so an SCF that starts near its solution never
+      !! pays for the interpolation. A caller that asked for DIIS gets DIIS at
+      !! every norm.
       integer, intent(in) :: accel
       real(dp), intent(in) :: err_norm
       integer :: scheme
@@ -279,19 +215,13 @@ contains
    subroutine scf_table_header(verbose, kohn_sham)
       !! Column headings for the per-iteration table
       !!
-      !! Through the logger like everything else the program says: the level
-      !! decides whether it is seen, and a run redirected to a log file gets the
-      !! table with it rather than only on a terminal that is no longer there.
       !! The frame is `mqc_convergence_report`, shared with the FMO outer loop;
       !! only the columns and their widths are the SCF's own.
       logical, intent(in) :: verbose
       logical, intent(in) :: kohn_sham
          !! Whether a functional is being evaluated. A Hartree-Fock run has no
-         !! quadrature, so its `XC` column is a column of zeros -- eleven
-         !! characters of every line saying that the thing that did not happen
-         !! took no time. Dropped rather than printed as `--`, since the row is
-         !! read by eye against a wall clock and a narrower table is easier to
-         !! scan than one with a hole in it.
+         !! quadrature, so its `XC` column is dropped rather than printed as a
+         !! column of zeros.
 
       if (kohn_sham) then
          call convergence_header(verbose, "SCF iterations", &
@@ -308,21 +238,14 @@ contains
                             t_rest, kohn_sham)
       !! One iteration's line, with the time that iteration took
       !!
-      !! **The quadrature has a column of its own, and needs one.** `STAGE_FOCK`
-      !! and `STAGE_XC` are separate buckets -- correctly, since the commit that
-      !! stopped the two-electron build being billed to the quadrature -- but the
-      !! row only ever read the first of them. On a Kohn-Sham run that is the
-      !! smaller half by a wide margin: 0.92 s of Fock printed beside an
-      !! iteration that took thirty, because the thirty were in the quadrature
-      !! and the quadrature was not on the line. The totals at the end were right
-      !! the whole time, which is what made it hard to see; a table nobody can
-      !! reconcile against a wall clock is worse than no table.
+      !! `STAGE_FOCK` and `STAGE_XC` are separate buckets and both are printed:
+      !! on a Kohn-Sham run the quadrature is much the larger of the two, so a
+      !! row carrying only the Fock time cannot be reconciled against a wall
+      !! clock.
       !!
-      !! Per-iteration rather than only a total because the first iterations of a
-      !! direct SCF are not the same price as the last: screening tightens as the
-      !! density settles, so a run whose Fock build is flat across iterations is
-      !! telling you the density-weighted screening of `INTEGRALS_MQC.md` §6.1 is
-      !! missing, which is exactly the case here.
+      !! Per-iteration rather than only a total, because screening tightens as
+      !! the density settles: a Fock build that is flat across iterations says
+      !! the density-weighted screening is not reaching.
       logical, intent(in) :: verbose
       integer, intent(in) :: iter, ndiis
       real(dp), intent(in) :: energy, de, gnorm, t_fock, t_xc, t_rest
@@ -344,10 +267,9 @@ contains
    subroutine scf_table_footer(verbose, converged, iterations)
       !! Close the per-iteration table
       !!
-      !! The timing summary is `clk%report(...)`, which counts calls itself --
-      !! the Fock stage runs `iterations + 1` times because the converged energy
-      !! is rebuilt after the loop, and dividing by `iterations` reported a
-      !! per-build cost about 12% high.
+      !! The timing summary is `clk%report(...)`, which counts calls itself: the
+      !! Fock stage runs `iterations + 1` times, because the converged energy is
+      !! rebuilt after the loop.
       logical, intent(in) :: verbose, converged
       integer, intent(in) :: iterations
 
@@ -357,16 +279,13 @@ contains
    subroutine energy_components(verbose, mol, density, electronic, nuclear)
       !! The energy split into the pieces the virial theorem constrains
       !!
-      !! Every term here is already available at convergence -- these are traces
-      !! against the density, not new integrals -- and printing them costs one
-      !! kinetic and one nuclear-attraction build. What they buy is a check the
-      !! total energy cannot give: the virial ratio.
+      !! Traces against the converged density, plus one kinetic and one
+      !! nuclear-attraction build.
       !!
       !! For a variational wave function at a stationary geometry `-V/T` is
-      !! exactly 2. It is not constrained to be, so a value that drifts from 2
-      !! is evidence about the calculation rather than a restatement of it --
-      !! a basis too small to describe the cusp, or a geometry that is not a
-      !! stationary point. GAMESS prints the same block for the same reason.
+      !! exactly 2. It is not constrained to be, so drift from 2 is evidence
+      !! about the calculation -- a basis too small for the cusp, or a geometry
+      !! that is not a stationary point.
       logical, intent(in) :: verbose
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
@@ -384,7 +303,7 @@ contains
       t_energy = sum(density*kinetic)
       one_e = sum(density*core)
       ! The core Hamiltonian is kinetic plus nuclear attraction, so the
-      ! attraction alone is the difference -- no third integral build.
+      ! attraction alone is the difference.
       v_ne = one_e - t_energy
       two_e = electronic - one_e
       v_ee = two_e
@@ -428,113 +347,72 @@ contains
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
       real(dp), intent(in), optional :: grad_tol
+         !! Commutator threshold -- pyscf's `conv_tol_grad`. Zero or absent
+         !! derives `sqrt(energy_tol)`, which is the right scaling *for the
+         !! energy*: its error goes as `gnorm**2`.
+         !!
+         !! **A caller that consumes the density has to set this.** Density
+         !! error goes as `gnorm`, not its square, so the derived value bounds
+         !! it about three orders more loosely than the energy, and tightening
+         !! `energy_tol` cannot substitute: reaching `gnorm < 1e-8` that way
+         !! needs `energy_tol = 1e-16`, below what a molecular energy resolves.
       type(scf_convergence_t), intent(in), optional :: convergence
+         !! The rule that decides this SCF has converged. Absent reproduces
+         !! what `energy_tol` and `grad_tol` meant before this existed.
       type(scf_numerics_t), intent(in), optional :: scf
          !! The whole configuration, as one argument.
          !!
-         !! **Seven of its thirteen fields are honoured here, and the contract
-         !! matters because passing this looks like passing everything.** Read:
-         !! `level_shift`, `linear_dependence`, `accelerator`, `diis_size`,
-         !! `use_diis`, `incremental_fock`, `convergence_metric`, and
-         !! `grad_tol`. NOT read, for reasons rather than by oversight:
+         !! **Eight of its thirteen fields are honoured here**, and passing
+         !! this looks like passing everything. Read: `level_shift`,
+         !! `linear_dependence`, `accelerator`, `diis_size`, `use_diis`,
+         !! `incremental_fock`, `convergence_metric` and `grad_tol`. Not read:
          !!
-         !! * `max_iter`, `energy_tol`, `density_tol` are positional arguments
-         !!   to this routine and the caller has already supplied them. The
-         !!   group's copies exist for callers that carry a configuration
-         !!   around; whichever the caller passes positionally is what runs.
-         !! * `guess` is a deck spelling and turning it into an `SCF_GUESS_*`
-         !!   kind needs `mqc_libcint_atomic_guess`, which calls this routine --
-         !!   importing it here would be a cycle. The caller parses it and
-         !!   passes `guess=`.
-         !! * `allow_crap_scf` is not this routine's decision. It reports
-         !!   `result%converged` and the caller decides whether an unconverged
-         !!   SCF is acceptable; a fragment run and a single-point run answer
-         !!   that differently.
+         !! * `max_iter`, `energy_tol` and `density_tol`, which are positional
+         !!   arguments here -- whichever the caller passes positionally runs.
+         !! * `guess`, a deck spelling whose translation to an `SCF_GUESS_*`
+         !!   kind needs `mqc_libcint_atomic_guess`, which calls this routine.
+         !!   The caller parses it and passes `guess=`.
+         !! * `allow_crap_scf`. This routine reports `result%converged` and the
+         !!   caller decides whether an unconverged SCF is acceptable.
          !!
-         !! **This is what a caller holding a config should pass.** The
-         !! individual optionals above predate it and still work -- and still
-         !! win, so a caller can pass the group and override one field -- but a
-         !! new call site should name this and nothing else. Six keyword
-         !! arguments repeated at every call is how settings went missing: FMO
-         !! has eight such sites, SAPT three, and each was one forgotten
-         !! keyword away from silently ignoring the deck.
-         !! The rule that decides this SCF has converged. Absent reproduces
-         !! what `energy_tol` and `grad_tol` meant before this existed, so a
-         !! caller that has not been updated is unaffected.
+         !! An individual optional above wins over the group's copy of the same
+         !! setting, so a caller can pass the group and override one field.
       logical, intent(in), optional :: incremental_fock
          !! Build each iteration from the density change. Default true; false
          !! forces a full build every iteration, which is what to reach for when
          !! an SCF stalls or when a Fock timing needs to mean something.
-         !! Commutator threshold -- pyscf's `conv_tol_grad`. Zero or absent
-         !! derives `sqrt(energy_tol)`, which is pyscf's own default and the
-         !! right scaling *for the energy*: its error goes as `gnorm**2`.
-         !!
-         !! **A caller that consumes the density has to set this.** Density
-         !! error goes as `gnorm`, not its square, so the derived value bounds
-         !! it about three orders more loosely than the energy. It cannot be
-         !! fixed by tightening `energy_tol` instead: reaching `gnorm < 1e-8`
-         !! that way needs `energy_tol = 1e-16`, below what a molecular energy
-         !! resolves, and then nothing converges at all. The two demands are
-         !! separate and take separate numbers, which is why pyscf exposes this
-         !! one rather than only deriving it.
       logical, intent(in) :: verbose
       real(dp), intent(in), optional :: level_shift
-      integer, intent(in), optional :: accelerator
-         !! `ACCEL_DIIS` (the default and the historical behaviour), or one of
-         !! the energy-based schemes to run while the error is large.
          !! Hartree added to the virtual block of the Fock matrix before each
          !! diagonalisation. Absent or zero is off.
+      integer, intent(in), optional :: accelerator
+         !! `ACCEL_DIIS`, the default, or one of the energy-based schemes to run
+         !! while the error is large.
       type(rhf_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
       real(dp), allocatable, intent(out), optional :: b_ao_out(:, :)
-         !! The fitted `B(mu nu, P)` this SCF used, handed on rather than
+         !! The fitted `B(mu nu, P)` this SCF used, moved out rather than
          !! freed, for a correlated step that would otherwise rebuild the
-         !! integrals and refit them. Moved, not copied -- the SCF is finished
-         !! with it. Only meaningful alongside `aux`.
+         !! integrals and refit them. Only meaningful alongside `aux`.
       type(libcint_molecule_t), intent(in), optional :: aux
-         !! Auxiliary basis. Present means density-fitted J and K, which is
-         !! what cuEST always does -- so a comparison against the GPU path
-         !! needs this, and a comparison against an exact-ERI code needs it
-         !! absent. Both are worth being able to ask for.
+         !! Auxiliary basis. Present means density-fitted J and K; absent means
+         !! exact ERIs.
       integer, intent(in), optional :: diis_vectors
-         !! Subspace size. Zero turns DIIS off, which is worth being able to
-         !! do: the two paths should agree with and without it, and if they
-         !! do not, the extrapolation is where to look.
+         !! Subspace size. Zero turns DIIS off.
       logical, intent(in), optional :: in_core
          !! Store every integral and contract from the tensor, instead of
          !! rebuilding the Fock matrix directly each iteration. Default is
-         !! direct. This exists because the in-core path is the one validated
-         !! against PySCF, so it is what the direct build is checked against --
-         !! not because anything should run with it. It is n^4 in memory.
+         !! direct. This is the path validated against PySCF, and so what the
+         !! direct build is checked against; it is n^4 in memory.
       integer, intent(in), optional :: guess
          !! One of SCF_GUESS_*. Defaults to Wolfsberg-Helmholz, the best guess
-         !! that needs nothing but `H` and `S` -- superposition of atomic
-         !! densities is better still, and is what a deck gets, but
+         !! that needs nothing but `H` and `S`. Superposition of atomic
+         !! densities is better still and is what a deck gets, but
          !! `guess_density` has to be built before this routine is entered and
          !! so cannot be a default here.
-         !!
-         !! **It used to default to the core guess**, which is `F = H`: every
-         !! electron-electron term ignored, and the worst starting point
-         !! available. Iterations to 1e-12, measured:
-         !!
-         !!     HCN   STO-3G  B2GP-PLYP   core 15   gwh  9   sad 9
-         !!     H2O   cc-pVDZ B3LYP       core 11   gwh  9   sad 9
-         !!     NH3   cc-pVDZ PBE         core 12   gwh 10   sad 9
-         !!     CH4   cc-pVDZ HF          core 10   gwh 10   sad 8
-         !!
-         !! Never worse, occasionally much better, and free -- `H` and `S` are
-         !! both in hand before the first Fock build.
-         !!
-         !! This moves nothing a deck does: the driver resolves "auto" to SAD
-         !! and always passes it. What it moves is every *library* caller that
-         !! did not think about the guess -- the validation harnesses, SAPT, the
-         !! EFP potential, the projection code -- each of which was silently
-         !! taking the worst option.
       type(xc_context_t), intent(inout), optional :: xc
-         !! Exchange-correlation. Present turns this into a Kohn-Sham SCF; absent
-         !! leaves it Hartree-Fock. One argument rather than six, and one loop
-         !! rather than two -- a separate `run_libcint_rks` would have to be kept
-         !! in step with this one for the rest of its life.
+         !! Exchange-correlation. Present turns this into a Kohn-Sham SCF;
+         !! absent leaves it Hartree-Fock.
       real(dp), intent(in), optional :: guess_density(:, :)
          !! Total starting density, required by SCF_GUESS_SAC and SCF_GUESS_SAD
          !! and ignored otherwise. Built by `mqc_libcint_atomic_guess`, which
@@ -542,45 +420,41 @@ contains
          !! very module.
       real(dp), intent(in), optional :: h_extra(:, :)
          !! An extra one-electron operator, added to H before the first Fock
-         !! build and kept there. A uniform electric field is what it is for:
-         !! `F . r` makes this SCF the finite-field reference that `..._cphf`
-         !! is checked against, and a response property computed two ways from
-         !! one code path is worth more than either alone.
-         !!
-         !! `result%energy` then includes the interaction with whatever this
-         !! is, which is why the finite-field check differentiates the *dipole*
-         !! and not the energy: the dipole is unambiguous, one derivative
-         !! better conditioned, and needs no bookkeeping about what the total
-         !! is supposed to contain.
+         !! build and kept there; a uniform electric field `F . r` is what it is
+         !! for, making this SCF the finite-field reference `..._cphf` is
+         !! checked against. `result%energy` then includes the interaction with
+         !! it, so the finite-field check differentiates the *dipole* and not
+         !! the energy.
       type(pcm_context_t), intent(inout), optional :: pcm
-      real(dp), intent(in), optional :: linear_dependence
-         !! `keywords.scf.linear_dependence_threshold`. Zero or absent leaves
-         !! the orthogonaliser on its own cutoff.
          !! Continuum solvation. Present and built means every iteration solves
          !! the surface charges against its density and folds their operator
          !! into the Fock matrix; `result%energy` then includes the dielectric
          !! energy. Present-but-disabled is the same as absent, so a caller can
          !! pass its context unconditionally.
+      real(dp), intent(in), optional :: linear_dependence
+         !! `keywords.scf.linear_dependence_threshold`. Zero or absent leaves
+         !! the orthogonaliser on its own cutoff.
       type(fock_projector_t), intent(in), optional :: projector
          !! A constraint on the Fock matrix, applied after every build.
          !!
-         !! Unlike `h_extra` this is not an operator added to `H`: it is a
-         !! linear map on `F` that forces it block diagonal in a basis the
-         !! caller chose, so it cannot be folded into the core Hamiltonian and
-         !! has to be reapplied each iteration. What it is for is freezing
-         !! orbitals -- see `mqc_fock_projector` -- and this routine is
-         !! deliberately told only that its Fock matrix is constrained, not why.
+         !! Unlike `h_extra` this is not an operator added to `H` but a linear
+         !! map on `F` that forces it block diagonal in a basis the caller
+         !! chose, so it cannot be folded into the core Hamiltonian and is
+         !! reapplied each iteration. Freezing orbitals is what it is for -- see
+         !! `mqc_fock_projector`.
          !!
-         !! Applied before the DIIS error and extrapolation, so that everything
-         !! downstream sees the constrained matrix and not two different ones.
-         !! Not applied to the final build below, which is the energy's Fock:
-         !! the constraint decides which determinant comes out, and the energy
-         !! of that determinant is an expectation value of the real Hamiltonian.
+         !! Applied before the DIIS error and extrapolation, so everything
+         !! downstream sees the constrained matrix. **Not** applied to the final
+         !! build: the constraint decides which determinant comes out, and the
+         !! energy of that determinant is an expectation value of the real
+         !! Hamiltonian.
 
       character(len=LINE_LEN) :: line
       integer :: diis_size, guess_kind
       logical :: use_in_core
       real(dp), allocatable :: bounds(:, :)
+      ! TODO(mqc): `stats` is declared here and never used; the screening counts
+      ! come back in `screening`, which `assemble_fock` fills.
       type(direct_stats_t) :: stats
 
       real(dp), allocatable :: s(:, :), h(:, :), eri(:, :, :, :), bmat(:, :)
@@ -642,32 +516,19 @@ contains
          return
       end if
 
-      ! Reported because this is what went unnoticed for as long as it did:
-      ! 6-31G* read as spherical converges just as prettily as 6-31G* read
-      ! Cartesian -- one basis function short and 1.4 mHartree out -- and
-      ! neither the iterations nor the final energy look wrong on their own.
-      ! The count and the angular form together are what name the basis.
-      ! Still gated on `verbose` rather than on the logger level alone: the atomic
-      ! guess runs one of these per element, and those are not runs anyone wants a
-      ! table for. The level decides how loud a reported run is; `verbose` decides
-      ! whether this run reports at all.
+      ! The count and the angular form together are what name the basis: a
+      ! set read spherical where it should be Cartesian converges just as
+      ! prettily, one function short. Gated on `verbose` rather than on the
+      ! logger level, because the atomic guess runs one of these per element.
       if (verbose) then
          if (mol%cartesian) then
             call logger%info("  basis functions: "//to_char(n_ao)//"  (Cartesian, 6d/10f)")
          else
             call logger%info("  basis functions: "//to_char(n_ao)//"  (spherical, 5d/7f)")
          end if
-         ! Charge and multiplicity, because a log that reports neither cannot be
-         ! checked against the deck that asked for it. `nelec` alone does not say
-         ! which ion this is: a Fukui run prints three of these tables in a row and
-         ! they differ by one electron, so "205 electrons" identifies the state only
-         ! to a reader willing to count nuclei.
-         !
-         ! Derived rather than passed. `mol%charges` carries the ECP's core
-         ! subtracted and `nelec` arrives reduced by the same cores, so the
-         ! difference is the physical charge in both cases and needs no separate
-         ! all-electron count. `core_electrons` is zero for an all-electron atom,
-         ! which is what makes the one expression serve both.
+         ! Charge derived rather than passed: `mol%charges` carries the ECP's
+         ! core subtracted and `nelec` arrives reduced by the same cores, so the
+         ! difference is the physical charge either way.
          call logger%info("  restricted: charge = "// &
                           to_char(nint(sum(mol%charges)) - nelec)// &
                           "  multiplicity = 1"// &
@@ -723,9 +584,8 @@ contains
       allocate (err(n_mo, n_mo), fock_flat(n_ao*n_ao))
       if (use_pcm) allocate (v_pcm(n_ao, n_ao))
 
-      ! The error vector lives in the orthogonal basis, where it is n_mo
-      ! square rather than n_ao -- that is the same shape the cuEST path uses
-      ! and the reason both converge alike.
+      ! The error vector lives in the orthogonal basis, where it is n_mo square
+      ! rather than n_ao -- the same shape the cuEST path uses.
       ! Resolved before the subspace is built, not after it. `energy_based`
       ! decides whether the history can hold densities and energies at all, and
       ! reading `accel` here while it was still assigned some fifty lines below
@@ -776,8 +636,8 @@ contains
       ! orthogonaliser and the guess.
       call clk%lap(STAGE_SETUP)
       ! `present(xc)` is not the question: the bridge passes its context
-      ! unconditionally, built or not, so it is present on a Hartree-Fock run
-      ! too. `active` is what says a functional was actually constructed.
+      ! unconditionally, so it is present on a Hartree-Fock run too. `active`
+      ! is what says a functional was constructed.
       kohn_sham_run = .false.
       if (present(xc)) kohn_sham_run = xc%active
       call scf_table_header(verbose, kohn_sham_run)
@@ -786,8 +646,7 @@ contains
       ! caller states it. See the argument's own note for why a density
       ! consumer must.
       ! Assembled once. A caller that states nothing gets `CONV_METRIC_STANDARD`
-      ! with the same `sqrt(energy_tol)` bound this line used to compute, so
-      ! introducing the type moves no number.
+      ! with the bound `sqrt(energy_tol)`.
       if (present(convergence)) then
          conv = convergence
       else
@@ -802,17 +661,17 @@ contains
             if (metric_ok) conv%metric = metric_kind
          end if
       end if
+      ! TODO(mqc): `gtol` is assigned here and never read -- `conv%is_converged`
+      ! applies the commutator bound itself. Dead on both spin paths.
       gtol = conv%commutator_bound()
 
       ! The group first, then any individual override on top of it.
       shift = 0.0_dp
       if (present(scf)) shift = scf%level_shift
       if (present(level_shift)) shift = level_shift
-      ! Refused rather than clamped. A negative shift lowers the virtuals into
-      ! the occupied set, which is the opposite of the point: it narrows the gap
-      ! the next density is built through and drives the oscillation it was
-      ! asked to damp. Someone typing one has misunderstood the sign, and
-      ! quietly using zero would hide that.
+      ! Refused rather than clamped: a negative shift lowers the virtuals into
+      ! the occupied set, narrowing the gap the next density is built through
+      ! and driving the oscillation it was asked to damp.
       if (shift < 0.0_dp) then
          call error%set(ERROR_VALIDATION, "keywords.scf.level_shift is negative. A "// &
                         "level shift raises the virtual orbitals to widen the gap; a "// &
@@ -820,25 +679,18 @@ contains
                         "better. Give a positive value in Hartree, or leave it out.")
          return
       end if
-      ! Off well before the SCF is done. The shift buys nothing near the
-      ! solution -- it slows the last approach -- and, far more importantly,
-      ! every orbital energy this routine reports has to belong to the
-      ! *unshifted* operator: they are read back as MP2 and coupled-cluster
-      ! denominators, as the weights of the gradient's energy-weighted density,
-      ! and as `eps_occ` and the response poles of a fragment potential. A shift
-      ! left in would move all of those by an amount nothing downstream could
-      ! recognise as a shift.
+      ! Tapered off well before the SCF is done, because every orbital energy
+      ! this routine reports has to belong to the *unshifted* operator: they are
+      ! read back as MP2 and coupled-cluster denominators, as the weights of the
+      ! gradient's energy-weighted density, and as `eps_occ` and the response
+      ! poles of a fragment potential.
       taper = 100.0_dp*density_tol
       drms_prev = huge(1.0_dp)
       shift_now = 0.0_dp
 
-      ! Say so. A shift is asked for when an SCF is misbehaving, which is
-      ! exactly when the run is being read closely, and until this line there
-      ! was nothing between "the deck set one" and "the deck set one and it was
-      ! silently dropped on the way here" -- which is what happened to the
-      ! Fukui ions for as long as `fukui_indices` took no level shift. Printing
-      ! the taper alongside the value matters as much: a shift that is off by
-      ! iteration three is not the shift the reader thinks they applied.
+      ! Reported with its taper: a shift that is off by iteration three is not
+      ! the shift the reader thinks they applied, and a shift dropped on the way
+      ! here is otherwise indistinguishable from one that was never set.
       if (shift > 0.0_dp) then
          write (line, "(a,f8.4,a,es9.2)") "    level shift: ", shift, &
             " hartree, tapered off below dD ", taper
@@ -850,25 +702,20 @@ contains
          ! The energy belongs to the Fock built from this density, so both come
          ! back together and before extrapolation. A DIIS-mixed Fock is a
          ! convergence device, not a state anything is the energy of.
-         ! Read the bucket BEFORE the build. `assemble_fock` closes the Fock
-         ! stage itself, so by the time it returns the time is already charged
-         ! and a read here would difference against itself -- which is what the
-         ! per-iteration Fock column was doing when it printed 0.00 s beside a
-         ! Kohn-Sham run that plainly took seconds.
+         !
+         ! Read the buckets BEFORE the build: `assemble_fock` closes the Fock
+         ! stage itself, so a read afterwards would difference against itself.
          t_fock_iter = clk%seconds_of(STAGE_FOCK)
          t_xc_iter = clk%seconds_of(STAGE_XC)
          ! `incr` present is what switches incremental building on inside
-         ! `assemble_fock`, so withholding it is how the deck turns it off --
-         ! one branch here rather than a flag threaded into the assembler and
-         ! tested again at each of its three build sites.
+         ! `assemble_fock`, so withholding it is how the deck turns it off.
          if (want_incremental) then
             call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
                                fock, e_elec, error, clk=clk, screening=screening, incr=incr, &
                                bmat_lr=bmat_lr)
          else
             ! Counted here rather than in the assembler: without `incr` it has
-            ! no state to record into, and every build on this branch is a full
-            ! one by construction.
+            ! no state to record into, and every build here is a full one.
             incr%full_builds = incr%full_builds + 1
             call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
                                fock, e_elec, error, clk=clk, screening=screening, &
@@ -880,13 +727,9 @@ contains
          ! eigenproblem diagonalises, or the converged orbitals would not feel
          ! the solvent. The energy carries its own half already.
          !
-         ! Charged to its OWN stage, not folded into the Fock bucket. `lap`
-         ! adds to a stage's seconds and increments its call count, and
-         ! `assemble_fock` already closes STAGE_FOCK itself -- so lapping it
-         ! again here would report two Fock builds per iteration, which is the
-         ! reporting bug the Fock/quadrature split was fixed for. A separate row
-         ! also says what the continuum actually costs, which turns out to be
-         ! almost nothing beside the quadrature.
+         ! Charged to its OWN stage. `lap` also increments a stage's call count,
+         ! and `assemble_fock` has already closed STAGE_FOCK, so lapping that
+         ! again here would report two Fock builds per iteration.
          if (use_pcm) then
             call pcm%operator_matrix(mol, density, v_pcm, e_pcm, error)
             if (error%has_error()) return
@@ -916,13 +759,10 @@ contains
          call clk%lap(STAGE_DIIS)
          t_rest_iter = clk%seconds_of(STAGE_DIIS) - t_rest_iter
 
-         ! **After DIIS, never before it.** The error vector above is built from
-         ! the unshifted Fock, and it has to be: shift first and the vectors
-         ! DIIS stores stop being a subspace of Fock matrices, so what it
-         ! extrapolates is not the thing it is meant to extrapolate. It would
-         ! still converge to something, which is what makes that ordering
-         ! expensive to find. The energy is likewise already taken, from the
-         ! build above, for the reason stated there.
+         ! **After DIIS, never before it.** The error vector above is built
+         ! from the unshifted Fock, and has to be: shift first and the vectors
+         ! DIIS stores stop being a subspace of Fock matrices. The energy is
+         ! likewise already taken, from the build above.
          !
          ! The virtual projector without the virtual orbitals: completeness
          ! gives `C_o C_o^T + C_v C_v^T = S^-1`, so
@@ -953,66 +793,27 @@ contains
          result%iterations = iter
          result%full_fock_builds = incr%full_builds
          result%incremental_updates = incr%updates
-         ! `shift_now` is part of the test rather than checked afterwards. The
-         ! orbitals and eigenvalues that leave here are the ones the last
-         ! diagonalisation produced, so convergence has to be declared on an
-         ! iteration that was not shifted -- otherwise every virtual energy is
-         ! high by `shift` and everything downstream quietly inherits it. The
-         ! taper makes this true on its own in every ordinary case; requiring it
-         ! costs an iteration in the case where it would not have been.
+         ! `shift_now` is part of the test below rather than checked
+         ! afterwards: the orbitals and eigenvalues that leave here are the ones
+         ! the last diagonalisation produced, so convergence has to be declared
+         ! on an unshifted iteration or every virtual energy is high by `shift`.
          drms_prev = drms
-         ! **The energy and the commutator, and not the density.** This is
-         ! pyscf's test -- `abs(e_tot - last_hf_e) < conv_tol .and. norm_gorb <
-         ! conv_tol_grad`, with `conv_tol_grad` defaulting to `sqrt(conv_tol)`
-         ! and `norm_gorb` normalised per element exactly as `gnorm` is here.
-         ! pyscf computes a density change too, calls it `norm_ddm`, and never
-         ! tests it. It prints it; this does not, and the table shows the
-         ! commutator in that column instead -- a number that is not part of
-         ! the convergence test reads as though it were, and the `diis` column
-         ! is the one a stalled SCF has to be diagnosed from. `drms` is still
-         ! computed, because the level-shift taper is driven from it.
+         ! **The energy and the commutator, and not the density.** `de` and
+         ! `drms` say the iteration stopped moving; they do not say it stopped
+         ! at a stationary point. `FDS - SDF` is what vanishes when F and D
+         ! commute, and an SCF can hold the other two small while this one is
+         ! nowhere near zero -- any scheme that interpolates rather than
+         ! extrapolates will do it. `drms` is still computed, because the
+         ! level-shift taper is driven from it.
          !
-         ! `de` and `drms` say the iteration stopped moving; they do not say it
-         ! stopped at a stationary point. `FDS - SDF` is what vanishes when F
-         ! and D commute, which is what convergence *means*, and an SCF can
-         ! hold both of the others small while this one is nowhere near zero.
-         ! Any scheme that *interpolates* rather than extrapolates will do it,
-         ! because a stalled interpolation moves the density hardly at all:
-         ! EDIIS on water/6-31G pins at a commutator of 1.156e-2 for seven
-         ! iterations while `de` sits at 1e-12 and `drms` at 1e-11, and without
-         ! this term the SCF stops there, 5.9e-5 Hartree from the answer.
+         ! The bound has to clear the commutator's own noise floor, which moves
+         ! with thread count because the OpenMP reduction merges are unordered.
+         ! `sqrt(energy_tol)` clears it by orders at the default `energy_tol`.
          !
-         ! **Dropping `drms` is only safe with the tighter energy tolerance
-         ! that comes with it.** `DEFAULT_SCF_CONV` is 1e-9 now, as pyscf's is,
-         ! where it was 1e-6. At the old value `drms` was doing the work the
-         ! energy threshold was too loose to do, and removing it alone left the
-         ! SCF stopping early enough that a finite-field polarizability
-         ! disagreed with the analytic one. The two changes are one change.
-         !
-         ! Two thresholds were tried and rejected, and the reasons bound what
-         ! any future one may be:
-         !
-         !   * `min(sqrt(energy_tol), density_tol)` is 1e-10 where a caller
-         !     asks for a tight density, and the commutator cannot be resolved
-         !     that far. Unordered OpenMP reduction merges scatter it over a
-         !     band whose top moves with thread count -- AlH3/6-31G, run past
-         !     any gate, plateaus at 9.8e-14 on one thread and 3.1e-10 on
-         !     sixteen. The same binary passed a test at 1 and 8 threads and
-         !     failed it at 2 and 4.
-         !   * A fixed 1e-9, with no energy term, passed all 121 unit tests and
-         !     then failed **34 of 296** validation cases -- every open-shell
-         !     KS case, the range-separated hybrids, RI-CCSD, EFP2 and ORMAS,
-         !     none of which reach it, so they ran to the iteration cap.
-         !
-         ! So a bound has to clear the noise floor at the thread count and
-         ! system size in use, and be reachable by an open-shell
-         ! range-separated case. `sqrt(energy_tol)` is 3.2e-5 at the new
-         ! default and satisfies both by orders.
-         ! The rule lives in `scf_convergence_t`, not here. `shift_now` stays
-         ! in the caller because it is not a convergence measure: a shifted
-         ! Fock matrix is a different operator, so an iterate that met the
-         ! threshold under a shift has not converged the problem that was
-         ! asked for.
+         ! The rule lives in `scf_convergence_t`. `shift_now` stays in the
+         ! caller because it is not a convergence measure: a shifted Fock matrix
+         ! is a different operator, so an iterate that met the threshold under a
+         ! shift has not converged the problem that was asked for.
          if (iter > 1 .and. conv%is_converged(de, drms, gnorm) .and. &
              shift_now == 0.0_dp) then
             result%converged = .true.
@@ -1020,17 +821,14 @@ contains
          end if
       end do
 
-      ! The energy that goes out is the one belonging to the density that
-      ! satisfied the test, so it is recomputed from the final Fock rather
-      ! than carried over from the loop.
-      !
-      ! Deliberately without `incr`: this one is a full build. An incremental
-      ! Fock carries however many corrections have accumulated since the last
-      ! reset, and the number that leaves this routine should not.
+      ! The energy that goes out belongs to the density that satisfied the
+      ! test, so it is recomputed from the final Fock. Deliberately without
+      ! `incr`: this one is a full build, and the number that leaves must not
+      ! carry the corrections accumulated since the last reset.
       call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
                          fock, result%electronic, error, clk=clk, bmat_lr=bmat_lr)
       if (error%has_error()) return
-      ! Last use of the fitted tensor. A caller that asked for it takes the
+      ! Last use of the fitted tensor: a caller that asked for it takes the
       ! allocation itself rather than a copy of several gigabytes.
       if (present(b_ao_out) .and. allocated(bmat)) call move_alloc(bmat, b_ao_out)
       if (use_pcm) then
@@ -1040,9 +838,7 @@ contains
          result%pcm_energy = e_pcm
          result%pcm_charge = pcm%q_total
          ! Lapped like the iterations' operators, so the stage counts one per
-         ! Fock build rather than one fewer. The final rebuild is a solvated
-         ! build like any other -- it has to be, or the energy reported would
-         ! be the gas-phase one.
+         ! Fock build rather than one fewer.
          call clk%lap(STAGE_PCM)
       end if
       result%nuclear_repulsion = mol%nuclear_repulsion()
@@ -1053,11 +849,8 @@ contains
       call move_alloc(density, result%density)
       call diis%destroy()
 
-      ! The final rebuild above is a Fock build like any other and lands in the
-      ! same bucket -- charged by `assemble_fock` itself, so no lap here. One
-      ! used to be, and once the routine started closing its own stage that
-      ! second lap only inflated the call count: 24 builds reported for a
-      ! 12-iteration SCF.
+      ! The final rebuild above lands in the Fock bucket, charged by
+      ! `assemble_fock` itself, so there is deliberately no lap here.
       call clk%finish()
       call scf_table_footer(verbose, result%converged, result%iterations)
       call energy_components(verbose, mol, result%density, result%electronic, &
@@ -1075,13 +868,10 @@ contains
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
       !! - K(D_sigma). They are diagonalised separately and extrapolated
-      !! together -- one DIIS over the pair, because the two spins converge to
-      !! each other and letting them extrapolate independently lets them
-      !! disagree about which iteration they are on.
+      !! together, one DIIS over the pair.
       !!
-      !! No density fitting here yet. The fitted J and K are written for one
-      !! density, and splitting them is a separate piece of work rather than an
-      !! argument change; asking for both is refused rather than silently run
+      !! **No density fitting on this path.** The fitted J and K are written for
+      !! one density; asking for both is refused rather than silently run
       !! restricted.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -1089,63 +879,49 @@ contains
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
       real(dp), intent(in), optional :: grad_tol
+         !! Commutator threshold -- pyscf's `conv_tol_grad`. Zero or absent
+         !! derives `sqrt(energy_tol)`, which is the right scaling *for the
+         !! energy*: its error goes as `gnorm**2`.
+         !!
+         !! **A caller that consumes the density has to set this.** Density
+         !! error goes as `gnorm`, not its square, so the derived value bounds
+         !! it about three orders more loosely than the energy, and tightening
+         !! `energy_tol` cannot substitute: reaching `gnorm < 1e-8` that way
+         !! needs `energy_tol = 1e-16`, below what a molecular energy resolves.
       type(scf_convergence_t), intent(in), optional :: convergence
+         !! The rule that decides this SCF has converged. Absent reproduces
+         !! what `energy_tol` and `grad_tol` meant before this existed.
       type(scf_numerics_t), intent(in), optional :: scf
          !! The whole configuration, as one argument.
          !!
-         !! **Seven of its thirteen fields are honoured here, and the contract
-         !! matters because passing this looks like passing everything.** Read:
-         !! `level_shift`, `linear_dependence`, `accelerator`, `diis_size`,
-         !! `use_diis`, `incremental_fock`, `convergence_metric`, and
-         !! `grad_tol`. NOT read, for reasons rather than by oversight:
+         !! **Eight of its thirteen fields are honoured here**, and passing
+         !! this looks like passing everything. Read: `level_shift`,
+         !! `linear_dependence`, `accelerator`, `diis_size`, `use_diis`,
+         !! `incremental_fock`, `convergence_metric` and `grad_tol`. Not read:
          !!
-         !! * `max_iter`, `energy_tol`, `density_tol` are positional arguments
-         !!   to this routine and the caller has already supplied them. The
-         !!   group's copies exist for callers that carry a configuration
-         !!   around; whichever the caller passes positionally is what runs.
-         !! * `guess` is a deck spelling and turning it into an `SCF_GUESS_*`
-         !!   kind needs `mqc_libcint_atomic_guess`, which calls this routine --
-         !!   importing it here would be a cycle. The caller parses it and
-         !!   passes `guess=`.
-         !! * `allow_crap_scf` is not this routine's decision. It reports
-         !!   `result%converged` and the caller decides whether an unconverged
-         !!   SCF is acceptable; a fragment run and a single-point run answer
-         !!   that differently.
+         !! * `max_iter`, `energy_tol` and `density_tol`, which are positional
+         !!   arguments here -- whichever the caller passes positionally runs.
+         !! * `guess`, a deck spelling whose translation to an `SCF_GUESS_*`
+         !!   kind needs `mqc_libcint_atomic_guess`, which calls this routine.
+         !!   The caller parses it and passes `guess=`.
+         !! * `allow_crap_scf`. This routine reports `result%converged` and the
+         !!   caller decides whether an unconverged SCF is acceptable.
          !!
-         !! **This is what a caller holding a config should pass.** The
-         !! individual optionals above predate it and still work -- and still
-         !! win, so a caller can pass the group and override one field -- but a
-         !! new call site should name this and nothing else. Six keyword
-         !! arguments repeated at every call is how settings went missing: FMO
-         !! has eight such sites, SAPT three, and each was one forgotten
-         !! keyword away from silently ignoring the deck.
-         !! The rule that decides this SCF has converged. Absent reproduces
-         !! what `energy_tol` and `grad_tol` meant before this existed, so a
-         !! caller that has not been updated is unaffected.
+         !! An individual optional above wins over the group's copy of the same
+         !! setting, so a caller can pass the group and override one field.
       logical, intent(in), optional :: incremental_fock
          !! Build each iteration from the density change. Default true; false
          !! forces a full build every iteration, which is what to reach for when
          !! an SCF stalls or when a Fock timing needs to mean something.
-         !! Commutator threshold -- pyscf's `conv_tol_grad`. Zero or absent
-         !! derives `sqrt(energy_tol)`, which is pyscf's own default and the
-         !! right scaling *for the energy*: its error goes as `gnorm**2`.
-         !!
-         !! **A caller that consumes the density has to set this.** Density
-         !! error goes as `gnorm`, not its square, so the derived value bounds
-         !! it about three orders more loosely than the energy. It cannot be
-         !! fixed by tightening `energy_tol` instead: reaching `gnorm < 1e-8`
-         !! that way needs `energy_tol = 1e-16`, below what a molecular energy
-         !! resolves, and then nothing converges at all. The two demands are
-         !! separate and take separate numbers, which is why pyscf exposes this
-         !! one rather than only deriving it.
       logical, intent(in) :: verbose
       real(dp), intent(in), optional :: level_shift
+         !! Hartree added to the virtual block of each spin's Fock matrix
+         !! before its diagonalisation, against that spin's own virtual
+         !! projector. Absent or zero is off; tapered off before convergence as
+         !! on the restricted path.
       integer, intent(in), optional :: accelerator
-         !! `ACCEL_DIIS` (the default and the historical behaviour), or one of
-         !! the energy-based schemes to run while the error is large.
-         !! As `run_libcint_rhf`. Applied to each spin's Fock matrix against its
-         !! own virtual projector, and tapered off before convergence for the
-         !! same reason.
+         !! `ACCEL_DIIS`, the default, or one of the energy-based schemes to run
+         !! while the error is large.
       type(rhf_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: diis_vectors
@@ -1154,36 +930,36 @@ contains
          !! First iteration allowed to extrapolate. See the default below.
       integer, intent(in), optional :: guess
          !! One of SCF_GUESS_*. Defaults to Wolfsberg-Helmholz, as the restricted
-         !! path does and for the same reason -- see the note there.
+         !! path does.
       type(xc_context_t), intent(inout), optional :: xc
          !! Exchange-correlation, spin-polarised. Present makes this an
          !! unrestricted Kohn-Sham SCF; absent leaves it unrestricted
-         !! Hartree-Fock. The context must have been built with polarized=.true.,
-         !! which `xc_add_potential_uks` checks rather than assumes -- libxc fixes
-         !! the spin channel at initialisation and a restricted context would
-         !! otherwise be read with the wrong stride.
+         !! Hartree-Fock. **The context must have been built with
+         !! `polarized = .true.`** -- libxc fixes the spin channel at
+         !! initialisation, and `xc_add_potential_uks` checks rather than
+         !! assumes it.
       real(dp), intent(in), optional :: guess_density_alpha(:, :)
       real(dp), intent(in), optional :: guess_density_beta(:, :)
          !! Starting spin densities, required by SCF_GUESS_SAC and SCF_GUESS_SAD.
-         !! Both spins are taken separately on purpose: whether they differ is
-         !! the whole difference between the two atomic guesses here. SAC hands
-         !! over the free atom's own spin-polarised densities and so arrives
-         !! already symmetry-broken, which is what gets a radical's sigma/pi
-         !! ordering right. SAD hands over half the spherically averaged total
-         !! twice, and relies on the occupations to break the symmetry -- the
-         !! same position the core guess is in, but from a far better density.
+         !! The two are taken separately because whether they differ is the whole
+         !! difference between those guesses: SAC hands over the free atom's own
+         !! spin-polarised densities and so arrives already symmetry-broken,
+         !! where SAD hands over half the spherically averaged total twice and
+         !! relies on the occupations to break the symmetry.
       type(pcm_context_t), intent(inout), optional :: pcm
-      real(dp), intent(in), optional :: linear_dependence
-         !! `keywords.scf.linear_dependence_threshold`. Zero or absent leaves
-         !! the orthogonaliser on its own cutoff.
          !! Continuum solvation, exactly as on the restricted path. The surface
          !! charges see the total density and their operator lands in both spin
          !! Fock matrices, because the potential of a classical charge does not
          !! know spin.
+      real(dp), intent(in), optional :: linear_dependence
+         !! `keywords.scf.linear_dependence_threshold`. Zero or absent leaves
+         !! the orthogonaliser on its own cutoff.
 
       integer :: diis_size, start_cycle, guess_kind
       logical :: use_in_core
       real(dp), allocatable :: bounds(:, :)
+      ! TODO(mqc): `stats` is declared here and never used; the screening counts
+      ! come back in `screening`, which `assemble_fock` fills.
       type(direct_stats_t) :: stats
 
       real(dp), allocatable :: s(:, :), h(:, :), eri(:, :, :, :)
@@ -1213,9 +989,8 @@ contains
       logical :: want_incremental
       type(incremental_state_t) :: incr
          !! Owned by the loop and handed only to the loop's own build. The guess
-         !! and the final rebuild deliberately go without it: the energy that
-         !! leaves this routine must be an exact build, not one carrying sixteen
-         !! iterations of accumulated correction.
+         !! and the final rebuild go without it, so the energy that leaves this
+         !! routine is an exact build.
       real(dp) :: t_fock_iter, t_rest_iter, t_xc_iter
       real(dp) :: s_min, s_kept   !! overlap conditioning, reported before iteration 1
       real(dp) :: lindep
@@ -1240,8 +1015,8 @@ contains
       if (present(pcm)) use_pcm = pcm%enabled
 
       ! 2S+1 = n_alpha - n_beta + 1, so the unpaired count is multiplicity - 1.
-      ! Both have to come out whole and non-negative, and a deck can ask for a
-      ! pairing that does not exist -- four electrons in a quintet, say.
+      ! Both have to come out whole and non-negative; a deck can ask for a
+      ! pairing that does not exist, four electrons in a quintet say.
       if (multiplicity < 1) then
          call error%set(ERROR_VALIDATION, "UHF: multiplicity must be at least 1")
          return
@@ -1323,12 +1098,10 @@ contains
                      energy_based=(accel /= ACCEL_DIIS))
 
       ! The symmetric guesses -- core and GWH -- give alpha and beta the same
-      ! orbitals, and the occupations are what separate them: n_alpha > n_beta
-      ! puts an electron somewhere beta has none, and the Fock matrices diverge
-      ! from there. For n_alpha == n_beta they converge to the restricted
-      ! solution, which is the right answer rather than a failure. SAC is the one
-      ! that arrives already asymmetric, because a free atom's own alpha and beta
-      ! densities differ wherever its shell is open.
+      ! orbitals, and the occupations separate them: n_alpha > n_beta puts an
+      ! electron where beta has none. For n_alpha == n_beta they converge to the
+      ! restricted solution, which is the right answer rather than a failure.
+      ! SAC is the one that arrives already asymmetric.
       select case (guess_kind)
       case (SCF_GUESS_CORE)
          fock_a = h
@@ -1369,8 +1142,8 @@ contains
 
       call clk%lap(STAGE_SETUP)
       ! `present(xc)` is not the question: the bridge passes its context
-      ! unconditionally, built or not, so it is present on a Hartree-Fock run
-      ! too. `active` is what says a functional was actually constructed.
+      ! unconditionally, so it is present on a Hartree-Fock run too. `active`
+      ! is what says a functional was constructed.
       kohn_sham_run = .false.
       if (present(xc)) kohn_sham_run = xc%active
       call scf_table_header(verbose, kohn_sham_run)
@@ -1379,8 +1152,7 @@ contains
       ! caller states it. See the argument's own note for why a density
       ! consumer must.
       ! Assembled once. A caller that states nothing gets `CONV_METRIC_STANDARD`
-      ! with the same `sqrt(energy_tol)` bound this line used to compute, so
-      ! introducing the type moves no number.
+      ! with the bound `sqrt(energy_tol)`.
       if (present(convergence)) then
          conv = convergence
       else
@@ -1395,17 +1167,17 @@ contains
             if (metric_ok) conv%metric = metric_kind
          end if
       end if
+      ! TODO(mqc): `gtol` is assigned here and never read -- `conv%is_converged`
+      ! applies the commutator bound itself. Dead on both spin paths.
       gtol = conv%commutator_bound()
 
       ! The group first, then any individual override on top of it.
       shift = 0.0_dp
       if (present(scf)) shift = scf%level_shift
       if (present(level_shift)) shift = level_shift
-      ! Refused rather than clamped. A negative shift lowers the virtuals into
-      ! the occupied set, which is the opposite of the point: it narrows the gap
-      ! the next density is built through and drives the oscillation it was
-      ! asked to damp. Someone typing one has misunderstood the sign, and
-      ! quietly using zero would hide that.
+      ! Refused rather than clamped: a negative shift lowers the virtuals into
+      ! the occupied set, narrowing the gap the next density is built through
+      ! and driving the oscillation it was asked to damp.
       if (shift < 0.0_dp) then
          call error%set(ERROR_VALIDATION, "keywords.scf.level_shift is negative. A "// &
                         "level shift raises the virtual orbitals to widen the gap; a "// &
@@ -1417,13 +1189,9 @@ contains
       drms_prev = huge(1.0_dp)
       shift_now = 0.0_dp
 
-      ! Say so. A shift is asked for when an SCF is misbehaving, which is
-      ! exactly when the run is being read closely, and until this line there
-      ! was nothing between "the deck set one" and "the deck set one and it was
-      ! silently dropped on the way here" -- which is what happened to the
-      ! Fukui ions for as long as `fukui_indices` took no level shift. Printing
-      ! the taper alongside the value matters as much: a shift that is off by
-      ! iteration three is not the shift the reader thinks they applied.
+      ! Reported with its taper: a shift that is off by iteration three is not
+      ! the shift the reader thinks they applied, and a shift dropped on the way
+      ! here is otherwise indistinguishable from one that was never set.
       if (shift > 0.0_dp) then
          write (line, "(a,f8.4,a,es9.2)") "    level shift: ", shift, &
             " hartree, tapered off below dD ", taper
@@ -1434,9 +1202,9 @@ contains
          d_a_old = d_a
          d_b_old = d_b
 
-         ! Read before the build, not after it. Both stages are cumulative, so a
-         ! reading taken once the build has already charged them differences
-         ! against itself -- which is what the XC column was doing.
+         ! Read before the build, not after it: both stages are cumulative, so
+         ! a reading taken once the build has charged them differences against
+         ! itself.
          t_fock_iter = clk%seconds_of(STAGE_FOCK)
          t_xc_iter = clk%seconds_of(STAGE_XC)
          ! As on the restricted path: `incr` present is the switch, so the deck
@@ -1445,8 +1213,7 @@ contains
             call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
                                    e_elec, error, clk=clk, incr=incr)
          else
-            ! Same reasoning as the restricted branch: no `incr` to record into,
-            ! and every build here is a full one.
+            ! No `incr` to record into, and every build here is a full one.
             incr%full_builds = incr%full_builds + 1
             call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
                                    e_elec, error, clk=clk)
@@ -1461,6 +1228,10 @@ contains
             fock_b = fock_b + v_pcm
             e_elec = e_elec + e_pcm
          end if
+         ! TODO(mqc): `assemble_fock_uhf` already laps STAGE_FOCK when it is
+         ! given a clock, so this second lap counts two Fock builds per
+         ! iteration and charges the continuum solve to the Fock bucket, where
+         ! the restricted path gives it STAGE_PCM.
          call clk%lap(STAGE_FOCK)
          t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
          t_xc_iter = clk%seconds_of(STAGE_XC) - t_xc_iter
@@ -1490,7 +1261,7 @@ contains
          ! After the extrapolation and after the two commutators, for the reason
          ! `run_libcint_rhf` sets out. Each spin gets its own virtual projector:
          ! `build_density_spin` gives an occupation of one, so the closed-shell
-         ! factor of a half is absent and it is `S - S D_sigma S`.
+         ! factor of a half is absent and the projector is `S - S D_sigma S`.
          shift_now = 0.0_dp
          if (shift > 0.0_dp .and. drms_prev > taper) shift_now = shift
          if (shift_now > 0.0_dp) then
@@ -1523,58 +1294,22 @@ contains
          result%full_fock_builds = incr%full_builds
          result%incremental_updates = incr%updates
          drms_prev = drms
-         ! **The energy and the commutator, and not the density.** This is
-         ! pyscf's test -- `abs(e_tot - last_hf_e) < conv_tol .and. norm_gorb <
-         ! conv_tol_grad`, with `conv_tol_grad` defaulting to `sqrt(conv_tol)`
-         ! and `norm_gorb` normalised per element exactly as `gnorm` is here.
-         ! pyscf computes a density change too, calls it `norm_ddm`, and never
-         ! tests it. It prints it; this does not, and the table shows the
-         ! commutator in that column instead -- a number that is not part of
-         ! the convergence test reads as though it were, and the `diis` column
-         ! is the one a stalled SCF has to be diagnosed from. `drms` is still
-         ! computed, because the level-shift taper is driven from it.
+         ! **The energy and the commutator, and not the density.** `de` and
+         ! `drms` say the iteration stopped moving; they do not say it stopped
+         ! at a stationary point. `FDS - SDF` is what vanishes when F and D
+         ! commute, and an SCF can hold the other two small while this one is
+         ! nowhere near zero -- any scheme that interpolates rather than
+         ! extrapolates will do it. `drms` is still computed, because the
+         ! level-shift taper is driven from it.
          !
-         ! `de` and `drms` say the iteration stopped moving; they do not say it
-         ! stopped at a stationary point. `FDS - SDF` is what vanishes when F
-         ! and D commute, which is what convergence *means*, and an SCF can
-         ! hold both of the others small while this one is nowhere near zero.
-         ! Any scheme that *interpolates* rather than extrapolates will do it,
-         ! because a stalled interpolation moves the density hardly at all:
-         ! EDIIS on water/6-31G pins at a commutator of 1.156e-2 for seven
-         ! iterations while `de` sits at 1e-12 and `drms` at 1e-11, and without
-         ! this term the SCF stops there, 5.9e-5 Hartree from the answer.
+         ! The bound has to clear the commutator's own noise floor, which moves
+         ! with thread count because the OpenMP reduction merges are unordered.
+         ! `sqrt(energy_tol)` clears it by orders at the default `energy_tol`.
          !
-         ! **Dropping `drms` is only safe with the tighter energy tolerance
-         ! that comes with it.** `DEFAULT_SCF_CONV` is 1e-9 now, as pyscf's is,
-         ! where it was 1e-6. At the old value `drms` was doing the work the
-         ! energy threshold was too loose to do, and removing it alone left the
-         ! SCF stopping early enough that a finite-field polarizability
-         ! disagreed with the analytic one. The two changes are one change.
-         !
-         ! Two thresholds were tried and rejected, and the reasons bound what
-         ! any future one may be:
-         !
-         !   * `min(sqrt(energy_tol), density_tol)` is 1e-10 where a caller
-         !     asks for a tight density, and the commutator cannot be resolved
-         !     that far. Unordered OpenMP reduction merges scatter it over a
-         !     band whose top moves with thread count -- AlH3/6-31G, run past
-         !     any gate, plateaus at 9.8e-14 on one thread and 3.1e-10 on
-         !     sixteen. The same binary passed a test at 1 and 8 threads and
-         !     failed it at 2 and 4.
-         !   * A fixed 1e-9, with no energy term, passed all 121 unit tests and
-         !     then failed **34 of 296** validation cases -- every open-shell
-         !     KS case, the range-separated hybrids, RI-CCSD, EFP2 and ORMAS,
-         !     none of which reach it, so they ran to the iteration cap.
-         !
-         ! So a bound has to clear the noise floor at the thread count and
-         ! system size in use, and be reachable by an open-shell
-         ! range-separated case. `sqrt(energy_tol)` is 3.2e-5 at the new
-         ! default and satisfies both by orders.
-         ! The rule lives in `scf_convergence_t`, not here. `shift_now` stays
-         ! in the caller because it is not a convergence measure: a shifted
-         ! Fock matrix is a different operator, so an iterate that met the
-         ! threshold under a shift has not converged the problem that was
-         ! asked for.
+         ! The rule lives in `scf_convergence_t`. `shift_now` stays in the
+         ! caller because it is not a convergence measure: a shifted Fock matrix
+         ! is a different operator, so an iterate that met the threshold under a
+         ! shift has not converged the problem that was asked for.
          if (iter > 1 .and. conv%is_converged(de, drms, gnorm) .and. &
              shift_now == 0.0_dp) then
             result%converged = .true.
@@ -1621,17 +1356,12 @@ contains
                             fock, e_elec, error, clk, screening, incr, bmat_lr)
       !! The Fock matrix for this density, and the electronic energy that belongs to it
       !!
-      !! One place, because there used to be two: the iteration built its Fock
-      !! matrix through a three-way branch and the final energy rebuilt it through
-      !! an identical copy, which is a duplication that only stays correct by
-      !! attention. Exchange-correlation would have made it three copies.
-      !!
-      !! The energy is returned with the Fock matrix because for Kohn-Sham they
-      !! cannot be separated after the fact. Hartree-Fock's
-      !! `1/2 Tr[D (H + F)]` counts the potential at half weight, which is right
-      !! for a mean field and wrong for a functional: the exchange-correlation
-      !! energy is E_xc, not `1/2 Tr[D V_xc]`. So the energy is taken from the Fock
-      !! matrix *before* V_xc is added, and E_xc is added on top.
+      !! The energy comes back with the Fock matrix because for Kohn-Sham the
+      !! two cannot be separated after the fact: `1/2 Tr[D (H + F)]` counts the
+      !! potential at half weight, which is right for a mean field and wrong for
+      !! a functional, whose energy is E_xc and not `1/2 Tr[D V_xc]`. So the
+      !! energy is taken from the Fock matrix *before* V_xc is added, and E_xc
+      !! is added on top.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: h(:, :), density(:, :)
       real(dp), intent(in) :: coeff(:, :)
@@ -1652,16 +1382,13 @@ contains
          !! reported apart from the Coulomb/exchange build rather than inside it.
          !! Absent from the guess and gradient callers, which do not report.
       type(direct_stats_t), intent(out), optional :: screening
-         !! How much of the quartet space each test removed. Reported rather than
-         !! discarded because wall time on a shared node varies by more than a
-         !! screening change does -- these counts are exactly reproducible, so
-         !! they are the measurement that can actually be trusted.
+         !! How much of the quartet space each test removed. Counts rather than
+         !! seconds, because they are exactly reproducible.
       type(incremental_state_t), intent(inout), optional :: incr
          !! Present from the SCF loop, which wants each build to cost only the
-         !! change since the last one. Absent from the guess, the gradient callers
-         !! and the final energy rebuild, all of which want an exact build --
-         !! the last of those especially, since the energy that goes out must not
-         !! carry sixteen iterations of accumulated correction.
+         !! change since the last one. Absent from the guess, the gradient
+         !! callers and the final energy rebuild, all of which want an exact
+         !! build.
 
       type(direct_stats_t) :: stats
       real(dp), allocatable :: g_delta(:, :), d_delta(:, :), h_zero(:, :)
@@ -1679,33 +1406,25 @@ contains
       if (present(xc)) then
          if (xc%active) then
             kohn_sham = .true.
-            ! Pure functionals want no Fock exchange at all, hybrids want a
-            ! fraction, and Hartree-Fock is the fraction being one -- which is why
-            ! this is a scale rather than a branch.
+            ! Pure functionals want no Fock exchange, hybrids a fraction, and
+            ! Hartree-Fock the fraction one -- hence a scale, not a branch.
             k_scale = xc%exx_fraction
-            ! Settled once, because the direct branch now asks in three places
-            ! -- the full build, the delta and the non-incremental callers --
-            ! and `xc` is optional, so each site would otherwise need its own
-            ! `present` guard before touching `range_separated`.
+            ! Settled once, because `xc` is optional and each of the three
+            ! direct build sites would otherwise need its own `present` guard.
             want_lr = xc%range_separated
          end if
       end if
 
-      ! A range-separated functional needs a second exchange matrix, over the
+      ! A range-separated functional needs a second exchange matrix over the
       ! erf-attenuated kernel, and the two are combined as
       !
       !     K_eff = exx_fraction * K_full + rs_k_lr * K_lr(omega)
       !
-      ! Only the direct build can produce the second one: libcint switches kernels
-      ! through `env`, so an omega pass is the same quartet loop, while the in-core
-      ! tensor and the fitted tensor are both built for the full Coulomb kernel and
-      ! would need a second one of their own. Refused rather than approximated.
+      ! The direct build produces it as a second quartet pass with `omega` set,
+      ! and the fitted build as a second fit (`bmat_lr`). The in-core tensor is
+      ! refused: it is built for the full Coulomb kernel, and a second n_ao^4
+      ! array is not worth having.
       if (present(xc)) then
-         ! The in-core tensor is still refused: it is built once for the full
-         ! Coulomb kernel and a second `n_ao^4` array for the attenuated one is
-         ! not worth having. The *fitted* path is answerable now -- `bmat_lr`
-         ! below is the same fit against `erf(omega r)/r`, which costs another
-         ! `n_ao^2 n_aux` rather than another `n_ao^4`.
          if (xc%range_separated .and. allocated(eri) .and. .not. allocated(bmat)) then
             call error%set(ERROR_VALIDATION, "a range-separated functional needs the "// &
                            "direct or the density-fitted Fock build: the in-core "// &
@@ -1715,8 +1434,7 @@ contains
          end if
          ! `present` before `allocated`, and not merged into one expression:
          ! Fortran does not short-circuit, so `allocated(bmat_lr)` on an absent
-         ! optional is a reference to something that is not there. The same
-         ! trap the two-particle density hit in the MP2 gradient.
+         ! optional is a reference to something that is not there.
          if (xc%range_separated .and. allocated(bmat)) then
             have_lr = .false.
             if (present(bmat_lr)) have_lr = allocated(bmat_lr)
@@ -1730,9 +1448,9 @@ contains
          end if
       end if
 
-      ! Incremental building is for the direct path only. The fitted and in-core
-      ! paths contract a stored tensor, so their cost does not depend on how large
-      ! the density elements are and there is nothing for a small delta to save.
+      ! Incremental building is for the direct path only: the fitted and in-core
+      ! paths contract a stored tensor, whose cost does not depend on how large
+      ! the density elements are.
       use_incremental = .false.
       if (present(incr) .and. .not. allocated(bmat) .and. .not. allocated(eri)) then
          use_incremental = .true.
@@ -1800,50 +1518,27 @@ contains
                allocate (h_zero(size(h, 1), size(h, 2)))
                d_delta = density - incr%d_ref
                h_zero = 0.0_dp
-               ! Zero for the core Hamiltonian, so this returns G(delta) and nothing
-               ! has to be subtracted back out. The same device the range-separated
-               ! branch below uses to get the long-range exchange on its own.
+               ! Zero for the core Hamiltonian, so this returns G(delta) and
+               ! nothing has to be subtracted back out.
                !
-               ! `density_screen=.true.`, and it is the whole point of building
-               ! incrementally. With it false this branch screened exactly as
-               ! hard as a full build -- same Schwarz bound, same 15 % skipped --
-               ! so the delta cost what it was meant to save: iteration twelve
-               ! was as expensive as iteration one, and the incremental
-               ! machinery bought nothing. With it true the skipped fraction
-               ! goes to 28 % and the per-iteration cost falls 1.87 s to 1.24 s
-               ! across the SCF, which is the shape GAMESS's FDIFF shows too.
-               !
-               ! The worry this replaces was that a screen keyed on the
-               ! magnitude of what a quartet multiplies tightens as the delta
-               ! shrinks, leaving a correction that is systematically incomplete
-               ! and path-dependent -- the symptom being a converged energy that
-               ! moves when the whole system is translated. It does not happen,
+               ! `density_screen=.true.` is the whole point of building
+               ! incrementally: with it false the delta screens exactly as hard
+               ! as a full build and saves nothing. The screen stays sound
                ! because the test is on the *contribution* against a fixed
-               ! absolute tolerance, not on the delta relative to itself: a term
-               ! dropped here is smaller than the tolerance in absolute terms
-               ! however small the delta got, and `INCREMENTAL_RESET` bounds how
-               ! many such drops can accumulate before a full build re-syncs.
+               ! absolute tolerance, not on the delta relative to itself, and
+               ! `INCREMENTAL_RESET` bounds how many dropped terms can
+               ! accumulate before a full build re-syncs.
                !
-               ! Measured rather than argued. Translating this molecule by
-               ! (37, -19, 23) Angstrom moves the converged energy by 7e-13, the
-               ! energy sits 4e-12 from the same SCF run in core, and all 235
-               ! CPU validation cases pass against their PySCF references with
-               ! the in-core path forced off so that this branch is what runs.
-               !
-               ! Note this is *not* the CPHF situation, which still needs false.
-               ! There the density is a Krylov trial vector the solver drives to
-               ! zero and the operator has to stay the same linear map from one
-               ! matvec to the next; here there is no operator to keep fixed,
-               ! only a sum to accumulate to a bounded accuracy.
+               ! **CPHF still needs it false.** There the density is a Krylov
+               ! trial vector the solver drives to zero, and the operator has to
+               ! stay the same linear map from one matvec to the next.
                call build_fock_direct(mol, h_zero, d_delta, bounds, g_delta, stats, error, &
                                       k_scale=k_scale, density_screen=.true.)
                if (error%has_error()) return
                incr%g_ref = incr%g_ref + g_delta
-               ! The attenuated exchange on the same delta. `erf(omega r)/r <= 1/r`
-               ! pointwise, so the full-kernel Schwarz bounds screen this
-               ! conservatively -- the same argument the full LR pass already
-               ! relies on -- and the density weighting is keyed on the delta
-               ! here just as it is above.
+               ! The attenuated exchange on the same delta. `erf(omega r)/r`
+               ! is at most `1/r` pointwise, so the full-kernel Schwarz bounds
+               ! screen it conservatively.
                if (want_lr) then
                   call build_fock_direct(mol, h_zero, d_delta, bounds, g_delta, stats, &
                                          error, k_scale=xc%rs_k_lr, j_scale=0.0_dp, &
@@ -1865,12 +1560,10 @@ contains
 
          ! The long-range exchange for the callers that build in full -- the
          ! guess, the gradient and the final energy rebuild. The incremental
-         ! branch above handles its own, accumulating into `g_ref_lr`, because
-         ! it has the delta and this does not.
+         ! branch above accumulates its own into `g_ref_lr`.
          !
          ! Zero in place of the core Hamiltonian and no Coulomb term, so this
-         ! pass returns the long-range exchange alone and nothing has to be
-         ! subtracted back out afterwards.
+         ! pass returns the long-range exchange alone.
          if (want_lr .and. .not. use_incremental) then
             allocate (k_lr(size(h, 1), size(h, 2)), h_zero(size(h, 1), size(h, 2)))
             h_zero = 0.0_dp
@@ -1886,18 +1579,11 @@ contains
       ! Taken here, from the Fock matrix that is still a mean field.
       e_elec = electronic_energy(h, fock, density)
 
-      ! CLOSE THE FOCK BUCKET BEFORE THE QUADRATURE OPENS.
-      !
-      ! `lap` charges everything since the previous lap to the stage it names,
-      ! and the previous lap is in the caller, before this routine was entered.
-      ! So a single `lap(STAGE_XC)` after the quadrature charged the two-electron
-      ! build to the quadrature as well, and the caller's `lap(STAGE_FOCK)`
-      ! immediately afterwards found nothing left to charge.
-      !
-      ! The report said so plainly and was read as a result rather than as a
-      ! bug: 14 Fock builds at 0.00 s beside 81.57 s of "XC quadrature" on a
-      ! 518-function PBE0 run. A Kohn-Sham profile that shows no Fock time at
-      ! all is reporting on its own instrumentation.
+      ! Close the Fock bucket before the quadrature opens. `lap` charges
+      ! everything since the previous lap, which is in the caller, so a single
+      ! `lap(STAGE_XC)` after the quadrature would bill the two-electron build
+      ! to the quadrature as well and leave the caller's `lap(STAGE_FOCK)`
+      ! nothing to charge.
       if (present(clk)) call clk%lap(STAGE_FOCK)
 
       if (kohn_sham) then
@@ -1917,13 +1603,10 @@ contains
                                 fock_a, fock_b, e_elec, error, clk, incr)
       !! Both spin Fock matrices for this pair of densities, and their energy
       !!
-      !! The unrestricted twin of `assemble_fock`, and it exists for the same
-      !! reason: the loop, the initial guess and the final rebuild each built the
-      !! Fock matrices through their own copy of the same branch, so
-      !! exchange-correlation would have become a fourth. The energy comes back with
-      !! the matrices because for Kohn-Sham it cannot be recovered afterwards --
-      !! `uhf_electronic_energy` counts the potential at half weight, which is right
-      !! for a mean field and wrong for a functional, so it is taken before V_xc is
+      !! The unrestricted twin of `assemble_fock`. The energy comes back with the
+      !! matrices because for Kohn-Sham it cannot be recovered afterwards:
+      !! `uhf_electronic_energy` counts the potential at half weight, right for a
+      !! mean field and wrong for a functional, so it is taken before V_xc is
       !! added and E_xc is added on top.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: h(:, :), d_alpha(:, :), d_beta(:, :)
@@ -1940,15 +1623,11 @@ contains
       type(incremental_state_t), intent(inout), optional :: incr
          !! Present from the SCF loop, which wants each build to cost only the
          !! change since the last one. Absent from the guess and the final energy
-         !! rebuild, which want an exact build -- the last of those especially,
-         !! since the energy that goes out must not carry sixteen iterations of
-         !! accumulated correction.
+         !! rebuild, which want an exact build.
          !!
          !! Two spin channels and, for a range-separated functional, two kernels
          !! in each: four accumulated G in the worst case, all keyed to one
-         !! `since_reset` so a rebuild re-syncs them together. The saving is
-         !! larger here than on the restricted path, because an open-shell build
-         !! was doing two full passes per iteration and now does two small ones.
+         !! `since_reset` so a rebuild re-syncs them together.
 
       type(direct_stats_t) :: stats
       real(dp), allocatable :: v_a(:, :), v_b(:, :)
@@ -1971,8 +1650,8 @@ contains
          end if
       end if
 
-      ! As in the closed-shell path: the attenuated exchange matrix is something
-      ! only the direct build can produce, so it is refused rather than dropped.
+      ! As in the closed-shell path: only the direct build can produce the
+      ! attenuated exchange matrix, so in-core is refused rather than dropped.
       if (present(xc)) then
          if (xc%range_separated .and. allocated(eri)) then
             call error%set(ERROR_VALIDATION, "a range-separated functional needs the "// &
@@ -1984,9 +1663,7 @@ contains
       end if
 
       ! Incremental building is for the direct path only, as on the restricted
-      ! side: the in-core path contracts a stored tensor, so its cost does not
-      ! depend on how large the density elements are and a small delta saves
-      ! nothing.
+      ! side.
       use_incremental = .false.
       if (present(incr) .and. .not. allocated(eri)) use_incremental = .true.
 
@@ -2035,15 +1712,13 @@ contains
             da_delta = d_alpha - incr%d_ref
             db_delta = d_beta - incr%d_ref_b
             h_zero = 0.0_dp
-            ! Zero for the core Hamiltonian, so this returns G(delta) and nothing
-            ! has to be subtracted back out.
+            ! Zero for the core Hamiltonian, so this returns G(delta) and
+            ! nothing has to be subtracted back out.
             !
             ! `build_fock_direct_uhf` always weights its Schwarz bound by the
-            ! density it multiplies, so the delta screens hard here without a
-            ! flag to ask for it -- which is what makes the correction cheaper
-            ! than the build rather than merely equal to it. The restricted path
-            ! needs `density_screen=.true.` explicitly only because it also
-            ! serves CPHF, which must opt out.
+            ! density it multiplies, so the delta screens hard here with no flag
+            ! to ask for it. The restricted path needs `density_screen=.true.`
+            ! explicitly only because it also serves CPHF, which must opt out.
             call build_fock_direct_uhf(mol, h_zero, da_delta, db_delta, bounds, &
                                        ga_delta, gb_delta, stats, error, k_scale=k_scale)
             if (error%has_error()) return
@@ -2093,11 +1768,7 @@ contains
       e_elec = uhf_electronic_energy(h, fock_a, fock_b, d_alpha, d_beta)
 
       ! Close the Fock bucket before the quadrature opens, for the reason
-      ! `assemble_fock` sets out at length. The unrestricted path had neither
-      ! lap: it was never handed a clock, so `STAGE_XC` was never charged at
-      ! all and the caller's XC column differenced a constant against itself.
-      ! It printed 0.00 s next to a grid-4 PBE run, which is not a small number
-      ! reported imprecisely but no measurement at all.
+      ! `assemble_fock` sets out.
       if (present(clk)) call clk%lap(STAGE_FOCK)
 
       if (kohn_sham) then
@@ -2115,10 +1786,8 @@ contains
    subroutine commutator(fock, density, overlap, x, err)
       !! e = X^T (F D S - S D F) X, the DIIS error vector
       !!
-      !! Projected into the orthogonal basis rather than left in the AO one:
-      !! in the AO basis the commutator's size depends on the overlap's
-      !! conditioning, so two bases describing the same molecule would
-      !! converge differently for no physical reason.
+      !! Projected into the orthogonal basis rather than left in the AO one,
+      !! where its size would depend on the overlap's conditioning.
       real(dp), intent(in) :: fock(:, :), density(:, :), overlap(:, :), x(:, :)
       real(dp), intent(out) :: err(:, :)
 
@@ -2146,11 +1815,9 @@ contains
       !!   F_ij = 1/2 K S_ij (H_ii + H_jj),   F_ii = H_ii
       !!
       !! A crude stand-in for the screening the core guess leaves out, costing
-      !! nothing beyond two matrices already in hand. It is worth having even
-      !! next to the atomic guesses: it needs no free-atom SCF, so it is the
-      !! fallback when one fails, and it is what cuEST starts from -- which makes
-      !! it the only guess under which the two backends' iteration counts are
-      !! comparable.
+      !! nothing beyond two matrices already in hand. It needs no free-atom SCF,
+      !! so it is the fallback when an atomic guess fails, and it is what cuEST
+      !! starts from.
       real(dp), intent(in) :: overlap(:, :), h(:, :)
       real(dp), intent(out) :: fock(:, :)
 
@@ -2171,11 +1838,8 @@ contains
    subroutine atomic_guess_fock(mol, h, density, bmat, eri, bounds, fock, error)
       !! One Fock build from a guess density, through whichever path is active
       !!
-      !! Exists so the atomic guesses reach the loop in the same state as the
-      !! core guess: as a Fock matrix waiting to be diagonalised. The
-      !! alternative -- entering the loop with the guess density directly -- was
-      !! rejected because the DF path would then have no orbitals for its
-      !! exchange on the one iteration that has no orbitals to give it.
+      !! Brings an atomic guess to the loop in the same state as the core guess:
+      !! a Fock matrix waiting to be diagonalised.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: h(:, :), density(:, :)
       real(dp), allocatable, intent(in) :: bmat(:, :)
@@ -2203,26 +1867,23 @@ contains
       !! Columns c_i satisfying D = 2 sum_i c_i c_i^T, for a density with no orbitals
       !!
       !! `build_fock_df` gets its exchange from occupied orbitals rather than
-      !! from the density, which is a factor of n/n_occ cheaper and the reason
-      !! the fitted path is worth having. A guess density cannot be written that
-      !! way -- superposing atomic densities, or spherically averaging one, gives
-      !! something that is not idempotent, so it has no orbitals in the usual
-      !! sense. Its eigenvectors serve instead: with D = sum_i w_i v_i v_i^T and
-      !! c_i = v_i sqrt(w_i/2), the identity D = 2 sum_i c_i c_i^T holds exactly,
-      !! and K comes out exact through code that never learns the difference.
+      !! from the density. A guess density is not idempotent and so has no
+      !! orbitals in the usual sense; its eigenvectors serve instead, since with
+      !! D = sum_i w_i v_i v_i^T and c_i = v_i sqrt(w_i/2) the identity
+      !! D = 2 sum_i c_i c_i^T holds exactly.
       !!
-      !! Costs one n^3 diagonalisation, once, on the guess only.
+      !! Costs one n^3 diagonalisation, on the guess only.
       real(dp), intent(in) :: density(:, :)
       real(dp), allocatable, intent(out) :: coeff(:, :)
       integer, intent(out) :: n_modes
       type(error_t), intent(inout) :: error
 
-      !> Occupations below this are dropped. A density built from converged
-      !> atomic solutions is positive semi-definite in exact arithmetic, so
-      !> anything at or below zero here is rounding on an empty mode -- an
-      !> unoccupied polarisation shell, most often -- and contributes nothing to
-      !> K. Keeping them would mean taking the square root of a negative number.
       real(dp), parameter :: OCCUPATION_FLOOR = 1.0e-12_dp
+         !! Occupations at or below this are dropped. A density built from
+         !! converged atomic solutions is positive semi-definite in exact
+         !! arithmetic, so anything here is rounding on an empty mode and
+         !! contributes nothing to K; keeping one would mean taking the square
+         !! root of a negative number.
       real(dp), allocatable :: vectors(:, :), values(:)
       integer :: n, i, info
 
@@ -2280,36 +1941,17 @@ contains
    subroutine build_fock(h, eri, density, fock, k_scale)
       !! `F = H + J - K/2` from a stored two-electron tensor
       !!
-      !! Threaded over the target element, which needs no reduction: each `(mu, nu)`
-      !! accumulates into its own entry. That is worth doing because the response
-      !! solver applies this thousands of times -- once per iteration of an inner
-      !! solve inside every iteration of an outer one -- so it, and not the integrals,
-      !! is where an in-core run spends its time. Not `pure` any more for the sake of
-      !! the directive.
+      !! **Correct for an antisymmetric density as well as a symmetric one.**
+      !! Nothing here assumes either, and the Coulomb term vanishes of its own
+      !! accord for an antisymmetric density because the integral is symmetric
+      !! in the contracted pair.
       !!
-      !! Correct for an antisymmetric density as well as a symmetric one: nothing
-      !! here assumes either, and the Coulomb term vanishes of its own accord when
-      !! the density is antisymmetric because the integral is symmetric in the
-      !! contracted pair.
-      !!
-      !! **Blocked over the ket pair, not over the target element.** Writing the
-      !! sum with `(mu, nu)` outermost reads the exchange integral as
-      !! `eri(mu, la, nu, si)` with `la` innermost -- a stride of `n` doubles, so
-      !! every one of the n^4 loads pulls a cache line to use eight bytes of it.
-      !! The tensor is 380 MB at eighty-three functions and the loop was touching
-      !! it as though it were eight times that.
-      !!
-      !! Fixing the order costs nothing in arithmetic. For a fixed ket pair
-      !! `(c, d)` the slice `eri(:, :, c, d)` is contiguous, and *both* terms are
-      !! expressible on it:
-      !!
-      !!   * Coulomb wants `J += D(c,d) * eri(:,:,c,d)` -- an axpy over the block.
-      !!   * Exchange wants `K(:,c) += eri(:,:,c,d) . D(:,d)` -- a matrix-vector
-      !!     product on the same block. Relabel `(mu la|nu si)` as `(a b|c d)`:
-      !!     `K(a,c) = sum_bd D(b,d) (a b|c d)`, which is that gemv summed over d.
-      !!
-      !! So the tensor is walked once, in order, and each 55 kB block is used
-      !! twice while it is still in L2. Same n^4 flops, an eighth of the traffic.
+      !! **Blocked over the ket pair, not over the target element.** For a fixed
+      !! `(c, d)` the slice `eri(:, :, c, d)` is contiguous and carries both
+      !! terms: Coulomb is `J += D(c,d) * eri(:,:,c,d)`, an axpy over the block,
+      !! and exchange is `K(:,c) += eri(:,:,c,d) . D(:,d)`, a matrix-vector
+      !! product on the same block. The tensor is walked once, in order, and
+      !! each block used twice while it is still in cache.
       real(dp), intent(in) :: h(:, :), eri(:, :, :, :), density(:, :)
       real(dp), intent(out) :: fock(:, :)
       real(dp), intent(in), optional :: k_scale   !! Exact-exchange fraction, default one
@@ -2326,14 +1968,14 @@ contains
       j_mat = 0.0_dp
       k_mat = 0.0_dp
 
-      ! Threaded over `c`, which is what makes the exchange update safe without a
+      ! Threaded over `c`, which makes the exchange update safe without a
       ! reduction: `K(:, c)` belongs to exactly one thread. Coulomb accumulates
-      ! over every `(c, d)` and so does need one, but it is a single n*n array per
-      ! thread merged once, not per-element atomics.
+      ! over every `(c, d)` and does need one, as a single n*n array per thread
+      ! merged once.
       !
-      ! The `if` keeps genuinely tiny systems serial. The response solver enters
-      ! this region tens of thousands of times, so for a handful of basis functions
-      ! the barriers cost more than the arithmetic; by a few dozen they do not.
+      ! The `if` keeps genuinely tiny systems serial: the response solver enters
+      ! this region tens of thousands of times, and for a handful of basis
+      ! functions the barriers cost more than the arithmetic.
       !$omp parallel default(none) private(a, b, c, d, dcd, j_local) &
       !$omp shared(n, eri, density, j_mat, k_mat) if(n >= 16)
       allocate (j_local(n, n))
@@ -2365,16 +2007,12 @@ contains
    subroutine build_fock_df(h, b, density, coeff, n_occ, fock, k_scale, j_scale)
       !! F = H + J - K/2 from the fitted tensor rather than the exact ERIs
       !!
-      !! Neither term ever forms a four-index object. Density fitting is not the
-      !! opposite of a direct build -- it removes the four-index integrals
-      !! altogether, so the direct/stored distinction does not apply to it. What
-      !! is stored is B, which is n^2 by n_aux: 40 MB where the exact tensor is
-      !! 800 MB, and n^3 rather than n^4.
+      !! Neither term ever forms a four-index object. What is stored is B, which
+      !! is n^2 by n_aux -- n^3 rather than n^4.
       !!
       !! J is two contractions with the density: c_P = sum_uv B(uv,P) D_uv, then
       !! J_uv = sum_P B(uv,P) c_P. Both are BLAS-2 against the flattened tensor,
-      !! blocked over P so each thread owns a slice of the output and nothing
-      !! but the final merge is shared.
+      !! blocked over P.
       !!
       !! K goes through the occupied orbitals rather than the density. Writing
       !! D = 2 sum_i C_ui C_vi and substituting,
@@ -2383,45 +2021,32 @@ contains
       !!         = 2 sum_P sum_i W(u,i,P) W(v,i,P),   W^P = B^P C_occ
       !!
       !! which costs 2 n^2 n_occ per auxiliary function instead of the 2 n^3 of
-      !! contracting the full density. The saving is a factor of n/n_occ, and it
-      !! grows with basis size at fixed electron count -- which is the regime
-      !! density fitting is used in. On water/cc-pVDZ that is already 4.8x.
+      !! contracting the full density -- a factor of n/n_occ.
       !!
       !! **Threaded over P, not collapsed into one GEMM.** Stacking every W^P
-      !! side by side turns sum_P W^P (W^P)^T into a single large product, which
-      !! is the right move against a threaded BLAS and the wrong one here: this
-      !! project links a sequential BLAS on purpose, so one GEMM is one core no
-      !! matter how large it is. Measured, that version ran the exchange 2.2x
-      !! faster on sixteen threads where the per-P loop below runs it 12x. An
-      !! auxiliary function owns a private partial K instead, and the partials
-      !! are merged once at the end.
-      !!
-      !! Every loop here is threaded. It was written as three serial loops over
-      !! n_aux with a `reshape` of a column of B inside each, which is where a
-      !! fitted SCF spent nearly all of its time: at 560 functions and n_aux
-      !! near 2000 that is six thousand 2.5 MB array temporaries per iteration,
-      !! evaluated on one core while the rest of the node idled. The reshapes
-      !! are gone -- a column of B reaches the GEMM through an explicit-shape
-      !! dummy, which is sequence association and copies nothing.
+      !! side by side would turn sum_P W^P (W^P)^T into a single large product,
+      !! which is the right move against a threaded BLAS; this project links a
+      !! sequential one on purpose, so one GEMM is one core however large it is.
+      !! Each auxiliary function owns a private partial K, merged once at the
+      !! end.
       real(dp), intent(in) :: h(:, :), density(:, :)
       real(dp), intent(in) :: b(:, :)
       contiguous :: b
          !! So that a column block `b(:, p0:p1)` reaches BLAS as a view, and
-         !! `b(:, p)` reaches `df_exchange_slice` as one. Without it the
-         !! compiler is entitled to copy 2.5 MB per auxiliary function --
-         !! reinstating, per call, the very temporaries this removed.
-         !! On its own line because `fortitude` mis-scopes the argument list
-         !! when `contiguous` shares a declaration with `intent`.
+         !! `b(:, p)` reaches `df_exchange_slice` as one. Without it the compiler
+         !! is entitled to copy a column per auxiliary function.
+         !!
+         !! On its own line because `fortitude` mis-scopes the argument list when
+         !! `contiguous` shares a declaration with `intent`.
       real(dp), intent(in) :: coeff(:, :)   !! MO coefficients; only the occupied block is read
       integer, intent(in) :: n_occ
       real(dp), intent(out) :: fock(:, :)
       real(dp), intent(in), optional :: k_scale   !! Exact-exchange fraction, default one
       real(dp), intent(in), optional :: j_scale
          !! Coulomb fraction, default one. Zero is the long-range exchange pass
-         !! of a range-separated functional: the attenuated tensor must not
-         !! contribute a second Coulomb term, because `erf(omega r)/r` and
-         !! `1/r` differ there too and J is already complete from the full-range
-         !! pass.
+         !! of a range-separated functional, where the attenuated tensor must not
+         !! contribute a second Coulomb term: J is already complete from the
+         !! full-range pass.
 
       real(dp) :: kf, jf
       real(dp), allocatable :: c(:), j_flat(:), j_local(:), k(:, :), w(:, :), c_occ(:, :)
@@ -2439,8 +2064,7 @@ contains
       fock = h
 
       ! Coulomb. Skipped outright when it is scaled away, which is the
-      ! long-range exchange pass of a range-separated functional: two full
-      ! passes over B is not a cheap way to compute something discarded.
+      ! long-range exchange pass of a range-separated functional.
       if (jf /= 0.0_dp) then
          allocate (c(naux), j_flat(n*n), d_flat(n*n))
          d_flat = reshape(density, [n*n])
@@ -2512,14 +2136,10 @@ contains
    subroutine df_exchange_slice(b_p, c_occ, w, k_local, n)
       !! One auxiliary function's contribution to K
       !!
-      !! Exists so that a column of B can be seen as the (n, n) matrix it
-      !! already is. `b_p` is explicit-shape against a contiguous rank-1 actual
-      !! argument, so this is sequence association: the reinterpretation is
-      !! free, where the `reshape` it replaces materialised the whole block --
-      !! 2.5 MB at 560 functions, once per auxiliary function, per iteration.
-      !!
-      !! Both halves in one place because `w` is scratch that never leaves:
-      !! W^P is formed and consumed here, so nothing outside needs the stack.
+      !! `b_p` is explicit-shape against a contiguous rank-1 actual argument, so
+      !! a column of B is seen as the (n, n) matrix it already is by sequence
+      !! association -- free, where a `reshape` would materialise the block.
+      !! `w` is scratch that never leaves: W^P is formed and consumed here.
       integer, intent(in) :: n
       real(dp), intent(in) :: b_p(n, n)
       real(dp), intent(in) :: c_occ(:, :)
@@ -2527,8 +2147,7 @@ contains
       real(dp), intent(inout) :: k_local(:, :)
 
       call pic_gemm(b_p, c_occ, w, beta=0.0_dp)
-      ! A rank-k update, not a general product: W W^T is symmetric, so half of
-      ! what the GEMM computed was the other half's mirror image. Only the
+      ! A rank-k update, not a general product: W W^T is symmetric. Only the
       ! lower triangle is written, and the caller mirrors it once at the end
       ! rather than n_aux times here.
       call pic_syrk(w, k_local, uplo="L", alpha=2.0_dp, beta=1.0_dp)
@@ -2541,8 +2160,8 @@ contains
       real(dp), intent(in) :: h(:, :), eri(:, :, :, :), d_alpha(:, :), d_beta(:, :)
       real(dp), intent(out) :: fock_a(:, :), fock_b(:, :)
       real(dp), intent(in), optional :: k_scale
-         !! Fraction of exact exchange, as in the closed-shell build: one for
-         !! Hartree-Fock and the default, less for a hybrid Kohn-Sham build.
+         !! Fraction of exact exchange. One for Hartree-Fock and the default,
+         !! less for a hybrid Kohn-Sham build.
 
       integer :: mu, nu, la, si, n
       real(dp) :: dt, kf

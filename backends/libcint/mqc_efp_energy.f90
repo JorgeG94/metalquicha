@@ -11,15 +11,13 @@ module mqc_efp_energy
    !! localized orbitals on different fragments. This module is where the two meet,
    !! and it exists so no caller has to know which term came from where.
    !!
-   !! **Every term here is separately validated against GAMESS.** The references are
-   !! in `EFP_PLAN.md`, all for the same water dimer, and the point of keeping the
-   !! breakdown in the result rather than returning a bare total is that a regression
-   !! then names the term it broke.
+   !! **Every term here is separately validated against GAMESS**, all for the
+   !! same water dimer, which is why the result keeps the breakdown rather than
+   !! returning a bare total: a regression then names the term it broke.
    !!
-   !! **Dispersion is the damped sum `E6 + E7 + E8`**, which is what GAMESS totals
-   !! (`efdrvr.src:1923`) when the potential carries the tensors for all three. The
-   !! undamped `dispersion_energy_e6` in `mqc_efp_interaction` is not used here; it
-   !! exists because it was the rung the ladder started on.
+   !! **Dispersion is the damped sum `E6 + E7 + E8`**, which is what GAMESS
+   !! totals when the potential carries the tensors for all three. The undamped
+   !! `dispersion_energy_e6` in `mqc_efp_interaction` is not used here.
    !!
    !! **Fragments arrive already turned.** `place_fragment` gives the rotation a deck
    !! implies and `mqc_efp_rotate` applies it, so by the time a fragment reaches this
@@ -41,14 +39,14 @@ module mqc_efp_energy
    public :: efp_interaction_energy
    public :: place_fragment
 
-   !> How far a deck atom may sit from where the potential's own geometry puts it,
-   !> after the rigid shift, before the placement is refused. A fragment is rigid, so
-   !> this is not a fitting tolerance -- it is the width of the round trip through
-   !> the file, which carries ten decimals.
+   ! How far a deck atom may sit from where the potential's own geometry puts it,
+   ! after the rigid shift, before the placement is refused. A fragment is rigid,
+   ! so this is not a fitting tolerance -- it is the width of the round trip
+   ! through the file, which carries ten decimals.
    real(dp), parameter :: PLACEMENT_TOL = 1.0e-6_dp
 
-   !> Every multipole rank the electrostatics carries: charges, dipoles,
-   !> quadrupoles and octupoles.
+   ! Every multipole rank the electrostatics carries: charges, dipoles,
+   ! quadrupoles and octupoles.
    integer, parameter :: MAX_RANK = 3
 
    type :: efp_energy_t
@@ -77,11 +75,10 @@ contains
       !! not a sum of pair terms. The other three are pairwise and are summed over
       !! `a < b`. Nothing here assumes two fragments.
       !!
-      !! A term whose data the potential does not carry is left at zero rather than
-      !! erroring: a potential written without the dynamic polarizabilities has no
-      !! dispersion to contribute, and refusing the whole calculation over it would
-      !! make a legitimate potential unusable. What is *not* tolerated is a term
-      !! failing for any other reason, which propagates.
+      !! A term whose data the potential does not carry is left at zero rather
+      !! than erroring -- a potential written without the dynamic polarizabilities
+      !! has no dispersion to contribute. A term failing for any other reason
+      !! propagates.
       type(efp_fragment_t), intent(in) :: fragments(:)
       real(dp), intent(in) :: translations(:, :)   !! (3, n_fragments), Bohr
       type(error_t), intent(inout) :: error
@@ -169,16 +166,13 @@ contains
       !! frame three atoms define.
       !!
       !! **The rotation is returned, not applied.** Turning the fragment is
-      !! `rotate_fragment`, and it is a separate step because it rewrites every tensor
-      !! the potential carries and the caller may want to know the transform without
-      !! paying for that.
+      !! `rotate_fragment`, a separate step because it rewrites every tensor the
+      !! potential carries.
       !!
-      !! Every atom is then required to land where the potential says, which is a test
-      !! rather than a fit: an EFP fragment is rigid, so a residual means the deck and
-      !! the potential disagree about something. It catches a potential paired with the
-      !! wrong species, atoms listed in a different order, and a geometry that has been
-      !! relaxed since the potential was made -- each of which would otherwise place
-      !! the fragment somewhere plausible and return an energy.
+      !! Every atom is then required to land where the potential says, which is a
+      !! test rather than a fit: an EFP fragment is rigid, so a residual means the
+      !! deck and the potential disagree -- the wrong species, atoms listed in a
+      !! different order, or a geometry relaxed since the potential was made.
       type(efp_fragment_t), intent(in) :: frag
       real(dp), intent(in) :: coords(:, :)     !! (3, n_atoms) from the deck, Bohr
       real(dp), intent(out) :: rot(3, 3)
@@ -216,6 +210,8 @@ contains
 
    pure function real_text(x) result(text)
       !! A number as text, for a message
+      ! TODO(mqc): this and `count_text` below duplicate `pic_io`'s `to_char`,
+      ! which every other module in this backend uses for the same job.
       real(dp), intent(in) :: x
       character(len=:), allocatable :: text
 

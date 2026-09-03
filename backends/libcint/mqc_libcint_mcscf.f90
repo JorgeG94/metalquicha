@@ -13,13 +13,11 @@ module mqc_libcint_mcscf
    !!     g_pq = 2 (F_qp - F_pq)
    !!
    !! where `F` is the generalised Fock matrix. **That sign is fixed by finite
-   !! differences, not asserted.** Both orderings appear in the literature
-   !! because both `C exp(kappa)` and `C exp(-kappa)` are used as the
-   !! parametrisation, and getting it backwards gives an optimiser that climbs
-   !! -- which looks like a convergence problem rather than a sign error, and is
-   !! diagnosed as one for a long time. `test_mqc_mcscf.f90` differentiates the
-   !! CASCI energy numerically and compares. Its rows are built differently
-   !! depending on what the orbital is:
+   !! differences, not asserted**, in `test_mqc_mcscf.f90`: both orderings
+   !! appear in the literature because both `C exp(kappa)` and `C exp(-kappa)`
+   !! are used as the parametrisation, and getting it backwards gives an
+   !! optimiser that climbs. The rows of `F` are built differently depending on
+   !! what the orbital is:
    !!
    !!     F_in = 2 (FI_ni + FA_ni)                            n inactive
    !!     F_tn = sum_u D_tu FI_nu + sum_uvw d_tuvw (nu|vw)    t active
@@ -46,9 +44,7 @@ module mqc_libcint_mcscf
    !! `one_index_fock` is `generalized_fock` with each orbital in turn replaced
    !! by `C kappa` and the Hessian is read out of it through the gradient
    !! formula above. Nothing here can have a Hessian that disagrees with its
-   !! gradient, which is worth more than the lines it saves: the two are checked
-   !! against finite differences separately, and a discrepancy between them is
-   !! the failure that a converging optimiser hides best.
+   !! gradient.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use pic_io, only: to_char
@@ -85,23 +81,18 @@ module mqc_libcint_mcscf
       !!
       !! Every eigenvalue is raised until the smallest reaches this, so a mode
       !! that is genuinely stiff keeps its own curvature and only the soft and
-      !! the inverted ones are regularised. The number wants to sit below the
-      !! softest real mode and above zero: water in STO-3G has its smallest
-      !! positive eigenvalue at 1.6e-3, so anything much larger would damp a
-      !! direction that did not need it and cost the quadratic convergence that
-      !! is the reason for building the Hessian at all.
+      !! the inverted ones are regularised. It has to sit below the softest real
+      !! mode and above zero; larger damps directions that did not need it and
+      !! costs the quadratic convergence the Hessian was built for.
    real(dp), parameter :: SADDLE_CURVATURE = -1.0e-5_dp
       !! How negative an eigenvalue has to be before the point is called a
       !! saddle rather than a minimum.
       !!
-      !! The Hessian is analytic, so its noise floor is rounding rather than
-      !! anything to do with step sizes, and this could be a good deal tighter.
-      !! It is not, because a nearly redundant rotation -- an active orbital
+      !! Deliberately loose. A nearly redundant rotation -- an active orbital
       !! whose occupation has gone to two, say -- has a nearly zero eigenvalue
       !! whose sign is decided by how well the CI converged, and chasing those
-      !! costs iterations and buys nothing. A real symmetry-breaking mode is
-      !! orders of magnitude below this: the water case that motivated it sits
-      !! at -1.0e-2.
+      !! buys nothing. A real symmetry-breaking mode is orders of magnitude
+      !! below this.
    real(dp), parameter :: MAX_ROTATION = 0.2_dp
       !! Largest rotation angle the trust radius is allowed to grow back to, in
       !! radians. Roughly 11 degrees.
@@ -114,18 +105,14 @@ module mqc_libcint_mcscf
       !!
       !! About fifteen units in the last place of a molecular energy, so it is
       !! the resolution of the arithmetic rather than a convergence criterion.
-      !! It is needed because the step is tested by whether the energy went
-      !! down, and near the solution a Newton step is worth `g^2/H` -- at a
-      !! gradient of 1e-7 that is 1e-13, below what the energy can report. The
-      !! test then measures the noise of the CI solve, rejects a perfectly good
-      !! step, halves the trust radius and stalls, at a gradient a decade or
-      !! two above the one asked for. So a step whose *predicted* gain is below
-      !! this is taken without being tested: there is nothing left to test it
-      !! with, and the gradient goes on shrinking.
+      !! Near the solution a Newton step is worth `g^2/H`, which drops below
+      !! what the energy can report while the gradient is still shrinking, so a
+      !! step whose *predicted* gain is below this is taken without being
+      !! tested rather than rejected on the noise of the CI solve.
    real(dp), parameter :: TRUST_GROWTH = 1.3_dp
       !! How fast the trust radius recovers after a successful step. Slower than
-      !! it shrinks, which is the usual asymmetry: an over-long step costs a
-      !! wasted CI solve, an over-short one only costs an iteration.
+      !! it shrinks: an over-long step costs a wasted CI solve, an over-short
+      !! one only an iteration.
 
    type :: casscf_result_t
       !! What an orbital optimisation leaves behind
@@ -153,13 +140,10 @@ module mqc_libcint_mcscf
       logical :: converged = .false.
       logical :: stalled = .false.
          !! The optimisation stopped because no step downhill could be found,
-         !! rather than because it ran out of iterations. The distinction
-         !! matters to whoever reads the failure: more iterations do not help.
-         !! A step that the model expects to be worth less than the resolution
-         !! of the energy is taken without being tested, so this no longer
-         !! fires merely because the gradient has outrun what the energy can
-         !! resolve; reaching it now means the surface itself defeated the
-         !! quadratic model.
+         !! rather than because it ran out of iterations -- so more iterations
+         !! will not help. A step worth less than `ENERGY_RESOLUTION` is taken
+         !! untested, so this means the surface defeated the quadratic model
+         !! and not that the gradient outran what the energy can resolve.
    end type casscf_result_t
 
    type :: mcscf_fock_t
@@ -190,12 +174,9 @@ contains
       !! parameter with a real gradient. Two orbitals *within* one subspace are
       !! redundant again, because a subspace is complete in itself.
       !!
-      !! Getting this wrong is not loud. Treat a real parameter as redundant and
-      !! the optimiser converges, reports a small gradient, and stops somewhere
-      !! that is not a stationary point; treat a redundant one as real and the
-      !! Hessian acquires a null direction. `subspaces` absent means a complete
-      !! active space, which is the case the rest of this module was written
-      !! for.
+      !! Getting this wrong is not loud: treat a real parameter as redundant and
+      !! the optimiser stops somewhere that is not a stationary point, and treat
+      !! a redundant one as real and the Hessian acquires a null direction.
       integer, intent(in) :: p, q, n_inactive, n_active
       integer, intent(in), optional :: subspaces(:)
          !! Active orbital each subspace starts at, ascending, as
@@ -249,6 +230,9 @@ contains
    subroutine generalized_fock(mol, orbitals, n_inactive, n_active, dm1, dm2, &
                                fock, error)
       !! Build `F_mn`, and the inactive and active Fock matrices with it
+      ! TODO(mqc): calls `mol%eris_packed`, which recomputes the whole packed AO
+      ! integral list rather than caching it. `orbital_hessian` does the same,
+      ! so a CASSCF macro-iteration builds them twice.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)      !! (n_ao, n_mo)
       integer, intent(in) :: n_inactive, n_active
@@ -298,10 +282,9 @@ contains
       call build_fock_direct(mol, h_ao, d_inactive, bounds, f_inactive_ao, stats, error)
       if (error%has_error()) return
 
-      ! The active mean field, which is the same J - K/2 built from the active
-      ! density and with no one-electron part. Passing a zero core Hamiltonian
-      ! is what leaves it out; there is no separate two-electron-only entry
-      ! point and inventing one would be a second copy of the quartet loop.
+      ! The active mean field: the same J - K/2 built from the active density
+      ! and with no one-electron part, which is what the zero core Hamiltonian
+      ! leaves out.
       allocate (d_active(n_ao, n_ao), f_active_ao(n_ao, n_ao), zero_h(n_ao, n_ao))
       allocate (work(n_ao, n_active))
       call pic_gemm(c_active, dm1, work)
@@ -391,15 +374,10 @@ contains
    subroutine rotation_matrix(kappa, rotation)
       !! `exp(kappa)` for antisymmetric `kappa`, by scaling and squaring
       !!
-      !! The result is orthogonal to machine precision for any step size, which
-      !! is the reason for parametrising orbital changes this way: a large step
-      !! is a bad step but never an invalid one, and no reorthogonalisation is
-      !! needed after it.
-      !!
-      !! Scaling and squaring because a plain Taylor series loses accuracy once
-      !! the step is not small, and orbital steps early in an optimisation are
-      !! not small. Halving until the norm is below 1/2 costs a few matrix
-      !! multiplies and makes the series converge in a handful of terms.
+      !! Orthogonal to machine precision for any step size, so a large step is a
+      !! bad step but never an invalid one and no reorthogonalisation is needed
+      !! after it. Scaled by halving until the norm is below 1/2, because a
+      !! plain Taylor series loses accuracy once the step is not small.
       real(dp), intent(in) :: kappa(:, :)
       real(dp), allocatable, intent(out) :: rotation(:, :)
 
@@ -444,11 +422,10 @@ contains
       !! The rotations that are real parameters, as a flat list
       !!
       !! Everything second order works in this list rather than in the `n_mo` by
-      !! `n_mo` matrix the gradient arrives in, because a Hessian is a matrix
-      !! over *parameters*: carry the redundant rotations along and it is
-      !! singular by construction, which is the one thing a Newton step cannot
-      !! survive. Only `p > q` appears, since `kappa` is antisymmetric and the
-      !! two triangles are the same variable seen twice.
+      !! `n_mo` matrix the gradient arrives in: carry the redundant rotations
+      !! along and the Hessian is singular by construction. Only `p > q`
+      !! appears, since `kappa` is antisymmetric and the two triangles are the
+      !! same variable seen twice.
       integer, intent(in) :: n_mo, n_inactive, n_active
       integer, allocatable, intent(out) :: rows(:), cols(:)
          !! `(rows(k), cols(k))` is the orbital pair parameter `k` rotates
@@ -484,12 +461,11 @@ contains
       !! the generalised Fock reads: its virtual rows are zero, so nothing ever
       !! asks what the potential does between two empty orbitals.
       !!
-      !! **The density must vanish on the virtual-virtual block.** Both densities
-      !! this is used for are one-index transforms of a density that was carried
-      !! by occupied orbitals, so one index is always occupied and the block is
-      !! zero identically -- which is what makes the two integral blocks above
-      !! sufficient. A density without that structure would need
-      !! `(virtual virtual|virtual virtual)` integrals, which are not here.
+      !! **The density must vanish on the virtual-virtual block**, which is what
+      !! makes the two integral blocks sufficient. Both densities this is used
+      !! for are one-index transforms of a density carried by occupied orbitals,
+      !! so one index is always occupied. A density without that structure would
+      !! need `(virtual virtual|virtual virtual)` integrals, which are not here.
       real(dp), intent(in) :: a_block(:, :, :, :)   !! `(p q|r s)`, `q` and `s` occupied
       real(dp), intent(in) :: b_block(:, :, :, :)   !! `(p q|r s)`, `r` and `s` occupied
       integer, intent(in) :: n_occ
@@ -502,11 +478,9 @@ contains
       n_mo = size(density, 1)
       allocate (weight(n_mo, n_occ), exchange(n_mo, n_occ))
 
-      ! The Coulomb sum runs over every pair of density indices, but the block
-      ! on hand only has the second one occupied. A pair with the *first* index
-      ! occupied is the same integral read the other way round, so folding it
-      ! onto its partner -- doubling the rows that are not occupied -- covers
-      ! both without a second block.
+      ! The block on hand has only the second density index occupied. A pair
+      ! with the *first* index occupied is the same integral read the other way
+      ! round, so doubling the rows that are not occupied covers both.
       weight = density(:, 1:n_occ)
       weight(n_occ + 1:n_mo, :) = 2.0_dp*weight(n_occ + 1:n_mo, :)
 
@@ -526,7 +500,7 @@ contains
          end do
          ! The exchange cannot be folded the same way: swapping the density
          ! indices moves them to different slots of the integral, so the half
-         ! with a virtual second index is read out of the other block instead.
+         ! with a virtual second index comes from the other block.
          do s = n_occ + 1, n_mo
             do r = 1, n_occ
                exchange(:, q) = exchange(:, q) + density(r, s)*a_block(s, q, :, r)
@@ -542,26 +516,18 @@ contains
                              kappa, transformed)
       !! The generalised Fock matrix differentiated along one orbital rotation
       !!
-      !! This is the whole of the second-order method. Expanding `C exp(kappa)`
-      !! shows that the term of the energy quadratic in `kappa` is the term
-      !! *linear* in it, evaluated on integrals that have themselves been
-      !! differentiated once -- so
-      !!
       !!     (H kappa)_pq = 2 (Ft_qp - Ft_pq)
       !!
       !! with `Ft` built exactly as `generalized_fock` builds `F`, but with each
       !! orbital in turn replaced by `C kappa`. Differentiating an integral is
       !! the product rule over its coefficient matrices, so every term below is
-      !! one of `generalized_fock`'s with one coefficient swapped, and the
-      !! Hessian needs no formula of its own. Getting the *same* expression to
-      !! serve as gradient and Hessian is what makes the two impossible to
-      !! disagree.
+      !! one of `generalized_fock`'s with one coefficient swapped.
       !!
       !! The density matrices are the ones the CI produced and are held fixed:
       !! this is the orbital-orbital block at fixed CI, not the full second
-      !! derivative of the two-step energy. The difference is a Schur
-      !! complement that only makes eigenvalues smaller, so a negative direction
-      !! found here is a genuine one.
+      !! derivative of the two-step energy. The difference is a Schur complement
+      !! that only makes eigenvalues smaller, so a negative direction found here
+      !! is a genuine one.
       real(dp), intent(in) :: a_block(:, :, :, :)   !! `(p q|r s)`, `q` and `s` occupied
       real(dp), intent(in) :: b_block(:, :, :, :)   !! `(p q|r s)`, `r` and `s` occupied
       type(mcscf_fock_t), intent(in) :: fock
@@ -581,9 +547,9 @@ contains
       n_occ = n_inactive + n_active
 
       ! The inactive density is C_i C_i^T, so its derivative replaces one factor
-      ! at a time; the result is non-zero only where exactly one index is
-      ! inactive, which is also why a rotation between two inactive orbitals
-      ! moves nothing.
+      ! at a time and is non-zero only where exactly one index is inactive --
+      ! which is also why a rotation between two inactive orbitals moves
+      ! nothing.
       allocate (d_inactive(n_mo, n_mo), d_active(n_mo, n_mo), occupations(n_mo, n_mo))
       d_inactive = 0.0_dp
       d_inactive(:, 1:n_inactive) = 2.0_dp*kappa(:, 1:n_inactive)
@@ -632,8 +598,8 @@ contains
       end do
 
       ! The rows, assembled exactly as `generalized_fock` assembles them. The
-      ! virtual rows stay zero: they are zero because the density is, and the
-      ! density is not what is being differentiated.
+      ! virtual rows stay zero because the density is, and the density is not
+      ! what is being differentiated.
       transformed = 0.0_dp
       do i = 1, n_inactive
          do n = 1, n_mo
@@ -668,15 +634,12 @@ contains
       !!
       !! One column per parameter, each the differentiated Fock matrix of
       !! `one_index_fock` read through the gradient expression. Dense, because
-      !! the point of building it is to *diagonalise* it -- a Newton step alone
-      !! would not need the eigenvalues, but escaping a saddle does, and at
-      !! these sizes the eigendecomposition is far cheaper than the CI solve it
-      !! saves.
+      !! the point of building it is to *diagonalise* it: escaping a saddle
+      !! needs the eigenvalues.
       !!
-      !! The two integral blocks are the whole memory cost, `n_mo^2 n_occ^2`
-      !! each. Everything an MCSCF Hessian needs has at most two general indices
-      !! because the density matrices supply the rest, so no `n_mo^4` tensor is
-      !! ever formed.
+      !! The two integral blocks are `n_mo^2 n_occ^2` each. Everything an MCSCF
+      !! Hessian needs has at most two general indices because the density
+      !! matrices supply the rest, so no `n_mo^4` MO tensor is ever formed.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)      !! (n_ao, n_mo)
       integer, intent(in) :: n_inactive, n_active
@@ -720,9 +683,9 @@ contains
       end do
 
       ! Symmetric in exact arithmetic. Away from a stationary point the two
-      ! triangles differ by rounding, and by the term that distinguishes
-      ! differentiating the gradient from differentiating the energy twice --
-      ! which is antisymmetric, and so is removed by exactly this average.
+      ! triangles differ by rounding and by the antisymmetric term that
+      ! distinguishes differentiating the gradient from differentiating the
+      ! energy twice, which this average removes.
       hessian = 0.5_dp*(hessian + transpose(hessian))
 
       deallocate (a_block, b_block, kappa, transformed)
@@ -732,27 +695,21 @@ contains
                           predicted, error)
       !! The Newton step, level shifted, and pushed off a saddle when it is on one
       !!
-      !! In the eigenbasis of the Hessian the step is one division per mode. Two
-      !! things go wrong there and both are handled by looking at the eigenvalue.
+      !! In the eigenbasis of the Hessian the step is one division per mode, and
+      !! two things go wrong there.
       !!
-      !! A mode with small or negative curvature would divide by nearly nothing
-      !! and take an absurd step, so every eigenvalue is raised by a single
-      !! shift until the smallest is positive. One shift for all modes rather
-      !! than a floor applied mode by mode, because that is the exact solution
-      !! of the trust-region subproblem and leaves the well-conditioned modes
-      !! essentially untouched.
+      !! A mode with small or negative curvature would divide by nearly nothing,
+      !! so every eigenvalue is raised by a single shift until the smallest
+      !! reaches `MIN_CURVATURE`. One shift for all modes rather than a per-mode
+      !! floor, because that is the exact solution of the trust-region
+      !! subproblem and leaves the well-conditioned modes untouched.
       !!
-      !! **A mode with negative curvature and no gradient on it is the case that
-      !! matters.** That is a saddle, and it is where a first-order optimiser
-      !! stops and reports success: the gradient really is zero, so no step
-      !! rule built from the gradient alone can move. It happens whenever the
-      !! starting orbitals carry a symmetry the solution does not -- the
-      !! symmetry-breaking rotations have exactly zero gradient and keep it --
-      !! and the energy left on the table can be tens of millihartree. The
-      !! division gives nothing to work with there, so such a mode is instead
-      !! displaced by hand. Either sign descends, since the curvature is
-      !! negative and the slope is zero, so no choice has to be made; the caller
-      !! backtracks if the step was too long for the cubic term.
+      !! **A mode with negative curvature and no gradient on it is a saddle**,
+      !! and it is where an optimiser built from the gradient alone stops and
+      !! reports success. It happens whenever the starting orbitals carry a
+      !! symmetry the solution does not. The division gives nothing to work with
+      !! there, so such a mode is displaced by `escape` instead; either sign
+      !! descends, and the caller backtracks if the step was too long.
       real(dp), intent(in) :: hessian(:, :)
       real(dp), intent(in) :: gradient(:, :)   !! (n_mo, n_mo), as `orbital_gradient`
       integer, intent(in) :: rows(:), cols(:)  !! From `rotation_parameters`
@@ -835,31 +792,22 @@ contains
       !! which after the first few iterations is nearly the answer already.
       !!
       !! Two-step, so the orbital step ignores the coupling between orbital
-      !! rotations and the CI coefficients: it assumes the CI is re-optimised
-      !! afterwards, which it is, but not that the two respond to each other.
-      !! That costs iterations near the solution and nothing else, because the
-      !! neglected block only makes the true curvature smaller than the one
-      !! used here -- so a direction this sees as downhill really is one.
+      !! rotations and the CI coefficients. That costs iterations near the
+      !! solution and nothing else, because the neglected block only makes the
+      !! true curvature smaller than the one used here.
       !!
-      !! **What the second-order step buys is not speed.** A first-order
-      !! optimiser stops wherever the gradient vanishes, and on a symmetric
-      !! starting guess that can be a saddle rather than a minimum: the
-      !! rotations that would break the symmetry have exactly zero gradient and
-      !! keep it, so the run converges cleanly, reports a stationary point, and
-      !! is tens of millihartree above the answer. Nothing about the gradient
-      !! says so. The Hessian does, and it is therefore built and diagonalised
-      !! even on the iteration that looks converged -- convergence here means a
-      !! small gradient *and* no negative curvature.
+      !! **Convergence means a small gradient *and* no negative curvature.** An
+      !! optimiser built from the gradient alone stops wherever it vanishes,
+      !! which on a symmetric starting guess can be a saddle: the rotations that
+      !! would break the symmetry have exactly zero gradient and keep it. So the
+      !! Hessian is built and diagonalised even on the iteration that looks
+      !! converged.
       !!
-      !! **There is no extrapolation here and that is a measurement, not an
-      !! oversight.** An earlier first-order version needed DIIS badly -- it
-      !! took water in cc-pVDZ from about 102 macro-iterations to about 60.
-      !! Against a Newton step it earns nothing: measured across five cases it
-      !! was worth one iteration either way (N2 10 and 10, water cc-pVDZ 21 and
-      !! 19, water STO-3G 17 and 16), while costing an extra CI solve on every
-      !! iteration to find that out. So it was removed, and with it the
-      !! reorthonormalisation that extrapolating orbitals directly made
-      !! necessary.
+      !! There is no extrapolation. Against a Newton step DIIS was measured
+      !! worth one iteration either way, for an extra CI solve per iteration.
+      ! TODO(mqc): `max_iterations = 0` skips the loop, leaving `largest`
+      ! undefined and `dm1`/`dm2` unallocated where the assignments below read
+      ! all three.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)
       integer, intent(in) :: n_inactive, n_active, n_alpha, n_beta
@@ -926,7 +874,7 @@ contains
       if (error%has_error()) return
 
       ! Which rotations are real parameters does not change as the orbitals
-      ! move, so the list is built once and the Hessian is indexed by it.
+      ! move, so the list is built once.
       if (restricted) then
          call rotation_parameters(n_mo, n_inactive, n_active, rows, cols, subspaces)
       else
@@ -1007,23 +955,18 @@ contains
                exit
             end if
             ! Leaving a saddle is a fresh direction, so it gets a fresh trust
-            ! radius: the old one records how the *previous* direction behaved
-            ! and is usually small by the time a run has settled, which would
-            ! make the escape too short to show above the noise.
+            ! radius: the old one records how the previous direction behaved and
+            ! is usually small by the time a run has settled.
             trust = MAX_ROTATION
             if (loud) call logger%info("    the gradient has vanished at a saddle "// &
                                        "point; following the negative curvature out")
          end if
 
-         ! **The trust region is what makes this converge rather than
-         ! oscillate.** Even an exact Hessian describes the surface only near
-         ! the point it was built at, and early steps are not near it: the
-         ! quadratic model happily proposes a rotation that raises the energy.
-         ! Rejecting any such step and halving the radius costs a CI solve when
-         ! it happens and removes the failure mode entirely. It is also what
-         ! picks the sign of a saddle escape, where the model is indifferent --
-         ! both directions descend to second order, and only the cubic term,
-         ! which is not modelled, distinguishes them.
+         ! The trust region is what makes this converge rather than oscillate:
+         ! an exact Hessian still describes the surface only near the point it
+         ! was built at, and early steps are not near it. It is also what picks
+         ! the sign of a saddle escape, where the second-order model is
+         ! indifferent between the two directions.
          accepted = .false.
 
          ! ---- take it, backtracking until it descends ----------------------
@@ -1076,8 +1019,7 @@ contains
       result%orbitals = current
       ! Whichever of the two the CI actually produced. A restricted space fills
       ! the flat one and leaves the rectangle unallocated, and copying an
-      ! unallocated allocatable is undefined rather than empty -- it survived
-      ! one set of compiler flags and segfaulted under another.
+      ! unallocated allocatable is undefined rather than empty.
       if (allocated(ci%ci_vector)) result%ci_vector = ci%ci_vector
       if (allocated(ci%ci_flat)) result%ci_flat = ci%ci_flat
       result%dm1 = dm1
@@ -1108,10 +1050,8 @@ contains
       !!
       !! The density is block diagonal (two on the inactive diagonal, the active
       !! block, zero on the virtual), so the inactive and virtual orbitals come
-      !! through untouched and only the active block is rotated. Diagonalising
-      !! the whole thing anyway costs nothing at this size and means the
-      !! Hartree-Fock case needs no separate path: there the density is already
-      !! diagonal and the "rotation" is the identity.
+      !! through untouched. The whole matrix is diagonalised anyway, which means
+      !! the Hartree-Fock case needs no separate path.
       real(dp), intent(in) :: orbitals(:, :)      !! (n_ao, n_mo)
       integer, intent(in) :: n_inactive, n_active
       real(dp), intent(in) :: dm1(:, :)           !! Active one-particle density
@@ -1160,10 +1100,9 @@ contains
       !!
       !! After the first couple of macro-iterations the orbitals barely move, so
       !! the previous CI vector is very nearly the answer and the Davidson
-      !! converges in a handful of products instead of dozens. That matters
-      !! here more than anywhere: a trust-region backtrack solves the CI again
-      !! at a rejected geometry, so a cheap re-solve is what makes rejecting a
-      !! step affordable.
+      !! converges in a handful of products. A trust-region backtrack re-solves
+      !! the CI at a rejected geometry, so a cheap re-solve is what makes
+      !! rejecting a step affordable.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)
       integer, intent(in) :: n_inactive, n_active, n_alpha, n_beta
@@ -1176,9 +1115,7 @@ contains
       real(dp), allocatable, intent(inout), optional :: flat_guess(:, :)
 
       ! A restricted space has no alpha-by-beta rectangle to keep a guess in, so
-      ! it carries the flat vector instead. Same idea and the same payoff: after
-      ! the first few macro-iterations the previous answer is nearly this one,
-      ! and a trust-region backtrack re-solves the CI at a rejected geometry.
+      ! it carries the flat vector instead.
       if (present(subspaces)) then
          if (have_guess .and. present(flat_guess)) then
             call run_libcint_ormas_ci(mol, orbitals, n_inactive, n_active, n_alpha, &

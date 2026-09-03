@@ -25,7 +25,7 @@ module test_mqc_mixed_overlap
    public :: collect_mqc_mixed_overlap_tests
 
    integer, parameter :: N_DIM = 3
-   !> Water, the geometry the exchange-correlation kernel checks use, in Bohr.
+   !! Water, the geometry the exchange-correlation kernel checks use, in Bohr.
    real(dp), parameter :: WATER(N_DIM, 3) = reshape( &
                           [0.0_dp, 0.0_dp, 0.0_dp, &
                            0.0_dp, -1.4308_dp, 1.1078_dp, &

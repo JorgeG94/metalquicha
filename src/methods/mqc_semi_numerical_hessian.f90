@@ -5,19 +5,9 @@ module mqc_semi_numerical_hessian
    !!
    !!   H[i,j] = (g_j(x_i + h) - g_j(x_i - h)) / 2h
    !!
-   !! This is *semi*-numerical: only one derivative is taken numerically, the
-   !! other is analytic. That matters for accuracy -- differencing energies
-   !! twice would lose roughly half the available digits, whereas differencing
-   !! gradients once keeps most of them.
-   !!
-   !! The routine is written against `qc_method_t` rather than any concrete
-   !! method, so anything with a working `calc_gradient` gets a Hessian for
-   !! free.
-   !!
-   !! Cost is 6N gradient evaluations for N atoms, and each of those is a full
-   !! SCF. The displaced geometries are independent, so this is the obvious
-   !! place to distribute work across ranks -- metalquicha already does that
-   !! for the unfragmented Hessian path.
+   !! Semi-numerical: only one derivative is taken numerically, the other is
+   !! analytic. Cost is 6N gradient evaluations for N atoms, plus the
+   !! undisplaced point, each of them a full SCF.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -42,8 +32,7 @@ contains
       type(calculation_result_t), intent(out) :: result   !! Energy, gradient and Hessian
       logical, intent(in), optional :: verbose
       real(dp), intent(in), optional :: displacement_in
-         !! Step in Bohr. Absent, `DEFAULT_DISPLACEMENT` stands, which is what
-         !! every caller got before this argument existed.
+         !! Step in Bohr; `DEFAULT_DISPLACEMENT` when absent.
 
       type(displaced_geometry_t), allocatable :: forward_geoms(:), backward_geoms(:)
       real(dp), allocatable :: forward_gradients(:, :, :), backward_gradients(:, :, :)
@@ -73,8 +62,7 @@ contains
       call generate_perturbed_geometries(fragment, displacement, forward_geoms, backward_geoms)
       allocate (forward_gradients(n_displacements, 3, n_atoms))
       allocate (backward_gradients(n_displacements, 3, n_atoms))
-      ! The same displacements give dmu/dR, and so IR intensities, for nothing
-      ! beyond storing the dipole each method already returns.
+      ! The same displacements give dmu/dR, and so IR intensities.
       allocate (forward_dipoles(n_displacements, 3), backward_dipoles(n_displacements, 3))
       forward_dipoles = 0.0_dp
       backward_dipoles = 0.0_dp
@@ -113,8 +101,7 @@ contains
       result%has_hessian = .true.
 
       ! The undisplaced point supplies the energy and gradient that go with the
-      ! Hessian. It is one extra SCF on top of the 6N, and skipping it would
-      ! mean reporting a Hessian with no energy beside it.
+      ! Hessian.
       call method%calc_gradient(fragment, point)
       if (point%has_error) then
          result%error = point%error
@@ -134,9 +121,8 @@ contains
       end if
       call point%destroy()
 
-      ! Dipole derivatives, hence IR intensities, whenever every displacement
-      ! returned a dipole. A method that does not supply one leaves them
-      ! absent rather than silently zero.
+      ! Dipole derivatives, hence IR intensities, only when every displacement
+      ! returned a dipole; otherwise absent rather than silently zero.
       if (have_dipoles) then
          call finite_diff_dipole_derivatives(n_atoms, forward_dipoles, backward_dipoles, &
                                              displacement, result%dipole_derivatives)
@@ -155,11 +141,9 @@ contains
       !!
       !!   sum_A  d(mu_k)/d(R_{A,k'})  =  Q * delta_{k,k'}
       !!
-      !! Rigid translation of the whole molecule shifts every nucleus and the
-      !! whole electron cloud together, so the dipole changes only by Q times
-      !! the shift -- zero for a neutral system. It is a reference-free test of
-      !! the dipole derivatives: a violation means dmu/dR is wrong, and shows up
-      !! as spurious IR intensity on the translational modes.
+      !! A reference-free test of the dipole derivatives: a violation means
+      !! dmu/dR is wrong, and shows up as spurious IR intensity on the
+      !! translational modes.
       real(dp), intent(in) :: dipole_derivatives(:, :)  !! (3, 3*n_atoms)
       integer, intent(in) :: charge
       logical, intent(in) :: verbose
@@ -167,6 +151,9 @@ contains
       real(dp) ::  residual
       real(dp) :: sums(3, 3)
       integer :: n_atoms, iatom, k, kp
+      ! TODO(mqc): the warning branch below writes 100 characters into this
+      ! 96-character buffer, so a sum rule that is actually violated raises an
+      ! output-overflow runtime error instead of printing the warning.
       character(len=96) :: line
 
       n_atoms = size(dipole_derivatives, 2)/3
@@ -179,9 +166,7 @@ contains
          end do
       end do
 
-      ! Expected: charge on the diagonal, zero off it. Total nuclear charge and
-      ! electron count balance to `charge` (in atomic units the dipole gradient
-      ! sum rule uses the total molecular charge).
+      ! Expected: charge on the diagonal, zero off it.
       residual = 0.0_dp
       do kp = 1, 3
          do k = 1, 3

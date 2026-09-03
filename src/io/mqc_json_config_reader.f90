@@ -2,12 +2,6 @@
 module mqc_json_config_reader
    !! The only input reader. Parses a JSON deck into `mqc_config_t`.
    !!
-   !! Until 0.2.0 this program read a section-based `.mqc` format generated from
-   !! the user's JSON by a Python helper, so ~2800 lines and a runtime Python
-   !! dependency stood between an input file and this type. Both are gone.
-   !! json-fortran was already required by the output writer and the basis
-   !! reader, so reading JSON here costs no new dependency.
-   !!
    !! Three behaviours are not obvious from the schema alone:
    !!
    !!   * **A molecule gives either `xyz` or `symbols` + `geometry`, never
@@ -22,17 +16,15 @@ module mqc_json_config_reader
    !!   * **Absent keys leave defaults alone.** The `optional_*` accessors
    !!     write only when the key is present, so `mqc_config_types` holds the
    !!     defaults and nothing here restates them. Route two keys through one
-   !!     local and the first one's value survives into the second -- that bug
-   !!     has been made once already.
+   !!     local and the first one's value survives into the second.
    !!
    !! Atom indices are 0-based throughout, in the JSON and in the config, and
    !! are stored as read.
    !!
    !! Unknown keys, missing required ones, and the cross-checks between a
    !! molecule's parallel lists are `mqc_json_schema`'s job, run over the
-   !! document before any of this. That separation is why the accessors below
-   !! can stay as simple as they are: by the time they run, the deck is known
-   !! to contain only keys this module knows about.
+   !! document before any of this. By the time the accessors below run, the
+   !! deck is known to contain only keys this module knows about.
    use pic_io, only: to_char
    use pic_types, only: dp
    use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN, MAX_MBE_LEVEL, &
@@ -58,11 +50,6 @@ module mqc_json_config_reader
 
    public :: read_json_config_file  !! Parse a JSON input file into mqc_config_t
    public :: read_json_config_text  !! Parse settings from a JSON string, no molecules
-
-   !> Element symbol width comes from `mqc_program_limits`, the same source
-   !  `mqc_xyz_reader` uses, so a geometry given inline and one read from an
-   !  .xyz file produce identical `elements` arrays rather than merely
-   !  equivalent ones.
 
 contains
 
@@ -91,8 +78,6 @@ contains
 
       ! Validate before reading, so a misspelled key is reported as itself
       ! rather than silently taking the default of the key it was meant to be.
-      ! One place to load and one to destroy; everything that can fail lives
-      ! in the two routines below and simply returns.
       call ensure_valid_json(json, error)
       if (.not. error%has_error()) then
          call populate_config(json, directory_of(filename), config, error)
@@ -106,13 +91,9 @@ contains
       !! Parse settings -- method, driver, keywords -- from a JSON string
       !!
       !! The same document a deck uses, less the molecules: this is how a
-      !! caller that already holds a system says what to *do* with it. The
-      !! string form matters because it is what crosses to the workers. A
-      !! `method_config_t` is sixty-odd fields across seven nested sub-configs,
-      !! and transcribing those into a broadcast means a field missed there is
-      !! a worker quietly running a different method than the one asked for.
-      !! Sending the document and parsing it on arrival has no such field list;
-      !! it also puts the workers through the validator rather than around it.
+      !! caller that already holds a system says what to *do* with it, and it is
+      !! what crosses to the workers, so they go through the validator rather
+      !! than around it.
       !!
       !! A molecules block is refused rather than ignored. It would otherwise
       !! be the geometry a caller believed they were running, silently losing
@@ -172,13 +153,10 @@ contains
       call require_string(json, "model.method", text, error)
       if (error%has_error()) return
       config%method = parse_method_string(text)
-      ! Refused here rather than by the factory, which is the only other place
-      ! that looks at the number and can do nothing but `ERROR STOP` -- it has
-      ! no error to set and no caller to hand it to. That is survivable for a
-      ! deck, where the process was going to end anyway, and not for a driven
-      ! run: a misspelt method took the caller's interpreter down with it, and
-      ! on a Python session every other rank with it. The spelling still exists
-      ! here, so this is also the only place that can quote it back.
+      ! Refused here rather than by the factory, which can only `ERROR STOP` --
+      ! survivable for a deck, and not for a driven run, where it takes the
+      ! caller's interpreter down with it. The spelling still exists here, so
+      ! this is also the only place that can quote it back.
       call check_method_supported(text, config%method, error)
       if (error%has_error()) return
       ! "scs-mp2" and "sos-mp2" parse to the same method type as "mp2", so the
@@ -189,10 +167,9 @@ contains
       ! from "mp2". A later keyword can still turn it off.
       config%corr_density_fitting = method_wants_density_fitting(text)
       ! And likewise "casci", which the method type cannot distinguish from
-      ! "casscf" -- both are METHOD_TYPE_MCSCF, because they are the same
-      ! wavefunction and differ only in whether the orbitals are allowed to
-      ! move. Read here while the spelling still exists;
-      ! `keywords.mcscf.optimize_orbitals` below can still override it.
+      ! "casscf" -- both are METHOD_TYPE_MCSCF, differing only in whether the
+      ! orbitals are allowed to move. `keywords.mcscf.optimize_orbitals` below
+      ! can still override it.
       config%mcscf_optimize_orbitals = .not. method_is_casci(text)
       call optional_string(json, "model.basis", config%basis)
       call optional_string(json, "model.ecp", config%ecp)
@@ -203,10 +180,8 @@ contains
 
       ! ---- properties ------------------------------------------------------
       ! The `fukui` OBJECT is what asks for the analysis; `population` only
-      ! says which charges. Default it here rather than downstream, so that the
-      ! scheme the run used is a value in the config -- and therefore in the
-      ! report and the JSON -- rather than a default buried in whichever
-      ! routine happened to look last.
+      ! says which charges. Defaulted here so the scheme the run used is a value
+      ! in the config -- and so in the report and the JSON.
       call json%info("properties.fukui", found=found_fukui)
       if (found_fukui) then
          config%fukui_population = "chelpg"
@@ -219,9 +194,7 @@ contains
          ! it is read by `read_fukui_scf` below once those values exist.
       end if
       ! Same shape as `fukui`: the OBJECT is the request, `scheme` only says
-      ! how. Defaulted here for the same reason -- the scheme a run used should
-      ! be a value in the config, and so in the report and the JSON, rather
-      ! than a default resolved wherever the partition happens to be done.
+      ! how, and it is defaulted here for the same reason.
       call json%info("properties.charges", found=found_charges)
       if (found_charges) then
          config%charges_scheme = "mulliken"
@@ -253,10 +226,10 @@ contains
       end if
 
       ! ---- system ----------------------------------------------------------
-      ! Written straight into the config fields, which already hold the
-      ! defaults set above. Routing them through a shared local instead would
-      ! carry the previous key's value forward whenever one is absent, since
-      ! `optional_string` leaves its target alone rather than clearing it.
+      ! Written straight into the config fields, which already hold the defaults
+      ! set above. A shared local would carry the previous key's value forward
+      ! whenever one is absent, since `optional_string` leaves its target alone
+      ! rather than clearing it.
       call optional_string(json, "system.logger.level", config%log_level)
       call optional_logical_seen(json, "system.gpu", config%gpu, config%gpu_set)
       call optional_logical(json, "system.skip_json_output", config%skip_json_output)
@@ -287,16 +260,14 @@ contains
       if (error%has_error()) return
       call optional_logical(json, "keywords.scf.allow_crap_scf", config%allow_crap_scf)
 
-      ! After `keywords.scf`, and that ordering is the whole design: the ion
-      ! settings inherit by being *seeded* from the neutral's before the deck
-      ! is consulted, so "the deck did not say" needs no sentinel -- the field
-      ! simply still holds what it inherited.
+      ! After `keywords.scf`: the ion settings are *seeded* from the neutral's
+      ! before the deck is consulted, so "the deck did not say" needs no
+      ! sentinel -- the field still holds what it inherited.
       call read_fukui_scf(json, config)
       call optional_logical(json, "keywords.scf.density_fitting", &
                             config%scf_density_fitting)
-      ! MAKEFP's own group. Nothing here is an SCF setting -- the SCF is already
-      ! configured by `keywords.scf` and reads it -- these are the response solve
-      ! and the screening fit, which is where a potential's wall clock goes.
+      ! MAKEFP's own group: the response solve and the screening fit. Nothing
+      ! here is an SCF setting -- that is `keywords.scf`, which it reads.
       call optional_real(json, "keywords.efp.dynamic_tolerance", &
                          config%efp_dynamic_tolerance)
       call optional_int(json, "keywords.efp.dynamic_maxiter", config%efp_dynamic_maxiter)
@@ -314,10 +285,9 @@ contains
       call optional_logical(json, "keywords.correlation.density_fitting", &
                             config%corr_density_fitting)
 
-      ! A fitted SCF needs a basis to fit against. There is a default, but it is a
-      ! JK set that is wrong for some of what asks for fitting, so rather than pick
-      ! one silently a fitted run must name its own. `aux_basis` is unallocated
-      ! exactly when `model.aux_basis` was absent, which is the case to refuse.
+      ! A fitted SCF needs a basis to fit against, and must name its own rather
+      ! than inherit a JK set that is wrong for some of what asks for fitting.
+      ! `aux_basis` is unallocated exactly when `model.aux_basis` was absent.
       if (config%scf_density_fitting .and. .not. allocated(config%aux_basis)) then
          call error%set(ERROR_VALIDATION, "keywords.scf.density_fitting is on but no "// &
                         "auxiliary basis was given; set model.aux_basis")
@@ -332,10 +302,9 @@ contains
       call optional_logical(json, "keywords.cc.diis", config%cc_diis)
       call optional_int(json, "keywords.cc.diis_size", config%cc_diis_size)
       call optional_logical(json, "keywords.cc.spin_adapted", config%cc_spin_adapted)
-      ! Recorded as "was it named" as well as "what was it", because the method
-      ! name is the usual source of this and only an explicit keyword may
-      ! override it. `optional_logical` leaves its target alone when the key is
-      ! absent, which cannot distinguish absent from false on its own.
+      ! Recorded as "was it named" as well as "what was it": the method name is
+      ! the usual source of this and only an explicit keyword may override it,
+      ! which `optional_logical` alone cannot tell from an absent key.
       call optional_logical_seen(json, "keywords.cc.triples", config%cc_triples, &
                                  config%cc_triples_set)
       call read_avas_orbitals(json, config, error)
@@ -353,14 +322,11 @@ contains
       call optional_int(json, "keywords.mcscf.max_macro_iter", config%mcscf_max_macro_iter)
       call optional_real(json, "keywords.mcscf.orbital_convergence", &
                          config%mcscf_orbital_convergence)
-      ! Read last of the group, and deliberately with plain `optional_logical`
-      ! rather than the `_seen` variant the triples use. The field already holds
-      ! what the method spelling implied, and `optional_logical` leaves it there
-      ! when the key is absent -- so "present wins over the name, absent loses to
-      ! it" falls out without a second flag. The triples need `_seen` only
-      ! because their default is settled in the adapter, one hop after the
-      ! spelling has been discarded; this one is settled here, where it still
-      ! exists.
+      ! Plain `optional_logical` rather than the `_seen` variant the triples
+      ! use: the field already holds what the method spelling implied, so
+      ! "present wins over the name, absent loses to it" falls out without a
+      ! second flag. The triples need `_seen` because their default is settled
+      ! in the adapter, one hop after the spelling has been discarded.
       call optional_logical(json, "keywords.mcscf.optimize_orbitals", &
                             config%mcscf_optimize_orbitals)
       call optional_int(json, "keywords.dft.grid_level", config%dft_grid_level)
@@ -369,9 +335,6 @@ contains
       call optional_real(json, "keywords.dft.screening_tolerance", &
                          config%dft_screening_tolerance)
       call optional_int(json, "keywords.dft.block_size", config%dft_block_size)
-      ! The continuum is switched on by the presence of the block rather than by a
-      ! flag inside it: a deck that names a dielectric wants solvent, and a
-      ! separate "enabled" would let the two disagree.
       block
          ! Read into a deferred-length local, since the config field is fixed
          ! width and `optional_string` takes an allocatable.
@@ -383,6 +346,9 @@ contains
       ! checked against what this build and this method can actually do.
       call resolve_gpu_request(config, backend_named, error)
       if (error%has_error()) return
+      ! The continuum is switched on by the presence of the block rather than by
+      ! a flag inside it: a deck that names a dielectric wants solvent, and a
+      ! separate "enabled" would let the two disagree.
       call json%info("keywords.pcm", found=found)
       config%pcm_enabled = found
       block
@@ -404,8 +370,7 @@ contains
       call optional_int(json, "keywords.dft.radial_points", config%dft_radial_points)
       call optional_int(json, "keywords.dft.angular_points", config%dft_angular_points)
 
-      ! Both spellings of the displacement key are accepted, as the JSON
-      ! generator used to allow.
+      ! Both spellings of the displacement key are accepted.
       call optional_real(json, "keywords.hessian.finite_difference_displacement", &
                          config%hessian_displacement)
       call optional_real(json, "keywords.hessian.displacement", config%hessian_displacement)
@@ -474,10 +439,6 @@ contains
 
       call optional_string(json, "keywords.xtb.solvent", config%solvent)
       call optional_string(json, "keywords.xtb.solvation_model", config%solvation_model)
-      ! Before 0.2.0 these were reachable only from a hand-written .mqc deck --
-      ! the JSON generator had no field for either, though both are plumbed
-      ! through to the xTB method. Retiring .mqc without adding them here
-      ! would have quietly removed the only way to turn them off.
       call optional_logical(json, "keywords.xtb.use_cds", config%use_cds)
       call optional_logical(json, "keywords.xtb.use_shift", config%use_shift)
       call optional_real(json, "keywords.xtb.dielectric", config%dielectric)
@@ -539,6 +500,8 @@ contains
       type(mqc_config_t), intent(inout) :: config
       type(error_t), intent(out) :: error
 
+      ! TODO(mqc): `level`, `highest` and `cutoff` are dead here -- the cutoff
+      ! loop they belonged to now lives in `read_cutoffs`.
       integer :: level, highest
       real(dp) :: cutoff
       logical :: found
@@ -579,9 +542,8 @@ contains
       !! sized to the highest one present, so `fragment_cutoffs(3)` is the
       !! trimer cutoff whichever spelling produced it.
       !!
-      !! Both spellings are probed rather than enumerated because json-fortran
-      !! offers no way to list an object's keys through the `json_file`
-      !! interface.
+      !! Both spellings are probed rather than enumerated: json-fortran offers
+      !! no way to list an object's keys through the `json_file` interface.
       type(json_file), intent(inout) :: json
       type(mqc_config_t), intent(inout) :: config
       type(error_t), intent(out) :: error
@@ -608,9 +570,9 @@ contains
       end do
       if (highest < 2) return
 
-      ! Sized to every supported level and filled with the same -1 sentinel the
-      ! .mqc parser uses, because downstream code reads "no cutoff at this
-      ! level" off that sentinel and would take a 0 as "screen everything out".
+      ! Sized to every supported level and filled with -1: downstream code reads
+      ! "no cutoff at this level" off that sentinel and would take a 0 as
+      ! "screen everything out".
       allocate (config%fragment_cutoffs(MAX_MBE_LEVEL))
       config%fragment_cutoffs = -1.0_dp
 
@@ -669,9 +631,8 @@ contains
       !! Two failures, and they read the same to whoever typed the name. A
       !! spelling the parser does not know at all comes back UNKNOWN; a
       !! spelling it knows and no backend implements -- the F12 family, which
-      !! has a method type and no code behind it -- parses cleanly and then
-      !! stops in the factory. Both used to end in `ERROR STOP` from a routine
-      !! with no error to set, which takes a driven run's caller down with it.
+      !! has a method type and no code behind it -- parses cleanly and would
+      !! otherwise stop in the factory, which can only `ERROR STOP`.
       character(len=*), intent(in) :: spelling
       integer, intent(in) :: method_type
       type(error_t), intent(inout) :: error
@@ -694,23 +655,19 @@ contains
          return
       case default
          ! Every other type is implemented somewhere. Whether *this build* has
-         ! the backend for it is a different question and deliberately not
-         ! asked here: reading a deck must mean the same thing whatever was
-         ! linked, or a parse test starts depending on the CMake options. The
-         ! entry points that are about to run something ask it instead --
-         ! `mqc_session`, for the callers that cannot survive an `ERROR STOP`.
+         ! the backend for it is deliberately not asked here: reading a deck
+         ! must mean the same thing whatever was linked. `mqc_session` asks it
+         ! instead, for the callers that cannot survive an `ERROR STOP`.
       end select
    end subroutine check_method_supported
 
    subroutine read_efp_response(json, config, error)
       !! `keywords.efp.response`, as a code, or a refusal
       !!
-      !! Refused here rather than where the choice is acted on, which is an SCF, a
-      !! localization and a multipole expansion later: a misspelling is a property
-      !! of the deck and there is nothing to learn from running first. And refused
-      !! rather than quietly resolved -- a deck that asked for `matrix-free` and
-      !! got the size rule instead would report a timing for a route it did not
-      !! pick, which is the measurement the key exists to make.
+      !! Refused here rather than where the choice is acted on, an SCF and a
+      !! multipole expansion later, and refused rather than quietly resolved: a
+      !! deck that asked for `matrix_free` and got the size rule instead would
+      !! report a timing for a route it did not pick.
       type(json_file), intent(inout) :: json
       type(mqc_config_t), intent(inout) :: config
       type(error_t), intent(inout) :: error
@@ -746,9 +703,7 @@ contains
       !! `keywords.optimization.frozen_atoms`, a flat list of atom indices
       !!
       !! Zero-based in the deck, as every atom index in this format is, and
-      !! stored one-based because that is what Fortran indexes `spec` with. The
-      !! conversion happens once, here, rather than at the point of use where
-      !! it would have to be remembered.
+      !! stored one-based. The conversion happens once, here.
       type(json_file), intent(inout) :: json
       type(mqc_config_t), intent(inout) :: config
       type(error_t), intent(inout) :: error
@@ -778,10 +733,9 @@ contains
       !! `keywords.optimization.constraints`, one object per held coordinate
       !!
       !! Each names a `type` and the `atoms` it is measured over, and the two
-      !! have to agree: a bond takes two atoms and a torsion four. Checked here
-      !! rather than in the bridge, because the deck is where the mistake was
-      !! made and the count is the only thing that can catch it -- three atoms
-      !! under `"type": "torsion"` is a perfectly well-formed list of integers.
+      !! have to agree: a bond takes two atoms and a torsion four. The count is
+      !! the only thing that can catch the mistake -- three atoms under
+      !! `"type": "torsion"` is a perfectly well-formed list of integers.
       use mqc_optimizer_types, only: constraint_from_string, constraint_atom_count
       type(json_file), intent(inout) :: json
       type(mqc_config_t), intent(inout) :: config
@@ -849,16 +803,8 @@ contains
       !! and why no field carries a sentinel -- the state "unset" is spelled by
       !! the field still holding the inherited value.
       !!
-      !! The three fields this replaced each needed a sentinel, and one of them
-      !! could not have a clean one: zero is a real level shift meaning "off",
-      !! so "unset" had to be spelled "any negative" and the meaning of a
-      !! negative shift was quietly spent on bookkeeping.
-      !!
       !! `inherit_scf: false` skips the seed, leaving the type defaults for
-      !! anything the object does not name. It is for the case where the
-      !! neutral was converged tightly, or with an accelerator picked for it,
-      !! and carrying that onto a charged species is the wrong start rather
-      !! than a careful one.
+      !! anything the object does not name.
       type(json_file), intent(inout) :: json
       type(mqc_config_t), intent(inout) :: config
 
@@ -882,10 +828,7 @@ contains
          ! Both spellings, in the order `config_to_driver` resolves them for the
          ! neutral: `keywords.scf.guess` is the superseded one and
          ! `keywords.guess.type` the current one, so the latter wins where a
-         ! deck somehow carries both. Copying only the superseded field left a
-         ! deck written the current way inheriting the ladder below while its
-         ! ions kept `auto` -- inheritance that worked for twelve keys and
-         ! quietly did not for the thirteenth.
+         ! deck somehow carries both.
          if (allocated(config%scf_guess)) config%fukui_scf%guess = config%scf_guess
          if (allocated(config%scf_convergence_metric)) then
             config%fukui_scf%convergence_metric = config%scf_convergence_metric
@@ -945,8 +888,7 @@ contains
       !! listed here. Three SCFs -- STO-3G, 6-31G, cc-pVTZ -- is two steps.
       !!
       !! The schema has already refused a `subscf` that does not belong to a
-      !! projection guess and a projection guess with no steps, so this only has
-      !! to read what is there.
+      !! projection guess, and a projection guess with no steps.
       type(json_file), intent(inout) :: json
       type(mqc_config_t), intent(inout) :: config
       type(error_t), intent(inout) :: error
@@ -1136,17 +1078,14 @@ contains
       !! The fragments array, with its parallel charge, multiplicity and potential lists
       !!
       !! `fragment_potentials` is the one of those that may be given as a **single
-      !! string rather than a list**, when `uniform_system` says every fragment is the
-      !! same species. That is not sugar for its own sake: a ten-thousand-water cluster
-      !! would otherwise repeat one filename ten thousand times, and a list that long is
-      !! somewhere for a typo to hide rather than information.
+      !! string rather than a list**, when `uniform_system` says every fragment is
+      !! the same species.
       !!
-      !! Potential paths are resolved against the deck, exactly as `xyz` is, so a
-      !! deck refers to the potential beside it and works from any directory.
+      !! Potential paths are resolved against the deck, exactly as `xyz` is.
       !!
-      !! `uniform_system` is checked rather than believed. Fragments claimed uniform
-      !! must agree in atom count, so a deck that mixes species and says otherwise is
-      !! refused here instead of being handed the wrong potential and run.
+      !! `uniform_system` is checked rather than believed: fragments claimed
+      !! uniform must agree in atom count, so a deck that mixes species and says
+      !! otherwise is refused rather than handed the wrong potential.
       type(json_file), intent(inout) :: json
       character(len=*), intent(in) :: prefix
       character(len=*), intent(in) :: base_dir  !! For resolving relative potential paths
@@ -1242,10 +1181,10 @@ contains
          end if
       end do
 
-      ! The uniformity claim, checked. Atom count is what a potential has to agree with
-      ! for its own atoms to be superposable onto a fragment's, so it is the cheap
-      ! necessary condition; the loader still has to check composition when it reads
-      ! the file, which is where the elements become known.
+      ! The uniformity claim, checked. Atom count is the cheap necessary
+      ! condition for a potential's atoms to be superposable onto a fragment's;
+      ! the loader still checks composition when it reads the file, which is
+      ! where the elements become known.
       if (uniform) then
          do ifrag = 2, nfrag
             if (size(fragments(ifrag)%indices) /= size(fragments(1)%indices)) then
@@ -1411,10 +1350,9 @@ contains
       !!
       !! `optional_real` leaves a default in place when a key is absent, which
       !! loses the difference between "the user did not say" and "the user asked
-      !! for exactly the default". Most callers do not care. One does: MAKEFP
-      !! converges its SCF harder than the shared default because the multipoles
-      !! and the response are taken from that density, and it has to keep doing
-      !! that unless a deck actually asks otherwise.
+      !! for exactly the default". MAKEFP needs it: it converges its SCF harder
+      !! than the shared default, because the multipoles and the response are
+      !! taken from that density, unless a deck actually asks otherwise.
       type(json_file), intent(inout) :: json
       character(len=*), intent(in) :: path
       logical, intent(out) :: was_named
@@ -1440,11 +1378,8 @@ contains
    subroutine resolve_gpu_request(config, backend_named, error)
       !! Settle `system.gpu` against `backend`, then refuse a request nothing can honour
       !!
-      !! Three things happen here, and all three happen before a calculation is
-      !! set up rather than inside one. A deck that asks for a GPU it cannot have
-      !! should be told so while it is still a deck: the alternative is finding
-      !! out after fragmentation, once per fragment, from a bridge that computes
-      !! nothing.
+      !! Three things happen here, all of them before a calculation is set up
+      !! rather than once per fragment inside one:
       !!
       !!   * `system.gpu` resolves into `backend`, so everything downstream reads
       !!     one field however the deck spelled the question. Naming both and
@@ -1452,7 +1387,7 @@ contains
       !!     rather than resolved by precedence.
       !!   * asking for cuEST on a build without it is refused. This is asked of
       !!     the bridge that linked, not of a preprocessor symbol, so the answer
-      !!     describes the binary rather than somebody's configure line.
+      !!     describes the binary.
       !!   * asking for cuEST for a method it has no implementation of is refused.
       !!     Substituting the CPU silently would report a provenance and a set of
       !!     timings that were not true.

@@ -14,16 +14,12 @@ module mqc_libcint_fukui
    !!
    !!     f_A+ = q_A(N) - q_A(N+1)      f_A- = q_A(N-1) - q_A(N)
    !!
-   !! **Computed by difference rather than from frontier orbitals.** The cheap
-   !! route approximates `f+` by the shape of the LUMO and `f-` by the HOMO,
-   !! which costs one SCF instead of three and throws away the relaxation of
-   !! every other orbital in response to the added charge. That relaxation is
-   !! not a correction; on a polar molecule it is most of the answer, and it is
-   !! precisely what distinguishes the sites this analysis is run to rank.
+   !! **Computed by difference rather than from frontier orbitals**, so the
+   !! relaxation of every other orbital in response to the added charge is
+   !! kept. It costs three SCFs instead of one.
    !!
    !! The three calculations share one `libcint_molecule_t`, so they see the
-   !! same geometry and the same basis functions by construction rather than by
-   !! agreement.
+   !! same geometry and the same basis functions by construction.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -58,19 +54,13 @@ module mqc_libcint_fukui
       real(dp), allocatable :: f_minus(:)   !! Electrophilic attack: where charge leaves
       real(dp), allocatable :: f_zero(:)    !! Radical attack, the average of the two
          !! **A NEGATIVE ENTRY IN ANY OF THESE IS SPURIOUS.** The exact Fukui
-         !! function is a derivative of the density with respect to electron
-         !! count and cannot be negative -- no site gives up charge because the
-         !! molecule gained an electron. Negative condensed values come from
-         !! partitioning a continuous density onto atoms, where two states are
-         !! fitted independently and disagree by more than the one electron
-         !! that moved between them. Rank sites by these; do not quote the
-         !! numbers, and treat a small negative as "not reactive in this
-         !! channel" rather than as anything about repulsion.
+         !! function cannot be negative; negative condensed values are an
+         !! artefact of partitioning a continuous density onto atoms. Rank
+         !! sites by these rather than quoting the numbers, and read a small
+         !! negative as "not reactive in this channel".
       real(dp), allocatable :: dual(:)
          !! `f+ - f-`. Positive where a site prefers to accept and negative
-         !! where it prefers to donate, so one column separates electrophilic
-         !! from nucleophilic sites that both look reactive in either index
-         !! alone.
+         !! where it prefers to donate.
       real(dp), allocatable :: q_neutral(:), q_anion(:), q_cation(:)
       real(dp) :: energy_neutral = 0.0_dp
       real(dp) :: energy_anion = 0.0_dp
@@ -82,25 +72,19 @@ module mqc_libcint_fukui
       real(dp) :: electrophilicity = 0.0_dp       !! mu^2 / 2 eta
       integer :: iterations_anion = 0
       integer :: iterations_cation = 0
-         !! What each ion SCF cost. Reported because the ions are the two states
-         !! that misbehave, and because the guess they start from is otherwise
-         !! invisible: a regression that dropped the neutral seed would still
-         !! give the right energies, just slowly, and nothing else here would
-         !! notice.
+         !! What each ion SCF cost, the ions being the two states that
+         !! misbehave.
       logical :: anion_bound = .true.
          !! Whether `E(N+1)` came out below `E(N)`. When it did not, nothing
          !! bound the extra electron and `f+` describes whatever orbital was
          !! left over. **Two different things produce this and they cannot be
          !! told apart from here**: a basis with no diffuse functions, and a
-         !! molecule with no bound anion. Water is the second -- adding
-         !! diffuse functions moves its affinity from -0.19 to -0.04 hartree
-         !! and never makes it positive, because H2O- does not exist.
+         !! molecule with no bound anion.
       character(len=16) :: scheme = "chelpg"
       character(len=:), allocatable :: functional
          !! The functional the three states were computed with, empty for
-         !! Hartree-Fock. Recorded because an IP of 0.4 hartree means nothing
-         !! without it: the number is a difference of total energies and those
-         !! are not comparable across methods.
+         !! Hartree-Fock. IP, EA and hardness are differences of total energies
+         !! and are not comparable across methods.
    end type fukui_result_t
 
 contains
@@ -116,58 +100,33 @@ contains
       !! Run the ions and condense the difference onto atoms
       !!
       !! The neutral density is handed in rather than recomputed, since the
-      !! caller has just converged it.
+      !! caller has just converged it. The molecule must be a closed-shell
+      !! neutral, so that both ions are doublets.
       !!
-      !! KOHN-SHAM IONS NEED THEIR OWN CONTEXT, which is why this takes a
-      !! functional NAME and not the caller's `xc_context_t`. libxc fixes the
+      !! **Kohn-Sham ions need their own context**, which is why this takes a
+      !! functional NAME and not the caller's `xc_context_t`: libxc fixes the
       !! spin channel when a functional is initialised, and the caller's
-      !! context was built for the closed-shell neutral, so it is
-      !! spin-unpolarised. Handing it to the unrestricted ions does not
-      !! misread it -- `xc_add_potential` refuses it outright -- but the
-      !! refusal would arrive as a failed analysis rather than as a design.
-      !! One polarised context is built here and shared by both doublets,
-      !! which see the same grid as each other by construction.
+      !! context was built spin-unpolarised for the neutral. One polarised
+      !! context is built here and shared by both doublets. Absent or empty
+      !! `functional` is Hartree-Fock.
       !!
-      !! Absent or empty `functional` is Hartree-Fock, which is what this
-      !! routine did before it could do anything else.
-      !!
-      !! DOUBLE HYBRIDS ARE COMPUTED HERE, ALL THREE OF THEM. `pt2_fraction`
-      !! non-zero means the functional carries a perturbative term, and this
-      !! routine evaluates it for the neutral as well as for the two ions --
-      !! even though the caller computes the neutral's separately for the
-      !! energy it reports.
-      !!
-      !! Recomputing it is the point rather than the cost. IP and EA are
+      !! **A double hybrid's perturbative term is evaluated here for all three
+      !! states**, the neutral included, even though the caller computes the
+      !! neutral's separately for the energy it reports. IP and EA are
       !! differences of total energies, so the term has to be present in all
-      !! three or in none; taking the neutral's from the caller and the ions'
-      !! from here would make the three states depend on two code paths
-      !! agreeing about frozen cores and auxiliary bases. One restricted MP2 on
-      !! a closed shell is small beside the two unrestricted ones the ions
-      !! need, and it buys identical treatment by construction -- the same
-      !! argument that has the three states share one `libcint_molecule_t`.
+      !! three or in none, on one code path's frozen core and auxiliary basis.
       !!
-      !! `aux` present fits the correlation, absent computes it exactly, which
-      !! is the choice the caller already made for its own PT2 term.
+      !! `aux` present fits the correlation, absent computes it exactly.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
       integer, intent(in) :: multiplicity
       real(dp), intent(in) :: neutral_density(:, :)   !! Total density, both spins
       real(dp), intent(in) :: neutral_energy
       integer, intent(in), optional :: diis_vectors
-         !! The DIIS subspace, for the same reason as the shift below: a deck
-         !! that widens it to help a stubborn SCF means the ions, which are
-         !! where the stubborn ones are.
+         !! The DIIS subspace, applied to both ions.
       real(dp), intent(in), optional :: level_shift
-         !! Passed to both ions, which is the whole point of it being here.
-         !! A level shift is asked for to stabilise a difficult SCF, and in a
-         !! Fukui run the difficult SCFs are the ions: they are open shell,
-         !! they start from the neutral's converged density, and a doublet is
-         !! exactly where an SCF slides into a state that is not the one being
-         !! asked for. Applying the shift to the closed-shell reference and not
-         !! to them spends it on the one calculation that did not need it, and
-         !! spends it silently -- a deck setting `keywords.scf.level_shift`
-         !! alongside `properties.fukui` got a shifted neutral and two
-         !! unshifted ions, with nothing in the output to say so.
+         !! Applied to both ions, which are the open-shell SCFs a shift is
+         !! asked for to stabilise.
       character(len=*), intent(in) :: scheme          !! "chelpg" or "mulliken"
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
@@ -177,9 +136,7 @@ contains
       integer, intent(in), optional :: grid_level
       logical, intent(in), optional :: incremental_fock
          !! Passed to both ion SCFs, so that turning incremental building off
-         !! turns it off for the whole Fukui run. Withholding it here would
-         !! leave the one place a stalling run most wants to rule it out --
-         !! the ions -- building incrementally whatever the deck said.
+         !! turns it off for the whole Fukui run.
       integer, intent(in), optional :: accelerator
          !! `properties.fukui.scf.accelerator`, already parsed to an `ACCEL_*`
          !! kind by the caller. Absent leaves the SCF's own default.
@@ -187,10 +144,9 @@ contains
          !! `properties.fukui.scf.gradient_tolerance`. Absent derives it from
          !! the energy tolerance, as the neutral's SCF does.
       real(dp), intent(in), optional :: linear_dependence
-         !! `properties.fukui.scf.linear_dependence_threshold`. The ions are
-         !! the place this is most likely to be wanted: a diffuse basis chosen
-         !! so the anion binds its extra electron is also the one whose overlap
-         !! goes near-singular.
+         !! `properties.fukui.scf.linear_dependence_threshold`. A diffuse basis
+         !! chosen so the anion binds its extra electron is also the one whose
+         !! overlap goes near-singular.
       integer, intent(in), optional :: unseeded_guess
          !! An `SCF_GUESS_*` kind for an ion that is NOT seeded from the
          !! neutral -- so it bites under `guess_mode = "independent"`, and is
@@ -202,37 +158,28 @@ contains
          !! mentioned a guess is not quietly moved off GWH.
       logical, intent(in), optional :: allow_unconverged
          !! `properties.fukui.scf.allow_crap_scf`. Keep an ion that did not
-         !! converge instead of refusing to form the index, with a warning. The
-         !! indices are differences of two densities, so an unconverged one
-         !! makes every number downstream a result to follow up rather than to
-         !! trust -- which is exactly what the neutral's own flag means.
+         !! converge instead of refusing to form the index, with a warning.
+         !! Every number downstream is then a result to follow up rather than
+         !! to trust.
       character(len=*), intent(in), optional :: guess_mode
          !! "neutral" (the default) or "independent".
          !!
          !! "neutral" seeds each ion from the converged neutral's orbitals at
-         !! that ion's own occupation, which is usually much the better start --
-         !! see the note on the seeding below for what it is worth. But it fills
-         !! the *neutral's* LUMO, and where that orbital is a poor guess for the
-         !! ion's own the SCF can settle on a different stationary point
-         !! instead of climbing out of it: an anion that stalls a few
-         !! millihartree above the answer the ordinary guess reaches is the
-         !! symptom, and DIIS will not rescue it because a stationary point is
-         !! exactly what DIIS is looking for. "independent" gives each ion the
-         !! ordinary guess, which converges from further away but is not aimed
-         !! at any particular solution.
+         !! that ion's own occupation, which is usually much the better start.
+         !! But it fills the *neutral's* LUMO, and where that is a poor guess
+         !! for the ion's own the SCF can settle on a different stationary
+         !! point -- an anion stalling a few millihartree above the answer the
+         !! ordinary guess reaches, which DIIS will not rescue.
+         !! "independent" gives each ion the ordinary guess instead.
       integer, intent(in), optional :: nlc_grid_level
-         !! VV10's own quadrature level, forwarded from `keywords.dft.nlc_grid_level`.
-         !!
-         !! Absent leaves `NLC_GRID_LEVEL`, and leaving it absent was a bug: the
-         !! neutral honoured the deck and the ions did not, so a `-V` functional
-         !! integrated its non-local term on a grid the caller never asked for and
-         !! the difference these indices are made of was taken between two
-         !! quadratures. It also cost what a Fukui run cannot afford -- the double
-         !! sum goes as the square of this grid.
+         !! VV10's own quadrature level, forwarded from
+         !! `keywords.dft.nlc_grid_level`. Absent leaves `NLC_GRID_LEVEL`, which
+         !! would integrate the ions' non-local term on a different grid from
+         !! the neutral's.
       real(dp), intent(in), optional :: screening_tolerance
          !! AO screening threshold for the quadrature, from
-         !! `keywords.dft.screening_tolerance`. Same reasoning: the ions have no
-         !! business screening differently from the neutral.
+         !! `keywords.dft.screening_tolerance`. The ions have no business
+         !! screening differently from the neutral.
       integer, intent(in), optional :: block_size
          !! Grid points per block, from `keywords.dft.block_size`.
       real(dp), intent(in), optional :: pt2_fraction
@@ -243,24 +190,19 @@ contains
          !! The continuum the neutral was converged in, handed on to both ions.
          !!
          !! **All three states or none.** An ion solved in vacuum and
-         !! differenced against a neutral solved in solvent is not an ionisation
-         !! potential of anything: the solvation energy of a charged species is
-         !! one to three electronvolts, which is the size of the quantity being
-         !! reported. The same context object is reused rather than rebuilt --
-         !! the cavity is a property of the geometry, and the geometry does not
-         !! move between the three states.
+         !! differenced against a neutral solved in solvent is not an
+         !! ionisation potential of anything -- the solvation energy of a
+         !! charged species is the size of the quantity being reported. The
+         !! same context object is reused, the cavity being a property of a
+         !! geometry that does not move between the three states.
          !!
-         !! Equilibrium solvation, therefore, for all three. That makes the
-         !! indices and the potentials here the *adiabatic* ones: the solvent is
-         !! allowed to relax around each charge state. A vertical quantity would
-         !! need the slow polarisation frozen at the neutral's value and only the
-         !! fast part responding, which needs an optical dielectric this
-         !! program does not carry.
+         !! Equilibrium solvation for all three, so the indices and potentials
+         !! here are the *adiabatic* ones. A vertical quantity would need the
+         !! slow polarisation frozen at the neutral's value, which needs an
+         !! optical dielectric this program does not carry.
       logical, intent(in), optional :: verbose
          !! Print the two ion SCFs the way the neutral is printed. Absent is
-         !! quiet: a caller that did not ask for iterations should not get two
-         !! tables it cannot switch off, which matters most where this is called
-         !! most -- once per fragment of a fragmented run.
+         !! quiet.
       integer, intent(in), optional :: n_frozen
 
       type(rhf_result_t) :: anion, cation
@@ -315,12 +257,10 @@ contains
                            trim(functional)//"' but this build has no libxc.")
             return
          end if
-         ! Spin-polarised, because both ions are doublets. See the note on this
-         ! routine: this is the whole reason the functional arrives by name.
-         ! Every grid knob the neutral was given, not just `level`. An absent
+         ! Spin-polarised, because both ions are doublets, and given every grid
+         ! knob the neutral was given rather than `level` alone. An absent
          ! optional passed on stays absent, so a caller that says nothing still
-         ! gets the defaults -- but a caller that set one no longer has it
-         ! dropped on the floor here.
+         ! gets the defaults.
          call xc_context_create(mol, trim(functional), xc_ions, error, &
                                 level=grid_level, polarized=.true., &
                                 nlc_level=nlc_grid_level, &
@@ -330,11 +270,7 @@ contains
             call error%add_context("Fukui indices: the ions' functional")
             return
          end if
-         ! A double hybrid's perturbative term is evaluated below for all
-         ! three states. What cannot be done is evaluating it for some of them:
-         ! the Kohn-Sham half converges perfectly well on its own, so leaving
-         ! the term out of the ions would return descriptors that look fine and
-         ! are short by it. The orbitals the neutral's term needs are not
+         ! The orbitals a double hybrid's perturbative term needs are not
          ! derivable from the density this routine was handed, so they are
          ! required rather than assumed.
          if (double_hybrid) then
@@ -353,8 +289,7 @@ contains
       natm = mol%natm
       res%scheme = scheme
       ! The neutral's perturbative term, on a closed shell and so restricted.
-      ! Computed before the ions so that a failure here -- a saturated basis,
-      ! an auxiliary set that will not fit -- is reported before two
+      ! Computed before the ions so a failure here is reported before two
       ! unrestricted SCFs have been paid for.
       if (double_hybrid) then
          call state_pt2(mol, aux, neutral_orbitals, neutral_orbital_energies, &
@@ -374,27 +309,10 @@ contains
       ! The anion. One more electron, and a doublet because the neutral was
       ! closed shell.
       !
-      ! Solved in the open, like the neutral before it. A Fukui run is three
-      ! SCFs and the ions are the two that misbehave: an anion in a basis with
-      ! no diffuse functions is where this fails, and it fails by converging
-      ! slowly or to something unbound rather than by stopping. Running it
-      ! silently meant the report could say the affinity was negative while
-      ! the evidence for why -- the iterations it took, the energy it settled
-      ! on, <S^2> for the doublet -- was never printed.
-      ! Both ions start from the neutral, which is the whole reason the neutral
-      ! is solved first. Without this they fell through to the unrestricted
-      ! default, Wolfsberg-Helmholz -- a one-electron guess with no two-electron
-      ! information in it at all -- while the converged neutral density sat in
-      ! this routine's own argument list, used only to condense charges. On
-      ! water/6-31g that started the anion 1.94 Hartree above its own answer and
-      ! spent five iterations climbing back; the first density change was 3.1e-1
-      ! against the neutral's 3.0e-2.
-      !
       ! Each ion is seeded at *its own* occupation rather than from the neutral
-      ! density halved. The neutral is closed shell, so its orbitals are a fine
-      ! basis for both ions, and filling them Aufbau for a doublet gives the
-      ! anion (n/2 + 1, n/2) and the cation (n/2, n/2 - 1) -- the right electron
-      ! count and the right spin, where a halved density has neither.
+      ! density halved: filling the neutral's orbitals Aufbau for a doublet
+      ! gives the anion (n/2 + 1, n/2) and the cation (n/2, n/2 - 1), the right
+      ! electron count and the right spin, where a halved density has neither.
       !
       ! `d_guess_a` and `d_guess_b` stay unallocated only when neither the
       ! neutral's orbitals nor the free atoms can supply a density, and an
@@ -410,10 +328,8 @@ contains
       if (present(unseeded_guess)) guess_kind = unseeded_guess
       seeded = present(neutral_orbitals)
       ! An explicit "independent" turns the seeding off and nothing else: the
-      ! orbitals are still passed by the caller, still the right shape, and
-      ! still wanted for a double hybrid's perturbative term. Only the two
-      ! guess densities go unbuilt, and the unallocated-actual rule below then
-      ! removes them from the call.
+      ! orbitals are still wanted for a double hybrid's perturbative term. Only
+      ! the two guess densities go unbuilt.
       if (seeded .and. present(guess_mode)) then
          seeded = .not. (trim(guess_mode) == "independent")
       end if
@@ -425,19 +341,15 @@ contains
       else if (guess_kind == SCF_GUESS_SAD .or. guess_kind == SCF_GUESS_SAC) then
          ! Only when the deck asked for one. `SCF_GUESS_SAD` is the kind that
          ! says "the starting density is supplied", and in the seeded branch
-         ! above it is the neutral's orbitals supplying it. Asked for here with
-         ! nothing to seed from, it has to come from the free atoms -- and
-         ! without this the ions reached `run_libcint_uhf` naming an atomic
-         ! guess with no density behind it, which that routine refuses. That is
-         ! why `properties.fukui.scf.guess: "sad"` could not be used at all.
-         !
-         ! The default stays GWH: it costs nothing, and the atomic solves this
-         ! runs are not work to do on behalf of a deck that did not ask.
+         ! above it is the neutral's orbitals supplying it; asked for here with
+         ! nothing to seed from, it has to come from the free atoms. The
+         ! default stays GWH, so a deck that did not ask pays for no atomic
+         ! solves.
          call build_atomic_guess(mol, guess_kind, d_guess_a, d_guess_b, guess_error)
          if (guess_error%has_error()) then
-            ! A free atom that will not converge is a reason to start somewhere
-            ! else, not to fail the ion. Loud, because an open-shell ion really
-            ! can land on a different state from a different starting point.
+            ! A free atom that will not converge is a reason to start
+            ! somewhere else, not to fail the ion. Loud, because an open-shell
+            ! ion can land on a different state from a different start.
             call logger%warning("Fukui: atomic guess for the ions: "// &
                                 guess_error%get_message()//" -- falling back to gwh")
             guess_kind = SCF_GUESS_GWH
@@ -551,16 +463,11 @@ contains
       res%ionisation_potential = res%energy_cation - res%energy_neutral
       res%electron_affinity = res%energy_neutral - res%energy_anion
       res%chemical_potential = -0.5_dp*(res%ionisation_potential + res%electron_affinity)
-      ! **The half is Parr and Pearson's, and it was missing.** Absolute hardness
-      ! is `(IP - EA)/2`, the second derivative of the energy with respect to
-      ! electron number, in the same way the chemical potential just above is
-      ! the first: `-(IP + EA)/2`. Dropping it here made the hardness twice what
-      ! it should be, and -- because `omega = mu^2 / 2 eta` is written for the
-      ! halved quantity -- the electrophilicity half.
-      !
-      ! The give-away was internal rather than a reference: the chemical
-      ! potential carried its half and this did not, while the electrophilicity
-      ! below assumed both did. Three expressions that cannot all be right.
+      ! Absolute hardness is Parr and Pearson's `(IP - EA)/2`, the second
+      ! derivative of the energy with respect to electron number, as the
+      ! chemical potential above is the first. The half matters: the
+      ! electrophilicity `omega = mu^2 / 2 eta` is written for the halved
+      ! quantity.
       res%hardness = 0.5_dp*(res%ionisation_potential - res%electron_affinity)
       if (abs(res%hardness) > 1.0e-10_dp) then
          res%electrophilicity = res%chemical_potential**2/(2.0_dp*res%hardness)
@@ -573,9 +480,7 @@ contains
    subroutine state_pt2(mol, aux, coeff, eps, n_occ, frozen, e_corr, error)
       !! The UNSCALED MP2 correlation for the closed-shell neutral
       !!
-      !! Unscaled, and the caller multiplies by the functional's fraction. Two
-      !! routines that each scale would be one place too many for a factor that
-      !! belongs to the functional rather than to the correlation treatment.
+      !! Unscaled: the caller multiplies by the functional's fraction.
       type(libcint_molecule_t), intent(in) :: mol
       type(libcint_molecule_t), intent(in), optional :: aux
       real(dp), intent(in) :: coeff(:, :), eps(:)
@@ -598,10 +503,8 @@ contains
    subroutine state_pt2_open(mol, aux, scf, frozen, e_corr, error)
       !! The same for one of the doublet ions
       !!
-      !! Takes the whole SCF result rather than its pieces because the per-spin
-      !! occupied counts have to come from the same place the orbitals did.
-      !! Deriving them from a charge and a multiplicity is how an alpha count
-      !! ends up paired with a beta coefficient matrix.
+      !! Takes the whole SCF result rather than its pieces, so that the
+      !! per-spin occupied counts come from the same place the orbitals did.
       type(libcint_molecule_t), intent(in) :: mol
       type(libcint_molecule_t), intent(in), optional :: aux
       type(rhf_result_t), intent(in) :: scf
@@ -640,10 +543,9 @@ contains
 
       select case (trim(scheme))
       case ("chelpg")
-         ! The constraint matters here in a way it does not for a neutral: the
-         ! fit is told the ion's total charge, so the difference between two
-         ! states is a redistribution of exactly one electron rather than of one
-         ! electron plus whatever the two fits disagreed about.
+         ! The fit is told the ion's total charge, so the difference between
+         ! two states is a redistribution of exactly one electron rather than
+         ! of one electron plus whatever the two fits disagreed about.
          call chelpg_charges(mol, density, charges, error, total_charge=total_charge)
       case ("mulliken")
          call mulliken_charges(mol, density, overlap, charges, error)
@@ -657,10 +559,10 @@ contains
       !! Both indices must sum to one over the molecule
       !!
       !! The three states differ by exactly one electron and the charges account
-      !! for all of it, so `sum_A f_A+` and `sum_A f_A-` are one by construction.
-      !! Nothing about reactivity is being tested here -- what it catches is a
-      !! density that was not the total, an ion run at the wrong charge, or a
-      !! population scheme that lost part of the molecule.
+      !! for all of it, so `sum_A f_A+` and `sum_A f_A-` are one by
+      !! construction. What this catches is a density that was not the total,
+      !! an ion run at the wrong charge, or a population scheme that lost part
+      !! of the molecule.
       type(fukui_result_t), intent(in) :: res
       type(error_t), intent(inout) :: error
 
@@ -694,8 +596,7 @@ contains
       call logger%info("")
       ! The method belongs in the header for the same reason the scheme does:
       ! IP, EA and hardness are differences of total energies, so they are not
-      ! comparable across methods and a table that does not say which one it
-      ! used invites exactly that comparison.
+      ! comparable across methods.
       if (allocated(res%functional)) then
          if (len_trim(res%functional) > 0) then
             call logger%info("  Fukui ions: unrestricted Kohn-Sham, "// &
@@ -743,11 +644,9 @@ contains
          " hartree"
       call logger%info(trim(line))
 
-      ! **Said rather than hidden.** A negative condensed index is not a site
-      ! that repels electrons; it is the population analysis failing to divide
-      ! the density sensibly, and it is common with Mulliken in a basis with
-      ! diffuse functions -- a function centred on one atom reaching over
-      ! another gets charged to the wrong one.
+      ! A negative condensed index is not a site that repels electrons; it is
+      ! the population analysis failing to divide the density sensibly, which
+      ! is common with Mulliken in a basis with diffuse functions.
       if (any_negative) then
          call logger%warning("")
          call logger%warning("  NEGATIVE INDICES ABOVE ARE SPURIOUS -- take them with a "// &
@@ -789,8 +688,7 @@ contains
       end if
 
       ! The direct test rather than a guess from the basis-set name: if the
-      ! anion sits above the neutral then nothing bound the extra electron, and
-      ! f+ describes whatever orbital the basis had left over.
+      ! anion sits above the neutral then nothing bound the extra electron.
       if (.not. res%anion_bound) then
          call logger%warning("  the anion lies ABOVE the neutral, so nothing bound "// &
                              "the added electron and f+ describes whatever orbital "// &

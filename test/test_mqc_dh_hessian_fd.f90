@@ -48,33 +48,33 @@ module test_mqc_dh_hessian_fd
                            0.0_dp, 1.756000_dp, -0.454300_dp], [3, 3])
    integer, parameter :: WATER_NELEC = 10
 
-   !> B2PLYP: a GGA-based double hybrid, so the kernel ladder this exercises is
-   !> the one that exists. A meta-GGA one would be refused by
-   !> `xc_kernel2_apply` rather than silently approximated, and the bridge keeps
-   !> it off the analytic path for that reason.
    character(len=*), parameter :: FUNCTIONAL = "b2plyp"
+      !! B2PLYP: a GGA-based double hybrid, so the kernel ladder this exercises is
+      !! the one that exists. A meta-GGA one would be refused by
+      !! `xc_kernel2_apply` rather than silently approximated, and the bridge keeps
+      !! it off the analytic path for that reason.
 
-   !> Atom 1 (O), z -- the column `test_mqc_mp2_hessian_fd` perturbs, so a
-   !> reader comparing the two files is looking at the same entry of the same
-   !> molecule with only the reference changed.
    integer, parameter :: PERT_ATOM = 1
+      !! Atom 1 (O), z -- the column `test_mqc_mp2_hessian_fd` perturbs, so a
+      !! reader comparing the two files is looking at the same entry of the same
+      !! molecule with only the reference changed.
    integer, parameter :: PERT_CART = 3
 
-   !> Bohr; the 7-point O(h^6) stencil's step, as one rung down.
    real(dp), parameter :: STEP = 2.0e-3_dp
+      !! Bohr; the 7-point O(h^6) stencil's step, as one rung down.
 
-   !> Twenty times the measured worst entry, 4.891e-10 with this step on this
-   !> grid. Loose against the stencil's own reach and not against the
-   !> derivative's: what the number absorbs is the two SCF convergences and the
-   !> stencil's amplification of gradient-level noise, and a real disagreement
-   !> between these two derivatives would sit two orders above it.
    real(dp), parameter :: TOL = 1.0e-8_dp
+      !! Twenty times the measured worst entry, 4.891e-10 with this step on this
+      !! grid. Loose against the stencil's own reach and not against the
+      !! derivative's: what the number absorbs is the two SCF convergences and the
+      !! stencil's amplification of gradient-level noise, and a real disagreement
+      !! between these two derivatives would sit two orders above it.
 
-   !> Twenty times the measured worst entry with d functions, 4.590e-10 on
-   !> 6-31G* -- indistinguishable from the s-and-p number, which is the result
-   !> worth recording: nothing about the `l = 2` second derivatives or the
-   !> d-shell grid terms costs this assembly any accuracy.
    real(dp), parameter :: TOL_D = 1.0e-8_dp
+      !! Twenty times the measured worst entry with d functions, 4.590e-10 on
+      !! 6-31G* -- indistinguishable from the s-and-p number, which is the result
+      !! worth recording: nothing about the `l = 2` second derivatives or the
+      !! d-shell grid terms costs this assembly any accuracy.
 
 contains
 
@@ -91,8 +91,8 @@ contains
                   ]
    end subroutine collect_mqc_dh_hessian_fd_tests
 
-   !> The perturbative term's gradient at `coords`, on the grid in `ctx`
    subroutine pt2_gradient_at(ctx, coords, basis, gradient, err, ok)
+      !! The perturbative term's gradient at `coords`, on the grid in `ctx`
       type(xc_context_t), intent(inout) :: ctx
       real(dp), intent(in) :: coords(3, 3)
       character(len=*), intent(in) :: basis
@@ -125,8 +125,8 @@ contains
       ok = .not. err%has_error()
    end subroutine pt2_gradient_at
 
-   !> `H[:, X] = d(perturbative gradient)/dX` by the 7-point O(h^6) stencil
    subroutine fd_column(ctx, basis, column, err, ok)
+      !! `H[:, X] = d(perturbative gradient)/dX` by the 7-point O(h^6) stencil
       type(xc_context_t), intent(inout) :: ctx
       character(len=*), intent(in) :: basis
       real(dp), intent(out) :: column(9)
@@ -153,8 +153,8 @@ contains
       ok = .true.
    end subroutine fd_column
 
-   !> The analytic column, from the same context and reference geometry
    subroutine analytic_column(ctx, basis, column, err, ok)
+      !! The analytic column, from the same context and reference geometry
       type(xc_context_t), intent(inout) :: ctx
       character(len=*), intent(in) :: basis
       real(dp), intent(out) :: column(9)
@@ -296,8 +296,8 @@ contains
                  "response alone")
    end subroutine column_translates
 
-   !> The grid every evaluation in this file shares
    subroutine reference_context(basis, ctx, err, ok)
+      !! The grid every evaluation in this file shares
       character(len=*), intent(in) :: basis
       type(xc_context_t), intent(out) :: ctx
       type(error_t), intent(inout) :: err

@@ -1,7 +1,6 @@
 !! Quantum chemistry calculation result containers
 module mqc_result_types
-   !! Defines data structures for storing and managing results from
-   !! quantum chemistry calculations including energies, gradients, and properties.
+   !! Energy, gradient and property containers, and the MPI transfer of one.
    use pic_types, only: dp, int32
    use pic_mpi_lib, only: comm_t, isend, irecv, send, recv, wait, request_t, MPI_Status
    use mqc_error, only: error_t
@@ -22,9 +21,9 @@ module mqc_result_types
    integer, parameter :: SCF_CONVERGED = 1
       !! Reached its energy and density thresholds
    integer, parameter :: SCF_NOT_CONVERGED = 2
-      !! Ran out of iterations. The energy is whatever the last cycle held,
-      !! and putting it into an expansion poisons the total silently -- it is
-      !! a number of the right magnitude, so nothing downstream notices.
+      !! Ran out of iterations. The energy is whatever the last cycle held --
+      !! a number of the right magnitude, so an expansion that sums it is
+      !! silently wrong.
    public :: mbe_result_t          !! MBE aggregated result container type
    public :: result_send, result_isend  !! Send result over MPI
    public :: result_recv, result_irecv  !! Receive result over MPI
@@ -38,10 +37,8 @@ module mqc_result_types
       real(dp) :: ss = 0.0_dp  !! Same-spin correlation energy (Hartree)
       real(dp) :: os = 0.0_dp  !! Opposite-spin correlation energy (Hartree)
       ! Spin-component scaling, applied by `total` rather than folded into ss
-      ! and os. The two components stay the numbers the theory produced, so a
-      ! scaled run still reports what it was scaled from -- and a result read
-      ! back later can be rescaled instead of being stuck at whatever factors
-      ! the run used. Both default to one, which is plain MP2.
+      ! and os, so those stay the numbers the theory produced. Both default to
+      ! one, which is plain MP2.
       real(dp) :: ss_scale = 1.0_dp
       real(dp) :: os_scale = 1.0_dp
    contains
@@ -65,23 +62,10 @@ module mqc_result_types
    type :: energy_t
       !! Container for quantum chemistry energy components
       !!
-      !! Stores energy contributions from different levels of theory.
-      !! Total energy is computed as: scf + dh_pt2 + mp2%total() + cc%total()
+      !! The total is `scf + dh_pt2 + mp2%total() + cc%total()`.
       real(dp) :: scf = 0.0_dp           !! SCF/HF/KS reference energy (Hartree)
       real(dp) :: dh_pt2 = 0.0_dp
          !! The perturbative part of a double hybrid's *functional*.
-         !!
-         !! Separate from `mp2` on purpose, and the distinction is not cosmetic. A
-         !! double hybrid's second-order term is a component of its exchange-
-         !! correlation functional, not a correction applied on top of a reference
-         !! -- B2PLYP's energy is not "B2PLYP plus MP2". Putting it in `mp2` would
-         !! give the right total today, for the wrong reason, and the wrong total
-         !! the moment anyone asked for MP2 alongside a double hybrid: `total`
-         !! would add it twice.
-         !!
-         !! Belongs with `scf` conceptually -- it is part of what the functional
-         !! defines -- and is kept as its own field only so a run can report it.
-         !! Already scaled by the functional's coefficient when it is stored.
       type(mp2_energy_t) :: mp2          !! MP2 correlation components
       type(cc_energy_t) :: cc            !! Coupled cluster correlation components
       ! add more as needed, also need to modify the total energy function
@@ -93,8 +77,7 @@ module mqc_result_types
    type :: calculation_result_t
       !! Container for quantum chemistry calculation results
       !!
-      !! Stores computed quantities from QC calculations with flags
-      !! indicating which properties have been computed.
+      !! Each quantity carries a `has_*` flag saying whether it was filled in.
       type(energy_t) :: energy                  !! Energy components (Hartree)
       real(dp), allocatable :: gradient(:, :)   !! Energy gradient (3, natoms) (Hartree/Bohr)
       real(dp), allocatable :: sigma(:, :)     !! Stress tensor (3,3) (Hartree/Bohr^3)
@@ -104,39 +87,25 @@ module mqc_result_types
       real(dp), allocatable :: bond_orders(:, :)
          !! Wiberg-Mayer bond orders, (natoms, natoms), symmetric with a zero
          !! diagonal.
-         !!
-         !! What a distance rule cannot tell you: whether two atoms close enough
-         !! to look bonded actually share electrons. A hydrogen bond and a long
-         !! covalent one are the same distance argument and different numbers
-         !! here, which is why this is worth carrying rather than re-deriving
-         !! from the geometry.
-         !!
-         !! Atom indices are the fragment's own, so a fragment's matrix is
-         !! fragment-local and includes its caps.
 
       ! Atomic partial charges, when `properties.charges` asked for them.
       real(dp), allocatable :: atomic_charges(:)
          !! (natoms) nuclear charge minus the electrons assigned to the atom, so
-         !! positive is electron-poor. **Fragment-local, and caps are in it** --
-         !! the same convention `bond_orders` uses, and here it is what makes
-         !! the numbers checkable: the array sums to the charge of the molecule
-         !! the SCF actually saw. Dropping the caps would leave a column that
-         !! sums to nothing in particular.
+         !! positive is electron-poor.
       real(dp), allocatable :: spin_populations(:)
          !! (natoms) the same partition applied to `P_alpha - P_beta`, so it
          !! sums to `n_alpha - n_beta`. Allocated only for an unrestricted
-         !! reference under Mulliken: CHELPG fits the electrostatic potential,
-         !! which the total density alone determines, so there is no spin
-         !! analogue of it to report.
+         !! reference under Mulliken; CHELPG fits the electrostatic potential,
+         !! which has no spin analogue.
       character(len=16) :: charge_scheme = ""
-         !! Which partition produced them. Travels with the numbers because two
-         !! schemes disagree by design, so a charge without its scheme is not
-         !! interpretable.
+         !! Which partition produced them. Two schemes disagree by design, so a
+         !! charge without its scheme is not interpretable.
       logical :: has_charges = .false.
 
       ! Intrinsic energy decomposition, when `properties.bonding_analysis`
       ! asked for one. Hartree throughout, as everything here is; the printed
       ! tables convert.
+
       real(dp), allocatable :: ieda_atom(:)
          !! (natoms) everything that happens inside one atom -- its own kinetic
          !! energy, its electrons in its own nuclear field, its own repulsion.
@@ -151,8 +120,7 @@ module mqc_result_types
          !! is `sum(ieda_atom) + 0.5*sum(ieda_pair)` and not a triangle sum.
       real(dp), allocatable :: ieda_classical(:, :)
          !! (natoms, natoms) the part of the pair energy an electrostatic model
-         !! could produce. What is left is interference, which is where the
-         !! analysis argues covalent binding lives.
+         !! could produce; the remainder is interference.
       real(dp) :: ieda_formation = 0.0_dp
          !! The energy of formation: the molecule against its free atoms.
       logical :: has_ieda = .false.
@@ -165,9 +133,8 @@ module mqc_result_types
       real(dp) :: fukui_hardness = 0.0_dp
       real(dp) :: fukui_electrophilicity = 0.0_dp
       logical :: fukui_anion_bound = .true.
-         !! Carried so a consumer can discard `f+` without re-deriving why. An
-         !! unbound anion makes that column describe an orbital the basis
-         !! invented, and nothing about the numbers themselves says so.
+         !! False when the anion is unbound, in which case `f+` describes an
+         !! orbital the basis invented and nothing about the numbers says so.
       character(len=16) :: fukui_scheme = ""
       logical :: has_fukui = .false.
 
@@ -183,28 +150,14 @@ module mqc_result_types
       logical :: has_dipole_derivatives = .false.  !! Dipole derivatives have been computed
       logical :: has_bond_orders = .false.  !! Bond orders have been computed
 
-      ! Frontier orbitals
-      !
-      ! HOMO and LUMO rather than the whole spectrum: the gap is what anyone
-      ! asks for, and a per-fragment orbital array would be the largest thing
-      ! in the result by a wide margin.
-      !
-      ! **These do not add up.** Energies and dipoles are additive and the
-      ! expansion sums them; a gap is not, and there is no combination of
-      ! fragment gaps that is the system's. So these stay per fragment and no
-      ! total is formed anywhere -- a summed gap would look like a number and
-      ! be nothing at all. For the gap of a molecule, run it unfragmented.
+      ! Frontier orbitals only, not the whole spectrum
       real(dp) :: homo = 0.0_dp          !! Highest occupied orbital energy (Hartree)
       real(dp) :: lumo = 0.0_dp          !! Lowest unoccupied orbital energy (Hartree)
       logical :: has_orbitals = .false.  !! Whether homo/lumo were reported
 
-      ! SCF convergence
-      !
-      ! Tri-state rather than a logical, because either default would be a
-      ! lie: `.true.` makes a method that never reports look converged, and
-      ! `.false.` makes it look failed. A method that does not say leaves this
-      ! at SCF_UNKNOWN and the output prints "?" -- which is the truth, and
-      ! which shows up as something to fix rather than as a clean bill.
+      ! SCF convergence. Tri-state rather than a logical: a method that does
+      ! not report leaves this at SCF_UNKNOWN and the output prints "?",
+      ! neither claiming convergence nor claiming failure.
       integer :: scf_status = SCF_UNKNOWN  !! Whether the SCF reached its thresholds
       integer :: scf_iterations = 0        !! Cycles used, 0 if not reported
 
@@ -219,9 +172,9 @@ module mqc_result_types
    type :: mbe_result_t
       !! Container for Many-Body Expansion aggregated results
       !!
-      !! Stores total properties computed via MBE: energy, gradient, hessian, dipole.
-      !! Caller allocates desired components before calling compute_mbe; the function
-      !! uses allocated() to determine what to compute and sets has_* flags on success.
+      !! The caller allocates the components it wants before calling
+      !! `compute_mbe`, which computes whatever is allocated and sets the
+      !! matching `has_*` flag on success.
 
       real(dp) :: total_energy = 0.0_dp              !! Total MBE energy (Hartree)
       real(dp), allocatable :: gradient(:, :)        !! Total gradient (3, total_atoms) (Hartree/Bohr)
@@ -247,10 +200,6 @@ contains
 
    pure function mp2_total(this) result(total)
       !! The correlation energy as scaled, which for plain MP2 is the sum
-      !!
-      !! `energy_t%total` adds this to the reference, so the scaling has to be
-      !! applied here rather than by the caller -- otherwise a spin-scaled run
-      !! reports a scaled correlation energy and an unscaled total.
       class(mp2_energy_t), intent(in) :: this
       real(dp) :: total
 
@@ -260,9 +209,7 @@ contains
    pure function mp2_scs(this) result(scs_energy)
       !! Grimme's SCS-MP2 at its published factors, whatever this run used
       !!
-      !! Fixed on purpose: `total` reports the run's own scaling, and this
-      !! answers "what would SCS-MP2 have given", which is a different
-      !! question and the one worth being able to ask of any MP2 result.
+      !! The factors are fixed here, where `total` applies the run's own.
       class(mp2_energy_t), intent(in) :: this
       real(dp) :: scs_energy
 
@@ -346,6 +293,10 @@ contains
 
    subroutine result_destroy(this)
       !! Clean up allocated memory in calculation_result_t
+      ! TODO(mqc): `bond_orders`, `fukui_plus`, `fukui_minus` and `fukui_dual`
+      ! are never deallocated here, so a result reused through `result_recv`
+      ! keeps the previous fragment's arrays at the previous fragment's size
+      ! while `has_bond_orders` still says they are current.
       class(calculation_result_t), intent(inout) :: this
       if (allocated(this%gradient)) deallocate (this%gradient)
       if (allocated(this%sigma)) deallocate (this%sigma)
@@ -370,6 +321,9 @@ contains
 
    subroutine result_reset(this)
       !! Reset all values and flags in calculation_result_t
+      ! TODO(mqc): clears neither `has_charges` nor `has_bond_orders`, and
+      ! `destroy` deallocates `atomic_charges` on the way through, so a reused
+      ! result claims charges it no longer holds.
       class(calculation_result_t), intent(inout) :: this
       call this%energy%reset()
       call this%error%clear()
@@ -446,11 +400,9 @@ contains
    subroutine send_error_state(result, comm, dest, tag)
       !! Send the failure flag, code and trace that travel with a result
       !!
-      !! This is not optional bookkeeping. Without it a fragment that failed on
-      !! a worker arrives at the coordinator looking healthy: `has_error` stays
-      !! at its default `.false.`, the untouched SCF energy of 0 is taken at
-      !! face value, and the many-body expansion quietly sums zeros. Every
-      !! `has_error` check on the receiving side depends on this being sent.
+      !! Every `has_error` check on the receiving side depends on this being
+      !! sent. Without it a fragment that failed on a worker arrives looking
+      !! healthy and its untouched SCF energy of 0 is summed at face value.
       type(calculation_result_t), intent(in) :: result
       type(comm_t), intent(in) :: comm
       integer, intent(in) :: dest, tag
@@ -465,8 +417,8 @@ contains
       call send(comm, result%error%get_code(), dest, tag)
 
       ! pic-mpi carries no character type, so the trace goes as one character
-      ! code per element. It is never empty: a zero-length message would leave
-      ! the coordinator with a failure it cannot name.
+      ! code per element, and is never empty -- a zero-length message would
+      ! leave the coordinator with a failure it cannot name.
       trace = result%error%get_full_trace()
       if (len_trim(trace) == 0) trace = "Calculation failed without a diagnostic"
       n = len_trim(trace)
@@ -510,7 +462,6 @@ contains
 
    subroutine result_send(result, comm, dest, tag)
       !! Send calculation result over MPI (blocking)
-      !! Sends energy components and conditionally sends gradient based on has_gradient flag
       type(calculation_result_t), intent(in) :: result
       type(comm_t), intent(in) :: comm
       integer, intent(in) :: dest, tag
@@ -523,12 +474,9 @@ contains
       call send(comm, result%energy%cc%doubles, dest, tag)
       call send(comm, result%energy%cc%triples, dest, tag)
 
-      ! Send fragment metadata
+      ! Send fragment metadata. A field added to the type and not to these
+      ! four routines leaves every parallel run reporting the default.
       call send(comm, result%distance, dest, tag)
-      ! Convergence travels with the energy or it is not knowable at
-      ! the coordinator, which is the only rank that writes anything.
-      ! A field added to the type and not to these four routines
-      ! leaves every parallel run reporting the default.
       call send(comm, result%scf_status, dest, tag)
       call send(comm, result%scf_iterations, dest, tag)
       call send(comm, result%has_orbitals, dest, tag)
@@ -582,12 +530,9 @@ contains
       call send(comm, result%energy%cc%doubles, dest, tag)
       call send(comm, result%energy%cc%triples, dest, tag)
 
-      ! Send fragment metadata
+      ! Send fragment metadata. A field added to the type and not to these
+      ! four routines leaves every parallel run reporting the default.
       call send(comm, result%distance, dest, tag)
-      ! Convergence travels with the energy or it is not knowable at
-      ! the coordinator, which is the only rank that writes anything.
-      ! A field added to the type and not to these four routines
-      ! leaves every parallel run reporting the default.
       call send(comm, result%scf_status, dest, tag)
       call send(comm, result%scf_iterations, dest, tag)
       call send(comm, result%has_orbitals, dest, tag)
@@ -625,7 +570,6 @@ contains
 
    subroutine result_recv(result, comm, source, tag, status)
       !! Receive calculation result over MPI (blocking)
-      !! Receives energy components and conditionally receives gradient based on flag
       type(calculation_result_t), intent(inout) :: result
       type(comm_t), intent(in) :: comm
       integer, intent(in) :: source, tag
@@ -694,11 +638,8 @@ contains
       ! Start from an empty result. pic-mpi's array receives allocate only when
       ! the target is unallocated -- they will not resize a buffer that is
       ! already there, yet still receive the sender's full element count into
-      ! it. A caller reusing one result across messages of different shapes
-      ! (a relay loop forwarding fragments of unequal size, say) would overflow
-      ! the smaller allocation and corrupt the heap, surfacing much later as an
-      ! abort inside an unrelated deallocate. Clearing here makes reuse safe for
-      ! every caller rather than each having to remember.
+      ! it, so reusing one result across messages of different shapes would
+      ! overflow the smaller allocation and corrupt the heap.
       call result%destroy()
 
       ! Receive SCF energy (non-blocking)
@@ -754,16 +695,9 @@ contains
    pure function scf_not_converged_message(iterations) result(text)
       !! What to say when an SCF runs out of cycles and the run must stop
       !!
-      !! Written once and shared by every backend, because the two that had
-      !! their own said only "SCF not converged in N cycles" and left the reader
-      !! to discover both the escape hatch and what to do afterwards.
-      !!
-      !! **The escape hatch is named, and so is its cost.** A user whose run
-      !! stops on fragment 400,000 of a million needs to know that finishing is
-      !! possible; a user who reaches for it needs to know the total will then
-      !! be built partly from fragments that never converged, and that the
-      !! output says which. Naming the first without the second trades a stopped
-      !! run for a wrong one.
+      !! Shared by every backend. **The escape hatch is named, and so is its
+      !! cost**: `allow_crap_scf` lets a fragmented run finish, and the total it
+      !! then reports is built partly from unconverged fragments.
       integer, intent(in) :: iterations
       character(len=:), allocatable :: text
 
@@ -803,10 +737,8 @@ contains
       !!
       !! Occupation-driven rather than counting electrons, so the same routine
       !! serves restricted and unrestricted spectra. The threshold is half an
-      !! electron: with Fermi smearing the frontier occupations are fractional
-      !! rather than 0 or 2, and any cut inside that range names the same pair
-      !! for a molecule with a real gap. It is arbitrary for a system without
-      !! one, which is a system whose gap was not going to mean much anyway.
+      !! electron, which under Fermi smearing names the same pair as any other
+      !! cut for a molecule with a real gap, and is arbitrary without one.
       real(dp), intent(in) :: energies(:)
       real(dp), intent(in) :: occupations(:)
       real(dp), intent(out) :: homo, lumo
@@ -822,8 +754,7 @@ contains
          if (occupations(i) > 0.5_dp) i_homo = i
       end do
 
-      ! Nothing occupied, or nothing empty: no frontier pair to report, and
-      ! saying so beats inventing one from an end of the spectrum.
+      ! Nothing occupied, or nothing empty: no frontier pair to report.
       if (i_homo < 1 .or. i_homo >= size(energies)) return
 
       homo = energies(i_homo)

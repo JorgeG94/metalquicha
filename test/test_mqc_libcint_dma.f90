@@ -38,12 +38,12 @@ module test_mqc_libcint_dma
    real(dp), parameter :: ANG = 1.8897261254578281_dp
    integer, parameter :: Z(3) = [8, 1, 1]
 
-   !> A water dimer for the threading test, where the water above will not do.
-   !>
-   !> Two molecules give bond midpoints that several primitive pairs can claim,
-   !> and a partition with something to partition -- which is where a missing
-   !> reduction shows. One water is small enough that a broken thread split can
-   !> still look right.
+   !! A water dimer for the threading test, where the water above will not do.
+   !!
+   !! Two molecules give bond midpoints that several primitive pairs can claim,
+   !! and a partition with something to partition -- which is where a missing
+   !! reduction shows. One water is small enough that a broken thread split can
+   !! still look right.
    integer, parameter :: Z_DIMER(6) = [8, 1, 1, 8, 1, 1]
    character(len=2), parameter :: SYM_DIMER(6) = ["O ", "H ", "H ", "O ", "H ", "H "]
    real(dp), parameter :: GEO_DIMER(3, 6) = reshape( &

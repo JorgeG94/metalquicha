@@ -6,9 +6,6 @@ module mqc_basis_normalization
    !! integral engines expect the contracted function to be normalized. This
    !! applies the standard two-stage normalization: a per-primitive factor,
    !! followed by an overall factor Q that normalizes the contracted function.
-   !!
-   !! The convention matches the one cuEST's own sample helpers use, so a basis
-   !! normalized here reproduces the reference numbers exactly.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: cgto_type

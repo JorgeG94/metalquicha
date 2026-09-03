@@ -9,8 +9,8 @@ module test_mqc_afo_model
                               group_electron_shift
    implicit none
 
-   !> Geometries are quoted to four decimals in Angstrom, so a distance
-   !> reconstructed from them agrees to about there and not further.
+   !! Geometries are quoted to four decimals in Angstrom, so a distance
+   !! reconstructed from them agrees to about there and not further.
    real(dp), parameter :: TOL = 1.0e-4_dp
 
    private

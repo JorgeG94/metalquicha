@@ -32,9 +32,9 @@ module test_mqc_hdf5_checkpoint
    character(len=*), parameter :: PATH = "test_ckpt.h5"
    character(len=*), parameter :: FP = "f5f16b57fa5252ab"
 
-   !> Every element of a block says which block it came from, so a slice that
-   !> travelled to the wrong record is caught by its values and not only by
-   !> its size.
+   !! Every element of a block says which block it came from, so a slice that
+   !! travelled to the wrong record is caught by its values and not only by
+   !! its size.
    real(dp), parameter :: BASE_MONOMER_G = 100.0_dp
    real(dp), parameter :: BASE_MONOMER_H = 10.0_dp
    real(dp), parameter :: BASE_DIMER_23 = 200.0_dp

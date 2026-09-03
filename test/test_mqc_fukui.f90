@@ -27,7 +27,7 @@ module test_mqc_fukui
 
    integer, parameter :: WATER_Z(3) = [8, 1, 1]
    character(len=2), parameter :: WATER_SYM(3) = ["O ", "H ", "H "]
-   !> Bohr, C2v, with the two hydrogens exactly equivalent
+   !! Bohr, C2v, with the two hydrogens exactly equivalent
    real(dp), parameter :: WATER(3, 3) = reshape( &
                           [0.0_dp, 0.0_dp, 0.0_dp, &
                            0.0_dp, 1.4308_dp, 1.1078_dp, &

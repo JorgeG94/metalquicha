@@ -4,16 +4,11 @@ module mqc_efp_read
    !! writes it, this one reads one and hands back the parameters an interaction
    !! energy needs.
    !!
-   !! **Only the sections an energy reads are parsed.** A potential carries
-   !! seventeen sections and most of them are bulky -- the dynamic polarizabilities
-   !! alone are twelve frequencies by however many localized orbitals, and the
-   !! projection data carries a whole basis set. Electrostatics needs the expansion
-   !! points, the multipoles and the two screening fits, and that is what this reads.
-   !! The rest is skipped by name rather than by position, so adding a section later
-   !! is a matter of naming it.
+   !! Sections are found and skipped by name rather than by position, so adding
+   !! one later is a matter of naming it.
    !!
-   !! **The format is GAMESS's, so it is read the way GAMESS writes it** rather than
-   !! the way a reader would prefer:
+   !! **The format is GAMESS's, so it is read the way GAMESS writes it** rather
+   !! than the way a reader would prefer:
    !!
    !!   * a section is a header line, records, then `STOP`
    !!   * a record is a label followed by numbers, and a record too long for a line
@@ -38,40 +33,38 @@ module mqc_efp_read
    ! is how a packing convention drifts.
    public :: N_DIPOLE, N_QUADRUPOLE, N_OCTUPOLE
 
-   !> Multipole components at one expansion point, in the file's own order.
    integer, parameter :: N_DIPOLE = 3
    integer, parameter :: N_QUADRUPOLE = 6
    integer, parameter :: N_OCTUPOLE = 10
+      !! Multipole components at one expansion point, in the file's own order.
 
-   !> A dynamic polarizability record: a centroid then a 3x3 tensor.
    integer, parameter :: N_DYNAMIC_RECORD = 12
+      !! A dynamic polarizability record: a centroid then a 3x3 tensor.
 
-   !> Row and column of each of GAMESS's nine polarizability slots. The diagonal
-   !> comes first and the off-diagonal triples are the transpose of what its labels
-   !> suggest -- the same map `mqc_efp_potential` writes with, established there
-   !> against GAMESS's own output. Reading these nine as a row-major 3x3 gives a
-   !> tensor whose trace is negative, which is how the mistake announces itself.
-   !>
-   !> **`efinp.src` appears to contradict this, and does not.** Its reader
-   !> (`efinp.src:8456-8464`) and its writer (`efinp.src:7552-7561`) agree with each
-   !> other that slot 4 is `DYNDD_LMO(1,2)`, which is the transpose of the map below.
-   !> Both statements are true because the two arrays are indexed oppositely: GAMESS's
-   !> is `alpha(field, dipole)` and ours is `alpha(dipole, field)`. The maps compose to
-   !> the identity, so the *files* agree and a potential written here is read correctly
-   !> by GAMESS. Measured, not argued: per-orbital against a real `MAKEFP` potential,
-   !> this map lands 1.96e-05 away while the source-derived one lands 1.72e-01 away --
-   !> and that 1.72e-01 is each tensor's own asymmetry, orbital for orbital.
-   !>
-   !> So do not "fix" this to match `efinp.src`. What *does* follow from the transpose
-   !> is that anything mirroring a GAMESS expression over `DYNDD_LMO` must swap the two
-   !> indices when it reads `dyn_pol` -- E7 is the first such consumer. `dipquad` and
-   !> `quadquad` are stored flat in file order and need no swap.
+   ! Row and column of each of GAMESS's nine polarizability slots. The diagonal
+   ! comes first and the off-diagonal triples are the transpose of what the
+   ! labels suggest -- the same map `mqc_efp_potential` writes with. Reading the
+   ! nine as a row-major 3x3 gives a tensor whose trace is negative, which is
+   ! how the mistake announces itself.
+   !
+   ! **`efinp.src` appears to contradict this, and does not.** Its reader
+   ! (`efinp.src:8456-8464`) and its writer (`efinp.src:7552-7561`) agree that
+   ! slot 4 is `DYNDD_LMO(1,2)`, the transpose of the map below. Both are true
+   ! because the two arrays are indexed oppositely: GAMESS's is
+   ! `alpha(field, dipole)` and ours is `alpha(dipole, field)`. The maps compose
+   ! to the identity, so the *files* agree. Do not "fix" this to match
+   ! `efinp.src`.
+   !
+   ! What does follow from the transpose is that anything mirroring a GAMESS
+   ! expression over `DYNDD_LMO` must swap the two indices when it reads
+   ! `dyn_pol`. `dipquad` and `quadquad` are stored flat in file order and need
+   ! no swap.
    integer, parameter :: N_POL_SLOTS = 9
    integer, parameter :: POL_ROW(N_POL_SLOTS) = [1, 2, 3, 2, 3, 3, 1, 1, 2]
    integer, parameter :: POL_COL(N_POL_SLOTS) = [1, 2, 3, 1, 1, 2, 2, 3, 3]
 
-   !> Longest line a potential is expected to carry, matching the writer's own.
    integer, parameter :: MAX_LINE = 160
+      !! Longest line a potential is expected to carry, matching the writer's.
 
    type :: efp_fragment_t
       !! One fragment's parameters, as read
@@ -92,54 +85,61 @@ module mqc_efp_read
       real(dp), allocatable :: screen2(:)          !! Exponential damping exponent per point
       logical :: has_screen = .false.
       logical :: has_screen2 = .false.
-      !> Dynamic polarizabilities, for dispersion. `(3, 3, n_lmo, n_freq)`.
+
       integer :: n_lmo = 0
       integer :: n_freq = 0
       real(dp), allocatable :: dyn_pol(:, :, :, :)
+         !! Dynamic polarizabilities, for dispersion. `(3, 3, n_lmo, n_freq)`.
       real(dp), allocatable :: centroids(:, :)     !! (3, n_lmo), Bohr
       real(dp), allocatable :: frequencies(:)      !! Imaginary, a.u.
       logical :: has_dynamic = .false.
-      !> Static polarizabilities at the same centroids, for polarization.
+
       integer :: n_pol = 0
       real(dp), allocatable :: static_pol(:, :, :)  !! (3, 3, n_pol)
+         !! Static polarizabilities at the same centroids, for polarization.
       real(dp), allocatable :: pol_points(:, :)     !! (3, n_pol), Bohr
       logical :: has_static_pol = .false.
-      !> The two higher dispersion tensor sets, stored flat: their component order
-      !> is *not* established, and the E7/E8 formulas in GAMESS's `efdrvr.src` are
-      !> what will settle it. Reading them into a shaped array now would mean
-      !> guessing an index convention, which is how the polarizability slot order
-      !> went wrong once already.
+
       integer :: n_dipquad = 0                    !! Values per record, expected 27
       integer :: n_quadquad = 0                   !! Values per record, expected 81
       real(dp), allocatable :: dipquad(:, :, :)   !! (n_dipquad, n_lmo, n_freq)
       real(dp), allocatable :: quadquad(:, :, :)  !! (n_quadquad, n_lmo, n_freq)
+         !! The two higher dispersion tensor sets, **stored flat**: which of the
+         !! 27 or 81 slots is which index tuple is not established, and shaping
+         !! them would bake in a guess.
       logical :: has_dipquad = .false.
       logical :: has_quadquad = .false.
-      !> The projection basis, with GAMESS's primitive normalization divided back
-      !> out, so these are the raw contraction coefficients a basis object wants.
-      !> An `L` shell arrives as two shells over shared exponents.
+
       integer :: n_shells = 0
       integer, allocatable :: shell_atom(:), shell_l(:), shell_first(:), shell_nprim(:)
       real(dp), allocatable :: prim_expo(:), prim_coef(:)
+         !! The projection basis, with GAMESS's primitive normalization divided
+         !! back out, so these are the raw contraction coefficients a basis
+         !! object wants. An `L` shell arrives as two shells over shared
+         !! exponents.
       logical :: has_basis = .false.
-      !> The localized orbitals, in **GAMESS's** AO order -- the order the file uses,
-      !> not libcint's. Converting them needs the shell layout of a built molecule, so
-      !> it is left to whoever builds one; see `mqc_efp_pair`.
+
       integer :: n_lmo_proj = 0
       integer :: nao_proj = 0
       real(dp), allocatable :: lmo_gamess(:, :)   !! (nao_proj, n_lmo_proj)
+         !! The localized orbitals, in **GAMESS's** AO order, not libcint's.
+         !! Converting them needs the shell layout of a built molecule, so it is
+         !! left to whoever builds one; see `mqc_efp_pair`.
       logical :: has_lmo = .false.
-      !> The Fock matrix over the localized orbitals, unpacked to a full symmetric
-      !> matrix. The file stores its lower triangle row by row and carries no labels.
+
       real(dp), allocatable :: fock_lmo(:, :)     !! (n_lmo_proj, n_lmo_proj)
+         !! The Fock operator over the localized orbitals, unpacked to a full
+         !! symmetric matrix. The file stores its lower triangle row by row and
+         !! carries no labels.
       logical :: has_fock = .false.
-      !> `CTVEC` and `CTFOK`, which charge transfer needs. The orbital set here is
-      !> wider than the projection wavefunction's: `CTVEC` carries occupied *and*
-      !> virtual orbitals, since charge transfer moves density into the latter.
-      !> Also in GAMESS's AO order, so it needs the same inversion.
+
       integer :: n_occ_ct = 0
       integer :: n_mo_ct = 0
       real(dp), allocatable :: ctvec_gamess(:, :)  !! (nao_proj, n_mo_ct)
+         !! `CTVEC`, which charge transfer needs. A wider orbital set than the
+         !! projection wavefunction's -- occupied *and* virtual, since charge
+         !! transfer moves density into the latter -- and in GAMESS's AO order,
+         !! so it needs the same inversion.
       real(dp), allocatable :: eps_occ(:)          !! (n_occ_ct), from CTFOK
       logical :: has_ctvec = .false.
       logical :: has_ctfok = .false.
@@ -210,10 +210,8 @@ contains
    pure function fragment_net_charge(self) result(q)
       !! The fragment's net charge, nuclear plus electronic
       !!
-      !! Worth having as its own function because it is the cheapest check that a
-      !! potential was read correctly: the monopoles must sum to the charge the
-      !! fragment was computed for, and a misparsed record shows up here long before
-      !! it shows up in an energy.
+      !! The cheapest check that a potential was read correctly: the monopoles
+      !! must sum to the charge the fragment was computed for.
       class(efp_fragment_t), intent(in) :: self
       real(dp) :: q
 
@@ -282,10 +280,9 @@ contains
       allocate (frag%octopole(N_OCTUPOLE, frag%n_points))
       frag%octopole = values
 
-      ! The two screening sections are optional: a potential written without a
-      ! damping fit is still a usable potential, it just has no penetration term.
-      ! Each record is `1.0 alpha`, the leading one being a weight GAMESS always
-      ! writes as unity.
+      ! The two screening sections are optional; without them there is no
+      ! penetration term. Each record is `1.0 alpha`, the leading one being a
+      ! weight GAMESS always writes as unity.
       call section_records(lines, n_lines, "SCREEN2", 2, labels, values, n_rec, error)
       if (error%has_error()) return
       if (n_rec > 0) then
@@ -342,19 +339,18 @@ contains
    subroutine read_ctvec(lines, n_lines, frag, error)
       !! `CTVEC` and `CTFOK`: the orbitals and orbital energies charge transfer needs
       !!
-      !! `CTVEC`'s header carries two counts, occupied and total -- `CTVEC 5 19` is five
-      !! occupied among nineteen. **Not the same set as `PROJECTION WAVEFUNCTION`**,
-      !! which is valence-occupied only: charge transfer moves density into virtual
-      !! orbitals, so it needs them, and a potential can carry either the whole
-      !! canonical set or occupied-plus-valence-virtuals depending on `CTVVO`. The count
-      !! in the header says which arrived, so nothing has to be assumed.
+      !! `CTVEC`'s header carries two counts, occupied and total -- `CTVEC 5 19`
+      !! is five occupied among nineteen. **Not the same set as `PROJECTION
+      !! WAVEFUNCTION`**, which is valence-occupied only; which of the whole
+      !! canonical set or occupied-plus-valence-virtuals arrived depends on
+      !! GAMESS's `CTVVO` and is what the header count says.
       !!
       !! Rows are chunked by column, as in `PROJECTION WAVEFUNCTION`, and the
-      !! coefficients are in GAMESS's AO order -- `from_gamess_ao_order` applies here
-      !! too.
+      !! coefficients are in GAMESS's AO order.
       !!
-      !! `CTFOK` follows as a bare list of the occupied orbital energies, no labels,
-      !! and is read here because it is meaningless without the count `CTVEC` declares.
+      !! `CTFOK` follows as a bare unlabelled list of the occupied orbital
+      !! energies, and is read here because it is meaningless without the count
+      !! `CTVEC` declares.
       character(len=*), intent(in) :: lines(:)
       integer, intent(in) :: n_lines
       type(efp_fragment_t), intent(inout) :: frag
@@ -450,14 +446,13 @@ contains
    subroutine read_fock_lmo(lines, n_lines, frag, error)
       !! `FOCK MATRIX ELEMENTS`: the Fock operator over the localized orbitals
       !!
-      !! Exchange repulsion needs it, and it is the one section with no labels at all --
-      !! just the lower triangle, row by row, over continuation lines. Its size fixes
-      !! the orbital count independently, so a mismatch against the projection
-      !! wavefunction is caught rather than reshaped around.
+      !! Exchange repulsion needs it, and it is the one section with no labels at
+      !! all -- just the lower triangle, row by row, over continuation lines.
+      !! Its size fixes the orbital count independently, so a mismatch against
+      !! the projection wavefunction is caught rather than reshaped around.
       !!
-      !! Unpacked to a full symmetric matrix here. GAMESS keeps the triangle and
-      !! expands it where it is used (`CPYTSQ`); doing it once on the way in means the
-      !! consumers index `(i, j)` without thinking about packing.
+      !! Unpacked to a full symmetric matrix here, so consumers index `(i, j)`
+      !! without thinking about packing.
       character(len=*), intent(in) :: lines(:)
       integer, intent(in) :: n_lines
       type(efp_fragment_t), intent(inout) :: frag
@@ -540,11 +535,9 @@ contains
       !! then five coefficients in fixed columns, continuing over as many lines as the
       !! orbital needs.
       !!
-      !! **Left in GAMESS's AO order.** Converting to libcint's needs the shell layout
-      !! of a molecule, which this module does not build, and the d and f ordering maps
-      !! in `mqc_efp_potential` have to be applied in *reverse* -- silently wrong if
-      !! done by eye. So the coefficients are handed over as they are read and the
-      !! conversion belongs with the molecule.
+      !! **Left in GAMESS's AO order.** Converting to libcint's needs the shell
+      !! layout of a molecule, which this module does not build, and the d and f
+      !! ordering maps in `mqc_efp_potential` have to be applied in *reverse*.
       character(len=*), intent(in) :: lines(:)
       integer, intent(in) :: n_lines
       type(efp_fragment_t), intent(inout) :: frag
@@ -610,16 +603,15 @@ contains
    subroutine read_projection_basis(lines, n_lines, frag, error)
       !! `PROJECTION BASIS SET`, with GAMESS's normalization taken back out
       !!
-      !! Needed to build a molecule spanning two fragments, which is what the
-      !! inter-fragment overlaps behind exchange repulsion, charge transfer and the
-      !! dispersion damping are computed from.
+      !! Needed to build a molecule spanning two fragments, which the
+      !! inter-fragment overlaps behind exchange repulsion, charge transfer and
+      !! the dispersion damping are computed from.
       !!
-      !! **The printed coefficients are not the contraction coefficients.** GAMESS
-      !! folds the primitive normalization in -- the first oxygen s primitive reads
-      !! 0.83172368 where the basis file has 0.0018311 -- so each is divided by
-      !! `gamess_primitive_norm` at its own exponent and angular momentum. That is
-      !! exact rather than fitted: our own writer multiplies by that same function,
-      !! so this inverts a known transformation.
+      !! **The printed coefficients are not the contraction coefficients.**
+      !! GAMESS folds the primitive normalization in, so each is divided by
+      !! `gamess_primitive_norm` at its own exponent and angular momentum --
+      !! exact rather than fitted, since the writer multiplies by that same
+      !! function.
       !!
       !! An `L` shell is stored as two shells sharing exponents, and the angular
       !! momentum used for the division is **per coefficient column** -- zero for the
@@ -773,16 +765,14 @@ contains
       !! the same shape as the dipole dynamic section, two-token labels and all, so
       !! the same joiner serves.
       !!
-      !! **Stored flat, deliberately.** Which of the 27 or 81 slots is which index
-      !! triple or quadruple is not established, and the only thing that would
-      !! settle it is the E7/E8 expressions in GAMESS's own source. Reshaping now
-      !! would bake in a guess, and the nine-slot polarizability order already
-      !! showed what that costs: read row-major it gave a negative polarizability
-      !! and a fitted constant 15 times too large.
+      !! **Stored flat, deliberately.** Which of the 27 or 81 slots is which
+      !! index tuple is not established, and reshaping now would bake in a
+      !! guess.
       !!
-      !! The orbital and frequency counts come from the dipole section rather than
-      !! being counted again, and a section that disagrees with them is an error --
-      !! they describe the same set of localized orbitals at the same frequencies.
+      !! The orbital and frequency counts come from the dipole section rather
+      !! than being counted again, and a section that disagrees with them is an
+      !! error -- they describe the same localized orbitals at the same
+      !! frequencies.
       character(len=*), intent(in) :: lines(:)
       integer, intent(in) :: n_lines
       character(len=*), intent(in) :: name
@@ -866,12 +856,12 @@ contains
    subroutine read_static_pol(lines, n_lines, frag, error)
       !! `POLARIZABLE POINTS`: the static polarizability at each orbital centroid
       !!
-      !! The same record shape as the dynamic section -- a label, a centroid, nine
-      !! tensor components in GAMESS's slot order -- with one block rather than
-      !! twelve, and **one** label token rather than two: `CT1` here against `CT  1`
-      !! there. Taking the wrong number of tokens off the front shifts every value
-      !! by one and reads the tensor into the centroid, so the count is per section
-      !! rather than shared.
+      !! The same record shape as the dynamic section -- a label, a centroid,
+      !! nine tensor components in GAMESS's slot order -- with one block rather
+      !! than twelve, and **one** label token rather than two: `CT1` here
+      !! against `CT  1` there. Taking the wrong number of tokens off the front
+      !! shifts every value by one, so the count is per section rather than
+      !! shared.
       character(len=*), intent(in) :: lines(:)
       integer, intent(in) :: n_lines
       type(efp_fragment_t), intent(inout) :: frag
@@ -1040,13 +1030,11 @@ contains
       !!
       !! **This section cannot use `join_record`.** There, a record is continued
       !! only where a line ends in `>`, and here the label line does not -- the
-      !! tensor starts on the line *after* it, and the `>` marks continue within the
-      !! tensor. Reading it the general way makes each tensor line a record of its
-      !! own, which is how this announced itself: the record count stopped dividing
-      !! by the frequency count.
+      !! tensor starts on the line *after* it, and the `>` marks continue within
+      !! the tensor.
       !!
-      !! The frequency tag is dropped: everything from `--` onwards is a comment on
-      !! the label line, not data.
+      !! The frequency tag is dropped: everything from `--` onwards is a comment
+      !! on the label line, not data.
       character(len=*), intent(in) :: lines(:)
       integer, intent(inout) :: i
       integer, intent(in) :: finish
@@ -1346,8 +1334,7 @@ contains
    subroutine slurp(path, lines, n_lines, error)
       !! The whole file as lines
       !!
-      !! Read twice rather than grown: a potential is a few thousand lines, and one
-      !! extra pass over it costs nothing against knowing the count up front.
+      !! Read twice rather than grown, so the count is known before allocating.
       character(len=*), intent(in) :: path
       character(len=MAX_LINE), allocatable, intent(out) :: lines(:)
       integer, intent(out) :: n_lines

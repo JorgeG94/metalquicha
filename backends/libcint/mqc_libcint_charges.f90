@@ -11,13 +11,10 @@ module mqc_libcint_charges
    !!
    !! **CHELPG** asks what point charges would reproduce the molecule's own
    !! electrostatic potential on a grid of points outside it, and solves for
-   !! them. That is a physically meaningful question -- the potential is an
-   !! observable of the density -- and the answer is far less basis-set
-   !! sensitive. It costs an ESP evaluation on a few thousand points, which in
-   !! practice is not the expensive part: both schemes need the same SCF, and on
-   !! 24 to 32 atoms in 6-31G the whole CHELPG step adds about two seconds to an
-   !! eighteen-second calculation. Choosing the cheaper scheme buys ~10%, so
-   !! choose on which answer you want rather than on cost.
+   !! them. The potential is an observable of the density, so the answer is far
+   !! less basis-set sensitive. It costs an ESP evaluation on a few thousand
+   !! points, which is small next to the SCF both schemes need, so choose on
+   !! which answer you want rather than on cost.
    !!
    !! For embedding one fragment in the field of another, CHELPG is the one that
    !! matters: the whole point is to reproduce a field, and that is what it is
@@ -43,14 +40,12 @@ module mqc_libcint_charges
    public :: chelpg_charges
    public :: chelpg_grid
 
-   !> Grid spacing, Angstrom. Breneman and Wiberg's value.
+   ! Grid spacing, Angstrom. Breneman and Wiberg's value.
    real(dp), parameter :: CHELPG_SPACING = 0.3_dp
-   !> How far past the van der Waals surface points are kept, Angstrom.
-   !>
-   !> Both a box margin and a cutoff: the lattice extends this far beyond the
-   !> molecule, and a point further than this from every atom is dropped. The
-   !> shell that survives is where a neighbouring molecule's electrons would
-   !> actually sit, which is the region the charges have to get right.
+   ! How far past the van der Waals surface points are kept, Angstrom. Both a box
+   ! margin and a cutoff: the lattice extends this far beyond the molecule, and a
+   ! point further than this from every atom is dropped. The shell that survives
+   ! is where a neighbouring molecule's electrons would sit.
    real(dp), parameter :: CHELPG_HEAD_SPACE = 2.8_dp
 
 contains
@@ -59,8 +54,7 @@ contains
       !! Which atom each basis function belongs to, 1-based
       !!
       !! Public because splitting a whole-system matrix into per-fragment blocks
-      !! needs it, which `validation/probe_esp` does to check that a fragment's
-      !! embedding really is local.
+      !! needs it.
       type(libcint_molecule_t), intent(in) :: mol
       integer, allocatable, intent(out) :: owner(:)
 
@@ -80,11 +74,9 @@ contains
    subroutine mulliken_charges(mol, density, overlap, charges, error)
       !! q_A = Z_A - sum_{mu in A} (D S)_mu,mu
       !!
-      !! The diagonal of `D S` is the gross population of each basis function,
-      !! and summing it over an atom's functions charges that atom with every
-      !! overlap it takes part in, half of which belongs to its neighbour. That
-      !! halving is the whole of Mulliken's arbitrariness and the whole of its
-      !! cheapness.
+      !! The diagonal of `D S` is the gross population of each basis function, and
+      !! summing it over an atom's functions charges that atom with every overlap
+      !! it takes part in, half of which belongs to its neighbour.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :), overlap(:, :)
       real(dp), allocatable, intent(out) :: charges(:)
@@ -101,14 +93,11 @@ contains
       !!
       !! Same trace, different matrix: where `mulliken_charges` asks how many
       !! electrons sit on an atom, this asks how many *unpaired* ones do. The
-      !! nuclear charge does not enter and nothing is subtracted from it -- a
-      !! nucleus carries no spin -- so this is a population rather than a
-      !! charge, and it sums to `n_alpha - n_beta` and not to the molecular
-      !! charge.
+      !! nuclear charge does not enter, so this is a population rather than a
+      !! charge and it sums to `n_alpha - n_beta`.
       !!
-      !! There is deliberately no CHELPG counterpart. That scheme fits the
-      !! electrostatic potential, which the total density alone determines, so
-      !! a "spin CHELPG" would be fitting a potential no spin density produces.
+      !! There is no CHELPG counterpart: that scheme fits the electrostatic
+      !! potential, which the total density alone determines.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: spin_density(:, :), overlap(:, :)
       real(dp), allocatable, intent(out) :: populations(:)
@@ -128,12 +117,10 @@ contains
       !! `head_space`, keeping points that are outside every atom's van der
       !! Waals sphere and within `head_space` of at least one atom.
       !!
-      !! Both tests matter and for different reasons. Inside a sphere the
-      !! classical potential of a point charge diverges while the real one does
-      !! not, so fitting there would fit nonsense. Far outside, every charge
-      !! distribution with the right multipoles looks alike, so points there
-      !! carry no information about where the charge sits and would dilute the
-      !! points that do.
+      !! Both tests matter. Inside a sphere the classical potential of a point
+      !! charge diverges while the real one does not; far outside, every charge
+      !! distribution with the right multipoles looks alike, so those points
+      !! carry no information about where the charge sits.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), allocatable, intent(out) :: points(:, :)
       type(error_t), intent(inout) :: error

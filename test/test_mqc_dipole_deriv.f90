@@ -31,9 +31,9 @@ module test_mqc_dipole_deriv
                            0.0_dp, 0.000000_dp, 1.814137_dp, &
                            0.0_dp, 1.756000_dp, -0.454300_dp], [3, 3])
 
-   !> Deliberately not the centre of mass and not zero: an origin that happens
-   !> to be special can hide an index that is being read from the wrong place.
    real(dp), parameter :: ORIGIN(3) = [0.13_dp, -0.07_dp, 0.21_dp]
+      !! Deliberately not the centre of mass and not zero: an origin that happens
+      !! to be special can hide an index that is being read from the wrong place.
 
    real(dp), parameter :: STEP = 1.0e-4_dp
 
@@ -52,8 +52,8 @@ contains
                   ]
    end subroutine collect_mqc_dipole_deriv_tests
 
-   !> Central difference of `multipole_matrices` for one atom and direction
    subroutine fd_block(atom, cart, basis, block, err, ok)
+      !! Central difference of `multipole_matrices` for one atom and direction
       integer, intent(in) :: atom, cart
       character(len=*), intent(in) :: basis
       real(dp), allocatable, intent(out) :: block(:, :, :)   !! (n_ao, n_ao, 3)

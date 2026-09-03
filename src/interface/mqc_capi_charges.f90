@@ -3,27 +3,18 @@ module mqc_capi_charges
    !! Mulliken and CHELPG charges on a system handle, from an RHF density.
    !!
    !! Same shape as [[mqc_capi_bond_orders]] and for the same reason: charges
-   !! are an input to deciding what to calculate, not the output of a
-   !! calculation someone asked for. A caller weighing fragmentations wants to
-   !! know how much charge sits near each candidate cut, and wants to ask that
-   !! many times over many trial partitions -- a Python loop, not a deck.
+   !! are an input to deciding what to calculate, and a caller weighing
+   !! fragmentations asks for them once per trial partition.
    !!
-   !! **Unlike bond orders, these cost a real SCF.** Bond orders come from xTB,
-   !! which is cheap enough to run on the whole system without thinking about
-   !! it. Charges here come from `run_libcint_rhf` in whatever basis the caller
-   !! names, so `compute` on a large system in a large basis is a large
-   !! calculation. That is the caller's decision to make, which is why the basis
-   !! is a parameter and not a default hidden inside. Measured: 32 atoms in
-   !! 6-31G is about twenty seconds, nearly all of it the SCF -- so the basis is
-   !! the knob that matters and the choice of scheme is not.
+   !! **Unlike bond orders, these cost a real SCF.** They come from
+   !! `run_libcint_rhf` in whatever basis the caller names, so the basis is a
+   !! parameter rather than a default hidden inside, and it is the knob that
+   !! decides what `compute` costs.
    !!
-   !! **Which scheme to ask for.** CHELPG, unless the reason for asking is
-   !! specifically about basis-function populations. Measured on water between
-   !! 6-31G and aug-cc-pVDZ, the Mulliken charge on oxygen moves from -0.79 to
-   !! -0.30 while CHELPG moves from -0.94 to -0.74 -- the same molecule, and one
-   !! of the two answers has changed by more than half. For anything downstream
-   !! that treats a charge as a physical quantity, embedding especially, the
-   !! basis-stable one is the only defensible input.
+   !! **Which scheme to ask for.** CHELPG, unless the question is specifically
+   !! about basis-function populations: a Mulliken charge moves by a factor of
+   !! two between 6-31G and aug-cc-pVDZ where the CHELPG one barely moves, so
+   !! anything treating a charge as a physical quantity wants the stable one.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double, c_char, c_associated, c_f_pointer
    use pic_types, only: dp
    use mqc_capi_system, only: system_handle_t, last_message
@@ -47,14 +38,11 @@ contains
       !! Run one RHF over the whole system and keep its atomic charges
       !!
       !! `scheme` is "chelpg" or "mulliken"; an empty string takes chelpg, for
-      !! the reason in the module header. `basis` is any basis the build carries;
-      !! an empty string takes 6-31g, which is small enough to be affordable on
-      !! the systems this gets pointed at and large enough that the charges mean
-      !! something.
+      !! the reason in the module header. `basis` is any basis the build
+      !! carries; an empty string takes 6-31g.
       !!
-      !! Closed shell only. An odd electron count is refused rather than
-      !! silently paired up, because a caller fragmenting a radical needs to
-      !! know that this cannot answer for it.
+      !! Closed shell only: an odd electron count is refused rather than
+      !! silently paired up.
       type(c_ptr), value :: handle
       integer(c_int), value :: scheme_len
       character(kind=c_char), intent(in) :: scheme(scheme_len)
@@ -100,8 +88,8 @@ contains
          symbols(i) = element_number_to_symbol(h%geom%element_numbers(i))
       end do
 
-      ! Through the bridge, not into the backend. The odd-electron refusal and
-      ! the SCF live on the other side of it now, so this reports rather than
+      ! Through the bridge, not into the backend: the odd-electron refusal and
+      ! the SCF are both on the other side of it, so this reports rather than
       ! decides.
       call run_libcint_charges(h%geom%element_numbers, symbols, h%geom%coordinates, &
                                basis_name, which, h%geom%charge, q, error)
@@ -132,9 +120,7 @@ contains
       !! Which scheme produced the charges currently on the handle
       !!
       !! Empty if none have been computed. Worth asking, because "the charge on
-      !! atom 3" is not a well-defined number without it -- two schemes
-      !! disagree by design, and a caller comparing systems or caching results
-      !! has to be able to tell which question was answered.
+      !! atom 3" is not a well-defined number without it.
       use, intrinsic :: iso_c_binding, only: c_null_char
       type(c_ptr), value :: handle
       integer(c_int), value :: buffer_len

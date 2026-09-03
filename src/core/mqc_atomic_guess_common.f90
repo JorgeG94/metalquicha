@@ -2,12 +2,6 @@
 module mqc_atomic_guess_common
    !! What a superposition-of-atomic-densities guess needs to know about a free
    !! atom before any integrals exist.
-   !!
-   !! The libcint and cuEST guesses build their atomic densities with completely
-   !! different machinery, but they agree on which atom they are building: the
-   !! occupancy follows from the periodic table, not from the backend. Both
-   !! carried identical copies of this; one copy means the two paths cannot
-   !! start from different atoms and blame each other for the difference.
    use pic_types, only: dp
    implicit none
    private

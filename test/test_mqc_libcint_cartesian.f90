@@ -30,8 +30,8 @@ module test_mqc_libcint_cartesian
    character(len=*), parameter :: CC_PVDZ = "../basis_sets/cc-pvdz.json"
    character(len=*), parameter :: STO_3G = "../basis_sets/sto-3g.json"
 
-   !> Water, in Bohr. The geometry the Cartesian reference energies were
-   !> generated on, so the counts here name the same molecule as those.
+   !! Water, in Bohr. The geometry the Cartesian reference energies were
+   !! generated on, so the counts here name the same molecule as those.
    integer, parameter :: WATER_Z(3) = [8, 1, 1]
    real(dp), parameter :: WATER_COORDS(3, 3) = reshape([ &
                                                        0.0_dp, 0.0_dp, 0.225374_dp, &

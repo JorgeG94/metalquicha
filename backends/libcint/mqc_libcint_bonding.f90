@@ -6,17 +6,12 @@ module mqc_libcint_bonding
    !! bond order and what kind of orbital each end is.
    !!
    !! The pipeline itself lives in `mqc_aambs`, `mqc_libcint_quao` and
-   !! `mqc_libcint_quao_report`, each validated on its own. What is here is only
-   !! the assembly -- which spaces to build, in what order, and what to hand to
-   !! the report -- so that a deck can ask for the analysis without a caller
-   !! having to know that the valence-internal space is the occupied valence
-   !! orbitals followed by the valence-virtual ones.
+   !! `mqc_libcint_quao_report`. What is here is the assembly: which spaces to
+   !! build, in what order, and what to hand to the report.
    !!
-   !! **This is a Hartree-Fock analysis for now.** The construction takes a
-   !! one-particle density matrix and does not care where it came from, and
-   !! `quasi_atomic_orbitals` accepts one explicitly for exactly that reason.
-   !! But nothing here supplies a correlated density yet, so what is analysed is
-   !! the reference determinant.
+   !! **This is a Hartree-Fock analysis unless a correlated density is passed.**
+   !! `quasi_atomic_orbitals` accepts one, through `occupations`; without it
+   !! what is analysed is the reference determinant.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use pic_io, only: to_char
@@ -64,28 +59,28 @@ module mqc_libcint_bonding
 
    integer, parameter :: BONDING_NONE = 0
    integer, parameter :: BONDING_GMS_QUAO = 1
-
-   !> The population analysis must account for every electron. Loose next to the
-   !> others because it is a sum over the whole molecule, so it carries the
-   !> rounding of every term in it.
-   real(dp), parameter :: SUM_RULE_TOL = 1.0e-6_dp
-
-   !> How far the valence virtual space may fall short of spanning what the
-   !> minimal basis asks for before the analysis is refused.
-   real(dp), parameter :: SPAN_TOL = 1.0e-6_dp
-
-   !> A decomposition has to add back up to the thing it decomposed. Tighter
-   !> than the sum rule above: these compare a handful of terms rather than a
-   !> sum over the molecule, so there is less rounding to allow for.
-   real(dp), parameter :: BALANCE_TOL = 1.0e-8_dp
-
-   !> Occupations below this contribute nothing and are skipped, which also
-   !> keeps them out of divisions.
-   real(dp), parameter :: OCCUPATION_FLOOR = 1.0e-14_dp
       !! The Ruedenberg quasi-atomic analysis as GAMESS implements it. Named for
-      !! the reference implementation rather than the papers because the labels
-      !! and the thresholds are GAMESS's, and only the underlying quantities are
+      !! the reference implementation rather than the papers, because the labels
+      !! and the thresholds are GAMESS's and only the underlying quantities are
       !! the papers'.
+
+   real(dp), parameter :: SUM_RULE_TOL = 1.0e-6_dp
+      !! The population analysis must account for every electron. Loose next to
+      !! the others because it is a sum over the whole molecule, so it carries
+      !! the rounding of every term in it.
+
+   real(dp), parameter :: SPAN_TOL = 1.0e-6_dp
+      !! How far the valence virtual space may fall short of spanning what the
+      !! minimal basis asks for before the analysis is refused.
+
+   real(dp), parameter :: BALANCE_TOL = 1.0e-8_dp
+      !! A decomposition has to add back up to the thing it decomposed. Tighter
+      !! than the sum rule above: these compare a handful of terms rather than a
+      !! sum over the molecule.
+
+   real(dp), parameter :: OCCUPATION_FLOOR = 1.0e-14_dp
+      !! Occupations below this contribute nothing and are skipped, which also
+      !! keeps them out of divisions.
 
    integer, parameter :: NO_SHARING_CI_TRANSFORM = 0
       !! Carry a CI vector into the quasi-atomic basis rather than solving
@@ -100,24 +95,20 @@ module mqc_libcint_bonding
       !!
       !! Offered to the no-sharing analysis so that it need not converge its own
       !! when the two would be the same wave function. Whether they are is
-      !! decided by `inherit_valence_ci` and not by the caller: the analysis is
-      !! defined on the *full valence* space, and a deck's active space is
-      !! usually something else entirely.
+      !! decided by `inherit_valence_ci`, not by the caller: the analysis is
+      !! defined on the *full valence* space.
       !!
       !! `ci` and `orbitals` belong together -- the coefficients are over
-      !! determinants of those orbitals, in that order -- which is why they
-      !! travel on one object rather than as two optional arguments that could
-      !! arrive apart.
+      !! determinants of those orbitals, in that order.
       real(dp), allocatable :: ci(:, :)
          !! (n_alpha_strings, n_beta_strings). Left unallocated by a restricted
          !! space, which carries `ci_flat` and `ormas` instead.
       real(dp), allocatable :: ci_flat(:)
          !! The coefficients of an occupation-restricted space, whose
          !! determinants are not a rectangle. Written out over the complete
-         !! space before use -- see `scatter_restricted_ci`, and note that the
-         !! rotation carries such a wave function *out* of its own space, so the
-         !! complete one is not an optimisation but the only place the answer
-         !! fits.
+         !! space before use -- see `scatter_restricted_ci`: the rotation
+         !! carries such a wave function *out* of its own space, so the complete
+         !! one is the only place the answer fits.
       type(ormas_space_t) :: ormas
          !! The partition `ci_flat` is addressed by
       real(dp), allocatable :: orbitals(:, :)   !! (n_ao, n_active)
@@ -165,9 +156,8 @@ contains
       !! Parse a deck's `properties.bonding_analysis.no_sharing_ci` value
       !!
       !! Returns `-1` for anything else, which the caller refuses. The schema
-      !! catches a misspelling before a deck reaches here; this exists so that
-      !! the library refuses too, since a caller through the C API or the
-      !! Python interface never passes through the schema.
+      !! catches a misspelling before a deck reaches here, but a caller through
+      !! the C or Python interface never passes through the schema.
       character(len=*), intent(in) :: name
       integer :: kind
 
@@ -190,6 +180,9 @@ contains
                                 free_atom_energy, pair_energy, pair_classical, &
                                 formation_energy)
       !! The quasi-atomic bonding analysis, start to finish
+      ! TODO(mqc): the dummy arguments are interrupted by local declarations --
+      ! `aambs` through `labels` sit between `occupations` and `active_orbitals`
+      ! -- so the interface cannot be read off the top of the declaration block.
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
@@ -234,30 +227,23 @@ contains
          !! only when the wave function is a determinant. Passing the CI energy
          !! is what keeps the correlated case checked rather than trusted.
       logical, intent(in), optional :: energy_decomposition
-         !! Resolve the energy onto atoms and atom pairs. Off by default, and
-         !! that is a cost decision rather than a taste one: the two-electron
-         !! term needs the dense `n_ao^4` integral array, where the bonding
-         !! tables above need only one-electron integrals. At a hundred basis
-         !! functions that is eight hundred megabytes for an analysis a caller
-         !! may not have asked for.
+         !! Resolve the energy onto atoms and atom pairs. Off by default on
+         !! cost: the two-electron term needs the dense `n_ao^4` integral array,
+         !! where the bonding tables need only one-electron integrals.
       logical, intent(in), optional :: no_sharing
          !! Run the no-sharing analysis, which needs a full valence CI expanded
          !! over the quasi-atomic orbitals and projects it. Off by default
          !! because that CI is factorial in the valence shell -- ethane is
-         !! eleven million determinants and benzene is out of reach by nine
-         !! orders of magnitude.
+         !! eleven million determinants and benzene is out of reach.
       character(len=*), intent(in), optional :: no_sharing_ci
          !! How that expansion is obtained: `"transform"`, the default, or
-         !! `"resolve"`. See `no_sharing_analysis`, which is where the two
-         !! differ and where the difference is argued.
+         !! `"resolve"`. See `no_sharing_analysis`.
       logical, intent(in), optional :: restrict_localization
          !! Confine the localization to the wave function's
          !! occupation-restricted subspaces, so no rotation mixes two of them.
-         !! Off by default, and the default is a measurement: on water the
-         !! constraint costs 0.17 of atomic character and takes the no-sharing
-         !! wave function from 20% of the norm to 0.15%. It buys the ability to
-         !! keep a restricted wave function in its own space, which matters only
-         !! when writing it out over the complete one will not fit.
+         !! Off by default: the constraint costs atomic character, and buys only
+         !! the ability to keep a restricted wave function in its own space,
+         !! which matters when writing it out over the complete one will not fit.
       type(valence_wavefunction_t), intent(in), optional :: valence_wavefunction
          !! A converged multiconfigurational wave function to use instead of
          !! solving one, if it happens to be over the full valence space. Its
@@ -270,9 +256,8 @@ contains
       real(dp), intent(out), optional :: formation_energy
          !! The decomposition, for a caller that wants the numbers rather than
          !! the tables. Left unallocated when the energy decomposition did not
-         !! run, which is the only state that distinguishes "not asked for"
-         !! from "came out zero" -- and the tables are printed either way,
-         !! because a deck asking for an analysis is asking for its output.
+         !! run, which is what distinguishes "not asked for" from "came out
+         !! zero".
          !!
          !! `pair_energy` and `pair_classical` carry the full pair energy in
          !! both (A,B) and (B,A), as everything in the decomposition does, so
@@ -309,10 +294,9 @@ contains
       logical :: loud
 
       if (error%has_error()) return
-      ! An `intent(out)` scalar is undefined until it is written, and this one
-      ! is written only where the decomposition runs. Defined here so a caller
-      ! that reads it unconditionally reads a zero rather than a stack value;
-      ! the allocatables beside it say whether that zero means anything.
+      ! An `intent(out)` scalar is undefined until it is written, and this one is
+      ! written only where the decomposition runs. Defined here so a caller that
+      ! reads it unconditionally reads a zero rather than a stack value.
       if (present(formation_energy)) formation_energy = 0.0_dp
       loud = .true.
       if (present(verbose)) loud = verbose
@@ -346,35 +330,22 @@ contains
 
       ! **Unless the calculation already has a valence space, in which case use
       ! it.** The extraction above is the recipe for a wave function that does
-      ! not span the valence shell -- a single determinant -- and the paper says
-      ! so, calling it the route by which "good approximations to the QUAOs can
-      ! even be obtained from a wave function ... e.g., from a Hartree-Fock wave
-      ! function", recovering the missing part "by means of an SVD projection of
-      ! the accurate atomic minimal basis orbitals on the virtual molecular
-      ! orbitals".
+      ! not span the valence shell, recovering the missing part by an SVD
+      ! projection of the minimal-basis orbitals on the virtual ones.
       !
-      ! A full valence MCSCF has no missing part. Its active space *is* the
+      ! A full valence MCSCF has no missing part: its active space *is* the
       ! valence space, and re-deriving one here would produce a different
-      ! subspace of the same dimension -- necessarily, since the orbital
-      ! optimisation moves the active space against the inactive and virtual
-      ! ones, and those rotations are the non-redundant parameters a CASSCF
-      ! exists to optimise. Analysing the derived space would then decompose a
-      ! wave function the calculation never computed.
-      !
-      ! GAMESS takes the same branch, at `vvos.src:540`: for an MCSCF whose
-      ! occupied valence count already equals the minimal-basis valence count it
-      ! sets `IVVOS=0` and extracts nothing, reporting "WE ACTUALLY NEVER PICK
-      ! UP ANY NEW VVOS ORBITALS INTO THE ORBITAL SET."
+      ! subspace of the same dimension, so the analysis would decompose a wave
+      ! function the calculation never computed. GAMESS takes the same branch at
+      ! `vvos.src:540`.
       call adopt_valence_space(valence_wavefunction, dims, vvo%n_vvo, n_electrons, &
                                valence_internal, loud, adopted)
 
       ! An occupation-restricted partition constrains the localization, and can
-      ! only do so against the orbitals it was defined over -- so it travels
-      ! only when those orbitals were adopted above. The construction is then
-      ! confined to each subspace and no rotation may cross one, which is what
-      ! keeps a restricted wave function invariant under the transformation.
-      ! GAMESS imposes the same constraint and prints the same fact
-      ! (`LOCAL_PPASVD KEEPS ORBITALS WITHIN ORMAS SUBSPACES`).
+      ! only do so against the orbitals it was defined over, so it travels only
+      ! when those orbitals were adopted above. No rotation may then cross a
+      ! subspace, which is what keeps a restricted wave function invariant under
+      ! the transformation.
       restrict = .false.
       if (present(restrict_localization)) restrict = restrict_localization
       if (restrict .and. adopted .and. present(valence_wavefunction)) then
@@ -388,10 +359,10 @@ contains
          end if
       end if
 
-      ! The density in the valence-internal basis. For a reference determinant
-      ! this is two on the occupied diagonal and zero elsewhere, which is what
+      ! The density in the valence-internal basis. For a reference determinant it
+      ! is two on the occupied diagonal and zero elsewhere, which is what
       ! `quasi_atomic_orbitals` assumes when nothing is passed. For a correlated
-      ! one it is neither diagonal nor idempotent, and it has to be projected:
+      ! one it is neither diagonal nor idempotent, and has to be projected:
       !
       !     D_vi = W^T diag(n) W ,   W = C^T S V
       !
@@ -413,13 +384,11 @@ contains
             if (error%has_error()) return
             if (starved) then
                ! The partition cannot give every atom an orbital. Not a fault:
-               ! quasi-atomic orbitals are atomic and these subspaces are
-               ! usually grouped by orbital energy, so one strong atom can win
-               ! every slot -- for water, oxygen takes all six and both
-               ! hydrogens are left out. GAMESS stops here. This does not have
-               ! to, because the unconstrained construction plus writing the
-               ! wave function out over the complete space reaches the same
-               ! answer, so it goes that way and says so.
+               ! these subspaces are usually grouped by orbital energy, so one
+               ! strong atom can win every slot. GAMESS stops here; this does
+               ! not have to, because the unconstrained construction plus
+               ! writing the wave function out over the complete space reaches
+               ! the same answer.
                call logger%warning("  the occupation-restricted subspaces cannot "// &
                                    "give every atom a quasi-atomic orbital, so the "// &
                                    "localization is left unconstrained and the wave "// &
@@ -451,10 +420,8 @@ contains
       if (error%has_error()) return
 
       if (loud) then
-         ! Populations first: the headline of the analysis, and the number a
-         ! reader checks against chemical intuition before looking at anything
-         ! else. The core electrons are added back because the construction only
-         ! ever sees the valence.
+         ! Populations first. The core electrons are added back because the
+         ! construction only ever sees the valence.
          allocate (populations(natm))
          populations = 0.0_dp
          do i = 1, quao%n_quao
@@ -494,11 +461,8 @@ contains
          ! to look like free-atom orbitals, not to be natural orbitals, so
          ! whatever occupation sits outside their span is not recovered.
          !
-         ! It is small -- 3.7 millielectrons of 14 for N2 CAS(6,6) in cc-pVDZ --
-         ! and it is the honest measure of how much of the correlated wave
-         ! function this analysis is describing. Printed rather than hidden,
-         ! because a population analysis quietly losing electrons is the kind of
-         ! thing that gets discovered much later and from much further away.
+         ! It is small, and it is the measure of how much of the correlated wave
+         ! function this analysis is describing. Printed rather than hidden.
          if (abs(sum(populations) - real(n_electrons, dp)) > SUM_RULE_TOL) then
             write (line, "(a,f10.6,a,i0,a)") &
                "    outside the valence space ", &
@@ -529,6 +493,10 @@ contains
          ! it is part of; refusing on a technicality would be unhelpful.
          if (no_sharing) want_energy = .true.
       end if
+      ! TODO(mqc): `want_energy` is assigned only inside the `if (loud)` block
+      ! above and read in `if (loud .and. want_energy)` below, so a caller
+      ! passing `verbose = .false.` reads it undefined and silently gets no
+      ! energy decomposition however `energy_decomposition` was set.
 
       ci_route = NO_SHARING_CI_TRANSFORM
       if (present(no_sharing_ci)) then
@@ -603,20 +571,6 @@ contains
             call logger%info(trim(line))
          end do
 
-         ! **The check the decomposition exists to pass.** Everything above is
-         ! internally consistent by construction -- each routine verifies its own
-         ! bins add up -- but that says nothing about whether the basis they were
-         ! summed in holds the whole density. This compares the one-electron
-         ! energy the decomposition arrives at against the one the converged
-         ! orbitals give directly, in the atomic-orbital basis, with no
-         ! quasi-atomic anything involved.
-         !
-         ! For a reference determinant the two are equal to rounding: the core
-         ! and valence-internal spaces together contain every occupied orbital.
-         ! For a correlated density they are not, and the difference is the same
-         ! occupation living outside the valence-virtual span that the population
-         ! sum reports above -- a statement about the analysis rather than an
-         ! error, so it is printed rather than raised.
          ! The two-electron energy, where a term carries four atomic labels
          ! rather than three and both a bra and a ket distribution can be spread
          ! across two atoms at once.
@@ -638,8 +592,7 @@ contains
             if (error%has_error()) return
             ! The active orbitals are not quite inside the span -- they were
             ! optimised to lower an energy, the valence-virtual ones to look
-            ! atomic. Reported for the same reason the population shortfall is:
-            ! it says how much of the correlation this is describing.
+            ! atomic. Reported for the same reason the population shortfall is.
             if (span_deficit > SPAN_TOL) then
                write (line, "(a,es10.2)") &
                   "    active orbitals outside the quasi-atomic span ", span_deficit
@@ -660,19 +613,14 @@ contains
          if (error%has_error()) return
          call print_two_electron_decomposition(two_intra, two_inter, element_symbols)
 
-         ! **The check the whole thing exists to pass.** Each routine above
-         ! verifies its own bins add up, which says nothing about whether the
-         ! basis they were summed in holds the whole density. This compares the
-         ! energy the decomposition arrives at against the energy of the same
-         ! wave function computed in the atomic-orbital basis, with nothing
-         ! quasi-atomic anywhere in it.
+         ! **The check the whole thing exists to pass**, further down: the energy
+         ! the decomposition arrives at against the energy of the same wave
+         ! function computed in the atomic-orbital basis, with nothing
+         ! quasi-atomic anywhere in it. For a reference determinant the two are
+         ! equal to rounding; for a correlated density the difference is the
+         ! occupation living outside the valence-virtual span, which is a
+         ! statement about the analysis rather than an error and so is printed.
          !
-         ! For a reference determinant the two are equal to rounding: the core
-         ! and valence-internal spaces together contain every occupied orbital.
-         ! For a correlated density they are not, and the difference is the same
-         ! occupation living outside the valence-virtual span the population sum
-         ! reports above -- a statement about the analysis rather than an error,
-         ! so it is printed rather than raised.
          ! The nuclear repulsion needs no decomposing -- it is a sum over pairs
          ! already -- so adding it in the same convention resolves the whole
          ! energy into atoms and pairs with nothing left outside.
@@ -694,9 +642,9 @@ contains
          call print_interatomic_split(tot_inter, classical, element_symbols)
 
          ! The atoms as they would be on their own. Subtracting them turns a
-         ! table of large numbers into the energy of formation, which is the
-         ! quantity chemistry is about: what it costs to prepare each atom in
-         ! the shape the molecule needs, against what the pairs give back.
+         ! table of large numbers into the energy of formation: what it costs to
+         ! prepare each atom in the shape the molecule needs, against what the
+         ! pairs give back.
          call free_atom_energies(mol, free_energy, error)
          if (error%has_error()) return
          allocate (adaptation(natm))
@@ -705,9 +653,8 @@ contains
          call print_formation(adaptation, free_energy, tot_intra, tot_inter, &
                               element_symbols, formation)
 
-         ! Handed out here rather than at the end of the routine: everything
-         ! below is a check or a separate calculation, and a caller that asked
-         ! for the decomposition should get it even if the no-sharing CI it
+         ! Handed out here rather than at the end of the routine, so a caller
+         ! that asked for the decomposition gets it even if the no-sharing CI it
          ! also asked for turns out to be unaffordable.
          if (present(atom_energy)) atom_energy = tot_intra
          if (present(free_atom_energy)) free_atom_energy = free_energy
@@ -797,14 +744,12 @@ contains
             call logger%info(trim(line))
          end if
 
-         ! Two diagnostics, at the end rather than the top: they say whether to
-         ! believe the tables above, which is not a question worth asking until
-         ! the tables have been read. The atomic character is how much of each
-         ! orbital stayed on its own atom -- Paper II's functional, one when the
-         ! orbitals are exactly free-atom ones. The gap is the separation the
-         ! valence-virtual selection cut through; Paper I reports 0.99999
-         ! against 0.105-0.272, and anything narrower means the valence space
-         ! was not cleanly separable and the whole analysis is on sand.
+         ! Two diagnostics saying whether to believe the tables above. The
+         ! atomic character is how much of each orbital stayed on its own atom,
+         ! one when the orbitals are exactly free-atom ones. The gap is the
+         ! separation the valence-virtual selection cut through; **anything
+         ! narrow means the valence space was not cleanly separable and the
+         ! whole analysis is on sand.**
          call logger%info("")
          write (line, "(a,f8.4,a,i0,a)") "    atomic character   ", &
             quao%atomic_character, "   (", quao%sweeps, " refinement sweeps)"
@@ -813,10 +758,8 @@ contains
             vvo%smallest_retained, "   against rejected ", vvo%largest_rejected
          call logger%info(trim(line))
 
-         ! Per orbital as well as averaged, because the average cannot tell
-         ! every orbital being mediocre from a few being poor. The papers quote
-         ! these one at a time -- 0.978 to 0.9999 across ethane's sixteen -- so
-         ! this is the form in which our numbers can be set beside theirs.
+         ! Per orbital as well as averaged, because the average cannot tell every
+         ! orbital being mediocre from a few being poor.
          if (allocated(quao%character_of)) then
             call logger%info("")
             call logger%info("    atomic character per orbital, worst first")
@@ -891,10 +834,10 @@ contains
                                      density_ao, energy)
       !! The one-electron energy straight from the converged orbitals
       !!
-      !! Deliberately built without touching anything quasi-atomic, so that
-      !! comparing it against the decomposition is a real check rather than a
-      !! restatement. `sum(gamma * h)` rather than a trace with a transpose,
-      !! since both matrices are symmetric.
+      !! Built without touching anything quasi-atomic, so that comparing it
+      !! against the decomposition is a check rather than a restatement.
+      !! `sum(gamma * h)` rather than a trace with a transpose, since both
+      !! matrices are symmetric.
       real(dp), intent(in) :: orbitals(:, :)
       integer, intent(in) :: n_occupied
       real(dp), intent(in), optional :: occupations(:)
@@ -929,9 +872,8 @@ contains
       !! The two-electron energy straight from the atomic-orbital density
       !!
       !! The same `Gamma = gamma gamma - (1/2) gamma gamma` as the decomposition
-      !! uses, contracted in the basis the integrals were computed in. Built
-      !! independently so that comparing the two is a check and not a
-      !! restatement.
+      !! uses, contracted in the basis the integrals were computed in, and built
+      !! independently so that comparing the two is a check.
       real(dp), intent(in) :: density_ao(:, :)
       real(dp), intent(in) :: eri_ao(:, :, :, :)
       real(dp) :: energy
@@ -958,10 +900,9 @@ contains
       !! What it costs to prepare the atoms, against what the pairs give back
       !!
       !! **The adaptation energy is positive and that is not a bug.** An atom in
-      !! a molecule is deformed -- promoted, and in a polar bond stripped of
-      !! charge -- and both cost energy against the free atom. Binding comes
-      !! from the interatomic terms being more negative than the adaptation is
-      !! positive, which is why the two are printed side by side.
+      !! a molecule is deformed, which costs energy against the free atom;
+      !! binding comes from the interatomic terms being more negative than the
+      !! adaptation is positive.
       real(dp), intent(in) :: adaptation(:), free_energy(:), intra(:), inter(:, :)
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in) :: formation
@@ -997,27 +938,22 @@ contains
       !! active space is the full valence shell, and leaves it alone otherwise.
       !!
       !! The test is on counts, and counts are all that can be tested: the
-      !! valence dimension is a property of the *atoms* -- the sum of their
-      !! free-atom minimal-basis valence orbitals -- so an active space of that
-      !! size holding that many electrons on that many inactive orbitals is the
-      !! full valence shell or is a coincidence. GAMESS tests exactly the same
-      !! thing, comparing its `NACTDT` against a dimension it recounts from
-      !! `LOCAL_NUMVAL` per atom (`locsvd.src:3676`).
+      !! valence dimension is a property of the *atoms*, so an active space of
+      !! that size holding that many electrons on that many inactive orbitals is
+      !! the full valence shell or is a coincidence. GAMESS tests the same thing
+      !! at `locsvd.src:3676`.
       !!
-      !! A coincidence is not silent, because the analysis prints
-      !! `atomic character` -- the same quantity the paper tabulates as QUAO
-      !! overlaps with free-atom orbitals, 0.978 to 0.9999 for ethane. An active
-      !! space of the right size that is not the valence shell shows up there.
+      !! A coincidence is not silent: an active space of the right size that is
+      !! not the valence shell shows up in the printed `atomic character`.
       type(valence_wavefunction_t), intent(in), optional :: offered
       type(aambs_dimensions_t), intent(in) :: dims
       integer, intent(in) :: n_vvo, n_electrons
       real(dp), intent(inout) :: valence_internal(:, :)
       logical, intent(in) :: loud
       logical, intent(out) :: adopted
-         !! Whether the offer was taken. It gates more than a log line: an
-         !! occupation-restricted partition is expressed in the active
-         !! orbitals, so it means nothing against a valence space derived here
-         !! instead of taken from the calculation.
+         !! Whether the offer was taken. More than a log line: an
+         !! occupation-restricted partition is expressed in the active orbitals,
+         !! so it means nothing against a valence space derived here instead.
 
       character(len=160) :: line
       integer :: n_val
@@ -1053,8 +989,7 @@ contains
       !!
       !! **Nothing here is taken on trust.** A deck's active space is whatever
       !! the deck asked for, and the no-sharing analysis is defined on the full
-      !! valence space, so the two coincide only when someone deliberately
-      !! arranged it. Four things have to hold, and the third is the one that
+      !! valence space. Four things have to hold, and the third is the one that
       !! cannot be read off a dimension:
       !!
       !!   1. The vector is a rectangle. A restricted space carries `ci_flat`
@@ -1068,9 +1003,8 @@ contains
       !!      two bases of different spaces do not.
       !!   4. Closed shell, since the projection downstream is.
       !!
-      !! Even then the energy is checked afterwards, in the caller. This routine
-      !! establishes that the offer is plausible; the invariance check
-      !! establishes that it was right.
+      !! Even then the energy is checked afterwards, in the caller: this routine
+      !! establishes only that the offer is plausible.
       type(libcint_molecule_t), intent(in) :: mol
       type(valence_wavefunction_t), intent(in) :: offered
       type(quao_result_t), intent(in) :: valence_quao
@@ -1134,8 +1068,7 @@ contains
       !! Index permutation putting `values` in ascending order
       !!
       !! Ascending because the interesting end is the low one: a single orbital
-      !! that failed to become atomic says more about a molecule than the
-      !! dozen that succeeded.
+      !! that failed to become atomic says more than a dozen that succeeded.
       real(dp), intent(in) :: values(:)
       integer, allocatable, intent(out) :: order(:)
 
@@ -1174,42 +1107,28 @@ contains
       !! orbitals, so the wave function can be had either by solving in the
       !! quasi-atomic basis directly (`NO_SHARING_CI_RESOLVE`) or by solving in
       !! the molecular orbital basis and carrying the vector across with the
-      !! orbital transformation (`NO_SHARING_CI_TRANSFORM`, the default). Del
-      !! Angel Cruz, Gordon and Ruedenberg say which to prefer, in Section 3.3:
-      !! the re-solve "is laborious in the QUAO basis because of the lack of a
-      !! small dominant configurational part."
+      !! orbital transformation (`NO_SHARING_CI_TRANSFORM`, the default).
       !!
-      !! That is a statement about the Davidson and not about the Hamiltonian.
-      !! The transformation is orthogonal, so the CI matrix in the two bases is
-      !! the same matrix to a similarity and has the same spectrum. What
-      !! degrades is the starting vector -- `initial_basis` begins from the
-      !! lowest-diagonal determinant, which carries almost the whole wave
-      !! function in the molecular orbital basis and almost none of it in the
-      !! quasi-atomic one -- and the diagonal preconditioner, which assumes a
-      !! diagonal dominance the quasi-atomic basis does not have. For water in
-      !! 6-31G one determinant reaches 90% of the norm in the molecular orbital
-      !! basis and thirty-one are needed in the rotated one, and that ratio gets
-      !! worse with size, not better.
-      !!
-      !! The re-solve is kept because it is an independent route to the same
-      !! number, which is the only thing that would catch the transformation
-      !! being wrong.
+      !! Prefer the transform. The two matrices are the same to an orthogonal
+      !! similarity, but the Davidson's starting vector and diagonal
+      !! preconditioner both assume a dominant configuration the quasi-atomic
+      !! basis does not have. The re-solve is kept as an independent route to
+      !! the same number, which is the only thing that would catch the
+      !! transformation being wrong.
       !!
       !! The difference between the two energies is the charge-transfer
-      !! stabilisation. `E(Psi-0)` must come out **above** `E(Psi)`: a
-      !! projection cannot lower a variational energy, and that is asserted
-      !! because it is the one thing that would catch the projection being
-      !! applied to the wrong space.
+      !! stabilisation. `E(Psi-0)` must come out **above** `E(Psi)`, since a
+      !! projection cannot lower a variational energy, and that is asserted.
       type(libcint_molecule_t), intent(in) :: mol
       type(quao_result_t), intent(in) :: full_quao, valence_quao
       integer, intent(in) :: n_core, natm
       integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: core_orbitals(:, :)
-         !! (n_ao, n_core) the molecular orbitals the core quasi-atomic ones
-         !! were built from. They span the same space, so the inactive energy
-         !! and the mean field are the same either way; they are here so that
-         !! the transform route can solve in a basis where the reference
-         !! determinant is a determinant of the basis.
+         !! (n_ao, n_core) the molecular orbitals the core quasi-atomic ones were
+         !! built from. They span the same space, so the inactive energy and the
+         !! mean field are the same either way; they are here so the transform
+         !! route can solve in a basis where the reference determinant is a
+         !! determinant of the basis.
       real(dp), intent(in) :: valence_internal(:, :)
          !! (n_ao, n_val) the valence-internal orbitals, occupied valence
          !! followed by valence-virtual. `valence_quao%to_valence_internal` is
@@ -1282,27 +1201,22 @@ contains
          n_total = size(cas%ci_vector)
          ci = cas%ci_vector
       else
-         ! Is there already a wave function over this space? If a deck ran a
-         ! full valence CASSCF -- which is the protocol the papers use -- then
-         ! the calculation has converged the very thing this analysis is about
-         ! to converge again, and the only difference is which orbitals it is
-         ! expanded in. That is a rotation, not a calculation.
+         ! Is there already a wave function over this space? A full valence
+         ! CASSCF has converged the very thing this analysis is about to
+         ! converge again, differing only in which orbitals it is expanded in --
+         ! which is a rotation, not a calculation.
          inherited = .false.
          if (present(offered)) then
             call inherit_valence_ci(mol, offered, valence_quao, valence_internal, &
                                     n_core, n_active, na, nb, to_quao, declined)
             inherited = allocated(to_quao)
             if (.not. inherited) then
-               ! A warning and not a note. What follows is a decomposition of a
+               ! A warning and not a note: what follows is a decomposition of a
                ! *different* wave function from the one the calculation
                ! reported -- the full valence one this analysis is defined on,
                ! rather than whatever active space the deck asked for. GAMESS
-               ! refuses outright here (`quao_eda4.src:145`, "YOUR INPUT
-               ! IEDA = 1 SIGNALS A FULL-VALENCE WAVE FUNCTION BUT YOUR
-               ! CORE/ACTIVE SPACES DO NOT MATCH"). It can, because its analysis
-               ! reads the wave function from the run; this one builds its own,
-               ! so the result is still meaningful and the caller is told rather
-               ! than stopped.
+               ! refuses outright at `quao_eda4.src:145`; this one builds its
+               ! own wave function, so the result is still meaningful.
                call logger%warning("  the converged wave function is not over the "// &
                                    "full valence space ("//declined//"), so the "// &
                                    "no-sharing analysis solves its own and decomposes "// &
@@ -1407,11 +1321,10 @@ contains
          end if
       end if
 
-      ! What the route cost, which is the reason there is a choice: the two
-      ! solve the same matrix to an orthogonal similarity, so a difference here
-      ! is the starting vector and the preconditioner and nothing else. An
-      ! inherited wave function has no iterations of its own to report -- the
-      ! ones it took were the calculation's, and are already in its output.
+      ! What the route cost. The two solve the same matrix to an orthogonal
+      ! similarity, so a difference here is the starting vector and the
+      ! preconditioner and nothing else. An inherited wave function has no
+      ! iterations of its own to report.
       if (.not. inherited) then
          write (line, "(a,i0,a,i0,a)") "     CI iterations        ", cas%iterations, &
             " (", cas%sigma_products, " sigma products)"
@@ -1440,8 +1353,7 @@ contains
       call logger%info(trim(line))
       ! Printed to twelve figures because it is checkable: a full valence CI is
       ! invariant under rotation of its active orbitals, so this must equal the
-      ! same CAS run over the ordinary molecular orbitals -- and on the transform
-      ! route it is that CAS. Water in STO-3G gives -75.011224995270 either way.
+      ! same CAS run over the ordinary molecular orbitals.
       write (line, "(4x,a24,f18.12,a)") "E(Psi)", e_psi, " hartree"
       call logger%info(trim(line))
       write (line, "(4x,a24,f18.12,a)") "E(Psi-0)", e_zero, " hartree"

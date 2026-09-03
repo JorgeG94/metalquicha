@@ -1,16 +1,19 @@
 !! Fragment generation and manipulation utilities
 module mqc_frag_utils
-   !! Provides combinatorial functions and algorithms for generating molecular
-   !! fragments, managing fragment lists, and performing many-body expansion calculations.
+   !! The term list an expansion runs over: how it is built, screened and
+   !! ordered.
    !!
-   !! This module re-exports functionality from specialized modules:
-   !! - mqc_combinatorics: Pure combinatorial mathematics
-   !! - mqc_fragment_lookup: Hash-based fragment index lookup
-   !! - mqc_gmbe_utils: GMBE intersection and PIE enumeration
+   !! Re-exports three specialised modules under one name:
+   !!
+   !! - `mqc_combinatorics`: pure combinatorial mathematics
+   !! - `mqc_fragment_lookup`: hash-based fragment index lookup
+   !! - `mqc_gmbe_utils`: GMBE intersection and PIE enumeration
    use pic_types, only: int32, int64, dp, int_index
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_physical_fragment, only: system_geometry_t
+   ! TODO(mqc): `get_next_combination` is named twice in this one `only` list,
+   ! on the first continuation line and again eight lines down.
    use mqc_combinatorics, only: fragment_size_of, vmfc_subset_key, real_count_of, get_next_combination, &
                                 binomial, &
                                 get_nfrags, &
@@ -65,21 +68,17 @@ contains
       !! The term list a plain MBE run evaluates, at this geometry
       !!
       !! Monomers first, then every n-mer up to `max_level`, then distance
-      !! screening, then the size sort. Extracted from the driver so that a
-      !! caller who needs to know the list *before* running -- a geometry
-      !! optimization freezing it against the surface moving underneath -- gets
-      !! the same list the driver would have generated rather than a
-      !! reimplementation of it that drifts the first time screening changes.
+      !! screening, the counterpoise rows if any, and the size sort. This is
+      !! the same list the driver evaluates, for a caller that needs it in
+      !! advance -- an optimization freezing the term list, say.
       !!
-      !! Monomers are part of the list here, unlike `fraglist_t`, which starts
-      !! at pairs. That difference is the reason this exists rather than the
-      !! two being merged: `supplied_terms` is fed straight into the expansion
-      !! and the expansion expects the monomers to be in it.
+      !! Monomers are in the list here, unlike `fraglist_t`, which starts at
+      !! pairs: `supplied_terms` is fed straight into the expansion and the
+      !! expansion expects them.
       !!
-      !! Screening leaves the list closed under subsets already:
-      !! `fragment_should_be_screened` drops an n-mer if *any* of its k-subsets
-      !! exceeds the k-mer cutoff, so a surviving trimer's dimers all survived
-      !! too. Nothing further has to close it.
+      !! The result is closed under subsets. `fragment_should_be_screened`
+      !! drops an n-mer if *any* of its k-subsets exceeds the k-mer cutoff, so
+      !! a surviving trimer's dimers all survived too.
       use mqc_config_adapter, only: driver_config_t
 
       type(system_geometry_t), intent(in) :: sys_geom
@@ -125,14 +124,13 @@ contains
    subroutine add_vmfc_rows(polymers, total_fragments, max_level)
       !! Add, for every n-mer, the subfragments solved in that n-mer's basis
       !!
-      !! For the pair [i,j] that is [i,-j] and [-i,j]: monomer i with j present
-      !! as ghost centres, and the reverse. The pair's correction subtracts
-      !! those instead of the bare monomers, so the superposition error that
-      !! inflates the pair stands on both sides and cancels.
+      !! For the pair `[i,j]` that is `[i,-j]` and `[-i,j]`: monomer i with j
+      !! present as ghost centres, and the reverse. The pair's correction
+      !! subtracts those instead of the bare monomers, so the superposition
+      !! error that inflates the pair stands on both sides and cancels.
       !!
       !! The rows are auxiliary -- `is_auxiliary_row` -- and are never summed
-      !! into the total. The one-body term keeps using each monomer in its own
-      !! basis, which is what the unghosted rows already are.
+      !! into the total.
       integer, allocatable, intent(inout) :: polymers(:, :)
       integer(int64), intent(inout) :: total_fragments
       integer, intent(in) :: max_level
@@ -146,8 +144,7 @@ contains
       if (max_level < 2) return
 
       ! Every n-mer of size n contributes 2^n - 2 proper subsets, so the worst
-      ! case is bounded but not small. Grown once here rather than reallocated
-      ! per row.
+      ! case is bounded but not small.
       capacity = total_fragments*(2_int64**max_level)
       allocate (grown(capacity, max_level))
       grown = 0
@@ -178,12 +175,12 @@ contains
    end subroutine add_vmfc_rows
 
    subroutine apply_distance_screening(polymers, total_fragments, sys_geom, driver_config, max_level)
-      !! Apply distance-based screening to filter out fragments that exceed cutoff distances
-      !! Modifies polymers array in-place and updates total_fragments count
+      !! Drop the fragments beyond their level's cutoff, in place
       !!
-      !! IMPORTANT: For MBE correctness, if any k-subset of an n-mer exceeds the k-mer cutoff,
-      !! the entire n-mer must be screened out. Otherwise, compute_mbe will fail when trying
-      !! to look up the missing subset.
+      !! `polymers` is compacted and `total_fragments` reduced. An n-mer goes
+      !! if *any* of its k-subsets exceeds the k-mer cutoff, so the surviving
+      !! list stays closed under subsets -- `compute_mbe` looks those subsets
+      !! up and fails on a missing one.
       use mqc_physical_fragment, only: calculate_monomer_distance
       use mqc_config_adapter, only: driver_config_t
 
@@ -248,9 +245,8 @@ contains
    end subroutine apply_distance_screening
 
    function fragment_should_be_screened(fragment, n, sys_geom, driver_config) result(should_screen)
-      !! Check if a fragment should be screened out based on distance cutoffs.
-      !! Returns true if the fragment itself OR any of its k-subsets (k >= 2) exceeds
-      !! the corresponding k-mer cutoff. This ensures MBE subset consistency.
+      !! Whether this fragment or any of its k-subsets, `k >= 2`, exceeds the
+      !! k-mer cutoff
       use mqc_physical_fragment, only: calculate_monomer_distance
       use mqc_config_adapter, only: driver_config_t
 
@@ -310,9 +306,10 @@ contains
 
    ! cannot make this pure because sort is not pure
    subroutine sort_fragments_by_size(polymers, total_fragments, max_level)
-      !! Sort fragments by size (largest first) for better load balancing
-      !! Uses in-place sorting to reorder the polymers array
-      !! Larger fragments (e.g., tetramers) are computed before smaller ones (e.g., dimers)
+      !! Reorder `polymers` in place, largest fragment first
+      !!
+      !! The expensive terms then start first, which is what balances the load
+      !! across ranks.
       use pic_sorting, only: sort_index
 
       integer, intent(inout) :: polymers(:, :)

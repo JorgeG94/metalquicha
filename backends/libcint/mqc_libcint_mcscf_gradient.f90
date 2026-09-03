@@ -2,24 +2,20 @@
 module mqc_libcint_mcscf_gradient
    !! dE/dR for a converged CASSCF or ORMAS-SCF, in Hartree/Bohr
    !!
-   !! **No Z-vector, and that is the whole reason this module is short.** An
-   !! MP2 gradient has to solve for the orbital response because MP2 is not
-   !! variational in the orbitals; a converged MCSCF is stationary with respect
-   !! to both the orbital rotations and the CI coefficients, so the response
-   !! terms are identically zero and the gradient is a contraction of
-   !! differentiated integrals against densities that are already in hand.
+   !! **No Z-vector.** A converged MCSCF is stationary with respect to both the
+   !! orbital rotations and the CI coefficients, so the response terms are
+   !! identically zero and the gradient is a contraction of differentiated
+   !! integrals against densities that are already in hand.
    !!
-   !! That stationarity is a precondition rather than a property, which is why
-   !! the caller is required to have converged: at a point where the orbital
-   !! gradient is not zero this returns a confident number that is not the
-   !! derivative of anything.
+   !! That stationarity is a precondition rather than a property: at a point
+   !! where the orbital gradient is not zero this returns a confident number that
+   !! is not the derivative of anything.
    !!
    !! **The two-electron term is split by how many active indices it carries.**
-   !! Writing the whole two-particle density in the AO basis and contracting it
-   !! against differentiated integrals is correct and unaffordable -- it is
-   !! `n_ao^4` for every term, including the ones that are mean-field. The
-   !! inactive-inactive and inactive-active blocks are separable, being
-   !! products of one-particle densities, so
+   !! Contracting the whole two-particle density in the AO basis is `n_ao^4` for
+   !! every term, including the mean-field ones. The inactive-inactive and
+   !! inactive-active blocks are separable, being products of one-particle
+   !! densities, so
    !!
    !! ```
    !! E_2e = 1/2 D.(J - K/2)(D)  +  1/2 sum_tuvw  ddm2_tuvw (tu|vw)
@@ -32,16 +28,14 @@ module mqc_libcint_mcscf_gradient
    !! ddm2_tuvw = dm2_tuvw - dm1_tu dm1_vw + 1/2 dm1_tv dm1_uw
    !! ```
    !!
-   !! The first term is exactly what a closed-shell SCF gradient contracts and
-   !! goes through the same routine. Only the second needs the general
-   !! four-index machinery, and it is built from `n_active^4` rather than from
-   !! the basis, which is what makes this affordable.
+   !! The first term is what a closed-shell SCF gradient contracts and goes
+   !! through the same routine. Only the second needs the general four-index
+   !! machinery, and it is built from `n_active^4` rather than from the basis.
    !!
    !! Subtracting that mean-field part is not optional bookkeeping: leave it in
-   !! and the active-active energy is counted twice. The failure is invisible
-   !! at `n_active = 0`, where `ddm2` is empty and this reduces exactly to the
-   !! closed-shell gradient, which is why that reduction is a test rather than
-   !! a curiosity.
+   !! and the active-active energy is counted twice. The failure is invisible at
+   !! `n_active = 0`, where `ddm2` is empty and this reduces exactly to the
+   !! closed-shell gradient.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, atom_ao_blocks
@@ -58,9 +52,8 @@ module mqc_libcint_mcscf_gradient
    public :: cumulant_two_particle_density   !! Exposed for the tests
 
    real(dp), parameter :: BLOCK_TARGET = 2.0e8_dp
-      !! Bytes the first-index block of the AO two-particle density may reach.
-      !! The ceiling is then set by choice rather than by the basis, exactly as
-      !! on the MP2 path this borrows its contraction from.
+      !! Bytes the first-index block of the AO two-particle density may reach, so
+      !! that the ceiling is set by choice rather than by the basis.
 
 contains
 
@@ -69,11 +62,10 @@ contains
       !! The gradient of a stationary MCSCF energy
       !!
       !! `dm1` and `dm2` are the spin-traced active densities as
-      !! `active_space_rdms` builds them and `run_libcint_casscf` reports them,
-      !! and they must be the ones belonging to `orbitals`. On a run that
-      !! stopped early the two are one orbital step apart -- consistent with
-      !! each other but not with the orbitals -- so the caller checks
-      !! convergence before arriving here.
+      !! `active_space_rdms` builds them, and they must be the ones belonging to
+      !! `orbitals`. On a run that stopped early the two are one orbital step
+      !! apart -- consistent with each other but not with the orbitals -- so the
+      !! caller checks convergence before arriving here.
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)       !! (n_ao, n_mo)
       integer, intent(in) :: n_inactive, n_active
@@ -222,8 +214,7 @@ contains
       !! The separable term contracted above is `1/2 D.(J - K/2)(D)` over the
       !! *total* density, and expanding that leaves an active-active piece
       !! `1/2 sum [dm1_tu dm1_vw - 1/2 dm1_tv dm1_uw] (tu|vw)`. Subtracting it
-      !! here is what keeps the two contractions a partition of the energy
-      !! rather than an overlapping pair.
+      !! here keeps the two contractions a partition of the energy.
       !!
       !! Chemist ordering throughout, matching `active_space_rdms` and the
       !! `(tu|vw)` the generalised Fock contracts.
@@ -311,17 +302,13 @@ contains
       !!
       !! **Four gemms and no copies.** Each step contracts the *first* index and
       !! leaves the new one last, so after four the result is already `(p q r s)`
-      !! and never has to be put in order. Written the obvious way instead --
-      !! a `reshape` between steps -- the arithmetic is nothing and the copying
-      !! is everything: the last intermediate alone is `np n_ao^3`, and moving
-      !! it twice per block came to gigabytes and 2.8 s of a 16 s gradient on
-      !! ethane/cc-pVTZ, against about 0.1 s of actual multiplication.
+      !! and never has to be put in order. The copying is what costs here, not the
+      !! arithmetic: the last intermediate alone is `np n_ao^3`.
       !!
       !! The buffers are therefore flat and viewed through pointers with their
-      !! bounds remapped, which is the same trick `build_two_particle_density`
-      !! uses next door and for the same reason: the memory order is identical
-      !! either way, so the reshape was only ever telling the compiler what it
-      !! already had.
+      !! bounds remapped, as `build_two_particle_density` does next door. The
+      !! memory order is identical either way, so a `reshape` between steps would
+      !! only be telling the compiler what it already had.
       real(dp), intent(in), target :: c_active(:, :)
       real(dp), intent(in), target, contiguous :: ddm2(:, :, :, :)
          !! `contiguous` because its bounds are remapped below, and a rank

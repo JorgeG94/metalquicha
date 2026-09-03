@@ -27,21 +27,21 @@ program check_crest_search
    use lj, only: lj_engrad
    implicit none
 
-   !> Explicit interfaces for two bare external subroutines. `crest_main.f90`
-   !> calls both through an implicit interface; declaring them properly here
-   !> costs nothing and makes the compiler check the call, which matters most
-   !> for `arg`, an assumed-length explicit-shape array receiving a
-   !> deferred-length allocatable.
+   !! Explicit interfaces for two bare external subroutines. `crest_main.f90`
+   !! calls both through an implicit interface; declaring them properly here
+   !! costs nothing and makes the compiler check the call, which matters most
+   !! for `arg`, an assumed-length explicit-shape array receiving a
+   !! deferred-length allocatable.
    interface
       subroutine parseflags(env, arg, nra)
          import :: systemdata
          implicit none
          type(systemdata), intent(inout) :: env
          integer, intent(in) :: nra
-         !> No intent, deliberately: the definition in confparse.f90 declares
-         !> it without one, and intent is part of a procedure's
-         !> characteristics -- adding it here would make this interface
-         !> disagree with the procedure it describes.
+         !! No intent, deliberately: the definition in confparse.f90 declares
+         !! it without one, and intent is part of a procedure's
+         !! characteristics -- adding it here would make this interface
+         !! disagree with the procedure it describes.
          ! allow(missing-intent)
          character(len=*) :: arg(nra)
       end subroutine parseflags

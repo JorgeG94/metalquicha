@@ -4,11 +4,9 @@ module mqc_hdf5_amplitudes
    !! of them declines.
    !!
    !! A stub rather than a preprocessor conditional at each call site, matching
-   !! `mqc_hdf5_checkpoint_stub` beside it: the coupled-cluster code reads the
-   !! same either way, and there is exactly one place where "this build cannot
-   !! do that" is decided. `hdf5_amplitudes_available` is how a caller asks in
-   !! advance, so a CC gradient can refuse up front and name the build option
-   !! instead of dying somewhere less useful.
+   !! `mqc_hdf5_checkpoint_stub` beside it. `hdf5_amplitudes_available` is how a
+   !! caller asks in advance, so a CC gradient can refuse up front and name the
+   !! build option instead of dying somewhere less useful.
    !!
    !! `resumable` is `.false.` here for the same reason it is `.false.` after
    !! an interrupted write: a caller that branches on it starts from the MP2
