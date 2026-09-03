@@ -39,10 +39,10 @@ program check_xc_kernel
    !! molecule in its ground state.
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_cphf, only: static_polarizability
-   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_cphf, only: static_polarizability
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
 
@@ -143,7 +143,7 @@ contains
          !! that is the control and why the tolerance is what it is.
       integer, intent(inout) :: n_bad
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(xc_context_t) :: xc
       type(error_t) :: error
@@ -154,11 +154,11 @@ contains
       write (*, "(a,a)") "== ", label
       flush (output_unit)
 
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (fail(error, n_bad)) return
       call xc_context_create(mol, functional, xc, error, polarized=.false.)
       if (fail(error, n_bad)) return
-      call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error, xc=xc)
+      call run_czt_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error, xc=xc)
       if (fail(error, n_bad)) return
 
       ! An SCF that ran out of iterations returns its last iterate and no error,

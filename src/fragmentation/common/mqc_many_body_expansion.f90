@@ -162,8 +162,8 @@ module mqc_many_body_expansion
       !!     "ptc"   + "mbe"   electrostatically embedded MBE
       !!     "none"  + "mbe"   plain MBE
       !!
-      !! The physics lives in the libcint backend and is reached through
-      !! `mqc_libcint_bridge`, so a build without the backend refuses with a
+      !! The physics lives in the cenzontle backend and is reached through
+      !! `mqc_czt_bridge`, so a build without the backend refuses with a
       !! message naming the option rather than failing to link.
       integer, allocatable :: owner(:)
          !! Fragment index per atom, numbered from one with no gaps
@@ -302,7 +302,7 @@ contains
 
    subroutine fmo_run_serial(this, json_data)
       !! Run FMO on one rank
-      use mqc_libcint_bridge, only: run_libcint_fmo
+      use mqc_czt_bridge, only: run_czt_fmo
       use mqc_error, only: error_t
       use pic_logger, only: logger => global_logger
       use pic_io, only: to_char
@@ -328,14 +328,14 @@ contains
          symbols(i) = element_symbol_of(this%sys_geom%element_numbers(i))
       end do
 
-      call run_libcint_fmo(this%sys_geom%element_numbers, symbols, &
-                           this%sys_geom%coordinates, this%owner, &
-                           trim(this%basis), trim(this%esp), trim(this%expansion), &
-                           trim(this%far_field), this%resppc, this%level, &
-                           this%max_outer, this%outer_tol, this%scf_max_iter, &
-                           this%scf_energy_tol, this%scf_density_tol, &
-                           this%scf_drive, &
-                           trim(this%bond_breaking), this%cap_scale, this%energy, error)
+      call run_czt_fmo(this%sys_geom%element_numbers, symbols, &
+                       this%sys_geom%coordinates, this%owner, &
+                       trim(this%basis), trim(this%esp), trim(this%expansion), &
+                       trim(this%far_field), this%resppc, this%level, &
+                       this%max_outer, this%outer_tol, this%scf_max_iter, &
+                       this%scf_energy_tol, this%scf_density_tol, &
+                       this%scf_drive, &
+                       trim(this%bond_breaking), this%cap_scale, this%energy, error)
       if (error%has_error()) then
          call logger%error("fmo_run_serial: "//error%get_message())
          return
@@ -367,7 +367,7 @@ contains
       !! The communicator is handed down to the backend rather than the work
       !! being distributed here, so no fragment geometry ever crosses a wire --
       !! every rank assembles what it was asked for from the geometry it holds.
-      use mqc_libcint_bridge, only: run_libcint_fmo
+      use mqc_czt_bridge, only: run_czt_fmo
       use mqc_error, only: error_t
       use pic_logger, only: logger => global_logger
       use pic_io, only: to_char
@@ -397,15 +397,15 @@ contains
          symbols(i) = element_symbol_of(this%sys_geom%element_numbers(i))
       end do
 
-      call run_libcint_fmo(this%sys_geom%element_numbers, symbols, &
-                           this%sys_geom%coordinates, this%owner, &
-                           trim(this%basis), trim(this%esp), trim(this%expansion), &
-                           trim(this%far_field), this%resppc, this%level, &
-                           this%max_outer, this%outer_tol, this%scf_max_iter, &
-                           this%scf_energy_tol, this%scf_density_tol, &
-                           this%scf_drive, &
-                           trim(this%bond_breaking), this%cap_scale, this%energy, error, &
-                           comm=this%resources%mpi_comms%world_comm)
+      call run_czt_fmo(this%sys_geom%element_numbers, symbols, &
+                       this%sys_geom%coordinates, this%owner, &
+                       trim(this%basis), trim(this%esp), trim(this%expansion), &
+                       trim(this%far_field), this%resppc, this%level, &
+                       this%max_outer, this%outer_tol, this%scf_max_iter, &
+                       this%scf_energy_tol, this%scf_density_tol, &
+                       this%scf_drive, &
+                       trim(this%bond_breaking), this%cap_scale, this%energy, error, &
+                       comm=this%resources%mpi_comms%world_comm)
       if (error%has_error()) then
          call logger%error("fmo_run_distributed: "//error%get_message())
          return

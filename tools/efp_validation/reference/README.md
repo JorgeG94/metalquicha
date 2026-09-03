@@ -179,7 +179,7 @@ whichever code you are checking.
 
 **The one term this does not explain is `E8`, at 2.0e-07.** That is three orders
 above this floor. It is the per-orbital pair-antisymmetric difference in `LMOQQPOL`
-described in `backends/libcint/mqc_efp_potential.f90`, which is structural rather
+described in `backends/cenzontle/mqc_efp_potential.f90`, which is structural rather
 than numerical -- worth keeping distinct, because "it is just the basis" is a
 comfortable and wrong explanation for it.
 

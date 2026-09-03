@@ -17,7 +17,7 @@ That failure is silent by construction, and it has happened repeatedly:
     diffuse basis where the overlap goes near-singular.
 
 Each was found by reading code, which does not scale and did not catch the
-next one.  This does: it reads every `call run_libcint_rhf` / `_uhf` in the
+next one.  This does: it reads every `call run_czt_rhf` / `_uhf` in the
 tree and reports which of the optional settings the call forwards.
 
 ## What counts as a violation
@@ -63,7 +63,7 @@ SETTINGS = (
     "convergence",
 )
 
-CALL = re.compile(r"\bcall\s+run_libcint_(?:rhf|uhf)\s*\(", re.IGNORECASE)
+CALL = re.compile(r"\bcall\s+run_czt_(?:rhf|uhf)\s*\(", re.IGNORECASE)
 EXEMPT = re.compile(r"!\s*mqc:\s*scf-subset\b", re.IGNORECASE)
 
 BASELINE = Path(__file__).with_name("scf_call_sites_baseline.txt")

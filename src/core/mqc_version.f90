@@ -24,7 +24,7 @@ contains
       !! Asked of the backends rather than of preprocessor symbols: each call
       !! resolves to a real module or to its stub at link time, so the answer
       !! describes the binary that exists.
-      use mqc_libcint_bridge, only: libcint_backend_available, xc_available, ecp_backend_available
+      use mqc_czt_bridge, only: czt_backend_available, xc_available, ecp_backend_available
       use mqc_method_factory, only: method_backend_built
       use mqc_method_types, only: METHOD_TYPE_GFN2
       use mqc_cuest_bridge, only: cuest_backend_available
@@ -34,7 +34,7 @@ contains
       ! tblite has no bridge of its own to ask, so the question goes to the
       ! factory, which is preprocessed and knows whether the xTB method type
       ! has a branch to reach.
-      call logger%info("features: libcint="//available(libcint_backend_available())// &
+      call logger%info("features: libcint="//available(czt_backend_available())// &
                        " libxc="//available(xc_available())// &
                        " tblite="//available(method_backend_built(METHOD_TYPE_GFN2))// &
                        " cuest="//available(cuest_backend_available())// &

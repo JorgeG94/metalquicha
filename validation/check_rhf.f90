@@ -1,6 +1,6 @@
 !! Manual check that the CPU RHF gives the right total energy
 !!
-!!     cmake -B build -DMQC_ENABLE_LIBCINT=ON && ./build/check_rhf
+!!     cmake -B build -DMQC_ENABLE_CZT=ON && ./build/check_rhf
 !!
 !! Two systems, both with answers that exist independently of this program.
 !! The references below are PySCF 2.14 on the same geometries and the same
@@ -26,8 +26,8 @@
 program check_rhf
    use pic_types, only: dp
    use mqc_cgto, only: molecular_basis_type
-   use mqc_libcint_integrals, only: libcint_molecule_t
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_czt_integrals, only: czt_molecule_t
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_error, only: error_t
    implicit none
 
@@ -50,7 +50,7 @@ contains
    subroutine run_h2()
       !! H2, STO-3G, R = 1.4 bohr. Reference -1.1167 Ha.
       type(molecular_basis_type) :: basis
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(error_t) :: error
       real(dp) :: coords(3, 2)
@@ -68,7 +68,7 @@ contains
       call expect(.not. error%has_error(), "H2 packed: "//error%get_message())
       call expect(mol%nao == 2, "H2/STO-3G has two basis functions")
 
-      call run_libcint_rhf(mol, 2, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, error)
+      call run_czt_rhf(mol, 2, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, error)
       call expect(.not. error%has_error(), "H2 SCF: "//error%get_message())
       call expect(scf%converged, "H2 SCF converged")
 
@@ -91,7 +91,7 @@ contains
       !!
       !! r(OH) = 0.9689 angstrom, angle 103.9 degrees, placed in the yz plane.
       type(molecular_basis_type) :: basis
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf, plain
       type(error_t) :: error
       real(dp) :: coords(3, 3)
@@ -115,7 +115,7 @@ contains
       ! number would still look plausible.
       call expect(mol%nao == 7, "H2O/STO-3G has seven basis functions")
 
-      call run_libcint_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, error)
+      call run_czt_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, error)
       call expect(.not. error%has_error(), "H2O SCF: "//error%get_message())
       call expect(scf%converged, "H2O SCF converged")
 
@@ -123,8 +123,8 @@ contains
       ! change how many iterations this takes and nothing else; if the two
       ! answers differ, the extrapolation is altering the fixed point rather
       ! than finding it faster, which no iteration count would reveal.
-      call run_libcint_rhf(mol, 10, 200, 1.0e-10_dp, 1.0e-8_dp, .false., plain, error, &
-                           diis_vectors=0)
+      call run_czt_rhf(mol, 10, 200, 1.0e-10_dp, 1.0e-8_dp, .false., plain, error, &
+                       diis_vectors=0)
       call expect(.not. error%has_error(), "H2O SCF without DIIS: "//error%get_message())
       call expect(plain%converged, "H2O SCF converged without DIIS")
       call expect(abs(scf%energy - plain%energy) < 1.0e-9_dp, &

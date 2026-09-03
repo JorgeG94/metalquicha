@@ -32,11 +32,11 @@ module test_mqc_mp2_hessian_assembly
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_mp2_hessian, only: mp2_correlation_hessian
-   use mqc_libcint_hessian, only: response_hessian, rhf_hessian, &
-                                  nuclear_repulsion_hessian
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
+   use mqc_czt_hessian, only: response_hessian, rhf_hessian, &
+                              nuclear_repulsion_hessian
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    implicit none
    private
@@ -76,16 +76,16 @@ contains
    !! One SCF and the full assembly at a given geometry.
    subroutine assembly_at(coords, mol, scf, hess_corr, hess_ref, err)
       real(dp), intent(in) :: coords(:, :)
-      type(libcint_molecule_t), intent(out) :: mol
+      type(czt_molecule_t), intent(out) :: mol
       type(rhf_result_t), intent(out) :: scf
       real(dp), allocatable, intent(out) :: hess_corr(:, :, :, :)
       real(dp), allocatable, intent(out) :: hess_ref(:, :, :, :)
       type(error_t), intent(inout) :: err
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "6-31g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, "6-31g", mol, err)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, .false., &
-                           scf, err)
+      call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, .false., &
+                       scf, err)
       if (err%has_error()) return
       call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &
                                    scf%density, WATER_NELEC/2, 0, &
@@ -103,7 +103,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: hess_corr(:, :, :, :), hess_ref(:, :, :, :)
       real(dp), allocatable :: nuc(:, :, :, :), resp(:, :, :, :), full(:, :, :, :)
@@ -145,7 +145,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: hess_corr(:, :, :, :), hess_ref(:, :, :, :)
       real(dp) :: worst_sym, worst_tr, acc
@@ -219,7 +219,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: hess_corr(:, :, :, :), hess_ref(:, :, :, :)
       real(dp) :: coords(3, 3), worst_sym, worst_tr, acc
@@ -233,10 +233,10 @@ contains
             coords(1, 2) = 0.031_dp
             coords(2, 2) = -0.024_dp
          end if
-         call build_libcint_molecule(WATER_Z, WATER_SYM, coords, "6-31g", mol, err)
+         call build_czt_molecule(WATER_Z, WATER_SYM, coords, "6-31g", mol, err)
          if (.not. err%has_error()) then
-            call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
-                                 .false., scf, err)
+            call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                             .false., scf, err)
          end if
          if (.not. err%has_error()) then
             call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &

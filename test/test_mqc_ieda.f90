@@ -19,15 +19,15 @@ module test_mqc_ieda
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_atomic_guess, only: free_atom_energies
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_quao, only: quao_result_t
-   use mqc_libcint_ieda, only: kinetic_decomposition, kinetic_total, &
-                               nuclear_attraction_per_atom, nuclear_decomposition, &
-                               combine_quao_sets, quao_eris, two_electron_decomposition, &
-                               nuclear_repulsion_pairs, active_cumulant, &
-                               quao_projection, transform_cumulant, project_no_sharing, &
-                               screened_nucleus_split
+   use mqc_czt_atomic_guess, only: free_atom_energies
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_quao, only: quao_result_t
+   use mqc_czt_ieda, only: kinetic_decomposition, kinetic_total, &
+                           nuclear_attraction_per_atom, nuclear_decomposition, &
+                           combine_quao_sets, quao_eris, two_electron_decomposition, &
+                           nuclear_repulsion_pairs, active_cumulant, &
+                           quao_projection, transform_cumulant, project_no_sharing, &
+                           screened_nucleus_split
    implicit none
    private
 
@@ -319,11 +319,11 @@ contains
       !! of where the function sits, which is why this is not water.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: v_atom(:, :, :)
 
-      call build_libcint_molecule(H2_Z, H2_SYM, H2, "sto-3g", mol, err)
+      call build_czt_molecule(H2_Z, H2_SYM, H2, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "could not build H2")
       if (allocated(error)) return
 
@@ -832,11 +832,11 @@ contains
       !! that function singly occupied and the energy is above the exact -0.5.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: energies(:)
 
-      call build_libcint_molecule(H2_Z, H2_SYM, H2, "sto-3g", mol, err)
+      call build_czt_molecule(H2_Z, H2_SYM, H2, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "could not build H2")
       if (allocated(error)) return
 

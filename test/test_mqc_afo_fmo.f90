@@ -21,9 +21,9 @@ module test_mqc_afo_fmo
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_physical_fragment, only: to_bohr
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: run_libcint_rhf, rhf_result_t
-   use mqc_libcint_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: run_czt_rhf, rhf_result_t
+   use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
    implicit none
 
    !! Both sides are the same SCF on the same molecule in the same basis, so
@@ -54,7 +54,7 @@ contains
       type(error_t) :: err
       type(fmo_options_t) :: opts
       type(fmo_result_t) :: res
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: whole
       integer :: z(8)
       character(len=2) :: sym(8)
@@ -79,8 +79,8 @@ contains
       call check(error, res%converged, "the expansion did not converge")
       if (allocated(error)) return
 
-      call build_libcint_molecule(z, sym, xyz, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 18, 200, 1.0e-11_dp, 1.0e-9_dp, .false., whole, err)
+      call build_czt_molecule(z, sym, xyz, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 18, 200, 1.0e-11_dp, 1.0e-9_dp, .false., whole, err)
       call check(error,.not. err%has_error(), "the reference calculation failed")
       if (allocated(error)) return
 
@@ -144,7 +144,7 @@ contains
       type(error_t) :: err
       type(fmo_options_t) :: opts
       type(fmo_result_t) :: res
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: whole
       integer :: z(11)
       character(len=2) :: sym(11)
@@ -166,8 +166,8 @@ contains
          return
       end if
 
-      call build_libcint_molecule(z, sym, xyz, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 26, 200, 1.0e-11_dp, 1.0e-9_dp, .false., whole, err)
+      call build_czt_molecule(z, sym, xyz, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 26, 200, 1.0e-11_dp, 1.0e-9_dp, .false., whole, err)
       call check(error,.not. err%has_error(), "the reference calculation failed")
       if (allocated(error)) return
 
@@ -195,7 +195,7 @@ contains
       type(error_t) :: err
       type(fmo_options_t) :: opts
       type(fmo_result_t) :: res
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: whole
       integer :: z(11)
       character(len=2) :: sym(11)
@@ -217,8 +217,8 @@ contains
          return
       end if
 
-      call build_libcint_molecule(z, sym, xyz, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 26, 200, 1.0e-11_dp, 1.0e-9_dp, .false., whole, err)
+      call build_czt_molecule(z, sym, xyz, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 26, 200, 1.0e-11_dp, 1.0e-9_dp, .false., whole, err)
       call check(error,.not. err%has_error(), "the reference calculation failed")
       if (allocated(error)) return
 

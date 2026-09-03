@@ -37,9 +37,9 @@ program sweep_fmo
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger, warning_level
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
    implicit none
 
    real(dp), parameter :: A2B = 1.8897261254578281_dp
@@ -79,7 +79,7 @@ contains
       type(fmo_options_t) :: opts
       type(fmo_result_t) :: r
       type(error_t) :: error
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       integer, allocatable :: z(:), owner(:)
       character(len=2), allocatable :: sym(:)
@@ -110,9 +110,9 @@ contains
       end do
       xyz = xyz*A2B
 
-      call build_libcint_molecule(z, sym, xyz, "6-31g", mol, error)
+      call build_czt_molecule(z, sym, xyz, "6-31g", mol, error)
       if (error%has_error()) return
-      call run_libcint_rhf(mol, sum(z), 300, 1.0e-10_dp, 1.0e-8_dp, .false., scf, error)
+      call run_czt_rhf(mol, sum(z), 300, 1.0e-10_dp, 1.0e-8_dp, .false., scf, error)
       if (error%has_error() .or. .not. scf%converged) return
       e_reference = scf%energy
 

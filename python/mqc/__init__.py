@@ -366,7 +366,7 @@ class System:
         if _ffi.system_compute_charges is None:
             raise MQCError(
                 "charges need the libcint integrals backend, and this build "
-                "does not have it. Reconfigure with -DMQC_ENABLE_LIBCINT=ON."
+                "does not have it. Reconfigure with -DMQC_ENABLE_CZT=ON."
             )
         which = scheme.encode("utf-8")
         name = basis.encode("utf-8")

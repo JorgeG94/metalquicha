@@ -35,10 +35,10 @@ program check_fitted_reference_gradient
    !! the Coulomb and exchange halves can still cancel; at 0.5 it cannot.
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, &
-                                    three_centre, two_centre, metric_inverse_sqrt
-   use mqc_libcint_cphf, only: fitted_potential_general
-   use mqc_libcint_gradient, only: fitted_reference_gradient
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
+                                three_centre, two_centre, metric_inverse_sqrt
+   use mqc_czt_cphf, only: fitted_potential_general
+   use mqc_czt_gradient, only: fitted_reference_gradient
    use pic_blas_interfaces, only: pic_gemm
    use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
@@ -97,7 +97,7 @@ contains
       real(dp), intent(in) :: k_scale
       integer, intent(inout) :: n_bad
 
-      type(libcint_molecule_t) :: mol, aux
+      type(czt_molecule_t) :: mol, aux
       type(error_t) :: error
       real(dp), allocatable :: three(:, :), metric(:, :), jm12(:, :)
       real(dp), allocatable :: dm_a(:, :), dm_b(:, :)
@@ -110,9 +110,9 @@ contains
       write (*, "(a,a)") "== ", label
       flush (output_unit)
 
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (fail(error, n_bad)) return
-      call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
+      call build_czt_molecule(numbers, symbols, coords, aux_basis, aux, error)
       if (fail(error, n_bad)) return
 
       nao = mol%nao
@@ -189,14 +189,14 @@ contains
       real(dp), intent(out) :: value
       type(error_t), intent(inout) :: error
 
-      type(libcint_molecule_t) :: mol, aux
+      type(czt_molecule_t) :: mol, aux
       real(dp), allocatable :: three(:, :), metric(:, :), jm12(:, :), b(:, :)
       real(dp), allocatable :: g(:, :)
 
       value = 0.0_dp
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
-      call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
+      call build_czt_molecule(numbers, symbols, coords, aux_basis, aux, error)
       if (error%has_error()) return
 
       call three_centre(mol, aux, three)

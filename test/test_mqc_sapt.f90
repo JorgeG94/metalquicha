@@ -20,9 +20,9 @@ module test_mqc_sapt
                        sapt2_cache_t, build_sapt2_cache, sapt2_amps_t, build_sapt2_amps, &
                        sapt2_zero_amps, sapt2_amps_mp2_energy, sapt2_k2f, sapt_elst12, &
                        sapt_exch11, sapt_exch12, sapt_ind22, run_sapt2
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_mp2, only: run_libcint_mp2, mp2_result_t
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_mp2, only: run_czt_mp2, mp2_result_t
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
    implicit none
@@ -181,8 +181,8 @@ contains
       call check(error,.not. err%has_error(), "building the molecules failed")
       if (allocated(error)) return
 
-      call run_libcint_rhf(mols%mono_a, mols%n_elec_a, 200, 1.0e-11_dp, 1.0e-9_dp, &
-                           .false., scf, err, in_core=.true.)
+      call run_czt_rhf(mols%mono_a, mols%n_elec_a, 200, 1.0e-11_dp, 1.0e-9_dp, &
+                       .false., scf, err, in_core=.true.)
       call check(error,.not. err%has_error() .and. scf%converged, &
                  "monomer A's SCF failed in the dimer basis")
       if (allocated(error)) return
@@ -215,7 +215,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(sapt_molecules_t) :: mols
-      type(libcint_molecule_t) :: alone
+      type(czt_molecule_t) :: alone
       type(rhf_result_t) :: dcbs, own
       type(error_t) :: err
       integer :: z(3)
@@ -231,15 +231,15 @@ contains
       a = reshape([0.0_dp, 0.0_dp, 0.10077199_dp, &
                    0.0_dp, 0.77250895_dp, -0.46780200_dp, &
                    0.0_dp, -0.77250895_dp, -0.46780200_dp], [3, 3])*ANG
-      call build_libcint_molecule(z, sym, a, "6-31g", alone, err)
+      call build_czt_molecule(z, sym, a, "6-31g", alone, err)
       call check(error,.not. err%has_error(), "building the lone monomer failed")
       if (allocated(error)) return
 
-      call run_libcint_rhf(mols%mono_a, mols%n_elec_a, 200, 1.0e-11_dp, 1.0e-9_dp, &
-                           .false., dcbs, err, in_core=.true.)
+      call run_czt_rhf(mols%mono_a, mols%n_elec_a, 200, 1.0e-11_dp, 1.0e-9_dp, &
+                       .false., dcbs, err, in_core=.true.)
       if (.not. err%has_error()) then
-         call run_libcint_rhf(alone, mols%n_elec_a, 200, 1.0e-11_dp, 1.0e-9_dp, &
-                              .false., own, err, in_core=.true.)
+         call run_czt_rhf(alone, mols%n_elec_a, 200, 1.0e-11_dp, 1.0e-9_dp, &
+                          .false., own, err, in_core=.true.)
       end if
       call check(error,.not. err%has_error(), "an SCF failed")
       if (allocated(error)) return
@@ -534,7 +534,7 @@ contains
       !! Two identities, neither needing a SAPT2 reference:
       !!
       !! * the monomer MP2 correlation energy recovered from the amplitudes
-      !!   must equal `run_libcint_mp2` on the same ghosted monomer to machine
+      !!   must equal `run_czt_mp2` on the same ghosted monomer to machine
       !!   precision (the plan's 0.2) -- this pins the amplitude conventions
       !!   (denominator in, nothing antisymmetrized) before any term consumes
       !!   them;
@@ -572,12 +572,12 @@ contains
       ! The MP2 identity, against an implementation that shares none of the
       ! amplitude machinery. Conventional water dimer basis, monomer A.
       e2 = sapt2_amps_mp2_energy(c2, amps_a, "A")
-      call run_libcint_mp2(mols%mono_a, cache%c_a, cache%eps_a, cache%nocc_a, &
-                           cache%e_scf_a, mp2, err)
+      call run_czt_mp2(mols%mono_a, cache%c_a, cache%eps_a, cache%nocc_a, &
+                       cache%e_scf_a, mp2, err)
       call check(error,.not. err%has_error(), "the reference MP2 failed")
       if (allocated(error)) return
       call check(error, abs(e2 - mp2%correlation) < 1.0e-11_dp, &
-                 "the amplitudes' MP2 energy must match run_libcint_mp2")
+                 "the amplitudes' MP2 energy must match run_czt_mp2")
       if (allocated(error)) return
       e2 = sapt2_amps_mp2_energy(c2, amps_b, "B")
       call check(error, abs(e2 - mp2%correlation) < 1.0e-11_dp, &

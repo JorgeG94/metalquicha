@@ -31,11 +31,11 @@ program check_xc_potential_gradient
    !! resembling nothing the routine could special-case.
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_gradient, only: xc_potential_gradient
-   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available, &
-                             xc_add_potential
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_gradient, only: xc_potential_gradient
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available, &
+                         xc_add_potential
    use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
 
@@ -110,7 +110,7 @@ contains
       character(len=*), intent(in) :: functional
       integer, intent(inout) :: n_bad
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(xc_context_t) :: xc
       type(error_t) :: error
@@ -125,11 +125,11 @@ contains
       write (*, "(a,a)") "== ", label
       flush (output_unit)
 
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (fail(error, n_bad)) return
       call xc_context_create(mol, functional, xc, error, polarized=.false.)
       if (fail(error, n_bad)) return
-      call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error, xc=xc)
+      call run_czt_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error, xc=xc)
       if (fail(error, n_bad)) return
 
       nao = mol%nao
@@ -200,13 +200,13 @@ contains
       real(dp), intent(out) :: value
       type(error_t), intent(inout) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(xc_context_t) :: xc
       real(dp), allocatable :: v_xc(:, :)
       real(dp) :: e_xc, n_elec
 
       value = 0.0_dp
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
       call xc_context_create(mol, functional, xc, error, polarized=.false.)
       if (error%has_error()) return

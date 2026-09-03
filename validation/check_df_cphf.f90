@@ -21,10 +21,10 @@ program check_df_cphf
    !! operator gets excused as "within the fitting error".
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, &
-                                    build_df_tensor
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_cphf, only: cphf_solve
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
+                                build_df_tensor
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_cphf, only: cphf_solve
    use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
 
@@ -73,7 +73,7 @@ contains
       integer, intent(in) :: nelec
       integer, intent(inout) :: n_bad
 
-      type(libcint_molecule_t) :: mol, aux
+      type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
       type(error_t) :: error
       real(dp), allocatable :: bmat(:, :), eri_ri(:, :, :, :), eri(:, :, :, :)
@@ -86,11 +86,11 @@ contains
       write (*, "(a,a)") "== ", label
       flush (output_unit)
 
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (fail(error, n_bad)) return
-      call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
+      call build_czt_molecule(numbers, symbols, coords, aux_basis, aux, error)
       if (fail(error, n_bad)) return
-      call run_libcint_rhf(mol, nelec, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, error)
+      call run_czt_rhf(mol, nelec, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, error)
       if (fail(error, n_bad)) return
 
       n_ao = mol%nao

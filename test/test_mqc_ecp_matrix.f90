@@ -26,8 +26,8 @@ module test_mqc_ecp_matrix
    use mqc_error, only: error_t
    use mqc_json_basis_reader, only: build_molecular_basis_json
    use mqc_json_ecp_reader, only: build_molecular_ecp_json
-   use mqc_libcint_ecp, only: ecp_matrix
-   use mqc_libcint_integrals, only: libcint_molecule_t
+   use mqc_czt_ecp, only: ecp_matrix
+   use mqc_czt_integrals, only: czt_molecule_t
    use pic_types, only: dp
    implicit none
    private
@@ -67,7 +67,7 @@ contains
       !! Yb with a distant hydrogen, read from the shipped def2 files
       type(molecular_basis_type), intent(out) :: basis
       type(molecular_ecp_type), intent(out) :: ecp
-      type(libcint_molecule_t), intent(out) :: mol
+      type(czt_molecule_t), intent(out) :: mol
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
@@ -107,7 +107,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(molecular_basis_type) :: basis
       type(molecular_ecp_type) :: ecp
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       integer :: i
 
       call build_ytterbium(basis, ecp, mol, error)
@@ -136,7 +136,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(molecular_basis_type) :: basis
       type(molecular_ecp_type) :: ecp
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       real(dp), allocatable :: m(:, :)
       real(dp) :: got_max, got_trace
       integer :: i
@@ -166,7 +166,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(molecular_basis_type) :: basis
       type(molecular_ecp_type) :: ecp
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       real(dp), allocatable :: m(:, :)
 
       call build_ytterbium(basis, ecp, mol, error)

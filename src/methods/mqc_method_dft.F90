@@ -3,7 +3,7 @@ module mqc_method_dft
    !! Kohn-Sham density functional theory.
    !!
    !! Dispatches to whichever backend `model.backend` names, exactly as
-   !! `mqc_method_hf` does; the CPU path is `run_libcint_hf`, which takes the
+   !! `mqc_method_hf` does; the CPU path is `run_czt_hf`, which takes the
    !! functional as one more setting on the same SCF.
    !!
    !! Density fitting is not optional on cuEST: it has no conventional
@@ -21,9 +21,9 @@ module mqc_method_dft
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_semi_numerical_hessian, only: finite_difference_hessian
    use mqc_cuest_iface, only: apply_properties_settings, apply_scf_settings, cuest_scf_settings_t, parse_backend_name, &
-                              BACKEND_CUEST, BACKEND_LIBCINT
+                              BACKEND_CUEST, BACKEND_CZT
    use mqc_cuest_bridge, only: run_cuest_scf
-   use mqc_libcint_bridge, only: run_libcint_hf
+   use mqc_czt_bridge, only: run_czt_hf
    implicit none
    private
 
@@ -114,7 +114,7 @@ contains
       ! tree, although the factory fills it from `dft.grid_type`. A deck naming
       ! it silently gets whatever `grid_level` and the point counts above chose.
       ! The quasi-atomic bonding analysis is refused, not ignored: it is defined
-      ! against a Hartree-Fock or MCSCF wavefunction, and `run_libcint_hf`
+      ! against a Hartree-Fock or MCSCF wavefunction, and `run_czt_hf`
       ! dispatches on the deck naming an analysis alone, so passing it on would
       ! decompose Kohn-Sham orbitals and report numbers for it. Tested on the
       ! name rather than through `bonding_analysis_kind`, which lives in a
@@ -156,8 +156,8 @@ contains
             return
          end if
          call run_cuest_scf(settings, fragment, result, want_gradient)
-      case (BACKEND_LIBCINT)
-         call run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
+      case (BACKEND_CZT)
+         call run_czt_hf(settings, fragment, result, want_gradient, want_hessian)
       case default
 #ifdef MQC_WITH_CUEST
          if (settings%cartesian) then
@@ -171,7 +171,7 @@ contains
          end if
          call run_cuest_scf(settings, fragment, result, want_gradient)
 #else
-         call run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
+         call run_czt_hf(settings, fragment, result, want_gradient, want_hessian)
 #endif
       end select
    end subroutine dft_run

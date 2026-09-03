@@ -25,17 +25,17 @@ module test_mqc_mcscf
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_casci, only: run_libcint_casci, casci_result_t, &
-                                run_libcint_ormas_ci
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_casci, only: run_czt_casci, casci_result_t, &
+                            run_czt_ormas_ci
    use mqc_ormas_space, only: ormas_space_t, build_ormas_space
    use mqc_ormas_ci, only: ormas_density_matrices
    use mqc_determinants, only: link_table_t, build_link_table
    use mqc_rdm, only: active_space_rdms
-   use mqc_libcint_mcscf, only: mcscf_fock_t, generalized_fock, orbital_gradient, &
-                                rotation_matrix, is_redundant, run_libcint_casscf, &
-                                casscf_result_t, rotation_parameters, orbital_hessian
+   use mqc_czt_mcscf, only: mcscf_fock_t, generalized_fock, orbital_gradient, &
+                            rotation_matrix, is_redundant, run_czt_casscf, &
+                            casscf_result_t, rotation_parameters, orbital_hessian
    use mqc_config_types, only: mqc_config_t
    use mqc_json_config_reader, only: read_json_config_file
    use mqc_config_adapter, only: driver_config_t, config_to_driver
@@ -93,7 +93,7 @@ contains
    subroutine test_zero_macro_iterations(error)
       !! A CASSCF asked for no macro-iterations refuses instead of reporting
       !!
-      !! `keywords.mcscf.max_macro_iter` reaches `run_libcint_casscf` unchecked
+      !! `keywords.mcscf.max_macro_iter` reaches `run_czt_casscf` unchecked
       !! -- the schema allow-lists the key without a range -- and a zero used to
       !! skip the macro loop entirely. The assembly afterwards then read the
       !! gradient norm, which the loop assigns, and the density matrices, which
@@ -102,21 +102,21 @@ contains
       !! macro-iterations has no optimised orbitals to describe.
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(casscf_result_t) :: cas
       type(error_t) :: err
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "the molecule should build")
       if (allocated(error)) return
 
-      call run_libcint_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call run_czt_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       call check(error, scf%converged, "the reference SCF should converge")
       if (allocated(error)) return
 
-      call run_libcint_casscf(mol, scf%orbitals, 3, 4, 2, 2, cas, err, &
-                              max_iterations=0, verbose=.false.)
+      call run_czt_casscf(mol, scf%orbitals, 3, 4, 2, 2, cas, err, &
+                          max_iterations=0, verbose=.false.)
       call check(error, err%has_error(), &
                  "max_macro_iter = 0 should be refused, not reported on")
       if (allocated(error)) return
@@ -235,7 +235,7 @@ contains
       !! which no bound and no trace would notice, and which GAMESS carried for
       !! years in the same place.
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(casci_result_t) :: ci
       type(mcscf_fock_t) :: fock
@@ -253,8 +253,8 @@ contains
       integer, parameter :: LEFT(3) = [6, 7, 7], RIGHT(3) = [4, 4, 5]
       real(dp), parameter :: STEP = 1.0e-4_dp
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       call check(error, scf%converged, "the SCF should converge")
       if (allocated(error)) return
       n_ao = size(scf%orbitals, 1)
@@ -285,8 +285,8 @@ contains
                  "the partition should keep 9 of the 36 determinants")
       if (allocated(error)) return
 
-      call run_libcint_ormas_ci(mol, start, N_INACTIVE, N_ACTIVE, 2, 2, SUBSPACES, &
-                                MIN_E, MAX_E, ci, err, tolerance=1.0e-12_dp)
+      call run_czt_ormas_ci(mol, start, N_INACTIVE, N_ACTIVE, 2, 2, SUBSPACES, &
+                            MIN_E, MAX_E, ci, err, tolerance=1.0e-12_dp)
       call ormas_density_matrices(space, ci%ci_flat, dm1, dm2, err)
       call generalized_fock(mol, start, N_INACTIVE, N_ACTIVE, dm1, dm2, fock, err)
       call orbital_gradient(fock, N_INACTIVE, N_ACTIVE, gradient, SUBSPACES)
@@ -306,16 +306,16 @@ contains
          kappa(RIGHT(pair), LEFT(pair)) = -STEP
          call rotation_matrix(kappa, rotation)
          call pic_gemm(start, rotation, moved)
-         call run_libcint_ormas_ci(mol, moved, N_INACTIVE, N_ACTIVE, 2, 2, SUBSPACES, &
-                                   MIN_E, MAX_E, ci, err, tolerance=1.0e-12_dp)
+         call run_czt_ormas_ci(mol, moved, N_INACTIVE, N_ACTIVE, 2, 2, SUBSPACES, &
+                               MIN_E, MAX_E, ci, err, tolerance=1.0e-12_dp)
          plus = ci%energy
          deallocate (rotation)
 
          kappa = -kappa
          call rotation_matrix(kappa, rotation)
          call pic_gemm(start, rotation, moved)
-         call run_libcint_ormas_ci(mol, moved, N_INACTIVE, N_ACTIVE, 2, 2, SUBSPACES, &
-                                   MIN_E, MAX_E, ci, err, tolerance=1.0e-12_dp)
+         call run_czt_ormas_ci(mol, moved, N_INACTIVE, N_ACTIVE, 2, 2, SUBSPACES, &
+                               MIN_E, MAX_E, ci, err, tolerance=1.0e-12_dp)
          minus = ci%energy
          deallocate (rotation)
 
@@ -350,7 +350,7 @@ contains
       !! of zero no matter what the sign convention is -- so testing there would
       !! establish nothing about the thing most likely to be wrong.
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(casci_result_t) :: ci
       type(mcscf_fock_t) :: fock
@@ -364,8 +364,8 @@ contains
       integer, parameter :: LEFT(4) = [4, 5, 6, 7], RIGHT(4) = [1, 2, 3, 1]
       real(dp), parameter :: STEP = 1.0e-4_dp
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       call check(error, scf%converged, "the SCF should converge")
       if (allocated(error)) return
       n_ao = size(scf%orbitals, 1)
@@ -383,8 +383,8 @@ contains
       call pic_gemm(scf%orbitals, rotation, start)
       deallocate (rotation)
 
-      call run_libcint_casci(mol, start, N_INACTIVE, N_ACTIVE, 2, 2, ci, err, &
-                             tolerance=1.0e-12_dp)
+      call run_czt_casci(mol, start, N_INACTIVE, N_ACTIVE, 2, 2, ci, err, &
+                         tolerance=1.0e-12_dp)
       call build_link_table(N_ACTIVE, 2, alpha, err)
       call build_link_table(N_ACTIVE, 2, beta, err)
       call active_space_rdms(ci%ci_vector, alpha, beta, dm1, dm2, err)
@@ -404,16 +404,16 @@ contains
          kappa(RIGHT(pair), LEFT(pair)) = -STEP
          call rotation_matrix(kappa, rotation)
          call pic_gemm(start, rotation, moved)
-         call run_libcint_casci(mol, moved, N_INACTIVE, N_ACTIVE, 2, 2, ci, err, &
-                                tolerance=1.0e-12_dp)
+         call run_czt_casci(mol, moved, N_INACTIVE, N_ACTIVE, 2, 2, ci, err, &
+                            tolerance=1.0e-12_dp)
          plus = ci%energy
          deallocate (rotation)
 
          kappa = -kappa
          call rotation_matrix(kappa, rotation)
          call pic_gemm(start, rotation, moved)
-         call run_libcint_casci(mol, moved, N_INACTIVE, N_ACTIVE, 2, 2, ci, err, &
-                                tolerance=1.0e-12_dp)
+         call run_czt_casci(mol, moved, N_INACTIVE, N_ACTIVE, 2, 2, ci, err, &
+                            tolerance=1.0e-12_dp)
          minus = ci%energy
          deallocate (rotation)
 
@@ -463,7 +463,7 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(casci_result_t) :: ci
       real(dp), allocatable :: start(:, :), rotation(:, :), kappa(:, :)
@@ -472,17 +472,17 @@ contains
 
       ok = .false.
       casci_energy = 0.0_dp
-      call build_libcint_molecule(atomic_numbers, symbols, coordinates, basis, mol, err)
-      call run_libcint_rhf(mol, n_electrons, 300, 1.0e-12_dp, 1.0e-10_dp, .false., &
-                           scf, err)
+      call build_czt_molecule(atomic_numbers, symbols, coordinates, basis, mol, err)
+      call run_czt_rhf(mol, n_electrons, 300, 1.0e-12_dp, 1.0e-10_dp, .false., &
+                       scf, err)
       if (err%has_error() .or. .not. scf%converged) return
       if (present(subspaces)) then
-         call run_libcint_ormas_ci(mol, scf%orbitals, n_inactive, n_active, n_alpha, &
-                                   n_beta, subspaces, min_electrons, max_electrons, &
-                                   ci, err, tolerance=1.0e-12_dp)
+         call run_czt_ormas_ci(mol, scf%orbitals, n_inactive, n_active, n_alpha, &
+                               n_beta, subspaces, min_electrons, max_electrons, &
+                               ci, err, tolerance=1.0e-12_dp)
       else
-         call run_libcint_casci(mol, scf%orbitals, n_inactive, n_active, n_alpha, n_beta, &
-                                ci, err, tolerance=1.0e-12_dp)
+         call run_czt_casci(mol, scf%orbitals, n_inactive, n_active, n_alpha, n_beta, &
+                            ci, err, tolerance=1.0e-12_dp)
       end if
       if (err%has_error()) return
       casci_energy = ci%energy
@@ -506,15 +506,15 @@ contains
       threshold = 1.0e-6_dp
       if (present(gradient_tol)) threshold = gradient_tol
       if (present(subspaces)) then
-         call run_libcint_casscf(mol, start, n_inactive, n_active, n_alpha, &
-                                 n_beta, result, err, max_iterations=cycles, &
-                                 gradient_tol=threshold, subspaces=subspaces, &
-                                 min_electrons=min_electrons, &
-                                 max_electrons=max_electrons)
+         call run_czt_casscf(mol, start, n_inactive, n_active, n_alpha, &
+                             n_beta, result, err, max_iterations=cycles, &
+                             gradient_tol=threshold, subspaces=subspaces, &
+                             min_electrons=min_electrons, &
+                             max_electrons=max_electrons)
       else
-         call run_libcint_casscf(mol, start, n_inactive, n_active, n_alpha, &
-                                 n_beta, result, err, max_iterations=cycles, &
-                                 gradient_tol=threshold)
+         call run_czt_casscf(mol, start, n_inactive, n_active, n_alpha, &
+                             n_beta, result, err, max_iterations=cycles, &
+                             gradient_tol=threshold)
       end if
       ok = .not. err%has_error()
       call mol%destroy()
@@ -705,7 +705,7 @@ contains
       !! this average everywhere else. Testing away from a stationary point is
       !! the whole point -- at one, half the matrix is unexercised.
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(casci_result_t) :: ci
       type(mcscf_fock_t) :: fock
@@ -720,8 +720,8 @@ contains
       integer, parameter :: N_INACTIVE = 3, N_ACTIVE = 4
       real(dp), parameter :: STEP = 1.0e-4_dp
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       call check(error, scf%converged, "the SCF should converge")
       if (allocated(error)) return
       n_ao = size(scf%orbitals, 1)
@@ -739,8 +739,8 @@ contains
       call pic_gemm(scf%orbitals, rotation, start)
       deallocate (rotation)
 
-      call run_libcint_casci(mol, start, N_INACTIVE, N_ACTIVE, 2, 2, ci, err, &
-                             tolerance=1.0e-12_dp)
+      call run_czt_casci(mol, start, N_INACTIVE, N_ACTIVE, 2, 2, ci, err, &
+                         tolerance=1.0e-12_dp)
       call build_link_table(N_ACTIVE, 2, alpha, err)
       call build_link_table(N_ACTIVE, 2, beta, err)
       call active_space_rdms(ci%ci_vector, alpha, beta, dm1, dm2, err)
@@ -827,7 +827,7 @@ contains
       !! where a term gets counted from both ends, exactly as
       !! `test_restricted_gradient` describes for the gradient.
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(casci_result_t) :: ci
       type(mcscf_fock_t) :: fock
@@ -843,8 +843,8 @@ contains
       integer, parameter :: MIN_E(2) = [3, 0], MAX_E(2) = [4, 1]
       real(dp), parameter :: STEP = 1.0e-4_dp
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
-      call run_libcint_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 10, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       call check(error, scf%converged, "the SCF should converge")
       if (allocated(error)) return
       n_ao = size(scf%orbitals, 1)
@@ -863,8 +863,8 @@ contains
       deallocate (rotation)
 
       call build_ormas_space(SUBSPACES, N_ACTIVE, 2, 2, MIN_E, MAX_E, space, err)
-      call run_libcint_ormas_ci(mol, start, N_INACTIVE, N_ACTIVE, 2, 2, SUBSPACES, &
-                                MIN_E, MAX_E, ci, err, tolerance=1.0e-12_dp)
+      call run_czt_ormas_ci(mol, start, N_INACTIVE, N_ACTIVE, 2, 2, SUBSPACES, &
+                            MIN_E, MAX_E, ci, err, tolerance=1.0e-12_dp)
       call ormas_density_matrices(space, ci%ci_flat, dm1, dm2, err)
       call generalized_fock(mol, start, N_INACTIVE, N_ACTIVE, dm1, dm2, fock, err)
       call rotation_parameters(n_mo, N_INACTIVE, N_ACTIVE, rows, cols, SUBSPACES)
@@ -992,7 +992,7 @@ contains
    !  End to end: a JSON deck, through every hop, to an energy
    ! ==========================================================================
    !
-   ! The cases above drive `run_libcint_casscf` directly, which is the right way
+   ! The cases above drive `run_czt_casscf` directly, which is the right way
    ! to test the physics and says nothing whatever about whether a user can
    ! reach it. These two close that gap. Everything between the deck and the
    ! number is real -- the schema validator, the reader, the config adapter, the

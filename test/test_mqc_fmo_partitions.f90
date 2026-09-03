@@ -22,7 +22,7 @@
 module test_mqc_fmo_partitions
    use pic_types, only: dp
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_libcint_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
+   use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
    use mqc_error, only: error_t
    use mqc_physical_constants, only: ANGSTROM_TO_BOHR
    implicit none

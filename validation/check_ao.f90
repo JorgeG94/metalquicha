@@ -1,6 +1,6 @@
 !! Manual check that basis functions evaluate to what libcint's integrals assume
 !!
-!!     cmake -B build -DMQC_ENABLE_LIBCINT=ON && ./build/check_ao
+!!     cmake -B build -DMQC_ENABLE_CZT=ON && ./build/check_ao
 !!
 !! Writes chi_mu(r) at a fixed set of points to a text file, for
 !! `validation/check_ao.py` to compare against `pyscf.dft.numint.eval_ao` on the
@@ -14,11 +14,11 @@
 !! those converges.
 !!
 !! The second check -- numerical against analytic overlap -- lives in
-!! `test/test_mqc_libcint_ao.f90`, because it needs no external reference.
+!! `test/test_mqc_czt_ao.f90`, because it needs no external reference.
 program check_ao
    use pic_types, only: dp
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_ao, only: eval_ao_block
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_ao, only: eval_ao_block
    use mqc_error, only: error_t
    implicit none
 
@@ -45,7 +45,7 @@ contains
       !! Dump chi at the probe points for one basis set
       character(len=*), intent(in) :: basis
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: ao(:, :)
       real(dp) :: c(3, 3), pts(3, N_POINTS)
@@ -70,7 +70,7 @@ contains
                     -2.1_dp, 1.7_dp, -1.3_dp, &
                     8.0_dp, -6.0_dp, 5.0_dp], [3, N_POINTS])
 
-      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
       if (err%has_error()) then
          write (*, "(A,A,A,A)") "[ao] ", basis, " basis failed: ", err%get_message()
          failures = failures + 1

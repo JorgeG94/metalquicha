@@ -32,8 +32,8 @@ module test_mqc_incremental_fock
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    implicit none
    private
 
@@ -47,7 +47,7 @@ module test_mqc_incremental_fock
    character(len=2), parameter :: WATER_SYM(3) = ["O ", "H ", "H "]
 
    !! Iterations between full rebuilds when incremental building is on. Must
-   !! match `INCREMENTAL_RESET` in `mqc_libcint_rhf`; the tests below stay well
+   !! match `INCREMENTAL_RESET` in `mqc_czt_rhf`; the tests below stay well
    !! inside one window so the arithmetic does not depend on it.
    integer, parameter :: RESET_WINDOW = 16
 
@@ -69,15 +69,15 @@ contains
       type(error_type), allocatable, intent(out) :: error
       logical, intent(in) :: incremental
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "the molecule should build")
       if (allocated(error)) return
 
-      call run_libcint_rhf(mol, 10, 50, 1.0e-9_dp, 1.0e-7_dp, .false., scf, err, &
-                           incremental_fock=incremental)
+      call run_czt_rhf(mol, 10, 50, 1.0e-9_dp, 1.0e-7_dp, .false., scf, err, &
+                       incremental_fock=incremental)
       call check(error,.not. err%has_error(), "the SCF should run: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, scf%converged, "the SCF should converge")

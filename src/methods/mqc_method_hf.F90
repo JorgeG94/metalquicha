@@ -3,7 +3,7 @@ module mqc_method_hf
    !! Hartree-Fock, and the MP2 and coupled-cluster corrections built on it.
    !!
    !! Dispatches to whichever backend `model.backend` names: the CPU one
-   !! through `mqc_libcint_bridge`, or the GPU one through `mqc_cuest_bridge`.
+   !! through `mqc_czt_bridge`, or the GPU one through `mqc_cuest_bridge`.
    !! cuEST has no conventional four-index ERI path, so J and K are always
    !! density-fitted there and an auxiliary (JKFIT) basis is required alongside
    !! the orbital basis.
@@ -16,9 +16,9 @@ module mqc_method_hf
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_semi_numerical_hessian, only: finite_difference_hessian
    use mqc_cuest_iface, only: apply_properties_settings, apply_scf_settings, cuest_scf_settings_t, parse_backend_name, &
-                              BACKEND_CUEST, BACKEND_LIBCINT
+                              BACKEND_CUEST, BACKEND_CZT
    use mqc_cuest_bridge, only: run_cuest_scf
-   use mqc_libcint_bridge, only: run_libcint_hf
+   use mqc_czt_bridge, only: run_czt_hf
    implicit none
    private
 
@@ -124,8 +124,8 @@ contains
             return
          end if
          call run_cuest_scf(settings, fragment, result, want_gradient)
-      case (BACKEND_LIBCINT)
-         call run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
+      case (BACKEND_CZT)
+         call run_czt_hf(settings, fragment, result, want_gradient, want_hessian)
       case default
 #ifdef MQC_WITH_CUEST
          if (settings%cartesian) then
@@ -139,7 +139,7 @@ contains
          end if
          call run_cuest_scf(settings, fragment, result, want_gradient)
 #else
-         call run_libcint_hf(settings, fragment, result, want_gradient, want_hessian)
+         call run_czt_hf(settings, fragment, result, want_gradient, want_hessian)
 #endif
       end select
    end subroutine hf_run

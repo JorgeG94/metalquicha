@@ -17,10 +17,10 @@ program check_ri_mp2_gradient
    !! terms were wrong through three revisions while it held at 1e-15.
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_ri_mp2
-   use mqc_libcint_ri_mp2_gradient, only: libcint_ri_mp2_gradient
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_mp2, only: mp2_result_t, run_czt_ri_mp2
+   use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
@@ -135,7 +135,7 @@ contains
       ! and not from this comparison's own difference: the pipeline carries
       ! ~5e-11 of run-to-run scatter from the unordered
       ! `!$omp critical(mqc_direct_fock_accumulate)` merge of thread-local
-      ! accumulators in `mqc_libcint_direct.f90` -- our OpenMP, not threaded
+      ! accumulators in `mqc_czt_direct.f90` -- our OpenMP, not threaded
       ! BLAS (`MKL_NUM_THREADS=1 OMP_NUM_THREADS=8` still varies,
       ! `OMP_NUM_THREADS=1 MKL_NUM_THREADS=8` is byte-identical), and not a
       ! race: eight runs land on five contiguous values in the 11th digit,
@@ -214,18 +214,18 @@ contains
       logical, intent(in) :: force_direct
       type(error_t), intent(inout) :: error
 
-      type(libcint_molecule_t) :: mol, aux
+      type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
 
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
-      call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
+      call build_czt_molecule(numbers, symbols, coords, aux_basis, aux, error)
       if (error%has_error()) return
-      call run_libcint_rhf(mol, nelec, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, error)
+      call run_czt_rhf(mol, nelec, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, error)
       if (error%has_error()) return
-      call libcint_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, &
-                                   nelec/2, gradient, error, n_frozen=frozen, &
-                                   force_direct=force_direct)
+      call czt_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, &
+                               nelec/2, gradient, error, n_frozen=frozen, &
+                               force_direct=force_direct)
       call mol%destroy()
       call aux%destroy()
    end subroutine gradient_at
@@ -240,19 +240,19 @@ contains
       real(dp), intent(out) :: energy
       type(error_t), intent(inout) :: error
 
-      type(libcint_molecule_t) :: mol, aux
+      type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
       type(mp2_result_t) :: mp2
 
       energy = 0.0_dp
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
-      call build_libcint_molecule(numbers, symbols, coords, aux_basis, aux, error)
+      call build_czt_molecule(numbers, symbols, coords, aux_basis, aux, error)
       if (error%has_error()) return
-      call run_libcint_rhf(mol, nelec, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, error)
+      call run_czt_rhf(mol, nelec, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, error)
       if (error%has_error()) return
-      call run_libcint_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, nelec/2, &
-                              scf%energy, mp2, error, n_frozen=frozen)
+      call run_czt_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, nelec/2, &
+                          scf%energy, mp2, error, n_frozen=frozen)
       if (error%has_error()) return
       energy = mp2%total
       call mol%destroy()

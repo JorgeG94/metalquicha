@@ -20,8 +20,8 @@ program check_ecp
    use mqc_ecp, only: molecular_ecp_type
    use mqc_json_basis_reader, only: build_molecular_basis_json
    use mqc_json_ecp_reader, only: build_molecular_ecp_json
-   use mqc_libcint_integrals, only: libcint_molecule_t
-   use mqc_libcint_ecp, only: ecp_matrix
+   use mqc_czt_integrals, only: czt_molecule_t
+   use mqc_czt_ecp, only: ecp_matrix
    implicit none
 
    !! PySCF 2.14, mol.intor('ECPscalar_sph') on the system below
@@ -32,7 +32,7 @@ program check_ecp
    type(error_t) :: err
    type(molecular_basis_type) :: basis
    type(molecular_ecp_type) :: ecp
-   type(libcint_molecule_t) :: mol
+   type(czt_molecule_t) :: mol
    real(dp), allocatable :: m(:, :)
    real(dp) :: xyz(3, 2)
    real(dp) :: got_max, got_trace, asym

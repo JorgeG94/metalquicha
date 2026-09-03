@@ -1,7 +1,7 @@
 program probe_esp
    !! Is a neighbour's contribution to the embedding really local?
    !!
-   !! With a `resppc` cutoff, [[mqc_libcint_fmo]] builds the exact part of the
+   !! With a `resppc` cutoff, [[mqc_czt_fmo]] builds the exact part of the
    !! embedding over a molecule holding only the fragment and its near
    !! neighbours -- not the whole system. That is what stops the cost per
    !! fragment growing once the system is bigger than a neighbourhood, and it is
@@ -19,15 +19,15 @@ program probe_esp
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger, info_level
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, direct_stats_t
-   use mqc_libcint_charges, only: ao_to_atom
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_direct, only: schwarz_bounds, build_fock_direct, direct_stats_t
+   use mqc_czt_charges, only: ao_to_atom
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    implicit none
 
    real(dp), parameter :: A2B = 1.8897261254578281_dp
    integer, parameter :: NW = 3
-   type(libcint_molecule_t) :: super, frag
+   type(czt_molecule_t) :: super, frag
    type(rhf_result_t) :: scf
    type(error_t) :: error
    type(direct_stats_t) :: stats
@@ -60,16 +60,16 @@ program probe_esp
    end do
    xyz = xyz*A2B
 
-   call build_libcint_molecule(z, sym, xyz, "6-31g", super, error)
+   call build_czt_molecule(z, sym, xyz, "6-31g", super, error)
    call schwarz_bounds(super, sb, error)
    call ao_to_atom(super, ao_atom)
    allocate (zero_s(super%nao, super%nao), source=0.0_dp)
 
    ! An isolated monomer density, replicated -- the identity does not care
    ! whether the densities are converged, only that they are densities.
-   call build_libcint_molecule(z(1:3), sym(1:3), xyz(:, 1:3), "6-31g", frag, error)
+   call build_czt_molecule(z(1:3), sym(1:3), xyz(:, 1:3), "6-31g", frag, error)
    call schwarz_bounds(frag, fb, error)
-   call run_libcint_rhf(frag, 10, 100, 1.0e-9_dp, 1.0e-7_dp, .false., scf, error)
+   call run_czt_rhf(frag, 10, 100, 1.0e-9_dp, 1.0e-7_dp, .false., scf, error)
    allocate (d_frag(frag%nao, frag%nao, NW))
    do f = 1, NW
       d_frag(:, :, f) = scf%density*(1.0_dp + 0.03_dp*real(f, dp))   !! deliberately unequal
@@ -105,12 +105,12 @@ program probe_esp
       ! Over the pair {1, f} alone, laid out the way the module lays it out:
       ! the embedded fragment first, its neighbour after.
       block
-         type(libcint_molecule_t) :: local
+         type(czt_molecule_t) :: local
          real(dp), allocatable :: lb(:, :), dl(:, :), zl(:, :), jl(:, :)
          integer, allocatable :: pair(:)
          integer :: n1, nf
          pair = [(i, i=1, 3), (i, i=3*(f - 1) + 1, 3*f)]
-         call build_libcint_molecule(z(pair), sym(pair), xyz(:, pair), "6-31g", local, error)
+         call build_czt_molecule(z(pair), sym(pair), xyz(:, pair), "6-31g", local, error)
          call schwarz_bounds(local, lb, error)
          n1 = frag%nao
          nf = frag%nao

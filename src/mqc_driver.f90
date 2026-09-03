@@ -1034,7 +1034,7 @@ contains
       !! `H_A + H_B + V`; there is no slot for a third monomer, so a cluster is
       !! one SAPT calculation per pair. See `validation/check_sapt.f90`, which
       !! walks the pairs of a six-water prism.
-      use mqc_libcint_bridge, only: run_libcint_sapt0, run_libcint_sapt2
+      use mqc_czt_bridge, only: run_czt_sapt0, run_czt_sapt2
       use mqc_method_types, only: METHOD_TYPE_SAPT2
       use mqc_program_limits, only: N_SAPT_TERMS, N_SAPT2_TERMS
       use mqc_elements, only: element_number_to_symbol
@@ -1114,14 +1114,14 @@ contains
       is_sapt2 = config%method_config%method_type == METHOD_TYPE_SAPT2
       if (is_sapt2) then
          allocate (terms(N_SAPT2_TERMS))
-         call run_libcint_sapt2(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
-                                config%method_config%basis_set, &
-                                charge_a, charge_b, terms, err)
+         call run_czt_sapt2(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
+                            config%method_config%basis_set, &
+                            charge_a, charge_b, terms, err)
       else
          allocate (terms(N_SAPT_TERMS))
-         call run_libcint_sapt0(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
-                                config%method_config%basis_set, &
-                                charge_a, charge_b, terms, err)
+         call run_czt_sapt0(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, &
+                            config%method_config%basis_set, &
+                            charge_a, charge_b, terms, err)
       end if
       if (err%has_error()) then
          call refuse(result_out, "SAPT: "//err%get_message())
@@ -1193,10 +1193,10 @@ contains
       !! orientation and evaluates the five EFP2 terms. There is no SCF here:
       !! the wavefunctions were solved when the potentials were made.
       !!
-      !! Rank zero only. The work is in `run_libcint_efp`, which lives behind
-      !! `MQC_ENABLE_LIBCINT`; the stub declines with the same signature and
+      !! Rank zero only. The work is in `run_czt_efp`, which lives behind
+      !! `MQC_ENABLE_CZT`; the stub declines with the same signature and
       !! names the build option.
-      use mqc_libcint_bridge, only: run_libcint_efp
+      use mqc_czt_bridge, only: run_czt_efp
       use mqc_program_limits, only: N_EFP_TERMS
       use mqc_json_output_types, only: OUTPUT_MODE_UNFRAGMENTED
       type(driver_config_t), intent(in) :: config
@@ -1226,8 +1226,8 @@ contains
          return
       end if
 
-      call run_libcint_efp(config%fragment_potentials, sys_geom%fragment_sizes, &
-                           sys_geom%fragment_atoms, sys_geom%coordinates, terms, err)
+      call run_czt_efp(config%fragment_potentials, sys_geom%fragment_sizes, &
+                       sys_geom%fragment_atoms, sys_geom%coordinates, terms, err)
       if (err%has_error()) then
          call refuse(result_out, "EFP: "//err%get_message())
          return
@@ -1286,7 +1286,7 @@ contains
       !! threaded inside the integral backend, and the write is a single file.
       use mqc_calc_types, only: CALC_TYPE_MAKEFP
       use mqc_elements, only: element_number_to_symbol
-      use mqc_libcint_bridge, only: run_libcint_makefp
+      use mqc_czt_bridge, only: run_czt_makefp
       use mqc_io_helpers, only: get_basename
       type(driver_config_t), intent(in) :: config
       type(system_geometry_t), intent(in) :: sys_geom
@@ -1343,36 +1343,36 @@ contains
       makefp_scf%accelerator = config%method_config%scf%accelerator
       if (config%method_config%scf%density_fitting) then
          ! TODO(mqc): make good
-         call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
-                                 config%method_config%basis_set, name, path, err, &
-                                 charge=sys_geom%charge, verbose=.true., &
-                                 aux_basis=trim(config%method_config%scf%aux_basis_set), &
-                                 guess=trim(config%method_config%scf%guess), &
-                                 energy_tol=named_energy_tol, &
-                                 density_tol=named_density_tol, &
-                                 grad_tol=named_grad_tol, &
-                                 scf_in=makefp_scf, max_iter_in=named_max_iter, &
-                                 vdwscl=config%method_config%efp%vdw_scale, &
-                                 dynamic_tol=config%method_config%efp%dynamic_tolerance, &
-                                 dynamic_maxiter=config%method_config%efp%dynamic_maxiter, &
-                                 response=config%method_config%efp%response, &
-                                 allow_crap_response=config%method_config%efp%allow_crap_response, &
-                                 response_batch=config%method_config%efp%response_batch)
+         call run_czt_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
+                             config%method_config%basis_set, name, path, err, &
+                             charge=sys_geom%charge, verbose=.true., &
+                             aux_basis=trim(config%method_config%scf%aux_basis_set), &
+                             guess=trim(config%method_config%scf%guess), &
+                             energy_tol=named_energy_tol, &
+                             density_tol=named_density_tol, &
+                             grad_tol=named_grad_tol, &
+                             scf_in=makefp_scf, max_iter_in=named_max_iter, &
+                             vdwscl=config%method_config%efp%vdw_scale, &
+                             dynamic_tol=config%method_config%efp%dynamic_tolerance, &
+                             dynamic_maxiter=config%method_config%efp%dynamic_maxiter, &
+                             response=config%method_config%efp%response, &
+                             allow_crap_response=config%method_config%efp%allow_crap_response, &
+                             response_batch=config%method_config%efp%response_batch)
       else
-         call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
-                                 config%method_config%basis_set, name, path, err, &
-                                 charge=sys_geom%charge, verbose=.true., &
-                                 guess=trim(config%method_config%scf%guess), &
-                                 energy_tol=named_energy_tol, &
-                                 density_tol=named_density_tol, &
-                                 grad_tol=named_grad_tol, &
-                                 scf_in=makefp_scf, max_iter_in=named_max_iter, &
-                                 vdwscl=config%method_config%efp%vdw_scale, &
-                                 dynamic_tol=config%method_config%efp%dynamic_tolerance, &
-                                 dynamic_maxiter=config%method_config%efp%dynamic_maxiter, &
-                                 response=config%method_config%efp%response, &
-                                 allow_crap_response=config%method_config%efp%allow_crap_response, &
-                                 response_batch=config%method_config%efp%response_batch)
+         call run_czt_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
+                             config%method_config%basis_set, name, path, err, &
+                             charge=sys_geom%charge, verbose=.true., &
+                             guess=trim(config%method_config%scf%guess), &
+                             energy_tol=named_energy_tol, &
+                             density_tol=named_density_tol, &
+                             grad_tol=named_grad_tol, &
+                             scf_in=makefp_scf, max_iter_in=named_max_iter, &
+                             vdwscl=config%method_config%efp%vdw_scale, &
+                             dynamic_tol=config%method_config%efp%dynamic_tolerance, &
+                             dynamic_maxiter=config%method_config%efp%dynamic_maxiter, &
+                             response=config%method_config%efp%response, &
+                             allow_crap_response=config%method_config%efp%allow_crap_response, &
+                             response_batch=config%method_config%efp%response_batch)
       end if
       if (err%has_error()) then
          call refuse(result_out, "MAKEFP failed: "//err%get_message())

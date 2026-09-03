@@ -52,7 +52,7 @@ enough to be coincidental (0, 1, 2, 100, …) are never matched. `acos(-1)` is
 recognised as `PI`.
 
 This is the rule with teeth. When it was first run it found
-`HARTREE_TO_KCAL = 627.5094740631_dp` in `mqc_libcint_quao.f90`, identical to
+`HARTREE_TO_KCAL = 627.5094740631_dp` in `mqc_czt_quao.f90`, identical to
 `HARTREE_TO_KCALMOL`, and three files carrying `ANGSTROM_TO_BOHR =
 1.8897261254578281_dp` — a value matching neither CODATA revision the module
 offers, and drifted from the one it computes by 4.4e-10 relative. Every copy
@@ -88,7 +88,7 @@ Going strict therefore meant moving each docstring below its declaration rather
 than a search and replace, which is why it took a sweep. The move also repaired
 docstrings that had already drifted onto the wrong entity: several module
 parameter blocks, and four argument docstrings attached to the wrong dummy in
-both `run_libcint_rhf` and `run_libcint_uhf`.
+both `run_czt_rhf` and `run_czt_uhf`.
 
 `--allow-predoc` remains as a flag, for linting a tree that predates the
 migration. Nothing here needs it.

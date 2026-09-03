@@ -17,13 +17,13 @@ program check_ao_deriv2
    !! same reason: a point on a symmetry axis makes whole components vanish.
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_ao, only: eval_ao_block, AO_HESS_COMP
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_ao, only: eval_ao_block, AO_HESS_COMP
    implicit none
 
    integer, parameter :: N_DIM = 3
    integer, parameter :: N_POINT = 3
-   type(libcint_molecule_t) :: mol
+   type(czt_molecule_t) :: mol
    type(error_t) :: error
    real(dp), allocatable :: ao(:, :), grad(:, :, :), hess(:, :, :)
    real(dp) :: points(N_DIM, N_POINT)
@@ -36,11 +36,11 @@ program check_ao_deriv2
    integer, parameter :: HESS_J(AO_HESS_COMP) = [1, 1, 1, 2, 2, 3]
    integer, parameter :: HESS_K(AO_HESS_COMP) = [1, 2, 3, 2, 3, 3]
 
-   call build_libcint_molecule([8, 1, 1], ["O", "H", "H"], &
-                               reshape([0.0_dp, 0.0_dp, 0.0_dp, &
-                                        0.0_dp, -1.4308_dp, 1.1078_dp, &
-                                        0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
-                               "cc-pvdz", mol, error)
+   call build_czt_molecule([8, 1, 1], ["O", "H", "H"], &
+                           reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                                    0.0_dp, -1.4308_dp, 1.1078_dp, &
+                                    0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                           "cc-pvdz", mol, error)
    if (error%has_error()) then
       write (*, "(a,a)") "basis failed: ", error%get_message()
       error stop 1
@@ -100,7 +100,7 @@ contains
       !! in the second derivatives shows up against the first derivatives they
       !! are supposed to be the derivative of, in the same basis, with the same
       !! normalisation, whatever that normalisation happens to be.
-      type(libcint_molecule_t), intent(in) :: mol
+      type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: points(:, :)
       real(dp), intent(in) :: step
 

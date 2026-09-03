@@ -17,10 +17,10 @@ program check_mp2_gradient
    !! Not a ctest case: one converged SCF and one MP2 per displaced geometry.
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2
-   use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2
+   use mqc_czt_mp2_gradient, only: czt_mp2_gradient
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
@@ -176,7 +176,7 @@ contains
       ! around 1e-12, HCN the worst of these five. On top of that the whole
       ! pipeline scatters run to run at more than one thread, from the
       ! unordered `!$omp critical(mqc_direct_fock_accumulate)` merge of
-      ! thread-local accumulators in `mqc_libcint_direct.f90` -- correctly
+      ! thread-local accumulators in `mqc_czt_direct.f90` -- correctly
       ! synchronised, but the merge order, and so the summation order, varies
       ! between runs. Single-threaded, repeated runs of this comparison land
       ! on 3.4e-16 identically; threaded, twenty runs spread 1e-12 to 3e-11
@@ -237,16 +237,16 @@ contains
       real(dp), intent(in), optional :: block_bytes
       logical, intent(in), optional :: force_blocked
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
 
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
-      call run_libcint_rhf(mol, nelec, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, error)
+      call run_czt_rhf(mol, nelec, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, error)
       if (error%has_error()) return
-      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
-                                gradient, error, n_frozen=frozen, &
-                                block_bytes=block_bytes, force_blocked=force_blocked)
+      call czt_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
+                            gradient, error, n_frozen=frozen, &
+                            block_bytes=block_bytes, force_blocked=force_blocked)
       call mol%destroy()
    end subroutine gradient_at
 
@@ -260,17 +260,17 @@ contains
       real(dp), intent(out) :: energy
       type(error_t), intent(inout) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(mp2_result_t) :: mp2
 
       energy = 0.0_dp
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) return
-      call run_libcint_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error)
+      call run_czt_rhf(mol, nelec, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, error)
       if (error%has_error()) return
-      call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
-                           scf%energy, mp2, error, n_frozen=frozen)
+      call run_czt_mp2(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
+                       scf%energy, mp2, error, n_frozen=frozen)
       if (error%has_error()) return
       energy = mp2%total
       call mol%destroy()

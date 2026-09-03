@@ -21,13 +21,13 @@ module test_mqc_avas
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_avas, only: avas_select, avas_result_t, parse_orbital_label, &
-                               valence_select
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_avas, only: avas_select, avas_result_t, parse_orbital_label, &
+                           valence_select
    use pic_blas_interfaces, only: pic_gemm
-   use mqc_libcint_casci, only: run_libcint_casci, casci_result_t
-   use mqc_libcint_mcscf, only: run_libcint_casscf, casscf_result_t
+   use mqc_czt_casci, only: run_czt_casci, casci_result_t
+   use mqc_czt_mcscf, only: run_czt_casscf, casscf_result_t
    implicit none
    private
 
@@ -122,26 +122,26 @@ contains
          !! The orbitals reached a stationary point, which is not the same as
          !! the optimiser having said so -- see `STATIONARY` below
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(casscf_result_t) :: mc
       integer :: per_spin
 
       ok = .false.
       energy = 0.0_dp
-      call build_libcint_molecule(atomic_numbers, symbols, coordinates, "cc-pvdz", &
-                                  mol, err)
-      call run_libcint_rhf(mol, n_electrons, 300, 1.0e-12_dp, 1.0e-10_dp, .false., &
-                           scf, err)
+      call build_czt_molecule(atomic_numbers, symbols, coordinates, "cc-pvdz", &
+                              mol, err)
+      call run_czt_rhf(mol, n_electrons, 300, 1.0e-12_dp, 1.0e-10_dp, .false., &
+                       scf, err)
       if (err%has_error() .or. .not. scf%converged) return
       call avas_select(mol, atomic_numbers, symbols, coordinates, scf%orbitals, &
                        n_occupied, labels, result, err)
       if (err%has_error()) return
 
       per_spin = result%n_active_electrons/2
-      call run_libcint_casscf(mol, result%orbitals, result%n_inactive, &
-                              result%n_active, per_spin, per_spin, mc, err, &
-                              max_iterations=300, gradient_tol=1.0e-6_dp)
+      call run_czt_casscf(mol, result%orbitals, result%n_inactive, &
+                          result%n_active, per_spin, per_spin, mc, err, &
+                          max_iterations=300, gradient_tol=1.0e-6_dp)
       if (err%has_error()) return
 
       ! Stationarity, not the optimiser's own verdict. These cases stall a
@@ -314,7 +314,7 @@ contains
       !! same molecule gives the same space in any basis set, and the assertion
       !! below would hold in 6-31G as it does in cc-pVDZ.
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(avas_result_t) :: valence
       type(casci_result_t) :: small, full
@@ -322,8 +322,8 @@ contains
       real(dp), allocatable :: overlap(:, :), gram(:, :), work(:, :)
       integer :: i, j, n_mo
 
-      call build_libcint_molecule(NITROGEN_Z, NITROGEN_SYM, NITROGEN, "cc-pvdz", mol, err)
-      call run_libcint_rhf(mol, 14, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call build_czt_molecule(NITROGEN_Z, NITROGEN_SYM, NITROGEN, "cc-pvdz", mol, err)
+      call run_czt_rhf(mol, 14, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       call check(error, scf%converged, "the SCF should converge")
       if (allocated(error)) return
 
@@ -366,10 +366,10 @@ contains
       ! And it has to be a better space than the one it contains. CAS(6,6) on
       ! the same reference is a subset of the valence space, so the valence CI
       ! cannot be higher.
-      call run_libcint_casci(mol, scf%orbitals, 4, 6, 3, 3, small, err, &
-                             tolerance=1.0e-11_dp)
-      call run_libcint_casci(mol, valence%orbitals, valence%n_inactive, &
-                             valence%n_active, 5, 5, full, err, tolerance=1.0e-11_dp)
+      call run_czt_casci(mol, scf%orbitals, 4, 6, 3, 3, small, err, &
+                         tolerance=1.0e-11_dp)
+      call run_czt_casci(mol, valence%orbitals, valence%n_inactive, &
+                         valence%n_active, 5, 5, full, err, tolerance=1.0e-11_dp)
       call check(error,.not. err%has_error(), "both CIs should run")
       if (allocated(error)) return
       call check(error, full%energy < small%energy, &
@@ -384,14 +384,14 @@ contains
       !! Requests that name nothing
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(avas_result_t) :: avas
       character(len=8) :: labels(1)
 
-      call build_libcint_molecule(NITROGEN_Z, NITROGEN_SYM, NITROGEN, "cc-pvdz", &
-                                  mol, err)
-      call run_libcint_rhf(mol, 14, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call build_czt_molecule(NITROGEN_Z, NITROGEN_SYM, NITROGEN, "cc-pvdz", &
+                              mol, err)
+      call run_czt_rhf(mol, 14, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       call check(error, scf%converged, "the SCF should converge")
       if (allocated(error)) return
 

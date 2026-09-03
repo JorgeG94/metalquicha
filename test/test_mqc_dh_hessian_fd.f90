@@ -4,7 +4,7 @@ module test_mqc_dh_hessian_fd
    !!
    !! `mp2_correlation_hessian` handed an `xc` context returns the second
    !! derivative of a double hybrid's perturbative term over a Kohn-Sham
-   !! reference, and `libcint_mp2_gradient` handed the same context returns the
+   !! reference, and `czt_mp2_gradient` handed the same context returns the
    !! first derivative of that same term. One differences the other. Nothing in
    !! the ladder below this point tests the two together: the kernel identities
    !! pin single contractions and the skeleton checks pin single matrices, while
@@ -18,7 +18,7 @@ module test_mqc_dh_hessian_fd
    !! Hessian deliberately omits -- the same term, and the same trap, that
    !! `test_mqc_xc_hessian`'s `xc_at` documents one rung down. One context is
    !! built at the reference geometry and every displaced evaluation is handed
-   !! it; only `mol` moves. That is also why `libcint_mp2_gradient` gained
+   !! it; only `mol` moves. That is also why `czt_mp2_gradient` gained
    !! `fixed_grid`: without it the comparison lands about 1e-5 apart, which is
    !! too small to look like a bug and too large to be step noise, and reads as
    !! a grid-convergence problem rather than as two different derivatives.
@@ -29,11 +29,11 @@ module test_mqc_dh_hessian_fd
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
-   use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
-   use mqc_libcint_mp2_hessian, only: mp2_correlation_hessian
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_czt_mp2_gradient, only: czt_mp2_gradient
+   use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    implicit none
    private
@@ -100,27 +100,27 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, trim(basis), mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, trim(basis), mol, err)
       if (err%has_error()) return
 
       ! Tighter than the default for the reason one rung down gives: a loose
       ! SCF is the usual cause of a noisy finite-difference column and the
       ! cheapest thing to rule out before doubting the derivative.
-      call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
-                           .false., scf, err, xc=ctx)
+      call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                       .false., scf, err, xc=ctx)
       if (err%has_error()) then
          call mol%destroy()
          return
       end if
 
-      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
-                                WATER_NELEC/2, gradient, err, &
-                                xc=ctx, scf_density=scf%density, &
-                                pt2_scale=ctx%pt2_fraction, fixed_grid=.true.)
+      call czt_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
+                            WATER_NELEC/2, gradient, err, &
+                            xc=ctx, scf_density=scf%density, &
+                            pt2_scale=ctx%pt2_fraction, fixed_grid=.true.)
       call mol%destroy()
       ok = .not. err%has_error()
    end subroutine pt2_gradient_at
@@ -161,16 +161,16 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       real(dp), allocatable :: hess_corr(:, :, :, :), hess_ref(:, :, :, :)
       integer :: ia, a
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, trim(basis), mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, trim(basis), mol, err)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
-                           .false., scf, err, xc=ctx)
+      call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                       .false., scf, err, xc=ctx)
       if (.not. err%has_error()) then
          ! `hess_ref` is Hartree-Fock-shaped and discarded by contract -- the
          ! bridge takes its whole reference block from `ks_hessian` instead.
@@ -303,10 +303,10 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, trim(basis), mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, trim(basis), mol, err)
       if (err%has_error()) return
       call xc_context_create(mol, FUNCTIONAL, ctx, err, level=3)
       call mol%destroy()

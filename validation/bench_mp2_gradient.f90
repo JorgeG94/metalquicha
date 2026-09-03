@@ -8,9 +8,9 @@ program bench_mp2_gradient
    !! up; `system_clock` is what answers the question being asked.
    use pic_types, only: dp, int64
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_mp2_gradient, only: czt_mp2_gradient
    use omp_lib, only: omp_get_max_threads
    use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
@@ -59,27 +59,27 @@ contains
       character(len=*), intent(in) :: basis
       integer, intent(in) :: nelec
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(error_t) :: error
       real(dp), allocatable :: gradient(:, :)
       integer(int64) :: t0, t1, rate
       real(dp) :: seconds, blocked_seconds
 
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          return
       end if
-      call run_libcint_rhf(mol, nelec, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, error)
+      call run_czt_rhf(mol, nelec, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, error)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          return
       end if
 
       ! Warm-up, discarded.
-      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
-                                gradient, error)
+      call czt_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
+                            gradient, error)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          return
@@ -87,8 +87,8 @@ contains
       deallocate (gradient)
 
       call system_clock(t0, rate)
-      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
-                                gradient, error)
+      call czt_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
+                            gradient, error)
       call system_clock(t1)
       seconds = real(t1 - t0, dp)/real(rate, dp)
 
@@ -106,12 +106,12 @@ contains
       ! small to take on their own. What it measures is the overhead of never
       ! storing anything: the integrals are rebuilt per block and only the ket
       ! pair's symmetry survives.
-      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
-                                gradient, error, force_blocked=.true.)
+      call czt_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
+                            gradient, error, force_blocked=.true.)
       deallocate (gradient)
       call system_clock(t0, rate)
-      call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
-                                gradient, error, force_blocked=.true.)
+      call czt_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, nelec/2, &
+                            gradient, error, force_blocked=.true.)
       call system_clock(t1)
       blocked_seconds = real(t1 - t0, dp)/real(rate, dp)
 

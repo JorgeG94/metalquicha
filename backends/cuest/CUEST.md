@@ -189,7 +189,7 @@ comparison to make on the CPU is therefore against the fitted answer too:
 "keywords": { "scf": { "density_fitting": true } }
 ```
 
-Without that the libcint backend uses exact integrals and will sit ~1e-4 Ha
+Without that the cenzontle backend uses exact integrals and will sit ~1e-4 Ha
 away, which looks like a discrepancy and is not one.
 
 One caveat before treating these as reference values: the geometry is given as

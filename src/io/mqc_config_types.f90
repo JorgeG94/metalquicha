@@ -487,7 +487,7 @@ module mqc_config_types
          !!
          !! `"none"` refuses a partition that cuts one. `"caps"` closes it with
          !! a hydrogen. `"afo"` is the adjusted frozen orbital -- see
-         !! `mqc_libcint_afo.f90` and `mqc_docs/source/fmo.rst`. An FMO
+         !! `mqc_czt_afo.f90` and `mqc_docs/source/fmo.rst`. An FMO
          !! expansion accepts `"none"` and `"afo"`; it refuses `"caps"` as not
          !! implemented for that expansion.
          !!

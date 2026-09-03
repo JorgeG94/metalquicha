@@ -1,6 +1,6 @@
 !! Manual check that density fitting reproduces PySCF's
 !!
-!!     cmake -B build -DMQC_ENABLE_LIBCINT=ON && ./build/check_df
+!!     cmake -B build -DMQC_ENABLE_CZT=ON && ./build/check_df
 !!
 !! Density fitting is the approximation cuEST always makes -- it has no
 !! conventional four-index path -- so a CPU reference that computes exact
@@ -15,11 +15,11 @@
 !! cancel; the error itself agreeing to four digits could not.
 program check_df
    use pic_types, only: dp
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_error, only: error_t
    implicit none
-   type(libcint_molecule_t) :: mol, aux
+   type(czt_molecule_t) :: mol, aux
    type(rhf_result_t) :: exact, fitted
    type(error_t) :: error
    real(dp) :: coords(3, 3)
@@ -32,20 +32,20 @@ program check_df
    coords(:, 2) = [0.0_dp, 1.4304924_dp, 1.0826636_dp]
    coords(:, 3) = [0.0_dp, -1.4304924_dp, 1.0826636_dp]
 
-   call build_libcint_molecule(z, names, coords, "cc-pvdz", mol, error)
+   call build_czt_molecule(z, names, coords, "cc-pvdz", mol, error)
    if (error%has_error()) then
       print *, "orbital: ", error%get_message()
       stop
    end if
-   call build_libcint_molecule(z, names, coords, "cc-pvtz-jkfit", aux, error)
+   call build_czt_molecule(z, names, coords, "cc-pvtz-jkfit", aux, error)
    if (error%has_error()) then
       print *, "aux: ", error%get_message()
       stop
    end if
    write (*, "(a,i0,a,i0)") "cc-pVDZ nao=", mol%nao, "   cc-pVTZ-JKFIT naux=", aux%nao
 
-   call run_libcint_rhf(mol, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., exact, error)
-   call run_libcint_rhf(mol, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., fitted, error, aux=aux)
+   call run_czt_rhf(mol, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., exact, error)
+   call run_czt_rhf(mol, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., fitted, error, aux=aux)
    write (*, "(a,f18.10)") "  exact ERI   E = ", exact%energy
    write (*, "(a,f18.10)") "  density fit E = ", fitted%energy
    write (*, "(a,es12.4)") "  fitting error = ", fitted%energy - exact%energy

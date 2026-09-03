@@ -17,16 +17,16 @@ module test_mqc_quao
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
    use mqc_aambs, only: aambs_dimensions, aambs_dimensions_t, aambs_element_counts
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, &
-                                    mixed_basis_overlap
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_quao, only: build_aambs_molecule, mo_aambs_overlap, &
-                               valence_virtual_orbitals, vvo_result_t, &
-                               aambs_atom_ranges, quasi_atomic_orbitals, quao_result_t, &
-                               orient_quasi_atomic_orbitals, kinetic_bond_orders, &
-                               split_localize
-   use mqc_libcint_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
-                                      print_quao_report, quao_type_name, QUAO_TYPE_NONE
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
+                                mixed_basis_overlap
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_quao, only: build_aambs_molecule, mo_aambs_overlap, &
+                           valence_virtual_orbitals, vvo_result_t, &
+                           aambs_atom_ranges, quasi_atomic_orbitals, quao_result_t, &
+                           orient_quasi_atomic_orbitals, kinetic_bond_orders, &
+                           split_localize
+   use mqc_czt_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
+                                  print_quao_report, quao_type_name, QUAO_TYPE_NONE
    implicit none
    private
 
@@ -111,7 +111,7 @@ contains
          !! Needed because the valence-internal basis is not reproducible between
          !! two runs -- see `test_supplied_density`.
 
-      type(libcint_molecule_t) :: mol, aambs
+      type(czt_molecule_t) :: mol, aambs
       type(rhf_result_t) :: scf
       type(vvo_result_t) :: vvo
       real(dp), allocatable :: mixed(:, :), s_mbs(:, :), projection(:, :)
@@ -120,9 +120,9 @@ contains
       integer :: n_ao, n_valocc
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, basis_name, mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, basis_name, mol, err)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
       if (err%has_error() .or. .not. scf%converged) return
 
       call build_aambs_molecule(WATER_Z, WATER_SYM, WATER, aambs, err)
@@ -492,7 +492,7 @@ contains
       type(quao_result_t) :: quao
       type(aambs_dimensions_t) :: dims
       type(error_t) :: err
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       real(dp), allocatable :: overlap(:, :), kinetic(:, :), kbo(:, :)
       real(dp), allocatable :: interference(:, :), vi(:, :), work(:, :)
       logical :: ok
@@ -515,7 +515,7 @@ contains
       call check(error,.not. err%has_error(), "orientation should succeed")
       if (allocated(error)) return
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "cc-pvdz", mol, err)
       call check(error,.not. err%has_error(), "the molecule should rebuild")
       if (allocated(error)) return
       call mol%kinetic(kinetic)
@@ -692,7 +692,7 @@ contains
       !! the pattern of six distinct bond types is not something a broken
       !! implementation reproduces by accident.
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol, aambs
+      type(czt_molecule_t) :: mol, aambs
       type(rhf_result_t) :: scf
       type(vvo_result_t) :: vvo
       type(quao_result_t) :: quao
@@ -703,10 +703,10 @@ contains
       integer, allocatable :: co(:), cn(:), vo(:), vn(:)
       integer :: i, core, valence
 
-      call build_libcint_molecule(BQ_Z, BQ_SYM, BQ, "cc-pvdz", mol, err)
+      call build_czt_molecule(BQ_Z, BQ_SYM, BQ, "cc-pvdz", mol, err)
       call check(error,.not. err%has_error(), "benzoquinone should build")
       if (allocated(error)) return
-      call run_libcint_rhf(mol, 56, 300, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err)
+      call run_czt_rhf(mol, 56, 300, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err)
       call check(error, scf%converged, "the benzoquinone SCF should converge")
       if (allocated(error)) return
 
@@ -984,7 +984,7 @@ contains
       !! that difference to hide in: the two total energies then agree to 9.5e-9
       !! and every downstream comparison in this file becomes a statement about
       !! the analysis rather than about the basis.
-      type(libcint_molecule_t), intent(out) :: mol, aambs
+      type(czt_molecule_t), intent(out) :: mol, aambs
       real(dp), allocatable, intent(out) :: mixed(:, :), s_mbs(:, :)
       type(aambs_dimensions_t), intent(out) :: dims
       type(quao_result_t), intent(out) :: quao
@@ -997,9 +997,9 @@ contains
       integer, allocatable :: co(:), cn(:), vo(:), vn(:)
 
       ok = .false.
-      call build_libcint_molecule(FC_Z, FC_SYM, FC, "6-31g", mol, err)
+      call build_czt_molecule(FC_Z, FC_SYM, FC, "6-31g", mol, err)
       if (err%has_error()) return
-      call run_libcint_rhf(mol, 32, 300, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err)
+      call run_czt_rhf(mol, 32, 300, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err)
       if (err%has_error()) return
       if (.not. scf%converged) return
 
@@ -1072,7 +1072,7 @@ contains
       !! worst case itself, so a compiler or BLAS that rounds differently does
       !! not fail it.
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol, aambs
+      type(czt_molecule_t) :: mol, aambs
       type(quao_result_t) :: quao
       type(aambs_dimensions_t) :: dims
       type(error_t) :: err
@@ -1152,7 +1152,7 @@ contains
       !! GAMESS's, so agreeing with GAMESS says the rules were transcribed, not
       !! that they are right. Nothing in the papers defines them.
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol, aambs
+      type(czt_molecule_t) :: mol, aambs
       type(quao_result_t) :: quao
       type(quao_labels_t) :: labels
       type(aambs_dimensions_t) :: dims
@@ -1282,7 +1282,7 @@ contains
       !! `local=ruednbrg`, which is worth knowing: they are a property of the
       !! quasi-atomic space, not of how it was localized.
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol, aambs
+      type(czt_molecule_t) :: mol, aambs
       type(quao_result_t) :: quao
       type(aambs_dimensions_t) :: dims
       type(error_t) :: err

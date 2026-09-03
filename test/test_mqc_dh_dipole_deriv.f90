@@ -24,12 +24,12 @@ module test_mqc_dh_dipole_deriv
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_mp2_gradient, only: libcint_mp2_gradient
-   use mqc_libcint_mp2_hessian, only: mp2_correlation_hessian
-   use mqc_libcint_multipole, only: multipole_matrices
-   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_mp2_gradient, only: czt_mp2_gradient
+   use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
+   use mqc_czt_multipole, only: multipole_matrices
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    implicit none
    private
@@ -105,25 +105,25 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(xc_context_t) :: ctx
       real(dp), allocatable :: grad(:, :), dm1mo(:, :), dip(:, :, :), drel(:, :)
       integer :: a
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, BASIS, mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, BASIS, mol, err)
       if (err%has_error()) return
       call xc_context_create(mol, FUNCTIONAL, ctx, err, level=GRID_LEVEL)
       if (.not. err%has_error()) &
-         call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
-                              .false., scf, err, xc=ctx)
+         call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                          .false., scf, err, xc=ctx)
       if (.not. err%has_error()) &
-         call libcint_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
-                                   WATER_NELEC/2, grad, err, xc=ctx, &
-                                   scf_density=scf%density, &
-                                   pt2_scale=ctx%pt2_fraction, &
-                                   relaxed_density_mo=dm1mo)
+         call czt_mp2_gradient(mol, scf%orbitals, scf%orbital_energies, &
+                               WATER_NELEC/2, grad, err, xc=ctx, &
+                               scf_density=scf%density, &
+                               pt2_scale=ctx%pt2_fraction, &
+                               relaxed_density_mo=dm1mo)
       if (.not. err%has_error()) call multipole_matrices(mol, origin, 1, dip, err)
       if (err%has_error()) then
          call mol%destroy()
@@ -168,7 +168,7 @@ contains
 
       real(dp), parameter :: WEIGHT(6) = [-1.0_dp, 9.0_dp, -45.0_dp, 45.0_dp, -9.0_dp, 1.0_dp]
       integer, parameter :: OFFSET(6) = [-3, -2, -1, 1, 2, 3]
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(xc_context_t) :: ctx
       type(error_t) :: err
@@ -182,12 +182,12 @@ contains
       call omp_set_num_threads(1)
       origin = centroid(WATER)
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, BASIS, mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, BASIS, mol, err)
       if (.not. err%has_error()) &
          call xc_context_create(mol, FUNCTIONAL, ctx, err, level=GRID_LEVEL)
       if (.not. err%has_error()) &
-         call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
-                              .false., scf, err, xc=ctx)
+         call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                          .false., scf, err, xc=ctx)
       if (.not. err%has_error()) &
          call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &
                                       scf%density, WATER_NELEC/2, 0, hc, hr, err, &
@@ -228,15 +228,15 @@ contains
       !! Asking for it over a Hartree-Fock reference is refused, not approximated
       type(error_type), allocatable, intent(out) :: error
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(error_t) :: err
       real(dp), allocatable :: hc(:, :, :, :), hr(:, :, :, :), ddip(:, :)
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       if (.not. err%has_error()) &
-         call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-12_dp, 1.0e-10_dp, &
-                              .false., scf, err)
+         call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-12_dp, 1.0e-10_dp, &
+                          .false., scf, err)
       if (.not. err%has_error()) &
          call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &
                                       scf%density, WATER_NELEC/2, 0, hc, hr, err, &

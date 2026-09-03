@@ -12,9 +12,9 @@ program bench_df_k
    !! cc-pVDZ is 24/5; in cc-pVTZ it is 58/5.
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule, &
-                                    build_df_tensor
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
+                                build_df_tensor
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    implicit none
 
    integer, parameter :: N_DIM = 3
@@ -28,7 +28,7 @@ contains
    subroutine bench(orbital_basis, aux_basis)
       character(len=*), intent(in) :: orbital_basis, aux_basis
 
-      type(libcint_molecule_t) :: mol, aux
+      type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: res
       type(error_t) :: error
       real(dp) :: coords(N_DIM, 3)
@@ -39,12 +39,12 @@ contains
                         0.0_dp, -1.4308_dp, 1.1078_dp, &
                         0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3])
 
-      call build_libcint_molecule([8, 1, 1], ["O", "H", "H"], coords, orbital_basis, mol, error)
+      call build_czt_molecule([8, 1, 1], ["O", "H", "H"], coords, orbital_basis, mol, error)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          return
       end if
-      call build_libcint_molecule([8, 1, 1], ["O", "H", "H"], coords, aux_basis, aux, error)
+      call build_czt_molecule([8, 1, 1], ["O", "H", "H"], coords, aux_basis, aux, error)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          return
@@ -52,7 +52,7 @@ contains
 
       ! One SCF first, so basis reading and tensor construction are not being
       ! timed along with the thing under test.
-      call run_libcint_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., res, error, aux=aux)
+      call run_czt_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., res, error, aux=aux)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          return
@@ -60,7 +60,7 @@ contains
 
       call cpu_time(t0)
       do rep = 1, N_REPEAT
-         call run_libcint_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., res, error, aux=aux)
+         call run_czt_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., res, error, aux=aux)
       end do
       call cpu_time(t1)
 

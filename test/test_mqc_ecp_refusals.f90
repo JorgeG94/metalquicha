@@ -13,7 +13,7 @@ module test_mqc_ecp_refusals
    !! array of zeros is an all-electron system and a non-zero entry anywhere is
    !! an ECP one. That is exactly the distinction the callers make.
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_libcint_ecp, only: ecp_refuses_derivatives, ecp_refuses_auto_frozen_core
+   use mqc_czt_ecp, only: ecp_refuses_derivatives, ecp_refuses_auto_frozen_core
    use mqc_error, only: error_t
    implicit none
    private

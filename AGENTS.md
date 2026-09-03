@@ -131,7 +131,7 @@ The bookkeeping rule that matters: **a cut belongs to a group, not a fragment.**
 A bond severed between two monomers is whole again inside the dimer holding both
 ends, so that dimer carries no ghost, no frozen orbital and no electron shift
 there. Deciding it per fragment and inheriting it is what made an earlier capped
-version 11 Hartree wrong. See `mqc_libcint_afo.f90` and `mqc_docs/source/fmo.rst`.
+version 11 Hartree wrong. See `mqc_czt_afo.f90` and `mqc_docs/source/fmo.rst`.
 
 ### Hydrogen Capping
 - Broken covalent bonds get H-cap atoms
@@ -196,10 +196,19 @@ Semi-empirical, via tblite:
 - `GFN1` - GFN1-xTB (faster, older parametrization)
 - `GFN2` - GFN2-xTB (recommended, more accurate)
 
-Ab initio on the CPU (`backends/libcint/`, which holds both). The integrals come
-from **libfint** by default -- an all-Fortran port of libcint, so no C compiler
--- and `-DMQC_USE_LIBFINT=OFF` takes libcint itself. The two are not
-interchangeable at compile time and only one CI job builds libcint:
+Ab initio on the CPU is **cenzontle** (`backends/cenzontle/`, modules `mqc_czt_*`,
+built by `-DMQC_ENABLE_CZT=ON`) -- named for the bird of four hundred voices,
+because one backend speaks HF, DFT, MP2, CC, MCSCF, EFP and SAPT.
+
+It is **not** a wrapper around either integral library, which is why it stopped
+being called `libcint`. The integrals come from **libfint** by default -- an
+all-Fortran port of libcint, so no C compiler -- and `-DMQC_USE_LIBFINT=OFF`
+takes libcint itself. Both export the same `libcint_fortran` module and the same
+`libcint_*`/`LIBCINT_*` symbols, so libfint drops in without an ABI change and no
+source under `backends/cenzontle/` knows which one it linked. Those spellings are
+therefore the real library's and are left alone; only our own names are `czt`.
+The two are not interchangeable at compile time and only one CI job builds
+libcint:
 
 - `HF` - restricted and unrestricted; direct, in-core, or density-fitted
 - `DFT` - restricted and unrestricted Kohn-Sham over libxc, through
@@ -229,7 +238,7 @@ Through tblite, for xTB only:
 - `ALPB` - Analytical Linearized Poisson-Boltzmann
 - `GBSA` - Generalized Born with Solvent-Accessible Surface Area
 
-Continuum solvation on the CPU ab initio path (`mqc_libcint_pcm.f90`):
+Continuum solvation on the CPU ab initio path (`mqc_czt_pcm.f90`):
 
 - `CPCM` - conductor-like, the scaled-conductor approximation
 - `IEFPCM` - the integral-equation formalism
@@ -423,7 +432,7 @@ A benchmark suite that checks them lives on `perf/benchmark-suite`.
 * **Only xTB is pinned to one thread, and not for speed.** `needs_serial_execution`
   in `src/mqc_method_types.f90` names GFN1 and GFN2 and nothing else: threaded,
   tblite corrupts a result rather than failing. Every other method -- the whole
-  libcint/libfint ab initio path -- keeps the threads the launcher gave it, on
+  cenzontle ab initio path -- keeps the threads the launcher gave it, on
   the unfragmented path and on the fragment workers alike, and a Fock build
   threads its own quartet loop. Clamping those was an old bug, not a policy:
   raising `OMP_NUM_THREADS` did nothing and the cause was nowhere near the

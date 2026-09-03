@@ -5,7 +5,7 @@ module mqc_acknowledgements
    use pic_logger, only: logger => global_logger
    use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
    use mqc_cuest_iface, only: parse_backend_name, method_runs_on_cuest, &
-                              BACKEND_CUEST, BACKEND_LIBCINT
+                              BACKEND_CUEST, BACKEND_CZT
    use mqc_cuest_bridge, only: cuest_backend_available
    use mqc_error, only: error_t
    implicit none
@@ -76,7 +76,7 @@ contains
       select case (kind)
       case (BACKEND_CUEST)
          which = ACK_CUEST
-      case (BACKEND_LIBCINT)
+      case (BACKEND_CZT)
          which = ACK_LIBCINT
       case default
          if (cuest_backend_available() .and. method_runs_on_cuest(method_type)) then

@@ -33,14 +33,14 @@ endif()
 # Factory must come after method types are defined
 target_sources(${main_lib} PRIVATE mqc_method_factory.F90)
 
-# The CPU integrals, SCF and bridge live in backends/libcint/, outside src/,
+# The CPU integrals, SCF and bridge live in backends/cenzontle/, outside src/,
 # because they use libcint_fortran and fpm -- which globs src/ -- has no source
 # for it. The stub stays here and is compiled when the backend is not, so
-# `mqc_libcint_bridge` resolves without a preprocessor guard at the call site --
-# the same arrangement as mqc_cuest_bridge next door. Both defining that module
-# name is also why the real one cannot stay: fpm would reject the duplicate.
-if(NOT MQC_ENABLE_LIBCINT)
-  target_sources(${main_lib} PRIVATE mqc_libcint_bridge_stub.f90)
+# `mqc_czt_bridge` resolves without a preprocessor guard at the call site -- the
+# same arrangement as mqc_cuest_bridge next door. Both defining that module name
+# is also why the real one cannot stay: fpm would reject the duplicate.
+if(NOT MQC_ENABLE_CZT)
+  target_sources(${main_lib} PRIVATE mqc_czt_bridge_stub.f90)
 endif()
 
 # The real driver lives in backends/crest/, outside src/, because fpm globs src/

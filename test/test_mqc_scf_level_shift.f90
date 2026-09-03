@@ -12,7 +12,7 @@ module test_mqc_scf_level_shift
    !! poles of a fragment potential. A shift left in at exit moves all of them
    !! by an amount nothing downstream could recognise as a shift.
    !!
-   !! `run_libcint_rhf` prevents that by making "the shift is off" part of the
+   !! `run_czt_rhf` prevents that by making "the shift is off" part of the
    !! convergence test rather than something checked afterwards, so the last
    !! diagonalisation is always unshifted. These tests are what says that
    !! mechanism works, and they are written against the consequences -- the
@@ -21,9 +21,9 @@ module test_mqc_scf_level_shift
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf
-   use mqc_libcint_mp2, only: run_libcint_mp2, mp2_result_t
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, run_czt_uhf
+   use mqc_czt_mp2, only: run_czt_mp2, mp2_result_t
    implicit none
    private
 
@@ -66,7 +66,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       real(dp), intent(in) :: shift
       type(rhf_result_t), intent(out) :: scf
-      type(libcint_molecule_t), intent(out) :: mol
+      type(czt_molecule_t), intent(out) :: mol
       character(len=*), intent(in), optional :: basis
 
       type(error_t) :: err
@@ -75,12 +75,12 @@ contains
       set = "sto-3g"
       if (present(basis)) set = basis
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, trim(set), mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, trim(set), mol, err)
       call check(error,.not. err%has_error(), "the molecule should build")
       if (allocated(error)) return
 
-      call run_libcint_rhf(mol, 10, 300, E_TOL, D_TOL, .false., scf, err, &
-                           level_shift=shift)
+      call run_czt_rhf(mol, 10, 300, E_TOL, D_TOL, .false., scf, err, &
+                       level_shift=shift)
       call check(error,.not. err%has_error(), "the SCF should run")
       if (allocated(error)) return
       call check(error, scf%converged, "the SCF should converge")
@@ -90,7 +90,7 @@ contains
       !! Same fixed point, reached along a different path
       type(error_type), allocatable, intent(out) :: error
       type(rhf_result_t) :: plain, shifted
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
 
       call converge(error, 0.0_dp, plain, mol)
       if (allocated(error)) return
@@ -113,7 +113,7 @@ contains
       !! would notice.
       type(error_type), allocatable, intent(out) :: error
       type(rhf_result_t) :: plain, shifted
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       real(dp) :: worst
 
       call converge(error, 0.0_dp, plain, mol)
@@ -133,26 +133,26 @@ contains
    subroutine shift_keeps_mp2(error)
       !! The same guard through a consumer that would not complain on its own
       !!
-      !! `run_libcint_mp2` takes the orbital energies as its denominators, so a
+      !! `run_czt_mp2` takes the orbital energies as its denominators, so a
       !! residual shift arrives here as a correlation energy that is wrong and
       !! entirely plausible.
       type(error_type), allocatable, intent(out) :: error
       type(rhf_result_t) :: plain, shifted
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(mp2_result_t) :: mp2_plain, mp2_shifted
       type(error_t) :: err
 
       call converge(error, 0.0_dp, plain, mol, basis="6-31g")
       if (allocated(error)) return
-      call run_libcint_mp2(mol, plain%orbitals, plain%orbital_energies, &
-                           plain%n_occupied, plain%energy, mp2_plain, err)
+      call run_czt_mp2(mol, plain%orbitals, plain%orbital_energies, &
+                       plain%n_occupied, plain%energy, mp2_plain, err)
       call check(error,.not. err%has_error(), "the reference MP2 should run")
       if (allocated(error)) return
 
       call converge(error, SHIFT, shifted, mol, basis="6-31g")
       if (allocated(error)) return
-      call run_libcint_mp2(mol, shifted%orbitals, shifted%orbital_energies, &
-                           shifted%n_occupied, shifted%energy, mp2_shifted, err)
+      call run_czt_mp2(mol, shifted%orbitals, shifted%orbital_energies, &
+                       shifted%n_occupied, shifted%energy, mp2_shifted, err)
       call check(error,.not. err%has_error(), "the shifted-run MP2 should run")
       if (allocated(error)) return
 
@@ -163,23 +163,23 @@ contains
    subroutine shift_keeps_the_uhf_energy(error)
       !! The unrestricted path shifts each spin against its own virtuals
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: plain, shifted
       type(error_t) :: err
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "the molecule should build")
       if (allocated(error)) return
 
       ! The cation, so there is an unpaired electron for the two spins to
       ! disagree about and the two Fock matrices are genuinely different.
-      call run_libcint_uhf(mol, 9, 2, 300, E_TOL, D_TOL, .false., plain, err)
+      call run_czt_uhf(mol, 9, 2, 300, E_TOL, D_TOL, .false., plain, err)
       call check(error,.not. err%has_error() .and. plain%converged, &
                  "the unshifted UHF should converge")
       if (allocated(error)) return
 
-      call run_libcint_uhf(mol, 9, 2, 300, E_TOL, D_TOL, .false., shifted, err, &
-                           level_shift=SHIFT)
+      call run_czt_uhf(mol, 9, 2, 300, E_TOL, D_TOL, .false., shifted, err, &
+                       level_shift=SHIFT)
       call check(error,.not. err%has_error() .and. shifted%converged, &
                  "the shifted UHF should converge")
       if (allocated(error)) return
@@ -191,16 +191,16 @@ contains
    subroutine negative_shift_is_refused(error)
       !! Refused rather than clamped to zero, because it is a typo and not a request
       type(error_type), allocatable, intent(out) :: error
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(error_t) :: err
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "the molecule should build")
       if (allocated(error)) return
 
-      call run_libcint_rhf(mol, 10, 300, E_TOL, D_TOL, .false., scf, err, &
-                           level_shift=-0.5_dp)
+      call run_czt_rhf(mol, 10, 300, E_TOL, D_TOL, .false., scf, err, &
+                       level_shift=-0.5_dp)
       call check(error, err%has_error(), "a negative level shift must be refused")
       if (allocated(error)) return
       call check(error, len_trim(err%get_message()) > 0, &

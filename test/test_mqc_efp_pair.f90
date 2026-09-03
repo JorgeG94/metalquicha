@@ -27,7 +27,7 @@ module test_mqc_efp_pair
                            dispersion_e7_damped, dispersion_e8_damped, &
                            charge_transfer
    use pic_blas_interfaces, only: pic_gemm
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_error, only: error_t
    implicit none
    private
@@ -110,7 +110,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(efp_fragment_t) :: a, b
-      type(libcint_molecule_t) :: pair, single
+      type(czt_molecule_t) :: pair, single
       type(error_t) :: err
       real(dp), allocatable :: s_pair(:, :), s_single(:, :)
       real(dp) :: c(3, 3), offset(3)
@@ -146,7 +146,7 @@ contains
                    0.00000000000000_dp, 0.77250895271063_dp, -0.46780199741728_dp, &
                    0.00000000000000_dp, -0.77250895280218_dp, -0.46780199748881_dp], &
                   [3, 3])*ANG
-      call build_libcint_molecule(z, symbols, c, "6-31g*", single, err)
+      call build_czt_molecule(z, symbols, c, "6-31g*", single, err)
       call check(error,.not. err%has_error(), "building the single molecule failed: "//err%get_full_trace())
       if (allocated(error)) return
 
@@ -371,7 +371,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(efp_fragment_t) :: a
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: ct(:, :), s(:, :), sc(:, :), gram(:, :)
       integer :: i, j
@@ -540,7 +540,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(efp_fragment_t) :: a
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: lmo(:, :), s(:, :), sc(:, :), gram(:, :)
       integer :: i, j, n_lmo
@@ -589,7 +589,7 @@ contains
       type(error_t), intent(inout) :: err
       real(dp) :: peak
 
-      type(libcint_molecule_t) :: pair
+      type(czt_molecule_t) :: pair
       real(dp), allocatable :: s(:, :)
       integer :: n_ao_a
 

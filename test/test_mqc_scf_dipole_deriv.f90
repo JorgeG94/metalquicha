@@ -21,11 +21,11 @@ module test_mqc_scf_dipole_deriv
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_hessian, only: response_hessian
-   use mqc_libcint_multipole, only: multipole_matrices
-   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_hessian, only: response_hessian
+   use mqc_czt_multipole, only: multipole_matrices
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    implicit none
    private
@@ -122,14 +122,14 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(xc_context_t) :: ctx
       real(dp), allocatable :: dip(:, :, :)
       integer :: ia, a
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, coords, BASIS, mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, coords, BASIS, mol, err)
       if (err%has_error()) return
       if (len_trim(functional) > 0) then
          call xc_context_create(mol, functional, ctx, err, level=KS_GRID_LEVEL)
@@ -137,11 +137,11 @@ contains
             call mol%destroy()
             return
          end if
-         call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
-                              .false., scf, err, xc=ctx)
+         call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                          .false., scf, err, xc=ctx)
       else
-         call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
-                              .false., scf, err)
+         call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                          .false., scf, err)
       end if
       if (.not. err%has_error()) call multipole_matrices(mol, origin, 1, dip, err)
       if (err%has_error()) then
@@ -167,7 +167,7 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(xc_context_t) :: ctx
       real(dp), allocatable :: hess(:, :, :, :), ddip(:, :)
@@ -181,7 +181,7 @@ contains
       threads = omp_get_max_threads()
       call omp_set_num_threads(1)
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, BASIS, mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, BASIS, mol, err)
       if (err%has_error()) then
          call omp_set_num_threads(threads)
          return
@@ -197,16 +197,16 @@ contains
       if (len_trim(functional) > 0) then
          call xc_context_create(mol, functional, ctx, err, level=KS_GRID_LEVEL)
          if (.not. err%has_error()) &
-            call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
-                                 .false., scf, err, xc=ctx)
+            call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                             .false., scf, err, xc=ctx)
          if (.not. err%has_error()) &
             call response_hessian(mol, scf%density, scf%orbitals, scf%orbital_energies, &
                                   WATER_NELEC/2, hess, err, xc=ctx, &
                                   reference=scf%density, k_scale=ctx%exx_fraction, &
                                   dipole_derivatives=ddip)
       else
-         call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
-                              .false., scf, err)
+         call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                          .false., scf, err)
          if (.not. err%has_error()) &
             call response_hessian(mol, scf%density, scf%orbitals, scf%orbital_energies, &
                                   WATER_NELEC/2, hess, err, dipole_derivatives=ddip)
@@ -357,27 +357,27 @@ contains
       type(error_t), intent(inout) :: err
       logical, intent(out) :: ok
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(xc_context_t) :: ctx
       real(dp), allocatable :: hess(:, :, :, :)
 
       ok = .false.
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, basis, mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, basis, mol, err)
       if (err%has_error()) return
       if (len_trim(functional) > 0) then
          call xc_context_create(mol, functional, ctx, err, level=KS_GRID_LEVEL)
          if (.not. err%has_error()) &
-            call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
-                                 .false., scf, err, xc=ctx)
+            call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                             .false., scf, err, xc=ctx)
          if (.not. err%has_error()) &
             call response_hessian(mol, scf%density, scf%orbitals, scf%orbital_energies, &
                                   WATER_NELEC/2, hess, err, xc=ctx, &
                                   reference=scf%density, k_scale=ctx%exx_fraction, &
                                   dipole_derivatives=ddip)
       else
-         call run_libcint_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
-                              .false., scf, err)
+         call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
+                          .false., scf, err)
          if (.not. err%has_error()) &
             call response_hessian(mol, scf%density, scf%orbitals, scf%orbital_energies, &
                                   WATER_NELEC/2, hess, err, dipole_derivatives=ddip)

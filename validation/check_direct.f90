@@ -12,10 +12,10 @@ program check_direct
    !! block equally.
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, direct_stats_t, &
-                                 DEFAULT_SCREEN_TOL
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_direct, only: schwarz_bounds, build_fock_direct, direct_stats_t, &
+                             DEFAULT_SCREEN_TOL
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    implicit none
 
    integer, parameter :: N_DIM = 3
@@ -62,7 +62,7 @@ contains
       !! it is the number a user actually sees.
       integer, intent(inout) :: n_bad
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: res_direct, res_incore
       type(error_t) :: error
       real(dp) :: t0, t1, t_direct, t_incore, de
@@ -70,11 +70,11 @@ contains
       write (*, "(a)") ""
       write (*, "(a)") "== full SCF, water/cc-pvdz"
 
-      call build_libcint_molecule([8, 1, 1], ["O", "H", "H"], &
-                                  reshape([0.0_dp, 0.0_dp, 0.0_dp, &
-                                           0.0_dp, -1.4308_dp, 1.1078_dp, &
-                                           0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
-                                  "cc-pvdz", mol, error)
+      call build_czt_molecule([8, 1, 1], ["O", "H", "H"], &
+                              reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                                       0.0_dp, -1.4308_dp, 1.1078_dp, &
+                                       0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                              "cc-pvdz", mol, error)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL: ", error%get_message()
          n_bad = n_bad + 1
@@ -82,8 +82,8 @@ contains
       end if
 
       call cpu_time(t0)
-      call run_libcint_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., &
-                           res_direct, error)
+      call run_czt_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., &
+                       res_direct, error)
       call cpu_time(t1)
       t_direct = t1 - t0
       if (error%has_error()) then
@@ -93,8 +93,8 @@ contains
       end if
 
       call cpu_time(t0)
-      call run_libcint_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., &
-                           res_incore, error, in_core=.true.)
+      call run_czt_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., &
+                       res_incore, error, in_core=.true.)
       call cpu_time(t1)
       t_incore = t1 - t0
       if (error%has_error()) then
@@ -151,7 +151,7 @@ contains
       logical, intent(in) :: expect_screening  !! Whether the system is extended enough
       integer, intent(inout) :: n_bad
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(direct_stats_t) :: stats
       type(error_t) :: error
       real(dp), allocatable :: h(:, :), eri(:, :, :, :), density(:, :)
@@ -159,7 +159,7 @@ contains
       real(dp) :: t0, t1, t_incore, t_direct, worst
       integer :: n, k
 
-      call build_libcint_molecule(atomic_numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(atomic_numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) then
          write (*, "(a,a)") "FAIL building molecule: ", error%get_message()
          n_bad = n_bad + 1
@@ -249,7 +249,7 @@ contains
    end subroutine pseudo_density
 
    pure subroutine build_fock_incore(h, eri, density, fock)
-      !! The reference build, copied from mqc_libcint_rhf
+      !! The reference build, copied from mqc_czt_rhf
       real(dp), intent(in) :: h(:, :), eri(:, :, :, :), density(:, :)
       real(dp), intent(out) :: fock(:, :)
 

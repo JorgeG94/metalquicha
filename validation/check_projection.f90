@@ -20,9 +20,9 @@ program check_projection
    use pic_blas_interfaces, only: pic_gemm
    use pic_logger, only: logger => global_logger, info_level
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_projection, only: project_occupied, cross_overlap
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, SCF_GUESS_CORE, SCF_GUESS_SAD
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_projection, only: project_occupied, cross_overlap
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, SCF_GUESS_CORE, SCF_GUESS_SAD
    implicit none
 
    integer, parameter :: N_DIM = 3
@@ -68,7 +68,7 @@ contains
       integer, intent(in) :: nelec
       integer, intent(inout) :: n_bad
 
-      type(libcint_molecule_t) :: mol_s, mol_t
+      type(czt_molecule_t) :: mol_s, mol_t
       type(rhf_result_t) :: scf_s, scf_t_proj, scf_t_core
       type(error_t) :: error
       real(dp), allocatable :: d_proj(:, :), s_t(:, :), s_x(:, :), d_self(:, :)
@@ -80,13 +80,13 @@ contains
       write (*, "(a)") ""
       write (*, "(a,a,a,a,a,a)") "== ", label, ": ", small, " -> ", target_basis
 
-      call build_libcint_molecule(charges, symbols, coords, small, mol_s, error)
+      call build_czt_molecule(charges, symbols, coords, small, mol_s, error)
       if (failed(error, "small molecule", n_bad)) return
-      call build_libcint_molecule(charges, symbols, coords, target_basis, mol_t, error)
+      call build_czt_molecule(charges, symbols, coords, target_basis, mol_t, error)
       if (failed(error, "target molecule", n_bad)) return
 
-      call run_libcint_rhf(mol_s, nelec, 100, 1.0e-9_dp, 1.0e-7_dp, .false., scf_s, error, &
-                           guess=SCF_GUESS_CORE)
+      call run_czt_rhf(mol_s, nelec, 100, 1.0e-9_dp, 1.0e-7_dp, .false., scf_s, error, &
+                       guess=SCF_GUESS_CORE)
       if (failed(error, "small-basis SCF", n_bad)) return
       write (*, "(a,i0,a,i0,a,f18.10)") "  ", mol_s%nao, " -> ", mol_t%nao, &
          " functions,  small-basis E = ", scf_s%energy
@@ -120,11 +120,11 @@ contains
       call report("D S D = 2 D", worst_idem, 1.0e-10_dp, n_bad)
 
       ! ---- what it is for ----
-      call run_libcint_rhf(mol_t, nelec, 100, 1.0e-9_dp, 1.0e-7_dp, .false., scf_t_core, &
-                           error, guess=SCF_GUESS_CORE)
+      call run_czt_rhf(mol_t, nelec, 100, 1.0e-9_dp, 1.0e-7_dp, .false., scf_t_core, &
+                       error, guess=SCF_GUESS_CORE)
       if (failed(error, "target SCF from core", n_bad)) return
-      call run_libcint_rhf(mol_t, nelec, 100, 1.0e-9_dp, 1.0e-7_dp, .false., scf_t_proj, &
-                           error, guess=SCF_GUESS_SAD, guess_density=d_proj)
+      call run_czt_rhf(mol_t, nelec, 100, 1.0e-9_dp, 1.0e-7_dp, .false., scf_t_proj, &
+                       error, guess=SCF_GUESS_SAD, guess_density=d_proj)
       if (failed(error, "target SCF from projection", n_bad)) return
 
       write (*, "(a,i0,a,f18.10)") "  from core guess:        ", scf_t_core%iterations, &

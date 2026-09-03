@@ -103,7 +103,7 @@ mqc_add_validation_program(check_thing LIBRARIES ${MQC_INTEGRALS_LIBS})
   code one of these covers, build it by name before believing it.
 - **`IN_DEFAULT_BUILD` only for the three that `add_test` drives.**
 - **Backend-specific ones live with the backend.** A program linking
-  `${MQC_INTEGRALS_LIBS}` belongs in `backends/libcint/validation.cmake`, which
+  `${MQC_INTEGRALS_LIBS}` belongs in `backends/cenzontle/validation.cmake`, which
   only exists when that backend does, rather than behind an `if()` in a file
   that is always read.
 - **Prefer a test-drive unit test.** A new check belongs in `test/` where CI
@@ -169,7 +169,7 @@ reached:
 ```
 Index '62' of dimension 1 of array 'coeff' above upper bound of 61
   cint_log_max_pgto_coeff   _deps/libfint-src/src/cint_screen.f90:36
-  two_electron_optimizer    backends/libcint/mqc_libcint_integrals.F90:317
+  two_electron_optimizer    backends/cenzontle/mqc_czt_integrals.F90:317
 ```
 
 A measurement on gfortran 13.2.0 at `1a5cbc92cd` put it at 56 failures of 125:

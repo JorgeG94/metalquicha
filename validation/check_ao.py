@@ -25,7 +25,7 @@ given. So the test is on the *ratio*:
 convention is not libcint's -- the ratio there varies by two orders of magnitude
 across points and changes sign, which is a permutation rather than a scale. Our
 Cartesian path is checked instead by the overlap identity in
-`test/test_mqc_libcint_ao.f90`, which compares against *our* integrals and is the
+`test/test_mqc_czt_ao.f90`, which compares against *our* integrals and is the
 comparison that actually has to hold. Making PySCF's Cartesian ordering line up
 would be a separate piece of work with no benefit to the DFT path.
 """

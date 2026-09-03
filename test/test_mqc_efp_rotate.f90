@@ -20,7 +20,7 @@ module test_mqc_efp_rotate
    use mqc_efp_read, only: efp_fragment_t, read_efp_potential
    use mqc_efp_rotate, only: superpose, rotate_fragment, cartesian_rotation
    use mqc_efp_pair, only: fragment_molecule
-   use mqc_libcint_integrals, only: libcint_molecule_t
+   use mqc_czt_integrals, only: czt_molecule_t
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
    implicit none
@@ -335,7 +335,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(efp_fragment_t) :: spun
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(error_t) :: err
       real(dp), allocatable :: s(:, :), c(:, :), sc(:, :), gram(:, :)
       real(dp) :: rot(3, 3), worst

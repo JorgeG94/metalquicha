@@ -18,12 +18,12 @@ module test_mqc_vv10
    use pic_types, only: dp
    use testdrive, only: new_unittest, unittest_type, error_type, check, test_failed
    use mqc_error, only: error_t
-   use mqc_libcint_vv10, only: vv10_nlc, VV10_RHO_THRESHOLD
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available, &
-                             ensure_nlc_grid
-   use mqc_libcint_ao, only: eval_ao_block, eval_rho
+   use mqc_czt_vv10, only: vv10_nlc, VV10_RHO_THRESHOLD
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available, &
+                         ensure_nlc_grid
+   use mqc_czt_ao, only: eval_ao_block, eval_rho
    implicit none
    private
 
@@ -183,7 +183,7 @@ contains
                                                    0.0000_dp, -1.4300_dp, 1.1075_dp], [3, 3])
       integer, parameter :: BLK = 256
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx
       type(rhf_result_t) :: scf
       type(error_t) :: err
@@ -194,7 +194,7 @@ contains
 
       if (.not. xc_available()) return
 
-      call build_libcint_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
       call check(error,.not. err%has_error(), "building water failed")
       if (allocated(error)) return
       call xc_context_create(mol, "b97m-v", ctx, err, level=3)
@@ -203,7 +203,7 @@ contains
          call check(error, .false., "creating the b97m-v context failed")
          return
       end if
-      call run_libcint_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (.not. err%has_error()) call ensure_nlc_grid(ctx, mol, err)
       if (err%has_error()) then
          call mol%destroy()

@@ -61,7 +61,7 @@ executable:
 
 .. code-block:: bash
 
-   cmake -B build -DMQC_ENABLE_TBLITE=ON -DMQC_ENABLE_LIBCINT=ON
+   cmake -B build -DMQC_ENABLE_TBLITE=ON -DMQC_ENABLE_CZT=ON
    cmake --build build --target mqc_shared
 
 Then point Python at it. The package looks for the library next to an in-tree
@@ -80,7 +80,7 @@ and if the library is elsewhere, ``MQC_LIBRARY`` overrides the search:
 
 Which methods are available depends on how the library was built. ``gfn2`` and
 ``gfn1`` need ``MQC_ENABLE_TBLITE``; everything ab initio needs
-``MQC_ENABLE_LIBCINT``; the Kohn-Sham functionals need ``MQC_ENABLE_LIBXC``;
+``MQC_ENABLE_CZT``; the Kohn-Sham functionals need ``MQC_ENABLE_LIBXC``;
 ``backend="gpu"`` needs ``MQC_ENABLE_CUEST``. Asking for a method this build
 does not carry raises, naming the CMake option -- it never quietly substitutes
 another one.

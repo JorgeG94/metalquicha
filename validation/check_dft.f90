@@ -1,6 +1,6 @@
 !! Manual check that an exchange-correlation energy comes out right
 !!
-!!     cmake -B build -DMQC_ENABLE_LIBCINT=ON -DMQC_ENABLE_LIBXC=ON
+!!     cmake -B build -DMQC_ENABLE_CZT=ON -DMQC_ENABLE_LIBXC=ON
 !!     ./build/check_dft && python3 validation/check_dft.py
 !!
 !! Milestone 1 of the DFT plan: a converged RHF density, its value on the grid, and
@@ -22,11 +22,11 @@
 !! the functional evaluation alone and cannot be confounded by either.
 program check_dft
    use pic_types, only: dp
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf
-   use mqc_libcint_ao, only: eval_ao_block, eval_rho
-   use mqc_libcint_xc, only: xc_context_t, xc_context_create
-   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_ri_mp2, run_libcint_mp2
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, run_czt_uhf
+   use mqc_czt_ao, only: eval_ao_block, eval_rho
+   use mqc_czt_xc, only: xc_context_t, xc_context_create
+   use mqc_czt_mp2, only: mp2_result_t, run_czt_ri_mp2, run_czt_mp2
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid
    use mqc_error, only: error_t
    use xc_f03_lib_m, only: xc_f03_func_t, xc_f03_func_init, xc_f03_func_end, &
@@ -93,9 +93,9 @@ contains
       !!
       !!   1. a hybrid Kohn-Sham SCF over the functional's semilocal components and
       !!      its exact-exchange fraction -- which `xc_spec_t` already describes and
-      !!      `run_libcint_rhf` already runs;
+      !!      `run_czt_rhf` already runs;
       !!   2. RI-MP2 over the *Kohn-Sham* orbitals, scaled by the perturbative
-      !!      fraction. That falls out for free: `run_libcint_ri_mp2` takes
+      !!      fraction. That falls out for free: `run_czt_ri_mp2` takes
       !!      coefficients and orbital energies and never asks where they came from.
       !!
       !! Density-fitted deliberately. The reference is pyscf-forge's `DFDH`, whose
@@ -110,7 +110,7 @@ contains
          !! MP2 -- which is the only check of that error that does not import
          !! somebody else's auxiliary basis along with it.
 
-      type(libcint_molecule_t) :: mol, aux
+      type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
       type(mp2_result_t) :: mp2
       type(xc_context_t) :: xc
@@ -125,13 +125,13 @@ contains
                    0.0_dp, 0.77250895271063_dp*ANG, -0.46780199741728_dp*ANG, &
                    0.0_dp, -0.77250895280218_dp*ANG, -0.46780199748881_dp*ANG], [3, 3])
 
-      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
       if (err%has_error()) then
          write (*, "(A,A)") "[dft] basis failed: ", err%get_message()
          failures = failures + 1
          return
       end if
-      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, auxbasis, aux, err)
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, auxbasis, aux, err)
       if (err%has_error()) then
          write (*, "(A,A)") "[dft] aux basis failed: ", err%get_message()
          failures = failures + 1
@@ -145,8 +145,8 @@ contains
          return
       end if
 
-      call run_libcint_rhf(mol, 10, 200, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err, &
-                           in_core=.true., xc=xc)
+      call run_czt_rhf(mol, 10, 200, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err, &
+                       in_core=.true., xc=xc)
       if (err%has_error() .or. .not. scf%converged) then
          write (*, "(A,A,A)") "[dft] ", functional, " SCF failed"
          failures = failures + 1
@@ -158,11 +158,11 @@ contains
       use_df = .true.
       if (present(fitted)) use_df = fitted
       if (use_df) then
-         call run_libcint_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
-                                 scf%energy, mp2, err, n_frozen=0)
+         call run_czt_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
+                             scf%energy, mp2, err, n_frozen=0)
       else
-         call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, 5, &
-                              scf%energy, mp2, err, n_frozen=0)
+         call run_czt_mp2(mol, scf%orbitals, scf%orbital_energies, 5, &
+                          scf%energy, mp2, err, n_frozen=0)
       end if
       if (err%has_error()) then
          write (*, "(A,A,A,A)") "[dft] ", functional, " RI-MP2 failed: ", err%get_message()
@@ -192,7 +192,7 @@ contains
       !!
       !! The point of milestone 2: the potential reaches the Fock matrix and the
       !! SCF converges on it. Nothing here is new machinery -- it is
-      !! `run_libcint_rhf` with one extra argument, which is the whole design.
+      !! `run_czt_rhf` with one extra argument, which is the whole design.
       character(len=*), intent(in) :: basis, functional
       integer, intent(in) :: level
       logical, intent(in), optional :: direct
@@ -202,7 +202,7 @@ contains
          !! agree exactly, and the direct one is the one with Schwarz screening in
          !! it. Screening that changed an answer would show here and nowhere else.
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(xc_context_t) :: xc
       type(error_t) :: err
@@ -216,7 +216,7 @@ contains
                    0.0_dp, 0.77250895271063_dp*ANG, -0.46780199741728_dp*ANG, &
                    0.0_dp, -0.77250895280218_dp*ANG, -0.46780199748881_dp*ANG], [3, 3])
 
-      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
       if (err%has_error()) then
          write (*, "(A,A)") "[dft] basis failed: ", err%get_message()
          failures = failures + 1
@@ -237,8 +237,8 @@ contains
 
       use_direct = .false.
       if (present(direct)) use_direct = direct
-      call run_libcint_rhf(mol, 10, 200, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err, &
-                           in_core=(.not. use_direct), xc=xc)
+      call run_czt_rhf(mol, 10, 200, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err, &
+                       in_core=(.not. use_direct), xc=xc)
       if (err%has_error() .or. .not. scf%converged) then
          write (*, "(A,A,A,A)") "[dft] ", functional, " SCF failed: ", err%get_message()
          failures = failures + 1
@@ -274,12 +274,12 @@ contains
       !! quantity has a known restricted counterpart, and a wrong stride or a
       !! dropped cross term shows up as a disagreement with a number already
       !! validated against PySCF. That comparison is asserted in
-      !! test_mqc_libcint_uks rather than only printed here.
+      !! test_mqc_czt_uks rather than only printed here.
       character(len=*), intent(in) :: basis, functional
       integer, intent(in) :: level
       character(len=*), intent(in) :: molecule   !! "ch3" or "water"
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(xc_context_t) :: xc
       type(error_t) :: err
@@ -315,7 +315,7 @@ contains
          mult = 1
       end select
 
-      call build_libcint_molecule(z, sym, c, basis, mol, err)
+      call build_czt_molecule(z, sym, c, basis, mol, err)
       if (err%has_error()) then
          write (*, "(A,A)") "[dft] basis failed: ", err%get_message()
          failures = failures + 1
@@ -332,8 +332,8 @@ contains
          return
       end if
 
-      call run_libcint_uhf(mol, nelec, mult, 200, 1.0e-10_dp, 1.0e-8_dp, .false., &
-                           scf, err, xc=xc)
+      call run_czt_uhf(mol, nelec, mult, 200, 1.0e-10_dp, 1.0e-8_dp, .false., &
+                       scf, err, xc=xc)
       if (err%has_error() .or. .not. scf%converged) then
          write (*, "(A,A,A,A)") "[dft] ", functional, " UKS failed: ", err%get_message()
          failures = failures + 1
@@ -361,7 +361,7 @@ contains
       character(len=*), intent(in) :: basis
       integer, intent(in) :: level
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(dft_grid_t) :: grid
       type(error_t) :: err
@@ -376,15 +376,15 @@ contains
                    0.0_dp, 0.77250895271063_dp*ANG, -0.46780199741728_dp*ANG, &
                    0.0_dp, -0.77250895280218_dp*ANG, -0.46780199748881_dp*ANG], [3, 3])
 
-      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
       if (err%has_error()) then
          write (*, "(A,A)") "[dft] basis failed: ", err%get_message()
          failures = failures + 1
          return
       end if
 
-      call run_libcint_rhf(mol, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err, &
-                           in_core=.true.)
+      call run_czt_rhf(mol, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err, &
+                       in_core=.true.)
       if (err%has_error() .or. .not. scf%converged) then
          write (*, "(A)") "[dft] SCF failed"
          failures = failures + 1

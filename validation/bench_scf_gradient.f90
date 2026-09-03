@@ -6,9 +6,9 @@ program bench_scf_gradient
    !! of actual work for water in a minimal basis.
    use pic_types, only: dp, int64
    use mqc_error, only: error_t
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_gradient, only: libcint_scf_gradient
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_gradient, only: czt_scf_gradient
    implicit none
 
    ! Wall clock, not cpu_time. The two-electron contraction is threaded, and
@@ -27,7 +27,7 @@ contains
       character(len=*), intent(in) :: basis
       integer, intent(in) :: nwater
 
-      type(libcint_molecule_t) :: mol
+      type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(error_t) :: error
       real(dp), allocatable :: g(:, :), coords(:, :)
@@ -48,25 +48,25 @@ contains
          coords(:, base + 3) = [0.0_dp, 1.4308_dp, 1.1078_dp] + [6.0_dp*(iw - 1), 0.0_dp, 0.0_dp]
       end do
 
-      call build_libcint_molecule(numbers, symbols, coords, basis, mol, error)
+      call build_czt_molecule(numbers, symbols, coords, basis, mol, error)
       if (error%has_error()) then
          write (*, "(a,a)") "build failed: ", error%get_message()
          return
       end if
-      call run_libcint_rhf(mol, 10*nwater, 200, 1.0e-10_dp, 1.0e-8_dp, .false., scf, error)
+      call run_czt_rhf(mol, 10*nwater, 200, 1.0e-10_dp, 1.0e-8_dp, .false., scf, error)
       if (error%has_error()) then
          write (*, "(a,a)") "scf failed: ", error%get_message()
          return
       end if
 
-      call libcint_scf_gradient(mol, scf%density, orbitals=scf%orbitals, &
-                                orbital_energies=scf%orbital_energies, &
-                                n_occupied=scf%n_occupied, gradient=g, error=error)
+      call czt_scf_gradient(mol, scf%density, orbitals=scf%orbitals, &
+                            orbital_energies=scf%orbital_energies, &
+                            n_occupied=scf%n_occupied, gradient=g, error=error)
       deallocate (g)
       call system_clock(tick0, rate)
-      call libcint_scf_gradient(mol, scf%density, orbitals=scf%orbitals, &
-                                orbital_energies=scf%orbital_energies, &
-                                n_occupied=scf%n_occupied, gradient=g, error=error)
+      call czt_scf_gradient(mol, scf%density, orbitals=scf%orbitals, &
+                            orbital_energies=scf%orbital_energies, &
+                            n_occupied=scf%n_occupied, gradient=g, error=error)
       call system_clock(tick1)
       write (*, "(a10,a,i0,a,i4,a,i4,a,f10.4,a)") basis, "  (H2O)x", nwater, &
          "  nao=", mol%nao, "  nbas=", mol%nbas, "   gradient ", &

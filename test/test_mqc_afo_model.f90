@@ -5,8 +5,8 @@ module test_mqc_afo_model
    use mqc_error, only: error_t
    use mqc_physical_fragment, only: system_geometry_t, to_bohr, to_angstrom
    use mqc_bond_perception, only: find_severed_bonds, severed_bond_t
-   use mqc_libcint_afo, only: afo_model_t, build_afo_model, cuts_outside_group, &
-                              group_electron_shift
+   use mqc_czt_afo, only: afo_model_t, build_afo_model, cuts_outside_group, &
+                          group_electron_shift
    implicit none
 
    !! Geometries are quoted to four decimals in Angstrom, so a distance

@@ -37,7 +37,7 @@ contains
       !! polymorphic allocatable and has no error to set, so a method whose
       !! backend is absent can only `ERROR STOP`.
       !!
-      !! Only tblite is asked about here. The libcint and cuEST paths each have
+      !! Only tblite is asked about here. The cenzontle and cuEST paths each have
       !! a stub that reports the missing build on the result; tblite has none,
       !! because the method type it backs is not compiled at all without it.
       integer, intent(in) :: method_type
