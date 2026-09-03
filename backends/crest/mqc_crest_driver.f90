@@ -13,6 +13,7 @@ module mqc_crest_driver
    !! file -- and handed to `parseflags`, exactly as `crest_main` does with the
    !! real argv.
    use, intrinsic :: iso_fortran_env, only: output_unit
+   use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use pic_mpi_lib, only: abort_comm
@@ -51,12 +52,26 @@ module mqc_crest_driver
          type(systemdata), intent(inout) :: env
          type(timer), intent(inout) :: tim
       end subroutine crest_search_imtdgc
+
+      subroutine new_ompautoset(env, modus, maxjobs, parallel_jobs, cores_per_job)
+         import :: systemdata
+         implicit none
+         type(systemdata), intent(inout) :: env
+         character(len=*), intent(in) :: modus
+         integer, intent(in) :: maxjobs
+         integer, intent(out) :: parallel_jobs
+         integer, intent(out) :: cores_per_job
+      end subroutine new_ompautoset
    end interface
 
    ! What the refinement level needs, waiting for a callback that is handed a
    ! geometry and nothing else. Module state because that callback takes no
    ! context of its own, so only one search can be in flight -- true anyway,
    ! since CREST runs on a single rank.
+   !
+   ! One context, and CREST reaches the callback from concurrent OpenMP tasks,
+   ! so `crest_engrad` serialises itself rather than duplicating this per
+   ! thread. See the comment there for why duplicating it would not be enough.
    type(system_geometry_t), save :: ctx_geom
    type(driver_config_t), save :: ctx_config
    type(resources_t), save :: ctx_resources
@@ -82,8 +97,18 @@ contains
       type(timer) :: tim
       type(calculation_settings) :: refine_level
       character(len=:), allocatable :: argv(:)
+      character(len=:), allocatable :: threads_text
       character(len=*), parameter :: START_FILE = "crest_input.xyz"
+      character(len=*), parameter :: THREAD_FLAG = "-T"
       integer :: unit, i, io
+      integer :: n_threads, parallel_jobs, cores_per_job
+
+      ! The thread count the launcher asked for, read before anything below
+      ! changes it. CREST defaults to one thread and consults OMP_NUM_THREADS
+      ! only when `-T` was absent *and* nothing set the count manually, so an
+      ! argument vector without it samples serially however many threads the
+      ! job was given.
+      n_threads = max(1, omp_get_max_threads())
 
       ! **Single rank, refused rather than deadlocked.** CREST samples on one
       ! rank with OpenMP threads underneath, while `compute_energy_and_forces`
@@ -130,9 +155,30 @@ contains
       call install_context(sys_geom, config, resources)
 
       call tim%init(20)
-      allocate (character(len=len(START_FILE)) :: argv(1))
+      ! `-T n`, which is how CREST is told a thread count on a real command
+      ! line; going through its parser rather than assigning `env%threads` also
+      ! sets the two flags that stop it overriding the value later.
+      threads_text = int_text(n_threads)
+      allocate (character(len=max(len(START_FILE), len(threads_text))) :: argv(3))
       argv(1) = START_FILE
-      call parseflags(env, argv, 1)
+      argv(2) = THREAD_FLAG
+      argv(3) = threads_text
+      call parseflags(env, argv, 3)
+
+      ! The OpenMP setup `crest_main` does after its own parse, which nothing
+      ! else performs: every sampling stage divides `env%threads`, but the
+      ! process thread count and OMP_NUM_THREADS are established here.
+      !
+      ! `env%omp_allow_nested` is deliberately left at CREST's default, which
+      ! is on, and it is worth saying why turning it off is not the safety
+      ! measure the name suggests. CREST's parallel loops gate the *per-thread*
+      ! `ompmklset(Tn)` on that flag -- the call that gives each worker the
+      ! thread count it is meant to compute with, one apiece whenever there are
+      ! at least as many structures as threads. Switching it off does not make
+      ! the inner work serial; it leaves every worker at the outer count and
+      ! takes away the only thing that was pinning the engines down. The
+      ! parallelism that matters here is over structures either way.
+      call new_ompautoset(env, "max", 0, parallel_jobs, cores_per_job)
 
       if (env%calc%ncalculations < 1) then
          call error%set(ERROR_VALIDATION, "CREST set up no calculation level to sample with")
@@ -150,6 +196,8 @@ contains
 
       call logger%info("")
       call logger%info("  conformer sampling: CREST samples, this program refines")
+      call logger%info("  sampling threads: "//int_text(parallel_jobs)// &
+                       ", "//int_text(cores_per_job)//" per calculation")
 
       call crest_search_imtdgc(env, tim)
 
@@ -205,6 +253,8 @@ contains
       real(dp), intent(out) :: grad(3, nat)
       integer, intent(out) :: iostatus
 
+      integer :: saved_threads
+
       iostatus = 0
       energy = 0.0_dp
       grad = 0.0_dp
@@ -224,8 +274,27 @@ contains
          return
       end if
 
-      !$omp atomic
+      ! **One refinement at a time.** CREST re-ranks an ensemble from concurrent
+      ! OpenMP tasks in `crest_sploop`, and every one of them arrives here.
+      ! What this calls is `run_calculation`, the whole program's driver: it
+      ! writes the global logger, clamps the process thread count when the
+      ! method is xTB, and keeps module state of its own. None of that is
+      ! re-entrant, and the context above is single besides, so two calls in
+      ! flight would interleave two geometries into one calculation. Giving
+      ! each thread its own context would fix the second of those and none of
+      ! the first, so the lock is the honest answer.
+      !
+      ! The threads are not wasted by this: the tens of thousands of gradients
+      ! a search spends its time on are CREST's own sampling level, which runs
+      ! them concurrently and never reaches this pointer. Only the few hundred
+      ! survivors are refined here.
+      !$omp critical(mqc_crest_engrad)
       ctx_calls = ctx_calls + 1
+
+      ! `run_calculation` sets the thread count to one for xTB and, by its own
+      ! comment, does not put it back. Left that way the calling thread would
+      ! carry the clamp into whatever CREST does next.
+      saved_threads = omp_get_max_threads()
 
       ctx_geom%coordinates = xyz
       ! `write_output` off: the driver writes results.json on every call
@@ -236,6 +305,9 @@ contains
       ! is what CREST does with it at this refinement stage anyway.
       call compute_energy_and_forces(ctx_geom, ctx_config, ctx_resources, &
                                      energy, write_output=.false.)
+
+      call omp_set_num_threads(saved_threads)
+      !$omp end critical(mqc_crest_engrad)
    end subroutine crest_engrad
 
    pure function int_text(value) result(text)
