@@ -177,11 +177,13 @@ if(MQC_ENABLE_TERCO)
   # -DTERCO_LIBRARY=<path> wins over all of them: find_library leaves a cache
   # entry that is already set alone. The authoritative declaration, compiled
   # from terco's tree. See backends/terco/CMakeLists.txt for why this is not
-  # vendored.
+  # vendored. `include/terco` is where `make install` puts it and `include` is
+  # where a source checkout keeps it, so both layouts are reachable from one
+  # TERCO_ROOT.
   find_file(
     TERCO_INTERFACES
     NAMES trc_c_interfaces.f90
-    PATHS "${TERCO_ROOT}/include"
+    PATHS "${TERCO_ROOT}/include/terco" "${TERCO_ROOT}/include"
     NO_DEFAULT_PATH REQUIRED)
   list(APPEND libraries_to_link ${TERCO_LIBRARY})
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_TERCO)

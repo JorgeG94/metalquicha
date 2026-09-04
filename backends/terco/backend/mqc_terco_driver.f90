@@ -254,12 +254,14 @@ contains
       grid_c = int(settings%grid_level, c_int)
       maxiter_c = int(settings%max_iter, c_int)
 
-      ! terco prints its own iteration table when this is non-zero, straight to
-      ! stdout rather than through mqc's logger -- it is a separate library and
-      ! has no handle on ours. So it follows the deck's SCF verbosity, which is
-      ! the setting that already means "show me the iterations"; without it the
-      ! mqc log jumps from the guess to the converged energy with nothing
-      ! between, and a slow or oscillating SCF looks identical to a fast one.
+      ! terco prints its own iteration table when this is non-zero. It goes
+      ! straight to stdout rather than through mqc's logger -- terco is a
+      ! separate library with no handle on ours -- but it appears and disappears
+      ! with `system.logger.level`, because `settings%verbose` is derived from
+      ! the log level rather than read from a key of its own. So it behaves the
+      ! way the rest of the output does even though it does not travel the same
+      ! path. Without it the log jumps from the guess to the converged energy,
+      ! and a slow or oscillating SCF reads exactly like a fast one.
       verbose_c = 0_c_int
       if (settings%verbose) verbose_c = 1_c_int
 
