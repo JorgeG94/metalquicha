@@ -97,8 +97,11 @@ contains
    !! response), equals standalone `rhf_hessian`. Unit 1.3 measured 2.5e-14
    !! for the bare sweep; this re-earns it through the full assembly, where a
    !! quiet edit to the duplicated deposits would otherwise surface only as an
-   !! unattributable total-Hessian error. 1e-13 and not tighter because the
-   !! two two-electron walks sum in different orders.
+   !! unattributable total-Hessian error. 1e-10 and not tighter because the
+   !! two two-electron walks, and since `hess_rinv_contract` the two
+   !! nuclear-attraction contractions, sum in different orders over terms of
+   !! about 7e3 on oxygen's core functions: 3e-12 measured, from 2.5e-14 when
+   !! both ran the same statements. A wrong term lands at 1e-6 or above.
    subroutine reference_matches(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -129,7 +132,7 @@ contains
 
       write (*, "(a, es10.3)") "        max |assembly ref - rhf_hessian| = ", &
          maxval(abs(nuc + hess_ref + resp - full))
-      call check(error, maxval(abs(nuc + hess_ref + resp - full)) < 1.0e-13_dp, &
+      call check(error, maxval(abs(nuc + hess_ref + resp - full)) < 1.0e-10_dp, &
                  "the assembly's reference block diverged from rhf_hessian")
       call mol%destroy()
    end subroutine reference_matches
