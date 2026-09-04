@@ -353,6 +353,9 @@ contains
       integer :: npts, nao, natm, g0, g1, nb, ig, gg, comp, ia, own
       integer :: n_sig, isig, jsig
       logical :: unrestricted
+      real(dp), allocatable :: gloc(:, :)
+      type(error_t) :: local_error
+      logical :: failed
 
       unrestricted = present(density_beta)
 
@@ -415,18 +418,35 @@ contains
       end if
       if (error%has_error()) return
 
-      allocate (c_offsets(natm), c_counts(natm))
-      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
-      allocate (d_sig(nao, nao))
-      if (unrestricted) allocate (db_sig(nao, nao))
       call shell_extents(mol, ctx%screen_tol, extents)
 
       ! A closed-shell density already carries its factor of two, so the
       ! derivative of rho with respect to a moving basis function is 2*D*chi
       ! either way -- the two is the bra/ket pair, not the occupation.
       scale = 2.0_dp
+      failed = .false.
 
+      ! Threaded over blocks of points. A block's contribution is a whole
+      ! `(3, natm)`, small, so each thread sums its own copy and they are added
+      ! once at the end. `default(shared)` because `density_beta` is an
+      ! optional dummy, and naming an absent one in a data-sharing clause is
+      ! not portable. A thread that has failed stops working, but the loop
+      ! still has to run out so every thread reaches the barrier.
+      !$omp parallel default(shared) &
+      !$omp    private(ao, ao_grad, ao_hess, dchi, dchi_beta, dgchi, dgchi_beta, dpart, &
+      !$omp            d_sig, db_sig, shell_mask, ao_list, ao_offset, c_offsets, c_counts, &
+      !$omp            contrib, wv, g0, g1, nb, ig, gg, comp, ia, own, n_sig, isig, jsig, gloc) &
+      !$omp    firstprivate(local_error)
+      allocate (c_offsets(natm), c_counts(natm))
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
+      allocate (d_sig(nao, nao))
+      if (unrestricted) allocate (db_sig(nao, nao))
+      allocate (gloc(3, natm))
+      gloc = 0.0_dp
+
+      !$omp do schedule(dynamic)
       do g0 = 1, npts, ctx%point_block
+         if (failed) cycle
          g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
 
@@ -462,15 +482,23 @@ contains
             end if
 
             if (gga) then
-               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                   grad=ao_grad, hess=ao_hess, shell_mask=shell_mask, &
                                   ao_offset=ao_offset, n_ao_out=n_sig)
             else
-               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                   grad=ao_grad, shell_mask=shell_mask, &
                                   ao_offset=ao_offset, n_ao_out=n_sig)
             end if
-            if (error%has_error()) return
+            if (local_error%has_error()) then
+               !$omp critical (xc_gradient_failure)
+               if (.not. failed) then
+                  failed = .true.
+                  error = local_error
+               end if
+               !$omp end critical (xc_gradient_failure)
+               cycle
+            end if
 
             ! (D chi)_mu(g) = sum_nu D_mu,nu chi_nu(g), the partner every term
             ! below contracts the basis-function gradient against.
@@ -505,27 +533,27 @@ contains
 
                wv = ctx%grid%weights(gg)*vrho(gg)
                call accumulate_channel(ao_grad, dchi, ig, n_sig, wv, scale, &
-                                       c_offsets, c_counts, natm, own, gradient)
+                                       c_offsets, c_counts, natm, own, gloc)
                if (gga) then
                   call accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, n_sig, &
                                               ctx%grid%weights(gg)*gcoef(gg, :), scale, &
-                                              c_offsets, c_counts, natm, own, gradient)
+                                              c_offsets, c_counts, natm, own, gloc)
                end if
                if (mgga) then
                   call accumulate_mgga_channel(ao_grad, ao_hess, dgchi, ig, n_sig, &
                                                ctx%grid%weights(gg)*vtau(gg), scale, &
-                                               c_offsets, c_counts, natm, own, gradient)
+                                               c_offsets, c_counts, natm, own, gloc)
                end if
                if (unrestricted) then
                   wv = ctx%grid%weights(gg)*vrho_beta(gg)
                   call accumulate_channel(ao_grad, dchi_beta, ig, n_sig, wv, scale, &
-                                          c_offsets, c_counts, natm, own, gradient)
+                                          c_offsets, c_counts, natm, own, gloc)
                   if (gga) then
                      call accumulate_gga_channel(ao_grad, ao_hess, dchi_beta, &
                                                  dgchi_beta, ig, n_sig, &
                                                  ctx%grid%weights(gg)*gcoef_beta(gg, :), &
                                                  scale, c_offsets, c_counts, natm, own, &
-                                                 gradient)
+                                                 gloc)
                   end if
                end if
             end do
@@ -538,8 +566,16 @@ contains
          allocate (dpart(3, natm, nb))
          call becke_partition_derivatives(ctx%grid%coords(:, g0:g1), mol%coords, &
                                           ctx%grid%numbers, ctx%grid%atom(g0:g1), &
-                                          ctx%grid%scheme, ctx%grid%adjust, dpart, error)
-         if (error%has_error()) return
+                                          ctx%grid%scheme, ctx%grid%adjust, dpart, local_error)
+         if (local_error%has_error()) then
+            !$omp critical (xc_gradient_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (xc_gradient_failure)
+            cycle
+         end if
 
          do ig = 1, nb
             gg = g0 + ig - 1
@@ -551,7 +587,7 @@ contains
             end if
             do ia = 1, natm
                do comp = 1, 3
-                  gradient(comp, ia) = gradient(comp, ia) + contrib(1)*dpart(comp, ia, ig)
+                  gloc(comp, ia) = gloc(comp, ia) + contrib(1)*dpart(comp, ia, ig)
                end do
             end do
 
@@ -569,12 +605,20 @@ contains
             own = ctx%grid%atom(gg)
             do ia = 1, natm
                do comp = 1, 3
-                  gradient(comp, own) = gradient(comp, own) &
-                                        - contrib(1)*dpart(comp, ia, ig)
+                  gloc(comp, own) = gloc(comp, own) &
+                                    - contrib(1)*dpart(comp, ia, ig)
                end do
             end do
          end do
       end do
+      !$omp end do
+
+      !$omp critical (xc_gradient_reduce)
+      gradient = gradient + gloc
+      !$omp end critical (xc_gradient_reduce)
+      deallocate (c_offsets, c_counts, shell_mask, ao_offset, ao_list, d_sig, gloc)
+      if (allocated(db_sig)) deallocate (db_sig)
+      !$omp end parallel
    end subroutine xc_gradient
 
    subroutine vv10_gradient(ctx, mol, density, gradient, error)

@@ -36,6 +36,7 @@ module mqc_czt_xc_hessian
    !! `d_c d_d d_e chi`, which `eval_ao_block` supplies as `deriv3`. A meta-GGA
    !! adds the `tau` channel on the same footing.
    use pic_types, only: dp
+   use pic_logger, only: logger => global_logger
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t
@@ -54,6 +55,12 @@ module mqc_czt_xc_hessian
    public :: xc_kernel_deriv
    public :: vv10_hessian
    public :: vv10_potential_deriv
+
+   real(dp), parameter :: XC_DERIV_BLOCK_TOL = 1.0e-13_dp
+      !! Below this bound on every element of a block's contribution to one
+      !! perturbation's skeleton potential derivative, the weighted overlap
+      !! producing it is not formed. On cholesterol most atoms reach most
+      !! blocks with something, but few with enough to matter.
 
 contains
 
@@ -1241,8 +1248,11 @@ contains
       integer, allocatable :: ao_offset(:), ao_list(:), c_offsets(:), c_counts(:)
       integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig, ia, a, i, j, ig, d
       integer :: r0, r1, nr
-      real(dp) :: acc
+      real(dp) :: acc, aomax, agmax, gdotmax, wsum
       logical :: gga, mgga
+      ! TEMP(mqc): screen instrumentation, remove before committing.
+      integer(8) :: n_full, n_skip
+      character(len=200) :: tmpline
       type(error_t) :: local_error
       logical :: failed
 !$    integer(omp_lock_kind), allocatable :: locks(:, :)
@@ -1269,6 +1279,8 @@ contains
       allocate (extents(mol%nbas))
       call shell_extents(mol, ctx%screen_tol, extents)
       failed = .false.
+      n_full = 0
+      n_skip = 0
 
       ! Threaded over blocks of points, writing one shared `h1`. A block's
       ! contribution to one perturbation is gathered in `hacc` over the
@@ -1292,7 +1304,8 @@ contains
       !$omp    private(ao, ao_grad, ao_hess, d_sig, dmu, dchi, wcol, wv, blk, blkr, hacc, dmu_d, &
       !$omp            dgrad, dsig, gdot, dgdot, hgdot, dtau, shell_mask, ao_offset, ao_list, &
       !$omp            c_offsets, c_counts, g0, g1, nb, n_sig, isig, jsig, ia, a, i, j, ig, d, &
-      !$omp            r0, r1, nr, acc) &
+      !$omp            r0, r1, nr, acc, aomax, agmax, gdotmax, wsum) &
+      !$omp    reduction(+:n_full, n_skip) &
       !$omp    firstprivate(local_error)
       allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
       allocate (c_offsets(natm), c_counts(natm), d_sig(nao, nao))
@@ -1429,6 +1442,15 @@ contains
          end if
          wv = ctx%grid%weights(g0:g1)*vrho(g0:g1)
 
+         ! Largest basis-function value and gradient component on the block,
+         ! for the screen below: a weighted overlap `sum_g w(g) L(g,u) R(g,v)`
+         ! is bounded elementwise by `max|L| max|R| sum_g |w(g)|`, and a
+         ! distant atom's perturbation weights are tiny on this block.
+         aomax = maxval(abs(ao(1:nb, 1:n_sig)))
+         agmax = maxval(abs(ao_grad(1:nb, 1:n_sig, :)))
+         gdotmax = 0.0_dp
+         if (gga) gdotmax = maxval(abs(gdot(1:nb, 1:n_sig)))
+
          ! One perturbation at a time, its whole contribution from this block
          ! gathered in `hacc` and deposited once. The terms that live on the
          ! rows or the columns atom `ia` owns -- `r0:r1` -- are built on those
@@ -1456,8 +1478,14 @@ contains
                                *dsig(3*(ia - 1) + a, 1:nb)
                if (mgga) wcol = wcol + ctx%grid%weights(g0:g1)*frt(g0:g1) &
                                 *dtau(3*(ia - 1) + a, 1:nb)
-               call weighted_overlap(ao(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
-               hacc = hacc + blk
+               wsum = sum(abs(wcol))
+               if (aomax*aomax*wsum >= XC_DERIV_BLOCK_TOL) then
+                  n_full = n_full + 1
+                  call weighted_overlap(ao(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
+                  hacc = hacc + blk
+               else
+                  n_skip = n_skip + 1
+               end if
 
                if (gga) then
                   ! d v_sigma / dA, against `2 grad rho . grad(chi_u chi_v)`.
@@ -1466,8 +1494,11 @@ contains
                            + fss(g0:g1)*dsig(3*(ia - 1) + a, 1:nb))
                   if (mgga) wcol = wcol + 2.0_dp*ctx%grid%weights(g0:g1)*fst(g0:g1) &
                                    *dtau(3*(ia - 1) + a, 1:nb)
-                  call weighted_overlap(gdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
-                  hacc = hacc + blk + transpose(blk)
+                  wsum = sum(abs(wcol))
+                  if (gdotmax*aomax*wsum >= XC_DERIV_BLOCK_TOL) then
+                     call weighted_overlap(gdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
+                     hacc = hacc + blk + transpose(blk)
+                  end if
 
                   ! `grad rho` itself moving, against the same factor.
                   dgdot = 0.0_dp
@@ -1480,8 +1511,11 @@ contains
                      end do
                   end do
                   wcol = 2.0_dp*ctx%grid%weights(g0:g1)*vsigma(g0:g1)
-                  call weighted_overlap(dgdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
-                  hacc = hacc + blk + transpose(blk)
+                  wsum = sum(abs(wcol))
+                  if (maxval(abs(dgdot(1:nb, 1:n_sig)))*aomax*wsum >= XC_DERIV_BLOCK_TOL) then
+                     call weighted_overlap(dgdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
+                     hacc = hacc + blk + transpose(blk)
+                  end if
 
                   ! The basis functions inside `grad(chi_u chi_v)` moving. Four
                   ! pieces, two on each index, and only the rows or columns this
@@ -1516,11 +1550,14 @@ contains
                          *(frt(g0:g1)*dchi(3*(ia - 1) + a, 1:nb) &
                            + fst(g0:g1)*dsig(3*(ia - 1) + a, 1:nb) &
                            + ftt(g0:g1)*dtau(3*(ia - 1) + a, 1:nb))
-                  do d = 1, 3
-                     call weighted_overlap(ao_grad(1:nb, 1:n_sig, d), &
-                                           ao_grad(1:nb, 1:n_sig, d), wcol, blk)
-                     hacc = hacc + blk
-                  end do
+                  wsum = sum(abs(wcol))
+                  if (agmax*agmax*wsum >= XC_DERIV_BLOCK_TOL) then
+                     do d = 1, 3
+                        call weighted_overlap(ao_grad(1:nb, 1:n_sig, d), &
+                                              ao_grad(1:nb, 1:n_sig, d), wcol, blk)
+                        hacc = hacc + blk
+                     end do
+                  end if
                   wcol = 0.5_dp*ctx%grid%weights(g0:g1)*vtau(g0:g1)
                   do d = 1, 3
                      call weighted_overlap(ao_hess(1:nb, r0:r1, PAIR(a, d)), &
@@ -1552,6 +1589,9 @@ contains
 !$       end do
 !$    end do
 !$    deallocate (locks)
+      write (tmpline, "(a,f7.3,a,i0,a)") "    xc_potential_deriv: skipped fraction of the frr overlaps ", &
+         real(n_skip, dp)/max(1.0_dp, real(n_full + n_skip, dp)), " of ", n_full + n_skip, " (block, perturbation) pairs"
+      call logger%performance(trim(tmpline))
    end subroutine xc_potential_deriv
 
    subroutine xc_kernel_deriv(ctx, mol, density, dtilde, h1, error)

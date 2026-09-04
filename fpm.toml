@@ -27,16 +27,19 @@ source-form = "free"
 
 
 [dependencies]
-pic = { git = "https://github.com/JorgeG94/pic.git", tag = "v0.6.0"}
-pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", tag = "v0.6.0"}
+pic = { git = "https://github.com/JorgeG94/pic.git", tag = "v0.6.1"}
+pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", tag = "v0.6.1"}
 pic-blas = { git = "https://github.com/JorgeG94/pic-blas.git", tag = "v0.3.2"}
 tblite = { git = "https://github.com/tblite/tblite", tag = "v0.6.0"}
+
 # TODO pin to a version
 test-drive = { git = "https://github.com/fortran-lang/test-drive", branch = "main" }
 json-fortran = { git = "https://github.com/jacobwilliams/json-fortran.git", tag = "9.3.1"}
+
 openmp = "*"
 [extra.fortitude.check]
 select = ["C", "E", "S", "PORT"]
+
 # S212 is the warning that a program and a module are in the same file, this would make our tests stupid
 # C003 is 'implicit none' missing 'external', this does not always work with other compilers, so we ignore it
 # C072 is character '{name}' has assumed size but does not have intent(in), since this is a bit too much

@@ -434,8 +434,18 @@ contains
       allocate (rz(ncol), col_change(ncol), b(m, ncol), free(m, ncol))
       free = den > 0.0_dp
 
+      if (present(label)) then
+         write (line, "(a,es9.1)") "    "//trim(label)//", residual threshold ", threshold
+         call logger%performance(trim(line))
+         call logger%performance("      cycle  subspace  improving  max residual   seconds" &
+                                 //operator%note_header())
+      end if
+      call system_clock(clock_last, clock_rate)
+
       ! The fixed elements take their right-hand side; their mean field,
-      ! applied once, joins the right-hand side of the free ones.
+      ! applied once, joins the right-hand side of the free ones. A full
+      ! pass, and reported as one: it is the difference between the passes
+      ! the operator counts and the cycles below.
       b = reshape(rhs, [m, ncol])
       x = 0.0_dp
       where (.not. free) x = b
@@ -444,6 +454,13 @@ contains
       if (error%has_error()) return
       q = reshape(image, [m, ncol])
       where (free) b = b + q
+      if (present(label)) then
+         call system_clock(clock_now)
+         write (line, "(a,f10.2,a)") "      fixed occupied block, one pass         ", &
+            real(clock_now - clock_last, dp)/real(clock_rate, dp), operator%note()
+         call logger%performance(trim(line))
+         clock_last = clock_now
+      end if
 
       ! From zero on the free elements: the first direction is then the
       ! uncoupled response, which is what the subspace solver starts from.
@@ -456,14 +473,6 @@ contains
          col_change(c) = maxval(abs(z(:, c)))
          if (col_change(c) < threshold) p(:, c) = 0.0_dp
       end do
-
-      if (present(label)) then
-         write (line, "(a,es9.1)") "    "//trim(label)//", residual threshold ", threshold
-         call logger%performance(trim(line))
-         call logger%performance("      cycle  subspace  improving  max residual   seconds" &
-                                 //operator%note_header())
-      end if
-      call system_clock(clock_last, clock_rate)
 
       do it = 1, cycles
          if (present(iterations)) iterations = it

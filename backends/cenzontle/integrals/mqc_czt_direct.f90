@@ -902,104 +902,210 @@ contains
          hit_task = .false.
          all_task = .false.
          do ts = 1, tr
-         fs = fo(ts)
-         ws = tw(ts)
-         hit_ts = .false.
-         all_ts = .false.
-         do s1 = tile_first(tp), tile_last(tp)
-            d1 = dims(s1)
-            o1 = offs(s1)
-            do s2 = tile_first(tq), min(tile_last(tq), s1)
-               d2 = dims(s2)
-               o2 = offs(s2)
-               ij = s1*(s1 - 1)/2 + s2
-               do s3 = tile_first(tr), min(tile_last(tr), s1)
-                  d3 = dims(s3)
-                  o3 = offs(s3)
-                  do s4 = tile_first(ts), min(tile_last(ts), s3)
-                     kl = s3*(s3 - 1)/2 + s4
-                     if (kl > ij) cycle
-                     d4 = dims(s4)
-                     o4 = offs(s4)
+            fs = fo(ts)
+            ws = tw(ts)
+            hit_ts = .false.
+            all_ts = .false.
+            do s1 = tile_first(tp), tile_last(tp)
+               d1 = dims(s1)
+               o1 = offs(s1)
+               do s2 = tile_first(tq), min(tile_last(tq), s1)
+                  d2 = dims(s2)
+                  o2 = offs(s2)
+                  ij = s1*(s1 - 1)/2 + s2
+                  do s3 = tile_first(tr), min(tile_last(tr), s1)
+                     d3 = dims(s3)
+                     o3 = offs(s3)
+                     do s4 = tile_first(ts), min(tile_last(ts), s3)
+                        kl = s3*(s3 - 1)/2 + s4
+                        if (kl > ij) cycle
+                        d4 = dims(s4)
+                        o4 = offs(s4)
 
-                     n_total = n_total + 1_int64
+                        n_total = n_total + 1_int64
 
-                     if (bq(s1, s2)*bq(s3, s4) < tol) then
-                        n_screened = n_screened + 1_int64
-                        cycle
-                     end if
-                     deg = pair_degeneracy(s1, s2, s3, s4)
-                     if (weight_density) then
-                        if (bq(s1, s2)*bq(s3, s4)*density_weight(dsh, s1, s2, s3, s4, jxm, &
-                                                                 kx*0.25_dp, deg) < tol) then
+                        if (bq(s1, s2)*bq(s3, s4) < tol) then
                            n_screened = n_screened + 1_int64
                            cycle
                         end if
-                     end if
-
-                     shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
-                     ! `env_many`, not `tab%env`: the omega slot lives in the copy, and
-                     ! handing the optimizer the attenuated environment while the quartet
-                     ! call reads the unattenuated one gives full-range integrals scaled
-                     ! by `k_scale` -- a long-range pass that is not long-range at all.
-                     ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
-                                              tab%bas, tab%nbas, env_many, opt)
-                     if (ret == 0) then
-                        n_screened = n_screened + 1_int64
-                        cycle
-                     end if
-                     n_computed = n_computed + 1_int64
-
-                     ! Which sets this quartet can touch above the tolerance: the same
-                     ! bound as the quartet screen, per set. A response density is
-                     ! local to its atom, so with a wide batch most sets fail it and
-                     ! the six updates run over the survivors alone.
-                     if (weight_density) then
-                        na = 0
-                        qq = deg*bq(s1, s2)*bq(s3, s4)
-                        do iset = 1, n_set
-                           if (qq*max(jxm*dsh_all(iset, s1, s2), jxm*dsh_all(iset, s3, s4), &
-                                      kq*dsh_all(iset, s1, s3), kq*dsh_all(iset, s1, s4), &
-                                      kq*dsh_all(iset, s2, s3), kq*dsh_all(iset, s2, s4)) >= tol) then
-                              na = na + 1
-                              active(na) = iset
+                        deg = pair_degeneracy(s1, s2, s3, s4)
+                        if (weight_density) then
+                           if (bq(s1, s2)*bq(s3, s4)*density_weight(dsh, s1, s2, s3, s4, jxm, &
+                                                                    kx*0.25_dp, deg) < tol) then
+                              n_screened = n_screened + 1_int64
+                              cycle
                            end if
-                        end do
-                     else
-                        na = n_set
-                     end if
-                     if (na == 0) cycle
+                        end if
 
-                     ! Three shapes of the same six updates. At least half the sets
-                     ! active, which is the usual case: contiguous vectors down the
-                     ! whole set index straight into the accumulator, the inactive
-                     ! sets included -- their contributions are below tolerance and
-                     ! cost less as part of a vector than a scalar loop over the
-                     ! survivors would, a measured ten times less per quartet. A
-                     ! small sparse quartet: the updates indexed over the survivors,
-                     ! since a handful of elements does not repay gathering blocks.
-                     ! A large sparse quartet: the density blocks compacted to the
-                     ! survivors once, the updates contiguous over them, and the six
-                     ! output blocks scattered back once.
-                     if (2*na >= n_set) na = n_set
-                     if (na == n_set) then
-                        all_ts = .true.
-                        all_task = .true.
-                     else
-                        do ia = 1, na
-                           hit_ts(active(ia)) = .true.
-                           hit_task(active(ia)) = .true.
+                        shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
+                        ! `env_many`, not `tab%env`: the omega slot lives in the copy, and
+                        ! handing the optimizer the attenuated environment while the quartet
+                        ! call reads the unattenuated one gives full-range integrals scaled
+                        ! by `k_scale` -- a long-range pass that is not long-range at all.
+                        ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
+                                                 tab%bas, tab%nbas, env_many, opt)
+                        if (ret == 0) then
+                           n_screened = n_screened + 1_int64
+                           cycle
+                        end if
+                        n_computed = n_computed + 1_int64
+
+                        ! Which sets this quartet can touch above the tolerance: the same
+                        ! bound as the quartet screen, per set. A response density is
+                        ! local to its atom, so with a wide batch most sets fail it and
+                        ! the six updates run over the survivors alone.
+                        if (weight_density) then
+                           na = 0
+                           qq = deg*bq(s1, s2)*bq(s3, s4)
+                           do iset = 1, n_set
+                              if (qq*max(jxm*dsh_all(iset, s1, s2), jxm*dsh_all(iset, s3, s4), &
+                                         kq*dsh_all(iset, s1, s3), kq*dsh_all(iset, s1, s4), &
+                                         kq*dsh_all(iset, s2, s3), kq*dsh_all(iset, s2, s4)) >= tol) then
+                                 na = na + 1
+                                 active(na) = iset
+                              end if
+                           end do
+                        else
+                           na = n_set
+                        end if
+                        if (na == 0) cycle
+
+                        ! Three shapes of the same six updates. At least half the sets
+                        ! active, which is the usual case: contiguous vectors down the
+                        ! whole set index straight into the accumulator, the inactive
+                        ! sets included -- their contributions are below tolerance and
+                        ! cost less as part of a vector than a scalar loop over the
+                        ! survivors would, a measured ten times less per quartet. A
+                        ! small sparse quartet: the updates indexed over the survivors,
+                        ! since a handful of elements does not repay gathering blocks.
+                        ! A large sparse quartet: the density blocks compacted to the
+                        ! survivors once, the updates contiguous over them, and the six
+                        ! output blocks scattered back once.
+                        if (2*na >= n_set) na = n_set
+                        if (na == n_set) then
+                           all_ts = .true.
+                           all_task = .true.
+                        else
+                           do ia = 1, na
+                              hit_ts(active(ia)) = .true.
+                              hit_task(active(ia)) = .true.
+                           end do
+                        end if
+                        if (na == n_set .or. d1*d2*d3*d4 < 32) then
+                           do f4 = 1, d4
+                              b4 = o4 + f4
+                              do f3 = 1, d3
+                                 b3 = o3 + f3
+                                 do f2 = 1, d2
+                                    b2 = o2 + f2
+                                    do f1 = 1, d1
+                                       b1 = o1 + f1
+
+                                       idx = f1 + (f2 - 1)*d1 + (f3 - 1)*d1*d2 + (f4 - 1)*d1*d2*d3
+                                       value = buf(idx)
+                                       scaled = value*deg
+                                       jscaled = jxm*scaled
+                                       kscaled = kx*0.25_dp*scaled
+
+                                       ! Two Coulomb and four exchange contributions. g is
+                                       ! not symmetric as it stands; symmetrising at the end
+                                       ! is what makes these six updates equivalent to the
+                                       ! full sum over all eight permutations.
+                                       if (na == n_set) then
+                                          l12(:, b1 - fp, b2 - fq) = l12(:, b1 - fp, b2 - fq) + jscaled*d_half(:, b3, b4)
+                                          l34(:, b3 - fr, b4 - fs) = l34(:, b3 - fr, b4 - fs) + jscaled*d_half(:, b1, b2)
+                                          l13(:, b1 - fp, b3 - fr) = l13(:, b1 - fp, b3 - fr) - kscaled*d_half(:, b2, b4)
+                                          l24(:, b2 - fq, b4 - fs) = l24(:, b2 - fq, b4 - fs) - kscaled*d_half(:, b1, b3)
+                                          l14(:, b1 - fp, b4 - fs) = l14(:, b1 - fp, b4 - fs) - kscaled*d_half(:, b2, b3)
+                                          l23(:, b2 - fq, b3 - fr) = l23(:, b2 - fq, b3 - fr) - kscaled*d_half(:, b1, b4)
+                                       else
+                                          do ia = 1, na
+                                             iset = active(ia)
+                                  l12(iset, b1 - fp, b2 - fq) = l12(iset, b1 - fp, b2 - fq) + jscaled*d_half(iset, b3, b4)
+                                  l34(iset, b3 - fr, b4 - fs) = l34(iset, b3 - fr, b4 - fs) + jscaled*d_half(iset, b1, b2)
+                                  l13(iset, b1 - fp, b3 - fr) = l13(iset, b1 - fp, b3 - fr) - kscaled*d_half(iset, b2, b4)
+                                  l24(iset, b2 - fq, b4 - fs) = l24(iset, b2 - fq, b4 - fs) - kscaled*d_half(iset, b1, b3)
+                                  l14(iset, b1 - fp, b4 - fs) = l14(iset, b1 - fp, b4 - fs) - kscaled*d_half(iset, b2, b3)
+                                  l23(iset, b2 - fq, b3 - fr) = l23(iset, b2 - fq, b3 - fr) - kscaled*d_half(iset, b1, b4)
+                                          end do
+                                       end if
+                                    end do
+                                 end do
+                              end do
+                           end do
+                           cycle
+                        end if
+
+                        ! The six density blocks this quartet reads, compacted to the
+                        ! active sets as `(na, d_a*d_b)` with the first function fastest.
+                        ! The six output blocks accumulate in the same shape and go back
+                        ! to the accumulator once per quartet, so the updates per element
+                        ! are contiguous whatever the sets, and land in a few kilobytes.
+                        do f2 = 1, d2
+                           do f1 = 1, d1
+                              p12 = f1 + (f2 - 1)*d1
+                              do ia = 1, na
+                                 dd12(ia, p12) = d_half(active(ia), o1 + f1, o2 + f2)
+                              end do
+                           end do
                         end do
-                     end if
-                     if (na == n_set .or. d1*d2*d3*d4 < 32) then
                         do f4 = 1, d4
-                           b4 = o4 + f4
                            do f3 = 1, d3
-                              b3 = o3 + f3
+                              p34 = f3 + (f4 - 1)*d3
+                              do ia = 1, na
+                                 dd34(ia, p34) = d_half(active(ia), o3 + f3, o4 + f4)
+                              end do
+                           end do
+                        end do
+                        do f3 = 1, d3
+                           do f1 = 1, d1
+                              p13 = f1 + (f3 - 1)*d1
+                              do ia = 1, na
+                                 dd13(ia, p13) = d_half(active(ia), o1 + f1, o3 + f3)
+                              end do
+                           end do
+                        end do
+                        do f4 = 1, d4
+                           do f2 = 1, d2
+                              p24 = f2 + (f4 - 1)*d2
+                              do ia = 1, na
+                                 dd24(ia, p24) = d_half(active(ia), o2 + f2, o4 + f4)
+                              end do
+                           end do
+                        end do
+                        do f4 = 1, d4
+                           do f1 = 1, d1
+                              p14 = f1 + (f4 - 1)*d1
+                              do ia = 1, na
+                                 dd14(ia, p14) = d_half(active(ia), o1 + f1, o4 + f4)
+                              end do
+                           end do
+                        end do
+                        do f3 = 1, d3
+                           do f2 = 1, d2
+                              p23 = f2 + (f3 - 1)*d2
+                              do ia = 1, na
+                                 dd23(ia, p23) = d_half(active(ia), o2 + f2, o3 + f3)
+                              end do
+                           end do
+                        end do
+                        gg12(1:na, 1:d1*d2) = 0.0_dp
+                        gg34(1:na, 1:d3*d4) = 0.0_dp
+                        gg13(1:na, 1:d1*d3) = 0.0_dp
+                        gg24(1:na, 1:d2*d4) = 0.0_dp
+                        gg14(1:na, 1:d1*d4) = 0.0_dp
+                        gg23(1:na, 1:d2*d3) = 0.0_dp
+
+                        do f4 = 1, d4
+                           do f3 = 1, d3
+                              p34 = f3 + (f4 - 1)*d3
                               do f2 = 1, d2
-                                 b2 = o2 + f2
+                                 p24 = f2 + (f4 - 1)*d2
+                                 p23 = f2 + (f3 - 1)*d2
                                  do f1 = 1, d1
-                                    b1 = o1 + f1
+                                    p12 = f1 + (f2 - 1)*d1
+                                    p13 = f1 + (f3 - 1)*d1
+                                    p14 = f1 + (f4 - 1)*d1
 
                                     idx = f1 + (f2 - 1)*d1 + (f3 - 1)*d1*d2 + (f4 - 1)*d1*d2*d3
                                     value = buf(idx)
@@ -1007,200 +1113,94 @@ contains
                                     jscaled = jxm*scaled
                                     kscaled = kx*0.25_dp*scaled
 
-                                    ! Two Coulomb and four exchange contributions. g is
-                                    ! not symmetric as it stands; symmetrising at the end
-                                    ! is what makes these six updates equivalent to the
-                                    ! full sum over all eight permutations.
-                                    if (na == n_set) then
-                                       l12(:, b1 - fp, b2 - fq) = l12(:, b1 - fp, b2 - fq) + jscaled*d_half(:, b3, b4)
-                                       l34(:, b3 - fr, b4 - fs) = l34(:, b3 - fr, b4 - fs) + jscaled*d_half(:, b1, b2)
-                                       l13(:, b1 - fp, b3 - fr) = l13(:, b1 - fp, b3 - fr) - kscaled*d_half(:, b2, b4)
-                                       l24(:, b2 - fq, b4 - fs) = l24(:, b2 - fq, b4 - fs) - kscaled*d_half(:, b1, b3)
-                                       l14(:, b1 - fp, b4 - fs) = l14(:, b1 - fp, b4 - fs) - kscaled*d_half(:, b2, b3)
-                                       l23(:, b2 - fq, b3 - fr) = l23(:, b2 - fq, b3 - fr) - kscaled*d_half(:, b1, b4)
-                                    else
-                                       do ia = 1, na
-                                          iset = active(ia)
-                                          l12(iset, b1 - fp, b2 - fq) = l12(iset, b1 - fp, b2 - fq) + jscaled*d_half(iset, b3, b4)
-                                          l34(iset, b3 - fr, b4 - fs) = l34(iset, b3 - fr, b4 - fs) + jscaled*d_half(iset, b1, b2)
-                                          l13(iset, b1 - fp, b3 - fr) = l13(iset, b1 - fp, b3 - fr) - kscaled*d_half(iset, b2, b4)
-                                          l24(iset, b2 - fq, b4 - fs) = l24(iset, b2 - fq, b4 - fs) - kscaled*d_half(iset, b1, b3)
-                                          l14(iset, b1 - fp, b4 - fs) = l14(iset, b1 - fp, b4 - fs) - kscaled*d_half(iset, b2, b3)
-                                          l23(iset, b2 - fq, b3 - fr) = l23(iset, b2 - fq, b3 - fr) - kscaled*d_half(iset, b1, b4)
-                                       end do
-                                    end if
+                                    ! Two Coulomb and four exchange contributions, every
+                                    ! active set at once down the fast index. g is not
+                                    ! symmetric as it stands; symmetrising at the end is
+                                    ! what makes these six updates equivalent to the full
+                                    ! sum over all eight permutations.
+                                    !
+                                    ! These six lines are the entire point of the routine:
+                                    ! the integral above was computed once and every set
+                                    ! reuses it.
+                                    gg12(1:na, p12) = gg12(1:na, p12) + jscaled*dd34(1:na, p34)
+                                    gg34(1:na, p34) = gg34(1:na, p34) + jscaled*dd12(1:na, p12)
+                                    gg13(1:na, p13) = gg13(1:na, p13) - kscaled*dd24(1:na, p24)
+                                    gg24(1:na, p24) = gg24(1:na, p24) - kscaled*dd13(1:na, p13)
+                                    gg14(1:na, p14) = gg14(1:na, p14) - kscaled*dd23(1:na, p23)
+                                    gg23(1:na, p23) = gg23(1:na, p23) - kscaled*dd14(1:na, p14)
                                  end do
                               end do
                            end do
                         end do
-                        cycle
-                     end if
 
-                     ! The six density blocks this quartet reads, compacted to the
-                     ! active sets as `(na, d_a*d_b)` with the first function fastest.
-                     ! The six output blocks accumulate in the same shape and go back
-                     ! to the accumulator once per quartet, so the updates per element
-                     ! are contiguous whatever the sets, and land in a few kilobytes.
-                     do f2 = 1, d2
-                        do f1 = 1, d1
-                           p12 = f1 + (f2 - 1)*d1
-                           do ia = 1, na
-                              dd12(ia, p12) = d_half(active(ia), o1 + f1, o2 + f2)
-                           end do
-                        end do
-                     end do
-                     do f4 = 1, d4
-                        do f3 = 1, d3
-                           p34 = f3 + (f4 - 1)*d3
-                           do ia = 1, na
-                              dd34(ia, p34) = d_half(active(ia), o3 + f3, o4 + f4)
-                           end do
-                        end do
-                     end do
-                     do f3 = 1, d3
-                        do f1 = 1, d1
-                           p13 = f1 + (f3 - 1)*d1
-                           do ia = 1, na
-                              dd13(ia, p13) = d_half(active(ia), o1 + f1, o3 + f3)
-                           end do
-                        end do
-                     end do
-                     do f4 = 1, d4
+                        ! Added, not assigned: two of the six blocks coincide whenever the
+                        ! quartet has a repeated shell pair.
                         do f2 = 1, d2
-                           p24 = f2 + (f4 - 1)*d2
-                           do ia = 1, na
-                              dd24(ia, p24) = d_half(active(ia), o2 + f2, o4 + f4)
-                           end do
-                        end do
-                     end do
-                     do f4 = 1, d4
-                        do f1 = 1, d1
-                           p14 = f1 + (f4 - 1)*d1
-                           do ia = 1, na
-                              dd14(ia, p14) = d_half(active(ia), o1 + f1, o4 + f4)
-                           end do
-                        end do
-                     end do
-                     do f3 = 1, d3
-                        do f2 = 1, d2
-                           p23 = f2 + (f3 - 1)*d2
-                           do ia = 1, na
-                              dd23(ia, p23) = d_half(active(ia), o2 + f2, o3 + f3)
-                           end do
-                        end do
-                     end do
-                     gg12(1:na, 1:d1*d2) = 0.0_dp
-                     gg34(1:na, 1:d3*d4) = 0.0_dp
-                     gg13(1:na, 1:d1*d3) = 0.0_dp
-                     gg24(1:na, 1:d2*d4) = 0.0_dp
-                     gg14(1:na, 1:d1*d4) = 0.0_dp
-                     gg23(1:na, 1:d2*d3) = 0.0_dp
-
-                     do f4 = 1, d4
-                        do f3 = 1, d3
-                           p34 = f3 + (f4 - 1)*d3
-                           do f2 = 1, d2
-                              p24 = f2 + (f4 - 1)*d2
-                              p23 = f2 + (f3 - 1)*d2
-                              do f1 = 1, d1
-                                 p12 = f1 + (f2 - 1)*d1
-                                 p13 = f1 + (f3 - 1)*d1
-                                 p14 = f1 + (f4 - 1)*d1
-
-                                 idx = f1 + (f2 - 1)*d1 + (f3 - 1)*d1*d2 + (f4 - 1)*d1*d2*d3
-                                 value = buf(idx)
-                                 scaled = value*deg
-                                 jscaled = jxm*scaled
-                                 kscaled = kx*0.25_dp*scaled
-
-                                 ! Two Coulomb and four exchange contributions, every
-                                 ! active set at once down the fast index. g is not
-                                 ! symmetric as it stands; symmetrising at the end is
-                                 ! what makes these six updates equivalent to the full
-                                 ! sum over all eight permutations.
-                                 !
-                                 ! These six lines are the entire point of the routine:
-                                 ! the integral above was computed once and every set
-                                 ! reuses it.
-                                 gg12(1:na, p12) = gg12(1:na, p12) + jscaled*dd34(1:na, p34)
-                                 gg34(1:na, p34) = gg34(1:na, p34) + jscaled*dd12(1:na, p12)
-                                 gg13(1:na, p13) = gg13(1:na, p13) - kscaled*dd24(1:na, p24)
-                                 gg24(1:na, p24) = gg24(1:na, p24) - kscaled*dd13(1:na, p13)
-                                 gg14(1:na, p14) = gg14(1:na, p14) - kscaled*dd23(1:na, p23)
-                                 gg23(1:na, p23) = gg23(1:na, p23) - kscaled*dd14(1:na, p14)
+                           do f1 = 1, d1
+                              p12 = f1 + (f2 - 1)*d1
+                              do ia = 1, na
+                 l12(active(ia), o1 + f1 - fp, o2 + f2 - fq) = l12(active(ia), o1 + f1 - fp, o2 + f2 - fq) + gg12(ia, p12)
                               end do
                            end do
                         end do
-                     end do
-
-                     ! Added, not assigned: two of the six blocks coincide whenever the
-                     ! quartet has a repeated shell pair.
-                     do f2 = 1, d2
-                        do f1 = 1, d1
-                           p12 = f1 + (f2 - 1)*d1
-                           do ia = 1, na
-                           l12(active(ia), o1 + f1 - fp, o2 + f2 - fq) = l12(active(ia), o1 + f1 - fp, o2 + f2 - fq) + gg12(ia, p12)
+                        do f4 = 1, d4
+                           do f3 = 1, d3
+                              p34 = f3 + (f4 - 1)*d3
+                              do ia = 1, na
+                 l34(active(ia), o3 + f3 - fr, o4 + f4 - fs) = l34(active(ia), o3 + f3 - fr, o4 + f4 - fs) + gg34(ia, p34)
+                              end do
                            end do
                         end do
-                     end do
-                     do f4 = 1, d4
                         do f3 = 1, d3
-                           p34 = f3 + (f4 - 1)*d3
-                           do ia = 1, na
-                           l34(active(ia), o3 + f3 - fr, o4 + f4 - fs) = l34(active(ia), o3 + f3 - fr, o4 + f4 - fs) + gg34(ia, p34)
+                           do f1 = 1, d1
+                              p13 = f1 + (f3 - 1)*d1
+                              do ia = 1, na
+                 l13(active(ia), o1 + f1 - fp, o3 + f3 - fr) = l13(active(ia), o1 + f1 - fp, o3 + f3 - fr) + gg13(ia, p13)
+                              end do
                            end do
                         end do
-                     end do
-                     do f3 = 1, d3
-                        do f1 = 1, d1
-                           p13 = f1 + (f3 - 1)*d1
-                           do ia = 1, na
-                           l13(active(ia), o1 + f1 - fp, o3 + f3 - fr) = l13(active(ia), o1 + f1 - fp, o3 + f3 - fr) + gg13(ia, p13)
+                        do f4 = 1, d4
+                           do f2 = 1, d2
+                              p24 = f2 + (f4 - 1)*d2
+                              do ia = 1, na
+                 l24(active(ia), o2 + f2 - fq, o4 + f4 - fs) = l24(active(ia), o2 + f2 - fq, o4 + f4 - fs) + gg24(ia, p24)
+                              end do
                            end do
                         end do
-                     end do
-                     do f4 = 1, d4
-                        do f2 = 1, d2
-                           p24 = f2 + (f4 - 1)*d2
-                           do ia = 1, na
-                           l24(active(ia), o2 + f2 - fq, o4 + f4 - fs) = l24(active(ia), o2 + f2 - fq, o4 + f4 - fs) + gg24(ia, p24)
+                        do f4 = 1, d4
+                           do f1 = 1, d1
+                              p14 = f1 + (f4 - 1)*d1
+                              do ia = 1, na
+                 l14(active(ia), o1 + f1 - fp, o4 + f4 - fs) = l14(active(ia), o1 + f1 - fp, o4 + f4 - fs) + gg14(ia, p14)
+                              end do
                            end do
                         end do
-                     end do
-                     do f4 = 1, d4
-                        do f1 = 1, d1
-                           p14 = f1 + (f4 - 1)*d1
-                           do ia = 1, na
-                           l14(active(ia), o1 + f1 - fp, o4 + f4 - fs) = l14(active(ia), o1 + f1 - fp, o4 + f4 - fs) + gg14(ia, p14)
-                           end do
-                        end do
-                     end do
-                     do f3 = 1, d3
-                        do f2 = 1, d2
-                           p23 = f2 + (f3 - 1)*d2
-                           do ia = 1, na
-                           l23(active(ia), o2 + f2 - fq, o3 + f3 - fr) = l23(active(ia), o2 + f2 - fq, o3 + f3 - fr) + gg23(ia, p23)
+                        do f3 = 1, d3
+                           do f2 = 1, d2
+                              p23 = f2 + (f3 - 1)*d2
+                              do ia = 1, na
+                 l23(active(ia), o2 + f2 - fq, o3 + f3 - fr) = l23(active(ia), o2 + f2 - fq, o3 + f3 - fr) + gg23(ia, p23)
+                              end do
                            end do
                         end do
                      end do
                   end do
                end do
             end do
-         end do
 
-         ! The three blocks that change with the ket tile go in now.
-         call touched_sets(all_ts, hit_ts, hits, nhit)
-         if (nhit > 0) then
-!$          call omp_set_lock(locks(tr, ts))
-            call add_tile_block(g, l34, wr, ws, fr, fs, nhit, hits)
-!$          call omp_unset_lock(locks(tr, ts))
-!$          call omp_set_lock(locks(tq, ts))
-            call add_tile_block(g, l24, wq, ws, fq, fs, nhit, hits)
-!$          call omp_unset_lock(locks(tq, ts))
-!$          call omp_set_lock(locks(tp, ts))
-            call add_tile_block(g, l14, wp, ws, fp, fs, nhit, hits)
-!$          call omp_unset_lock(locks(tp, ts))
-         end if
+            ! The three blocks that change with the ket tile go in now.
+            call touched_sets(all_ts, hit_ts, hits, nhit)
+            if (nhit > 0) then
+!$             call omp_set_lock(locks(tr, ts))
+               call add_tile_block(g, l34, wr, ws, fr, fs, nhit, hits)
+!$             call omp_unset_lock(locks(tr, ts))
+!$             call omp_set_lock(locks(tq, ts))
+               call add_tile_block(g, l24, wq, ws, fq, fs, nhit, hits)
+!$             call omp_unset_lock(locks(tq, ts))
+!$             call omp_set_lock(locks(tp, ts))
+               call add_tile_block(g, l14, wp, ws, fp, fs, nhit, hits)
+!$             call omp_unset_lock(locks(tp, ts))
+            end if
          end do
 
          ! The three the task held throughout.

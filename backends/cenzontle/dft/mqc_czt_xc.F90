@@ -79,6 +79,11 @@ module mqc_czt_xc
    public :: vv10_kernel_apply
 
    real(dp), parameter :: KERNEL_RHO_FLOOR = 1.0e-10_dp
+   integer, parameter :: KERNEL_SET_CHUNK = 8
+      !! Response densities contracted per gemm in `xc_kernel_apply_many`.
+      !! Eight of 250 significant functions makes an inner dimension of two
+      !! thousand; the four stacked work arrays are then a few tens of
+      !! megabytes per thread.
       !! Grid points below this density contribute no *second* derivative.
       !!
       !! Not a tolerance -- a necessity. The LDA kernel is `d2e/drho2`, which for
@@ -443,6 +448,8 @@ contains
       real(dp), allocatable :: rho_a_blk(:), rho_b_blk(:)
       integer :: g0, g1, nb, i, ig, npts
       logical :: unrestricted
+      type(error_t) :: local_error
+      logical :: failed
 
       unrestricted = present(density_beta)
       npts = ctx%grid%n_points
@@ -483,12 +490,31 @@ contains
       ! means resizing every downstream array to the significant-AO subset, the
       ! way the potential loops do, which is a change to numerics and belongs on
       ! its own.
+      !
+      ! Threaded over blocks: every output is indexed by the point, so the
+      ! blocks write disjoint ranges. `default(shared)` because the spin-beta
+      ! arguments are optional dummies, and naming an absent one in a
+      ! data-sharing clause is not portable.
+      failed = .false.
+      !$omp parallel default(shared) &
+      !$omp    private(g0, g1, nb, i, ig, ao, rho_blk, exc_i, vrho_i, rho_a_blk, rho_b_blk) &
+      !$omp    firstprivate(local_error)
+      !$omp do schedule(dynamic)
       do g0 = 1, npts, ctx%point_block
+         if (failed) cycle
          g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
 
-         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error)
-         if (error%has_error()) return
+         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error)
+         if (local_error%has_error()) then
+            !$omp critical (xc_lda_quantities_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (xc_lda_quantities_failure)
+            cycle
+         end if
 
          if (allocated(exc_i)) deallocate (exc_i, vrho_i)
 
@@ -534,6 +560,8 @@ contains
             end do
          end if
       end do
+      !$omp end do
+      !$omp end parallel
 #else
       call error%set(ERROR_VALIDATION, "no libxc in this build")
 #endif
@@ -591,6 +619,8 @@ contains
       real(dp), allocatable :: rho_grad(:, :)
       integer :: g0, g1, nb, i, ig, id, npts
       logical :: unrestricted
+      type(error_t) :: local_error
+      logical :: failed
 
       unrestricted = present(density_beta)
       npts = ctx%grid%n_points
@@ -649,12 +679,31 @@ contains
       ! means resizing every downstream array to the significant-AO subset, the
       ! way the potential loops do, which is a change to numerics and belongs on
       ! its own.
+      !
+      ! Threaded over blocks, as `xc_grid_lda_quantities` and for the same
+      ! reasons, `default(shared)` included.
+      failed = .false.
+      !$omp parallel default(shared) &
+      !$omp    private(g0, g1, nb, i, ig, id, ao, ao_grad, rho_blk, sigma, exc_i, vrho_i, &
+      !$omp            vsigma_i, vsigma, tau_blk, lapl, vlapl, vtau_i, rho_a_blk, rho_b_blk, &
+      !$omp            grad_a, grad_b, rho_grad) &
+      !$omp    firstprivate(local_error)
+      !$omp do schedule(dynamic)
       do g0 = 1, npts, ctx%point_block
+         if (failed) cycle
          g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
 
-         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
-         if (error%has_error()) return
+         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, grad=ao_grad)
+         if (local_error%has_error()) then
+            !$omp critical (xc_gga_quantities_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (xc_gga_quantities_failure)
+            cycle
+         end if
 
          if (allocated(exc_i)) deallocate (exc_i)
          if (allocated(vrho_i)) deallocate (vrho_i)
@@ -775,6 +824,8 @@ contains
             end do
          end if
       end do
+      !$omp end do
+      !$omp end parallel
 #else
       call error%set(ERROR_VALIDATION, "no libxc in this build")
 #endif
@@ -1774,6 +1825,15 @@ contains
       !! output; there is no copy per thread, so the memory is the batch and
       !! nothing times the thread count.
       !!
+      !! **Sets are contracted in stacks.** The densities of up to
+      !! `KERNEL_SET_CHUNK` sets are gathered side by side into one matrix,
+      !! contracted against the block's basis in one gemm with a long inner
+      !! dimension, and their output matrices assembled by one gemm the same
+      !! way. Set by set the same arithmetic streams a half-megabyte density
+      !! through a gemm too small to hide it, and on a hundred cores at once
+      !! that ran at a third of the rate this reaches. A meta-GGA keeps the
+      !! set-by-set path, since its tau needs three more gemms per set.
+      !!
       !! Accumulates into `v_kernels`, as `xc_kernel_apply` does into its one.
 !$    use omp_lib, only: omp_lock_kind, omp_init_lock, omp_set_lock, omp_unset_lock, omp_destroy_lock
       type(xc_context_t), intent(inout) :: ctx
@@ -1801,14 +1861,21 @@ contains
          !! in and discarded out.
       real(dp), allocatable :: v_sig(:, :), d_sig(:, :), dt_sig(:, :)
       real(dp), allocatable :: extents(:), dmax(:)
+      real(dp), allocatable :: dt_all(:, :), x_all(:, :), s_all(:, :), m_all(:, :), wg(:)
       logical, allocatable :: shell_mask(:)
-      integer, allocatable :: ao_list(:), ao_offset(:)
-      integer :: n_sig, ia, ja, iset, n_set
+      integer, allocatable :: ao_list(:), ao_offset(:), keep(:)
+      integer :: n_sig, ia, ja, iset, n_set, nk, ik, nc, c, col0, mu
       type(error_t) :: local_error
       logical :: failed
       integer :: g0, g1, nb, i, ig, id, npts
       real(dp) :: amax, agmax, dmax_blk, s
       logical :: gga, mgga
+      ! TEMP(mqc): sweep instrumentation, remove before committing.
+      integer(8) :: n_skipped, n_sets_seen, n_blocks, sum_nsig, sum_nsig2
+      ! TEMP(mqc): MQC_KERNEL_NOSTACK forces the set-by-set path, for the A/B.
+      logical :: no_stack
+      character(len=16) :: envbuf
+      integer :: envlen, envstat
 !$    integer(omp_lock_kind), allocatable :: locks(:)
 
       if (.not. ctx%active) return
@@ -1834,6 +1901,14 @@ contains
       failed = .false.
 
       call shell_extents(mol, ctx%screen_tol, extents)
+      no_stack = .false.
+      call get_environment_variable("MQC_KERNEL_NOSTACK", envbuf, envlen, envstat)
+      if (envstat == 0 .and. envlen > 0) no_stack = .true.
+      n_skipped = 0
+      n_sets_seen = 0
+      n_blocks = 0
+      sum_nsig = 0
+      sum_nsig2 = 0
 
       ! The largest element of each set, which its screen is relative to.
       allocate (dmax(n_set))
@@ -1848,18 +1923,20 @@ contains
 
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, density, dtildes, v_kernels, error, failed, &
-      !$omp           gga, mgga, npts, extents, n_set, dmax, locks) &
+      !$omp           gga, mgga, npts, extents, n_set, dmax, locks, no_stack) &
+      !$omp    reduction(+:n_skipped, n_sets_seen, n_blocks, sum_nsig, sum_nsig2) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, ao_grad, rho, rho_grad, drho, &
       !$omp            drho_grad, sigma, dsigma, frr, frs, fss, vsig, frr_i, &
       !$omp            frs_i, fss_i, exc_i, vrho_i, vsigma_i, c_rho, c_grad, &
       !$omp            c_tau, no_tau, tau, dtau, lapl, frt, fst, ftt, vtau, &
       !$omp            frt_i, fst_i, ftt_i, vtau_i, lapl_scratch) &
       !$omp    private(v_sig, d_sig, dt_sig, shell_mask, ao_list, ao_offset, &
-      !$omp            n_sig, ia, ja, iset, amax, agmax, dmax_blk, s) &
+      !$omp            n_sig, ia, ja, iset, amax, agmax, dmax_blk, s, &
+      !$omp            dt_all, x_all, s_all, m_all, wg, keep, nk, ik, nc, c, col0, mu) &
       !$omp    firstprivate(local_error)
       allocate (v_sig(mol%nao, mol%nao), d_sig(mol%nao, mol%nao), &
                 dt_sig(mol%nao, mol%nao))
-      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao), keep(n_set))
 
       !$omp do schedule(dynamic)
       do g0 = 1, npts, ctx%point_block
@@ -1876,6 +1953,9 @@ contains
          call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
                                     shell_mask, ao_list, ao_offset, n_sig)
          if (n_sig == 0) cycle          ! empty space; no basis function reaches it
+         n_blocks = n_blocks + 1
+         sum_nsig = sum_nsig + n_sig
+         sum_nsig2 = sum_nsig2 + int(n_sig, 8)*int(n_sig, 8)
 
          do ja = 1, n_sig
             do ia = 1, n_sig
@@ -2029,104 +2109,251 @@ contains
             end do
          end if
 
-         do iset = 1, n_set
-            if (dmax(iset) == 0.0_dp) cycle
-            dmax_blk = 0.0_dp
-            do ja = 1, n_sig
-               do ia = 1, n_sig
-                  dt_sig(ia, ja) = dtildes(ao_list(ia), ao_list(ja), iset)
-                  dmax_blk = max(dmax_blk, abs(dt_sig(ia, ja)))
-               end do
-            end do
-            ! `|drho| <= max|D| (sum |chi|)^2` and `|grad drho| <= 2 max|D|
-            ! (sum |chi|)(sum |grad chi|)`, both against the set's own scale.
-            if (dmax_blk*amax*max(amax, 2.0_dp*agmax) < ctx%screen_tol*dmax(iset)) cycle
-
-            if (mgga) then
-               ! **The tau convention never has to be decided here.** Whatever
-               ! `eval_rho` means by tau is what the energy path fed libxc and
-               ! what `accumulate_xc_matrix` differentiates, and the response
-               ! density goes through the same routine.
-               call eval_rho(ao, dt_sig(1:n_sig, 1:n_sig), drho, ao_grad=ao_grad, &
-                             rho_grad=drho_grad, tau=dtau)
-            else if (gga) then
-               call eval_rho(ao, dt_sig(1:n_sig, 1:n_sig), drho, ao_grad=ao_grad, &
-                             rho_grad=drho_grad)
-            else
-               call eval_rho(ao, dt_sig(1:n_sig, 1:n_sig), drho)
-            end if
-
-            dsigma = 0.0_dp
-            if (gga) then
-               do ig = 1, nb
-                  dsigma(ig) = 2.0_dp*(rho_grad(ig, 1)*drho_grad(ig, 1) &
-                                       + rho_grad(ig, 2)*drho_grad(ig, 2) &
-                                       + rho_grad(ig, 3)*drho_grad(ig, 3))
-               end do
-            end if
-
-            ! The potential has three pieces on this rung and every one of them
-            ! responds to every component of the response density:
-            !
-            !     dv_rho   = f_rr drho + f_rs dsigma + f_rt dtau
-            !     dv_sigma = f_rs drho + f_ss dsigma + f_st dtau
-            !     dv_tau   = f_rt drho + f_st dsigma + f_tt dtau
-            !
-            ! `dtau` is zero on the LDA and GGA paths, so the same three lines
-            ! reduce to what they were rather than branching.
-            do ig = 1, nb
-               c_rho(ig) = frr(ig)*drho(ig) + frs(ig)*dsigma(ig) + frt(ig)*dtau(ig)
-            end do
-            if (gga) then
-               if (allocated(c_grad)) deallocate (c_grad)
-               allocate (c_grad(nb, 3))
-               do id = 1, 3
-                  do ig = 1, nb
-                     c_grad(ig, id) = 2.0_dp*(frs(ig)*drho(ig) + fss(ig)*dsigma(ig) &
-                                              + fst(ig)*dtau(ig))*rho_grad(ig, id) &
-                                      + 2.0_dp*vsig(ig)*drho_grad(ig, id)
+         if (mgga .or. no_stack) then
+            do iset = 1, n_set
+               if (dmax(iset) == 0.0_dp) cycle
+               dmax_blk = 0.0_dp
+               do ja = 1, n_sig
+                  do ia = 1, n_sig
+                     dt_sig(ia, ja) = dtildes(ao_list(ia), ao_list(ja), iset)
+                     dmax_blk = max(dmax_blk, abs(dt_sig(ia, ja)))
                   end do
                end do
-            end if
-            if (mgga) then
+               n_sets_seen = n_sets_seen + 1
+               ! `|drho| <= max|D| (sum |chi|)^2` and `|grad drho| <= 2 max|D|
+               ! (sum |chi|)(sum |grad chi|)`, both against the set's own scale.
+               if (dmax_blk*amax*max(amax, 2.0_dp*agmax) < ctx%screen_tol*dmax(iset)) then
+                  n_skipped = n_skipped + 1
+                  cycle
+               end if
+
+               if (mgga) then
+                  ! **The tau convention never has to be decided here.** Whatever
+                  ! `eval_rho` means by tau is what the energy path fed libxc and
+                  ! what `accumulate_xc_matrix` differentiates, and the response
+                  ! density goes through the same routine.
+                  call eval_rho(ao, dt_sig(1:n_sig, 1:n_sig), drho, ao_grad=ao_grad, &
+                                rho_grad=drho_grad, tau=dtau)
+               else if (gga) then
+                  call eval_rho(ao, dt_sig(1:n_sig, 1:n_sig), drho, ao_grad=ao_grad, &
+                                rho_grad=drho_grad)
+               else
+                  call eval_rho(ao, dt_sig(1:n_sig, 1:n_sig), drho)
+               end if
+
+               dsigma = 0.0_dp
+               if (gga) then
+                  do ig = 1, nb
+                     dsigma(ig) = 2.0_dp*(rho_grad(ig, 1)*drho_grad(ig, 1) &
+                                          + rho_grad(ig, 2)*drho_grad(ig, 2) &
+                                          + rho_grad(ig, 3)*drho_grad(ig, 3))
+                  end do
+               end if
+
+               ! The potential has three pieces on this rung and every one of them
+               ! responds to every component of the response density:
+               !
+               !     dv_rho   = f_rr drho + f_rs dsigma + f_rt dtau
+               !     dv_sigma = f_rs drho + f_ss dsigma + f_st dtau
+               !     dv_tau   = f_rt drho + f_st dsigma + f_tt dtau
+               !
+               ! `dtau` is zero on the LDA and GGA paths, so the same three lines
+               ! reduce to what they were rather than branching.
                do ig = 1, nb
-                  c_tau(ig) = frt(ig)*drho(ig) + fst(ig)*dsigma(ig) + ftt(ig)*dtau(ig)
+                  c_rho(ig) = frr(ig)*drho(ig) + frs(ig)*dsigma(ig) + frt(ig)*dtau(ig)
                end do
+               if (gga) then
+                  if (allocated(c_grad)) deallocate (c_grad)
+                  allocate (c_grad(nb, 3))
+                  do id = 1, 3
+                     do ig = 1, nb
+                        c_grad(ig, id) = 2.0_dp*(frs(ig)*drho(ig) + fss(ig)*dsigma(ig) &
+                                                 + fst(ig)*dtau(ig))*rho_grad(ig, id) &
+                                         + 2.0_dp*vsig(ig)*drho_grad(ig, id)
+                     end do
+                  end do
+               end if
+               if (mgga) then
+                  do ig = 1, nb
+                     c_tau(ig) = frt(ig)*drho(ig) + fst(ig)*dsigma(ig) + ftt(ig)*dtau(ig)
+                  end do
+               end if
+
+               ! The same assembly the potential uses, with the kernel's
+               ! coefficients in place of the potential's.
+               v_sig(1:n_sig, 1:n_sig) = 0.0_dp
+               if (mgga) then
+                  call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, &
+                                            v_sig(1:n_sig, 1:n_sig), &
+                                            ao_grad=ao_grad, grad_coeff=c_grad, vtau=c_tau, &
+                                            any_gga=gga, any_mgga=.true.)
+               else
+                  call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, &
+                                            v_sig(1:n_sig, 1:n_sig), &
+                                            ao_grad=ao_grad, grad_coeff=c_grad, vtau=no_tau, &
+                                            any_gga=gga, any_mgga=.false.)
+               end if
+
+!$             call omp_set_lock(locks(iset))
+               do ja = 1, n_sig
+                  do ia = 1, n_sig
+                     v_kernels(ao_list(ia), ao_list(ja), iset) = &
+                        v_kernels(ao_list(ia), ao_list(ja), iset) + v_sig(ia, ja)
+                  end do
+               end do
+!$             call omp_unset_lock(locks(iset))
+            end do
+         else
+            ! Which sets are worth contracting on this block, their densities
+            ! gathered side by side: `|drho| <= max|D| (sum |chi|)^2` and
+            ! `|grad drho| <= 2 max|D| (sum |chi|)(sum |grad chi|)`, both
+            ! against the set's own scale.
+            if (allocated(dt_all)) deallocate (dt_all, x_all, s_all, m_all, wg)
+            allocate (dt_all(n_sig, n_sig*min(n_set, KERNEL_SET_CHUNK)), &
+                      x_all(nb, n_sig*min(n_set, KERNEL_SET_CHUNK)), &
+                      s_all(nb, n_sig*min(n_set, KERNEL_SET_CHUNK)), &
+                      m_all(n_sig*min(n_set, KERNEL_SET_CHUNK), n_sig), wg(nb))
+            wg = ctx%grid%weights(g0:g1)
+            if (allocated(drho)) deallocate (drho)
+            allocate (drho(nb))
+            if (gga) then
+               if (allocated(drho_grad)) deallocate (drho_grad)
+               if (allocated(c_grad)) deallocate (c_grad)
+               allocate (drho_grad(nb, 3), c_grad(nb, 3))
             end if
 
-            ! The same assembly the potential uses, with the kernel's
-            ! coefficients in place of the potential's.
-            v_sig(1:n_sig, 1:n_sig) = 0.0_dp
-            if (mgga) then
-               call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, &
-                                         v_sig(1:n_sig, 1:n_sig), &
-                                         ao_grad=ao_grad, grad_coeff=c_grad, vtau=c_tau, &
-                                         any_gga=gga, any_mgga=.true.)
-            else
-               call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, &
-                                         v_sig(1:n_sig, 1:n_sig), &
-                                         ao_grad=ao_grad, grad_coeff=c_grad, vtau=no_tau, &
-                                         any_gga=gga, any_mgga=.false.)
-            end if
+            nk = 0
+            do iset = 1, n_set
+               if (dmax(iset) == 0.0_dp) cycle
+               dmax_blk = 0.0_dp
+               do ja = 1, n_sig
+                  do ia = 1, n_sig
+                     dmax_blk = max(dmax_blk, abs(dtildes(ao_list(ia), ao_list(ja), iset)))
+                  end do
+               end do
+               n_sets_seen = n_sets_seen + 1
+               if (dmax_blk*amax*max(amax, 2.0_dp*agmax) < ctx%screen_tol*dmax(iset)) then
+                  n_skipped = n_skipped + 1
+                  cycle
+               end if
+               nk = nk + 1
+               keep(nk) = iset
+            end do
 
-!$          call omp_set_lock(locks(iset))
-            do ja = 1, n_sig
-               do ia = 1, n_sig
-                  v_kernels(ao_list(ia), ao_list(ja), iset) = &
-                     v_kernels(ao_list(ia), ao_list(ja), iset) + v_sig(ia, ja)
+            do ik = 1, nk, KERNEL_SET_CHUNK
+               nc = min(KERNEL_SET_CHUNK, nk - ik + 1)
+               do c = 1, nc
+                  col0 = (c - 1)*n_sig
+                  iset = keep(ik + c - 1)
+                  do ja = 1, n_sig
+                     do ia = 1, n_sig
+                        dt_all(ia, col0 + ja) = dtildes(ao_list(ia), ao_list(ja), iset)
+                     end do
+                  end do
+               end do
+
+               ! `X = chi D` for every set of the stack in one gemm; then per
+               ! set the row-wise dots `eval_rho` takes, the kernel
+               ! coefficients, and the scaled left factor of the assembly.
+               call pic_gemm(ao(1:nb, 1:n_sig), dt_all(1:n_sig, 1:nc*n_sig), &
+                             x_all(1:nb, 1:nc*n_sig), beta=0.0_dp)
+               do c = 1, nc
+                  col0 = (c - 1)*n_sig
+                  drho = 0.0_dp
+                  do mu = 1, n_sig
+                     do ig = 1, nb
+                        drho(ig) = drho(ig) + x_all(ig, col0 + mu)*ao(ig, mu)
+                     end do
+                  end do
+                  dsigma = 0.0_dp
+                  if (gga) then
+                     drho_grad = 0.0_dp
+                     do id = 1, 3
+                        do mu = 1, n_sig
+                           do ig = 1, nb
+                              drho_grad(ig, id) = drho_grad(ig, id) &
+                                                  + 2.0_dp*x_all(ig, col0 + mu)*ao_grad(ig, mu, id)
+                           end do
+                        end do
+                     end do
+                     do ig = 1, nb
+                        dsigma(ig) = 2.0_dp*(rho_grad(ig, 1)*drho_grad(ig, 1) &
+                                             + rho_grad(ig, 2)*drho_grad(ig, 2) &
+                                             + rho_grad(ig, 3)*drho_grad(ig, 3))
+                     end do
+                  end if
+
+                  !     dv_rho   = f_rr drho + f_rs dsigma
+                  !     dv_sigma = f_rs drho + f_ss dsigma
+                  !
+                  ! and the assembly is `M + M^T` with
+                  ! `M = (w dv_rho chi / 2 + w dv_grad . grad chi)^T chi`, as
+                  ! `accumulate_xc_matrix` builds it.
+                  do ig = 1, nb
+                     c_rho(ig) = frr(ig)*drho(ig) + frs(ig)*dsigma(ig)
+                  end do
+                  if (gga) then
+                     do id = 1, 3
+                        do ig = 1, nb
+                           c_grad(ig, id) = 2.0_dp*(frs(ig)*drho(ig) + fss(ig)*dsigma(ig)) &
+                                            *rho_grad(ig, id) + 2.0_dp*vsig(ig)*drho_grad(ig, id)
+                        end do
+                     end do
+                     do mu = 1, n_sig
+                        do ig = 1, nb
+                           s_all(ig, col0 + mu) = wg(ig)*(0.5_dp*c_rho(ig)*ao(ig, mu) &
+                                                          + c_grad(ig, 1)*ao_grad(ig, mu, 1) &
+                                                          + c_grad(ig, 2)*ao_grad(ig, mu, 2) &
+                                                          + c_grad(ig, 3)*ao_grad(ig, mu, 3))
+                        end do
+                     end do
+                  else
+                     do mu = 1, n_sig
+                        do ig = 1, nb
+                           s_all(ig, col0 + mu) = 0.5_dp*wg(ig)*c_rho(ig)*ao(ig, mu)
+                        end do
+                     end do
+                  end if
+               end do
+
+               ! `M` for the whole stack in one gemm, then each set's
+               ! `M + M^T` into its output under its lock.
+               call pic_gemm(s_all(1:nb, 1:nc*n_sig), ao(1:nb, 1:n_sig), &
+                             m_all(1:nc*n_sig, 1:n_sig), transa="T", beta=0.0_dp)
+               do c = 1, nc
+                  col0 = (c - 1)*n_sig
+                  iset = keep(ik + c - 1)
+!$                call omp_set_lock(locks(iset))
+                  do ja = 1, n_sig
+                     do ia = 1, n_sig
+                        v_kernels(ao_list(ia), ao_list(ja), iset) = &
+                           v_kernels(ao_list(ia), ao_list(ja), iset) &
+                           + m_all(col0 + ia, ja) + m_all(col0 + ja, ia)
+                     end do
+                  end do
+!$                call omp_unset_lock(locks(iset))
                end do
             end do
-!$          call omp_unset_lock(locks(iset))
-         end do
+         end if
       end do
       !$omp end do
-      deallocate (v_sig, d_sig, dt_sig, shell_mask, ao_offset, ao_list)
+      deallocate (v_sig, d_sig, dt_sig, shell_mask, ao_offset, ao_list, keep)
+      if (allocated(dt_all)) deallocate (dt_all, x_all, s_all, m_all, wg)
       !$omp end parallel
 
 !$    do iset = 1, n_set
 !$       call omp_destroy_lock(locks(iset))
 !$    end do
 !$    deallocate (locks)
+      block
+         character(len=200) :: l
+         write (l, "(a,f7.3,a,i0,a,f7.1,a,f7.1,a,i0)") &
+            "      kernel many: sets skipped ", &
+            real(n_skipped, dp)/max(1.0_dp, real(n_sets_seen, dp)), &
+            "  blocks ", n_blocks, "  mean n_sig ", real(sum_nsig, dp)/max(1.0_dp, real(n_blocks, dp)), &
+            "  rms n_sig ", sqrt(real(sum_nsig2, dp)/max(1.0_dp, real(n_blocks, dp))), "  nao ", mol%nao
+         call logger%performance(trim(l))
+      end block
 #else
       call error%set(ERROR_VALIDATION, "no libxc in this build")
       if (size(density) < 0 .or. size(dtildes) < 0 .or. size(v_kernels) < 0) return
