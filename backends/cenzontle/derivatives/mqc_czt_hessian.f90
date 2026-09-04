@@ -24,7 +24,7 @@ module mqc_czt_hessian
                                 hess_2e_contract, h1_contract, &
                                 HESS_OVLP_II, HESS_OVLP_IJ, HESS_KIN_II, HESS_KIN_IJ, &
                                 HESS_NUC_II, HESS_NUC_IJ
-   use mqc_czt_xc, only: xc_context_t, xc_kernel_apply, xc_add_potential, &
+   use mqc_czt_xc, only: xc_context_t, xc_kernel_apply_many, xc_add_potential, &
                          vv10_kernel_apply
    use mqc_czt_xc_hessian, only: xc_potential_deriv, vv10_potential_deriv
    use mqc_czt_direct, only: build_fock_direct, build_fock_direct_many, &
@@ -482,7 +482,7 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: mo1(:, :, :), half(:, :), dens(:, :, :), g(:, :, :)
-      real(dp), allocatable :: vxc(:, :), vnl(:, :, :)
+      real(dp), allocatable :: vnl(:, :, :)
       real(dp), allocatable :: g_lr(:, :, :)
       real(dp), allocatable :: work(:, :), gmo(:, :), scale(:)
       real(dp) :: dmax
@@ -556,16 +556,11 @@ contains
       ! trial density. Leaving it out does not fail, it converges to the wrong
       ! orbital response.
       if (associated(this%xc)) then
-         if (.not. allocated(vxc)) allocate (vxc(size(dens, 1), size(dens, 2)))
-         do p = 1, size(dens, 3)
-            ! Zeroed per perturbation: `xc_kernel_apply` accumulates into its
-            ! output rather than assigning, so a shared buffer carries the
-            ! previous perturbation's kernel into this one.
-            vxc = 0.0_dp
-            call xc_kernel_apply(this%xc, this%mol, this%reference, dens(:, :, p), vxc, error)
-            if (error%has_error()) return
-            g(:, :, p) = g(:, :, p) + vxc
-         end do
+         ! One grid pass for the whole batch: the basis functions and the
+         ! reference kernel are evaluated once per block and every trial
+         ! density is contracted against them. Accumulates into `g`.
+         call xc_kernel_apply_many(this%xc, this%mol, this%reference, dens, g, error)
+         if (error%has_error()) return
          ! The non-local kernel, once for the whole batch rather than inside
          ! the loop above: `vv10_kernel_apply`'s pair sweep is O(npts^2)
          ! whether it carries one trial or a dozen. It accumulates, like the
@@ -1586,10 +1581,10 @@ contains
          !! Most densities per pass; `DEFAULT_RESPONSE_BATCH` when absent.
 
       integer :: max_batch
-      real(dp), allocatable :: chunk(:, :, :), out(:, :, :), vxc_chunk(:, :)
+      real(dp), allocatable :: chunk(:, :, :), out(:, :, :)
       real(dp), allocatable :: vnl_chunk(:, :, :), out_lr(:, :, :)
       type(direct_stats_t) :: stats
-      integer :: nao, natm, n_pert, first, last, wide, p, q, ia, a, ic
+      integer :: nao, natm, n_pert, first, last, wide, p, q, ia, a
       integer :: n_chunks, per_chunk
 
       if (error%has_error()) return
@@ -1642,13 +1637,8 @@ contains
          ! The same kernel the response operator applies, for the reason
          ! `k_scale` above gives.
          if (present(xc) .and. present(reference)) then
-            if (.not. allocated(vxc_chunk)) allocate (vxc_chunk(size(chunk, 1), size(chunk, 2)))
-            do ic = 1, size(chunk, 3)
-               vxc_chunk = 0.0_dp
-               call xc_kernel_apply(xc, mol, reference, chunk(:, :, ic), vxc_chunk, error)
-               if (error%has_error()) return
-               out(:, :, ic) = out(:, :, ic) + vxc_chunk
-            end do
+            call xc_kernel_apply_many(xc, mol, reference, chunk, out, error)
+            if (error%has_error()) return
             ! The non-local kernel, once per chunk for the reason
             ! `nuclear_apply` gives.
             if (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp) then
