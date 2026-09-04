@@ -141,6 +141,79 @@ module mqc_czt_rhf
       real(dp) :: pcm_charge = 0.0_dp          !! Total apparent surface charge
    end type rhf_result_t
 
+   ! ---------------------------------------------------------------------------
+   ! The SCF iteration, as three things rather than forty arguments
+   !
+   ! `run_czt_rhf` used to carry its whole iteration inline: a 123-line loop body
+   ! reading some forty locals. Lifting it out is what the routine wants anyway
+   ! -- and nvfortran needs it, because its optimiser segfaults on a routine this
+   ! size at -O2 and above, on every version from 25.11 to 26.5.
+   !
+   ! Extracting it with a plain argument list would have meant a 41-argument
+   ! call, which trades one unreadable thing for another. These three say what
+   ! each name is FOR, which is the part an argument list cannot:
+   !
+   !   rhf_operators_t   fixed for the whole SCF -- read, never written
+   !   rhf_controls_t    the policy the deck chose -- cheap scalars
+   !   rhf_state_t       what an iteration advances, and its scratch
+   !
+   ! Private, and RHF's: `run_czt_uhf` has its own loop and an alpha/beta state
+   ! that is genuinely a different shape, so sharing these is a later change made
+   ! once UHF has said what it needs rather than guessed at now.
+   ! ---------------------------------------------------------------------------
+
+   type :: rhf_operators_t
+      !! What the iteration reads and never changes
+      !!
+      !! The arrays are MOVED in, not copied -- `eri` is n^4 and a copy of it
+      !! would dwarf everything else this routine allocates.
+      real(dp), allocatable :: h(:, :)        !! Core Hamiltonian, plus `h_extra` if given
+      real(dp), allocatable :: s(:, :)        !! Overlap
+      real(dp), allocatable :: x(:, :)        !! Orthogonaliser, (n_ao, n_mo)
+      real(dp), allocatable :: bmat(:, :)     !! Fitted B(mu nu, P); unallocated if not fitted
+      real(dp), allocatable :: bmat_lr(:, :)  !! The same against erf(omega r)/r
+      real(dp), allocatable :: eri(:, :, :, :)  !! In-core integrals; unallocated on the direct path
+      real(dp), allocatable :: bounds(:, :)   !! Schwarz bounds for screening
+      integer :: n_ao = 0
+      integer :: n_mo = 0                     !! May be below n_ao where the overlap was singular
+      integer :: n_occ = 0
+   end type rhf_operators_t
+
+   type :: rhf_controls_t
+      !! The policy the deck asked for, fixed once before the first iteration
+      logical :: incremental = .true.   !! Build each Fock from the density change
+      logical :: verbose = .false.
+      logical :: kohn_sham = .false.    !! Only to label the iteration table
+      logical :: use_pcm = .false.
+      integer :: accel = 0              !! One of ACCEL_*
+      real(dp) :: shift = 0.0_dp        !! Level shift, hartree; zero is off
+      real(dp) :: taper = 0.0_dp        !! Below this dD(rms) the shift is dropped
+      type(scf_convergence_t) :: conv   !! What stopping is measured against
+   end type rhf_controls_t
+
+   type :: rhf_state_t
+      !! What one iteration advances, and the scratch it advances it in
+      !!
+      !! The scratch lives here rather than being local to the iteration so that
+      !! it is allocated once for the SCF instead of once per iteration.
+      real(dp), allocatable :: density(:, :)
+      real(dp), allocatable :: density_old(:, :)  !! Previous iteration's, for dD(rms)
+      real(dp), allocatable :: coeff(:, :)
+      real(dp), allocatable :: eigenvalues(:)
+      real(dp), allocatable :: fock(:, :)
+      real(dp), allocatable :: fock_flat(:)       !! F as a vector, which is what DIIS stores
+      real(dp), allocatable :: err(:, :)          !! FDS - SDF in the orthogonal basis
+      real(dp), allocatable :: sd(:, :)           !! S D and S D S, the level shift's
+      real(dp), allocatable :: sds(:, :)          !!   virtual projector; allocated on first use
+      real(dp), allocatable :: v_pcm(:, :)        !! Continuum operator, allocated only with PCM
+      real(dp) :: e_elec = 0.0_dp
+      real(dp) :: e_old = 0.0_dp                  !! Previous iteration's, for dE
+      real(dp) :: drms_prev = huge(1.0_dp)        !! Drives the level-shift taper
+      type(diis_state_t) :: diis
+      type(incremental_state_t) :: incr
+      type(direct_stats_t) :: screening
+   end type rhf_state_t
+
    integer, parameter :: INCREMENTAL_RESET = 16
       !! Iterations between full rebuilds of the accumulated G.
       !!
@@ -457,33 +530,16 @@ contains
       ! come back in `screening`, which `assemble_fock` fills.
       type(direct_stats_t) :: stats
 
-      real(dp), allocatable :: s(:, :), h(:, :), eri(:, :, :, :), bmat(:, :)
-      real(dp), allocatable :: bmat_lr(:, :)
-      real(dp), allocatable :: x(:, :), fock(:, :), density(:, :), density_old(:, :)
-      real(dp), allocatable :: coeff(:, :), eigenvalues(:)
-      real(dp), allocatable :: err(:, :), fock_flat(:)
-      real(dp), allocatable :: v_pcm(:, :)
-      logical :: use_pcm
+      type(rhf_operators_t) :: ops
+      type(rhf_controls_t) :: ctrl
+      type(rhf_state_t) :: st
       real(dp) :: e_pcm
-      type(diis_state_t) :: diis
-      logical :: extrapolated
-      logical :: kohn_sham_run
-      integer :: accel
-      real(dp) :: e_elec, e_old, de, drms
-      real(dp) :: gnorm
       real(dp) :: gtol
-      type(scf_convergence_t) :: conv
       logical :: accel_ok_grp
       integer :: metric_kind
       logical :: metric_ok
-      real(dp) :: shift, shift_now, drms_prev, taper
-      real(dp), allocatable :: sd(:, :), sds(:, :)
-      integer :: n_ao, n_mo, n_occ, iter
+      integer :: iter
       type(timing_report_t) :: clk
-      type(direct_stats_t) :: screening
-      type(incremental_state_t) :: incr
-      logical :: want_incremental
-      real(dp) :: t_fock_iter, t_rest_iter, t_xc_iter
       real(dp) :: s_min, s_kept   !! overlap conditioning, reported before iteration 1
       real(dp) :: lindep
 
@@ -500,18 +556,18 @@ contains
       end if
       if (present(diis_vectors)) diis_size = diis_vectors
       use_in_core = .false.
-      want_incremental = .true.
-      if (present(scf)) want_incremental = scf%incremental_fock
-      if (present(incremental_fock)) want_incremental = incremental_fock
+      ctrl%incremental = .true.
+      if (present(scf)) ctrl%incremental = scf%incremental_fock
+      if (present(incremental_fock)) ctrl%incremental = incremental_fock
       if (present(in_core)) use_in_core = in_core
       guess_kind = SCF_GUESS_GWH
       if (present(guess)) guess_kind = guess
-      use_pcm = .false.
-      if (present(pcm)) use_pcm = pcm%enabled
+      ctrl%use_pcm = .false.
+      if (present(pcm)) ctrl%use_pcm = pcm%enabled
 
-      n_ao = mol%nao
-      n_occ = nelec/2
-      if (n_occ < 1) then
+      ops%n_ao = mol%nao
+      ops%n_occ = nelec/2
+      if (ops%n_occ < 1) then
          call error%set(ERROR_VALIDATION, "RHF: no electrons to place")
          return
       end if
@@ -522,9 +578,9 @@ contains
       ! logger level, because the atomic guess runs one of these per element.
       if (verbose) then
          if (mol%cartesian) then
-            call logger%info("  basis functions: "//to_char(n_ao)//"  (Cartesian, 6d/10f)")
+            call logger%info("  basis functions: "//to_char(ops%n_ao)//"  (Cartesian, 6d/10f)")
          else
-            call logger%info("  basis functions: "//to_char(n_ao)//"  (spherical, 5d/7f)")
+            call logger%info("  basis functions: "//to_char(ops%n_ao)//"  (spherical, 5d/7f)")
          end if
          ! Charge derived rather than passed: `mol%charges` carries the ECP's
          ! core subtracted and `nelec` arrives reduced by the same cores, so the
@@ -536,17 +592,17 @@ contains
       end if
 
       call clk%start()
-      call mol%overlap(s)
-      call mol%core_hamiltonian(h)
+      call mol%overlap(ops%s)
+      call mol%core_hamiltonian(ops%h)
       if (present(h_extra)) then
-         if (size(h_extra, 1) /= n_ao .or. size(h_extra, 2) /= n_ao) then
-            call error%set(ERROR_VALIDATION, "RHF: h_extra is not n_ao square")
+         if (size(h_extra, 1) /= ops%n_ao .or. size(h_extra, 2) /= ops%n_ao) then
+            call error%set(ERROR_VALIDATION, "RHF: h_extra is not ops%n_ao square")
             return
          end if
-         h = h + h_extra
+         ops%h = ops%h + h_extra
       end if
       if (present(aux)) then
-         call build_df_tensor(mol, aux, bmat, error)
+         call build_df_tensor(mol, aux, ops%bmat, error)
          if (error%has_error()) return
          ! A second fit, against the attenuated kernel, when the functional
          ! splits its exchange by range. Built once beside the first rather than
@@ -554,35 +610,35 @@ contains
          ! neither of which moves during an SCF.
          if (present(xc)) then
             if (xc%range_separated) then
-               call build_df_tensor(mol, aux, bmat_lr, error, omega=xc%rs_omega)
+               call build_df_tensor(mol, aux, ops%bmat_lr, error, omega=xc%rs_omega)
             end if
          end if
          if (error%has_error()) return
       else if (use_in_core) then
-         call mol%eris(eri)
+         call mol%eris(ops%eri)
       else
          ! The bounds depend on the basis and the geometry, not the density, so
          ! one set serves every iteration of the SCF.
-         call schwarz_bounds(mol, bounds, error)
+         call schwarz_bounds(mol, ops%bounds, error)
          if (error%has_error()) return
       end if
 
       lindep = 0.0_dp
       if (present(scf)) lindep = scf%linear_dependence
       if (present(linear_dependence)) lindep = linear_dependence
-      call build_orthogonalizer(s, x, n_mo, error, smallest_overlap=s_min, &
+      call build_orthogonalizer(ops%s, ops%x, ops%n_mo, error, smallest_overlap=s_min, &
                                 smallest_kept=s_kept, threshold=lindep)
       if (error%has_error()) return
-      call report_linear_dependence(n_ao, n_mo, s_min, s_kept, verbose, threshold=lindep)
-      if (n_occ > n_mo) then
+      call report_linear_dependence(ops%n_ao, ops%n_mo, s_min, s_kept, verbose, threshold=lindep)
+      if (ops%n_occ > ops%n_mo) then
          call error%set(ERROR_VALIDATION, "RHF: more occupied orbitals than the basis "// &
                         "supports after near-null modes were dropped")
          return
       end if
 
-      allocate (fock(n_ao, n_ao), density(n_ao, n_ao), density_old(n_ao, n_ao))
-      allocate (err(n_mo, n_mo), fock_flat(n_ao*n_ao))
-      if (use_pcm) allocate (v_pcm(n_ao, n_ao))
+      allocate (st%fock(ops%n_ao, ops%n_ao), st%density(ops%n_ao, ops%n_ao), st%density_old(ops%n_ao, ops%n_ao))
+      allocate (st%err(ops%n_mo, ops%n_mo), st%fock_flat(ops%n_ao*ops%n_ao))
+      if (ctrl%use_pcm) allocate (st%v_pcm(ops%n_ao, ops%n_ao))
 
       ! The error vector lives in the orthogonal basis, where it is n_mo square
       ! rather than n_ao -- the same shape the cuEST path uses.
@@ -590,11 +646,11 @@ contains
       ! decides whether the history can hold densities and energies at all, and
       ! reading `accel` here while it was still assigned some fifty lines below
       ! took that decision on an undefined value.
-      accel = ACCEL_DIIS
-      if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
-      if (present(accelerator)) accel = accelerator
-      call diis%init(diis_size, n_ao*n_ao, n_mo*n_mo, &
-                     energy_based=(accel /= ACCEL_DIIS))
+      ctrl%accel = ACCEL_DIIS
+      if (present(scf)) call parse_accelerator_name(scf%accelerator, ctrl%accel, accel_ok_grp)
+      if (present(accelerator)) ctrl%accel = accelerator
+      call st%diis%init(diis_size, ops%n_ao*ops%n_ao, ops%n_mo*ops%n_mo, &
+                        energy_based=(ctrl%accel /= ACCEL_DIIS))
 
       ! Every guess ends up as a starting Fock matrix, which is then diagonalised
       ! and occupied exactly as an iteration's would be. That uniformity is the
@@ -602,33 +658,33 @@ contains
       ! built from, so nothing below this line knows which one ran.
       select case (guess_kind)
       case (SCF_GUESS_CORE)
-         fock = h
+         st%fock = ops%h
       case (SCF_GUESS_GWH)
-         call guess_fock(s, h, fock)
+         call guess_fock(ops%s, ops%h, st%fock)
       case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ)
          if (.not. present(guess_density)) then
             call error%set(ERROR_VALIDATION, "RHF: an atomic guess was asked for but no "// &
-                           "guess density was supplied")
+                           "guess st%density was supplied")
             return
          end if
-         if (size(guess_density, 1) /= n_ao .or. size(guess_density, 2) /= n_ao) then
-            call error%set(ERROR_VALIDATION, "RHF: the guess density is not the size of "// &
+         if (size(guess_density, 1) /= ops%n_ao .or. size(guess_density, 2) /= ops%n_ao) then
+            call error%set(ERROR_VALIDATION, "RHF: the guess st%density is not the size of "// &
                            "this basis")
             return
          end if
-         density = guess_density
-         call atomic_guess_fock(mol, h, density, bmat, eri, bounds, fock, error)
+         st%density = guess_density
+         call atomic_guess_fock(mol, ops%h, st%density, ops%bmat, ops%eri, ops%bounds, st%fock, error)
          if (error%has_error()) return
       case default
          call error%set(ERROR_VALIDATION, "RHF: unknown initial guess")
          return
       end select
 
-      call diagonalize(fock, x, n_ao, n_mo, coeff, eigenvalues, error)
+      call diagonalize(st%fock, ops%x, ops%n_ao, ops%n_mo, st%coeff, st%eigenvalues, error)
       if (error%has_error()) return
-      call build_density_closed_shell(coeff, n_occ, density)
+      call build_density_closed_shell(st%coeff, ops%n_occ, st%density)
 
-      e_old = 0.0_dp
+      st%e_old = 0.0_dp
       result%converged = .false.
 
       ! Everything from the top of the routine to here is one-time cost: the 1e
@@ -638,9 +694,9 @@ contains
       ! `present(xc)` is not the question: the bridge passes its context
       ! unconditionally, so it is present on a Hartree-Fock run too. `active`
       ! is what says a functional was constructed.
-      kohn_sham_run = .false.
-      if (present(xc)) kohn_sham_run = xc%active
-      call scf_table_header(verbose, kohn_sham_run)
+      ctrl%kohn_sham = .false.
+      if (present(xc)) ctrl%kohn_sham = xc%active
+      call scf_table_header(verbose, ctrl%kohn_sham)
 
       ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
       ! caller states it. See the argument's own note for why a density
@@ -648,33 +704,33 @@ contains
       ! Assembled once. A caller that states nothing gets `CONV_METRIC_STANDARD`
       ! with the bound `sqrt(energy_tol)`.
       if (present(convergence)) then
-         conv = convergence
+         ctrl%conv = convergence
       else
-         conv%tolerance = energy_tol
-         if (present(scf)) conv%gradient_tolerance = scf%grad_tol
-         if (present(grad_tol)) conv%gradient_tolerance = grad_tol
+         ctrl%conv%tolerance = energy_tol
+         if (present(scf)) ctrl%conv%gradient_tolerance = scf%grad_tol
+         if (present(grad_tol)) ctrl%conv%gradient_tolerance = grad_tol
          ! The metric named by the group, when one was passed. A spelling the
          ! caller has already validated; an unparseable one leaves the default
          ! rather than failing a calculation from inside the SCF.
          if (present(scf)) then
             call parse_convergence_metric(scf%convergence_metric, metric_kind, metric_ok)
-            if (metric_ok) conv%metric = metric_kind
+            if (metric_ok) ctrl%conv%metric = metric_kind
          end if
       end if
       ! TODO(mqc): `gtol` is assigned here and never read -- `conv%is_converged`
       ! applies the commutator bound itself. Dead on both spin paths.
-      gtol = conv%commutator_bound()
+      gtol = ctrl%conv%commutator_bound()
 
       ! The group first, then any individual override on top of it.
-      shift = 0.0_dp
-      if (present(scf)) shift = scf%level_shift
-      if (present(level_shift)) shift = level_shift
+      ctrl%shift = 0.0_dp
+      if (present(scf)) ctrl%shift = scf%level_shift
+      if (present(level_shift)) ctrl%shift = level_shift
       ! Refused rather than clamped: a negative shift lowers the virtuals into
       ! the occupied set, narrowing the gap the next density is built through
       ! and driving the oscillation it was asked to damp.
-      if (shift < 0.0_dp) then
+      if (ctrl%shift < 0.0_dp) then
          call error%set(ERROR_VALIDATION, "keywords.scf.level_shift is negative. A "// &
-                        "level shift raises the virtual orbitals to widen the gap; a "// &
+                        "level ctrl%shift raises the virtual orbitals to widen the gap; a "// &
                         "negative one narrows it and makes convergence worse, not "// &
                         "better. Give a positive value in Hartree, or leave it out.")
          return
@@ -684,155 +740,48 @@ contains
       ! read back as MP2 and coupled-cluster denominators, as the weights of the
       ! gradient's energy-weighted density, and as `eps_occ` and the response
       ! poles of a fragment potential.
-      taper = 100.0_dp*density_tol
-      drms_prev = huge(1.0_dp)
-      shift_now = 0.0_dp
+      ctrl%taper = 100.0_dp*density_tol
+      st%drms_prev = huge(1.0_dp)
 
       ! Reported with its taper: a shift that is off by iteration three is not
       ! the shift the reader thinks they applied, and a shift dropped on the way
       ! here is otherwise indistinguishable from one that was never set.
-      if (shift > 0.0_dp) then
-         write (line, "(a,f8.4,a,es9.2)") "    level shift: ", shift, &
-            " hartree, tapered off below dD ", taper
+      if (ctrl%shift > 0.0_dp) then
+         write (line, "(a,f8.4,a,es9.2)") "    level ctrl%shift: ", ctrl%shift, &
+            " hartree, tapered off below dD ", ctrl%taper
          call logger%info(trim(line))
       end if
 
+      ! `verbose` is a dummy of this routine, so it is the one control that is
+      ! copied across rather than having been written straight into `ctrl`.
+      ctrl%verbose = verbose
+
+      ! One call per iteration, and the three views above are what makes that
+      ! readable: the alternative was a forty-one argument call.
+      !
+      ! `exit` cannot live inside the callee, so convergence comes back on
+      ! `result%converged` -- which is where it was recorded anyway -- and the
+      ! error check is the caller's, exactly as it is after every other call
+      ! in this routine.
       do iter = 1, max_iter
-         density_old = density
-         ! The energy belongs to the Fock built from this density, so both come
-         ! back together and before extrapolation. A DIIS-mixed Fock is a
-         ! convergence device, not a state anything is the energy of.
-         !
-         ! Read the buckets BEFORE the build: `assemble_fock` closes the Fock
-         ! stage itself, so a read afterwards would difference against itself.
-         t_fock_iter = clk%seconds_of(STAGE_FOCK)
-         t_xc_iter = clk%seconds_of(STAGE_XC)
-         ! `incr` present is what switches incremental building on inside
-         ! `assemble_fock`, so withholding it is how the deck turns it off.
-         if (want_incremental) then
-            call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                               fock, e_elec, error, clk=clk, screening=screening, incr=incr, &
-                               bmat_lr=bmat_lr)
-         else
-            ! Counted here rather than in the assembler: without `incr` it has
-            ! no state to record into, and every build here is a full one.
-            incr%full_builds = incr%full_builds + 1
-            call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                               fock, e_elec, error, clk=clk, screening=screening, &
-                               bmat_lr=bmat_lr)
-         end if
+         call do_rhf_iteration(iter, mol, ops, ctrl, st, clk, xc, pcm, projector, &
+                               result, error)
          if (error%has_error()) return
-         ! The continuum, after the gas-phase pieces and before the commutator:
-         ! its operator belongs to the Fock matrix DIIS extrapolates and the
-         ! eigenproblem diagonalises, or the converged orbitals would not feel
-         ! the solvent. The energy carries its own half already.
-         !
-         ! Charged to its OWN stage. `lap` also increments a stage's call count,
-         ! and `assemble_fock` has already closed STAGE_FOCK, so lapping that
-         ! again here would report two Fock builds per iteration.
-         if (use_pcm) then
-            call pcm%operator_matrix(mol, density, v_pcm, e_pcm, error)
-            if (error%has_error()) return
-            fock = fock + v_pcm
-            e_elec = e_elec + e_pcm
-            call clk%lap(STAGE_PCM)
-         end if
-         t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
-         t_xc_iter = clk%seconds_of(STAGE_XC) - t_xc_iter
-
-         if (present(projector)) then
-            call projector%apply(fock, error)
-            if (error%has_error()) return
-         end if
-
-         ! FDS - SDF, projected into the orthogonal basis. It vanishes exactly
-         ! when F and D commute, which is what convergence means, so it is the
-         ! quantity worth extrapolating against.
-         call commutator(fock, density, s, x, err)
-         gnorm = maxval(abs(err))
-         fock_flat = reshape(fock, [n_ao*n_ao])
-         call diis%push(fock_flat, reshape(err, [n_mo*n_mo]), &
-                        density=reshape(density, [n_ao*n_ao]), energy=e_elec)
-         call diis%extrapolate_with(scheme_now(accel, gnorm), fock_flat, extrapolated)
-         if (extrapolated) fock = reshape(fock_flat, [n_ao, n_ao])
-         t_rest_iter = clk%seconds_of(STAGE_DIIS)
-         call clk%lap(STAGE_DIIS)
-         t_rest_iter = clk%seconds_of(STAGE_DIIS) - t_rest_iter
-
-         ! **After DIIS, never before it.** The error vector above is built
-         ! from the unshifted Fock, and has to be: shift first and the vectors
-         ! DIIS stores stop being a subspace of Fock matrices. The energy is
-         ! likewise already taken, from the build above.
-         !
-         ! The virtual projector without the virtual orbitals: completeness
-         ! gives `C_o C_o^T + C_v C_v^T = S^-1`, so
-         ! `S C_v C_v^T S = S - S C_o C_o^T S = S - (1/2) S D S` for a closed
-         ! shell, which is two products against the density already in hand.
-         shift_now = 0.0_dp
-         if (shift > 0.0_dp .and. drms_prev > taper) shift_now = shift
-         if (shift_now > 0.0_dp) then
-            if (.not. allocated(sd)) allocate (sd(n_ao, n_ao), sds(n_ao, n_ao))
-            call pic_gemm(s, density, sd, beta=0.0_dp)
-            call pic_gemm(sd, s, sds, beta=0.0_dp)
-            fock = fock + shift_now*(s - 0.5_dp*sds)
-         end if
-
-         call diagonalize(fock, x, n_ao, n_mo, coeff, eigenvalues, error)
-         if (error%has_error()) return
-         call build_density_closed_shell(coeff, n_occ, density)
-         t_rest_iter = t_rest_iter - clk%seconds_of(STAGE_DIAG)
-         call clk%lap(STAGE_DIAG)
-         t_rest_iter = t_rest_iter + clk%seconds_of(STAGE_DIAG)
-
-         de = abs(e_elec - e_old)
-         drms = sqrt(sum((density - density_old)**2)/real(n_ao*n_ao, dp))
-         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, gnorm, &
-                            diis%count(), t_fock_iter, t_xc_iter, t_rest_iter, kohn_sham_run)
-
-         e_old = e_elec
-         result%iterations = iter
-         result%full_fock_builds = incr%full_builds
-         result%incremental_updates = incr%updates
-         ! `shift_now` is part of the test below rather than checked
-         ! afterwards: the orbitals and eigenvalues that leave here are the ones
-         ! the last diagonalisation produced, so convergence has to be declared
-         ! on an unshifted iteration or every virtual energy is high by `shift`.
-         drms_prev = drms
-         ! **The energy and the commutator, and not the density.** `de` and
-         ! `drms` say the iteration stopped moving; they do not say it stopped
-         ! at a stationary point. `FDS - SDF` is what vanishes when F and D
-         ! commute, and an SCF can hold the other two small while this one is
-         ! nowhere near zero -- any scheme that interpolates rather than
-         ! extrapolates will do it. `drms` is still computed, because the
-         ! level-shift taper is driven from it.
-         !
-         ! The bound has to clear the commutator's own noise floor, which moves
-         ! with thread count because the OpenMP reduction merges are unordered.
-         ! `sqrt(energy_tol)` clears it by orders at the default `energy_tol`.
-         !
-         ! The rule lives in `scf_convergence_t`. `shift_now` stays in the
-         ! caller because it is not a convergence measure: a shifted Fock matrix
-         ! is a different operator, so an iterate that met the threshold under a
-         ! shift has not converged the problem that was asked for.
-         if (iter > 1 .and. conv%is_converged(de, drms, gnorm) .and. &
-             shift_now == 0.0_dp) then
-            result%converged = .true.
-            exit
-         end if
+         if (result%converged) exit
       end do
 
       ! The energy that goes out belongs to the density that satisfied the
       ! test, so it is recomputed from the final Fock. Deliberately without
       ! `incr`: this one is a full build, and the number that leaves must not
       ! carry the corrections accumulated since the last reset.
-      call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                         fock, result%electronic, error, clk=clk, bmat_lr=bmat_lr)
+      call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
+                         st%fock, result%electronic, error, clk=clk, bmat_lr=ops%bmat_lr)
       if (error%has_error()) return
       ! Last use of the fitted tensor: a caller that asked for it takes the
       ! allocation itself rather than a copy of several gigabytes.
-      if (present(b_ao_out) .and. allocated(bmat)) call move_alloc(bmat, b_ao_out)
-      if (use_pcm) then
-         call pcm%operator_matrix(mol, density, v_pcm, e_pcm, error)
+      if (present(b_ao_out) .and. allocated(ops%bmat)) call move_alloc(ops%bmat, b_ao_out)
+      if (ctrl%use_pcm) then
+         call pcm%operator_matrix(mol, st%density, st%v_pcm, e_pcm, error)
          if (error%has_error()) return
          result%electronic = result%electronic + e_pcm
          result%pcm_energy = e_pcm
@@ -843,11 +792,11 @@ contains
       end if
       result%nuclear_repulsion = mol%nuclear_repulsion()
       result%energy = result%electronic + result%nuclear_repulsion
-      result%n_occupied = n_occ
-      call move_alloc(eigenvalues, result%orbital_energies)
-      call move_alloc(coeff, result%orbitals)
-      call move_alloc(density, result%density)
-      call diis%destroy()
+      result%n_occupied = ops%n_occ
+      call move_alloc(st%eigenvalues, result%orbital_energies)
+      call move_alloc(st%coeff, result%orbitals)
+      call move_alloc(st%density, result%density)
+      call st%diis%destroy()
 
       ! The final rebuild above lands in the Fock bucket, charged by
       ! `assemble_fock` itself, so there is deliberately no lap here.
@@ -855,9 +804,162 @@ contains
       call scf_table_footer(verbose, result%converged, result%iterations)
       call energy_components(verbose, mol, result%density, result%electronic, &
                              result%nuclear_repulsion)
-      call screening_summary(verbose, screening)
+      call screening_summary(verbose, st%screening)
       call clk%report("RHF", verbose)
    end subroutine run_czt_rhf
+
+   subroutine do_rhf_iteration(iter, mol, ops, ctrl, st, clk, xc, pcm, projector, &
+                               result, error)
+      !! One SCF iteration: build, extrapolate, shift, diagonalise, test
+      !!
+      !! Lifted out of `run_czt_rhf`, whose body this was. Two reasons, and the
+      !! second is not optional: a 523-line routine is hard to follow, and
+      !! nvfortran's optimiser segfaults compiling one that size at -O2 and
+      !! above -- every version from 25.11 to 26.5, with no `-Mno<pass>` that
+      !! avoids it. Nothing in here is what upsets it; the routine was simply
+      !! over some internal limit, which splitting it puts it back under.
+      !!
+      !! **Convergence leaves on `result%converged`, not by exiting.** A callee
+      !! cannot `exit` its caller's loop, and making it return a separate flag
+      !! would mean two places recording the same fact.
+      integer, intent(in) :: iter
+      type(czt_molecule_t), intent(in) :: mol
+      type(rhf_operators_t), intent(in) :: ops
+      type(rhf_controls_t), intent(in) :: ctrl
+      type(rhf_state_t), intent(inout) :: st
+      type(timing_report_t), intent(inout) :: clk
+      type(xc_context_t), intent(inout), optional :: xc
+      type(pcm_context_t), intent(inout), optional :: pcm
+      type(fock_projector_t), intent(in), optional :: projector
+      type(rhf_result_t), intent(inout) :: result
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: de, drms, gnorm, e_pcm
+      real(dp) :: shift_now
+      real(dp) :: t_fock_iter, t_rest_iter, t_xc_iter
+      logical :: extrapolated
+
+      st%density_old = st%density
+      ! The energy belongs to the Fock built from this density, so both come
+      ! back together and before extrapolation. A DIIS-mixed Fock is a
+      ! convergence device, not a state anything is the energy of.
+      !
+      ! Read the buckets BEFORE the build: `assemble_fock` closes the Fock
+      ! stage itself, so a read afterwards would difference against itself.
+      t_fock_iter = clk%seconds_of(STAGE_FOCK)
+      t_xc_iter = clk%seconds_of(STAGE_XC)
+      ! `incr` present is what switches incremental building on inside
+      ! `assemble_fock`, so withholding it is how the deck turns it off.
+      if (ctrl%incremental) then
+         call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
+                            st%fock, st%e_elec, error, clk=clk, screening=st%screening, incr=st%incr, &
+                            bmat_lr=ops%bmat_lr)
+      else
+         ! Counted here rather than in the assembler: without `incr` it has
+         ! no state to record into, and every build here is a full one.
+         st%incr%full_builds = st%incr%full_builds + 1
+         call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
+                            st%fock, st%e_elec, error, clk=clk, screening=st%screening, &
+                            bmat_lr=ops%bmat_lr)
+      end if
+      if (error%has_error()) return
+      ! The continuum, after the gas-phase pieces and before the commutator:
+      ! its operator belongs to the Fock matrix DIIS extrapolates and the
+      ! eigenproblem diagonalises, or the converged orbitals would not feel
+      ! the solvent. The energy carries its own half already.
+      !
+      ! Charged to its OWN stage. `lap` also increments a stage's call count,
+      ! and `assemble_fock` has already closed STAGE_FOCK, so lapping that
+      ! again here would report two Fock builds per iteration.
+      if (ctrl%use_pcm) then
+         call pcm%operator_matrix(mol, st%density, st%v_pcm, e_pcm, error)
+         if (error%has_error()) return
+         st%fock = st%fock + st%v_pcm
+         st%e_elec = st%e_elec + e_pcm
+         call clk%lap(STAGE_PCM)
+      end if
+      t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
+      t_xc_iter = clk%seconds_of(STAGE_XC) - t_xc_iter
+
+      if (present(projector)) then
+         call projector%apply(st%fock, error)
+         if (error%has_error()) return
+      end if
+
+      ! FDS - SDF, projected into the orthogonal basis. It vanishes exactly
+      ! when F and D commute, which is what convergence means, so it is the
+      ! quantity worth extrapolating against.
+      call commutator(st%fock, st%density, ops%s, ops%x, st%err)
+      gnorm = maxval(abs(st%err))
+      st%fock_flat = reshape(st%fock, [ops%n_ao*ops%n_ao])
+      call st%diis%push(st%fock_flat, reshape(st%err, [ops%n_mo*ops%n_mo]), &
+                        density=reshape(st%density, [ops%n_ao*ops%n_ao]), energy=st%e_elec)
+      call st%diis%extrapolate_with(scheme_now(ctrl%accel, gnorm), st%fock_flat, extrapolated)
+      if (extrapolated) st%fock = reshape(st%fock_flat, [ops%n_ao, ops%n_ao])
+      t_rest_iter = clk%seconds_of(STAGE_DIIS)
+      call clk%lap(STAGE_DIIS)
+      t_rest_iter = clk%seconds_of(STAGE_DIIS) - t_rest_iter
+
+      ! **After DIIS, never before it.** The error vector above is built
+      ! from the unshifted Fock, and has to be: shift first and the vectors
+      ! DIIS stores stop being a subspace of Fock matrices. The energy is
+      ! likewise already taken, from the build above.
+      !
+      ! The virtual projector without the virtual orbitals: completeness
+      ! gives `C_o C_o^T + C_v C_v^T = S^-1`, so
+      ! `S C_v C_v^T S = S - S C_o C_o^T S = S - (1/2) S D S` for a closed
+      ! shell, which is two products against the density already in hand.
+      shift_now = 0.0_dp
+      if (ctrl%shift > 0.0_dp .and. st%drms_prev > ctrl%taper) shift_now = ctrl%shift
+      if (shift_now > 0.0_dp) then
+         if (.not. allocated(st%sd)) allocate (st%sd(ops%n_ao, ops%n_ao), st%sds(ops%n_ao, ops%n_ao))
+         call pic_gemm(ops%s, st%density, st%sd, beta=0.0_dp)
+         call pic_gemm(st%sd, ops%s, st%sds, beta=0.0_dp)
+         st%fock = st%fock + shift_now*(ops%s - 0.5_dp*st%sds)
+      end if
+
+      call diagonalize(st%fock, ops%x, ops%n_ao, ops%n_mo, st%coeff, st%eigenvalues, error)
+      if (error%has_error()) return
+      call build_density_closed_shell(st%coeff, ops%n_occ, st%density)
+      t_rest_iter = t_rest_iter - clk%seconds_of(STAGE_DIAG)
+      call clk%lap(STAGE_DIAG)
+      t_rest_iter = t_rest_iter + clk%seconds_of(STAGE_DIAG)
+
+      de = abs(st%e_elec - st%e_old)
+      drms = sqrt(sum((st%density - st%density_old)**2)/real(ops%n_ao*ops%n_ao, dp))
+      call scf_table_row(ctrl%verbose, iter, st%e_elec + mol%nuclear_repulsion(), de, gnorm, &
+                         st%diis%count(), t_fock_iter, t_xc_iter, t_rest_iter, ctrl%kohn_sham)
+
+      st%e_old = st%e_elec
+      result%iterations = iter
+      result%full_fock_builds = st%incr%full_builds
+      result%incremental_updates = st%incr%updates
+      ! `shift_now` is part of the test below rather than checked
+      ! afterwards: the orbitals and eigenvalues that leave here are the ones
+      ! the last diagonalisation produced, so convergence has to be declared
+      ! on an unshifted iteration or every virtual energy is high by `shift`.
+      st%drms_prev = drms
+      ! **The energy and the commutator, and not the density.** `de` and
+      ! `drms` say the iteration stopped moving; they do not say it stopped
+      ! at a stationary point. `FDS - SDF` is what vanishes when F and D
+      ! commute, and an SCF can hold the other two small while this one is
+      ! nowhere near zero -- any scheme that interpolates rather than
+      ! extrapolates will do it. `drms` is still computed, because the
+      ! level-shift taper is driven from it.
+      !
+      ! The bound has to clear the commutator's own noise floor, which moves
+      ! with thread count because the OpenMP reduction merges are unordered.
+      ! `sqrt(energy_tol)` clears it by orders at the default `energy_tol`.
+      !
+      ! The rule lives in `scf_convergence_t`. `shift_now` stays in the
+      ! caller because it is not a convergence measure: a shifted Fock matrix
+      ! is a different operator, so an iterate that met the threshold under a
+      ! shift has not converged the problem that was asked for.
+      if (iter > 1 .and. ctrl%conv%is_converged(de, drms, gnorm) .and. &
+          shift_now == 0.0_dp) then
+         result%converged = .true.
+      end if
+   end subroutine do_rhf_iteration
 
    subroutine run_czt_uhf(mol, nelec, multiplicity, max_iter, energy_tol, density_tol, &
                           verbose, result, error, diis_vectors, in_core, diis_start, &
