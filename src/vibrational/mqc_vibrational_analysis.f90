@@ -4,11 +4,8 @@ module mqc_vibrational_analysis
    !! Uses LAPACK eigenvalue decomposition via pic-blas interfaces.
    use pic_types, only: dp
    use pic_lapack_interfaces, only: pic_syev, pic_gesvd
-   use pic_logger, only:
-   ! TODO(mqc): an empty `only` list that imports nothing, with the real import
-   ! two lines below. Dead line.
    use mqc_elements, only: element_mass, element_number_to_symbol
-   use pic_logger, only: logger => global_logger
+   use pic_logger, only: logger => global_logger, verbose_level
    use mqc_physical_constants, only: AU_TO_CM1, AU_TO_MDYNE_ANG, AU_TO_KMMOL, AMU_TO_AU
    use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry, print_thermochemistry
    implicit none
@@ -669,7 +666,10 @@ contains
       real(dp), intent(in), optional :: force_constants_mdyne(:)
          !! Force constants in mdyne/Å (if provided, these are printed instead)
       logical, intent(in), optional :: print_displacements
-         !! If true, print Cartesian displacement vectors (default: true)
+         !! Whether to print the Cartesian displacement vectors. Absent, they
+         !! are printed at the `verbose` logger level and above only: on a
+         !! 74-atom molecule they are 72 groups of 80 lines, and the JSON
+         !! output carries them regardless.
       integer, intent(in), optional :: n_atoms
          !! Number of atoms (if not provided, derived from size of element_numbers)
       real(dp), intent(in), optional :: ir_intensities(:)
@@ -699,7 +699,11 @@ contains
          n_at = size(element_numbers)
       end if
 
-      do_print_disp = .true.
+      block
+         integer :: current_log_level
+         call logger%configuration(level=current_log_level)
+         do_print_disp = current_log_level >= verbose_level
+      end block
       if (present(print_displacements)) do_print_disp = print_displacements
 
       call logger%info(" ")
