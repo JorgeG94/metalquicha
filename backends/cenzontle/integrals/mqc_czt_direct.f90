@@ -621,12 +621,13 @@ contains
       !! passed one at a time, which is what makes the single-density wrapper
       !! above safe.
       !!
-      !! **The batch can be wide.** The accumulator is `n_set * n^2` per thread
-      !! with the set index fastest, and the quartet loop is tiled so the blocks
-      !! a tile quartet touches stay in cache whatever the width; a pass over
-      !! 222 densities costs a few times a pass over 12. What limits the width
-      !! is memory: one slab per thread, so 128 threads on 512 functions at
-      !! 222 sets hold 60 GB.
+      !! **The batch can be wide.** The accumulator is one `n_set * n^2` array
+      !! with the set index fastest, shared by every thread and written under
+      !! a lock per tile pair, and the quartet loop is tiled so the blocks a
+      !! tile quartet touches stay in cache whatever the width; a pass over
+      !! 222 densities costs a few times a pass over 12. Memory is the
+      !! densities, the accumulator and the result, three copies of
+      !! `n_set * n^2`, whatever the thread count.
       !!
       !! **Symmetric densities only.** The six updates below assume `D` is
       !! symmetric in two places: the factor of two for `s1 /= s2` stands in for
@@ -635,7 +636,7 @@ contains
       !! permutations double where they should cancel, so the Coulomb term comes
       !! back at twice its value instead of at zero, and nothing here detects it.
       !! Use `build_fock_direct_nosym` for that case.
-!$    use omp_lib, only: omp_get_thread_num
+!$    use omp_lib, only: omp_lock_kind, omp_init_lock, omp_set_lock, omp_unset_lock, omp_destroy_lock
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: h(:, :)          !! Core Hamiltonian, added to every set
       real(dp), intent(in) :: densities(:, :, :)  !! (n_ao, n_ao, n_set), each 2 C C^T
@@ -662,9 +663,15 @@ contains
          !! buys is locality -- a response to one atom's displacement is small
          !! far from that atom.
 
-      real(dp), allocatable :: buf(:), g(:, :, :), acc(:, :, :, :), d_half(:, :, :)
+      real(dp), allocatable :: buf(:), g(:, :, :), d_half(:, :, :)
       real(dp), allocatable :: bq(:, :), dsh(:, :), dsh_set(:, :), dsh_all(:, :, :)
-      integer, allocatable :: active(:)
+      real(dp), allocatable :: l12(:, :, :), l34(:, :, :), l13(:, :, :), l24(:, :, :), l14(:, :, :), l23(:, :, :)
+      integer, allocatable :: active(:), hits(:)
+      logical, allocatable :: hit_ts(:), hit_task(:)
+      logical :: all_ts, all_task
+      integer :: nhit, fp, fq, fr, fs, wp, wq, wr, ws, tw_max
+      integer, allocatable :: fo(:), tw(:)
+!$    integer(omp_lock_kind), allocatable :: locks(:, :)
       integer :: na, ia, p12, p34, p13, p24, p14, p23
       real(dp), allocatable :: dd12(:, :), dd34(:, :), dd13(:, :), dd24(:, :), dd14(:, :), dd23(:, :)
       real(dp), allocatable :: gg12(:, :), gg34(:, :), gg13(:, :), gg24(:, :), gg14(:, :), gg23(:, :)
@@ -678,7 +685,7 @@ contains
       integer :: f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, block_max, n, iset, n_set
       integer :: ij, kl
       integer, allocatable :: dims(:), offs(:)
-      integer :: itask, tid, t, nthreads
+      integer :: itask
       integer :: ntile, ntp, tp, tq, tr, ts
       integer, allocatable :: tile_first(:), tile_last(:), tp_p(:), tp_q(:), tp_r(:)
       integer(int64) :: n_total, n_computed, n_screened
@@ -731,6 +738,13 @@ contains
       ! `r <= p` and `t <= r` and keeping `kl <= ij` visits each unique
       ! quartet exactly once, the same set as the triangular nest.
       call shell_tiles(dims, FOCK_TILE_FUNCS, tile_first, tile_last, ntile)
+      ! First function of each tile, one before it, and its width in functions.
+      allocate (fo(ntile), tw(ntile))
+      do tp = 1, ntile
+         fo(tp) = offs(tile_first(tp))
+         tw(tp) = offs(tile_last(tp)) + dims(tile_last(tp)) - fo(tp)
+      end do
+      tw_max = maxval(tw)
       ! A task is a bra tile pair and one ket bra tile: the blocks it
       ! holds on the bra side and on `tr` stay put while `ts` walks.
       ntp = 0
@@ -758,7 +772,7 @@ contains
       ! what makes a wide batch cost little more than a narrow one. Measured on
       ! the Hessian's coupled-perturbed solve, where the cost of a pass grew
       ! almost linearly with the batch in the other layout.
-      allocate (g(n_set, n, n), d_half(n_set, n, n))
+      allocate (d_half(n_set, n, n))
 
       ! The six-update form below is written for D = C_occ C_occ^T, the density
       ! without its factor of two. `build_density` produces D = 2 C_occ C_occ^T,
@@ -804,46 +818,73 @@ contains
       n_computed = 0_int64
       n_screened = 0_int64
 
-      ! Threaded over bra pairs. libcint carries no mutable state across calls --
+      ! Threaded over tile tasks. libcint carries no mutable state across calls --
       ! the 2e path has no static globals, and `opt` is written once here and
       ! only read inside -- so the integrals need nothing but a private buffer
       ! each.
       !
-      ! The accumulator does need care. The updates below scatter at positions
-      ! that depend on all four shells, so two threads holding
-      ! different quartets can land on the same element. Each thread fills its
-      ! own copy and adds it in once at the end; atomics on the innermost
-      ! statement would be correct too and far slower. The cost is one n*n array
-      ! per thread, growing as n^2 -- **worth watching at a few thousand
-      ! functions**, where a blocked scheme like GTFock's would be the answer.
+      ! **The accumulator is one shared array, written under a lock per tile
+      ! pair.** The updates below scatter at positions that depend on all four
+      ! shells, so two threads holding different quartets can land on the same
+      ! element. A copy per thread was the first answer and its memory was the
+      ! thread count times `n_set * n^2`: 60 GB for 128 threads on cholesterol
+      ! at 222 sets, and it would not have fit a 256 GB node at 256 threads.
+      ! Instead a thread accumulates the six blocks of the tile quartet in hand
+      ! in six tile-sized local blocks -- the same blocks the tiling already
+      ! keeps in cache -- and adds each into the shared array once the tile
+      ! quartet is done, holding that tile pair's lock while it does. The three
+      ! blocks fixed across a task, `(p,q)`, `(p,r)` and `(q,r)`, wait until the
+      ! task ends, since every task with the same bra tile pair wants `(p,q)`
+      ! and they would otherwise queue on it. Only the sets a block touched
+      ! are added and zeroed, so a nearly screened tile quartet costs nearly
+      ! nothing to flush. The memory traffic is what the per-thread copies
+      ! already paid, since their blocks were evicted once per tile quartet
+      ! too; what is gone is the reduction over the copies.
       !
-      ! `schedule(dynamic)`: pair ij does ij quartets, so the last chunk is
-      ! thousands of times the first.
-      ! One accumulator slab per thread, in one shared array so the reduction
-      ! below can be shared out; the size is the same as private copies.
-      nthreads = omp_threads()
-      allocate (acc(n_set, n, n, nthreads))
+      ! `schedule(dynamic)`: task `(p, q, r)` walks `r` ket tiles and the
+      ! screen leaves the distant ones nearly empty, so the tasks are uneven.
+      allocate (g(n_set, n, n))
+!$    allocate (locks(ntile, ntile))
+!$    do tq = 1, ntile
+!$       do tp = 1, ntile
+!$          call omp_init_lock(locks(tp, tq))
+!$       end do
+!$    end do
 
       !$omp parallel default(none) &
       !$omp    shared(kx, jxm, env_many, mol, tab, bq, dsh, weight_density, d_half, g, dims, offs, &
-      !$omp           tile_first, tile_last, tp_p, tp_q, tp_r, ntp, tol, opt, n, block_max, n_set, acc, nthreads, &
-      !$omp           focks, h, dsh_all, kq) &
+      !$omp           tile_first, tile_last, tp_p, tp_q, tp_r, ntp, tol, opt, n, block_max, n_set, &
+      !$omp           focks, h, dsh_all, kq, locks, fo, tw, tw_max) &
       !$omp    private(itask, ij, kl, tp, tq, tr, ts, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, &
-      !$omp            jscaled, kscaled, buf, iset, tid, t, active, na, ia, qq, &
+      !$omp            jscaled, kscaled, buf, iset, active, na, ia, qq, &
       !$omp            p12, p34, p13, p24, p14, p23, dd12, dd34, dd13, dd24, dd14, dd23, &
-      !$omp            gg12, gg34, gg13, gg24, gg14, gg23) &
+      !$omp            gg12, gg34, gg13, gg24, gg14, gg23, &
+      !$omp            l12, l34, l13, l24, l14, l23, hits, hit_ts, hit_task, all_ts, all_task, nhit, &
+      !$omp            fp, fq, fr, fs, wp, wq, wr, ws) &
       !$omp    reduction(+:n_total, n_computed, n_screened)
-      allocate (buf(block_max**4), active(n_set))
+      allocate (buf(block_max**4), active(n_set), hits(n_set), hit_ts(n_set), hit_task(n_set))
       active = [(iset, iset=1, n_set)]
       allocate (dd12(n_set, block_max**2), dd34(n_set, block_max**2), dd13(n_set, block_max**2), &
                 dd24(n_set, block_max**2), dd14(n_set, block_max**2), dd23(n_set, block_max**2))
       allocate (gg12(n_set, block_max**2), gg34(n_set, block_max**2), gg13(n_set, block_max**2), &
                 gg24(n_set, block_max**2), gg14(n_set, block_max**2), gg23(n_set, block_max**2))
-      tid = 1
-!$    tid = omp_get_thread_num() + 1
-      ! Each thread zeroes the slab it will write, so its pages are its own.
-      acc(:, :, :, tid) = 0.0_dp
+      ! The six tile-local blocks, zero on entry and left zero by every flush.
+      allocate (l12(n_set, tw_max, tw_max), l34(n_set, tw_max, tw_max), l13(n_set, tw_max, tw_max), &
+                l24(n_set, tw_max, tw_max), l14(n_set, tw_max, tw_max), l23(n_set, tw_max, tw_max))
+      l12 = 0.0_dp
+      l34 = 0.0_dp
+      l13 = 0.0_dp
+      l24 = 0.0_dp
+      l14 = 0.0_dp
+      l23 = 0.0_dp
+
+      ! The shared accumulator, zeroed by every thread so its pages are spread.
+      !$omp do
+      do b2 = 1, n
+         g(:, :, b2) = 0.0_dp
+      end do
+      !$omp end do
 
       ! Descending: the later tile pairs carry the most ket tile pairs, and
       ! `schedule(dynamic)` wants the big tasks first.
@@ -852,7 +893,19 @@ contains
          tp = tp_p(itask)
          tq = tp_q(itask)
          tr = tp_r(itask)
+         fp = fo(tp)
+         fq = fo(tq)
+         fr = fo(tr)
+         wp = tw(tp)
+         wq = tw(tq)
+         wr = tw(tr)
+         hit_task = .false.
+         all_task = .false.
          do ts = 1, tr
+         fs = fo(ts)
+         ws = tw(ts)
+         hit_ts = .false.
+         all_ts = .false.
          do s1 = tile_first(tp), tile_last(tp)
             d1 = dims(s1)
             o1 = offs(s1)
@@ -929,6 +982,15 @@ contains
                      ! survivors once, the updates contiguous over them, and the six
                      ! output blocks scattered back once.
                      if (2*na >= n_set) na = n_set
+                     if (na == n_set) then
+                        all_ts = .true.
+                        all_task = .true.
+                     else
+                        do ia = 1, na
+                           hit_ts(active(ia)) = .true.
+                           hit_task(active(ia)) = .true.
+                        end do
+                     end if
                      if (na == n_set .or. d1*d2*d3*d4 < 32) then
                         do f4 = 1, d4
                            b4 = o4 + f4
@@ -950,21 +1012,21 @@ contains
                                     ! is what makes these six updates equivalent to the
                                     ! full sum over all eight permutations.
                                     if (na == n_set) then
-                                       acc(:, b1, b2, tid) = acc(:, b1, b2, tid) + jscaled*d_half(:, b3, b4)
-                                       acc(:, b3, b4, tid) = acc(:, b3, b4, tid) + jscaled*d_half(:, b1, b2)
-                                       acc(:, b1, b3, tid) = acc(:, b1, b3, tid) - kscaled*d_half(:, b2, b4)
-                                       acc(:, b2, b4, tid) = acc(:, b2, b4, tid) - kscaled*d_half(:, b1, b3)
-                                       acc(:, b1, b4, tid) = acc(:, b1, b4, tid) - kscaled*d_half(:, b2, b3)
-                                       acc(:, b2, b3, tid) = acc(:, b2, b3, tid) - kscaled*d_half(:, b1, b4)
+                                       l12(:, b1 - fp, b2 - fq) = l12(:, b1 - fp, b2 - fq) + jscaled*d_half(:, b3, b4)
+                                       l34(:, b3 - fr, b4 - fs) = l34(:, b3 - fr, b4 - fs) + jscaled*d_half(:, b1, b2)
+                                       l13(:, b1 - fp, b3 - fr) = l13(:, b1 - fp, b3 - fr) - kscaled*d_half(:, b2, b4)
+                                       l24(:, b2 - fq, b4 - fs) = l24(:, b2 - fq, b4 - fs) - kscaled*d_half(:, b1, b3)
+                                       l14(:, b1 - fp, b4 - fs) = l14(:, b1 - fp, b4 - fs) - kscaled*d_half(:, b2, b3)
+                                       l23(:, b2 - fq, b3 - fr) = l23(:, b2 - fq, b3 - fr) - kscaled*d_half(:, b1, b4)
                                     else
                                        do ia = 1, na
                                           iset = active(ia)
-                                          acc(iset, b1, b2, tid) = acc(iset, b1, b2, tid) + jscaled*d_half(iset, b3, b4)
-                                          acc(iset, b3, b4, tid) = acc(iset, b3, b4, tid) + jscaled*d_half(iset, b1, b2)
-                                          acc(iset, b1, b3, tid) = acc(iset, b1, b3, tid) - kscaled*d_half(iset, b2, b4)
-                                          acc(iset, b2, b4, tid) = acc(iset, b2, b4, tid) - kscaled*d_half(iset, b1, b3)
-                                          acc(iset, b1, b4, tid) = acc(iset, b1, b4, tid) - kscaled*d_half(iset, b2, b3)
-                                          acc(iset, b2, b3, tid) = acc(iset, b2, b3, tid) - kscaled*d_half(iset, b1, b4)
+                                          l12(iset, b1 - fp, b2 - fq) = l12(iset, b1 - fp, b2 - fq) + jscaled*d_half(iset, b3, b4)
+                                          l34(iset, b3 - fr, b4 - fs) = l34(iset, b3 - fr, b4 - fs) + jscaled*d_half(iset, b1, b2)
+                                          l13(iset, b1 - fp, b3 - fr) = l13(iset, b1 - fp, b3 - fr) - kscaled*d_half(iset, b2, b4)
+                                          l24(iset, b2 - fq, b4 - fs) = l24(iset, b2 - fq, b4 - fs) - kscaled*d_half(iset, b1, b3)
+                                          l14(iset, b1 - fp, b4 - fs) = l14(iset, b1 - fp, b4 - fs) - kscaled*d_half(iset, b2, b3)
+                                          l23(iset, b2 - fq, b3 - fr) = l23(iset, b2 - fq, b3 - fr) - kscaled*d_half(iset, b1, b4)
                                        end do
                                     end if
                                  end do
@@ -1077,7 +1139,7 @@ contains
                         do f1 = 1, d1
                            p12 = f1 + (f2 - 1)*d1
                            do ia = 1, na
-                           acc(active(ia), o1 + f1, o2 + f2, tid) = acc(active(ia), o1 + f1, o2 + f2, tid) + gg12(ia, p12)
+                           l12(active(ia), o1 + f1 - fp, o2 + f2 - fq) = l12(active(ia), o1 + f1 - fp, o2 + f2 - fq) + gg12(ia, p12)
                            end do
                         end do
                      end do
@@ -1085,7 +1147,7 @@ contains
                         do f3 = 1, d3
                            p34 = f3 + (f4 - 1)*d3
                            do ia = 1, na
-                           acc(active(ia), o3 + f3, o4 + f4, tid) = acc(active(ia), o3 + f3, o4 + f4, tid) + gg34(ia, p34)
+                           l34(active(ia), o3 + f3 - fr, o4 + f4 - fs) = l34(active(ia), o3 + f3 - fr, o4 + f4 - fs) + gg34(ia, p34)
                            end do
                         end do
                      end do
@@ -1093,7 +1155,7 @@ contains
                         do f1 = 1, d1
                            p13 = f1 + (f3 - 1)*d1
                            do ia = 1, na
-                           acc(active(ia), o1 + f1, o3 + f3, tid) = acc(active(ia), o1 + f1, o3 + f3, tid) + gg13(ia, p13)
+                           l13(active(ia), o1 + f1 - fp, o3 + f3 - fr) = l13(active(ia), o1 + f1 - fp, o3 + f3 - fr) + gg13(ia, p13)
                            end do
                         end do
                      end do
@@ -1101,7 +1163,7 @@ contains
                         do f2 = 1, d2
                            p24 = f2 + (f4 - 1)*d2
                            do ia = 1, na
-                           acc(active(ia), o2 + f2, o4 + f4, tid) = acc(active(ia), o2 + f2, o4 + f4, tid) + gg24(ia, p24)
+                           l24(active(ia), o2 + f2 - fq, o4 + f4 - fs) = l24(active(ia), o2 + f2 - fq, o4 + f4 - fs) + gg24(ia, p24)
                            end do
                         end do
                      end do
@@ -1109,7 +1171,7 @@ contains
                         do f1 = 1, d1
                            p14 = f1 + (f4 - 1)*d1
                            do ia = 1, na
-                           acc(active(ia), o1 + f1, o4 + f4, tid) = acc(active(ia), o1 + f1, o4 + f4, tid) + gg14(ia, p14)
+                           l14(active(ia), o1 + f1 - fp, o4 + f4 - fs) = l14(active(ia), o1 + f1 - fp, o4 + f4 - fs) + gg14(ia, p14)
                            end do
                         end do
                      end do
@@ -1117,7 +1179,7 @@ contains
                         do f2 = 1, d2
                            p23 = f2 + (f3 - 1)*d2
                            do ia = 1, na
-                           acc(active(ia), o2 + f2, o3 + f3, tid) = acc(active(ia), o2 + f2, o3 + f3, tid) + gg23(ia, p23)
+                           l23(active(ia), o2 + f2 - fq, o3 + f3 - fr) = l23(active(ia), o2 + f2 - fq, o3 + f3 - fr) + gg23(ia, p23)
                            end do
                         end do
                      end do
@@ -1125,26 +1187,40 @@ contains
                end do
             end do
          end do
-         end do
-      end do
-      !$omp end do
 
-      ! The reduction over the thread slabs, a column of `g` per iteration
-      ! rather than one thread at a time inside a critical section. Measured
-      ! at a few per cent of a pass on adenine; the slabs grow as
-      ! `n_set * n^2` per thread, so on a wide batch of a large molecule the
-      ! serial form would not stay small.
-      !$omp do
-      do b2 = 1, n
-         g(:, :, b2) = acc(:, :, b2, 1)
-         do t = 2, nthreads
-            g(:, :, b2) = g(:, :, b2) + acc(:, :, b2, t)
+         ! The three blocks that change with the ket tile go in now.
+         call touched_sets(all_ts, hit_ts, hits, nhit)
+         if (nhit > 0) then
+!$          call omp_set_lock(locks(tr, ts))
+            call add_tile_block(g, l34, wr, ws, fr, fs, nhit, hits)
+!$          call omp_unset_lock(locks(tr, ts))
+!$          call omp_set_lock(locks(tq, ts))
+            call add_tile_block(g, l24, wq, ws, fq, fs, nhit, hits)
+!$          call omp_unset_lock(locks(tq, ts))
+!$          call omp_set_lock(locks(tp, ts))
+            call add_tile_block(g, l14, wp, ws, fp, fs, nhit, hits)
+!$          call omp_unset_lock(locks(tp, ts))
+         end if
          end do
+
+         ! The three the task held throughout.
+         call touched_sets(all_task, hit_task, hits, nhit)
+         if (nhit > 0) then
+!$          call omp_set_lock(locks(tp, tq))
+            call add_tile_block(g, l12, wp, wq, fp, fq, nhit, hits)
+!$          call omp_unset_lock(locks(tp, tq))
+!$          call omp_set_lock(locks(tp, tr))
+            call add_tile_block(g, l13, wp, wr, fp, fr, nhit, hits)
+!$          call omp_unset_lock(locks(tp, tr))
+!$          call omp_set_lock(locks(tq, tr))
+            call add_tile_block(g, l23, wq, wr, fq, fr, nhit, hits)
+!$          call omp_unset_lock(locks(tq, tr))
+         end if
       end do
       !$omp end do
 
       ! Back to one matrix per set, symmetrised on the way. The barrier the
-      ! loop above ends with is what makes `g(:, b2, b1)` complete here.
+      ! loop above ends with is what makes every block of `g` complete here.
       !$omp do
       do b2 = 1, n
          do iset = 1, n_set
@@ -1155,7 +1231,8 @@ contains
       end do
       !$omp end do
 
-      deallocate (buf, active, dd12, dd34, dd13, dd24, dd14, dd23, gg12, gg34, gg13, gg24, gg14, gg23)
+      deallocate (buf, active, hits, hit_ts, hit_task, dd12, dd34, dd13, dd24, dd14, dd23, &
+                  gg12, gg34, gg13, gg24, gg14, gg23, l12, l34, l13, l24, l14, l23)
       !$omp end parallel
 
       stats%quartets_total = n_total
@@ -1164,8 +1241,74 @@ contains
 
       call libcint_del_optimizer(opt)
 
-      deallocate (g, acc, d_half, dims, offs, tile_first, tile_last, tp_p, tp_q, tp_r, dsh, dsh_all)
+!$    do tq = 1, ntile
+!$       do tp = 1, ntile
+!$          call omp_destroy_lock(locks(tp, tq))
+!$       end do
+!$    end do
+!$    deallocate (locks)
+      deallocate (g, d_half, dims, offs, tile_first, tile_last, tp_p, tp_q, tp_r, dsh, dsh_all, fo, tw)
    end subroutine build_fock_direct_many
+
+   pure subroutine touched_sets(all, hit, hits, nhit)
+      !! The list of sets a tile block was written in
+      !!
+      !! `all` short-circuits the mask: every set, and `hits` is not read by
+      !! the flush in that case.
+      logical, intent(in) :: all
+      logical, intent(in) :: hit(:)
+      integer, intent(inout) :: hits(:)
+      integer, intent(out) :: nhit
+
+      integer :: iset
+
+      if (all) then
+         nhit = size(hit)
+         return
+      end if
+      nhit = 0
+      do iset = 1, size(hit)
+         if (hit(iset)) then
+            nhit = nhit + 1
+            hits(nhit) = iset
+         end if
+      end do
+   end subroutine touched_sets
+
+   subroutine add_tile_block(g, blk, wa, wb, fa, fb, nhit, hits)
+      !! Adds a tile-local block into the shared accumulator and clears it
+      !!
+      !! `blk(:, 1:wa, 1:wb)` lands at `g(:, fa+1:fa+wa, fb+1:fb+wb)`. Only the
+      !! `nhit` sets in `hits` are added and zeroed -- the rest were never
+      !! written and are zero already -- and `nhit == size(g, 1)` means every
+      !! set, contiguously, without reading `hits`. The caller holds the lock
+      !! of the tile pair `(fa, fb)` belongs to.
+      real(dp), intent(inout) :: g(:, :, :)
+      real(dp), intent(inout) :: blk(:, :, :)
+      integer, intent(in) :: wa, wb, fa, fb, nhit
+      integer, intent(in) :: hits(:)
+
+      integer :: a, b, ih, iset
+
+      if (nhit == size(g, 1)) then
+         do b = 1, wb
+            do a = 1, wa
+               g(:, fa + a, fb + b) = g(:, fa + a, fb + b) + blk(:, a, b)
+               blk(:, a, b) = 0.0_dp
+            end do
+         end do
+      else
+         do b = 1, wb
+            do a = 1, wa
+               do ih = 1, nhit
+                  iset = hits(ih)
+                  g(iset, fa + a, fb + b) = g(iset, fa + a, fb + b) + blk(iset, a, b)
+                  blk(iset, a, b) = 0.0_dp
+               end do
+            end do
+         end do
+      end if
+   end subroutine add_tile_block
 
    subroutine build_fock_direct_nosym(mol, h, densities, bounds, focks, stats, error, &
                                       screen_tol)
