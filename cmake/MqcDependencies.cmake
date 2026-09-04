@@ -273,6 +273,14 @@ if(MQC_ENABLE_CZT AND MQC_USE_LIBFINT)
     add_library(cint_fortran ALIAS fint)
   endif()
   target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:fint>)
+  # PUBLIC, for the reason the libxc include above is and the libcint one below
+  # is: nvfortran opens every transitively used module file, so anything linking
+  # this library has to be able to find `cint_workspace.mod` even though no
+  # source outside backends/cenzontle/ names it. The `fint` link is PRIVATE, so
+  # the target's own interface include does not carry through -- which is why
+  # this has to be stated rather than inherited.
+  target_include_directories(
+    ${main_lib} PUBLIC $<BUILD_INTERFACE:${libfint_BINARY_DIR}/include>)
   add_subdirectory(backends/cenzontle)
   message(
     STATUS
