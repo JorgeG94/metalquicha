@@ -177,13 +177,23 @@ contains
    end function xc_available
 
    subroutine xc_context_create(mol, functional, ctx, error, level, polarized, &
-                                screen_tol, point_block, nlc_level, allow_half)
+                                screen_tol, point_block, nlc_level, allow_half, &
+                                n_radial, n_angular)
       !! Resolve a functional name and build the grid it will be integrated on
       type(czt_molecule_t), intent(in) :: mol
       character(len=*), intent(in) :: functional
       type(xc_context_t), intent(out) :: ctx
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: level
+         !! Grid level, `DEFAULT_GRID_LEVEL` when absent. Negative means the
+         !! deck gave explicit counts instead, which then have to arrive in
+         !! `n_radial` and `n_angular`: a negative level on its own is refused,
+         !! since the grid builder would clamp it to level 0 and integrate on
+         !! the coarsest grid there is without a word.
+      integer, intent(in), optional :: n_radial, n_angular
+         !! Explicit per-atom radial shells and Lebedev order, in force when
+         !! `level` is negative. `keywords.dft.radial_points` and
+         !! `angular_points`.
       logical, intent(in), optional :: polarized
          !! Initialise the functionals spin-polarised, for an unrestricted
          !! calculation. Default restricted. Fixed here because libxc fixes it at
@@ -237,7 +247,23 @@ contains
       ! `core_electrons` is zero for an all-electron atom and for a ghost, so
       ! this is the identity everywhere an ECP is not involved.
       numbers = nint(mol%charges) + mol%core_electrons
-      call build_dft_grid(mol%coords, numbers, ctx%grid, error, level=grid_level)
+      if (grid_level < 0) then
+         if (.not. (present(n_radial) .and. present(n_angular))) then
+            call error%set(ERROR_VALIDATION, "xc_context_create: a negative grid level "// &
+                           "stands for explicit radial and angular counts, and none "// &
+                           "were passed")
+            return
+         end if
+         if (n_radial < 1 .or. n_angular < 1) then
+            call error%set(ERROR_VALIDATION, "xc_context_create: the explicit grid counts "// &
+                           "must both be positive")
+            return
+         end if
+         call build_dft_grid(mol%coords, numbers, ctx%grid, error, &
+                             n_radial=n_radial, n_angular=n_angular)
+      else
+         call build_dft_grid(mol%coords, numbers, ctx%grid, error, level=grid_level)
+      end if
       if (error%has_error()) return
       deallocate (numbers)
       if (error%has_error()) return

@@ -815,7 +815,9 @@ contains
                                 level=settings%grid_level, polarized=unrestricted, &
                                 nlc_level=settings%nlc_grid_level, &
                                 screen_tol=settings%screening_tolerance, &
-                                point_block=settings%block_size)
+                                point_block=settings%block_size, &
+                                n_radial=settings%radial_points, &
+                                n_angular=settings%angular_points)
          if (error%has_error()) then
             call result%error%set(ERROR_VALIDATION, error%get_message())
             result%has_error = .true.
@@ -823,7 +825,13 @@ contains
             return
          end if
          if (settings%verbose) then
-            write (line, "(a,a,a,i0)") "  functional: ", trim(settings%functional), ", grid level ", settings%grid_level
+            if (settings%grid_level < 0) then
+               write (line, "(a,a,a,i0,a,i0)") "  functional: ", trim(settings%functional), &
+                  ", grid ", settings%radial_points, " radial x ", settings%angular_points
+            else
+               write (line, "(a,a,a,i0)") "  functional: ", trim(settings%functional), &
+                  ", grid level ", settings%grid_level
+            end if
             call logger%info(trim(line))
          end if
          ! A double hybrid's perturbative term is an MP2 on top of the
@@ -1213,6 +1221,10 @@ contains
                fukui_frozen = core_orbital_count(fragment%element_numbers)
             end if
             if (.not. settings%freeze_core) fukui_frozen = 0
+            ! TODO(mqc): `fukui_indices` takes the grid level alone, so a deck
+            ! that gives `keywords.dft.radial_points`/`angular_points` (grid
+            ! level -1) is refused by `xc_context_create` on the Fukui path
+            ! rather than run on the counts.
             call fukui_indices(mol, nelec, fragment%multiplicity, scf%density, &
                                scf%energy, settings%fukui_population, &
                                settings%fukui_scf%max_iter, &
