@@ -188,7 +188,21 @@ if(MQC_ENABLE_LIBXC)
   # static link resolves left to right.
   target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:xcf03>
                                             $<BUILD_INTERFACE:xc>)
-  target_include_directories(${main_lib} PRIVATE ${libxc_BINARY_DIR})
+  # PUBLIC, and for the same reason the libcint include below is: nvfortran
+  # needs every transitively used module file on the include path, not only the
+  # ones a source names itself. `app/main.f90` uses no libxc module -- it uses
+  # `mqc_driver`, which reaches `xc_f03_lib_m` several modules down -- and
+  # nvfortran still has to open `xc_f03_lib_m.mod` to read them. PRIVATE keeps
+  # it off the executable's include path and the build dies at 65 per cent with
+  #
+  # NVFORTRAN-F-0004-Unable to open MODULE file xc_f03_lib_m.mod
+  #
+  # gfortran does not need it, which is why this stood for so long.
+  #
+  # BUILD_INTERFACE because a fetched third-party library never joins this
+  # project's export set.
+  target_include_directories(${main_lib}
+                             PUBLIC $<BUILD_INTERFACE:${libxc_BINARY_DIR}>)
   message(STATUS "libxc enabled: exchange-correlation functionals available")
 endif()
 
