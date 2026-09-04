@@ -12,6 +12,7 @@ module mqc_czt_bridge
    use pic_logger, only: logger => global_logger
    use mqc_string_utils, only: int_to_text
    use pic_types, only: dp
+   use mqc_physical_constants, only: HARTREE_TO_EV
    use pic_timer, only: timer_type
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED, &
@@ -1091,6 +1092,7 @@ contains
 
       result%energy%scf = scf%energy
       result%has_energy = .true.
+      call frontier_summary(scf)
       if (settings%pcm%enabled) then
          write (line, "(a,f18.10,a,f9.4)") "    continuum: E_diel = ", scf%pcm_energy, &
             "   total surface charge ", scf%pcm_charge
@@ -1528,11 +1530,15 @@ contains
             if (kohn_sham) then
                call ks_hessian(mol, fragment%element_numbers, scf%density, scf%orbitals, &
                                scf%orbital_energies, scf%n_occupied, xc, xc%exx_fraction, &
-                               hess4, error, dipole_derivatives=ddip)
+                               hess4, error, max_iter=settings%hessian_response_max_iter, &
+                               tol=settings%hessian_response_tol, &
+                               batch=settings%hessian_response_batch, dipole_derivatives=ddip)
             else
                call rhf_hessian(mol, fragment%element_numbers, scf%density, scf%orbitals, &
                                 scf%orbital_energies, scf%n_occupied, hess4, error, &
-                                dipole_derivatives=ddip)
+                                max_iter=settings%hessian_response_max_iter, &
+                                tol=settings%hessian_response_tol, &
+                                batch=settings%hessian_response_batch, dipole_derivatives=ddip)
             end if
             ! The perturbative term, on top of the Kohn-Sham one, and the same
             ! split the gradient uses: `ks_hessian` is the whole reference --
@@ -2188,6 +2194,36 @@ contains
       if (kohn_sham) call xc%destroy()
       call mol%destroy()
    end subroutine run_czt_hf
+
+   subroutine frontier_summary(scf)
+      !! HOMO, LUMO and the gap in eV, one row per spin the SCF carried
+      type(rhf_result_t), intent(in) :: scf
+
+      if (.not. allocated(scf%orbital_energies)) return
+      if (allocated(scf%orbital_energies_beta)) then
+         call frontier_row("alpha ", scf%orbital_energies, scf%n_occupied)
+         call frontier_row("beta  ", scf%orbital_energies_beta, scf%n_occupied_beta)
+      else
+         call frontier_row("", scf%orbital_energies, scf%n_occupied)
+      end if
+   end subroutine frontier_summary
+
+   subroutine frontier_row(label, energies, n_occ)
+      !! One `HOMO, LUMO, gap` line, skipped when either orbital is missing
+      character(len=*), intent(in) :: label
+      real(dp), intent(in) :: energies(:)
+      integer, intent(in) :: n_occ
+
+      character(len=MAX_LINE_LENGTH) :: line
+      real(dp) :: homo, lumo
+
+      if (n_occ < 1 .or. n_occ >= size(energies)) return
+      homo = energies(n_occ)*HARTREE_TO_EV
+      lumo = energies(n_occ + 1)*HARTREE_TO_EV
+      write (line, "(a,f12.6,a,f12.6,a,f12.6,a)") "  "//label//"HOMO ", homo, &
+         " eV   LUMO ", lumo, " eV   gap ", lumo - homo, " eV"
+      call logger%info(trim(line))
+   end subroutine frontier_row
 
    subroutine resolve_active_space(settings, fragment, n_ao, space, error)
       !! Turn the deck's active space into the four integers the CI needs

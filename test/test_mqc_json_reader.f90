@@ -18,7 +18,8 @@ module test_mqc_json_reader
                                METHOD_TYPE_MCSCF
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
-                                       DEFAULT_PRESSURE, DEFAULT_SCF_CONV, &
+                                       DEFAULT_PRESSURE, DEFAULT_RESPONSE_TOL, &
+                                       DEFAULT_RESPONSE_MAX_ITER, DEFAULT_SCF_CONV, &
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
                                        DEFAULT_DYNAMIC_TOL, DEFAULT_DYNAMIC_MAXITER, &
                                        EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
@@ -502,7 +503,9 @@ contains
 
       call write_deck('"method": "XTB-GFN2"', "Hessian", &
                       '"hessian": {"finite_difference_displacement": 0.005, '// &
-                      '"temperature": 300.0, "pressure": 1.5}', "", two_atoms())
+                      '"temperature": 300.0, "pressure": 1.5, '// &
+                      '"response_tolerance": 1.0e-6, "response_max_iter": 20, '// &
+                      '"response_batch": 7}', "", two_atoms())
       call read_deck(config, parse_error)
 
       call check(error,.not. parse_error%has_error(), parse_error%get_message())
@@ -514,6 +517,12 @@ contains
       call check(error, close_enough(config%hessian_temperature, 300.0_dp))
       if (allocated(error)) return
       call check(error, close_enough(config%hessian_pressure, 1.5_dp))
+      if (allocated(error)) return
+      call check(error, close_enough(config%hessian_response_tol, 1.0e-6_dp))
+      if (allocated(error)) return
+      call check(error, config%hessian_response_max_iter, 20)
+      if (allocated(error)) return
+      call check(error, config%hessian_response_batch, 7)
    end subroutine test_hessian
 
    subroutine test_hessian_defaults(error)
@@ -532,6 +541,10 @@ contains
       call check(error, close_enough(config%hessian_temperature, DEFAULT_TEMPERATURE))
       if (allocated(error)) return
       call check(error, close_enough(config%hessian_pressure, DEFAULT_PRESSURE))
+      if (allocated(error)) return
+      call check(error, close_enough(config%hessian_response_tol, DEFAULT_RESPONSE_TOL))
+      if (allocated(error)) return
+      call check(error, config%hessian_response_max_iter, DEFAULT_RESPONSE_MAX_ITER)
    end subroutine test_hessian_defaults
 
    subroutine test_aimd(error)

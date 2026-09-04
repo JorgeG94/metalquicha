@@ -507,6 +507,9 @@ contains
       call allow(keys, "displacement")
       call allow(keys, "temperature")
       call allow(keys, "pressure")
+      call allow(keys, "response_tolerance")
+      call allow(keys, "response_max_iter")
+      call allow(keys, "response_batch")
    end function hessian_keys
 
    function aimd_keys() result(keys)

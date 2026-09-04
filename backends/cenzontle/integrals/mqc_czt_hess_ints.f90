@@ -12,13 +12,16 @@ module mqc_czt_hess_ints
    !! `ipovlpip` puts one on each. A Hessian built from only the first is not a
    !! slightly worse Hessian, it is one that violates translational invariance,
    !! which shows up as translations that are no longer zero-frequency modes.
-   use, intrinsic :: iso_fortran_env, only: real64
+   use, intrinsic :: iso_fortran_env, only: real64, int64
    use, intrinsic :: iso_c_binding, only: c_null_ptr
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim, atom_ao_blocks, &
                                 eri_shell_table_t, eri_shell_table, eri_schwarz_collapse
-   use mqc_czt_direct, only: schwarz_bounds
+   use mqc_czt_direct, only: schwarz_bounds, direct_stats_t, pair_degeneracy, pair_work_order, &
+                             omp_threads
+   use pic_logger, only: logger => global_logger
+   use mqc_program_limits, only: MAX_LINE_LENGTH
    use libcint_fortran, only: LIBCINT_NPRIM_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_RINV_ORIG, &
                               LIBCINT_PTR_RANGE_OMEGA
    use mqc_czt_hess_abi, only: &
@@ -36,6 +39,7 @@ module mqc_czt_hess_ints
    public :: hess_1e_block
    public :: HESS_RINV_II, HESS_RINV_IJ
    public :: hess_rinv_block
+   public :: hess_rinv_contract
    public :: HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
    public :: hess_2e_block
    public :: hess_2e_contract
@@ -65,6 +69,12 @@ module mqc_czt_hess_ints
       !! differentiating brings a factor of `2 alpha r` down from the
       !! exponential, and what stands in for it is `2 sqrt(alpha_max)` per
       !! differentiation, twice over for a second derivative.
+
+   real(dp), parameter :: H1_ACCUMULATOR_BUDGET = 8.0e9_dp
+      !! Bytes the per-thread copies of the skeleton Fock derivative may take
+      !! together before `h1_contract` splits the atoms into groups. A copy is
+      !! `nao^2 * 3 * natm` doubles per thread, which is 30 GB for a 74-atom
+      !! molecule in 6-31G* on 64 threads.
 
    integer, parameter :: N_COMPONENTS = 9
       !! Every one of these is a 3x3 Cartesian block per shell pair, laid out by
@@ -112,12 +122,17 @@ contains
       ! Flat and indexed by hand: the library packs a block with the *actual*
       ! shell dimensions, so a rank-3 buffer declared at the largest shell has
       ! the wrong strides for every smaller one.
-      allocate (buf(mx*mx*N_COMPONENTS))
       atm_flat = reshape(mol%atm, [size(mol%atm)])
       bas_flat = reshape(mol%bas, [size(mol%bas)])
       allocate (matrix(mol%nao, mol%nao, N_COMPONENTS))
       matrix = 0.0_dp
 
+      ! Threaded over the bra shell: every block a thread writes sits in its
+      ! own rows, so nothing is shared but the molecule.
+      !$omp parallel default(none) shared(mol, which, matrix, atm_flat, bas_flat, mx) &
+      !$omp    private(ish, jsh, di, dj, io, jo, i, j, comp, shls, dims, buf, have)
+      allocate (buf(mx*mx*N_COMPONENTS))
+      !$omp do schedule(dynamic)
       do ish = 1, mol%nbas
          di = shell_dim(mol%cartesian, ish - 1, mol%bas)
          io = mol%shell_offset(ish)
@@ -140,8 +155,11 @@ contains
             end do
          end do
       end do
+      !$omp end do
+      deallocate (buf)
+      !$omp end parallel
 
-      deallocate (buf, atm_flat, bas_flat)
+      deallocate (atm_flat, bas_flat)
    end subroutine hess_1e_block
 
    function drive(mol, which, buf, dims, shls, atm, bas) result(have)
@@ -245,7 +263,6 @@ contains
          mx = max(mx, shell_dim(mol%cartesian, ish - 1, mol%bas))
       end do
 
-      allocate (buf(mx*mx*N_COMPONENTS))
       allocate (matrix(mol%nao, mol%nao, N_COMPONENTS))
       matrix = 0.0_dp
       atm_flat = reshape(mol%atm, [size(mol%atm)])
@@ -253,6 +270,10 @@ contains
       allocate (env(size(mol%env)), source=mol%env)
       env(LIBCINT_PTR_RINV_ORIG + 1:LIBCINT_PTR_RINV_ORIG + 3) = mol%coords(:, iatom)
 
+      !$omp parallel default(none) shared(mol, which, matrix, atm_flat, bas_flat, env, mx) &
+      !$omp    private(ish, jsh, di, dj, io, jo, i, j, comp, shls, dims, buf, have)
+      allocate (buf(mx*mx*N_COMPONENTS))
+      !$omp do schedule(dynamic)
       do ish = 1, mol%nbas
          di = shell_dim(mol%cartesian, ish - 1, mol%bas)
          io = mol%shell_offset(ish)
@@ -291,9 +312,129 @@ contains
             end do
          end do
       end do
+      !$omp end do
+      deallocate (buf)
+      !$omp end parallel
 
-      deallocate (buf, env, atm_flat, bas_flat)
+      deallocate (env, atm_flat, bas_flat)
    end subroutine hess_rinv_block
+
+   subroutine hess_rinv_contract(mol, density, cross, error)
+      !! Both `1/|r-R_C|` second derivatives, contracted, for every basis atom
+      !! and every nucleus in one pass
+      !!
+      !! `cross(:, :, A, C)` is `sum_ij D_ij [ipiprinv + iprinvip]_ij` with the
+      !! operator origin on nucleus `C` and the bra function `i` centred on
+      !! atom `A` -- what `partial_hessian` used to assemble from two
+      !! `hess_rinv_block` calls per nucleus, each a serial pass forming an
+      !! `(nao, nao, 9)` matrix. Here the shell pairs are walked once, threaded,
+      !! with the nuclei inside, and each block is contracted on the spot.
+      !! Nothing of size `nao^2` is stored.
+      !!
+      !! Returned **unscaled**, as `hess_rinv_block` is: the charge and the
+      !! sign of the electron-nucleus attraction are the caller's. The nine
+      !! components are libcint's, `a` on the bra centre and `b` on the
+      !! nucleus for `iprinvip` and both on the bra for `ipiprinv`.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)
+      real(dp), allocatable, intent(out) :: cross(:, :, :, :)   !! (3, 3, natm, natm)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: buf_ii(:), buf_ij(:), env(:), cloc(:, :, :, :)
+      integer, allocatable :: atm_flat(:), bas_flat(:), offsets(:), counts(:), owner(:)
+      real(dp) :: acc(N_COMPONENTS)
+      integer :: dims(0:3), shls(0:1)
+      integer :: ish, jsh, di, dj, io, jo, i, j, comp, mx, c, a, b, natm, nao, ia
+      logical :: have_ii, have_ij
+
+      if (error%has_error()) return
+
+      nao = mol%nao
+      natm = mol%natm
+      allocate (offsets(natm), counts(natm), owner(nao))
+      call atom_ao_blocks(mol, offsets, counts)
+      owner = 0
+      do c = 1, natm
+         do i = offsets(c) + 1, offsets(c) + counts(c)
+            owner(i) = c
+         end do
+      end do
+
+      mx = 0
+      do ish = 1, mol%nbas
+         mx = max(mx, shell_dim(mol%cartesian, ish - 1, mol%bas))
+      end do
+      atm_flat = reshape(mol%atm, [size(mol%atm)])
+      bas_flat = reshape(mol%bas, [size(mol%bas)])
+
+      allocate (cross(3, 3, natm, natm))
+      cross = 0.0_dp
+
+      ! `env` is private because the operator origin lives in it and each
+      ! thread moves it from nucleus to nucleus.
+      !$omp parallel default(none) shared(mol, density, cross, owner, atm_flat, bas_flat, mx, natm) &
+      !$omp    private(ish, jsh, di, dj, io, jo, i, j, comp, c, a, b, ia, shls, dims, &
+      !$omp            buf_ii, buf_ij, env, cloc, acc, have_ii, have_ij)
+      allocate (buf_ii(mx*mx*N_COMPONENTS), buf_ij(mx*mx*N_COMPONENTS))
+      allocate (env(size(mol%env)), cloc(3, 3, natm, natm))
+      env = mol%env
+      cloc = 0.0_dp
+      !$omp do schedule(dynamic)
+      do ish = 1, mol%nbas
+         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         io = mol%shell_offset(ish)
+         ! Every function of a shell sits on the shell's atom.
+         ia = owner(io + 1)
+         do jsh = 1, mol%nbas
+            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+            jo = mol%shell_offset(jsh)
+            shls = [ish - 1, jsh - 1]
+            dims = [di, dj, 1, 1]
+
+            do c = 1, natm
+               env(LIBCINT_PTR_RINV_ORIG + 1:LIBCINT_PTR_RINV_ORIG + 3) = mol%coords(:, c)
+               if (mol%cartesian) then
+                  have_ii = cint1e_ipiprinv_cart(buf_ii, shls, atm_flat, mol%natm, &
+                                                 bas_flat, mol%nbas, env) /= 0
+                  have_ij = cint1e_iprinvip_cart(buf_ij, shls, atm_flat, mol%natm, &
+                                                 bas_flat, mol%nbas, env) /= 0
+               else
+                  have_ii = cint1e_ipiprinv_sph(buf_ii, shls, atm_flat, mol%natm, &
+                                                bas_flat, mol%nbas, env) /= 0
+                  have_ij = cint1e_iprinvip_sph(buf_ij, shls, atm_flat, mol%natm, &
+                                                bas_flat, mol%nbas, env) /= 0
+               end if
+               if (.not. (have_ii .or. have_ij)) cycle
+               if (.not. have_ii) buf_ii(1:di*dj*N_COMPONENTS) = 0.0_dp
+               if (.not. have_ij) buf_ij(1:di*dj*N_COMPONENTS) = 0.0_dp
+
+               do comp = 1, N_COMPONENTS
+                  acc(comp) = 0.0_dp
+                  do j = 1, dj
+                     do i = 1, di
+                        acc(comp) = acc(comp) + density(io + i, jo + j) &
+                                    *(buf_ii(i + di*(j - 1 + dj*(comp - 1))) &
+                                      + buf_ij(i + di*(j - 1 + dj*(comp - 1))))
+                     end do
+                  end do
+               end do
+               do comp = 1, N_COMPONENTS
+                  a = (comp - 1)/3 + 1
+                  b = comp - 3*(a - 1)
+                  cloc(a, b, ia, c) = cloc(a, b, ia, c) + acc(comp)
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+      !$omp critical
+      cross = cross + cloc
+      !$omp end critical
+      deallocate (buf_ii, buf_ij, env, cloc)
+      !$omp end parallel
+
+      deallocate (atm_flat, bas_flat, offsets, counts, owner)
+   end subroutine hess_rinv_contract
 
    subroutine hess_2e_block(mol, which, eri, error)
       !! One second-derivative two-electron integral over the whole basis
@@ -499,7 +640,7 @@ contains
    end subroutine eri_ip1_block
 
    subroutine hess_2e_contract(mol, density, hess, error, screen_tol, k_scale, &
-                               j_scale, omega)
+                               j_scale, omega, stats, bounds)
       !! The two-electron second derivatives, contracted as they are computed
       !!
       !! Same numbers `hess_2e_block` produces and never the same array. Each
@@ -507,12 +648,23 @@ contains
       !! and forgotten, so the memory is one quartet rather than `nao^4` times
       !! nine times three.
       !!
-      !! **The deposit rules are the same three the assembly derives**, with
-      !! the same 4, 4 and 8 from folding the sixteen index pairs against a
-      !! weight symmetric under all eight permutations of `(mn|ls)`. The loop
-      !! runs over every quartet in every order, which is what makes that
-      !! folding valid -- restricting it to unique quartets would need the
-      !! *derivative* integrals to carry symmetries they do not have.
+      !! **Unique quartets, sixteen blocks each.** The second derivative of
+      !! `(ij|kl)` has a 3x3 block for every ordered pair of its four centres.
+      !! Summed over all ordered quartets against a weight with the full
+      !! eightfold symmetry, that sum is `deg * gam` times the sixteen-block
+      !! sum on each *unique* quartet, because the sixteen-block sum is itself
+      !! invariant under relabelling the quartet. So the loop walks the Fock
+      !! build's unique quartets and deposits all sixteen blocks from each.
+      !!
+      !! **Six kernel calls give the sixteen blocks.** `ipip1` on `(ij|kl)`,
+      !! `(ji|kl)` and `(kl|ij)` are the diagonal blocks of the first three
+      !! centres; `ipvip1` on `(ij|kl)` is the `ij` block and `ip1ip2` on
+      !! `(ij|kl)` and `(ji|kl)` the `ik` and `jk` blocks; their transposes
+      !! are the `ji`, `ki`, `kj` blocks. Every block involving the fourth
+      !! centre follows from translational invariance -- the derivatives with
+      !! respect to the four centres sum to zero -- so `l` costs no kernel.
+      !! That is six calls per unique quartet where the ordered-bra loop it
+      !! replaces made four per half-ordered one: 0.75 against 2 per `nbas^4`.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
       real(dp), intent(inout) :: hess(:, :, :, :)   !! (3, 3, natm, natm), accumulated
@@ -532,20 +684,28 @@ contains
          !! `env(PTR_RANGE_OMEGA)`, so the attenuated integrals are the same
          !! entry points over the same quartets -- no new procedures, which is
          !! what makes this a threading job rather than an integral one.
-      real(dp), allocatable :: buf_ii(:), buf_ij(:), buf_ik(:), buf_ik2(:)
+      type(direct_stats_t), intent(out), optional :: stats
+         !! Unique shell quartets walked, skipped by the estimate, and handed
+         !! to the derivative kernels. A computed quartet is six kernel calls.
+      real(dp), intent(in), optional :: bounds(:, :)
+         !! From `schwarz_bounds`, when the caller already has them.
+      real(dp), allocatable :: buf_ii(:), buf_jj(:), buf_kk(:)
+      real(dp), allocatable :: buf_ij(:), buf_ik(:), buf_jk(:)
       real(dp), allocatable :: hloc(:, :, :, :)
       integer, allocatable :: atm_flat(:), bas_flat(:), owner(:)
       integer, allocatable :: offsets(:), counts(:), sh_dim(:), sh_off(:)
-      real(dp), allocatable :: bounds(:, :), dsh(:, :), sa(:)
-      real(dp) :: qq, wbound, est, tol, kx, jx
+      integer, allocatable :: pair_i(:), pair_j(:), order(:)
+      real(dp), allocatable :: qb(:, :), dsh(:, :), sa(:)
+      real(dp) :: qq, wbound, est, tol, kx, jx, deg, gam, w
+      real(dp) :: t(3, 3, 4, 4)
       real(dp), allocatable, target :: env_use(:)
-      integer :: dims(0:3), shls(0:3), dims2(0:3), shls2(0:3)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
-      integer :: io, jo, ko, lo, i, j, k, l, comp, mx, idx
-      integer :: nao, natm, ia, ja, ka, la, a, b, c, pair, n_pairs
-      real(dp) :: gam, ket_w
-      integer :: idx2
-      logical :: have_ii, have_ij, have_ik, have_ik2
+      integer :: io, jo, ko, lo, i, j, k, l, comp, mx, n4
+      integer :: o_ijkl, o_jikl, o_klij
+      integer :: nao, natm, at(4), a, b, x, y, c
+      integer :: npair, ipair, itask, ij, kl
+      integer(int64) :: n_total, n_computed, n_screened
+      logical :: have(6)
 
       if (error%has_error()) return
 
@@ -553,6 +713,9 @@ contains
       if (present(k_scale)) kx = k_scale
       jx = 1.0_dp
       if (present(j_scale)) jx = j_scale
+      n_total = 0_int64
+      n_computed = 0_int64
+      n_screened = 0_int64
       ! A local copy so an omega pass can set the range-separation slot
       ! without disturbing the molecule every other caller shares.
       allocate (env_use(0:size(mol%env) - 1), source=mol%env)
@@ -582,7 +745,22 @@ contains
 
       atm_flat = reshape(mol%atm, [size(mol%atm)])
       bas_flat = reshape(mol%bas, [size(mol%bas)])
-      n_pairs = mol%nbas*mol%nbas
+
+      ! The unique quartets as the Fock build enumerates them: shell pairs
+      ! `i >= j`, and `kl <= ij`. Over the split shells, not the fused-sp
+      ! view: these kernels read a fused entry as a p shell over the s
+      ! coefficients, silently.
+      npair = mol%nbas*(mol%nbas + 1)/2
+      allocate (pair_i(npair), pair_j(npair))
+      ipair = 0
+      do ish = 1, mol%nbas
+         do jsh = 1, ish
+            ipair = ipair + 1
+            pair_i(ipair) = ish
+            pair_j(ipair) = jsh
+         end do
+      end do
+      call pair_work_order(pair_i, pair_j, sh_dim, order)
 
       ! ---- what a quartet can contribute, before computing it ---------------
       !
@@ -597,8 +775,12 @@ contains
       ! negligible.
       tol = HESS_SCREEN_TOL
       if (present(screen_tol)) tol = screen_tol
-      call schwarz_bounds(mol, bounds, error)
-      if (error%has_error()) return
+      if (present(bounds)) then
+         qb = bounds
+      else
+         call schwarz_bounds(mol, qb, error)
+         if (error%has_error()) return
+      end if
 
       allocate (dsh(mol%nbas, mol%nbas), sa(mol%nbas))
       do ish = 1, mol%nbas
@@ -616,105 +798,120 @@ contains
       ! update per quartet would cost everything.
       !$omp parallel default(none) &
       !$omp shared(kx, jx, env_use, mol, density, hess, owner, sh_dim, sh_off, atm_flat, bas_flat, &
-      !$omp        mx, natm, n_pairs, error, bounds, dsh, sa, tol) &
-      !$omp private(buf_ii, buf_ij, buf_ik, buf_ik2, hloc, dims, shls, dims2, shls2, &
+      !$omp        mx, natm, npair, pair_i, pair_j, order, qb, dsh, sa, tol) &
+      !$omp private(buf_ii, buf_jj, buf_kk, buf_ij, buf_ik, buf_jk, hloc, t, &
       !$omp         ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, i, j, k, l, &
-      !$omp         comp, idx, idx2, ia, ja, ka, la, a, b, gam, ket_w, pair, &
-      !$omp         have_ii, have_ij, have_ik, have_ik2, qq, wbound, est)
-      allocate (buf_ii(mx**4*N_COMPONENTS), buf_ij(mx**4*N_COMPONENTS), &
-                buf_ik(mx**4*N_COMPONENTS), buf_ik2(mx**4*N_COMPONENTS))
+      !$omp         comp, n4, o_ijkl, o_jikl, o_klij, at, a, b, x, y, deg, gam, w, &
+      !$omp         itask, ij, kl, have, qq, wbound, est) &
+      !$omp reduction(+:n_total, n_computed, n_screened)
+      allocate (buf_ii(mx**4*N_COMPONENTS), buf_jj(mx**4*N_COMPONENTS), &
+                buf_kk(mx**4*N_COMPONENTS), buf_ij(mx**4*N_COMPONENTS), &
+                buf_ik(mx**4*N_COMPONENTS), buf_jk(mx**4*N_COMPONENTS))
       allocate (hloc(3, 3, natm, natm))
       hloc = 0.0_dp
 
       !$omp do schedule(dynamic)
-      do pair = 1, n_pairs
-         ish = (pair - 1)/mol%nbas + 1
-         jsh = pair - mol%nbas*(ish - 1)
+      do itask = 1, npair
+         ij = order(itask)
+         ish = pair_i(ij)
+         jsh = pair_j(ij)
          di = sh_dim(ish)
          io = sh_off(ish)
          dj = sh_dim(jsh)
          jo = sh_off(jsh)
-         do ksh = 1, mol%nbas
+         do kl = 1, ij
+            ksh = pair_i(kl)
+            lsh = pair_j(kl)
             dk = sh_dim(ksh)
             ko = sh_off(ksh)
-            ! **Only the ket pair is restricted, and only two of the three
-            ! integrals get to use it.** `ipip1` and `ipvip1` leave the ket
-            ! untouched, so `(kl)` and `(lk)` are the same integral, carry the
-            ! same weight and deposit into the same atom pair; one call covers
-            ! both orderings.
-            !
-            ! `ip1ip2` does not get that: its second derivative sits on the
-            ! *first* ket index, so swapping `k` and `l` moves the derivative
-            ! to a different atom. Both orderings are computed.
-            !
-            ! No permutation of the bra is available at all, `ipip1`
-            ! distinguishing its two bra indices and `ip1ip2` distinguishing
-            ! bra from ket.
-            do lsh = 1, ksh
-               dl = sh_dim(lsh)
-               lo = sh_off(lsh)
-               shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
-               dims = [di, dj, dk, dl]
-               ket_w = 2.0_dp
-               if (lsh == ksh) ket_w = 1.0_dp
+            dl = sh_dim(lsh)
+            lo = sh_off(lsh)
+            deg = pair_degeneracy(ish, jsh, ksh, lsh)
 
-               ! The largest weight any element of this quartet can carry,
-               ! written the way the contraction weight is: a Coulomb term and
-               ! the two exchange terms the eightfold symmetrisation produces.
-               wbound = 0.5_dp*dsh(ish, jsh)*dsh(ksh, lsh) &
-                        + abs(kx)*0.125_dp*(dsh(ish, lsh)*dsh(ksh, jsh) &
-                                            + dsh(ish, ksh)*dsh(jsh, lsh))
-               qq = bounds(ish, jsh)*bounds(ksh, lsh)
-               ! Four times the deposit weights (4, 4 and 8) against the
-               ! per-integral derivative factors, which differ because the two
-               ! derivatives sit on different centres in each.
-               est = 16.0_dp*wbound*qq*(sa(ish)*sa(ish) &
-                                        + sa(ish)*sa(jsh) &
-                                        + 2.0_dp*sa(ish)*sa(ksh))
-               if (est < tol) cycle
+            ! The largest weight any element of this quartet can carry,
+            ! written the way the contraction weight is: a Coulomb term and
+            ! the two exchange terms the eightfold symmetrisation produces,
+            ! times the degeneracy the fold puts on it.
+            wbound = deg*(0.5_dp*dsh(ish, jsh)*dsh(ksh, lsh) &
+                          + abs(kx)*0.125_dp*(dsh(ish, lsh)*dsh(ksh, jsh) &
+                                              + dsh(ish, ksh)*dsh(jsh, lsh)))
+            qq = qb(ish, jsh)*qb(ksh, lsh)
+            ! Sixteen blocks, each two derivatives on some pair of centres.
+            est = 2.0_dp*wbound*qq*(sa(ish) + sa(jsh) + sa(ksh) + sa(lsh))**2
+            n_total = n_total + 1_int64
+            if (est < tol) then
+               n_screened = n_screened + 1_int64
+               cycle
+            end if
+            n_computed = n_computed + 1_int64
 
-               have_ii = drive_2e(mol, HESS_ERI_II, buf_ii, dims, shls, atm_flat, bas_flat, env_use)
-               have_ij = drive_2e(mol, HESS_ERI_IJ, buf_ij, dims, shls, atm_flat, bas_flat, env_use)
-               have_ik = drive_2e(mol, HESS_ERI_IK, buf_ik, dims, shls, atm_flat, bas_flat, env_use)
-               have_ik2 = .false.
-               if (lsh /= ksh) then
-                  shls2 = [ish - 1, jsh - 1, lsh - 1, ksh - 1]
-                  dims2 = [di, dj, dl, dk]
-                  have_ik2 = drive_2e(mol, HESS_ERI_IK, buf_ik2, dims2, shls2, &
-                                      atm_flat, bas_flat, env_use)
-               end if
-               if (.not. (have_ii .or. have_ij .or. have_ik .or. have_ik2)) cycle
+            have(1) = drive_2e(mol, HESS_ERI_II, buf_ii, [di, dj, dk, dl], &
+                               [ish - 1, jsh - 1, ksh - 1, lsh - 1], atm_flat, bas_flat, env_use)
+            have(2) = drive_2e(mol, HESS_ERI_II, buf_jj, [dj, di, dk, dl], &
+                               [jsh - 1, ish - 1, ksh - 1, lsh - 1], atm_flat, bas_flat, env_use)
+            have(3) = drive_2e(mol, HESS_ERI_II, buf_kk, [dk, dl, di, dj], &
+                               [ksh - 1, lsh - 1, ish - 1, jsh - 1], atm_flat, bas_flat, env_use)
+            have(4) = drive_2e(mol, HESS_ERI_IJ, buf_ij, [di, dj, dk, dl], &
+                               [ish - 1, jsh - 1, ksh - 1, lsh - 1], atm_flat, bas_flat, env_use)
+            have(5) = drive_2e(mol, HESS_ERI_IK, buf_ik, [di, dj, dk, dl], &
+                               [ish - 1, jsh - 1, ksh - 1, lsh - 1], atm_flat, bas_flat, env_use)
+            have(6) = drive_2e(mol, HESS_ERI_IK, buf_jk, [dj, di, dk, dl], &
+                               [jsh - 1, ish - 1, ksh - 1, lsh - 1], atm_flat, bas_flat, env_use)
+            if (.not. any(have)) cycle
+            ! A kernel that found nothing leaves its buffer as it was.
+            n4 = di*dj*dk*dl
+            if (.not. have(1)) buf_ii(1:n4*N_COMPONENTS) = 0.0_dp
+            if (.not. have(2)) buf_jj(1:n4*N_COMPONENTS) = 0.0_dp
+            if (.not. have(3)) buf_kk(1:n4*N_COMPONENTS) = 0.0_dp
+            if (.not. have(4)) buf_ij(1:n4*N_COMPONENTS) = 0.0_dp
+            if (.not. have(5)) buf_ik(1:n4*N_COMPONENTS) = 0.0_dp
+            if (.not. have(6)) buf_jk(1:n4*N_COMPONENTS) = 0.0_dp
 
-               do l = 1, dl
-                  la = owner(lo + l)
-                  do k = 1, dk
-                     ka = owner(ko + k)
-                     do j = 1, dj
-                        ja = owner(jo + j)
-                        do i = 1, di
-                           ia = owner(io + i)
-                           ! Symmetric under `k <-> l`, which is what lets the
-                           ! swapped ordering reuse it.
-                           gam = jx*0.5_dp*density(io + i, jo + j)*density(ko + k, lo + l) &
-                                 - kx*0.125_dp &
-                                 *(density(io + i, lo + l)*density(ko + k, jo + j) &
-                                   + density(io + i, ko + k)*density(jo + j, lo + l))
-                           if (gam == 0.0_dp) cycle
-                           do comp = 1, N_COMPONENTS
-                              a = (comp - 1)/3 + 1
-                              b = comp - 3*(a - 1)
-                              idx = i + di*(j - 1 + dj*(k - 1 + dk*(l - 1 + dl*(comp - 1))))
-                              hloc(a, b, ia, ia) = hloc(a, b, ia, ia) &
-                                                   + 4.0_dp*ket_w*gam*buf_ii(idx)
-                              hloc(a, b, ia, ja) = hloc(a, b, ia, ja) &
-                                                   + 4.0_dp*ket_w*gam*buf_ij(idx)
-                              hloc(a, b, ia, ka) = hloc(a, b, ia, ka) + 8.0_dp*gam*buf_ik(idx)
-                              if (have_ik2) then
-                                 idx2 = i + di*(j - 1 + dj*(l - 1 + dl*(k - 1 &
-                                                                        + dk*(comp - 1))))
-                                 hloc(a, b, ia, la) = hloc(a, b, ia, la) &
-                                                      + 8.0_dp*gam*buf_ik2(idx2)
-                              end if
+            do l = 1, dl
+               at(4) = owner(lo + l)
+               do k = 1, dk
+                  at(3) = owner(ko + k)
+                  do j = 1, dj
+                     at(2) = owner(jo + j)
+                     do i = 1, di
+                        at(1) = owner(io + i)
+                        gam = jx*0.5_dp*density(io + i, jo + j)*density(ko + k, lo + l) &
+                              - kx*0.125_dp &
+                              *(density(io + i, lo + l)*density(ko + k, jo + j) &
+                                + density(io + i, ko + k)*density(jo + j, lo + l))
+                        if (gam == 0.0_dp) cycle
+                        w = deg*gam
+
+                        ! Where this function quartet sits in each buffer,
+                        ! before the component stride: the three shell orders
+                        ! the kernels were called in.
+                        o_ijkl = i + di*(j - 1 + dj*(k - 1 + dk*(l - 1)))
+                        o_jikl = j + dj*(i - 1 + di*(k - 1 + dk*(l - 1)))
+                        o_klij = k + dk*(l - 1 + dl*(i - 1 + di*(j - 1)))
+                        do comp = 1, N_COMPONENTS
+                           a = (comp - 1)/3 + 1
+                           b = comp - 3*(a - 1)
+                           t(a, b, 1, 1) = buf_ii(o_ijkl + n4*(comp - 1))
+                           t(a, b, 2, 2) = buf_jj(o_jikl + n4*(comp - 1))
+                           t(a, b, 3, 3) = buf_kk(o_klij + n4*(comp - 1))
+                           t(a, b, 1, 2) = buf_ij(o_ijkl + n4*(comp - 1))
+                           t(a, b, 1, 3) = buf_ik(o_ijkl + n4*(comp - 1))
+                           t(a, b, 2, 3) = buf_jk(o_jikl + n4*(comp - 1))
+                        end do
+                        t(:, :, 2, 1) = transpose(t(:, :, 1, 2))
+                        t(:, :, 3, 1) = transpose(t(:, :, 1, 3))
+                        t(:, :, 3, 2) = transpose(t(:, :, 2, 3))
+                        ! The fourth centre: minus the other three, in each
+                        ! derivative index in turn.
+                        do x = 1, 3
+                           t(:, :, x, 4) = -(t(:, :, x, 1) + t(:, :, x, 2) + t(:, :, x, 3))
+                           t(:, :, 4, x) = transpose(t(:, :, x, 4))
+                        end do
+                        t(:, :, 4, 4) = -(t(:, :, 4, 1) + t(:, :, 4, 2) + t(:, :, 4, 3))
+
+                        do y = 1, 4
+                           do x = 1, 4
+                              hloc(:, :, at(x), at(y)) = hloc(:, :, at(x), at(y)) + w*t(:, :, x, y)
                            end do
                         end do
                      end do
@@ -728,11 +925,17 @@ contains
       !$omp critical
       hess = hess + hloc
       !$omp end critical
-      deallocate (buf_ii, buf_ij, buf_ik, buf_ik2, hloc)
+      deallocate (buf_ii, buf_jj, buf_kk, buf_ij, buf_ik, buf_jk, hloc)
       !$omp end parallel
 
+      if (present(stats)) then
+         stats%quartets_total = n_total
+         stats%quartets_computed = n_computed
+         stats%quartets_screened = n_screened
+      end if
+
       deallocate (atm_flat, bas_flat, owner, offsets, counts, sh_dim, sh_off)
-      deallocate (bounds, dsh, sa)
+      deallocate (qb, dsh, sa, pair_i, pair_j, order)
    end subroutine hess_2e_contract
 
    subroutine hess_2e_skeleton_contract(mol, gamma, dref, owner, hess_corr, &
@@ -937,24 +1140,43 @@ contains
    end subroutine hess_2e_skeleton_contract
 
    subroutine h1_contract(mol, density, h1, error, screen_tol, k_scale, &
-                          j_scale, omega)
+                          j_scale, omega, stats, memory_budget, bounds)
       !! The skeleton derivative Fock for **every** atom, in one pass
       !!
       !! `make_h1_atom` builds one atom's `dF/dR` from a stored `int2e_ip1`
       !! array, at `nao^4` of memory and another `nao^4` of work per atom. This
       !! walks the shell quartets once and deposits into whichever atom each
-      !! quartet's differentiated index belongs to, so the `natm` leaves the
+      !! quartet's differentiated function belongs to, so the `natm` leaves the
       !! work and the array is not needed.
       !!
-      !! **The eight terms become seven deposits, and none is lost.** The
-      !! permuted orderings `make_h1_atom` indexes for are *other quartets*,
-      !! which this loop visits anyway, so each term is rewritten in the one
-      !! ordering the buffer has. Two of the Coulomb terms land on the same
-      !! element with the equal weights `d(i,j)` and `d(j,i)`, so they are
-      !! written once with a two.
+      !! **Unique quartets, the Fock build's six updates, one centre at a
+      !! time.** The derivative of `F` with respect to an atom is the Fock
+      !! functional applied to the derivative integrals, and for a fixed
+      !! function `X` the number `d(ij|kl)/dX` is the same however the quartet
+      !! is ordered. So each unique quartet is folded exactly as
+      !! `build_fock_direct_many` folds an undifferentiated one -- `deg` for
+      !! the orbit, six updates, symmetrised at the end -- once per centre,
+      !! into that centre's atom. `int2e_ip1` on `(ij|kl)`, `(ji|kl)` and
+      !! `(kl|ij)` give the first three centres; the fourth is minus their sum.
+      !! Three calls per unique quartet where the ordered loop it replaces
+      !! made one per ordered one: 3/8 against 1 per `nbas^4`.
+      !!
+      !! **The accumulator is bounded, not the thread count.** A private copy
+      !! of `h1` per thread is `nao^2 * 3 * natm` doubles each, which is tens
+      !! of gigabytes at a few hundred atoms on a full node. The atoms are
+      !! taken in groups sized so the copies fit `memory_budget`, each group
+      !! walking the quartets that touch it; a quartet with centres in several
+      !! groups is computed once per group, which is the price of the bound
+      !! and is paid only when the bound bites. The copies are one shared
+      !! array so the reduction runs in parallel over atoms and components
+      !! rather than through a critical section.
       !!
       !! Checked against `make_h1_atom` element by element in the test suite,
       !! that routine staying as the readable statement of what this computes.
+      ! TODO(mqc): with the budget binding, a quartet is recomputed once per
+      ! group it touches, up to four times; the cheaper alternative is to
+      ! deposit those into a smaller structure and was not tried.
+!$    use omp_lib, only: omp_get_thread_num
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)
       real(dp), allocatable, intent(out) :: h1(:, :, :, :)   !! (nao, nao, 3, natm)
@@ -974,19 +1196,37 @@ contains
          !! `env(PTR_RANGE_OMEGA)`, so the attenuated integrals are the same
          !! entry points over the same quartets -- no new procedures, which is
          !! what makes this a threading job rather than an integral one.
-      real(dp), allocatable :: buf(:), hloc(:, :, :, :)
-      real(dp), allocatable :: bounds(:, :), bq(:, :), dsh(:, :), sa(:)
-      real(dp) :: wmax, est, tol, kx, jx
+      type(direct_stats_t), intent(out), optional :: stats
+         !! Unique shell quartets walked, skipped by the estimate, and handed
+         !! to `int2e_ip1`, over the fused-sp view, summed over atom groups. A
+         !! computed quartet is three kernel calls.
+      real(dp), intent(in), optional :: memory_budget
+         !! Bytes the per-thread accumulators may take together;
+         !! `H1_ACCUMULATOR_BUDGET` when absent.
+      real(dp), intent(in), optional :: bounds(:, :)
+         !! From `schwarz_bounds`, over the split shells, when the caller
+         !! already has them.
+
+      real(dp), allocatable :: buf_i(:), buf_j(:), buf_k(:)
+      real(dp), allocatable :: acc(:, :, :, :, :)
+      real(dp), allocatable :: d_half(:, :)
+      real(dp), allocatable :: qb(:, :), bq(:, :), dsh(:, :), sa(:)
+      real(dp) :: wmax, est, tol, kx, jx, deg, budget, val, jsc, ksc
+      real(dp) :: v(3, 4)
       real(dp), allocatable, target :: env_use(:)
-      integer, allocatable :: atm_flat(:), bas_flat(:), owner(:)
+      integer, allocatable :: atm_flat(:), bas_flat(:), owner(:), shell_atom(:)
       integer, allocatable :: offsets(:), counts(:)
+      integer, allocatable :: pair_i(:), pair_j(:), order(:)
       type(eri_shell_table_t) :: tab
-      integer :: dims(0:3), shls(0:3)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
-      integer :: io, jo, ko, lo, i, j, k, l, comp, mx, idx
-      integer :: nao, natm, ii, jj, kk, ll, at, c, pair, n_pairs
-      real(dp) :: b
-      logical :: have
+      integer :: io, jo, ko, lo, i, j, k, l, comp, mx, n4
+      integer :: o_ijkl, o_jikl, o_klij
+      integer :: nao, natm, c, x, at(4), slot
+      integer :: npair, ipair, itask, ij, kl, nthreads, tid
+      integer :: n_groups, group, first, last, wide
+      integer(int64) :: n_total, n_computed, n_screened, bytes_full
+      logical :: have(3)
+      character(len=MAX_LINE_LENGTH) :: line
 
       if (error%has_error()) return
 
@@ -996,6 +1236,9 @@ contains
       if (present(j_scale)) jx = j_scale
       nao = mol%nao
       natm = mol%natm
+      n_total = 0_int64
+      n_computed = 0_int64
+      n_screened = 0_int64
 
       allocate (offsets(natm), counts(natm), owner(nao))
       call atom_ao_blocks(mol, offsets, counts)
@@ -1016,6 +1259,10 @@ contains
       ! density are indexed as before and the deposits need no map.
       call eri_shell_table(mol, tab)
       mx = tab%block_max
+      allocate (shell_atom(tab%nbas))
+      do ish = 1, tab%nbas
+         shell_atom(ish) = owner(tab%offs(ish) + 1)
+      end do
 
       ! A local copy so an omega pass can set the range-separation slot without
       ! disturbing the table every other caller shares. **From `tab%env` and
@@ -1027,17 +1274,33 @@ contains
 
       atm_flat = reshape(mol%atm, [size(mol%atm)])
       bas_flat = reshape(tab%bas, [size(tab%bas)])
-      n_pairs = tab%nbas*tab%nbas
+
+      ! The unique quartets, as the Fock build enumerates and orders them.
+      npair = tab%nbas*(tab%nbas + 1)/2
+      allocate (pair_i(npair), pair_j(npair))
+      ipair = 0
+      do ish = 1, tab%nbas
+         do jsh = 1, ish
+            ipair = ipair + 1
+            pair_i(ipair) = ish
+            pair_j(ipair) = jsh
+         end do
+      end do
+      call pair_work_order(pair_i, pair_j, tab%dims, order)
 
       ! Screened the same way `hess_2e_contract` is, with one derivative rather
-      ! than two, so the estimate carries one factor of `2 sqrt(alpha_max)`.
-      ! The bounds come from the split shells and are re-blocked onto the view,
-      ! because that is the table this loop walks.
+      ! than two, so the estimate carries one factor of `2 sqrt(alpha_max)`
+      ! per centre. The bounds come from the split shells and are re-blocked
+      ! onto the view, because that is the table this loop walks.
       tol = HESS_SCREEN_TOL
       if (present(screen_tol)) tol = screen_tol
-      call schwarz_bounds(mol, bounds, error)
-      if (error%has_error()) return
-      call eri_schwarz_collapse(mol, bounds, bq)
+      if (present(bounds)) then
+         qb = bounds
+      else
+         call schwarz_bounds(mol, qb, error)
+         if (error%has_error()) return
+      end if
+      call eri_schwarz_collapse(mol, qb, bq)
 
       allocate (dsh(tab%nbas, tab%nbas), sa(tab%nbas))
       do ish = 1, tab%nbas
@@ -1050,83 +1313,139 @@ contains
                                        + tab%bas(LIBCINT_NPRIM_OF, ish))))
       end do
 
+      ! The six-update form is written for the density without its two.
+      allocate (d_half(nao, nao))
+      d_half = 0.5_dp*density
+
       allocate (h1(nao, nao, 3, natm))
       h1 = 0.0_dp
 
-      ! A private accumulator per thread is `nao^2 * 3 * natm` doubles, the
-      ! same size as the answer. The first thing to revisit if the memory stops
-      ! being affordable; the alternative is an atomic per deposit, and there
-      ! are seven per buffer element.
-      !$omp parallel default(none) &
-      !$omp shared(kx, jx, env_use, mol, density, h1, owner, tab, atm_flat, bas_flat, &
-      !$omp        mx, nao, natm, n_pairs, bq, dsh, sa, tol) &
-      !$omp private(buf, hloc, dims, shls, ish, jsh, ksh, lsh, di, dj, dk, dl, &
-      !$omp         io, jo, ko, lo, i, j, k, l, comp, idx, ii, jj, kk, ll, at, b, &
-      !$omp         pair, have, wmax, est)
-      allocate (buf(mx**4*3))
-      allocate (hloc(nao, nao, 3, natm))
-      hloc = 0.0_dp
+      ! How many atoms the copies can hold at once.
+      budget = H1_ACCUMULATOR_BUDGET
+      if (present(memory_budget)) budget = memory_budget
+      nthreads = omp_threads()
+      bytes_full = int(nao, int64)*int(nao, int64)*3_int64*int(natm, int64)*8_int64
+      n_groups = int(ceiling(real(nthreads, dp)*real(bytes_full, dp)/budget))
+      n_groups = max(1, min(n_groups, natm))
+      wide = (natm + n_groups - 1)/n_groups
+      n_groups = (natm + wide - 1)/wide
+      if (n_groups > 1) then
+         write (line, "(a,i0,a,i0,a)") "    skeleton Fock derivative: accumulator held to ", &
+            n_groups, " atom groups of ", wide, " to fit the memory budget"
+         call logger%performance(trim(line))
+      end if
+      allocate (acc(nao, nao, 3, wide, nthreads))
 
-      !$omp do schedule(dynamic)
-      do pair = 1, n_pairs
-         ish = (pair - 1)/tab%nbas + 1
-         jsh = pair - tab%nbas*(ish - 1)
-         di = tab%dims(ish)
-         io = tab%offs(ish)
-         dj = tab%dims(jsh)
-         jo = tab%offs(jsh)
-         do ksh = 1, tab%nbas
-            dk = tab%dims(ksh)
-            ko = tab%offs(ksh)
-            do lsh = 1, tab%nbas
+      do group = 1, n_groups
+         first = (group - 1)*wide + 1
+         last = min(group*wide, natm)
+
+         !$omp parallel default(none) &
+         !$omp shared(kx, jx, env_use, mol, density, d_half, h1, owner, shell_atom, tab, &
+         !$omp        atm_flat, bas_flat, mx, nao, natm, npair, pair_i, pair_j, order, &
+         !$omp        bq, dsh, sa, tol, acc, first, last, wide, nthreads) &
+         !$omp private(buf_i, buf_j, buf_k, tid, ish, jsh, ksh, lsh, di, dj, dk, dl, &
+         !$omp         io, jo, ko, lo, i, j, k, l, comp, n4, o_ijkl, o_jikl, o_klij, &
+         !$omp         itask, ij, kl, deg, wmax, est, have, at, x, slot, v, val, jsc, ksc) &
+         !$omp reduction(+:n_total, n_computed, n_screened)
+         tid = 1
+!$       tid = omp_get_thread_num() + 1
+         allocate (buf_i(mx**4*3), buf_j(mx**4*3), buf_k(mx**4*3))
+         ! Each thread zeroes its own copy, so the pages are first touched by
+         ! the thread that will write them.
+         acc(:, :, :, :, tid) = 0.0_dp
+         !$omp barrier
+
+         !$omp do schedule(dynamic)
+         do itask = 1, npair
+            ij = order(itask)
+            ish = pair_i(ij)
+            jsh = pair_j(ij)
+            di = tab%dims(ish)
+            io = tab%offs(ish)
+            dj = tab%dims(jsh)
+            jo = tab%offs(jsh)
+            do kl = 1, ij
+               ksh = pair_i(kl)
+               lsh = pair_j(kl)
+               ! Nothing to deposit in this group from a quartet none of
+               ! whose centres belong to it.
+               if (.not. (in_group(shell_atom(ish)) .or. in_group(shell_atom(jsh)) &
+                          .or. in_group(shell_atom(ksh)) .or. in_group(shell_atom(lsh)))) cycle
+               dk = tab%dims(ksh)
+               ko = tab%offs(ksh)
                dl = tab%dims(lsh)
                lo = tab%offs(lsh)
-               shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
-               dims = [di, dj, dk, dl]
+               deg = pair_degeneracy(ish, jsh, ksh, lsh)
 
-               ! The largest density element any of the seven deposits can
-               ! pick up, against the bound on a once-differentiated quartet.
+               ! The largest density element any of the six updates can pick
+               ! up, against the bound on a once-differentiated quartet,
+               ! summed over the four centres the deposits come from.
                wmax = max(dsh(ksh, lsh), dsh(ish, jsh), dsh(jsh, ksh), &
                           dsh(ish, ksh), dsh(lsh, ish), dsh(lsh, jsh))
-               est = 4.0_dp*sa(ish)*bq(ish, jsh)*bq(ksh, lsh)*wmax
-               if (est < tol) cycle
-
-               if (mol%cartesian) then
-                  have = cint2e_ip1_cart(buf, shls, atm_flat, mol%natm, &
-                                         bas_flat, tab%nbas, env_use, c_null_ptr) /= 0
-               else
-                  have = cint2e_ip1_sph(buf, shls, atm_flat, mol%natm, &
-                                        bas_flat, tab%nbas, env_use, c_null_ptr) /= 0
+               est = 4.0_dp*deg*(sa(ish) + sa(jsh) + sa(ksh) + sa(lsh)) &
+                     *bq(ish, jsh)*bq(ksh, lsh)*wmax
+               n_total = n_total + 1_int64
+               if (est < tol) then
+                  n_screened = n_screened + 1_int64
+                  cycle
                end if
-               if (.not. have) cycle
+               n_computed = n_computed + 1_int64
 
-               do comp = 1, 3
-                  do l = 1, dl
-                     ll = lo + l
-                     do k = 1, dk
-                        kk = ko + k
-                        do j = 1, dj
-                           jj = jo + j
-                           do i = 1, di
-                              ii = io + i
-                              idx = i + di*(j - 1 + dj*(k - 1 + dk*(l - 1 + dl*(comp - 1))))
-                              b = buf(idx)
-                              if (b == 0.0_dp) cycle
-                              ! The nabla sits on the first index, so the whole
-                              ! quartet belongs to that index's atom.
-                              at = owner(ii)
-                              hloc(ii, jj, comp, at) = hloc(ii, jj, comp, at) - jx*density(kk, ll)*b
-                              hloc(jj, ii, comp, at) = hloc(jj, ii, comp, at) - jx*density(kk, ll)*b
-                              hloc(kk, ll, comp, at) = hloc(kk, ll, comp, at) &
-                                                       - jx*2.0_dp*density(ii, jj)*b
-                              hloc(ii, ll, comp, at) = hloc(ii, ll, comp, at) &
-                                                       + kx*0.5_dp*density(jj, kk)*b
-                              hloc(jj, ll, comp, at) = hloc(jj, ll, comp, at) &
-                                                       + kx*0.5_dp*density(ii, kk)*b
-                              hloc(kk, jj, comp, at) = hloc(kk, jj, comp, at) &
-                                                       + kx*0.5_dp*density(ll, ii)*b
-                              hloc(kk, ii, comp, at) = hloc(kk, ii, comp, at) &
-                                                       + kx*0.5_dp*density(ll, jj)*b
+               have(1) = ip1_block(mol, buf_i, [ish - 1, jsh - 1, ksh - 1, lsh - 1], &
+                                   atm_flat, bas_flat, tab%nbas, env_use)
+               have(2) = ip1_block(mol, buf_j, [jsh - 1, ish - 1, ksh - 1, lsh - 1], &
+                                   atm_flat, bas_flat, tab%nbas, env_use)
+               have(3) = ip1_block(mol, buf_k, [ksh - 1, lsh - 1, ish - 1, jsh - 1], &
+                                   atm_flat, bas_flat, tab%nbas, env_use)
+               if (.not. any(have)) cycle
+               n4 = di*dj*dk*dl
+               if (.not. have(1)) buf_i(1:n4*3) = 0.0_dp
+               if (.not. have(2)) buf_j(1:n4*3) = 0.0_dp
+               if (.not. have(3)) buf_k(1:n4*3) = 0.0_dp
+
+               do l = 1, dl
+                  at(4) = owner(lo + l)
+                  do k = 1, dk
+                     at(3) = owner(ko + k)
+                     do j = 1, dj
+                        at(2) = owner(jo + j)
+                        do i = 1, di
+                           at(1) = owner(io + i)
+                           o_ijkl = i + di*(j - 1 + dj*(k - 1 + dk*(l - 1)))
+                           o_jikl = j + dj*(i - 1 + di*(k - 1 + dk*(l - 1)))
+                           o_klij = k + dk*(l - 1 + dl*(i - 1 + di*(j - 1)))
+                           do comp = 1, 3
+                              v(comp, 1) = buf_i(o_ijkl + n4*(comp - 1))
+                              v(comp, 2) = buf_j(o_jikl + n4*(comp - 1))
+                              v(comp, 3) = buf_k(o_klij + n4*(comp - 1))
+                           end do
+                           v(:, 4) = -(v(:, 1) + v(:, 2) + v(:, 3))
+
+                           ! The Fock build's six updates, once per centre,
+                           ! into that centre's atom. The library's nabla is
+                           ! minus the derivative with respect to the atom.
+                           do x = 1, 4
+                              if (.not. in_group(at(x))) cycle
+                              slot = at(x) - first + 1
+                              do comp = 1, 3
+                                 val = -deg*v(comp, x)
+                                 if (val == 0.0_dp) cycle
+                                 jsc = jx*val
+                                 ksc = kx*0.25_dp*val
+                                 acc(io + i, jo + j, comp, slot, tid) = &
+                                    acc(io + i, jo + j, comp, slot, tid) + jsc*d_half(ko + k, lo + l)
+                                 acc(ko + k, lo + l, comp, slot, tid) = &
+                                    acc(ko + k, lo + l, comp, slot, tid) + jsc*d_half(io + i, jo + j)
+                                 acc(io + i, ko + k, comp, slot, tid) = &
+                                    acc(io + i, ko + k, comp, slot, tid) - ksc*d_half(jo + j, lo + l)
+                                 acc(jo + j, lo + l, comp, slot, tid) = &
+                                    acc(jo + j, lo + l, comp, slot, tid) - ksc*d_half(io + i, ko + k)
+                                 acc(io + i, lo + l, comp, slot, tid) = &
+                                    acc(io + i, lo + l, comp, slot, tid) - ksc*d_half(jo + j, ko + k)
+                                 acc(jo + j, ko + k, comp, slot, tid) = &
+                                    acc(jo + j, ko + k, comp, slot, tid) - ksc*d_half(io + i, lo + l)
+                              end do
                            end do
                         end do
                      end do
@@ -1134,16 +1453,68 @@ contains
                end do
             end do
          end do
+         !$omp end do
+
+         ! The reduction, in parallel over the group's atoms and components:
+         ! every copy summed, then symmetrised, which is what turns the six
+         ! updates into the full sum over the eight permutations.
+         !$omp do collapse(2)
+         do slot = 1, last - first + 1
+            do comp = 1, 3
+               do j = 1, nao
+                  do i = 1, nao
+                     h1(i, j, comp, first + slot - 1) = sum(acc(i, j, comp, slot, 1:nthreads))
+                  end do
+               end do
+               do j = 1, nao
+                  do i = 1, j - 1
+                     val = 0.5_dp*(h1(i, j, comp, first + slot - 1) + h1(j, i, comp, first + slot - 1))
+                     h1(i, j, comp, first + slot - 1) = val
+                     h1(j, i, comp, first + slot - 1) = val
+                  end do
+               end do
+            end do
+         end do
+         !$omp end do
+         deallocate (buf_i, buf_j, buf_k)
+         !$omp end parallel
       end do
-      !$omp end do
 
-      !$omp critical
-      h1 = h1 + hloc
-      !$omp end critical
-      deallocate (buf, hloc)
-      !$omp end parallel
+      if (present(stats)) then
+         stats%quartets_total = n_total
+         stats%quartets_computed = n_computed
+         stats%quartets_screened = n_screened
+      end if
 
-      deallocate (atm_flat, bas_flat, owner, offsets, counts, bounds, bq, dsh, sa)
+      deallocate (acc, d_half, atm_flat, bas_flat, owner, shell_atom, offsets, counts)
+      deallocate (qb, bq, dsh, sa, pair_i, pair_j, order)
+
+   contains
+
+      pure logical function in_group(atom)
+         !! Whether `atom` is in the group of atoms being accumulated
+         integer, intent(in) :: atom
+
+         in_group = atom >= first .and. atom <= last
+      end function in_group
    end subroutine h1_contract
+
+   function ip1_block(mol, buf, shls, atm, bas, nbas, env) result(have)
+      !! `int2e_ip1` on one shell quartet, spherical or Cartesian as the
+      !! molecule is
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(inout) :: buf(0:)
+      integer, intent(in) :: shls(0:)
+      integer, intent(in), target :: atm(0:), bas(0:)
+      integer, intent(in) :: nbas
+      real(dp), intent(in), target :: env(0:)
+      logical :: have
+
+      if (mol%cartesian) then
+         have = cint2e_ip1_cart(buf, shls, atm, mol%natm, bas, nbas, env, c_null_ptr) /= 0
+      else
+         have = cint2e_ip1_sph(buf, shls, atm, mol%natm, bas, nbas, env, c_null_ptr) /= 0
+      end if
+   end function ip1_block
 
 end module mqc_czt_hess_ints

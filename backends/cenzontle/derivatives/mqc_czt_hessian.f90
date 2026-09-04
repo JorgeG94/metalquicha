@@ -10,16 +10,20 @@ module mqc_czt_hessian
    !! by stage: the nuclear repulsion term, the per-atom perturbation that
    !! drives the coupled-perturbed equations, the response solve itself, and
    !! the explicit second-derivative assembly.
+   use, intrinsic :: iso_fortran_env, only: int64
    use pic_types, only: dp
+   use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_program_limits, only: MAX_LINE_LENGTH
+   use mqc_timing, only: timing_report_t
+   use mqc_calculation_defaults, only: DEFAULT_RESPONSE_BATCH
    use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks
    use mqc_czt_gradient, only: one_electron_deriv, iprinv_deriv_at, &
                                DERIV_KIN, DERIV_NUC, DERIV_OVLP
-   use mqc_czt_hess_ints, only: eri_ip1_block, hess_1e_block, hess_2e_block, &
-                                hess_rinv_block, hess_2e_contract, h1_contract, &
+   use mqc_czt_hess_ints, only: hess_1e_block, hess_rinv_contract, &
+                                hess_2e_contract, h1_contract, &
                                 HESS_OVLP_II, HESS_OVLP_IJ, HESS_KIN_II, HESS_KIN_IJ, &
-                                HESS_NUC_II, HESS_NUC_IJ, HESS_RINV_II, HESS_RINV_IJ, &
-                                HESS_ERI_II, HESS_ERI_IJ, HESS_ERI_IK
+                                HESS_NUC_II, HESS_NUC_IJ
    use mqc_czt_xc, only: xc_context_t, xc_kernel_apply, xc_add_potential, &
                          vv10_kernel_apply
    use mqc_czt_xc_hessian, only: xc_potential_deriv, vv10_potential_deriv
@@ -28,11 +32,14 @@ module mqc_czt_hessian
    use mqc_czt_response, only: response_operator_t, solve_response
    use pic_blas_interfaces, only: pic_gemm
    use mqc_czt_ecp, only: ecp_refuses_derivatives
-   ! TODO(mqc): `eri_ip1_block`, `hess_2e_block`, `HESS_ERI_II`, `HESS_ERI_IJ`
-   ! and `HESS_ERI_IK` above are imported and used nowhere; the two-electron
-   ! work moved to `hess_2e_contract` and `h1_contract` and the imports stayed.
    implicit none
    private
+
+   real(dp), parameter :: RESPONSE_SCREEN_FLOOR = 1.0e-6_dp
+      !! Largest trial-density element below which `nuclear_apply` scales the
+      !! density up to this before the screened Fock build. A hundred
+      !! thousand times the build's screening tolerance, so the image of the
+      !! smallest direction still carries five digits.
 
    public :: hcore_deriv_atom
    public :: make_h1_atom
@@ -46,6 +53,22 @@ module mqc_czt_hessian
    public :: rhf_hessian
    public :: ks_hessian
    public :: hessian_to_matrix
+
+   ! Stage labels for the timing table, named once so the laps inside
+   ! `partial_hessian` and `response_hessian` and the report in the drivers
+   ! cannot drift apart.
+   character(len=*), parameter :: STAGE_NUCLEAR = "nuclear repulsion"
+   character(len=*), parameter :: STAGE_1E_SECOND = "1e second derivatives"
+   character(len=*), parameter :: STAGE_RINV = "nuclear attraction, cross"
+   character(len=*), parameter :: STAGE_2E_SECOND = "2e second derivatives"
+   character(len=*), parameter :: STAGE_XC_SECOND = "XC second derivatives"
+   character(len=*), parameter :: STAGE_FOCK = "reference Fock"
+   character(len=*), parameter :: STAGE_H1 = "skeleton Fock derivative"
+   character(len=*), parameter :: STAGE_1E_ATOM = "1e derivatives per atom"
+   character(len=*), parameter :: STAGE_CPHF = "response solve"
+   character(len=*), parameter :: STAGE_D1 = "first-order densities"
+   character(len=*), parameter :: STAGE_G1 = "relaxed mean field"
+   character(len=*), parameter :: STAGE_ASSEMBLY = "dW/dR and assembly"
 
    type, extends(response_operator_t) :: nuclear_response_t
       !! The electronic Hessian, applied to a response that has occupied rows
@@ -81,12 +104,84 @@ module mqc_czt_hessian
          !! A range-separated functional's second exchange term:
          !! `rs_k_lr` of the exchange built against `erf(omega r)/r`. Zero
          !! omega is the ordinary case and costs nothing.
+      integer(int64) :: last_computed = 0_int64
+      integer(int64) :: last_screened = 0_int64
+         !! Shell quartets the most recent `apply` computed and skipped, over
+         !! every integral pass it made. What the solver's per-cycle line shows.
+      integer(int64) :: total_computed = 0_int64
+      integer :: n_apply = 0
+         !! Quartets computed and passes made over the operator's whole life.
    contains
       procedure :: apply => nuclear_apply
       procedure :: length => nuclear_length
+      procedure :: note_header => nuclear_note_header
+      procedure :: note => nuclear_note
+      procedure :: denominators => nuclear_denominators
    end type nuclear_response_t
 
 contains
+
+   subroutine lap(clk, stage)
+      !! Close `stage` on a clock the caller may not have supplied
+      type(timing_report_t), intent(inout), optional :: clk
+      character(len=*), intent(in) :: stage
+
+      if (present(clk)) call clk%lap(stage)
+   end subroutine lap
+
+   subroutine screening_line(what, stats)
+      !! One line saying how much of a derivative-integral pass was skipped
+      character(len=*), intent(in) :: what
+      type(direct_stats_t), intent(in) :: stats
+
+      character(len=MAX_LINE_LENGTH) :: line
+
+      if (stats%quartets_total <= 0) return
+      write (line, "(a,i14,a,i14,a,f6.1,a)") "    "//what//": quartets ", stats%quartets_total, &
+         ", computed ", stats%quartets_computed, " (", &
+         100.0_dp*real(stats%quartets_computed, dp)/real(stats%quartets_total, dp), " %)"
+      call logger%performance(trim(line))
+   end subroutine screening_line
+
+   function nuclear_note_header(this) result(text)
+      !! Headings for the integral columns of the solver's cycle line
+      class(nuclear_response_t), intent(in) :: this
+      character(len=:), allocatable :: text
+
+      text = "      computed     skipped"
+   end function nuclear_note_header
+
+   function nuclear_denominators(this) result(den)
+      !! `e_a - e_i` on every virtual-occupied element, zero on the
+      !! occupied-occupied ones `apply` reads but zeroes in its image, in the
+      !! `(n_mo, n_occ, n_pert)` layout of the response vector
+      class(nuclear_response_t), intent(in) :: this
+      real(dp), allocatable :: den(:)
+
+      integer :: a, i, q, idx
+
+      allocate (den(this%n_mo*this%n_occ*this%n_pert))
+      den = 0.0_dp
+      do q = 1, this%n_pert
+         do i = 1, this%n_occ
+            do a = this%n_occ + 1, this%n_mo
+               idx = a + (i - 1)*this%n_mo + (q - 1)*this%n_mo*this%n_occ
+               den(idx) = this%energies(a) - this%energies(i)
+            end do
+         end do
+      end do
+   end function nuclear_denominators
+
+   function nuclear_note(this) result(text)
+      !! Quartets the last `apply` computed and skipped
+      class(nuclear_response_t), intent(in) :: this
+      character(len=:), allocatable :: text
+
+      character(len=40) :: buf
+
+      write (buf, "(i14,i12)") this%last_computed, this%last_screened
+      text = trim(buf)
+   end function nuclear_note
 
    subroutine hcore_deriv_atom(mol, iatom, hcore_a, error)
       !! `dH_core/dR_A`, the one-electron Hamiltonian moved by one atom
@@ -389,14 +484,15 @@ contains
       real(dp), allocatable :: mo1(:, :, :), half(:, :), dens(:, :, :), g(:, :, :)
       real(dp), allocatable :: vxc(:, :), vnl(:, :, :)
       real(dp), allocatable :: g_lr(:, :, :)
-      real(dp), allocatable :: work(:, :), gmo(:, :)
+      real(dp), allocatable :: work(:, :), gmo(:, :), scale(:)
+      real(dp) :: dmax
       type(direct_stats_t) :: stats
       integer :: n_ao, i, a, p
 
       if (error%has_error()) return
 
       n_ao = size(this%orbitals, 1)
-      allocate (mo1(this%n_mo, this%n_occ, this%n_pert))
+      allocate (mo1(this%n_mo, this%n_occ, this%n_pert), scale(this%n_pert))
       mo1 = reshape(vector, [this%n_mo, this%n_occ, this%n_pert])
 
       ! The densities these responses imply, symmetrised, one per perturbation.
@@ -412,13 +508,33 @@ contains
          dens(:, :, p) = dens(:, :, p) + transpose(dens(:, :, p))
       end do
 
-      ! One integral pass for the whole batch. `build_fock_direct_many` screens
-      ! on the Schwarz bound alone, so a batch is bit-for-bit what the same
-      ! densities give one at a time -- which matters here, because a response
-      ! density is not a density and screening on its magnitude would be wrong.
+      ! **A tiny trial density is applied at unit scale and its image scaled
+      ! back.** The Fock build's density screen is absolute, and a conjugate-
+      ! gradient direction shrinks as the solve converges: once its largest
+      ! element is near the screening tolerance the surviving quartets are an
+      ! arbitrary subset of the operator and the image is noise, which the
+      ! solver sees as an operator that is not positive definite. Everything
+      ! applied below is linear in the density, so scaling up, screening at
+      ! the same tolerance and scaling down is the same operator with a
+      ! screen relative to the direction. The floor keeps that for directions
+      ! that need it and leaves a large one to shrink its own pass.
+      do p = 1, this%n_pert
+         dmax = maxval(abs(dens(:, :, p)))
+         scale(p) = 1.0_dp
+         if (dmax > 0.0_dp .and. dmax < RESPONSE_SCREEN_FLOOR) scale(p) = RESPONSE_SCREEN_FLOOR/dmax
+         if (scale(p) /= 1.0_dp) dens(:, :, p) = scale(p)*dens(:, :, p)
+      end do
+
+      ! One integral pass for the whole batch, screened on the Schwarz bound
+      ! weighted by the largest trial-density element a quartet touches. The
+      ! bound is rigorous for any symmetric matrix, so a response density
+      ! qualifies although it is not a density; what the weighting buys is
+      ! that a response to one atom's displacement is small far from it.
       call build_fock_direct_many(this%mol, this%zero_h, dens, this%bounds, g, stats, error, &
-                                  k_scale=this%k_scale)
+                                  k_scale=this%k_scale, density_screen=.true.)
       if (error%has_error()) return
+      this%last_computed = stats%quartets_computed
+      this%last_screened = stats%quartets_screened
 
       ! The long-range half of a range-separated functional's exchange. No
       ! Coulomb: the full-range pass above already supplied it.
@@ -426,10 +542,14 @@ contains
          if (.not. allocated(g_lr)) allocate (g_lr(size(g, 1), size(g, 2), size(g, 3)))
          call build_fock_direct_many(this%mol, this%zero_h, dens, this%bounds, g_lr, &
                                      stats, error, k_scale=this%rs_k_lr, j_scale=0.0_dp, &
-                                     omega=this%rs_omega)
+                                     omega=this%rs_omega, density_screen=.true.)
          if (error%has_error()) return
          g = g + g_lr
+         this%last_computed = this%last_computed + stats%quartets_computed
+         this%last_screened = this%last_screened + stats%quartets_screened
       end if
+      this%total_computed = this%total_computed + this%last_computed
+      this%n_apply = this%n_apply + 1
 
       ! The exchange-correlation kernel, for a Kohn-Sham reference: the second
       ! derivative of E_xc with respect to the density, contracted against the
@@ -464,6 +584,7 @@ contains
       ! Back to the molecular basis, occupied columns only.
       allocate (work(n_ao, this%n_occ), gmo(this%n_mo, this%n_occ))
       do p = 1, this%n_pert
+         if (scale(p) /= 1.0_dp) g(:, :, p) = g(:, :, p)/scale(p)
          call pic_gemm(g(:, :, p), this%c_occ, work)
          call pic_gemm(this%orbitals, work, gmo, transa="T")
          do i = 1, this%n_occ
@@ -631,7 +752,7 @@ contains
    end subroutine nuclear_repulsion_hessian
 
    subroutine partial_hessian(mol, density, weighted, hess, error, k_scale, &
-                              rs_k_lr, rs_omega)
+                              rs_k_lr, rs_omega, clk)
       !! The Hessian of the energy expression with the orbitals held fixed
       !!
       !! Everything in `d2E/dRdR` that survives when the density is not allowed
@@ -655,13 +776,16 @@ contains
          !! Exact-exchange fraction; one (Hartree-Fock) by default.
       real(dp), intent(in), optional :: rs_k_lr, rs_omega
       type(error_t), intent(inout) :: error
+      type(timing_report_t), intent(inout), optional :: clk
+         !! Lapped after each of the three stages here, when supplied.
 
+      type(direct_stats_t) :: stats, stats_lr
+      real(dp), allocatable :: bounds(:, :)
       real(dp), allocatable :: s2(:, :, :), sab(:, :, :)
       real(dp), allocatable :: h2(:, :, :), hab(:, :, :)
       real(dp), allocatable :: tmp(:, :, :)
-      real(dp), allocatable :: r2(:, :, :), rab(:, :, :)
       integer, allocatable :: owner(:), offsets(:), counts(:)
-      real(dp), allocatable :: cross(:, :, :)
+      real(dp), allocatable :: cross(:, :, :, :)
       real(dp) :: total(3, 3)
       real(dp) :: w, zc
       integer :: nao, natm, iao, jao, ia, ja, a, b, comp, c
@@ -730,6 +854,7 @@ contains
          end do
       end do
       deallocate (h2, hab, s2, sab)
+      call lap(clk, STAGE_1E_SECOND)
 
       ! ---- one electron, at least one derivative on a nucleus --------------
       !
@@ -738,40 +863,24 @@ contains
       ! derivative at all, so it reaches atom pairs the block above cannot see
       ! -- a nucleus with no basis functions on it still has a Hessian row.
       !
-      ! `cross(a, b, A)` collects, for the atom `c` whose nucleus is moving, the
-      ! part belonging to basis functions centred on `A`. Bra and ket fold onto
-      ! each other, hence the factor of two.
-      allocate (cross(3, 3, natm))
+      ! `cross(a, b, A, C)` collects, for the atom `C` whose nucleus is moving,
+      ! the part belonging to basis functions centred on `A`, contracted in
+      ! one threaded pass over the shell pairs. Bra and ket fold onto each
+      ! other, hence the factor of two.
+      call hess_rinv_contract(mol, density, cross, error)
+      if (error%has_error()) return
       do c = 1, natm
-         call hess_rinv_block(mol, c, HESS_RINV_II, r2, error)
-         call hess_rinv_block(mol, c, HESS_RINV_IJ, rab, error)
-         if (error%has_error()) return
          zc = mol%charges(c)
-
-         cross = 0.0_dp
-         do comp = 1, 9
-            a = (comp - 1)/3 + 1
-            b = comp - 3*(a - 1)
-            do jao = 1, nao
-               do iao = 1, nao
-                  ia = owner(iao)
-                  cross(a, b, ia) = cross(a, b, ia) + density(iao, jao) &
-                                    *(r2(iao, jao, comp) + rab(iao, jao, comp))
-               end do
-            end do
-         end do
-         deallocate (r2, rab)
-
          ! `w = -Z_C` is the charge and sign of the electron-nucleus
-         ! attraction, which `hess_rinv_block` deliberately leaves off.
+         ! attraction, which `hess_rinv_contract` deliberately leaves off.
          w = -zc
          total = 0.0_dp
          do ia = 1, natm
-            total = total + cross(:, :, ia)
+            total = total + cross(:, :, ia, c)
             do b = 1, 3
                do a = 1, 3
-                  hess(a, b, ia, c) = hess(a, b, ia, c) - 2.0_dp*w*cross(a, b, ia)
-                  hess(a, b, c, ia) = hess(a, b, c, ia) - 2.0_dp*w*cross(b, a, ia)
+                  hess(a, b, ia, c) = hess(a, b, ia, c) - 2.0_dp*w*cross(a, b, ia, c)
+                  hess(a, b, c, ia) = hess(a, b, c, ia) - 2.0_dp*w*cross(b, a, ia, c)
                end do
             end do
          end do
@@ -781,28 +890,38 @@ contains
          hess(:, :, c, c) = hess(:, :, c, c) + 2.0_dp*w*total
       end do
       deallocate (cross)
+      call lap(clk, STAGE_RINV)
 
       ! ---- two electron ----------------------------------------------------
       !
       ! Driven from shells and contracted on the spot: the three arrays this
       ! would otherwise form are `nao^4` times nine each.
-      call hess_2e_contract(mol, density, hess, error, k_scale=k_scale)
+      call schwarz_bounds(mol, bounds, error)
+      if (error%has_error()) return
+      call hess_2e_contract(mol, density, hess, error, k_scale=k_scale, stats=stats, &
+                            bounds=bounds)
       if (error%has_error()) return
       if (present(rs_omega)) then
          if (rs_omega > 0.0_dp) then
             ! The attenuated exchange, with no Coulomb of its own.
             call hess_2e_contract(mol, density, hess, error, k_scale=rs_k_lr, &
-                                  j_scale=0.0_dp, omega=rs_omega)
+                                  j_scale=0.0_dp, omega=rs_omega, stats=stats_lr, &
+                                  bounds=bounds)
+            stats%quartets_total = stats%quartets_total + stats_lr%quartets_total
+            stats%quartets_computed = stats%quartets_computed + stats_lr%quartets_computed
+            stats%quartets_screened = stats%quartets_screened + stats_lr%quartets_screened
          end if
       end if
       if (error%has_error()) return
+      call screening_line(STAGE_2E_SECOND, stats)
+      call lap(clk, STAGE_2E_SECOND)
 
-      deallocate (owner, offsets, counts)
+      deallocate (owner, offsets, counts, bounds)
    end subroutine partial_hessian
 
    subroutine response_hessian(mol, density, orbitals, energies, n_occ, hess, error, &
                                xc, reference, k_scale, rs_k_lr, rs_omega, &
-                               max_iter, tol, dipole_derivatives)
+                               max_iter, tol, dipole_derivatives, clk, batch)
       !! What the Hessian gains from letting the density relax
       !!
       !! The gradient needs no density derivative -- that is what makes the
@@ -847,10 +966,22 @@ contains
          !! coupled-perturbed solve below produces for the Hessian. Asking for
          !! it separately would pay for the whole response a second time, which
          !! is most of what an analytic Hessian costs.
+      type(timing_report_t), intent(inout), optional :: clk
+         !! Lapped after each stage here, when supplied.
+      integer, intent(in), optional :: batch
+         !! Perturbations per chunk of the coupled-perturbed solve and of the
+         !! relaxed mean field; `DEFAULT_RESPONSE_BATCH` when absent.
 
-      real(dp), allocatable :: h1(:, :, :, :), s1(:, :, :, :)
-      real(dp), allocatable :: d1(:, :, :, :), w1(:, :, :, :)
-      real(dp), allocatable :: mo1(:, :, :, :), s1a(:, :, :), hcore_a(:, :, :)
+      type(direct_stats_t) :: h1_stats, h1_stats_lr
+      integer :: width
+      real(dp), allocatable, target :: h1(:, :, :, :), s1(:, :, :, :)
+      real(dp), allocatable, target :: d1(:, :, :, :), w1(:, :, :, :)
+      real(dp), pointer :: h1_flat(:, :), s1_flat(:, :), d1_flat(:, :), w1_flat(:, :)
+      real(dp), allocatable :: hess_flat(:, :), fd(:, :), fc(:, :), cfc(:, :)
+      real(dp), allocatable :: mo1(:, :, :, :), kin(:, :, :), nuc(:, :, :), ds(:, :, :)
+      real(dp), allocatable :: vrinv(:, :, :)
+      integer, allocatable :: offsets(:), counts(:)
+      integer :: p0, p1, comp
       real(dp), allocatable :: hcore(:, :), fock(:, :), bounds(:, :), zero_h(:, :)
       real(dp), allocatable :: vxc_ref(:, :), fock_lr(:, :)
       real(dp), allocatable :: h1_lr(:, :, :, :)
@@ -863,6 +994,8 @@ contains
 
       if (error%has_error()) return
 
+      width = DEFAULT_RESPONSE_BATCH
+      if (present(batch)) width = max(1, batch)
       nao = mol%nao
       natm = mol%natm
       allocate (c_occ(nao, n_occ))
@@ -900,11 +1033,13 @@ contains
          fock = fock + vxc_ref
          deallocate (vxc_ref)
       end if
+      call lap(clk, STAGE_FOCK)
 
       ! Every atom's two-electron perturbation in one pass over the shell
       ! quartets. The core Hamiltonian derivative is per-atom either way and is
       ! added below.
-      call h1_contract(mol, density, h1, error, k_scale=k_scale)
+      call h1_contract(mol, density, h1, error, k_scale=k_scale, stats=h1_stats, &
+                       bounds=bounds)
       if (error%has_error()) return
       if (present(rs_omega)) then
          if (rs_omega > 0.0_dp) then
@@ -912,13 +1047,20 @@ contains
             ! `hess_2e_contract` next door accumulates, so a second call in
             ! place would discard the full-range pass.
             call h1_contract(mol, density, h1_lr, error, k_scale=rs_k_lr, &
-                             j_scale=0.0_dp, omega=rs_omega)
+                             j_scale=0.0_dp, omega=rs_omega, stats=h1_stats_lr, &
+                             bounds=bounds)
             if (error%has_error()) return
             h1 = h1 + h1_lr
             deallocate (h1_lr)
+            h1_stats%quartets_total = h1_stats%quartets_total + h1_stats_lr%quartets_total
+            h1_stats%quartets_computed = h1_stats%quartets_computed &
+                                         + h1_stats_lr%quartets_computed
+            h1_stats%quartets_screened = h1_stats%quartets_screened &
+                                         + h1_stats_lr%quartets_screened
          end if
       end if
       if (error%has_error()) return
+      call screening_line(STAGE_H1, h1_stats)
       ! For a Kohn-Sham reference the Fock derivative also carries the
       ! exchange-correlation potential's own, which `h1_contract` does not
       ! produce. Both of these accumulate into `h1`, and `vv10_potential_deriv`
@@ -929,28 +1071,55 @@ contains
          call vv10_potential_deriv(xc, mol, density, h1, error)
       end if
       if (error%has_error()) return
+      call lap(clk, STAGE_H1)
 
       allocate (s1(nao, nao, 3, natm))
       allocate (d1(nao, nao, 3, natm), w1(nao, nao, 3, natm))
       allocate (half(nao, n_occ), tmp(nao, nao), work(nao, nao))
       allocate (f1(nao, nao), outer(nao, nao), middle(nao, nao))
 
+      ! The core Hamiltonian and overlap derivatives per atom, as
+      ! `hcore_deriv_atom` and `overlap_deriv_atom` build them, with the parts
+      ! that do not depend on the atom -- the kinetic, nuclear and overlap
+      ! derivative matrices -- computed once rather than once per atom. Only
+      ! the `1/|r-R_A|` term is genuinely per atom.
+      call one_electron_deriv(mol, kin, DERIV_KIN)
+      call one_electron_deriv(mol, nuc, DERIV_NUC)
+      kin = kin + nuc
+      deallocate (nuc)
+      call one_electron_deriv(mol, ds, DERIV_OVLP)
+      ds = -ds
+      allocate (offsets(natm), counts(natm), vrinv(nao, nao, 3))
+      call atom_ao_blocks(mol, offsets, counts)
+      s1 = 0.0_dp
       do ia = 1, natm
-         call hcore_deriv_atom(mol, ia, hcore_a, error)
-         call overlap_deriv_atom(mol, ia, s1a, error)
-         if (error%has_error()) return
-         h1(:, :, :, ia) = h1(:, :, :, ia) + hcore_a
-         s1(:, :, :, ia) = s1a
-         deallocate (hcore_a, s1a)
+         call iprinv_deriv_at(mol, ia, vrinv)
+         vrinv = -mol%charges(ia)*vrinv
+         p0 = offsets(ia) + 1
+         p1 = offsets(ia) + counts(ia)
+         if (counts(ia) > 0) then
+            vrinv(p0:p1, :, :) = vrinv(p0:p1, :, :) - kin(p0:p1, :, :)
+            do comp = 1, 3
+               s1(p0:p1, :, comp, ia) = s1(p0:p1, :, comp, ia) + ds(p0:p1, :, comp)
+               s1(:, p0:p1, comp, ia) = s1(:, p0:p1, comp, ia) + transpose(ds(p0:p1, :, comp))
+            end do
+         end if
+         do comp = 1, 3
+            h1(:, :, comp, ia) = h1(:, :, comp, ia) + vrinv(:, :, comp) &
+                                 + transpose(vrinv(:, :, comp))
+         end do
       end do
+      deallocate (kin, ds, vrinv, offsets, counts)
+      call lap(clk, STAGE_1E_ATOM)
 
       ! Every perturbation at once, in chunks, so the Fock builds inside the
       ! iteration are shared rather than repeated `3 natm` times.
       call solve_mo1_batch(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
                            xc=xc, reference=reference, k_scale=k_scale, &
                            rs_k_lr=rs_k_lr, rs_omega=rs_omega, &
-                           max_iter=max_iter, tol=tol)
+                           max_iter=max_iter, tol=tol, batch=width, bounds=bounds)
       if (error%has_error()) return
+      call lap(clk, STAGE_CPHF)
 
       do ia = 1, natm
          do a = 1, 3
@@ -969,13 +1138,18 @@ contains
          call assemble_dipole_derivatives(mol, density, d1, dipole_derivatives, error)
          if (error%has_error()) return
       end if
+      call lap(clk, STAGE_D1)
 
       ! Their mean fields in one batch, chunked as the solve above is.
       call mean_field_batch(mol, d1, bounds, zero_h, g1all, error, &
                             xc=xc, reference=reference, k_scale=k_scale, &
-                            rs_k_lr=rs_k_lr, rs_omega=rs_omega)
+                            rs_k_lr=rs_k_lr, rs_omega=rs_omega, batch=width)
       if (error%has_error()) return
+      call lap(clk, STAGE_G1)
 
+      ! `F D` once: it is the same matrix in every perturbation's outer term.
+      allocate (fd(nao, nao), fc(nao, n_occ), cfc(n_occ, n_occ))
+      call pic_gemm(fock, density, fd)
       do ia = 1, natm
          do a = 1, 3
             tmp = d1(:, :, a, ia)
@@ -989,33 +1163,49 @@ contains
             ! **not** be symmetrised a second time -- doing so doubles its
             ! weight and gives a `dW/dR` that is still symmetric, still
             ! translationally invariant, and wrong.
-            call pic_gemm(tmp, fock, work)
-            call pic_gemm(work, density, outer)
-            call pic_gemm(density, f1, work)
-            call pic_gemm(work, density, middle)
+            call pic_gemm(tmp, fd, outer)
+            ! `D f1 D` through the occupied orbitals, `D = 2 C C^T`: two
+            ! `nao^2 n_occ` products and two `nao n_occ^2` ones, against two
+            ! `nao^3`.
+            call pic_gemm(f1, c_occ, fc)
+            call pic_gemm(c_occ, fc, cfc, transa="T")
+            call pic_gemm(c_occ, cfc, fc, alpha=4.0_dp, beta=0.0_dp)
+            call pic_gemm(fc, c_occ, middle, transb="T")
             w1(:, :, a, ia) = 0.5_dp*(outer + transpose(outer) + middle)
          end do
       end do
+      deallocate (fd, fc, cfc)
 
+      ! The contraction of every perturbation pair at once. Each array is
+      ! contiguous as `(nao^2, 3 natm)`, so the whole block is two matrix
+      ! products, `H1^T D1 - S1^T W1`, with the perturbation `(a, ia)` down
+      ! the rows and `(b, ja)` across.
+      h1_flat(1:nao*nao, 1:3*natm) => h1
+      s1_flat(1:nao*nao, 1:3*natm) => s1
+      d1_flat(1:nao*nao, 1:3*natm) => d1
+      w1_flat(1:nao*nao, 1:3*natm) => w1
+      allocate (hess_flat(3*natm, 3*natm))
+      call pic_gemm(h1_flat, d1_flat, hess_flat, transa="T")
+      call pic_gemm(s1_flat, w1_flat, hess_flat, transa="T", alpha=-1.0_dp, beta=1.0_dp)
       allocate (hess(3, 3, natm, natm))
-      hess = 0.0_dp
       do ja = 1, natm
          do ia = 1, natm
             do b = 1, 3
                do a = 1, 3
-                  hess(a, b, ia, ja) = sum(d1(:, :, b, ja)*h1(:, :, a, ia)) &
-                                       - sum(w1(:, :, b, ja)*s1(:, :, a, ia))
+                  hess(a, b, ia, ja) = hess_flat(3*(ia - 1) + a, 3*(ja - 1) + b)
                end do
             end do
          end do
       end do
+      deallocate (hess_flat)
 
       deallocate (h1, s1, d1, w1, hcore, fock, bounds, zero_h)
       deallocate (g1all, f1, half, c_occ, tmp, work, outer, middle)
+      call lap(clk, STAGE_ASSEMBLY)
    end subroutine response_hessian
 
    subroutine rhf_hessian(mol, atomic_numbers, density, orbitals, energies, n_occ, &
-                          hess, error, max_iter, tol, dipole_derivatives)
+                          hess, error, max_iter, tol, dipole_derivatives, batch)
       !! The analytic Hessian of a converged restricted Hartree-Fock energy
       !!
       !! Three pieces, only meaningful added together: the nuclear repulsion,
@@ -1040,35 +1230,35 @@ contains
          !! Hessian rather than from a routine of its own. Present, an infrared
          !! intensity costs two one-electron integrals on top of a Hessian that
          !! was being computed anyway; absent, nothing extra is built.
+      integer, intent(in), optional :: batch
+         !! Perturbations per chunk of the coupled-perturbed solve;
+         !! `DEFAULT_RESPONSE_BATCH` when absent.
 
       real(dp), allocatable :: weighted(:, :), part(:, :, :, :), resp(:, :, :, :)
-      integer :: i, nao
+      type(timing_report_t) :: clk
 
       if (error%has_error()) return
       if (ecp_refuses_derivatives(mol%core_electrons, "nuclear Hessian", error)) return
 
-      nao = mol%nao
-      allocate (weighted(nao, nao))
-      weighted = 0.0_dp
-      do i = 1, n_occ
-         weighted = weighted + 2.0_dp*energies(i) &
-                    *matmul(reshape(orbitals(:, i), [nao, 1]), &
-                            reshape(orbitals(:, i), [1, nao]))
-      end do
+      call clk%start()
+      call energy_weighted_density(orbitals, energies, n_occ, weighted)
 
       call nuclear_repulsion_hessian(atomic_numbers, mol%coords, hess, error)
-      call partial_hessian(mol, density, weighted, part, error)
+      call clk%lap(STAGE_NUCLEAR)
+      call partial_hessian(mol, density, weighted, part, error, clk=clk)
       call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
-                            max_iter=max_iter, tol=tol, &
-                            dipole_derivatives=dipole_derivatives)
+                            max_iter=max_iter, tol=tol, batch=batch, &
+                            dipole_derivatives=dipole_derivatives, clk=clk)
       if (error%has_error()) return
 
       hess = hess + part + resp
       deallocate (weighted, part, resp)
+      call clk%finish()
+      call clk%report("analytic Hessian")
    end subroutine rhf_hessian
 
    subroutine ks_hessian(mol, atomic_numbers, density, orbitals, energies, n_occ, &
-                         xc, k_scale, hess, error, max_iter, tol, dipole_derivatives)
+                         xc, k_scale, hess, error, max_iter, tol, dipole_derivatives, batch)
       !! The analytic Hessian of a converged Kohn-Sham energy
       !!
       !! `rhf_hessian` with the exchange-correlation parts put back. Three
@@ -1111,9 +1301,12 @@ contains
          !! Hessian rather than from a routine of its own. Present, an infrared
          !! intensity costs two one-electron integrals on top of a Hessian that
          !! was being computed anyway; absent, nothing extra is built.
+      integer, intent(in), optional :: batch
+         !! Perturbations per chunk of the coupled-perturbed solve;
+         !! `DEFAULT_RESPONSE_BATCH` when absent.
 
       real(dp), allocatable :: weighted(:, :), part(:, :, :, :), resp(:, :, :, :)
-      integer :: i, nao
+      type(timing_report_t) :: clk
 
       if (error%has_error()) return
       if (ecp_refuses_derivatives(mol%core_electrons, "nuclear Hessian", error)) return
@@ -1133,18 +1326,13 @@ contains
       ! depend only on the SCF density on every call, so the solve pays one of
       ! its two pair sweeps per iteration for nothing.
 
-      nao = mol%nao
-      allocate (weighted(nao, nao))
-      weighted = 0.0_dp
-      do i = 1, n_occ
-         weighted = weighted + 2.0_dp*energies(i) &
-                    *matmul(reshape(orbitals(:, i), [nao, 1]), &
-                            reshape(orbitals(:, i), [1, nao]))
-      end do
+      call clk%start()
+      call energy_weighted_density(orbitals, energies, n_occ, weighted)
 
       call nuclear_repulsion_hessian(atomic_numbers, mol%coords, hess, error)
+      call clk%lap(STAGE_NUCLEAR)
       call partial_hessian(mol, density, weighted, part, error, k_scale=k_scale, &
-                           rs_k_lr=xc%rs_k_lr, rs_omega=xc%rs_omega)
+                           rs_k_lr=xc%rs_k_lr, rs_omega=xc%rs_omega, clk=clk)
       if (error%has_error()) return
       call xc_hessian(xc, mol, density, part, error)
       if (error%has_error()) return
@@ -1153,16 +1341,38 @@ contains
       ! for a functional without VV10.
       call vv10_hessian(xc, mol, density, part, error)
       if (error%has_error()) return
+      call clk%lap(STAGE_XC_SECOND)
       call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
                             xc=xc, reference=density, k_scale=k_scale, &
                             rs_k_lr=xc%rs_k_lr, rs_omega=xc%rs_omega, &
-                            max_iter=max_iter, tol=tol, &
-                            dipole_derivatives=dipole_derivatives)
+                            max_iter=max_iter, tol=tol, batch=batch, &
+                            dipole_derivatives=dipole_derivatives, clk=clk)
       if (error%has_error()) return
 
       hess = hess + part + resp
       deallocate (weighted, part, resp)
+      call clk%finish()
+      call clk%report("analytic Hessian")
    end subroutine ks_hessian
+
+   subroutine energy_weighted_density(orbitals, energies, n_occ, weighted)
+      !! `2 sum_i eps_i C_i C_i^T`, the energy-weighted density of a closed shell
+      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), allocatable, intent(out) :: weighted(:, :)
+
+      real(dp), allocatable :: scaled(:, :)
+      integer :: i, nao
+
+      nao = size(orbitals, 1)
+      allocate (weighted(nao, nao), scaled(nao, n_occ))
+      do i = 1, n_occ
+         scaled(:, i) = 2.0_dp*energies(i)*orbitals(:, i)
+      end do
+      call pic_gemm(scaled, orbitals(:, 1:n_occ), weighted, transb="T")
+      deallocate (scaled)
+   end subroutine energy_weighted_density
 
    subroutine hessian_to_matrix(hess, matrix)
       !! `(3, 3, natm, natm)` to the `(3N, 3N)` a vibrational analysis reads
@@ -1195,7 +1405,7 @@ contains
 
    subroutine solve_mo1_batch(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
                               xc, reference, k_scale, rs_k_lr, rs_omega, &
-                              max_iter, tol)
+                              max_iter, tol, batch, bounds)
       !! The first-order orbitals for every atom, a dozen perturbations at a time
       !!
       !! Same equations `solve_mo1_atom` solves and the same right-hand side;
@@ -1203,15 +1413,16 @@ contains
       !! runs. A direct build costs an integral pass whichever density it
       !! contracts.
       !!
-      !! **Chunked at `MAX_BATCH` rather than all at once.** The win saturates
-      !! near fourfold and then *reverses*: the accumulator that makes the reuse
-      !! possible grows with the batch while the integral it reuses does not,
-      !! so past about a dozen densities the build becomes memory-bound.
+      !! **Chunked at `batch` rather than all at once.** The Fock build's win
+      !! from sharing a pass saturates near fourfold and then *reverses*: the
+      !! accumulator that makes the reuse possible grows with the batch while
+      !! the integral it reuses does not, so past about a dozen densities the
+      !! build becomes memory-bound. Against that, the block solve takes about
+      !! the same number of cycles whatever the chunk holds, so the pass count
+      !! is the chunk count times that; where the two trade off is a
+      !! measurement, which is why the width is a keyword.
       !!
       !! The Schwarz bounds are built once here rather than once per atom.
-      ! TODO(mqc): `MAX_BATCH` is spelled twice, here and in
-      ! `mean_field_batch`, for a figure both routines document as coming from
-      ! the same cache limit. Changing one leaves the other behind.
       type(czt_molecule_t), intent(in), target :: mol
       real(dp), intent(in) :: orbitals(:, :)
       real(dp), intent(in) :: energies(:)
@@ -1226,14 +1437,18 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
+      integer, intent(in), optional :: batch
+         !! Most perturbations per chunk; `DEFAULT_RESPONSE_BATCH` when absent.
+      real(dp), intent(in), optional :: bounds(:, :)
+         !! From `schwarz_bounds`, when the caller already has them.
 
-      integer, parameter :: MAX_BATCH = 12
-
+      integer :: max_batch
       type(nuclear_response_t) :: operator
       real(dp), allocatable :: rhs(:), answer(:), h1mo(:, :), s1mo(:, :)
       real(dp), allocatable :: work(:, :), base(:, :, :)
       integer :: n_ao, n_mo, natm, n_pert, first, last, wide, p, q, ia, comp, a, i
-      integer :: n_chunks, per_chunk
+      integer :: n_chunks, per_chunk, chunk
+      character(len=MAX_LINE_LENGTH) :: line
 
       if (error%has_error()) return
 
@@ -1241,6 +1456,8 @@ contains
       n_mo = size(orbitals, 2)
       natm = size(h1, 4)
       n_pert = 3*natm
+      max_batch = DEFAULT_RESPONSE_BATCH
+      if (present(batch)) max_batch = max(1, batch)
 
       ! `xc` and `reference` are one argument in two halves: the context without
       ! the density its kernel is evaluated at would reach `xc_kernel_apply`
@@ -1265,8 +1482,12 @@ contains
       if (present(k_scale)) operator%k_scale = k_scale
       if (present(rs_k_lr)) operator%rs_k_lr = rs_k_lr
       if (present(rs_omega)) operator%rs_omega = rs_omega
-      call schwarz_bounds(mol, operator%bounds, error)
-      if (error%has_error()) return
+      if (present(bounds)) then
+         operator%bounds = bounds
+      else
+         call schwarz_bounds(mol, operator%bounds, error)
+         if (error%has_error()) return
+      end if
 
       allocate (mo1(n_mo, n_occ, 3, natm))
       allocate (h1mo(n_mo, n_occ), s1mo(n_mo, n_occ), work(n_ao, n_occ))
@@ -1274,13 +1495,20 @@ contains
       ! Balanced rather than greedy: eighteen perturbations taken twelve at a
       ! time leaves a chunk of six that pays a full integral pass for half the
       ! reuse, where nine and nine costs the same two passes and amortises both.
-      n_chunks = (n_pert + MAX_BATCH - 1)/MAX_BATCH
+      n_chunks = (n_pert + max_batch - 1)/max_batch
       per_chunk = (n_pert + n_chunks - 1)/n_chunks
 
+      write (line, "(a,i0,a,i0,a,i0,a,i0,a)") "  solving ", n_pert, &
+         " nuclear responses in ", n_chunks, " chunks of up to ", per_chunk, &
+         ", over ", n_mo*n_occ, " orbital pairs each"
+      call logger%performance(trim(line))
+
+      chunk = 0
       first = 1
       do while (first <= n_pert)
          last = min(first + per_chunk - 1, n_pert)
          wide = last - first + 1
+         chunk = chunk + 1
          allocate (base(n_mo, n_occ, wide))
 
          do q = 1, wide
@@ -1308,8 +1536,11 @@ contains
 
          operator%n_pert = wide
          rhs = reshape(base, [n_mo*n_occ*wide])
+         write (line, "(a,i0,a,i0,a,i0,a,i0)") "chunk ", chunk, " of ", n_chunks, &
+            ": responses ", first, " to ", last
          call solve_response(operator, rhs, rhs, answer, error, &
-                             max_iter=max_iter, tol=tol)
+                             max_iter=max_iter, tol=tol, label=trim(line), &
+                             columns=wide, conjugate_gradient=.true.)
          if (error%has_error()) return
 
          base = reshape(answer, [n_mo, n_occ, wide])
@@ -1323,11 +1554,15 @@ contains
          first = last + 1
       end do
 
+      write (line, "(a,i0,a,i14,a)") "  response solve: ", operator%n_apply, &
+         " integral passes, ", operator%total_computed, " quartets computed in all"
+      call logger%performance(trim(line))
+
       deallocate (h1mo, s1mo, work, rhs)
    end subroutine solve_mo1_batch
 
    subroutine mean_field_batch(mol, d1, bounds, zero_h, g1, error, xc, reference, &
-                               k_scale, rs_k_lr, rs_omega)
+                               k_scale, rs_k_lr, rs_omega, batch)
       !! `G(D')` for every first-order density, a chunk at a time
       !!
       !! Flattens `(n_ao, n_ao, 3, natm)` to `(n_ao, n_ao, 3*natm)` and hands it
@@ -1347,9 +1582,10 @@ contains
          !! operator applies; getting one right and not the other gives a
          !! Hessian that is wrong while looking symmetric and plausible.
       real(dp), intent(in), optional :: rs_k_lr, rs_omega
+      integer, intent(in), optional :: batch
+         !! Most densities per pass; `DEFAULT_RESPONSE_BATCH` when absent.
 
-      integer, parameter :: MAX_BATCH = 12
-
+      integer :: max_batch
       real(dp), allocatable :: chunk(:, :, :), out(:, :, :), vxc_chunk(:, :)
       real(dp), allocatable :: vnl_chunk(:, :, :), out_lr(:, :, :)
       type(direct_stats_t) :: stats
@@ -1372,8 +1608,10 @@ contains
       natm = size(d1, 4)
       n_pert = 3*natm
       allocate (g1(nao, nao, n_pert))
+      max_batch = DEFAULT_RESPONSE_BATCH
+      if (present(batch)) max_batch = max(1, batch)
 
-      n_chunks = (n_pert + MAX_BATCH - 1)/MAX_BATCH
+      n_chunks = (n_pert + max_batch - 1)/max_batch
       per_chunk = (n_pert + n_chunks - 1)/n_chunks
 
       first = 1
@@ -1388,14 +1626,14 @@ contains
             chunk(:, :, q) = d1(:, :, a, ia)
          end do
          call build_fock_direct_many(mol, zero_h, chunk, bounds, out, stats, error, &
-                                     k_scale=k_scale)
+                                     k_scale=k_scale, density_screen=.true.)
          if (error%has_error()) return
          if (present(rs_omega)) then
             if (rs_omega > 0.0_dp) then
                if (.not. allocated(out_lr)) allocate (out_lr, mold=out)
                call build_fock_direct_many(mol, zero_h, chunk, bounds, out_lr, stats, &
                                            error, k_scale=rs_k_lr, j_scale=0.0_dp, &
-                                           omega=rs_omega)
+                                           omega=rs_omega, density_screen=.true.)
                if (error%has_error()) return
                out = out + out_lr
             end if

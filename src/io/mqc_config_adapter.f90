@@ -235,6 +235,10 @@ contains
       driver_config%hessian%displacement = mqc_config%hessian_displacement
       ! ...and to the method, which is what actually runs the displacements.
       driver_config%method_config%hessian_displacement = mqc_config%hessian_displacement
+      driver_config%method_config%hessian_response_tol = mqc_config%hessian_response_tol
+      driver_config%method_config%hessian_response_max_iter = &
+         mqc_config%hessian_response_max_iter
+      driver_config%method_config%hessian_response_batch = mqc_config%hessian_response_batch
       driver_config%hessian%temperature = mqc_config%hessian_temperature
       driver_config%hessian%pressure = mqc_config%hessian_pressure
       driver_config%aimd%dt = mqc_config%aimd_dt

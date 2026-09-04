@@ -12,7 +12,8 @@ module mqc_config_types
    use mqc_geometry, only: geometry_type
    use mqc_physical_fragment, only: bond_t
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
-                                       DEFAULT_PRESSURE, DEFAULT_AIMD_DT, &
+                                       DEFAULT_PRESSURE, DEFAULT_RESPONSE_TOL, &
+                                       DEFAULT_RESPONSE_MAX_ITER, DEFAULT_AIMD_DT, &
                                        DEFAULT_AIMD_NSTEPS, DEFAULT_AIMD_TEMPERATURE, &
                                        DEFAULT_AIMD_OUTPUT_FREQ, DEFAULT_SCF_CONV, &
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
@@ -397,6 +398,12 @@ module mqc_config_types
       real(dp) :: hessian_displacement = DEFAULT_DISPLACEMENT  !! Finite difference displacement (Bohr)
       real(dp) :: hessian_temperature = DEFAULT_TEMPERATURE    !! Temperature for thermochemistry (K)
       real(dp) :: hessian_pressure = DEFAULT_PRESSURE          !! Pressure for thermochemistry (atm)
+      real(dp) :: hessian_response_tol = DEFAULT_RESPONSE_TOL
+         !! Residual at which the analytic Hessian's coupled-perturbed solve stops
+      integer :: hessian_response_max_iter = DEFAULT_RESPONSE_MAX_ITER
+         !! Cycles that solve may take
+      integer :: hessian_response_batch = DEFAULT_RESPONSE_BATCH
+         !! Perturbations solved together, sharing each integral pass
 
       ! AIMD settings
       real(dp) :: aimd_dt = DEFAULT_AIMD_DT                          !! Timestep (femtoseconds)

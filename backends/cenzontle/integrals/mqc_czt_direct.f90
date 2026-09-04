@@ -44,6 +44,7 @@ module mqc_czt_direct
    public :: block_density_max
    public :: pair_degeneracy
    public :: pair_work_order
+   public :: omp_threads
    public :: build_fock_direct
    public :: build_fock_direct_many
    public :: build_fock_direct_nosym
@@ -52,6 +53,10 @@ module mqc_czt_direct
    public :: DEFAULT_SCREEN_TOL
 
    real(dp), parameter :: DEFAULT_SCREEN_TOL = 1.0e-11_dp
+   integer, parameter :: FOCK_TILE_FUNCS = 16
+      !! Functions per shell tile in the batched build's quartet loop. About
+      !! one heavy atom in a double-zeta basis; the twelve blocks a tile
+      !! quartet touches are `12 * FOCK_TILE_FUNCS**2 * n_set` doubles.
       !! Quartets whose Schwarz bound falls below this are skipped.
       !!
       !! The GTFock paper's value. The count of surviving quartets is
@@ -260,6 +265,36 @@ contains
                        kq*dsh(s1, s3), kq*dsh(s1, s4), &
                        kq*dsh(s2, s3), kq*dsh(s2, s4))
    end function density_weight
+
+   pure subroutine shell_tiles(dims, budget, first, last, ntile)
+      !! Consecutive shells grouped into tiles of at most `budget` functions
+      !!
+      !! A shell wider than the budget is a tile of its own. `first(t)` and
+      !! `last(t)` are shell indices, inclusive.
+      integer, intent(in) :: dims(:)
+      integer, intent(in) :: budget
+      integer, allocatable, intent(out) :: first(:), last(:)
+      integer, intent(out) :: ntile
+
+      integer :: s, nbas, used
+      integer, allocatable :: f(:), l(:)
+
+      nbas = size(dims)
+      allocate (f(nbas), l(nbas))
+      ntile = 0
+      used = 0
+      do s = 1, nbas
+         if (ntile == 0 .or. used + dims(s) > budget) then
+            ntile = ntile + 1
+            f(ntile) = s
+            used = 0
+         end if
+         l(ntile) = s
+         used = used + dims(s)
+      end do
+      first = f(1:ntile)
+      last = l(1:ntile)
+   end subroutine shell_tiles
 
    pure function pair_degeneracy(s1, s2, s3, s4) result(deg)
       !! The eightfold permutational weight this quartet carries
@@ -572,7 +607,7 @@ contains
    end subroutine build_fock_direct
 
    subroutine build_fock_direct_many(mol, h, densities, bounds, focks, stats, error, &
-                                     screen_tol, k_scale, j_scale, omega)
+                                     screen_tol, k_scale, j_scale, omega, density_screen)
       !! F = H + J - K/2 for many densities, over one pass of the integrals
       !!
       !! In a direct scheme the integral evaluation dominates and the contractions
@@ -586,10 +621,12 @@ contains
       !! passed one at a time, which is what makes the single-density wrapper
       !! above safe.
       !!
-      !! **Batch in chunks of about a dozen**, not a hundred at once: the win
-      !! saturates around fourfold and then reverses, because the updates scatter
-      !! into an `n^2 * n_set` accumulator per thread which grows with the batch
-      !! while the integral it reuses does not.
+      !! **The batch can be wide.** The accumulator is `n_set * n^2` per thread
+      !! with the set index fastest, and the quartet loop is tiled so the blocks
+      !! a tile quartet touches stay in cache whatever the width; a pass over
+      !! 222 densities costs a few times a pass over 12. What limits the width
+      !! is memory: one slab per thread, so 128 threads on 512 functions at
+      !! 222 sets hold 60 GB.
       !!
       !! **Symmetric densities only.** The six updates below assume `D` is
       !! symmetric in two places: the factor of two for `s1 /= s2` stands in for
@@ -598,6 +635,7 @@ contains
       !! permutations double where they should cancel, so the Coulomb term comes
       !! back at twice its value instead of at zero, and nothing here detects it.
       !! Use `build_fock_direct_nosym` for that case.
+!$    use omp_lib, only: omp_get_thread_num
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: h(:, :)          !! Core Hamiltonian, added to every set
       real(dp), intent(in) :: densities(:, :, :)  !! (n_ao, n_ao, n_set), each 2 C C^T
@@ -615,20 +653,36 @@ contains
          !! passes zero: the full-range pass has already supplied it.
       real(dp), intent(in), optional :: omega
          !! Range separation, through `env(PTR_RANGE_OMEGA)`.
+      logical, intent(in), optional :: density_screen
+         !! Also skip a quartet when the largest density element it multiplies,
+         !! over every set, makes its contribution negligible. Off by default,
+         !! which keeps a batch bit-for-bit what the same densities give one at
+         !! a time; on, the bound is `Q_ij Q_kl max|D|` over the six elements
+         !! the updates read, rigorous for any symmetric matrix, and what it
+         !! buys is locality -- a response to one atom's displacement is small
+         !! far from that atom.
 
-      real(dp), allocatable :: buf(:), g(:, :, :), g_local(:, :, :), d_half(:, :, :)
-      real(dp), allocatable :: bq(:, :)
+      real(dp), allocatable :: buf(:), g(:, :, :), acc(:, :, :, :), d_half(:, :, :)
+      real(dp), allocatable :: bq(:, :), dsh(:, :), dsh_set(:, :), dsh_all(:, :, :)
+      integer, allocatable :: active(:)
+      integer :: na, ia, p12, p34, p13, p24, p14, p23
+      real(dp), allocatable :: dd12(:, :), dd34(:, :), dd13(:, :), dd24(:, :), dd14(:, :), dd23(:, :)
+      real(dp), allocatable :: gg12(:, :), gg34(:, :), gg13(:, :), gg24(:, :), gg14(:, :), gg23(:, :)
+      real(dp) :: qq, kq
+      logical :: weight_density
       type(eri_shell_table_t) :: tab
       type(c_ptr) :: opt
       integer :: s1, s2, s3, s4
       integer :: d1, d2, d3, d4, o1, o2, o3, o4
       integer :: shls(4)
       integer :: f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, block_max, n, iset, n_set
-      integer :: ij, kl, npair, ipair
-      integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:), order(:)
-      integer :: itask
+      integer :: ij, kl
+      integer, allocatable :: dims(:), offs(:)
+      integer :: itask, tid, t, nthreads
+      integer :: ntile, ntp, tp, tq, tr, ts
+      integer, allocatable :: tile_first(:), tile_last(:), tp_p(:), tp_q(:), tp_r(:)
       integer(int64) :: n_total, n_computed, n_screened
-      real(dp) :: tol, deg, value, scaled, kx, jxm
+      real(dp) :: tol, deg, value, scaled, jscaled, kscaled, kx, jxm
       real(dp), allocatable :: env_many(:)
 
       n = mol%nao
@@ -658,23 +712,53 @@ contains
       offs = tab%offs(1:tab%nbas)
       block_max = tab%block_max
 
-      ! The quartet loop, flattened onto one index so it can be handed out.
-      ! Enumerating shell pairs and taking `kl <= ij` covers the same quartets
-      ! once each as the triangular nest, and is divisible where that is not.
-      npair = tab%nbas*(tab%nbas + 1)/2
-      allocate (pair_i(npair), pair_j(npair))
-      ipair = 0
-      do s1 = 1, tab%nbas
-         do s2 = 1, s1
-            ipair = ipair + 1
-            pair_i(ipair) = s1
-            pair_j(ipair) = s2
+      ! **The quartet loop is tiled for the cache.** With the set index fastest
+      ! a block of the accumulator or the density is `n_set` doubles per
+      ! matrix element, so at a few hundred sets the six blocks one shell
+      ! quartet touches are hundreds of kilobytes and a task that walks every
+      ! ket pair below its bra pair streams them from memory once per quartet.
+      ! Measured on cholesterol at 222 sets: the loop took the same 30 s on
+      ! 16 threads and on 128, with 93 per cent of the samples in the six
+      ! updates, which is a pass bound by memory bandwidth and not by the
+      ! integrals. Shells are grouped into tiles of consecutive shells of
+      ! about `FOCK_TILE_FUNCS` functions -- roughly one heavy atom -- and a
+      ! task is one bra tile pair against every ket tile pair at or below it,
+      ! shell quartets innermost. The twelve blocks a tile quartet touches fit
+      ! the cache and every shell quartet inside it reuses them.
+      !
+      ! Coverage: a quartet `(ij, kl)` with `kl <= ij` has `s3 <= s1`, so its
+      ! ket tile pair has `tile(s3) <= tile(s1)`; walking every `(r, t)` with
+      ! `r <= p` and `t <= r` and keeping `kl <= ij` visits each unique
+      ! quartet exactly once, the same set as the triangular nest.
+      call shell_tiles(dims, FOCK_TILE_FUNCS, tile_first, tile_last, ntile)
+      ! A task is a bra tile pair and one ket bra tile: the blocks it
+      ! holds on the bra side and on `tr` stay put while `ts` walks.
+      ntp = 0
+      do tp = 1, ntile
+         ntp = ntp + tp*tp
+      end do
+      allocate (tp_p(ntp), tp_q(ntp), tp_r(ntp))
+      itask = 0
+      do tp = 1, ntile
+         do tq = 1, tp
+            do tr = 1, tp
+               itask = itask + 1
+               tp_p(itask) = tp
+               tp_q(itask) = tq
+               tp_r(itask) = tr
+            end do
          end do
       end do
-      call pair_work_order(pair_i, pair_j, dims, order)
 
-      allocate (g(n, n, n_set), d_half(n, n, n_set))
-      g = 0.0_dp
+      ! **Set index fastest**, in the densities and in the accumulator both.
+      ! The six updates per integral element land on six matrix elements, and
+      ! with the set slowest each of those is `n_set` scattered read-modify-
+      ! writes a stride of `n^2` apart -- a different page per set. With the
+      ! set fastest they are six contiguous vectors of length `n_set`, which is
+      ! what makes a wide batch cost little more than a narrow one. Measured on
+      ! the Hessian's coupled-perturbed solve, where the cost of a pass grew
+      ! almost linearly with the batch in the other layout.
+      allocate (g(n_set, n, n), d_half(n_set, n, n))
 
       ! The six-update form below is written for D = C_occ C_occ^T, the density
       ! without its factor of two. `build_density` produces D = 2 C_occ C_occ^T,
@@ -684,7 +768,27 @@ contains
       if (present(k_scale)) kx = k_scale
       jxm = 1.0_dp
       if (present(j_scale)) jxm = j_scale
-      d_half = 0.5_dp*densities
+      do iset = 1, n_set
+         d_half(iset, :, :) = 0.5_dp*densities(:, :, iset)
+      end do
+
+      ! The largest halved density element per shell pair, over every set,
+      ! which is what the screen below multiplies the Schwarz bound by.
+      weight_density = .false.
+      if (present(density_screen)) weight_density = density_screen
+      if (weight_density) then
+         allocate (dsh(tab%nbas, tab%nbas), dsh_all(n_set, tab%nbas, tab%nbas))
+         dsh = 0.0_dp
+         do iset = 1, n_set
+            call block_density_max(0.5_dp*densities(:, :, iset), tab%nbas, offs, dims, dsh_set)
+            dsh = max(dsh, dsh_set)
+            dsh_all(iset, :, :) = dsh_set
+            deallocate (dsh_set)
+         end do
+      else
+         allocate (dsh(0, 0), dsh_all(0, 0, 0))
+      end if
+      kq = kx*0.25_dp
 
       ! Created once and reused for every quartet in this build.
       opt = c_null_ptr
@@ -715,32 +819,53 @@ contains
       !
       ! `schedule(dynamic)`: pair ij does ij quartets, so the last chunk is
       ! thousands of times the first.
-      !$omp parallel default(none) &
-      !$omp    shared(kx, jxm, env_many, mol, tab, bq, d_half, g, dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
-      !$omp           block_max, n_set) &
-      !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
-      !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, &
-      !$omp            buf, g_local, iset) &
-      !$omp    reduction(+:n_total, n_computed, n_screened)
-      allocate (buf(block_max**4))
-      allocate (g_local(n, n, n_set))
-      g_local = 0.0_dp
+      ! One accumulator slab per thread, in one shared array so the reduction
+      ! below can be shared out; the size is the same as private copies.
+      nthreads = omp_threads()
+      allocate (acc(n_set, n, n, nthreads))
 
+      !$omp parallel default(none) &
+      !$omp    shared(kx, jxm, env_many, mol, tab, bq, dsh, weight_density, d_half, g, dims, offs, &
+      !$omp           tile_first, tile_last, tp_p, tp_q, tp_r, ntp, tol, opt, n, block_max, n_set, acc, nthreads, &
+      !$omp           focks, h, dsh_all, kq) &
+      !$omp    private(itask, ij, kl, tp, tq, tr, ts, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
+      !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, &
+      !$omp            jscaled, kscaled, buf, iset, tid, t, active, na, ia, qq, &
+      !$omp            p12, p34, p13, p24, p14, p23, dd12, dd34, dd13, dd24, dd14, dd23, &
+      !$omp            gg12, gg34, gg13, gg24, gg14, gg23) &
+      !$omp    reduction(+:n_total, n_computed, n_screened)
+      allocate (buf(block_max**4), active(n_set))
+      active = [(iset, iset=1, n_set)]
+      allocate (dd12(n_set, block_max**2), dd34(n_set, block_max**2), dd13(n_set, block_max**2), &
+                dd24(n_set, block_max**2), dd14(n_set, block_max**2), dd23(n_set, block_max**2))
+      allocate (gg12(n_set, block_max**2), gg34(n_set, block_max**2), gg13(n_set, block_max**2), &
+                gg24(n_set, block_max**2), gg14(n_set, block_max**2), gg23(n_set, block_max**2))
+      tid = 1
+!$    tid = omp_get_thread_num() + 1
+      ! Each thread zeroes the slab it will write, so its pages are its own.
+      acc(:, :, :, tid) = 0.0_dp
+
+      ! Descending: the later tile pairs carry the most ket tile pairs, and
+      ! `schedule(dynamic)` wants the big tasks first.
       !$omp do schedule(dynamic)
-      do itask = 1, npair
-         ij = order(itask)
-         s1 = pair_i(ij)
-         s2 = pair_j(ij)
+      do itask = ntp, 1, -1
+         tp = tp_p(itask)
+         tq = tp_q(itask)
+         tr = tp_r(itask)
+         do ts = 1, tr
+         do s1 = tile_first(tp), tile_last(tp)
          d1 = dims(s1)
          o1 = offs(s1)
+         do s2 = tile_first(tq), min(tile_last(tq), s1)
          d2 = dims(s2)
          o2 = offs(s2)
-
-         do kl = 1, ij
-            s3 = pair_i(kl)
-            s4 = pair_j(kl)
-            d3 = dims(s3)
-            o3 = offs(s3)
+         ij = s1*(s1 - 1)/2 + s2
+         do s3 = tile_first(tr), min(tile_last(tr), s1)
+         d3 = dims(s3)
+         o3 = offs(s3)
+         do s4 = tile_first(ts), min(tile_last(ts), s3)
+            kl = s3*(s3 - 1)/2 + s4
+            if (kl > ij) cycle
             d4 = dims(s4)
             o4 = offs(s4)
 
@@ -749,6 +874,14 @@ contains
             if (bq(s1, s2)*bq(s3, s4) < tol) then
                n_screened = n_screened + 1_int64
                cycle
+            end if
+            deg = pair_degeneracy(s1, s2, s3, s4)
+            if (weight_density) then
+               if (bq(s1, s2)*bq(s3, s4)*density_weight(dsh, s1, s2, s3, s4, jxm, &
+                                                        kx*0.25_dp, deg) < tol) then
+                  n_screened = n_screened + 1_int64
+                  cycle
+               end if
             end if
 
             shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
@@ -764,55 +897,265 @@ contains
             end if
             n_computed = n_computed + 1_int64
 
-            deg = pair_degeneracy(s1, s2, s3, s4)
+            ! Which sets this quartet can touch above the tolerance: the same
+            ! bound as the quartet screen, per set. A response density is
+            ! local to its atom, so with a wide batch most sets fail it and
+            ! the six updates run over the survivors alone.
+            if (weight_density) then
+               na = 0
+               qq = deg*bq(s1, s2)*bq(s3, s4)
+               do iset = 1, n_set
+                  if (qq*max(jxm*dsh_all(iset, s1, s2), jxm*dsh_all(iset, s3, s4), &
+                             kq*dsh_all(iset, s1, s3), kq*dsh_all(iset, s1, s4), &
+                             kq*dsh_all(iset, s2, s3), kq*dsh_all(iset, s2, s4)) >= tol) then
+                     na = na + 1
+                     active(na) = iset
+                  end if
+               end do
+            else
+               na = n_set
+            end if
+            if (na == 0) cycle
 
-            do f4 = 1, d4
-               b4 = o4 + f4
-               do f3 = 1, d3
-                  b3 = o3 + f3
-                  do f2 = 1, d2
-                     b2 = o2 + f2
-                     do f1 = 1, d1
-                        b1 = o1 + f1
+            ! Three shapes of the same six updates. At least half the sets
+            ! active, which is the usual case: contiguous vectors down the
+            ! whole set index straight into the accumulator, the inactive
+            ! sets included -- their contributions are below tolerance and
+            ! cost less as part of a vector than a scalar loop over the
+            ! survivors would, a measured ten times less per quartet. A
+            ! small sparse quartet: the updates indexed over the survivors,
+            ! since a handful of elements does not repay gathering blocks.
+            ! A large sparse quartet: the density blocks compacted to the
+            ! survivors once, the updates contiguous over them, and the six
+            ! output blocks scattered back once.
+            if (2*na >= n_set) na = n_set
+            if (na == n_set .or. d1*d2*d3*d4 < 32) then
+               do f4 = 1, d4
+                  b4 = o4 + f4
+                  do f3 = 1, d3
+                     b3 = o3 + f3
+                     do f2 = 1, d2
+                        b2 = o2 + f2
+                        do f1 = 1, d1
+                           b1 = o1 + f1
 
-                        idx = f1 + (f2 - 1)*d1 + (f3 - 1)*d1*d2 + (f4 - 1)*d1*d2*d3
-                        value = buf(idx)
-                        scaled = value*deg
+                           idx = f1 + (f2 - 1)*d1 + (f3 - 1)*d1*d2 + (f4 - 1)*d1*d2*d3
+                           value = buf(idx)
+                           scaled = value*deg
+                           jscaled = jxm*scaled
+                           kscaled = kx*0.25_dp*scaled
 
-                        ! Two Coulomb and four exchange contributions per set. g
-                        ! is not symmetric as it stands; symmetrising at the end is
-                        ! what makes these six updates equivalent to the full sum
-                        ! over all eight permutations.
-                        !
-                        ! This inner loop is the entire point of the routine: the
-                        ! integral above was computed once and every set reuses it.
-                        do iset = 1, n_set
-                           g_local(b1, b2, iset) = g_local(b1, b2, iset) &
-                                                   + jxm*d_half(b3, b4, iset)*scaled
-                           g_local(b3, b4, iset) = g_local(b3, b4, iset) &
-                                                   + jxm*d_half(b1, b2, iset)*scaled
-                           g_local(b1, b3, iset) = g_local(b1, b3, iset) &
-                                                   - kx*0.25_dp*d_half(b2, b4, iset)*scaled
-                           g_local(b2, b4, iset) = g_local(b2, b4, iset) &
-                                                   - kx*0.25_dp*d_half(b1, b3, iset)*scaled
-                           g_local(b1, b4, iset) = g_local(b1, b4, iset) &
-                                                   - kx*0.25_dp*d_half(b2, b3, iset)*scaled
-                           g_local(b2, b3, iset) = g_local(b2, b3, iset) &
-                                                   - kx*0.25_dp*d_half(b1, b4, iset)*scaled
+                           ! Two Coulomb and four exchange contributions. g is
+                           ! not symmetric as it stands; symmetrising at the end
+                           ! is what makes these six updates equivalent to the
+                           ! full sum over all eight permutations.
+                           if (na == n_set) then
+                              acc(:, b1, b2, tid) = acc(:, b1, b2, tid) + jscaled*d_half(:, b3, b4)
+                              acc(:, b3, b4, tid) = acc(:, b3, b4, tid) + jscaled*d_half(:, b1, b2)
+                              acc(:, b1, b3, tid) = acc(:, b1, b3, tid) - kscaled*d_half(:, b2, b4)
+                              acc(:, b2, b4, tid) = acc(:, b2, b4, tid) - kscaled*d_half(:, b1, b3)
+                              acc(:, b1, b4, tid) = acc(:, b1, b4, tid) - kscaled*d_half(:, b2, b3)
+                              acc(:, b2, b3, tid) = acc(:, b2, b3, tid) - kscaled*d_half(:, b1, b4)
+                           else
+                              do ia = 1, na
+                                 iset = active(ia)
+                                 acc(iset, b1, b2, tid) = acc(iset, b1, b2, tid) + jscaled*d_half(iset, b3, b4)
+                                 acc(iset, b3, b4, tid) = acc(iset, b3, b4, tid) + jscaled*d_half(iset, b1, b2)
+                                 acc(iset, b1, b3, tid) = acc(iset, b1, b3, tid) - kscaled*d_half(iset, b2, b4)
+                                 acc(iset, b2, b4, tid) = acc(iset, b2, b4, tid) - kscaled*d_half(iset, b1, b3)
+                                 acc(iset, b1, b4, tid) = acc(iset, b1, b4, tid) - kscaled*d_half(iset, b2, b3)
+                                 acc(iset, b2, b3, tid) = acc(iset, b2, b3, tid) - kscaled*d_half(iset, b1, b4)
+                              end do
+                           end if
                         end do
                      end do
                   end do
                end do
+               cycle
+            end if
+
+            ! The six density blocks this quartet reads, compacted to the
+            ! active sets as `(na, d_a*d_b)` with the first function fastest.
+            ! The six output blocks accumulate in the same shape and go back
+            ! to the accumulator once per quartet, so the updates per element
+            ! are contiguous whatever the sets, and land in a few kilobytes.
+            do f2 = 1, d2
+               do f1 = 1, d1
+                  p12 = f1 + (f2 - 1)*d1
+                  do ia = 1, na
+                     dd12(ia, p12) = d_half(active(ia), o1 + f1, o2 + f2)
+                  end do
+               end do
+            end do
+            do f4 = 1, d4
+               do f3 = 1, d3
+                  p34 = f3 + (f4 - 1)*d3
+                  do ia = 1, na
+                     dd34(ia, p34) = d_half(active(ia), o3 + f3, o4 + f4)
+                  end do
+               end do
+            end do
+            do f3 = 1, d3
+               do f1 = 1, d1
+                  p13 = f1 + (f3 - 1)*d1
+                  do ia = 1, na
+                     dd13(ia, p13) = d_half(active(ia), o1 + f1, o3 + f3)
+                  end do
+               end do
+            end do
+            do f4 = 1, d4
+               do f2 = 1, d2
+                  p24 = f2 + (f4 - 1)*d2
+                  do ia = 1, na
+                     dd24(ia, p24) = d_half(active(ia), o2 + f2, o4 + f4)
+                  end do
+               end do
+            end do
+            do f4 = 1, d4
+               do f1 = 1, d1
+                  p14 = f1 + (f4 - 1)*d1
+                  do ia = 1, na
+                     dd14(ia, p14) = d_half(active(ia), o1 + f1, o4 + f4)
+                  end do
+               end do
+            end do
+            do f3 = 1, d3
+               do f2 = 1, d2
+                  p23 = f2 + (f3 - 1)*d2
+                  do ia = 1, na
+                     dd23(ia, p23) = d_half(active(ia), o2 + f2, o3 + f3)
+                  end do
+               end do
+            end do
+            gg12(1:na, 1:d1*d2) = 0.0_dp
+            gg34(1:na, 1:d3*d4) = 0.0_dp
+            gg13(1:na, 1:d1*d3) = 0.0_dp
+            gg24(1:na, 1:d2*d4) = 0.0_dp
+            gg14(1:na, 1:d1*d4) = 0.0_dp
+            gg23(1:na, 1:d2*d3) = 0.0_dp
+
+            do f4 = 1, d4
+               do f3 = 1, d3
+                  p34 = f3 + (f4 - 1)*d3
+                  do f2 = 1, d2
+                     p24 = f2 + (f4 - 1)*d2
+                     p23 = f2 + (f3 - 1)*d2
+                     do f1 = 1, d1
+                        p12 = f1 + (f2 - 1)*d1
+                        p13 = f1 + (f3 - 1)*d1
+                        p14 = f1 + (f4 - 1)*d1
+
+                        idx = f1 + (f2 - 1)*d1 + (f3 - 1)*d1*d2 + (f4 - 1)*d1*d2*d3
+                        value = buf(idx)
+                        scaled = value*deg
+                        jscaled = jxm*scaled
+                        kscaled = kx*0.25_dp*scaled
+
+                        ! Two Coulomb and four exchange contributions, every
+                        ! active set at once down the fast index. g is not
+                        ! symmetric as it stands; symmetrising at the end is
+                        ! what makes these six updates equivalent to the full
+                        ! sum over all eight permutations.
+                        !
+                        ! These six lines are the entire point of the routine:
+                        ! the integral above was computed once and every set
+                        ! reuses it.
+                        gg12(1:na, p12) = gg12(1:na, p12) + jscaled*dd34(1:na, p34)
+                        gg34(1:na, p34) = gg34(1:na, p34) + jscaled*dd12(1:na, p12)
+                        gg13(1:na, p13) = gg13(1:na, p13) - kscaled*dd24(1:na, p24)
+                        gg24(1:na, p24) = gg24(1:na, p24) - kscaled*dd13(1:na, p13)
+                        gg14(1:na, p14) = gg14(1:na, p14) - kscaled*dd23(1:na, p23)
+                        gg23(1:na, p23) = gg23(1:na, p23) - kscaled*dd14(1:na, p14)
+                     end do
+                  end do
+               end do
+            end do
+
+            ! Added, not assigned: two of the six blocks coincide whenever the
+            ! quartet has a repeated shell pair.
+            do f2 = 1, d2
+               do f1 = 1, d1
+                  p12 = f1 + (f2 - 1)*d1
+                  do ia = 1, na
+                     acc(active(ia), o1 + f1, o2 + f2, tid) = acc(active(ia), o1 + f1, o2 + f2, tid) + gg12(ia, p12)
+                  end do
+               end do
+            end do
+            do f4 = 1, d4
+               do f3 = 1, d3
+                  p34 = f3 + (f4 - 1)*d3
+                  do ia = 1, na
+                     acc(active(ia), o3 + f3, o4 + f4, tid) = acc(active(ia), o3 + f3, o4 + f4, tid) + gg34(ia, p34)
+                  end do
+               end do
+            end do
+            do f3 = 1, d3
+               do f1 = 1, d1
+                  p13 = f1 + (f3 - 1)*d1
+                  do ia = 1, na
+                     acc(active(ia), o1 + f1, o3 + f3, tid) = acc(active(ia), o1 + f1, o3 + f3, tid) + gg13(ia, p13)
+                  end do
+               end do
+            end do
+            do f4 = 1, d4
+               do f2 = 1, d2
+                  p24 = f2 + (f4 - 1)*d2
+                  do ia = 1, na
+                     acc(active(ia), o2 + f2, o4 + f4, tid) = acc(active(ia), o2 + f2, o4 + f4, tid) + gg24(ia, p24)
+                  end do
+               end do
+            end do
+            do f4 = 1, d4
+               do f1 = 1, d1
+                  p14 = f1 + (f4 - 1)*d1
+                  do ia = 1, na
+                     acc(active(ia), o1 + f1, o4 + f4, tid) = acc(active(ia), o1 + f1, o4 + f4, tid) + gg14(ia, p14)
+                  end do
+               end do
+            end do
+            do f3 = 1, d3
+               do f2 = 1, d2
+                  p23 = f2 + (f3 - 1)*d2
+                  do ia = 1, na
+                     acc(active(ia), o2 + f2, o3 + f3, tid) = acc(active(ia), o2 + f2, o3 + f3, tid) + gg23(ia, p23)
+                  end do
+               end do
+            end do
+         end do
+         end do
+         end do
+         end do
+         end do
+      end do
+      !$omp end do
+
+      ! The reduction over the thread slabs, a column of `g` per iteration
+      ! rather than one thread at a time inside a critical section. Measured
+      ! at a few per cent of a pass on adenine; the slabs grow as
+      ! `n_set * n^2` per thread, so on a wide batch of a large molecule the
+      ! serial form would not stay small.
+      !$omp do
+      do b2 = 1, n
+         g(:, :, b2) = acc(:, :, b2, 1)
+         do t = 2, nthreads
+            g(:, :, b2) = g(:, :, b2) + acc(:, :, b2, t)
+         end do
+      end do
+      !$omp end do
+
+      ! Back to one matrix per set, symmetrised on the way. The barrier the
+      ! loop above ends with is what makes `g(:, b2, b1)` complete here.
+      !$omp do
+      do b2 = 1, n
+         do iset = 1, n_set
+            do b1 = 1, n
+               focks(b1, b2, iset) = h(b1, b2) + 0.5_dp*(g(iset, b1, b2) + g(iset, b2, b1))
             end do
          end do
       end do
       !$omp end do
 
-      !$omp critical(mqc_direct_fock_accumulate)
-      g = g + g_local
-      !$omp end critical(mqc_direct_fock_accumulate)
-
-      deallocate (buf, g_local)
+      deallocate (buf, active, dd12, dd34, dd13, dd24, dd14, dd23, gg12, gg34, gg13, gg24, gg14, gg23)
       !$omp end parallel
 
       stats%quartets_total = n_total
@@ -821,11 +1164,7 @@ contains
 
       call libcint_del_optimizer(opt)
 
-      do iset = 1, n_set
-         focks(:, :, iset) = h + 0.5_dp*(g(:, :, iset) + transpose(g(:, :, iset)))
-      end do
-
-      deallocate (g, d_half, dims, offs, pair_i, pair_j)
+      deallocate (g, acc, d_half, dims, offs, tile_first, tile_last, tp_p, tp_q, tp_r, dsh, dsh_all)
    end subroutine build_fock_direct_many
 
    subroutine build_fock_direct_nosym(mol, h, densities, bounds, focks, stats, error, &

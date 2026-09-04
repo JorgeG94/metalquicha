@@ -10,7 +10,8 @@ module mqc_method_config
    use mqc_method_types, only: METHOD_TYPE_UNKNOWN
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_VDW_SCALE, DEFAULT_DYNAMIC_TOL, &
                                        DEFAULT_DYNAMIC_MAXITER, EFP_RESPONSE_AUTO, &
-                                       DEFAULT_RESPONSE_BATCH
+                                       DEFAULT_RESPONSE_BATCH, DEFAULT_RESPONSE_TOL, &
+                                       DEFAULT_RESPONSE_MAX_ITER
    implicit none
    private
 
@@ -345,6 +346,11 @@ module mqc_method_config
          !! Step for a finite-difference Hessian, in Bohr.
          !!
          !! Here because the method is what runs the displacements.
+      real(dp) :: hessian_response_tol = DEFAULT_RESPONSE_TOL
+      integer :: hessian_response_max_iter = DEFAULT_RESPONSE_MAX_ITER
+      integer :: hessian_response_batch = DEFAULT_RESPONSE_BATCH
+         !! The analytic Hessian's coupled-perturbed solve: where it stops, how
+         !! long it may take, and how many perturbations share a pass.
       type(pcm_config_t) :: pcm
          !! Continuum solvation. A property of the reference rather than of the
          !! functional, so every extending type inherits it.
@@ -512,6 +518,10 @@ module mqc_method_config
          !! Enable verbose output
       real(dp) :: hessian_displacement = DEFAULT_DISPLACEMENT
          !! Step for a finite-difference Hessian, in Bohr
+      real(dp) :: hessian_response_tol = DEFAULT_RESPONSE_TOL
+      integer :: hessian_response_max_iter = DEFAULT_RESPONSE_MAX_ITER
+      integer :: hessian_response_batch = DEFAULT_RESPONSE_BATCH
+         !! The analytic Hessian's coupled-perturbed solve
       character(len=32) :: basis_set = "sto-3g"
          !! Basis set name (HF, DFT, MCSCF)
       character(len=32) :: ecp_set = ""
@@ -639,6 +649,9 @@ contains
       this%method_type = METHOD_TYPE_UNKNOWN
       this%verbose = .false.
       this%hessian_displacement = DEFAULT_DISPLACEMENT
+      this%hessian_response_tol = DEFAULT_RESPONSE_TOL
+      this%hessian_response_max_iter = DEFAULT_RESPONSE_MAX_ITER
+      this%hessian_response_batch = DEFAULT_RESPONSE_BATCH
       this%basis_set = "sto-3g"
       this%use_spherical = .true.
 
