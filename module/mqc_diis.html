@@ -225,8 +225,8 @@ Extrapolation weights from a cached overlap matrix</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_ediis.html'>mqc_ediis</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
@@ -677,7 +677,7 @@ doubles the history&rsquo;s footprint.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_stored~2"></span>
+              <span class="anchor" id="variable-n_stored"></span>
               integer,
             </td>
               <td>public</td>
@@ -711,7 +711,7 @@ doubles the history&rsquo;s footprint.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~7"></span>
+              <span class="anchor" id="variable-overlap~4"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -740,12 +740,12 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/diis_state_t.html#boundprocedure-count~2'>count</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_count.html'>diis_count</a></td>
+  <strong><a href='../type/diis_state_t.html#boundprocedure-count~8'>count</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_count.html'>diis_count</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/diis_state_t.html#boundprocedure-destroy~7'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_destroy.html'>diis_destroy</a></td>
+  <strong><a href='../type/diis_state_t.html#boundprocedure-destroy~3'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_destroy.html'>diis_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -760,7 +760,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/diis_state_t.html#boundprocedure-init~2'>init</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_init.html'>diis_init</a></td>
+  <strong><a href='../type/diis_state_t.html#boundprocedure-init~3'>init</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_init.html'>diis_init</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -858,7 +858,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_stored~3"></span>
+              <span class="anchor" id="variable-n_stored~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -933,7 +933,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~37"></span>
+              <span class="anchor" id="variable-this~29"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(in)</td>
@@ -978,7 +978,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~38"></span>
+              <span class="anchor" id="variable-this~30"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1043,7 +1043,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~8"></span>
+              <span class="anchor" id="variable-overlap~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1073,7 +1073,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_stored~4"></span>
+              <span class="anchor" id="variable-n_stored~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1103,7 +1103,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coefficients~4"></span>
+              <span class="anchor" id="variable-coefficients~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1120,7 +1120,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~7"></span>
+              <span class="anchor" id="variable-ok~6"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1160,7 +1160,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~11"></span>
+              <span class="anchor" id="variable-name~16"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1190,7 +1190,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~5"></span>
+              <span class="anchor" id="variable-ok~4"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1230,7 +1230,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~42"></span>
+              <span class="anchor" id="variable-this~34"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1270,7 +1270,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~41"></span>
+              <span class="anchor" id="variable-this~33"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1300,7 +1300,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~6"></span>
+              <span class="anchor" id="variable-ok~5"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1340,7 +1340,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~40"></span>
+              <span class="anchor" id="variable-this~32"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1385,7 +1385,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~4"></span>
+              <span class="anchor" id="variable-ok~3"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1425,7 +1425,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~36"></span>
+              <span class="anchor" id="variable-this~28"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1526,7 +1526,7 @@ false, so a plain DIIS caller allocates exactly what it did before.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~39"></span>
+              <span class="anchor" id="variable-this~31"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1571,7 +1571,7 @@ false, so a plain DIIS caller allocates exactly what it did before.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density~2"></span>
+              <span class="anchor" id="variable-density"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1589,7 +1589,7 @@ the trace both energy models want.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~11"></span>
+              <span class="anchor" id="variable-energy~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1604,7 +1604,7 @@ the trace both energy models want.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~92"></span>
+              <span class="anchor" id="variable-error~65"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -1659,7 +1659,7 @@ the trace both energy models want.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coefficients~5"></span>
+              <span class="anchor" id="variable-coefficients~4"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1674,7 +1674,7 @@ the trace both energy models want.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~8"></span>
+              <span class="anchor" id="variable-ok~7"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1717,7 +1717,7 @@ the trace both energy models want.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-05 01:06 +0000             </p>
+ on 2026-09-05 02:16 +0000             </p>
           </div>
         </div>
         <br>
