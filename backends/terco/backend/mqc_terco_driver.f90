@@ -22,10 +22,11 @@ module mqc_terco_driver
    use mqc_elements, only: element_number_to_symbol
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_ao, only: max_ao_l
+   use mqc_czt_bridge, only: core_orbital_count
    use libcint_fortran, only: LIBCINT_NCTR_OF, LIBCINT_NPRIM_OF, LIBCINT_PTR_COEFF
    use mqc_czt_atomic_guess, only: build_restricted_guess, build_atomic_guess, &
                                    parse_guess_name
-   use trc_c_interfaces, only: trc_basis_create_libcint, trc_basis_destroy, &
+   use trc_c_interfaces, only: trc_basis_create_libcint, trc_basis_destroy, trc_rimp2, &
                                trc_basis_nao, trc_scf, &
                                TRC_OK, TRC_ERR_NOCONV, TRC_ERR_UNSUPPORTED
    implicit none
@@ -83,11 +84,18 @@ contains
          return
       end if
 
-      if (settings%run_mp2 .or. settings%run_cc) then
+      if (settings%run_cc) then
          call result%error%set(ERROR_VALIDATION, "backend 'terco' was asked for, but "// &
-                               "MP2 and coupled cluster have no terco implementation -- "// &
-                               "they run through the CPU backend. Ask for 'auto', or "// &
-                               "drop the correlated method.")
+                               "coupled cluster has no terco implementation -- it runs "// &
+                               "through the CPU backend. Ask for 'auto', or drop it.")
+         result%has_error = .true.
+         result%has_energy = .false.
+         return
+      end if
+      if (settings%run_mp2 .and. .not. settings%corr_density_fitting) then
+         call result%error%set(ERROR_VALIDATION, "backend 'terco' carries RI-MP2 only: "// &
+                               "ask for method 'ri-mp2' with model.aux_basis, or for "// &
+                               "backend 'auto' to run exact MP2 on the CPU.")
          result%has_error = .true.
          result%has_energy = .false.
          return
@@ -246,6 +254,16 @@ contains
          return
       end if
 
+      if (settings%run_mp2 .and. nspin == 2) then
+         call result%error%set(ERROR_VALIDATION, "backend 'terco': RI-MP2 needs a "// &
+                               "restricted closed-shell reference; this system is open "// &
+                               "shell or was asked for unrestricted.")
+         result%has_error = .true.
+         result%has_energy = .false.
+         rc = trc_basis_destroy(basis_handle)
+         return
+      end if
+
       allocate (dmat(mol%nao, mol%nao, nspin), eps(mol%nao, nspin))
       functional_c = c_string(functional_name)
 
@@ -299,6 +317,86 @@ contains
          result%has_error = .true.
          result%has_energy = .false.
       end select
+
+      ! ---- RI-MP2 on the orbitals terco kept -------------------------------
+      !
+      ! Inside this routine, before the basis handle goes: terco correlates
+      ! the orbitals of the last SCF on that handle. The auxiliary basis is
+      ! built the way the CPU path builds it (correlation_aux_basis) and handed
+      ! over the way the orbital one was: split bas/env rows, general
+      ! contractions segmented -- cc-pVDZ-RI is generally contracted, and an
+      ! unsplit set would fit in a smaller auxiliary space with no diagnostic.
+      !
+      if (settings%run_mp2 .and. result%has_energy) then
+         block
+            type(czt_molecule_t) :: aux
+            type(c_ptr) :: aux_handle
+            integer(c_int), allocatable :: aux_bas_c(:, :)
+            integer(c_int) :: naux_bas_c, frozen_c
+            real(c_double) :: e_os_c, e_ss_c
+            integer :: frozen
+            character(len=:), allocatable :: aux_name
+
+            aux_name = trim(settings%aux_basis_set)
+            if (len_trim(aux_name) == 0) then
+               call result%error%set(ERROR_VALIDATION, "backend 'terco': RI-MP2 needs an "// &
+                                     "auxiliary basis: set model.aux_basis")
+               result%has_error = .true.
+               result%has_energy = .false.
+               rc = trc_basis_destroy(basis_handle)
+               return
+            end if
+            if (index(aux_name, "rifit") == 0 .and. index(aux_name, "-ri") == 0) then
+               call logger%warning("bad basis set, calculations will be poor: '"//aux_name// &
+                                   "' is not a correlation-fitting (RIFIT) set")
+            end if
+            call build_czt_molecule(fragment%element_numbers, element_symbols, &
+                                    fragment%coordinates, aux_name, aux, error, &
+                                    force_cartesian=settings%cartesian)
+            if (error%has_error()) then
+               call result%error%set(ERROR_VALIDATION, "backend 'terco': "//error%get_message())
+               result%has_error = .true.
+               result%has_energy = .false.
+               rc = trc_basis_destroy(basis_handle)
+               return
+            end if
+            call segment_general_contractions(aux%bas, aux%nbas, aux_bas_c, naux_bas_c)
+            rc = trc_basis_create_libcint(int(aux%atm, c_int), int(aux%natm, c_int), aux_bas_c, &
+                                          naux_bas_c, real(aux%env, c_double), &
+                                          int(size(aux%env), c_int), 1_c_int, aux_handle)
+            call aux%destroy()
+            if (rc /= TRC_OK) then
+               call result%error%set(ERROR_VALIDATION, "backend 'terco': the auxiliary basis "// &
+                                     "was refused by terco (status "//status_text(rc)//").")
+               result%has_error = .true.
+               result%has_energy = .false.
+               rc = trc_basis_destroy(basis_handle)
+               return
+            end if
+
+            frozen = settings%n_frozen_core
+            if (frozen < 0) frozen = core_orbital_count(fragment%element_numbers)
+            if (.not. settings%freeze_core) frozen = 0
+            frozen_c = int(frozen, c_int)
+
+            rc = trc_rimp2(-1_c_int, basis_handle, aux_handle, frozen_c, 256_c_int, e_os_c, e_ss_c)
+            frozen_c = trc_basis_destroy(aux_handle)
+            if (rc /= TRC_OK) then
+               call result%error%set(ERROR_VALIDATION, "backend 'terco': RI-MP2 failed "// &
+                                     "(status "//status_text(rc)//").")
+               result%has_error = .true.
+               result%has_energy = .false.
+               rc = trc_basis_destroy(basis_handle)
+               return
+            end if
+            ! energy_t sums scf + mp2%total(), so only the components go in.
+            result%energy%mp2%ss = real(e_ss_c, dp)
+            result%energy%mp2%os = real(e_os_c, dp)
+            result%energy%mp2%ss_scale = settings%scs_ss
+            result%energy%mp2%os_scale = settings%scs_os
+            call result%energy%mp2%check_stability()
+         end block
+      end if
 
       rc = trc_basis_destroy(basis_handle)
    end subroutine run_terco_scf

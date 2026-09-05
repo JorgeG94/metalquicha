@@ -62,6 +62,7 @@ module mqc_czt_bridge
    private
 
    public :: run_czt_hf
+   public :: core_orbital_count   !! the terco backend counts its frozen core the same way
    public :: run_czt_mcscf
    public :: run_czt_fmo
    public :: run_czt_makefp
