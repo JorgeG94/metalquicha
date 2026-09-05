@@ -1250,9 +1250,6 @@ contains
       integer :: r0, r1, nr
       real(dp) :: acc, aomax, agmax, gdotmax, wsum
       logical :: gga, mgga
-      ! TEMP(mqc): screen instrumentation, remove before committing.
-      integer(8) :: n_full, n_skip
-      character(len=200) :: tmpline
       type(error_t) :: local_error
       logical :: failed
 !$    integer(omp_lock_kind), allocatable :: locks(:, :)
@@ -1279,8 +1276,6 @@ contains
       allocate (extents(mol%nbas))
       call shell_extents(mol, ctx%screen_tol, extents)
       failed = .false.
-      n_full = 0
-      n_skip = 0
 
       ! Threaded over blocks of points, writing one shared `h1`. A block's
       ! contribution to one perturbation is gathered in `hacc` over the
@@ -1305,7 +1300,6 @@ contains
       !$omp            dgrad, dsig, gdot, dgdot, hgdot, dtau, shell_mask, ao_offset, ao_list, &
       !$omp            c_offsets, c_counts, g0, g1, nb, n_sig, isig, jsig, ia, a, i, j, ig, d, &
       !$omp            r0, r1, nr, acc, aomax, agmax, gdotmax, wsum) &
-      !$omp    reduction(+:n_full, n_skip) &
       !$omp    firstprivate(local_error)
       allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
       allocate (c_offsets(natm), c_counts(natm), d_sig(nao, nao))
@@ -1480,11 +1474,8 @@ contains
                                 *dtau(3*(ia - 1) + a, 1:nb)
                wsum = sum(abs(wcol))
                if (aomax*aomax*wsum >= XC_DERIV_BLOCK_TOL) then
-                  n_full = n_full + 1
                   call weighted_overlap(ao(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
                   hacc = hacc + blk
-               else
-                  n_skip = n_skip + 1
                end if
 
                if (gga) then
@@ -1589,9 +1580,6 @@ contains
 !$       end do
 !$    end do
 !$    deallocate (locks)
-      write (tmpline, "(a,f7.3,a,i0,a)") "    xc_potential_deriv: skipped fraction of the frr overlaps ", &
-         real(n_skip, dp)/max(1.0_dp, real(n_full + n_skip, dp)), " of ", n_full + n_skip, " (block, perturbation) pairs"
-      call logger%performance(trim(tmpline))
    end subroutine xc_potential_deriv
 
    subroutine xc_kernel_deriv(ctx, mol, density, dtilde, h1, error)

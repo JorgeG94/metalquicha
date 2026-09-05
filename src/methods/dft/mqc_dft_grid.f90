@@ -273,13 +273,8 @@ contains
       integer(int64), allocatable :: key(:)
       integer(int_index), allocatable :: perm(:)
       real(dp) :: lo(N_DIM)
-      integer :: k, ix(N_DIM), n
-      ! TEMP(mqc): switch for the before/after measurement, remove before committing.
-      character(len=16) :: envbuf
-      integer :: envlen, envstat
-
-      call get_environment_variable("MQC_GRID_NOSORT", envbuf, envlen, envstat)
-      if (envstat == 0 .and. envlen > 0) return
+      integer :: k, n
+      integer :: ix(N_DIM)
 
       n = grid%n_points
       if (n < 2) return

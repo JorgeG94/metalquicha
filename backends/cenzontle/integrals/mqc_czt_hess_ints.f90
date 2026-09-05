@@ -47,6 +47,10 @@ module mqc_czt_hess_ints
    public :: eri_ip1_block
    public :: h1_contract
 
+   integer, parameter :: N_ERI_HESS_BLOCKS = 6
+      !! The distinct second-derivative blocks of one shell quartet: ii, jj,
+      !! kk on the diagonal and ij, ik, jk off it. Translational invariance
+      !! supplies the fourth centre, so there is no ll and no l cross term.
    integer, parameter :: HESS_OVLP_II = 1   !! `int1e_ipipovlp`, both derivatives on the bra
    integer, parameter :: HESS_OVLP_IJ = 2   !! `int1e_ipovlpip`, one on each centre
    integer, parameter :: HESS_KIN_II = 3
@@ -702,10 +706,11 @@ contains
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
       integer :: io, jo, ko, lo, i, j, k, l, comp, mx, n4
       integer :: o_ijkl, o_jikl, o_klij
-      integer :: nao, natm, at(4), a, b, x, y, c
+      integer :: nao, natm, a, b, x, y, c
+      integer :: at(4)
       integer :: npair, ipair, itask, ij, kl
       integer(int64) :: n_total, n_computed, n_screened
-      logical :: have(6)
+      logical :: have(N_ERI_HESS_BLOCKS)
 
       if (error%has_error()) return
 
@@ -1221,7 +1226,8 @@ contains
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
       integer :: io, jo, ko, lo, i, j, k, l, comp, mx, n4
       integer :: o_ijkl, o_jikl, o_klij
-      integer :: nao, natm, c, x, at(4), slot
+      integer :: nao, natm, c, x, slot
+      integer :: at(4)
       integer :: npair, ipair, itask, ij, kl, nthreads, tid
       integer :: n_groups, group, first, last, wide
       integer(int64) :: n_total, n_computed, n_screened, bytes_full
@@ -1491,11 +1497,12 @@ contains
 
    contains
 
-      pure logical function in_group(atom)
+      pure function in_group(atom) result(is_in)
          !! Whether `atom` is in the group of atoms being accumulated
          integer, intent(in) :: atom
+         logical :: is_in
 
-         in_group = atom >= first .and. atom <= last
+         is_in = atom >= first .and. atom <= last
       end function in_group
    end subroutine h1_contract
 

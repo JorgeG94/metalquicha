@@ -50,3 +50,21 @@ ignore = ["C003", "C072", "S212", "C142", "C183", "C181"]
 # overwritten on the next regeneration anyway.
 exclude = ["test/*", "backends/cuest/bindings/cuest.f90", "backends/cuest/bindings/cuda_runtime.F90"]
 line-length = 132
+
+# C061 (missing `intent`) reports a violation in this file that is not there,
+# at a line that is not where it thinks. Every dummy argument in
+# mqc_czt_gradient.f90 carries an intent -- checked one by one -- and the only
+# declarations without one are local working arrays, which is correct.
+#
+# The report is name-based rather than positional, which is what makes it a
+# tool bug rather than a finding: it points at the first *local* named `env` or
+# `buf`, and renaming that local moves the report to the next local of the same
+# name further down the file instead of clearing it. Every piece also passes on
+# its own -- the flagged routine extracted into a module is clean, and so is
+# `ip1_block`, whose dummies share those names and all have intent -- so it
+# needs the whole 2800-line file to appear at all.
+#
+# Scoped to this one rule in this one file so a real missing intent anywhere
+# else, including elsewhere in this file for any other rule, still fails.
+[extra.fortitude.check.per-file-ignores]
+"backends/cenzontle/derivatives/mqc_czt_gradient.f90" = ["C061"]

@@ -1870,12 +1870,6 @@ contains
       integer :: g0, g1, nb, i, ig, id, npts
       real(dp) :: amax, agmax, dmax_blk, s
       logical :: gga, mgga
-      ! TEMP(mqc): sweep instrumentation, remove before committing.
-      integer(8) :: n_skipped, n_sets_seen, n_blocks, sum_nsig, sum_nsig2
-      ! TEMP(mqc): MQC_KERNEL_NOSTACK forces the set-by-set path, for the A/B.
-      logical :: no_stack
-      character(len=16) :: envbuf
-      integer :: envlen, envstat
 !$    integer(omp_lock_kind), allocatable :: locks(:)
 
       if (.not. ctx%active) return
@@ -1901,14 +1895,6 @@ contains
       failed = .false.
 
       call shell_extents(mol, ctx%screen_tol, extents)
-      no_stack = .false.
-      call get_environment_variable("MQC_KERNEL_NOSTACK", envbuf, envlen, envstat)
-      if (envstat == 0 .and. envlen > 0) no_stack = .true.
-      n_skipped = 0
-      n_sets_seen = 0
-      n_blocks = 0
-      sum_nsig = 0
-      sum_nsig2 = 0
 
       ! The largest element of each set, which its screen is relative to.
       allocate (dmax(n_set))
@@ -1923,8 +1909,7 @@ contains
 
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, density, dtildes, v_kernels, error, failed, &
-      !$omp           gga, mgga, npts, extents, n_set, dmax, locks, no_stack) &
-      !$omp    reduction(+:n_skipped, n_sets_seen, n_blocks, sum_nsig, sum_nsig2) &
+      !$omp           gga, mgga, npts, extents, n_set, dmax, locks) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, ao_grad, rho, rho_grad, drho, &
       !$omp            drho_grad, sigma, dsigma, frr, frs, fss, vsig, frr_i, &
       !$omp            frs_i, fss_i, exc_i, vrho_i, vsigma_i, c_rho, c_grad, &
@@ -1953,9 +1938,6 @@ contains
          call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
                                     shell_mask, ao_list, ao_offset, n_sig)
          if (n_sig == 0) cycle          ! empty space; no basis function reaches it
-         n_blocks = n_blocks + 1
-         sum_nsig = sum_nsig + n_sig
-         sum_nsig2 = sum_nsig2 + int(n_sig, 8)*int(n_sig, 8)
 
          do ja = 1, n_sig
             do ia = 1, n_sig
@@ -2109,7 +2091,7 @@ contains
             end do
          end if
 
-         if (mgga .or. no_stack) then
+         if (mgga) then
             do iset = 1, n_set
                if (dmax(iset) == 0.0_dp) cycle
                dmax_blk = 0.0_dp
@@ -2119,11 +2101,9 @@ contains
                      dmax_blk = max(dmax_blk, abs(dt_sig(ia, ja)))
                   end do
                end do
-               n_sets_seen = n_sets_seen + 1
                ! `|drho| <= max|D| (sum |chi|)^2` and `|grad drho| <= 2 max|D|
                ! (sum |chi|)(sum |grad chi|)`, both against the set's own scale.
                if (dmax_blk*amax*max(amax, 2.0_dp*agmax) < ctx%screen_tol*dmax(iset)) then
-                  n_skipped = n_skipped + 1
                   cycle
                end if
 
@@ -2231,9 +2211,7 @@ contains
                      dmax_blk = max(dmax_blk, abs(dtildes(ao_list(ia), ao_list(ja), iset)))
                   end do
                end do
-               n_sets_seen = n_sets_seen + 1
                if (dmax_blk*amax*max(amax, 2.0_dp*agmax) < ctx%screen_tol*dmax(iset)) then
-                  n_skipped = n_skipped + 1
                   cycle
                end if
                nk = nk + 1
@@ -2345,15 +2323,6 @@ contains
 !$       call omp_destroy_lock(locks(iset))
 !$    end do
 !$    deallocate (locks)
-      block
-         character(len=200) :: l
-         write (l, "(a,f7.3,a,i0,a,f7.1,a,f7.1,a,i0)") &
-            "      kernel many: sets skipped ", &
-            real(n_skipped, dp)/max(1.0_dp, real(n_sets_seen, dp)), &
-            "  blocks ", n_blocks, "  mean n_sig ", real(sum_nsig, dp)/max(1.0_dp, real(n_blocks, dp)), &
-            "  rms n_sig ", sqrt(real(sum_nsig2, dp)/max(1.0_dp, real(n_blocks, dp))), "  nao ", mol%nao
-         call logger%performance(trim(l))
-      end block
 #else
       call error%set(ERROR_VALIDATION, "no libxc in this build")
       if (size(density) < 0 .or. size(dtildes) < 0 .or. size(v_kernels) < 0) return

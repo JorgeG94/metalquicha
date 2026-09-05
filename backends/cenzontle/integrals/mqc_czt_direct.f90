@@ -148,7 +148,12 @@ contains
    end subroutine schwarz_bounds
 
    integer function omp_threads() result(n)
-      !! Threads that ran the last parallel region, or one without OpenMP
+      !! Threads available to the NEXT parallel region, or one without OpenMP
+      !!
+      !! `omp_get_max_threads()`, so this is an upper bound and not a count of
+      !! what ran: dynamic adjustment or a `num_threads` clause can give fewer.
+      !! Right for sizing per-thread storage before a region, wrong for
+      !! normalising anything measured inside one -- count those in the region.
 !$    use omp_lib, only: omp_get_max_threads
       n = 1
 !$    n = omp_get_max_threads()
@@ -368,6 +373,7 @@ contains
       integer :: itask
       type(timer_type) :: thread_clock
       real(dp) :: t_thread, t_thread_max, t_thread_sum
+      integer :: n_thread_ran   !! Threads that actually entered the region
       integer(int64) :: n_total, n_computed, n_screened, n_schwarz, n_density
       real(dp) :: schwarz
       real(dp) :: tol, deg, value, scaled
@@ -463,6 +469,7 @@ contains
       n_density = 0_int64
       t_thread_max = 0.0_dp
       t_thread_sum = 0.0_dp
+      n_thread_ran = 0
 
       ! Threaded over bra pairs. libcint carries no mutable state across calls --
       ! the 2e path has no static globals, and `opt` is written once here and
@@ -486,7 +493,7 @@ contains
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, schwarz, &
       !$omp            buf, g_local, thread_clock, t_thread) &
       !$omp    reduction(+:n_total, n_computed, n_screened, n_schwarz, n_density) &
-      !$omp    reduction(max:t_thread_max) reduction(+:t_thread_sum)
+      !$omp    reduction(max:t_thread_max) reduction(+:t_thread_sum, n_thread_ran)
       allocate (buf(block_max**4))
       allocate (g_local(n, n))
       g_local = 0.0_dp
@@ -582,6 +589,7 @@ contains
       t_thread = thread_clock%get_elapsed_time()
       t_thread_max = max(t_thread_max, t_thread)
       t_thread_sum = t_thread_sum + t_thread
+      n_thread_ran = n_thread_ran + 1
 
       !$omp critical(mqc_direct_fock_accumulate)
       g = g + g_local
@@ -595,8 +603,13 @@ contains
       stats%quartets_screened = n_screened
       stats%screened_schwarz = n_schwarz
       stats%screened_density = n_density
-      if (t_thread_sum > 0.0_dp) then
-         stats%thread_imbalance = t_thread_max/(t_thread_sum/real(omp_threads(), dp))
+      ! Counted inside the region rather than read from `omp_threads()`, which
+      ! reports the maximum available for the NEXT region. `t_thread_sum` covers
+      ! the threads that actually entered this one, and dynamic adjustment can
+      ! make that fewer -- dividing by the larger number would understate the
+      ! mean and overstate the imbalance.
+      if (t_thread_sum > 0.0_dp .and. n_thread_ran > 0) then
+         stats%thread_imbalance = t_thread_max/(t_thread_sum/real(n_thread_ran, dp))
       end if
 
       call libcint_del_optimizer(opt)
@@ -1189,6 +1202,21 @@ contains
             end do
 
             ! The three blocks that change with the ket tile go in now.
+            !
+            ! **Why one lock per tile PAIR is enough, and why the pair is not
+            ! sorted.** `add_tile_block` puts `blk` at `g(:, fa+1:, fb+1:)`, so
+            ! the block a call writes is exactly the ordered pair it is given,
+            ! and every call below takes the lock of that same ordered pair.
+            ! The task enumeration constrains `tq <= tp` and `tr <= tp` but
+            ! leaves `tq` and `tr` unordered against each other, so both
+            ! `(tq, tr)` and `(tr, tq)` occur across tasks -- they address
+            ! different halves of a full `n x n` accumulator and so are
+            ! different memory under different locks. Canonicalising the index
+            ! would be wrong here, not merely unnecessary: it would put two
+            ! distinct blocks behind one lock.
+            !
+            ! Each lock is also taken and released before the next, so there is
+            ! no hold-and-wait and no order to get wrong.
             call touched_sets(all_ts, hit_ts, hits, nhit)
             if (nhit > 0) then
 !$             call omp_set_lock(locks(tr, ts))

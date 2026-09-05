@@ -68,8 +68,9 @@ module mqc_czt_gradient
    public :: two_electron_deriv
       !! Exposed for the MCSCF gradient, whose inactive and active blocks are
       !! separable and contract exactly as a closed-shell reference does.
-   public :: two_electron_gradient
-   public :: hellmann_feynman_gradient
+   ! `two_electron_gradient` and `hellmann_feynman_gradient` are deliberately
+   ! NOT public: nothing outside this module calls either, and both are steps of
+   ! `czt_scf_gradient` rather than pieces a caller assembles for itself.
    public :: iprinv_deriv_at
    public :: xc_potential_gradient
    public :: vv10_gradient_fixed_grid     !! The VV10 Hessian differences this
@@ -2068,7 +2069,8 @@ contains
       real(dp), allocatable :: buf1(:), buf2(:), buf3(:), gam(:), gam2(:), gam3(:)
       real(dp), allocatable :: g_local(:, :)
       integer, allocatable :: dims(:), offs(:), atom_of(:), pair_i(:), pair_j(:), order(:)
-      real(dp) :: f(3, 3), kx, jx, tol, coef, deg, schwarz, gmax, weight, amax
+      real(dp) :: kx, jx, tol, coef, deg, schwarz, gmax, weight, amax
+      real(dp) :: f(3, 3)
       logical :: do_j, unrestricted, have1, have2, have3, same_bra, same_pair
       type(c_ptr) :: opt
       type(eri_shell_table_t) :: tab
