@@ -205,13 +205,13 @@ Print debug information about GMBE intersections</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_logger</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1383,7 +1383,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~33"></span>
+              <span class="anchor" id="variable-n_atoms~29"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1434,7 +1434,7 @@ polymer(:) contains base fragment indices (1-based)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~35"></span>
+              <span class="anchor" id="variable-sys_geom~53"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1479,7 +1479,7 @@ polymer(:) contains base fragment indices (1-based)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_list~5"></span>
+              <span class="anchor" id="variable-atom_list"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1494,7 +1494,7 @@ polymer(:) contains base fragment indices (1-based)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~32"></span>
+              <span class="anchor" id="variable-n_atoms~28"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1534,7 +1534,7 @@ polymer(:) contains base fragment indices (1-based)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~33"></span>
+              <span class="anchor" id="variable-sys_geom~51"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1564,7 +1564,7 @@ polymer(:) contains base fragment indices (1-based)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~10"></span>
+              <span class="anchor" id="variable-polymers~11"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -1579,7 +1579,7 @@ polymer(:) contains base fragment indices (1-based)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~2"></span>
+              <span class="anchor" id="variable-n_monomers~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1695,7 +1695,7 @@ This works with dynamically generated polymers, not just base fragments</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~36"></span>
+              <span class="anchor" id="variable-sys_geom~54"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1710,7 +1710,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~11"></span>
+              <span class="anchor" id="variable-polymers~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1740,7 +1740,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~12"></span>
+              <span class="anchor" id="variable-max_level~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1840,7 +1840,7 @@ This works with dynamically generated polymers, not just base fragments</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~37"></span>
+              <span class="anchor" id="variable-sys_geom~55"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1915,7 +1915,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~6"></span>
+              <span class="anchor" id="variable-pie_atom_sets~2"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1930,7 +1930,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~3"></span>
+              <span class="anchor" id="variable-pie_coefficients~2"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1945,7 +1945,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~7"></span>
+              <span class="anchor" id="variable-n_pie_terms~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(out)</td>
@@ -1960,7 +1960,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~66"></span>
+              <span class="anchor" id="variable-error~119"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2030,7 +2030,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~4"></span>
+              <span class="anchor" id="variable-n_monomers~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2075,7 +2075,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~13"></span>
+              <span class="anchor" id="variable-max_level~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2090,7 +2090,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~4"></span>
+              <span class="anchor" id="variable-total_energy~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2145,7 +2145,7 @@ This works with dynamically generated polymers, not just base fragments</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~3"></span>
+              <span class="anchor" id="variable-total_gradient"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2160,7 +2160,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~38"></span>
+              <span class="anchor" id="variable-sys_geom~56"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2230,7 +2230,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~5"></span>
+              <span class="anchor" id="variable-n_monomers~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2360,7 +2360,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~11"></span>
+              <span class="anchor" id="variable-max_atoms~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2480,7 +2480,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_sets~3"></span>
+              <span class="anchor" id="variable-atom_sets"></span>
               integer,
             </td>
 <td>intent(inout),</td>
@@ -2540,7 +2540,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~67"></span>
+              <span class="anchor" id="variable-error~120"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2596,7 +2596,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms_list~2"></span>
+              <span class="anchor" id="variable-n_atoms_list"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2726,7 +2726,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~34"></span>
+              <span class="anchor" id="variable-sys_geom~52"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2756,7 +2756,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~3"></span>
+              <span class="anchor" id="variable-n_monomers~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2771,7 +2771,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~33"></span>
+              <span class="anchor" id="variable-k~26"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2801,7 +2801,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~7"></span>
+              <span class="anchor" id="variable-max_atoms~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2916,7 +2916,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms_list~3"></span>
+              <span class="anchor" id="variable-n_atoms_list~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2946,7 +2946,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~35"></span>
+              <span class="anchor" id="variable-k~28"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2976,7 +2976,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~9"></span>
+              <span class="anchor" id="variable-max_atoms~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3076,7 +3076,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_sets~4"></span>
+              <span class="anchor" id="variable-atom_sets~2"></span>
               integer,
             </td>
 <td>intent(inout),</td>
@@ -3121,7 +3121,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~12"></span>
+              <span class="anchor" id="variable-max_atoms~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3136,7 +3136,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~68"></span>
+              <span class="anchor" id="variable-error~121"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3294,7 +3294,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-03 12:17 +0000             </p>
+ on 2026-09-05 01:06 +0000             </p>
           </div>
         </div>
         <br>

@@ -217,11 +217,11 @@ after DIIS, the error vector measures a matrix nobody diagonalizes.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_scf_common.html'>mqc_scf_common</a></li>
                   <li class="list-inline-item">pic_lapack_interfaces</li>
                   <li class="list-inline-item">pic_blas_interfaces</li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_scf_common.html'>mqc_scf_common</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -460,7 +460,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis"></span>
+              <span class="anchor" id="variable-basis~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -479,7 +479,7 @@ lets a block be named by an index range.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen"></span>
+              <span class="anchor" id="variable-n_frozen~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -533,7 +533,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-shift~6"></span>
+              <span class="anchor" id="variable-shift"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -559,12 +559,12 @@ left alone; only its couplings to everything else are cut.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/fock_projector_t.html#boundprocedure-apply'>apply</a></strong></td>
+  <strong><a href='../type/fock_projector_t.html#boundprocedure-apply~2'>apply</a></strong></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/fock_projector_t.html#boundprocedure-init~2'>init</a></strong></td>
+  <strong><a href='../type/fock_projector_t.html#boundprocedure-init'>init</a></strong></td>
                   <td></td>
               </tr>
           </tbody>
@@ -628,7 +628,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~5"></span>
+              <span class="anchor" id="variable-overlap~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -643,7 +643,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~2"></span>
+              <span class="anchor" id="variable-basis~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -673,7 +673,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~69"></span>
+              <span class="anchor" id="variable-error~65"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -713,7 +713,7 @@ left alone; only its couplings to everything else are cut.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~50"></span>
+              <span class="anchor" id="variable-this~24"></span>
               class(<a href='../type/fock_projector_t.html'>fock_projector_t</a>),
             </td>
 <td>intent(in)</td>
@@ -728,7 +728,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fock~4"></span>
+              <span class="anchor" id="variable-fock"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -743,7 +743,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~72"></span>
+              <span class="anchor" id="variable-error~68"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -783,7 +783,7 @@ left alone; only its couplings to everything else are cut.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~49"></span>
+              <span class="anchor" id="variable-this~23"></span>
               class(<a href='../type/fock_projector_t.html'>fock_projector_t</a>),
             </td>
 <td>intent(out)</td>
@@ -798,7 +798,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~3"></span>
+              <span class="anchor" id="variable-basis~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -813,7 +813,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~7"></span>
+              <span class="anchor" id="variable-overlap~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -843,7 +843,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen~3"></span>
+              <span class="anchor" id="variable-n_frozen~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -858,7 +858,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-shift~7"></span>
+              <span class="anchor" id="variable-shift~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -873,7 +873,7 @@ left alone; only its couplings to everything else are cut.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~71"></span>
+              <span class="anchor" id="variable-error~67"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -914,7 +914,7 @@ orthonormalise what is left among itself in the metric <code>overlap</code></p><
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~6"></span>
+              <span class="anchor" id="variable-overlap~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -974,7 +974,7 @@ orthonormalise what is left among itself in the metric <code>overlap</code></p><
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~70"></span>
+              <span class="anchor" id="variable-error~66"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1017,7 +1017,7 @@ orthonormalise what is left among itself in the metric <code>overlap</code></p><
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-03 12:17 +0000             </p>
+ on 2026-09-05 01:06 +0000             </p>
           </div>
         </div>
         <br>

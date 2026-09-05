@@ -16,6 +16,12 @@ module mqc_calculation_defaults
    ! nothing.
    real(dp), parameter, public :: DEFAULT_TEMPERATURE = 298.15_dp  !! K (room temperature)
    real(dp), parameter, public :: DEFAULT_PRESSURE = 1.0_dp        !! atm (standard pressure)
+   real(dp), parameter, public :: DEFAULT_RESPONSE_TOL = 1.0e-9_dp
+   !! Largest residual at which an analytic Hessian's coupled-perturbed solve
+   !! stops, on the orbital response scaled by the energy denominators. The
+   !! Hessian is linear in that response, so its error tracks this number.
+   integer, parameter, public :: DEFAULT_RESPONSE_MAX_ITER = 50
+   !! Krylov cycles the solve may take before it reports non-convergence.
 
    ! =========================================================================
    ! SCF
