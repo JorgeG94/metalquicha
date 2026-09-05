@@ -27,16 +27,19 @@ source-form = "free"
 
 
 [dependencies]
-pic = { git = "https://github.com/JorgeG94/pic.git", tag = "v0.6.0"}
-pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", tag = "v0.6.0"}
+pic = { git = "https://github.com/JorgeG94/pic.git", tag = "v0.6.1"}
+pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", tag = "v0.6.1"}
 pic-blas = { git = "https://github.com/JorgeG94/pic-blas.git", tag = "v0.3.2"}
 tblite = { git = "https://github.com/tblite/tblite", tag = "v0.6.0"}
+
 # TODO pin to a version
 test-drive = { git = "https://github.com/fortran-lang/test-drive", branch = "main" }
 json-fortran = { git = "https://github.com/jacobwilliams/json-fortran.git", tag = "9.3.1"}
+
 openmp = "*"
 [extra.fortitude.check]
 select = ["C", "E", "S", "PORT"]
+
 # S212 is the warning that a program and a module are in the same file, this would make our tests stupid
 # C003 is 'implicit none' missing 'external', this does not always work with other compilers, so we ignore it
 # C072 is character '{name}' has assumed size but does not have intent(in), since this is a bit too much
@@ -47,3 +50,21 @@ ignore = ["C003", "C072", "S212", "C142", "C183", "C181"]
 # overwritten on the next regeneration anyway.
 exclude = ["test/*", "backends/cuest/bindings/cuest.f90", "backends/cuest/bindings/cuda_runtime.F90"]
 line-length = 132
+
+# C061 (missing `intent`) reports a violation in this file that is not there,
+# at a line that is not where it thinks. Every dummy argument in
+# mqc_czt_gradient.f90 carries an intent -- checked one by one -- and the only
+# declarations without one are local working arrays, which is correct.
+#
+# The report is name-based rather than positional, which is what makes it a
+# tool bug rather than a finding: it points at the first *local* named `env` or
+# `buf`, and renaming that local moves the report to the next local of the same
+# name further down the file instead of clearing it. Every piece also passes on
+# its own -- the flagged routine extracted into a module is clean, and so is
+# `ip1_block`, whose dummies share those names and all have intent -- so it
+# needs the whole 2800-line file to appear at all.
+#
+# Scoped to this one rule in this one file so a real missing intent anywhere
+# else, including elsewhere in this file for any other rule, still fails.
+[extra.fortitude.check.per-file-ignores]
+"backends/cenzontle/derivatives/mqc_czt_gradient.f90" = ["C061"]

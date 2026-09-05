@@ -2,7 +2,7 @@
 # of its own to translate.
 include("${CMAKE_CURRENT_LIST_DIR}/MqcFetch.cmake")
 
-set(_rev "v0.6.0")
+set(_rev "v0.6.1")
 
 # The first pic-mpi release carrying the single-rank backend, i.e. the first one
 # that understands PIC_ENABLE_MPI.

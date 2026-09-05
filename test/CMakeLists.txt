@@ -233,6 +233,14 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_uks)
   target_link_libraries(test_mqc_czt_uks PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The batched Fock build's decomposition, as three pure functions rather than
+  # through an SCF. `pair_degeneracy` wrong by two is a Fock matrix wrong on its
+  # diagonal blocks only; `pair_work_order` dropping a task is a missing block.
+  # Both converge to something, which is why they are checked directly.
+  addtest(mqc_czt_fock_blocking)
+  target_link_libraries(test_mqc_czt_fock_blocking
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # Range separation, on the two limits of the erf kernel. The validation
   # manifest checks the energies; this checks that omega reaches libcint at all,
   # which is the part that failed silently -- an ignored parameter returns

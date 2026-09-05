@@ -365,6 +365,9 @@ contains
       ok = .false.
       call build_czt_molecule(WATER_Z, WATER_SYM, WATER, basis, mol, err)
       if (err%has_error()) return
+      ! Solved to 1e-13 and not the production default: the translational
+      ! sum rule is checked to 1e-12, and the dipole derivative is linear in
+      ! the response, so its error is the residual the solve stops at.
       if (len_trim(functional) > 0) then
          call xc_context_create(mol, functional, ctx, err, level=KS_GRID_LEVEL)
          if (.not. err%has_error()) &
@@ -374,13 +377,13 @@ contains
             call response_hessian(mol, scf%density, scf%orbitals, scf%orbital_energies, &
                                   WATER_NELEC/2, hess, err, xc=ctx, &
                                   reference=scf%density, k_scale=ctx%exx_fraction, &
-                                  dipole_derivatives=ddip)
+                                  dipole_derivatives=ddip, tol=1.0e-13_dp)
       else
          call run_czt_rhf(mol, WATER_NELEC, 300, 1.0e-14_dp, 1.0e-12_dp, &
                           .false., scf, err)
          if (.not. err%has_error()) &
             call response_hessian(mol, scf%density, scf%orbitals, scf%orbital_energies, &
-                                  WATER_NELEC/2, hess, err, dipole_derivatives=ddip)
+                                  WATER_NELEC/2, hess, err, dipole_derivatives=ddip, tol=1.0e-13_dp)
       end if
       call mol%destroy()
       ok = .not. err%has_error()

@@ -108,6 +108,11 @@ module mqc_cuest_iface
          !! Pure (spherical) vs Cartesian angular functions
       logical :: verbose = .false.
          !! Print the SCF iteration table
+      real(dp) :: hessian_response_tol = 1.0e-9_dp
+      integer :: hessian_response_max_iter = 50
+      integer :: hessian_response_batch = 12
+         !! The analytic Hessian's coupled-perturbed solve; copied from the
+         !! options, whose defaults are the ones that count.
       character(len=32) :: accelerator = "diis"
          !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
          !! 'ediis'. The energy-based pair runs only while the error is large
@@ -220,6 +225,9 @@ contains
       settings%verbose = options%verbose
       settings%device_rank = options%device_rank
       settings%pcm = options%pcm
+      settings%hessian_response_tol = options%hessian_response_tol
+      settings%hessian_response_max_iter = options%hessian_response_max_iter
+      settings%hessian_response_batch = options%hessian_response_batch
    end subroutine apply_scf_settings
 
    subroutine parse_backend_name(name, kind, error)

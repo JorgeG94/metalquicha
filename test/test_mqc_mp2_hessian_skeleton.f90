@@ -106,11 +106,15 @@ contains
    !! `rhf_hessian` -- so the second-derivative integrals can be generated once
    !! for both densities without the five duplicated deposit lines diverging.
    !!
-   !! 1e-13 and not 1e-16: the two-electron walks differ (`hess_2e_contract`
+   !! 1e-10 and not 1e-16: the two-electron walks differ (`hess_2e_contract`
    !! restricts the ket pair and doubles, this sweep runs every ordering), and
-   !! two summation orders round differently. Measured 3.8e-14 when this
-   !! landed. The one-electron deposits, by contrast, are statement-for-
-   !! statement the same and contribute nothing at this tolerance.
+   !! two summation orders round differently, at 4e-13 here. The one-electron
+   !! deposits were statement-for-statement the same when this landed (3.8e-14
+   !! measured), but `partial_hessian` now takes the nuclear-attraction cross
+   !! term through `hess_rinv_contract`, and the largest terms in that sum are
+   !! about 7e3 on oxygen's core functions, so a different order rounds to
+   !! 3e-12. A term on the wrong atom or with the wrong factor lands at 1e-6 or
+   !! above, which the margin below still catches.
    subroutine reference_matches(error)
       type(error_type), allocatable, intent(out) :: error
 
@@ -146,7 +150,7 @@ contains
 
       write (*, "(a, es10.3)") "        max |skeleton ref - rhf_hessian| = ", &
          maxval(abs(nuc + hess_ref + resp - full))
-      call check(error, maxval(abs(nuc + hess_ref + resp - full)) < 1.0e-13_dp, &
+      call check(error, maxval(abs(nuc + hess_ref + resp - full)) < 1.0e-10_dp, &
                  "the reference skeleton diverged from rhf_hessian")
       call mol%destroy()
    end subroutine reference_matches

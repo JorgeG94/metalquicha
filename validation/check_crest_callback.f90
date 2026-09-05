@@ -140,6 +140,7 @@ program check_crest_callback
    implicit none
 
    integer, parameter :: NAT = 3
+   real(wp), parameter :: CALLBACK_TOL = 1.0e-12_wp
 
    type(calcdata) :: calc, calc2
    type(calculation_settings) :: sett, sett2
@@ -267,14 +268,18 @@ program check_crest_callback
          write (*, "(a,i0)") "  FAIL: CREST reported status ", io
          failures = failures + 1
       end if
-      ! Exact again: this compares mqc against mqc, so the callback is the
-      ! only thing in between. It says nothing about whether the gradient is
-      ! right -- only that it arrives unaltered, which is what this checks.
-      if (e_crest /= e_direct) then
+      ! mqc against mqc, so the callback is the only thing in between. It says
+      ! nothing about whether the gradient is right -- only that it arrives
+      ! unaltered, which is what this checks. To rounding and not to the bit:
+      ! the Fock and gradient builds merge per-thread partial sums in the
+      ! order the threads finish, so two runs on more than one thread differ
+      ! in the last place (2e-15 on two threads, 7e-15 on sixteen). A
+      ! transposed, scaled or missing gradient is off by 1e-3 or more.
+      if (abs(e_crest - e_direct) > CALLBACK_TOL) then
          write (*, "(a)") "  FAIL: the SCF energy changed crossing the callback"
          failures = failures + 1
       end if
-      if (any(g_crest /= g_direct)) then
+      if (any(abs(g_crest - g_direct) > CALLBACK_TOL)) then
          write (*, "(a)") "  FAIL: the gradient changed crossing the callback"
          failures = failures + 1
       end if

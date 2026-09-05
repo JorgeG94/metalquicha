@@ -169,6 +169,9 @@ contains
       options%spherical = config%use_spherical
       options%verbose = config%verbose
       options%hessian_displacement = config%hessian_displacement
+      options%hessian_response_tol = config%hessian_response_tol
+      options%hessian_response_max_iter = config%hessian_response_max_iter
+      options%hessian_response_batch = config%hessian_response_batch
       options%device_rank = config%device_rank
       options%backend = config%backend
       options%freeze_core = config%corr%freeze_core

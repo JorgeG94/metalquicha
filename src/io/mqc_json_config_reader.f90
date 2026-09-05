@@ -376,6 +376,11 @@ contains
       call optional_real(json, "keywords.hessian.displacement", config%hessian_displacement)
       call optional_real(json, "keywords.hessian.temperature", config%hessian_temperature)
       call optional_real(json, "keywords.hessian.pressure", config%hessian_pressure)
+      call optional_real(json, "keywords.hessian.response_tolerance", &
+                         config%hessian_response_tol)
+      call optional_int(json, "keywords.hessian.response_max_iter", &
+                        config%hessian_response_max_iter)
+      call optional_int(json, "keywords.hessian.response_batch", config%hessian_response_batch)
 
       call optional_real(json, "keywords.aimd.dt", config%aimd_dt)
       call optional_real(json, "keywords.aimd.timestep", config%aimd_dt)

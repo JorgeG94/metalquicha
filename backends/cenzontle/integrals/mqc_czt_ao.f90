@@ -736,15 +736,18 @@ contains
       allocate (work(n_points, n_ao), rho(n_points))
       call pic_gemm(ao, density, work)
 
+      ! The row-wise dots walk the function index outermost, so every inner
+      ! loop is one contiguous column: the other order strides by `n_points`
+      ! on each step and was a quarter of a Kohn-Sham Hessian's samples. No
+      ! threading here either -- every caller is already inside a parallel
+      ! region over blocks of points, and a region nested there is a barrier
+      ! that buys nothing.
       rho = 0.0_dp
-      !$omp parallel do default(none) shared(rho, work, ao, n_points, n_ao) &
-      !$omp    private(ig, mu) schedule(static)
-      do ig = 1, n_points
-         do mu = 1, n_ao
+      do mu = 1, n_ao
+         do ig = 1, n_points
             rho(ig) = rho(ig) + work(ig, mu)*ao(ig, mu)
          end do
       end do
-      !$omp end parallel do
 
       if (present(tau)) then
          allocate (tau(n_points))
@@ -755,15 +758,11 @@ contains
             allocate (gwork(n_points, n_ao))
             do id = 1, 3
                call pic_gemm(ao_grad(:, :, id), density, gwork)
-               !$omp parallel do default(none) &
-               !$omp    shared(tau, gwork, ao_grad, n_points, n_ao, id) &
-               !$omp    private(ig, mu) schedule(static)
-               do ig = 1, n_points
-                  do mu = 1, n_ao
+               do mu = 1, n_ao
+                  do ig = 1, n_points
                      tau(ig) = tau(ig) + 0.5_dp*gwork(ig, mu)*ao_grad(ig, mu, id)
                   end do
                end do
-               !$omp end parallel do
             end do
             deallocate (gwork)
          end if
@@ -777,18 +776,14 @@ contains
             ! LDA-shaped answer under a GGA's name.
             rho_grad = huge(1.0_dp)
          else
-            !$omp parallel do default(none) &
-            !$omp    shared(rho_grad, work, ao_grad, n_points, n_ao) &
-            !$omp    private(ig, mu, id) schedule(static)
-            do ig = 1, n_points
-               do id = 1, 3
-                  do mu = 1, n_ao
+            do id = 1, 3
+               do mu = 1, n_ao
+                  do ig = 1, n_points
                      rho_grad(ig, id) = rho_grad(ig, id) &
                                         + 2.0_dp*work(ig, mu)*ao_grad(ig, mu, id)
                   end do
                end do
             end do
-            !$omp end parallel do
          end if
       end if
 

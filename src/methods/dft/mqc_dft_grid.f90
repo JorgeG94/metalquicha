@@ -16,7 +16,8 @@ module mqc_dft_grid
    !!
    !! Grid size follows a `level` from 0 to 9, with radial and angular counts
    !! chosen per element period. Level 3 is the default.
-   use pic_types, only: dp
+   use pic_types, only: dp, int64, int_index
+   use pic_sorting, only: sort_index
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_lebedev, only: lebedev_grid
    use mqc_dft_radial, only: treutler_ahlrichs_radial
@@ -74,6 +75,11 @@ module mqc_dft_grid
       !! Lebedev points per (level, period), as point counts rather than the
       !! degrees the standard tables list, since that is what `lebedev_grid`
       !! takes.
+
+   real(dp), parameter :: GRID_SORT_CELL = 3.0_dp
+      !! Side of the cubes the points are binned into before blocking, Bohr.
+      !! About the spacing of bonded heavy atoms: a block of a few hundred
+      !! points then sits within one or two cubes.
 
    type :: dft_grid_t
       !! A molecular quadrature: points, weights, and which atom made each point
@@ -246,8 +252,59 @@ contains
       grid%adjust = used_adjust
       allocate (grid%numbers(n_atoms), source=atomic_numbers)
 
+      call sort_grid_spatially(grid)
       call apply_partition(grid, atom_coords, atomic_numbers, used_scheme, used_adjust, error)
    end subroutine build_dft_grid
+
+   subroutine sort_grid_spatially(grid)
+      !! Reorder the points so that consecutive ones are close in space
+      !!
+      !! The loop above lays the points down atom by atom and radial shell by
+      !! radial shell, so a block of consecutive points is a whole sphere around
+      !! one atom -- and for the outer shells a sphere of ten Bohr or more,
+      !! whose bounding sphere spans the molecule. Every basis function is
+      !! significant on such a block and its screening does nothing. Binned
+      !! into cubes of `GRID_SORT_CELL` Bohr and ordered along a Morton curve,
+      !! consecutive points share a cube or a neighbouring one, and a block
+      !! reaches only the functions near it. The quadrature is a sum, so the
+      !! order changes nothing but roundoff.
+      type(dft_grid_t), intent(inout) :: grid
+
+      integer(int64), allocatable :: key(:)
+      integer(int_index), allocatable :: perm(:)
+      real(dp) :: lo(N_DIM)
+      integer :: k, n
+      integer :: ix(N_DIM)
+
+      n = grid%n_points
+      if (n < 2) return
+      allocate (key(n), perm(n))
+      lo = minval(grid%coords, dim=2)
+      do k = 1, n
+         ix = int((grid%coords(:, k) - lo)/GRID_SORT_CELL)
+         ix = min(max(ix, 0), 1023)
+         key(k) = morton_key(ix(1), ix(2), ix(3))
+      end do
+      call sort_index(key, perm)
+      grid%coords = grid%coords(:, perm)
+      grid%weights = grid%weights(perm)
+      grid%atom = grid%atom(perm)
+   end subroutine sort_grid_spatially
+
+   pure function morton_key(ix, iy, iz) result(key)
+      !! The three cell indices interleaved bit by bit, ten bits each
+      integer, intent(in) :: ix, iy, iz
+      integer(int64) :: key
+
+      integer :: b
+
+      key = 0_int64
+      do b = 0, 9
+         if (btest(ix, b)) key = ibset(key, 3*b)
+         if (btest(iy, b)) key = ibset(key, 3*b + 1)
+         if (btest(iz, b)) key = ibset(key, 3*b + 2)
+      end do
+   end function morton_key
 
    pure subroutine atom_sizes(atomic_number, level, n_radial, n_angular, nr, na)
       !! Radial and angular counts for one atom, honouring any override
