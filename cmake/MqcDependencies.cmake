@@ -188,7 +188,21 @@ if(MQC_ENABLE_LIBXC)
   # static link resolves left to right.
   target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:xcf03>
                                             $<BUILD_INTERFACE:xc>)
-  target_include_directories(${main_lib} PRIVATE ${libxc_BINARY_DIR})
+  # PUBLIC, and for the same reason the libcint include below is: nvfortran
+  # needs every transitively used module file on the include path, not only the
+  # ones a source names itself. `app/main.f90` uses no libxc module -- it uses
+  # `mqc_driver`, which reaches `xc_f03_lib_m` several modules down -- and
+  # nvfortran still has to open `xc_f03_lib_m.mod` to read them. PRIVATE keeps
+  # it off the executable's include path and the build dies at 65 per cent with
+  #
+  # NVFORTRAN-F-0004-Unable to open MODULE file xc_f03_lib_m.mod
+  #
+  # gfortran does not need it, which is why this stood for so long.
+  #
+  # BUILD_INTERFACE because a fetched third-party library never joins this
+  # project's export set.
+  target_include_directories(${main_lib}
+                             PUBLIC $<BUILD_INTERFACE:${libxc_BINARY_DIR}>)
   message(STATUS "libxc enabled: exchange-correlation functionals available")
 endif()
 
@@ -259,6 +273,14 @@ if(MQC_ENABLE_CZT AND MQC_USE_LIBFINT)
     add_library(cint_fortran ALIAS fint)
   endif()
   target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:fint>)
+  # PUBLIC, for the reason the libxc include above is and the libcint one below
+  # is: nvfortran opens every transitively used module file, so anything linking
+  # this library has to be able to find `cint_workspace.mod` even though no
+  # source outside backends/cenzontle/ names it. The `fint` link is PRIVATE, so
+  # the target's own interface include does not carry through -- which is why
+  # this has to be stated rather than inherited.
+  target_include_directories(
+    ${main_lib} PUBLIC $<BUILD_INTERFACE:${libfint_BINARY_DIR}/include>)
   add_subdirectory(backends/cenzontle)
   message(
     STATUS
