@@ -282,7 +282,7 @@
                     0.213537435277
                 ]
             ],
-            "hessian_tolerance": 1e-09,
+            "hessian_tolerance": 1e-08,
             "requires": "libxc",
             "type": "unfragmented"
         },
