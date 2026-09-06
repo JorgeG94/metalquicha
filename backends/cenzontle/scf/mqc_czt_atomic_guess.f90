@@ -217,9 +217,22 @@ contains
 
       do b = 1, n_sub
          do a = 1, n_sub
-            ! Different angular momenta cannot mix in a spherical density, so
-            ! their block stays zero.
-            if (ang(a) /= ang(b)) cycle
+            ! Different angular momenta cannot mix in a spherical density --
+            ! in a basis of spherical harmonics. A CARTESIAN shell of l>=2 is
+            ! not pure l: (xx+yy+zz) is s-like, so a spherically symmetric
+            ! density genuinely has s-d entries, and zeroing them throws real
+            ! density away. Measured on oxygen: Tr(D S) came back 8.014 rather
+            ! than 8, and cc-pVTZ, which adds f, 7.933.
+            if (ang(a) /= ang(b)) then
+               if (atom_mol%cartesian .and. max(ang(a), ang(b)) >= 2) then
+                  exact = .false.
+                  averaged(first(a) + 1:first(a) + ncomp(a), &
+                           first(b) + 1:first(b) + ncomp(b)) = &
+                     density(first(a) + 1:first(a) + ncomp(a), &
+                             first(b) + 1:first(b) + ncomp(b))
+               end if
+               cycle
+            end if
 
             if (atom_mol%cartesian .and. ang(a) >= 2) then
                exact = .false.

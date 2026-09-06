@@ -49,6 +49,7 @@ contains
                   new_unittest("guess_choice_does_not_change_the_energy", test_same_energy), &
                   new_unittest("sad_is_spherical_and_sac_is_not", test_sad_symmetry), &
                   new_unittest("averaging_conserves_electrons", test_average_trace), &
+                  new_unittest("cartesian_d_conserves_electrons", test_cartesian_trace), &
                   new_unittest("averaging_is_idempotent", test_average_idempotent), &
                   new_unittest("pseudo_orbitals_rebuild_their_density", test_pseudo), &
                   new_unittest("closed_shell_atom_gives_one_guess", test_closed_atom), &
@@ -71,18 +72,23 @@ contains
       call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
    end subroutine water
 
-   subroutine single_atom(z, symbol, basis, mol, err)
+   subroutine single_atom(z, symbol, basis, mol, err, cartesian)
       !! One free atom, so its guess block is the whole matrix
       integer, intent(in) :: z
       character(len=*), intent(in) :: symbol, basis
       type(czt_molecule_t), intent(out) :: mol
       type(error_t), intent(inout) :: err
+      logical, intent(in), optional :: cartesian
       real(dp) :: c(3, 1)
       character(len=2) :: sym(1)
 
       sym(1) = symbol
       c = reshape([0.0_dp, 0.0_dp, 0.0_dp], [3, 1])
-      call build_czt_molecule([z], sym, c, basis, mol, err)
+      if (present(cartesian)) then
+         call build_czt_molecule([z], sym, c, basis, mol, err, force_cartesian=cartesian)
+      else
+         call build_czt_molecule([z], sym, c, basis, mol, err)
+      end if
    end subroutine single_atom
 
    subroutine test_same_energy(error)
@@ -256,6 +262,63 @@ contains
 
       call mol%destroy()
    end subroutine test_average_trace
+
+   subroutine test_cartesian_trace(error)
+      !! The same electron count, in the convention where l is not a good label
+      !!
+      !! `test_average_trace` next door checks this on a SPHERICAL basis, where
+      !! it held while this did not. A Cartesian shell of l>=2 is not pure l --
+      !! (xx+yy+zz) is s-like -- so a spherically symmetric density genuinely
+      !! carries s-d entries, and the averaging used to zero them along with
+      !! every other cross-l block. Oxygen came back with Tr(D S) = 8.014 in
+      !! cc-pVDZ and 7.933 in cc-pVTZ, which adds f.
+      !!
+      !! Nothing noticed, because a guess that has lost a hundredth of an
+      !! electron still converges to the right energy from a slightly worse
+      !! start. It took an outside consumer reading the densities out and
+      !! integrating them to see it, which is the argument for checking a guess
+      !! against something other than the energy it eventually reaches.
+      !!
+      !! cc-pVTZ is here as well as cc-pVDZ because the error grew with angular
+      !! momentum: a fix that only handled d would pass on one and fail here.
+      type(error_type), allocatable, intent(out) :: error
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: d_a(:, :), d_b(:, :), s(:, :)
+      real(dp) :: n_electrons
+      integer :: icase
+      character(len=8), parameter :: bases(2) = [character(len=8) :: "cc-pvdz", "cc-pvtz"]
+
+      do icase = 1, size(bases)
+         call clear_atomic_cache()
+         call single_atom(8, "O ", trim(bases(icase)), mol, err, cartesian=.true.)
+         call check(error,.not. err%has_error(), "oxygen must build: "//err%get_full_trace())
+         if (allocated(error)) return
+
+         call build_atomic_guess(mol, SCF_GUESS_SAD, d_a, d_b, err)
+         call check(error,.not. err%has_error(), "the SAD guess must build: "// &
+                    err%get_full_trace())
+         if (allocated(error)) return
+
+         call mol%overlap(s)
+         n_electrons = sum((d_a + d_b)*s)
+         call check(error, abs(n_electrons - 8.0_dp) < 1.0e-8_dp, &
+                    "a Cartesian "//trim(bases(icase))//" oxygen guess must carry 8 "// &
+                    "electrons, not "//real_text(n_electrons))
+         if (allocated(error)) return
+         deallocate (s, d_a, d_b)
+         call mol%destroy()
+      end do
+   end subroutine test_cartesian_trace
+
+   function real_text(x) result(text)
+      !! A number in a message, so a failure says how far off it was
+      real(dp), intent(in) :: x
+      character(len=:), allocatable :: text
+      character(len=32) :: buffer
+      write (buffer, "(f16.9)") x
+      text = trim(adjustl(buffer))
+   end function real_text
 
    subroutine test_average_idempotent(error)
       !! Averaging an averaged density changes nothing
