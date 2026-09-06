@@ -115,7 +115,7 @@ set(MQC_LIBFINT_REPOSITORY
     "https://github.com/JorgeG94/libfint.git"
     CACHE STRING "Where to fetch libfint from")
 set(MQC_LIBFINT_TAG
-    "v0.2.1"
+    "v0.2.2"
     CACHE STRING "libfint revision to build against")
 
 set(MQC_CREST_REPOSITORY
