@@ -401,7 +401,8 @@ if(MQC_ENABLE_DLFIND)
   message(STATUS "DL-FIND enabled: geometry optimization via libdlfind")
 endif()
 
-# Cray: put the threaded libsci ahead of the serial one the MPI wrapper drags in.
+# Cray: put the threaded libsci ahead of the serial one the MPI wrapper drags
+# in.
 #
 # `find_package(MPI)` learns what to link by asking the `ftn` wrapper for its
 # link line, and it asks *without* `-fopenmp`. What comes back therefore names
@@ -425,10 +426,9 @@ endif()
 # matrix came back with different eigenvalues, the rest with `info` in the
 # forties. Downstream that reads as an SCF that will not converge, or an
 # eigensolver failing on a perfectly ordinary structure -- never as a threading
-# problem, and never in a traceback naming the BLAS. It is what made a
-# conformer search sampling on eight threads lose every metadynamics run it
-# started, while the same tblite in a binary without the serial libsci was
-# fine.
+# problem, and never in a traceback naming the BLAS. It is what made a conformer
+# search sampling on eight threads lose every metadynamics run it started, while
+# the same tblite in a binary without the serial libsci was fine.
 #
 # Taken from what `find_package(OpenMP)` already resolved, so no path is
 # guessed. Nowhere but a Cray has an entry that matches, and the loop then adds
