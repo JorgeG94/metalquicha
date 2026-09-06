@@ -24,11 +24,15 @@ module mqc_terco_driver
    use mqc_czt_ao, only: max_ao_l
    use mqc_czt_bridge, only: core_orbital_count
    use libcint_fortran, only: LIBCINT_NCTR_OF, LIBCINT_NPRIM_OF, LIBCINT_PTR_COEFF
-   use mqc_czt_atomic_guess, only: build_restricted_guess, build_atomic_guess, &
-                                   parse_guess_name
-   use trc_c_interfaces, only: trc_basis_create_libcint, trc_basis_destroy, trc_rimp2, &
-                               trc_basis_nao, trc_scf, &
-                               TRC_OK, TRC_ERR_NOCONV, TRC_ERR_UNSUPPORTED
+   use mqc_czt_atomic_guess, only: parse_guess_name
+   use mqc_czt_rhf, only: SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
+   use trc_c_interfaces, only: trc_create, trc_destroy, trc_set_molecule, trc_set_basis_libcint, &
+                               trc_set_aux_libcint, trc_set_method, trc_set_convergence, &
+                               trc_set_screening, trc_set_guess, trc_set_verbose, trc_set_rimp2, &
+                               trc_run_scf, trc_run_rimp2, trc_nao, trc_energy, trc_iterations, &
+                               trc_rimp2_energy, trc_message, &
+                               TRC_OK, TRC_ERR_NOCONV, TRC_ERR_UNSUPPORTED, &
+                               TRC_GUESS_CORE, TRC_GUESS_GWH, TRC_GUESS_SAD
    implicit none
    private
 
@@ -53,16 +57,14 @@ contains
       type(error_t) :: error
       character(len=8), allocatable :: element_symbols(:)
       character(len=:), allocatable :: functional_name
-      real(dp), allocatable :: guess_total(:, :), guess_a(:, :), guess_b(:, :)
-      real(dp), allocatable, target :: dguess(:, :, :)
-      real(dp), allocatable :: dmat(:, :, :), eps(:, :)
       character(kind=c_char), allocatable :: functional_c(:)
-      type(c_ptr) :: basis_handle, dguess_ptr
-      integer(c_int) :: rc, nao_c, nalpha_c, nbeta_c, grid_c, maxiter_c, niter_c, nbas_c
-      integer(c_int) :: verbose_c
+      integer, parameter :: MSG_LEN = 256   !! terco's message buffer
+      character(kind=c_char) :: msg_c(MSG_LEN)
+      type(c_ptr) :: h
+      integer(c_int) :: rc, nao_c, niter_c, nbas_c, guess_c
+      real(c_double) :: energy_c, e_os_c, e_ss_c
       integer(c_int), allocatable :: atm_c(:, :), bas_c(:, :)
       real(c_double), allocatable :: env_c(:)
-      real(c_double) :: energy_c, e_xc_c
       integer :: iatom, nspin, n_alpha, n_beta, guess_kind, l_max
       logical :: occupations_ok, unrestricted, wants_gradient
 
@@ -190,160 +192,117 @@ contains
       ! told by a null pointer: it then builds the core guess itself. An atomic
       ! guess that will not build has already warned and fallen back to GWH
       ! inside `build_restricted_guess`, so there is nothing to handle here.
-      if (unrestricted) then
-         call parse_guess_name(settings%guess, guess_kind, error)
-         if (.not. error%has_error()) then
-            call build_atomic_guess(mol, guess_kind, guess_a, guess_b, error)
-         end if
-         if (error%has_error()) then
-            call logger%warning("backend 'terco': "//error%get_message()// &
-                                " -- starting from the core guess")
-            call error%clear()
-         else if (allocated(guess_a) .and. allocated(guess_b)) then
-            allocate (dguess(mol%nao, mol%nao, 2))
-            dguess(:, :, 1) = guess_a
-            dguess(:, :, 2) = guess_b
-         end if
-      else
-         call build_restricted_guess(mol, settings%guess, guess_kind, guess_total, error)
-         if (error%has_error()) then
-            call result%error%set(ERROR_VALIDATION, "backend 'terco': "//error%get_message())
-            result%has_error = .true.
-            result%has_energy = .false.
+      ! ---- which guess. terco builds SAD itself (one free-atom SCF per
+      ! element, spin-averaged); core and GWH are its own; SAC is the same
+      ! spherical atom under another name; a projection ladder is refused
+      ! here as it was refused by the CPU guess builder.
+      call parse_guess_name(settings%guess, guess_kind, error)
+      if (error%has_error()) then
+         call result%error%set(ERROR_VALIDATION, "backend 'terco': "//error%get_message())
+         result%has_error = .true.
+         result%has_energy = .false.
+         return
+      end if
+      select case (guess_kind)
+      case (SCF_GUESS_CORE)
+         guess_c = TRC_GUESS_CORE
+      case (SCF_GUESS_GWH)
+         guess_c = TRC_GUESS_GWH
+      case (SCF_GUESS_SAD, SCF_GUESS_SAC)
+         guess_c = TRC_GUESS_SAD
+      case default
+         call result%error%set(ERROR_VALIDATION, "backend 'terco': guess '"// &
+                               trim(settings%guess)//"' has no terco counterpart; use "// &
+                               "'sad', 'core' or 'gwh'.")
+         result%has_error = .true.
+         result%has_energy = .false.
+         return
+      end select
+
+      ! ---- one context, set up in steps, then run ---------------------------
+      rc = trc_create(h)
+      if (rc /= TRC_OK) then
+         call fail("could not create a terco context (status "//status_text(rc)//")")
+         return
+      end if
+      rc = trc_set_molecule(h, int(fragment%n_atoms, c_int), &
+                            real(fragment%element_numbers, c_double), &
+                            real(reshape(fragment%coordinates, [3*fragment%n_atoms]), c_double), &
+                            int(fragment%charge, c_int), int(fragment%multiplicity, c_int))
+      if (rc /= TRC_OK) then
+         call fail("the molecule was refused by terco (status "//status_text(rc)//")")
+         return
+      end if
+      call segment_general_contractions(mol%bas, mol%nbas, bas_c, nbas_c)
+      rc = trc_set_basis_libcint(h, int(mol%atm, c_int), int(mol%natm, c_int), bas_c, nbas_c, &
+                                 real(mol%env, c_double), int(size(mol%env), c_int), 1_c_int)
+      if (rc /= TRC_OK) then
+         call fail("the basis was refused by terco (status "//status_text(rc)//")")
+         return
+      end if
+      rc = trc_nao(h, nao_c)
+      if (rc /= TRC_OK .or. int(nao_c) /= mol%nao) then
+         call fail("terco and the CPU path disagree about the size of this basis. "// &
+                   "That is a bug in the adapter, not in the deck.")
+         return
+      end if
+      functional_c = c_string(functional_name)
+      rc = trc_set_method(h, functional_c, int(settings%grid_level, c_int))
+      ! terco stops on the energy change and the commutator norm, not on a
+      ! density change. The norm grows with the system, so mqc's per-element
+      ! density tolerance is the wrong scale for it; the gate is the square
+      ! root of the energy tolerance, where PySCF puts its gradient threshold.
+      ! cholesterol at 1e-6 took 41 iterations, the last dozen chasing a
+      ! norm that hovered just above the gate.
+      if (rc == TRC_OK) rc = trc_set_convergence(h, real(settings%energy_tol, c_double), &
+                                                 real(sqrt(settings%energy_tol), c_double), &
+                                                 int(settings%max_iter, c_int), int(settings%diis_size, c_int))
+      if (rc == TRC_OK) rc = trc_set_screening(h, real(settings%screening_tolerance, c_double))
+      if (rc == TRC_OK) rc = trc_set_guess(h, guess_c, c_null_ptr, 1_c_int)
+      if (rc == TRC_OK) rc = trc_set_verbose(h, int(merge(1, 0, settings%verbose), c_int))
+      if (rc /= TRC_OK) then
+         call fail("a setting was refused by terco (status "//status_text(rc)//")")
+         return
+      end if
+
+      rc = trc_run_scf(h)
+      select case (rc)
+      case (TRC_OK, TRC_ERR_NOCONV)
+         niter_c = 0
+         if (trc_iterations(h, niter_c) == TRC_OK) result%scf_iterations = int(niter_c)
+         if (trc_energy(h, energy_c) /= TRC_OK) then
+            call fail("terco ran the SCF and would not report its energy")
             return
          end if
-         if (allocated(guess_total)) then
-            allocate (dguess(mol%nao, mol%nao, 1))
-            dguess(:, :, 1) = guess_total
-         end if
-      end if
-
-      dguess_ptr = c_null_ptr
-      if (allocated(dguess)) dguess_ptr = c_loc(dguess)
-
-      ! ---- hand it over -----------------------------------------------------
-      !
-      ! The split `bas`/`env`, never the fused sp view: terco reads plain
-      ! libcint rows and an L-shell marker is not one.
-      atm_c = int(mol%atm, c_int)
-      env_c = real(mol%env, c_double)
-      call segment_general_contractions(mol%bas, mol%nbas, bas_c, nbas_c)
-
-      rc = trc_basis_create_libcint(atm_c, int(mol%natm, c_int), bas_c, &
-                                    nbas_c, env_c, &
-                                    int(size(mol%env), c_int), 1_c_int, basis_handle)
-      if (rc /= TRC_OK) then
-         call result%error%set(ERROR_VALIDATION, "backend 'terco': the basis was refused "// &
-                               "by terco (status "//status_text(rc)//").")
-         result%has_error = .true.
-         result%has_energy = .false.
-         return
-      end if
-
-      ! Size the outputs from terco's own count rather than from `mol%nao`, so
-      ! a disagreement about how many functions this basis has shows up as a
-      ! refusal here and not as a buffer overrun inside the library.
-      rc = trc_basis_nao(basis_handle, nao_c)
-      if (rc /= TRC_OK .or. int(nao_c) /= mol%nao) then
-         call result%error%set(ERROR_VALIDATION, "backend 'terco': terco and the CPU path "// &
-                               "disagree about the size of this basis. That is a bug in "// &
-                               "the adapter, not in the deck.")
-         result%has_error = .true.
-         result%has_energy = .false.
-         rc = trc_basis_destroy(basis_handle)
-         return
-      end if
-
-      if (settings%run_mp2 .and. nspin == 2) then
-         call result%error%set(ERROR_VALIDATION, "backend 'terco': RI-MP2 needs a "// &
-                               "restricted closed-shell reference; this system is open "// &
-                               "shell or was asked for unrestricted.")
-         result%has_error = .true.
-         result%has_energy = .false.
-         rc = trc_basis_destroy(basis_handle)
-         return
-      end if
-
-      allocate (dmat(mol%nao, mol%nao, nspin), eps(mol%nao, nspin))
-      functional_c = c_string(functional_name)
-
-      nalpha_c = int(n_alpha, c_int)
-      nbeta_c = int(n_beta, c_int)
-      grid_c = int(settings%grid_level, c_int)
-      maxiter_c = int(settings%max_iter, c_int)
-
-      ! terco prints its own iteration table when this is non-zero. It goes
-      ! straight to stdout rather than through mqc's logger -- terco is a
-      ! separate library with no handle on ours -- but it appears and disappears
-      ! with `system.logger.level`, because `settings%verbose` is derived from
-      ! the log level rather than read from a key of its own. So it behaves the
-      ! way the rest of the output does even though it does not travel the same
-      ! path. Without it the log jumps from the guess to the converged energy,
-      ! and a slow or oscillating SCF reads exactly like a fast one.
-      verbose_c = 0_c_int
-      if (settings%verbose) verbose_c = 1_c_int
-
-      rc = trc_scf(basis_handle, nalpha_c, nbeta_c, functional_c, grid_c, &
-                   real(settings%energy_tol, c_double), &
-                   real(settings%density_tol, c_double), maxiter_c, dguess_ptr, &
-                   verbose_c, energy_c, e_xc_c, dmat, eps, niter_c)
-
-      ! ---- what came back ---------------------------------------------------
-      select case (rc)
-      case (TRC_OK)
-         result%energy%scf = real(energy_c, dp)
-         result%has_energy = .true.
-      case (TRC_ERR_NOCONV)
-         ! The last iterate is in the outputs, and `allow_crap_scf` is the
-         ! deck's statement about whether that is acceptable. Defaulting to
-         ! keeping it would report an unconverged number as an energy.
-         if (settings%allow_crap_scf) then
+         if (rc == TRC_OK) then
+            result%energy%scf = real(energy_c, dp)
+            result%has_energy = .true.
+         else if (settings%allow_crap_scf) then
             result%energy%scf = real(energy_c, dp)
             result%has_energy = .true.
             call logger%warning("backend 'terco': the SCF did not converge in the "// &
                                 "iterations allowed; keeping the last iterate because "// &
                                 "'allow_crap_scf' is set.")
          else
-            call result%error%set(ERROR_VALIDATION, "backend 'terco': the SCF did not "// &
-                                  "converge in the iterations allowed. Raise "// &
-                                  "'keywords.scf.max_iter', or set 'allow_crap_scf' to "// &
-                                  "keep the last iterate.")
-            result%has_error = .true.
-            result%has_energy = .false.
+            call fail("the SCF did not converge in the iterations allowed. Raise "// &
+                      "'keywords.scf.max_iter', or set 'allow_crap_scf' to keep the last iterate.")
+            return
          end if
       case default
-         call result%error%set(ERROR_VALIDATION, "backend 'terco': the SCF failed "// &
-                               "(status "//status_text(rc)//").")
-         result%has_error = .true.
-         result%has_energy = .false.
+         call fail("the SCF failed (status "//status_text(rc)//"): "//terco_message())
+         return
       end select
 
-      ! ---- RI-MP2 on the orbitals terco kept -------------------------------
-      !
-      ! Inside this routine, before the basis handle goes: terco correlates
-      ! the orbitals of the last SCF on that handle. The auxiliary basis is
-      ! built the way the CPU path builds it (correlation_aux_basis) and handed
-      ! over the way the orbital one was: split bas/env rows, general
-      ! contractions segmented -- cc-pVDZ-RI is generally contracted, and an
-      ! unsplit set would fit in a smaller auxiliary space with no diagnostic.
-      !
       if (settings%run_mp2 .and. result%has_energy) then
          block
             type(czt_molecule_t) :: aux
-            type(c_ptr) :: aux_handle
             integer(c_int), allocatable :: aux_bas_c(:, :)
-            integer(c_int) :: naux_bas_c, frozen_c
-            real(c_double) :: e_os_c, e_ss_c
+            integer(c_int) :: naux_bas_c
             integer :: frozen
             character(len=:), allocatable :: aux_name
-
             aux_name = trim(settings%aux_basis_set)
             if (len_trim(aux_name) == 0) then
-               call result%error%set(ERROR_VALIDATION, "backend 'terco': RI-MP2 needs an "// &
-                                     "auxiliary basis: set model.aux_basis")
-               result%has_error = .true.
-               result%has_energy = .false.
-               rc = trc_basis_destroy(basis_handle)
+               call fail("RI-MP2 needs an auxiliary basis: set model.aux_basis")
                return
             end if
             if (index(aux_name, "rifit") == 0 .and. index(aux_name, "-ri") == 0) then
@@ -354,42 +313,28 @@ contains
                                     fragment%coordinates, aux_name, aux, error, &
                                     force_cartesian=settings%cartesian)
             if (error%has_error()) then
-               call result%error%set(ERROR_VALIDATION, "backend 'terco': "//error%get_message())
-               result%has_error = .true.
-               result%has_energy = .false.
-               rc = trc_basis_destroy(basis_handle)
+               call fail(error%get_message())
                return
             end if
             call segment_general_contractions(aux%bas, aux%nbas, aux_bas_c, naux_bas_c)
-            rc = trc_basis_create_libcint(int(aux%atm, c_int), int(aux%natm, c_int), aux_bas_c, &
-                                          naux_bas_c, real(aux%env, c_double), &
-                                          int(size(aux%env), c_int), 1_c_int, aux_handle)
+            rc = trc_set_aux_libcint(h, int(aux%atm, c_int), int(aux%natm, c_int), aux_bas_c, &
+                                     naux_bas_c, real(aux%env, c_double), &
+                                     int(size(aux%env), c_int), 1_c_int)
             call aux%destroy()
             if (rc /= TRC_OK) then
-               call result%error%set(ERROR_VALIDATION, "backend 'terco': the auxiliary basis "// &
-                                     "was refused by terco (status "//status_text(rc)//").")
-               result%has_error = .true.
-               result%has_energy = .false.
-               rc = trc_basis_destroy(basis_handle)
+               call fail("the auxiliary basis was refused by terco (status "//status_text(rc)//")")
                return
             end if
-
             frozen = settings%n_frozen_core
             if (frozen < 0) frozen = core_orbital_count(fragment%element_numbers)
             if (.not. settings%freeze_core) frozen = 0
-            frozen_c = int(frozen, c_int)
-
-            rc = trc_rimp2(-1_c_int, basis_handle, aux_handle, frozen_c, 256_c_int, e_os_c, e_ss_c)
-            frozen_c = trc_basis_destroy(aux_handle)
+            rc = trc_set_rimp2(h, int(frozen, c_int), 256_c_int)
+            if (rc == TRC_OK) rc = trc_run_rimp2(h)
+            if (rc == TRC_OK) rc = trc_rimp2_energy(h, e_os_c, e_ss_c)
             if (rc /= TRC_OK) then
-               call result%error%set(ERROR_VALIDATION, "backend 'terco': RI-MP2 failed "// &
-                                     "(status "//status_text(rc)//").")
-               result%has_error = .true.
-               result%has_energy = .false.
-               rc = trc_basis_destroy(basis_handle)
+               call fail("RI-MP2 failed (status "//status_text(rc)//"): "//terco_message())
                return
             end if
-            ! energy_t sums scf + mp2%total(), so only the components go in.
             result%energy%mp2%ss = real(e_ss_c, dp)
             result%energy%mp2%os = real(e_os_c, dp)
             result%energy%mp2%ss_scale = settings%scs_ss
@@ -397,8 +342,32 @@ contains
             call result%energy%mp2%check_stability()
          end block
       end if
+      rc = trc_destroy(h)
 
-      rc = trc_basis_destroy(basis_handle)
+   contains
+
+      subroutine fail(why)
+         !! Refuse, and release the context on the way out.
+         character(len=*), intent(in) :: why
+         integer(c_int) :: rc_d
+         call result%error%set(ERROR_VALIDATION, "backend 'terco': "//why)
+         result%has_error = .true.
+         result%has_energy = .false.
+         rc_d = trc_destroy(h)
+      end subroutine fail
+
+      function terco_message() result(text)
+         !! terco's last message, or an empty string.
+         character(len=:), allocatable :: text
+         integer :: i
+         text = ""
+         if (trc_message(h, msg_c, int(MSG_LEN, c_int)) /= TRC_OK) return
+         do i = 1, MSG_LEN
+            if (msg_c(i) == c_null_char) exit
+            text = text//msg_c(i)
+         end do
+      end function terco_message
+
    end subroutine run_terco_scf
 
    pure subroutine segment_general_contractions(bas, nbas, bas_out, nbas_out)
