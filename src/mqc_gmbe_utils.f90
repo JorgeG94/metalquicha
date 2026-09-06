@@ -905,15 +905,15 @@ contains
       call logger%info("GMBE gradient computation completed")
       call logger%info("  Total gradient norm: "//to_char(sqrt(sum(total_gradient**2))))
 
-      if (current_log_level >= info_level .and. sys_geom%total_atoms < 100) then
-         call logger%info(" ")
-         call logger%info("Total GMBE Gradient (Hartree/Bohr):")
+      if (sys_geom%total_atoms < 100) then
+         call logger%large_info(" ")
+         call logger%large_info("Total GMBE Gradient (Hartree/Bohr):")
          do iatom = 1, sys_geom%total_atoms
             write (grad_line, "(a,i5,a,3f20.12)") "  Atom ", iatom, ": ", &
                total_gradient(1, iatom), total_gradient(2, iatom), total_gradient(3, iatom)
-            call logger%info(trim(grad_line))
+            call logger%large_info(trim(grad_line))
          end do
-         call logger%info(" ")
+         call logger%large_info(" ")
       end if
    end subroutine print_gmbe_gradient_info
 

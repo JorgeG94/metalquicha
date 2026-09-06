@@ -11,7 +11,7 @@ module mqc_geometry_optimizer
    !! than fail.
    use pic_types, only: dp, int32, int64
    use pic_mpi_lib, only: comm_t, bcast
-   use pic_logger, only: logger => global_logger, warning_level, verbose_level
+   use pic_logger, only: logger => global_logger, warning_level, large_info_level
    use pic_io, only: to_char
    use pic_timer, only: timer_type
    use mqc_convergence_report, only: convergence_header
@@ -325,9 +325,14 @@ contains
       ! logging its energy, dipole, HOMO-LUMO gap and gradient norm, which is
       ! the wrong thing to say a hundred times over. Lowered to warnings so an
       ! unconverged fragment still speaks up, and left alone entirely when the
-      ! user asked for verbose.
+      ! user asked for it.
+      !
+      ! The threshold is `large_info` and not `verbose`: a level was inserted
+      ! between the default and `verbose`, and comparing against the higher one
+      ! would silence every child calculation for a user sitting on exactly the
+      ! level that exists to show them.
       saved_level = logger%log_level
-      if (saved_level < verbose_level) call logger%configure(level=warning_level)
+      if (saved_level < large_info_level) call logger%configure(level=warning_level)
       call step_clock%start()
       call run_step(gradient_config, result)
       step_time = step_clock%get_elapsed_time()
@@ -413,7 +418,7 @@ contains
       hess_config%calc_type = CALC_TYPE_HESSIAN
 
       saved_level = logger%log_level
-      if (saved_level < verbose_level) call logger%configure(level=warning_level)
+      if (saved_level < large_info_level) call logger%configure(level=warning_level)
       call run_step(hess_config, result)
       call logger%configure(level=saved_level)
 
@@ -459,7 +464,7 @@ contains
          if (command == OPT_CMD_HESSIAN) step_config%calc_type = CALC_TYPE_HESSIAN
 
          saved_level = logger%log_level
-         if (saved_level < verbose_level) call logger%configure(level=warning_level)
+         if (saved_level < large_info_level) call logger%configure(level=warning_level)
          call run_step(step_config, result)
          call logger%configure(level=saved_level)
       end do
@@ -1122,27 +1127,27 @@ contains
       type(driver_config_t), intent(in) :: config
       integer, intent(in) :: n_atoms
 
-      call logger%info(" ")
-      call logger%info("============================================")
-      call logger%info("Geometry optimization")
+      call logger%large_info(" ")
+      call logger%large_info("============================================")
+      call logger%large_info("Geometry optimization")
       ! The method and basis up front: an optimization suppresses the per-step
       ! single-point banner, so otherwise the theory appears only in the final
       ! single point, too late to notice a deck that asked for the wrong one.
-      call logger%info("  Method: "//trim(method_type_to_string(config%method_config%method_type)))
+      call logger%large_info("  Method: "//trim(method_type_to_string(config%method_config%method_type)))
       if (config%method_config%method_type /= METHOD_TYPE_GFN1 .and. &
           config%method_config%method_type /= METHOD_TYPE_GFN2) then
-         call logger%info("  Basis set: "//trim(config%method_config%basis_set))
+         call logger%large_info("  Basis set: "//trim(config%method_config%basis_set))
       end if
-      call logger%info("  Atoms: "//to_char(n_atoms))
-      call logger%info("  Coordinates: "//coordinates_to_string(config%optimization%coordinates))
-      call logger%info("  Algorithm: "//algorithm_to_string(config%optimization%algorithm))
-      call logger%info("  Max steps: "//to_char(config%optimization%max_steps))
-      call logger%info("  Gradient tolerance: "// &
-                       to_char(config%optimization%gradient_tolerance)//" Hartree/Bohr")
+      call logger%large_info("  Atoms: "//to_char(n_atoms))
+      call logger%large_info("  Coordinates: "//coordinates_to_string(config%optimization%coordinates))
+      call logger%large_info("  Algorithm: "//algorithm_to_string(config%optimization%algorithm))
+      call logger%large_info("  Max steps: "//to_char(config%optimization%max_steps))
+      call logger%large_info("  Gradient tolerance: "// &
+                             to_char(config%optimization%gradient_tolerance)//" Hartree/Bohr")
       if (config%nlevel > 0) then
-         call logger%info("  Energy and gradient from MBE("//to_char(config%nlevel)//")")
+         call logger%large_info("  Energy and gradient from MBE("//to_char(config%nlevel)//")")
       end if
-      call logger%info("============================================")
+      call logger%large_info("============================================")
 
    end subroutine report_settings
 
@@ -1209,10 +1214,10 @@ contains
       ctx_n_terms = n_generated
       ctx_terms_frozen = .true.
 
-      call logger%info("  Term list frozen at the starting geometry: "// &
-                       to_char(ctx_n_terms)//" terms")
+      call logger%large_info("  Term list frozen at the starting geometry: "// &
+                             to_char(ctx_n_terms)//" terms")
       if (allocated(config%fragment_cutoffs)) then
-         call logger%info("    (distance screening applied once, not per step)")
+         call logger%large_info("    (distance screening applied once, not per step)")
       end if
 
    end subroutine freeze_term_list

@@ -139,8 +139,8 @@
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-calc">calc</a>
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-ctx~4">ctx</a>
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-dipole_wp">dipole_wp</a>
-            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-energy~12">energy</a>
-            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-error~62">error</a>
+            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-energy~11">energy</a>
+            <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-error~72">error</a>
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-mol~2">mol</a>
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-num">num</a>
             <a class="list-group-item" href="../proc/xtb_calc_energy.html#variable-pproc">pproc</a>
@@ -205,7 +205,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~52"></span>
+              <span class="anchor" id="variable-this~73"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -220,7 +220,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~9"></span>
+              <span class="anchor" id="variable-fragment~10"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -235,7 +235,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~16"></span>
+              <span class="anchor" id="variable-result~10"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -322,17 +322,17 @@
 <path fill="none" stroke="#ff0000" d="M94.3,-398.13C103.89,-436.84 139.22,-558.3 217,-617 233.44,-629.41 255.83,-634.74 274.63,-636.93"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="274.36,-640.42 284.64,-637.85 275,-633.45 274.36,-640.42"/>
 </g>
-<!-- info -->
+<!-- large_info -->
 <g id="proc~~xtb_calc_energy~~CallsGraph_node6" class="node">
-<title>info</title>
-<polygon fill="#777777" stroke="#777777" points="339,-608 285,-608 285,-584 339,-584 339,-608"/>
-<text text-anchor="middle" x="312" y="-593.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+<title>large_info</title>
+<polygon fill="#777777" stroke="#777777" points="345,-608 279,-608 279,-584 345,-584 345,-608"/>
+<text text-anchor="middle" x="312" y="-593.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">large_info</text>
 </g>
-<!-- proc~xtb_calc_energy&#45;&gt;info -->
+<!-- proc~xtb_calc_energy&#45;&gt;large_info -->
 <g id="proc~~xtb_calc_energy~~CallsGraph_edge5" class="edge">
-<title>proc~xtb_calc_energy&#45;&gt;info</title>
-<path fill="none" stroke="#ff0000" d="M95.78,-398.06C108.44,-431.91 149.16,-528.37 217,-575 233.9,-586.61 256.17,-591.92 274.8,-594.3"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="274.68,-597.8 284.99,-595.36 275.41,-590.84 274.68,-597.8"/>
+<title>proc~xtb_calc_energy&#45;&gt;large_info</title>
+<path fill="none" stroke="#ff0000" d="M95.78,-398.06C108.44,-431.91 149.16,-528.37 217,-575 231.95,-585.28 251.11,-590.61 268.23,-593.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="268.19,-596.88 278.56,-594.74 269.12,-589.94 268.19,-596.88"/>
 </g>
 <!-- new -->
 <g id="proc~~xtb_calc_energy~~CallsGraph_node7" class="node">
@@ -938,7 +938,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~12"></span>
+              <span class="anchor" id="variable-energy~11"></span>
               real(kind=wp),
             </td>
               <td>private</td>
@@ -955,7 +955,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~62"></span>
+              <span class="anchor" id="variable-error~72"></span>
               type(error_type),
             </td>
               <td>private,</td>
@@ -1126,18 +1126,18 @@ large graphs.</div>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">results_type</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">xtb_results</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">verbose</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Calculating energy using "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">variant</span><span class="p">))</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Fragment has"</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">n_atoms</span><span class="p">)</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="s2">"atoms"</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: nelec ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">nelec</span><span class="p">))</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: charge ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">charge</span><span class="p">))</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"XTB: Calculating energy using "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">variant</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"XTB: Fragment has"</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">n_atoms</span><span class="p">)</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="s2">"atoms"</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"XTB: nelec ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">nelec</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"XTB: charge ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">charge</span><span class="p">))</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvent</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvation_model</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Solvation: "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvation_model</span><span class="p">)</span><span class="o">//</span><span class="s2">" with solvent = "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvent</span><span class="p">))</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"XTB: Solvation: "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvation_model</span><span class="p">)</span><span class="o">//</span><span class="s2">" with solvent = "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvent</span><span class="p">))</span>
 <span class="w">            </span><span class="k">else</span>
-<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Solvation: alpb with solvent = "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvent</span><span class="p">))</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"XTB: Solvation: alpb with solvent = "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">solvent</span><span class="p">))</span>
 <span class="w">            </span><span class="k">end if</span>
 <span class="k">         else</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Solvation: none (gas phase)"</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"XTB: Solvation: none (gas phase)"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">      end if</span>
 
@@ -1241,9 +1241,9 @@ large graphs.</div>
 <span class="w">      </span><span class="k">result</span><span class="p">%</span><span class="n">has_dipole</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">verbose</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Energy ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()))</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Dipole (e*Bohr) ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span><span class="p">))</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"XTB: Dipole magnitude (Debye) ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="nb">norm2</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span><span class="p">)</span><span class="o">*</span><span class="n">AU_TO_DEBYE</span><span class="p">))</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"XTB: Energy ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"XTB: Dipole (e*Bohr) ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"XTB: Dipole magnitude (Debye) ="</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="nb">norm2</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span><span class="p">)</span><span class="o">*</span><span class="n">AU_TO_DEBYE</span><span class="p">))</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="k">      deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">num</span><span class="p">,</span><span class="w"> </span><span class="n">xyz</span><span class="p">)</span>
@@ -1272,7 +1272,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-06 12:02 +0000             </p>
+ on 2026-09-06 22:58 +0000             </p>
           </div>
         </div>
         <br>

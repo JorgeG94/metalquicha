@@ -181,7 +181,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~28"></span>
+              <span class="anchor" id="variable-config~48"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -196,7 +196,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~46"></span>
+              <span class="anchor" id="variable-n_atoms~42"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -235,17 +235,17 @@
 <polygon fill="none" stroke="black" points="91,-108 0,-108 0,-84 91,-84 91,-108"/>
 <text text-anchor="middle" x="45.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50">report_settings</text>
 </g>
-<!-- info -->
+<!-- large_info -->
 <g id="proc~~report_settings~~CallsGraph_node2" class="node">
-<title>info</title>
-<polygon fill="#777777" stroke="#777777" points="220.5,-192 166.5,-192 166.5,-168 220.5,-168 220.5,-192"/>
-<text text-anchor="middle" x="193.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+<title>large_info</title>
+<polygon fill="#777777" stroke="#777777" points="226.5,-192 160.5,-192 160.5,-168 226.5,-168 226.5,-192"/>
+<text text-anchor="middle" x="193.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">large_info</text>
 </g>
-<!-- proc~report_settings&#45;&gt;info -->
+<!-- proc~report_settings&#45;&gt;large_info -->
 <g id="proc~~report_settings~~CallsGraph_edge1" class="edge">
-<title>proc~report_settings&#45;&gt;info</title>
-<path fill="none" stroke="#ff0000" d="M58.89,-108.02C73.9,-122 100.5,-144.96 127,-159 136.26,-163.91 146.87,-167.92 156.81,-171.07"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="155.88,-174.44 166.46,-173.93 157.87,-167.73 155.88,-174.44"/>
+<title>proc~report_settings&#45;&gt;large_info</title>
+<path fill="none" stroke="#ff0000" d="M58.89,-108.02C73.9,-122 100.5,-144.96 127,-159 134.35,-162.89 142.55,-166.22 150.6,-169.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="149.67,-172.39 160.26,-172.14 151.83,-165.73 149.67,-172.39"/>
 </g>
 <!-- proc~algorithm_to_string -->
 <g id="proc~~report_settings~~CallsGraph_node3" class="node">
@@ -541,27 +541,27 @@ large graphs.</div>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span>
 
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Geometry optimization"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"Geometry optimization"</span><span class="p">)</span>
 <span class="w">      </span><span class="c">! The method and basis up front: an optimization suppresses the per-step</span>
 <span class="w">      </span><span class="c">! single-point banner, so otherwise the theory appears only in the final</span>
 <span class="w">      </span><span class="c">! single point, too late to notice a deck that asked for the wrong one.</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Method: "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">method_type_to_string</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">method_type</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"  Method: "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">method_type_to_string</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">method_type</span><span class="p">)))</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">method_type</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">METHOD_TYPE_GFN1</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">          </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">method_type</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">METHOD_TYPE_GFN2</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Basis set: "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">basis_set</span><span class="p">))</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"  Basis set: "</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">basis_set</span><span class="p">))</span>
 <span class="w">      </span><span class="k">end if</span>
-<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Atoms: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">))</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Coordinates: "</span><span class="o">//</span><span class="n">coordinates_to_string</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">coordinates</span><span class="p">))</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Algorithm: "</span><span class="o">//</span><span class="n">algorithm_to_string</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">algorithm</span><span class="p">))</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Max steps: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">max_steps</span><span class="p">))</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Gradient tolerance: "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                       </span><span class="n">to_char</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">gradient_tolerance</span><span class="p">)</span><span class="o">//</span><span class="s2">" Hartree/Bohr"</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"  Atoms: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"  Coordinates: "</span><span class="o">//</span><span class="n">coordinates_to_string</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">coordinates</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"  Algorithm: "</span><span class="o">//</span><span class="n">algorithm_to_string</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">algorithm</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"  Max steps: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">max_steps</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"  Gradient tolerance: "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                             </span><span class="n">to_char</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">optimization</span><span class="p">%</span><span class="n">gradient_tolerance</span><span class="p">)</span><span class="o">//</span><span class="s2">" Hartree/Bohr"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">nlevel</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"  Energy and gradient from MBE("</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">nlevel</span><span class="p">)</span><span class="o">//</span><span class="s2">")"</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"  Energy and gradient from MBE("</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">nlevel</span><span class="p">)</span><span class="o">//</span><span class="s2">")"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
-<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">large_info</span><span class="p">(</span><span class="s2">"============================================"</span><span class="p">)</span>
 
 <span class="w">   </span><span class="k">end subroutine </span><span class="n">report_settings</span>
 </pre></div>
@@ -587,7 +587,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-06 12:02 +0000             </p>
+ on 2026-09-06 22:58 +0000             </p>
           </div>
         </div>
         <br>

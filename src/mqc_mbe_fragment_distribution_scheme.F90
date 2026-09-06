@@ -42,7 +42,7 @@ module mqc_mbe_fragment_distribution_scheme
 
    interface
       module subroutine do_fragment_work(fragment_idx, result, method_config, phys_frag, calc_type, world_comm, &
-                                         print_geometry)
+                                         print_geometry, sole_calculation)
          implicit none
          integer(int64), intent(in) :: fragment_idx
          type(calculation_result_t), intent(out) :: result
@@ -51,6 +51,7 @@ module mqc_mbe_fragment_distribution_scheme
          integer(int32), intent(in) :: calc_type
          type(comm_t), intent(in), optional :: world_comm
          logical, intent(in), optional :: print_geometry
+         logical, intent(in), optional :: sole_calculation
       end subroutine do_fragment_work
 
       module subroutine global_coordinator(ctx, json_data)

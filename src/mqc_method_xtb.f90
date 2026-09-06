@@ -88,18 +88,18 @@ contains
       type(results_type) :: xtb_results
 
       if (this%verbose) then
-         call logger%info("XTB: Calculating energy using "//to_char(this%variant))
-         call logger%info("XTB: Fragment has"//" "//to_char(fragment%n_atoms)//" "//"atoms")
-         call logger%info("XTB: nelec ="//" "//to_char(fragment%nelec))
-         call logger%info("XTB: charge ="//" "//to_char(fragment%charge))
+         call logger%large_info("XTB: Calculating energy using "//to_char(this%variant))
+         call logger%large_info("XTB: Fragment has"//" "//to_char(fragment%n_atoms)//" "//"atoms")
+         call logger%large_info("XTB: nelec ="//" "//to_char(fragment%nelec))
+         call logger%large_info("XTB: charge ="//" "//to_char(fragment%charge))
          if (allocated(this%solvent)) then
             if (allocated(this%solvation_model)) then
-               call logger%info("XTB: Solvation: "//trim(this%solvation_model)//" with solvent = "//to_char(this%solvent))
+         call logger%large_info("XTB: Solvation: "//trim(this%solvation_model)//" with solvent = "//to_char(this%solvent))
             else
-               call logger%info("XTB: Solvation: alpb with solvent = "//to_char(this%solvent))
+               call logger%large_info("XTB: Solvation: alpb with solvent = "//to_char(this%solvent))
             end if
          else
-            call logger%info("XTB: Solvation: none (gas phase)")
+            call logger%large_info("XTB: Solvation: none (gas phase)")
          end if
       end if
 
@@ -203,9 +203,9 @@ contains
       result%has_dipole = .true.
 
       if (this%verbose) then
-         call logger%info("XTB: Energy ="//" "//to_char(result%energy%total()))
-         call logger%info("XTB: Dipole (e*Bohr) ="//" "//to_char(result%dipole))
-         call logger%info("XTB: Dipole magnitude (Debye) ="//" "//to_char(norm2(result%dipole)*AU_TO_DEBYE))
+         call logger%large_info("XTB: Energy ="//" "//to_char(result%energy%total()))
+         call logger%large_info("XTB: Dipole (e*Bohr) ="//" "//to_char(result%dipole))
+         call logger%large_info("XTB: Dipole magnitude (Debye) ="//" "//to_char(norm2(result%dipole)*AU_TO_DEBYE))
       end if
 
       deallocate (num, xyz)
@@ -233,18 +233,18 @@ contains
       real(wp) :: dipole_wp(3)
 
       if (this%verbose) then
-         call logger%info("XTB: Calculating gradient using "//to_char(this%variant))
-         call logger%info("XTB: Fragment has"//" "//to_char(fragment%n_atoms)//" "//"atoms")
-         call logger%info("XTB: nelec ="//" "//to_char(fragment%nelec))
-         call logger%info("XTB: charge ="//" "//to_char(fragment%charge))
+         call logger%large_info("XTB: Calculating gradient using "//to_char(this%variant))
+         call logger%large_info("XTB: Fragment has"//" "//to_char(fragment%n_atoms)//" "//"atoms")
+         call logger%large_info("XTB: nelec ="//" "//to_char(fragment%nelec))
+         call logger%large_info("XTB: charge ="//" "//to_char(fragment%charge))
          if (allocated(this%solvent)) then
             if (allocated(this%solvation_model)) then
-               call logger%info("XTB: Solvation: "//trim(this%solvation_model)//" with solvent = "//to_char(this%solvent))
+         call logger%large_info("XTB: Solvation: "//trim(this%solvation_model)//" with solvent = "//to_char(this%solvent))
             else
-               call logger%info("XTB: Solvation: alpb with solvent = "//to_char(this%solvent))
+               call logger%large_info("XTB: Solvation: alpb with solvent = "//to_char(this%solvent))
             end if
          else
-            call logger%info("XTB: Solvation: none (gas phase)")
+            call logger%large_info("XTB: Solvation: none (gas phase)")
          end if
       end if
 
@@ -353,11 +353,11 @@ contains
       result%has_dipole = .true.
 
       if (this%verbose) then
-         call logger%info("XTB: Energy ="//" "//to_char(result%energy%total()))
-         call logger%info("XTB: Gradient norm ="//" "//to_char(sqrt(sum(result%gradient**2))))
-         call logger%info("XTB: Dipole (e*Bohr) ="//" "//to_char(result%dipole))
-         call logger%info("XTB: Dipole magnitude (Debye) ="//" "//to_char(norm2(result%dipole)*AU_TO_DEBYE))
-         call logger%info("XTB: Gradient calculation complete")
+         call logger%large_info("XTB: Energy ="//" "//to_char(result%energy%total()))
+         call logger%large_info("XTB: Gradient norm ="//" "//to_char(sqrt(sum(result%gradient**2))))
+         call logger%large_info("XTB: Dipole (e*Bohr) ="//" "//to_char(result%dipole))
+         call logger%large_info("XTB: Dipole magnitude (Debye) ="//" "//to_char(norm2(result%dipole)*AU_TO_DEBYE))
+         call logger%large_info("XTB: Gradient calculation complete")
       end if
 
       deallocate (num, xyz, gradient, sigma)
@@ -402,11 +402,11 @@ contains
       displacement = DEFAULT_DISPLACEMENT
 
       if (this%verbose) then
-         call logger%info("XTB: Computing Hessian via finite differences")
-         call logger%info("  Method: Central differences of gradients")
-         call logger%info("  Atoms: "//to_char(n_atoms))
-         call logger%info("  Gradient calculations needed: "//to_char(2*n_displacements))
-         call logger%info("  Finite difference step size: "//to_char(displacement)//" Bohr")
+         call logger%verbose("XTB: Computing Hessian via finite differences")
+         call logger%verbose("  Method: Central differences of gradients")
+         call logger%verbose("  Atoms: "//to_char(n_atoms))
+         call logger%verbose("  Gradient calculations needed: "//to_char(2*n_displacements))
+         call logger%verbose("  Finite difference step size: "//to_char(displacement)//" Bohr")
       end if
 
       ! Generate all perturbed geometries
@@ -425,7 +425,7 @@ contains
 
       ! Compute gradients at all forward-displaced geometries
       if (this%verbose) then
-         call logger%info("  Computing forward-displaced gradients...")
+         call logger%verbose("  Computing forward-displaced gradients...")
       end if
       do i = 1, n_displacements
 
@@ -465,11 +465,11 @@ contains
 
       end do
       if (this%verbose) then
-         call logger%info("  Forward and backward gradient calculations complete ")
+         call logger%verbose("  Forward and backward gradient calculations complete ")
       end if
       ! Compute Hessian from finite differences
       if (this%verbose) then
-         call logger%info("  Assembling Hessian matrix...")
+         call logger%verbose("  Assembling Hessian matrix...")
       end if
       call finite_diff_hessian_from_gradients(fragment, forward_gradients, backward_gradients, &
                                               displacement, result%hessian)
@@ -480,7 +480,7 @@ contains
                                              displacement, result%dipole_derivatives)
          result%has_dipole_derivatives = .true.
          if (this%verbose) then
-            call logger%info("  Dipole derivatives computed for IR intensities")
+            call logger%verbose("  Dipole derivatives computed for IR intensities")
          end if
       end if
 
@@ -504,7 +504,7 @@ contains
       result%has_hessian = .true.
 
       if (this%verbose) then
-         call logger%info("  Hessian calculation complete")
+         call logger%verbose("  Hessian calculation complete")
       end if
 
       ! Cleanup

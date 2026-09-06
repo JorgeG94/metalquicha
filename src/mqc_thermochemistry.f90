@@ -658,65 +658,65 @@ contains
       total_free_energy = electronic_energy + result%thermal_correction_gibbs
 
       ! Print header
-      call logger%info(" ")
-      call logger%info("Thermochemistry (RRHO)")
-      call logger%info("======================")
-      call logger%info(" ")
+      call logger%large_info(" ")
+      call logger%large_info("Thermochemistry (RRHO)")
+      call logger%large_info("======================")
+      call logger%large_info(" ")
 
       ! Setup section - simple list
       write (line, "(A,F10.4,A)") "  Temperature:       ", result%temperature, " K"
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
       write (line, "(A,F10.4,A)") "  Pressure:          ", result%pressure, " atm"
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
       write (line, "(A,F10.4,A)") "  Molecular mass:    ", result%total_mass, " amu"
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
       write (line, "(A,I6)") "  Vibrational modes: ", result%n_real_freqs
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
       if (result%n_imag_freqs > 0) then
          write (line, "(A,I6,A)") "  Imaginary freqs:   ", result%n_imag_freqs, " (skipped)"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
       end if
       if (result%is_linear) then
-         call logger%info("  Linear molecule:   yes")
+         call logger%large_info("  Linear molecule:   yes")
       else
-         call logger%info("  Linear molecule:   no")
+         call logger%large_info("  Linear molecule:   no")
       end if
       write (line, "(A,I6)") "  Symmetry number:   ", result%symmetry_number
-      call logger%info(trim(line))
-      call logger%info(" ")
+      call logger%large_info(trim(line))
+      call logger%large_info(" ")
 
       ! Contribution table
-      call logger%info("  temp (K)       q        H(cal/mol)  Cp(cal/K/mol)  S(cal/K/mol)  S(J/K/mol)")
-      call logger%info("  -------------------------------------------------------------------------")
+      call logger%large_info("  temp (K)       q        H(cal/mol)  Cp(cal/K/mol)  S(cal/K/mol)  S(J/K/mol)")
+      call logger%large_info("  -------------------------------------------------------------------------")
 
       write (line, "(F8.2,A,ES10.3,F12.3,F14.3,F14.3,F12.3)") &
          result%temperature, "  VIB", result%q_vib, H_vib_cal, result%Cv_vib, &
          result%S_vib, result%S_vib*CAL_TO_J
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
 
       write (line, "(A,ES10.3,F12.3,F14.3,F14.3,F12.3)") &
          "          ROT", result%q_rot, H_rot_cal, result%Cv_rot, &
          result%S_rot, result%S_rot*CAL_TO_J
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
 
       write (line, "(A,ES10.3,F12.3,F14.3,F14.3,F12.3)") &
          "          INT", result%q_rot*result%q_vib, H_vib_cal + H_rot_cal, &
          result%Cv_vib + result%Cv_rot, result%S_vib + result%S_rot, &
          (result%S_vib + result%S_rot)*CAL_TO_J
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
 
       ! For TR, report Cp = Cv + R (constant pressure heat capacity for ideal gas)
       write (line, "(A,ES10.3,F12.3,F14.3,F14.3,F12.3)") &
          "          TR ", result%q_trans, H_trans_cal, result%Cv_trans + R_CALMOLK, &
          result%S_trans, result%S_trans*CAL_TO_J
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
 
-      call logger%info("  -------------------------------------------------------------------------")
+      call logger%large_info("  -------------------------------------------------------------------------")
       write (line, "(A,F12.3,F14.3,F14.3,F12.3)") &
          "          TOT           ", H_total_cal, Cv_total, S_total, S_total_J
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
 
-      call logger%info(" ")
+      call logger%large_info(" ")
 
       ! Thermal corrections table
       call logger%info(" ")

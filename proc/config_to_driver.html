@@ -209,7 +209,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config"></span>
+              <span class="anchor" id="variable-driver_config~2"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -254,7 +254,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_fragments"></span>
+              <span class="anchor" id="variable-n_fragments~2"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -273,7 +273,7 @@ looks right. Pass the count from wherever the geometry came from.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~16"></span>
+              <span class="anchor" id="variable-error~13"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -910,18 +910,18 @@ large graphs.</div>
 <path fill="none" stroke="#7fff00" d="M428.62,-54C442.15,-54 459.11,-54 476.48,-54"/>
 <polygon fill="#7fff00" stroke="#7fff00" points="476.72,-57.5 486.72,-54 476.72,-50.5 476.72,-57.5"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="proc~~config_to_driver~~CalledByGraph_node7" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~config_to_driver~~CalledByGraph_node7"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_proc~~config_to_driver~~CalledByGraph_node7"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="438,-24 360,-24 360,0 438,0 438,-24"/>
 <text text-anchor="middle" x="399" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
 <g id="proc~~config_to_driver~~CalledByGraph_edge7" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#00ffff" d="M438.2,-12C462.67,-12 494.57,-12 520.44,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="520.76,-15.5 530.76,-12 520.76,-8.5 520.76,-15.5"/>
 </g>
@@ -934,9 +934,9 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
 <g id="proc~~config_to_driver~~CalledByGraph_edge8" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
 <path fill="none" stroke="#00ffff" d="M324.32,-12C332.93,-12 341.45,-12 349.47,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="349.69,-15.5 359.69,-12 349.69,-8.5 349.69,-15.5"/>
 </g>
@@ -1115,7 +1115,21 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! Build method configuration</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">method_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">method</span>
-<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">  </span><span class="c">! Controlled by logger level in do_fragment_work</span>
+<span class="w">      </span><span class="c">! **True, and not derived from the log level.** This flag answers *whose*</span>
+<span class="w">      </span><span class="c">! calculation this is, not how much of it to print: an unfragmented run</span>
+<span class="w">      </span><span class="c">! IS the calculation the user asked for, so its method may speak. How</span>
+<span class="w">      </span><span class="c">! much it says is the level's business -- the iteration table emits at</span>
+<span class="w">      </span><span class="c">! `info`, the energy components at `large_info`.</span>
+<span class="w">      </span><span class="c">!</span>
+<span class="w">      </span><span class="c">! It was pinned `.false.` here, deferring to the fragment scheduler, which</span>
+<span class="w">      </span><span class="c">! meant an unfragmented run reached no scheduler and every method's output</span>
+<span class="w">      </span><span class="c">! was unreachable at every level. `E(CASSCF)` and `E(CASCI)` were</span>
+<span class="w">      </span><span class="c">! invisible for that reason, and so was the SCF iteration table.</span>
+<span class="w">      </span><span class="c">!</span>
+<span class="w">      </span><span class="c">! Inner SCFs that this run owns -- an atomic guess, a basis-ladder rung, a</span>
+<span class="w">      </span><span class="c">! Fukui ion -- pass `.false.` themselves at their own call sites, which is</span>
+<span class="w">      </span><span class="c">! the only thing a flag can express and a level cannot.</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 
 <span class="w">      </span><span class="c">! Node-local rank, so several ranks on one node land on distinct GPUs.</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">node_rank</span><span class="p">))</span><span class="w"> </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">device_rank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">node_rank</span>
@@ -1453,7 +1467,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-06 12:02 +0000             </p>
+ on 2026-09-06 22:58 +0000             </p>
           </div>
         </div>
         <br>

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">24 statements</a>
+                 title=" 0.1% of total for procedures.">26 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -537,18 +537,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M428.51,-75C438.77,-75 450.97,-75 463.66,-75"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="463.91,-78.5 473.91,-75 463.91,-71.5 463.91,-78.5"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="proc~~get_logger_level~~CalledByGraph_node7" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~get_logger_level~~CalledByGraph_node7"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_proc~~get_logger_level~~CalledByGraph_node7"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="438,-45 360,-45 360,-21 438,-21 438,-45"/>
 <text text-anchor="middle" x="399" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
 <g id="proc~~get_logger_level~~CalledByGraph_edge6" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#00ffff" d="M438.34,-33C459.34,-33 485.52,-33 507.61,-33"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="507.75,-36.5 517.75,-33 507.75,-29.5 507.75,-36.5"/>
 </g>
@@ -561,9 +561,9 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
 <g id="proc~~get_logger_level~~CalledByGraph_edge7" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
 <path fill="none" stroke="#00ffff" d="M324.32,-33C332.93,-33 341.45,-33 349.47,-33"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="349.69,-36.5 359.69,-33 349.69,-29.5 349.69,-36.5"/>
 </g>
@@ -686,8 +686,8 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">get_logger_level</span><span class="p">(</span><span class="n">level_string</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">level_int</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Convert string log level to integer value</span>
 <span class="w">      </span><span class="c">!! This function uses the pic_logger constants</span>
-<span class="w">      </span><span class="k">use </span><span class="n">pic_logger</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">debug_level</span><span class="p">,</span><span class="w"> </span><span class="n">verbose_level</span><span class="p">,</span><span class="w"> </span><span class="n">info_level</span><span class="p">,</span><span class="w"> </span><span class="n">performance_level</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                            </span><span class="n">warning_level</span><span class="p">,</span><span class="w"> </span><span class="n">error_level</span><span class="p">,</span><span class="w"> </span><span class="n">knowledge_level</span>
+<span class="w">      </span><span class="k">use </span><span class="n">pic_logger</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">debug_level</span><span class="p">,</span><span class="w"> </span><span class="n">verbose_level</span><span class="p">,</span><span class="w"> </span><span class="n">large_info_level</span><span class="p">,</span><span class="w"> </span><span class="n">info_level</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                            </span><span class="n">performance_level</span><span class="p">,</span><span class="w"> </span><span class="n">warning_level</span><span class="p">,</span><span class="w"> </span><span class="n">error_level</span><span class="p">,</span><span class="w"> </span><span class="n">knowledge_level</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">level_string</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">level_int</span>
 
@@ -696,6 +696,8 @@ large graphs.</div>
 <span class="w">         </span><span class="n">level_int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">debug_level</span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"verbose"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Verbose"</span><span class="p">,</span><span class="w"> </span><span class="s2">"VERBOSE"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">level_int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">verbose_level</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"large_info"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Large_Info"</span><span class="p">,</span><span class="w"> </span><span class="s2">"LARGE_INFO"</span><span class="p">)</span>
+<span class="w">         </span><span class="n">level_int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">large_info_level</span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"info"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Info"</span><span class="p">,</span><span class="w"> </span><span class="s2">"INFO"</span><span class="p">)</span>
 <span class="w">         </span><span class="n">level_int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">info_level</span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">"performance"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Performance"</span><span class="p">,</span><span class="w"> </span><span class="s2">"PERFORMANCE"</span><span class="p">)</span>
@@ -735,7 +737,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-06 12:02 +0000             </p>
+ on 2026-09-06 22:58 +0000             </p>
           </div>
         </div>
         <br>
