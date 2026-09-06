@@ -789,23 +789,23 @@ contains
       if (verbose) then
          write (line, "(a,i0,a,i0,a,i0,a)") "  coupled cluster: ", n_so, " spin orbitals, ", no, &
             " occupied, ", nv, " virtual"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          if (frozen > 0) then
             write (line, "(a,i0,a)") "  frozen core: ", frozen, " spatial orbitals"
-            call logger%info(trim(line))
+            call logger%large_info(trim(line))
          end if
          ! Memory is the interesting constraint here, and the comparison worth
          ! reporting is against the whole spin-orbital tensor, n_so^4.
          write (line, "(a,f0.1,a,f0.1,a)") "  integrals: ", integral_megabytes(no, nv), &
             " MB in blocks, against ", real(n_so, dp)**4*8.0_dp/1.0e6_dp, " MB for the full tensor"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          ! The spatial tensor is the conventional path's alone, and it is the
          ! difference between the two paths' ceilings -- both report the same
          ! block total above.
          if (.not. present(aux)) then
             write (line, "(a,f0.1,a)") "  plus the spatial tensor: ", &
                real(n_act, dp)**4*8.0_dp/1.0e6_dp, " MB, which density fitting does not build"
-            call logger%info(trim(line))
+            call logger%large_info(trim(line))
          end if
       end if
 
@@ -887,7 +887,7 @@ contains
       call clk%lap()
       if (verbose) then
          write (line, "(a,f20.12)") "  MP2 (spin orbital) = ", result%e_mp2
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
       end if
 
       ! ---- CCSD -------------------------------------------------------------
@@ -954,7 +954,7 @@ contains
          call clk%lap()
          if (verbose) then
             write (line, "(a,f20.12)") "  (T) = ", result%e_triples
-            call logger%info(trim(line))
+            call logger%large_info(trim(line))
          end if
       end if
 

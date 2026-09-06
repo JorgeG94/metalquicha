@@ -1611,17 +1611,17 @@ contains
       if (verbose) then
          write (line, "(a,i0,a,i0,a,i0,a)") "  spin-adapted coupled cluster: ", n_act, &
             " spatial orbitals, ", no, " occupied, ", nv, " virtual"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          if (frozen > 0) then
             write (line, "(a,i0,a)") "  frozen core: ", frozen, " spatial orbitals"
-            call logger%info(trim(line))
+            call logger%large_info(trim(line))
          end if
          ! Against what the spin-orbital path would have taken for the same
          ! system, because that difference is the entire reason this exists.
          write (line, "(a,f0.1,a,f0.1,a)") "  integrals: ", &
             rcc_megabytes(no, nv,.not. present(aux)), " MB in blocks, against ", &
             rcc_megabytes(2*no, 2*nv,.not. present(aux)), " MB in spin orbitals"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
       end if
 
       call clk%start()
@@ -1657,7 +1657,7 @@ contains
       call clk%lap()
       if (verbose) then
          write (line, "(a,f20.12)") "  MP2 (spin adapted) = ", result%e_mp2
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
       end if
 
       ! ---- CCSD -------------------------------------------------------------
@@ -1717,7 +1717,7 @@ contains
          call clk%lap()
          if (verbose) then
             write (line, "(a,f20.12)") "  (T)                = ", result%e_triples
-            call logger%info(trim(line))
+            call logger%large_info(trim(line))
          end if
       end if
 

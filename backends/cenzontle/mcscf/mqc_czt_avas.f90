@@ -206,19 +206,19 @@ contains
       ! essentially one and rejects ones far below. No gap means the minimal
       ! basis is not finding a valence space.
       if (loud) then
-         call logger%info("")
-         call logger%info("  full valence active space")
+         call logger%large_info("")
+         call logger%large_info("  full valence active space")
          write (line, "(a,i0,a,i0,a)") "    active space                CAS(", &
             result%n_active_electrons, ",", result%n_active, ")"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,i0)") "    inactive (core) orbitals    ", result%n_inactive
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,i0,a,i0)") "    valence occupied            ", &
             dims%n_valocc, "   valence virtual  ", vvo%n_vvo
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,f10.6,a,f10.6)") "    smallest kept               ", &
             vvo%smallest_retained, "   largest rejected ", vvo%largest_rejected
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
       end if
 
       call aambs%destroy()
@@ -378,21 +378,21 @@ contains
       end if
 
       if (loud) then
-         call logger%info("")
-         call logger%info("  AVAS active space selection")
+         call logger%large_info("")
+         call logger%large_info("  AVAS active space selection")
          write (line, "(a,i0,a)") "    reference orbitals   ", n_ref, &
             " minimal-basis functions"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,f8.3)") "    threshold            ", cut
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,i0,a,i0,a)") "    active space         CAS(", &
             result%n_active_electrons, ",", result%n_active, ")"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,i0,a,i0,a)") "    from                 ", n_keep_occ, &
             " occupied and ", n_keep_vir, " virtual orbitals"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,i0)") "    inactive             ", result%n_inactive
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          ! The gap the cut fell in, which says whether the request was well posed.
          call report_gap(result%occupied_weights, cut, "occupied")
          call report_gap(result%virtual_weights, cut, "virtual")
@@ -487,7 +487,7 @@ contains
       if (below < 0.0_dp .or. above > 1.5_dp) return
       write (line, "(a,a,a,f7.4,a,f7.4)") "    ", name, " gap          ", below, &
          " to ", above
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
    end subroutine report_gap
 
 end module mqc_czt_avas

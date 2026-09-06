@@ -140,7 +140,7 @@ contains
       write (line, "(a,i14,a,i14,a,f6.1,a)") "    "//what//": quartets ", stats%quartets_total, &
          ", computed ", stats%quartets_computed, " (", &
          100.0_dp*real(stats%quartets_computed, dp)/real(stats%quartets_total, dp), " %)"
-      call logger%performance(trim(line))
+      call logger%large_info(trim(line))
    end subroutine screening_line
 
    function nuclear_note_header(this) result(text)
@@ -1496,7 +1496,7 @@ contains
       write (line, "(a,i0,a,i0,a,i0,a,i0,a)") "  solving ", n_pert, &
          " nuclear responses in ", n_chunks, " chunks of up to ", per_chunk, &
          ", over ", n_mo*n_occ, " orbital pairs each"
-      call logger%performance(trim(line))
+      call logger%large_info(trim(line))
 
       chunk = 0
       first = 1
@@ -1551,7 +1551,7 @@ contains
 
       write (line, "(a,i0,a,i14,a)") "  response solve: ", operator%n_apply, &
          " integral passes, ", operator%total_computed, " quartets computed in all"
-      call logger%performance(trim(line))
+      call logger%large_info(trim(line))
 
       deallocate (h1mo, s1mo, work, rhs)
    end subroutine solve_mo1_batch

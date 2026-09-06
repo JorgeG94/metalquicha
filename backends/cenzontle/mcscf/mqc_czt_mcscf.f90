@@ -1006,7 +1006,7 @@ contains
 
          if (.not. accepted) then
             result%stalled = .true.
-            if (loud) call logger%warning("    no step downhill was found; stopping")
+            call logger%warning("    no step downhill was found; stopping")
             exit
          end if
       end do
@@ -1028,9 +1028,14 @@ contains
       if (loud) then
          write (line, "(a,f22.12)") "    converged energy        ", result%energy
          call logger%info(trim(line))
-         if (.not. result%converged) then
-            call logger%warning("    the orbital gradient did not reach the threshold")
-         end if
+      end if
+
+      ! Outside the `loud` block on purpose: a warning says the answer may be
+      ! wrong, and that is not a thing a verbosity choice should be able to
+      ! withhold. It was inside, so an MCSCF that never reached its gradient
+      ! threshold said so only when someone had already asked for detail.
+      if (.not. result%converged) then
+         call logger%warning("    the orbital gradient did not reach the threshold")
       end if
 
       call alpha%destroy()

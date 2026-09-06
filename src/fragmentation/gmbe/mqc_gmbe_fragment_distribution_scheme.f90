@@ -206,23 +206,23 @@ contains
 
       ! Print gradient info if computed
       if (calc_type == CALC_TYPE_GRADIENT .or. calc_type == CALC_TYPE_HESSIAN) then
-         call logger%info("GMBE PIE gradient computation completed")
+         call logger%large_info("GMBE PIE gradient computation completed")
          call logger%info("  Total gradient norm: "//to_char(sqrt(sum(total_gradient**2))))
 
          ! Print detailed gradient if info level and small system
          call logger%configuration(level=current_log_level)
-         if (current_log_level >= info_level .and. sys_geom%total_atoms < 100) then
-            call logger%info(" ")
-            call logger%info("Total GMBE PIE Gradient (Hartree/Bohr):")
+         if (sys_geom%total_atoms < 100) then
+            call logger%large_info(" ")
+            call logger%large_info("Total GMBE PIE Gradient (Hartree/Bohr):")
             do iatom = 1, sys_geom%total_atoms
                block
                   character(len=256) :: grad_line
                   write (grad_line, "(a,i5,a,3f20.12)") "  Atom ", iatom, ": ", &
                      total_gradient(1, iatom), total_gradient(2, iatom), total_gradient(3, iatom)
-                  call logger%info(trim(grad_line))
+                  call logger%large_info(trim(grad_line))
                end block
             end do
-            call logger%info(" ")
+            call logger%large_info(" ")
          end if
       end if
 
@@ -911,18 +911,18 @@ contains
             use pic_logger, only: info_level
             integer :: iatom, current_log_level
             call logger%configuration(level=current_log_level)
-            if (current_log_level >= info_level .and. sys_geom%total_atoms < 100) then
-               call logger%info(" ")
-               call logger%info("Total GMBE PIE Gradient (Hartree/Bohr):")
+            if (sys_geom%total_atoms < 100) then
+               call logger%large_info(" ")
+               call logger%large_info("Total GMBE PIE Gradient (Hartree/Bohr):")
                do iatom = 1, sys_geom%total_atoms
                   block
                      character(len=256) :: grad_line
                      write (grad_line, "(a,i5,a,3f20.12)") "  Atom ", iatom, ": ", &
                         total_gradient(1, iatom), total_gradient(2, iatom), total_gradient(3, iatom)
-                     call logger%info(trim(grad_line))
+                     call logger%large_info(trim(grad_line))
                   end block
                end do
-               call logger%info(" ")
+               call logger%large_info(" ")
             end if
          end block
 

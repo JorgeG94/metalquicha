@@ -226,9 +226,9 @@ contains
 
       if (present(label)) then
          write (line, "(a,es9.1)") "    "//trim(label)//", residual threshold ", threshold
-         call logger%performance(trim(line))
-         call logger%performance("      cycle  subspace  improving  max residual   seconds" &
-                                 //operator%note_header())
+         call logger%verbose(trim(line))
+         call logger%verbose("      cycle  subspace  improving  max residual   seconds" &
+                             //operator%note_header())
       end if
       call system_clock(clock_last, clock_rate)
 
@@ -332,7 +332,7 @@ contains
             write (line, "(a,i7,i10,i11,es14.3,f10.2,a)") "    ", it, k, active, change, &
                real(clock_now - clock_last, dp)/real(clock_rate, dp), operator%note()
             clock_last = clock_now
-            call logger%performance(trim(line))
+            call logger%verbose(trim(line))
          end if
          if (change < threshold) then
             solution = reshape(sol, [n])
@@ -436,9 +436,9 @@ contains
 
       if (present(label)) then
          write (line, "(a,es9.1)") "    "//trim(label)//", residual threshold ", threshold
-         call logger%performance(trim(line))
-         call logger%performance("      cycle  subspace  improving  max residual   seconds" &
-                                 //operator%note_header())
+         call logger%verbose(trim(line))
+         call logger%verbose("      cycle  subspace  improving  max residual   seconds" &
+                             //operator%note_header())
       end if
       call system_clock(clock_last, clock_rate)
 
@@ -458,7 +458,7 @@ contains
          call system_clock(clock_now)
          write (line, "(a,f10.2,a)") "      fixed occupied block, one pass         ", &
             real(clock_now - clock_last, dp)/real(clock_rate, dp), operator%note()
-         call logger%performance(trim(line))
+         call logger%verbose(trim(line))
          clock_last = clock_now
       end if
 
@@ -521,7 +521,7 @@ contains
             write (line, "(a,i7,i10,i11,es14.3,f10.2,a)") "    ", it, it, active, change, &
                real(clock_now - clock_last, dp)/real(clock_rate, dp), operator%note()
             clock_last = clock_now
-            call logger%performance(trim(line))
+            call logger%verbose(trim(line))
          end if
       end do
       if (maxval(col_change) < threshold) then

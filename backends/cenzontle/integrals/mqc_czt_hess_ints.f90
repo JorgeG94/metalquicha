@@ -1338,7 +1338,7 @@ contains
       if (n_groups > 1) then
          write (line, "(a,i0,a,i0,a)") "    skeleton Fock derivative: accumulator held to ", &
             n_groups, " atom groups of ", wide, " to fit the memory budget"
-         call logger%performance(trim(line))
+         call logger%large_info(trim(line))
       end if
       allocate (acc(nao, nao, 3, wide, nthreads))
 

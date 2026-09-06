@@ -257,7 +257,7 @@ contains
          ! Check if JSON output should be skipped
          if (config%skip_json_output) then
             if (resources%mpi_comms%world_comm%rank() == 0) then
-               call logger%info("Skipping JSON output (skip_json_output = true)")
+               call logger%large_info("Skipping JSON output (skip_json_output = true)")
             end if
          else
             ! Determine if this rank should write JSON
@@ -313,10 +313,10 @@ contains
       ! For Hessian calculations with multiple ranks, use distributed approach
       if (config%calc_type == CALC_TYPE_HESSIAN .and. world_comm%size() > 1) then
          if (world_comm%rank() == 0) then
-            call logger%info(" ")
-            call logger%info("Running distributed unfragmented Hessian calculation")
-            call logger%info("  MPI ranks: "//to_char(world_comm%size()))
-            call logger%info(" ")
+            call logger%large_info(" ")
+            call logger%large_info("Running distributed unfragmented Hessian calculation")
+            call logger%large_info("  MPI ranks: "//to_char(world_comm%size()))
+            call logger%large_info(" ")
          end if
          call distributed_unfragmented_hessian(world_comm, sys_geom, config, json_data)
          return
@@ -513,8 +513,8 @@ contains
                call sort_fragments_by_size(polymers, total_fragments, max_level)
             end if
 
-            call logger%info("Generated "//to_char(n_primaries)//" primary "//to_char(max_level)//"-mers for GMBE("// &
-                             to_char(max_level)//")")
+         call logger%large_info("Generated "//to_char(n_primaries)//" primary "//to_char(max_level)//"-mers for GMBE("// &
+                                   to_char(max_level)//")")
 
             ! Use DFS to enumerate PIE terms with coefficients
             call gmbe_enumerate_pie_terms(sys_geom, polymers, n_primaries, max_level, max_intersection_level, &
@@ -524,7 +524,7 @@ contains
                call abort_comm(resources%mpi_comms%world_comm, 1)
             end if
 
-            call logger%info("GMBE PIE enumeration complete: "//to_char(n_pie_terms)//" unique subsystems to evaluate")
+         call logger%large_info("GMBE PIE enumeration complete: "//to_char(n_pie_terms)//" unique subsystems to evaluate")
 
             ! For now: total_fragments = n_pie_terms (each PIE term is a subsystem to evaluate)
             total_fragments = n_pie_terms
@@ -554,7 +554,7 @@ contains
       num_nodes = count(all_node_leader_ranks /= -1)
 
       if (resources%mpi_comms%world_comm%rank() == 0) then
-         call logger%info("Running with "//to_char(num_nodes)//" node(s)")
+         call logger%large_info("Running with "//to_char(num_nodes)//" node(s)")
       end if
 
       allocate (node_leader_ranks(num_nodes))
@@ -599,8 +599,8 @@ contains
       end do
 
       if (resources%mpi_comms%world_comm%rank() == 0 .and. num_nodes > 1) then
-         call logger%info("Multi-global groups: "//to_char(global_groups)//" (nodes_per_group="// &
-                          to_char(nodes_per_group)//")")
+         call logger%large_info("Multi-global groups: "//to_char(global_groups)//" (nodes_per_group="// &
+                                to_char(nodes_per_group)//")")
       end if
 
       ! Build polymorphic expansion context
@@ -761,7 +761,7 @@ contains
 
       ! Execute calculation using polymorphic dispatch
       if (resources%mpi_comms%world_comm%size() == 1) then
-         call logger%info("Running in serial mode (single MPI rank)")
+         call logger%large_info("Running in serial mode (single MPI rank)")
          call expansion%run_serial(json_data)
       else
          call expansion%run_distributed(json_data)
@@ -849,24 +849,24 @@ contains
       end do
 
       if (my_rank == 0) then
-         call logger%info(" ")
-         call logger%info("============================================")
-         call logger%info("Multi-molecule mode: "//to_char(mqc_config%nmol)//" molecules")
-         call logger%info("MPI ranks: "//to_char(num_ranks))
+         call logger%large_info(" ")
+         call logger%large_info("============================================")
+         call logger%large_info("Multi-molecule mode: "//to_char(mqc_config%nmol)//" molecules")
+         call logger%large_info("MPI ranks: "//to_char(num_ranks))
          if (has_fragmented_molecules) then
-            call logger%info("Mode: Sequential execution (fragmented molecules detected)")
-            call logger%info("  Each molecule will use all "//to_char(num_ranks)//" rank(s) for its calculation")
+            call logger%large_info("Mode: Sequential execution (fragmented molecules detected)")
+            call logger%large_info("  Each molecule will use all "//to_char(num_ranks)//" rank(s) for its calculation")
          else if (num_ranks == 1) then
-            call logger%info("Mode: Sequential execution (single rank)")
+            call logger%large_info("Mode: Sequential execution (single rank)")
          else if (num_ranks > mqc_config%nmol) then
-            call logger%info("Mode: Parallel execution (one molecule per rank)")
-            call logger%info("Note: More ranks than molecules - ranks "//to_char(mqc_config%nmol)// &
-                             " to "//to_char(num_ranks - 1)//" will be idle")
+            call logger%large_info("Mode: Parallel execution (one molecule per rank)")
+            call logger%large_info("Note: More ranks than molecules - ranks "//to_char(mqc_config%nmol)// &
+                                   " to "//to_char(num_ranks - 1)//" will be idle")
          else
-            call logger%info("Mode: Parallel execution (one molecule per rank)")
+            call logger%large_info("Mode: Parallel execution (one molecule per rank)")
          end if
-         call logger%info("============================================")
-         call logger%info(" ")
+         call logger%large_info("============================================")
+         call logger%large_info(" ")
       end if
 
       ! Determine execution mode:
@@ -1007,19 +1007,19 @@ contains
       end if
 
       if (my_rank == 0) then
-         call logger%info(" ")
-         call logger%info("============================================")
-         call logger%info("All "//to_char(mqc_config%nmol)//" molecules completed")
+         call logger%large_info(" ")
+         call logger%large_info("============================================")
+         call logger%large_info("All "//to_char(mqc_config%nmol)//" molecules completed")
          if (has_fragmented_molecules) then
-            call logger%info("Execution: Sequential (each molecule used all ranks)")
+            call logger%large_info("Execution: Sequential (each molecule used all ranks)")
          else if (num_ranks == 1) then
-            call logger%info("Execution: Sequential (single rank)")
+            call logger%large_info("Execution: Sequential (single rank)")
          else if (num_ranks > mqc_config%nmol) then
-           call logger%info("Execution: Parallel (active ranks: "//to_char(mqc_config%nmol)//"/"//to_char(num_ranks)//")")
+     call logger%large_info("Execution: Parallel (active ranks: "//to_char(mqc_config%nmol)//"/"//to_char(num_ranks)//")")
          else
-            call logger%info("Execution: Parallel (all ranks active)")
+            call logger%large_info("Execution: Parallel (all ranks active)")
          end if
-         call logger%info("============================================")
+         call logger%large_info("============================================")
       end if
 
    end subroutine run_multi_molecule_calculations

@@ -246,15 +246,15 @@ contains
       ! silent for as long as it takes, and a caller staring at the last line of
       ! the SCF has no way to tell what is being attempted.
       if (loud) then
-         call logger%info("")
-         call logger%info("  complete active space CI")
+         call logger%large_info("")
+         call logger%large_info("  complete active space CI")
          write (line, "(a,i0,a,i0,a)") "    active space                CAS(", &
             n_alpha + n_beta, ",", n_active, ")"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,i0)") "    inactive orbitals           ", n_inactive
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,i0)") "    determinants                ", result%n_determinants
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
       end if
 
       call davidson_lowest(folded, diagonal, alpha, beta, roots, davidson, error, &
@@ -283,12 +283,12 @@ contains
       if (loud) then
          write (line, "(a,i0,a,i0,a)") "    iterations                  ", &
             davidson%iterations, " (", davidson%sigma_products, " sigma products)"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,f22.10)") "    inactive plus nuclear       ", result%core_energy
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,f22.10)") "    active                      ", &
             result%active_energy
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,f22.10)") "    total                       ", result%energy
          call logger%info(trim(line))
          if (.not. result%converged) then
@@ -393,28 +393,28 @@ contains
       call clk%finish()
 
       if (loud) then
-         call logger%info("")
-         call logger%info("  occupation-restricted active space CI")
+         call logger%large_info("")
+         call logger%large_info("  occupation-restricted active space CI")
          write (line, "(a,i0,a,i0,a)") "    active space                ORMAS(", &
             n_alpha + n_beta, ",", n_active, ")"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,i0)") "    inactive orbitals           ", n_inactive
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,i0)") "    subspaces                   ", size(subspaces)
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          do i = 1, size(subspaces)
             write (line, "(a,i0,a,i0,a,i0,a,i0)") "      space ", i, ": orbitals from ", &
                subspaces(i), ", electrons ", space%min_electrons(i), " to ", &
                space%max_electrons(i)
-            call logger%info(trim(line))
+            call logger%large_info(trim(line))
          end do
          write (line, "(a,i0)") "    determinants                ", result%n_determinants
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,f22.10)") "    inactive plus nuclear       ", result%core_energy
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,f22.10)") "    active                      ", &
             result%active_energy
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(a,f22.10)") "    total                       ", result%energy
          call logger%info(trim(line))
       end if
