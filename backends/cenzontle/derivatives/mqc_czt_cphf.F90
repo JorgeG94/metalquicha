@@ -831,12 +831,12 @@ contains
       ! is visible either way; that a keyword is the reason is not.
       if (talk .and. take /= EFP_RESPONSE_AUTO) then
          if (iterate) then
-            call logger%info("        response route: matrix free, by keywords.efp.response")
-            if (present(aux)) call logger%info("          the auxiliary basis fits a Hessian "// &
-                                               "this route never builds, so it goes unused")
-            if (reuse) call logger%info("          a built Hessian was on hand and goes unused too")
+            call logger%large_info("        response route: matrix free, by keywords.efp.response")
+            if (present(aux)) call logger%large_info("          the auxiliary basis fits a Hessian "// &
+                                                     "this route never builds, so it goes unused")
+            if (reuse) call logger%large_info("          a built Hessian was on hand and goes unused too")
          else
-            call logger%info("        response route: dense, by keywords.efp.response")
+            call logger%large_info("        response route: dense, by keywords.efp.response")
          end if
       end if
 
@@ -913,7 +913,7 @@ contains
          write (line, "(A,I0,A,I0,A,I0,A,I0,A)") "        solving ", n_freq, &
             " frequencies x ", n_pert, " perturbations over ", n_ov, " pairs, ", &
             concurrent, " at a time"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          call clock%start()
       end if
       deallocate (lu, ipiv, solution)
@@ -1035,7 +1035,7 @@ contains
       if (talk) then
          write (line, "(A,I0,A,I0,A,F0.1,A)") "        Hessian: ", n_ov, " columns in chunks of ", chunk, &
             ", ", 2.0_dp*real(n_ov, dp)**2*8.0_dp/1.0e6_dp, " MB"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          call clock%start()
       end if
 
@@ -1128,7 +1128,7 @@ contains
       if (talk) then
          write (line, "(A,I0,A,I0,A,F0.1,A)") "        fitted Hessian: ", n_ov, " pairs, ", naux, &
             " auxiliary functions, ", 4.0_dp*real(n_ov, dp)**2*8.0_dp/1.0e6_dp, " MB"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          call tick(clock, 1, 3, "step")
       end if
 
@@ -1247,7 +1247,7 @@ contains
          write (line, "(A,I0,A,F0.1,A)") "        exact Hessian: ", n_ov, &
             " pairs by transformation, ", &
             (real(n_ao, dp)**2*real(n_ov, dp) + 4.0_dp*real(n_ov, dp)**2)*8.0_dp/1.0e6_dp, " MB"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          call tick(clock, 1, 3, "step")
       end if
 
@@ -1386,7 +1386,7 @@ contains
       left = so_far*real(total - done, dp)/real(max(done, 1), dp)
       write (line, "(A,I6,A,I0,1X,A,A,F8.1,A,F8.1,A)") "        ", done, " of ", total, trim(unit_name), &
          "s   ", so_far, " s in, ~", left, " s left"
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
       flush (output_unit)
    end subroutine tick
 
@@ -1521,15 +1521,15 @@ contains
          write (line, "(A,I0,A,I0,A,I0,A)") "        solving ", n_freq, &
             " frequencies x ", n_pert, " perturbations over ", n_vir*n_occ, &
             " pairs, matrix free"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(A,I0,A,I0,A,F0.2,A)") "          ", n_sys, &
             " systems in flight, ", 4*((n_sys + eff_batch - 1)/eff_batch), &
             " integral passes per iteration, ", &
             11.0_dp*real(n_vir*n_occ, dp)*real(n_sys, dp)*8.0_dp/1.0e9_dp, " GB of vectors"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(A,I0,A)") "          building the right-hand side, ", &
             (nnz + 11)/12, " integral passes"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          flush (output_unit)
          call clock%start()
       end if
@@ -1578,7 +1578,7 @@ contains
          write (line, "(A,F0.1,A,ES8.1,A,I0,A)") "          right-hand side done in ", &
             clock%get_elapsed_time(), " s; iterating to ", threshold, &
             ", at most ", cycles, " iterations"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          flush (output_unit)
          call clock%start()
       end if
@@ -1651,7 +1651,7 @@ contains
             write (line, "(A,I4,A,F9.1,A,I4,A,ES9.2)") "          iteration ", it, &
                "   ", clock%get_elapsed_time(), " s in, ", count(.not. done), &
                " systems live, worst residual ", worst
-            call logger%info(trim(line))
+            call logger%large_info(trim(line))
             flush (output_unit)
          end if
       end do
@@ -1682,11 +1682,11 @@ contains
       if (talk) then
          write (line, "(A,I0,A)") "          where the passes went (", prof_calls, &
             " of them, CPU seconds):"
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          write (line, "(A,F10.1,A,F10.1,A,F10.1)") &
             "            densities ", prof_dens, "   Fock ", prof_fock, &
             "   back-transform ", prof_back
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
          flush (output_unit)
       end if
 

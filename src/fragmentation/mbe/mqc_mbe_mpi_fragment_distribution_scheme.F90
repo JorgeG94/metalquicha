@@ -1,5 +1,6 @@
 submodule(mqc_mbe_fragment_distribution_scheme) mpi_fragment_work_smod
    use mqc_error, only: ERROR_VALIDATION, ERROR_GENERIC
+   use mqc_verbosity, only: per_item_requested
    use mqc_combinatorics, only: fragment_size_of
    use mqc_work_queue, only: queue_t, queue_init_from_list, queue_pop, queue_is_empty, queue_destroy
    use mqc_group_batching, only: flush_group_results, handle_local_worker_results_to_batch, &
@@ -148,7 +149,7 @@ contains
    end subroutine send_task_payload_from_row
 
    module subroutine do_fragment_work(fragment_idx, result, method_config, phys_frag, calc_type, world_comm, &
-                                      print_geometry)
+                                      print_geometry, sole_calculation)
       !! Process a single fragment for quantum chemistry calculation
       !!
       !! The calculator comes from `method_config`; verbosity follows the global
@@ -163,9 +164,18 @@ contains
       integer(int32), intent(in) :: calc_type  !! Calculation type
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
       logical, intent(in), optional :: print_geometry  !! Dump the geometry when verbose (default .true.)
+      logical, intent(in), optional :: sole_calculation
+         !! True when this is the ONLY calculation of the run rather than one
+         !! of many. Default false.
+         !!
+         !! This routine is shared by the unfragmented workflow, which calls it
+         !! once, and the fragment loops, which call it per fragment -- and from
+         !! the inside those are indistinguishable. The difference decides
+         !! whether the method may print: the user's single calculation may,
+         !! two hundred dimers may not, and only the caller knows which this is.
 
-      integer :: current_log_level  !! Current logger verbosity level
-      logical :: is_verbose  !! Whether verbose output is enabled
+      logical :: is_verbose   !! Print something once per fragment
+      logical :: is_sole      !! This is the run's only calculation
       logical :: show_geometry  !! Whether this task should dump its geometry
       integer(int32) :: calc_type_local  !! Local copy of calc_type
       type(method_config_t) :: local_config  !! Local copy for verbose override
@@ -174,10 +184,15 @@ contains
       calc_type_local = calc_type
       show_geometry = .true.
       if (present(print_geometry)) show_geometry = print_geometry
+      is_sole = .false.
+      if (present(sole_calculation)) is_sole = sole_calculation
 
-      ! Query logger to determine verbosity
-      call logger%configuration(level=current_log_level)
-      is_verbose = (current_log_level >= verbose_level)
+      ! Two questions, not one. A geometry dump is one per FRAGMENT, so it
+      ! belongs at `verbose`; a method's detail block is one per calculation
+      ! and belongs a notch lower, at `large_info`. Deriving both from
+      ! `verbose_level` meant the detail could only be had by also accepting
+      ! two hundred geometry dumps on a 20-mer.
+      is_verbose = per_item_requested()
 
       ! Print fragment geometry if provided and verbose mode is enabled.
       ! Suppressed for displaced tasks: 6N+1 near-identical geometries per
@@ -189,7 +204,15 @@ contains
 
          ! Copy config and override verbose based on logger level
          local_config = method_config
-         local_config%verbose = is_verbose
+         ! Per-fragment: one SCF's worth of output times the fragment count,
+         ! so this is the per-item question and not the detail one.
+         ! The sole calculation of a run speaks unless the caller silenced it;
+         ! one of many speaks only when the user asked for per-item output.
+         if (is_sole) then
+            local_config%verbose = method_config%verbose
+         else
+            local_config%verbose = is_verbose
+         end if
 
          ! Create calculator using factory
          ! allocate(..., source=) rather than plain assignment: see the note in

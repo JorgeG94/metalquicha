@@ -54,7 +54,8 @@ contains
       end if
 
       ! Process the full system
-      call do_fragment_work(0_int64, result, config%method_config, phys_frag=full_system, calc_type=config%calc_type)
+      call do_fragment_work(0_int64, result, config%method_config, phys_frag=full_system, &
+                            calc_type=config%calc_type, sole_calculation=.true.)
 
       ! Check for calculation errors
       if (result%has_error) then

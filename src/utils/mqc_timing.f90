@@ -82,19 +82,24 @@ contains
    subroutine report_begin(self, name)
       !! Say that `name` is starting, and let the next `lap` close it
       !!
-      !! Logged at `performance` level, the same level the table uses, which is
-      !! numerically below `info` and so shows by default.
+      !! Logged at `verbose`, unlike the table, which stays at `performance`.
+      !!
+      !! They are not the same kind of output and the old TODO here was asking
+      !! for the wrong fix. `report` fires once per run and its length is capped
+      !! by `MAX_TIMED_STAGES`; `begin` fires once per LAP, so a stage inside a
+      !! loop announces itself once per pass -- unbounded, and printed from
+      !! every deliberately silent inner SCF, one per element in an atomic
+      !! guess. Per-item output belongs at `verbose`; the bounded cost table
+      !! belongs below `info`, where a `level: performance` run can still see
+      !! it without the narrative.
       !!
       !! Announcing does not touch the lap clock. `begin` is free to be called
       !! anywhere; only `lap` divides the timeline.
-      ! TODO(mqc): the `verbose` argument to `report` suppresses the table but
-      ! nothing suppresses these, so a run that asked for no timing still logs
-      ! a line per stage.
       class(timing_report_t), intent(inout) :: self
       character(len=*), intent(in) :: name
 
       self%pending = name
-      call logger%performance("    "//trim(name)//" ...")
+      call logger%verbose("    "//trim(name)//" ...")
    end subroutine report_begin
 
    subroutine report_lap(self, name)

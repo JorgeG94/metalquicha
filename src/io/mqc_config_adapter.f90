@@ -114,7 +114,21 @@ contains
 
       ! Build method configuration
       driver_config%method_config%method_type = mqc_config%method
-      driver_config%method_config%verbose = .false.  ! Controlled by logger level in do_fragment_work
+      ! **True, and not derived from the log level.** This flag answers *whose*
+      ! calculation this is, not how much of it to print: an unfragmented run
+      ! IS the calculation the user asked for, so its method may speak. How
+      ! much it says is the level's business -- the iteration table emits at
+      ! `info`, the energy components at `large_info`.
+      !
+      ! It was pinned `.false.` here, deferring to the fragment scheduler, which
+      ! meant an unfragmented run reached no scheduler and every method's output
+      ! was unreachable at every level. `E(CASSCF)` and `E(CASCI)` were
+      ! invisible for that reason, and so was the SCF iteration table.
+      !
+      ! Inner SCFs that this run owns -- an atomic guess, a basis-ladder rung, a
+      ! Fukui ion -- pass `.false.` themselves at their own call sites, which is
+      ! the only thing a flag can express and a level cannot.
+      driver_config%method_config%verbose = .true.
 
       ! Node-local rank, so several ranks on one node land on distinct GPUs.
       if (present(node_rank)) driver_config%method_config%device_rank = node_rank
@@ -1123,8 +1137,8 @@ contains
    function get_logger_level(level_string) result(level_int)
       !! Convert string log level to integer value
       !! This function uses the pic_logger constants
-      use pic_logger, only: debug_level, verbose_level, info_level, performance_level, &
-                            warning_level, error_level, knowledge_level
+      use pic_logger, only: debug_level, verbose_level, large_info_level, info_level, &
+                            performance_level, warning_level, error_level, knowledge_level
       character(len=*), intent(in) :: level_string
       integer :: level_int
 
@@ -1133,6 +1147,8 @@ contains
          level_int = debug_level
       case ("verbose", "Verbose", "VERBOSE")
          level_int = verbose_level
+      case ("large_info", "Large_Info", "LARGE_INFO")
+         level_int = large_info_level
       case ("info", "Info", "INFO")
          level_int = info_level
       case ("performance", "Performance", "PERFORMANCE")

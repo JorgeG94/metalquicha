@@ -250,23 +250,23 @@ contains
 
       if (.not. verbose) return
       if (stats%quartets_total <= 0) return
-      call logger%performance("")
-      call logger%performance("  screening (last Fock build)")
+      call logger%large_info("")
+      call logger%large_info("  screening (last Fock build)")
       write (line, "(a,i14)") "    unique quartets      ", stats%quartets_total
-      call logger%performance(trim(line))
+      call logger%large_info(trim(line))
       write (line, "(a,i14,f9.1,a)") "    skipped, Schwarz     ", stats%screened_schwarz, &
          100.0_dp*real(stats%screened_schwarz, dp)/real(stats%quartets_total, dp), " %"
-      call logger%performance(trim(line))
+      call logger%large_info(trim(line))
       write (line, "(a,i14,f9.1,a)") "    skipped, density     ", stats%screened_density, &
          100.0_dp*real(stats%screened_density, dp)/real(stats%quartets_total, dp), " %"
-      call logger%performance(trim(line))
+      call logger%large_info(trim(line))
       write (line, "(a,i14,f9.1,a)") "    computed             ", stats%quartets_computed, &
          100.0_dp*real(stats%quartets_computed, dp)/real(stats%quartets_total, dp), " %"
-      call logger%performance(trim(line))
+      call logger%large_info(trim(line))
       ! One is perfect balance. A ratio inside one run, so a contended node
       ! largely divides out of it.
       write (line, "(a,f14.4)") "    thread imbalance     ", stats%thread_imbalance
-      call logger%performance(trim(line))
+      call logger%large_info(trim(line))
    end subroutine screening_summary
 
    pure function scheme_now(accel, err_norm) result(scheme)
@@ -382,29 +382,29 @@ contains
       v_ee = two_e
       v_total = v_ee + v_ne + nuclear
 
-      call logger%info("")
-      call logger%info("  energy components")
+      call logger%large_info("")
+      call logger%large_info("  energy components")
       write (line, "(a,f22.10)") "    one electron                ", one_e
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
       write (line, "(a,f22.10)") "    two electron                ", two_e
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
       write (line, "(a,f22.10)") "    nuclear repulsion           ", nuclear
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
       write (line, "(a,f22.10)") "    total                       ", electronic + nuclear
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
       write (line, "(a,f22.10)") "    electron-electron potential ", v_ee
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
       write (line, "(a,f22.10)") "    nucleus-electron potential  ", v_ne
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
       write (line, "(a,f22.10)") "    nucleus-nucleus potential   ", nuclear
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
       write (line, "(a,f22.10)") "    total potential             ", v_total
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
       write (line, "(a,f22.10)") "    total kinetic               ", t_energy
-      call logger%info(trim(line))
+      call logger%large_info(trim(line))
       if (abs(t_energy) > 0.0_dp) then
          write (line, "(a,f22.10)") "    virial ratio (-V/T)         ", -v_total/t_energy
-         call logger%info(trim(line))
+         call logger%large_info(trim(line))
       end if
       deallocate (kinetic, core)
    end subroutine energy_components
@@ -596,7 +596,7 @@ contains
       call mol%core_hamiltonian(ops%h)
       if (present(h_extra)) then
          if (size(h_extra, 1) /= ops%n_ao .or. size(h_extra, 2) /= ops%n_ao) then
-            call error%set(ERROR_VALIDATION, "RHF: h_extra is not ops%n_ao square")
+            call error%set(ERROR_VALIDATION, "RHF: h_extra is not n_ao square")
             return
          end if
          ops%h = ops%h + h_extra
@@ -664,11 +664,11 @@ contains
       case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ)
          if (.not. present(guess_density)) then
             call error%set(ERROR_VALIDATION, "RHF: an atomic guess was asked for but no "// &
-                           "guess st%density was supplied")
+                           "guess density was supplied")
             return
          end if
          if (size(guess_density, 1) /= ops%n_ao .or. size(guess_density, 2) /= ops%n_ao) then
-            call error%set(ERROR_VALIDATION, "RHF: the guess st%density is not the size of "// &
+            call error%set(ERROR_VALIDATION, "RHF: the guess density is not the size of "// &
                            "this basis")
             return
          end if
@@ -730,7 +730,7 @@ contains
       ! and driving the oscillation it was asked to damp.
       if (ctrl%shift < 0.0_dp) then
          call error%set(ERROR_VALIDATION, "keywords.scf.level_shift is negative. A "// &
-                        "level ctrl%shift raises the virtual orbitals to widen the gap; a "// &
+                        "level shift raises the virtual orbitals to widen the gap; a "// &
                         "negative one narrows it and makes convergence worse, not "// &
                         "better. Give a positive value in Hartree, or leave it out.")
          return
@@ -747,7 +747,7 @@ contains
       ! the shift the reader thinks they applied, and a shift dropped on the way
       ! here is otherwise indistinguishable from one that was never set.
       if (ctrl%shift > 0.0_dp) then
-         write (line, "(a,f8.4,a,es9.2)") "    level ctrl%shift: ", ctrl%shift, &
+         write (line, "(a,f8.4,a,es9.2)") "    level shift: ", ctrl%shift, &
             " hartree, tapered off below dD ", ctrl%taper
          call logger%info(trim(line))
       end if
