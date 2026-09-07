@@ -1887,7 +1887,8 @@ contains
    subroutine distributed_dynamic_cross(mol, orbitals, orbital_energies, n_occ, &
                                         frequencies, measure, respond, tensors, &
                                         centroids, error, n_core, max_iter, tol, hessian, &
-                                        progress, aux, route, allow_unconverged, batch)
+                                        progress, aux, route, allow_unconverged, batch, &
+                                        static_response)
       !! Mixed-multipole dynamic response, per localized orbital and frequency
       !!
       !!     alpha^(i)_{km}(i nu) = -2 sum_a h^{measure,k}_{ai} S^{respond,m}_{ai}
@@ -1912,6 +1913,13 @@ contains
       !!
       !! Phase conventions do not enter: each component is quadratic in its
       !! localized orbital, so flipping an orbital's sign leaves it unchanged.
+      !!
+      !! **The static response comes out of the same solve** when a zero
+      !! frequency is among `frequencies` and `static_response` is asked for.
+      !! It is the canonical-orbital response `U` that `cphf_solve` returns,
+      !! `(A+B) U = -h`, for every `respond` operator, so a caller that also
+      !! wants the static block over the whole occupied space does not solve
+      !! for it a second time.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)
       real(dp), intent(in) :: orbital_energies(:)
@@ -1938,11 +1946,15 @@ contains
          !! Take an unconverged response rather than refusing it.
       integer, intent(in), optional :: batch
          !! Passed straight through: densities per integral pass.
+      real(dp), allocatable, intent(out), optional :: static_response(:, :, :)
+         !! `(n_vir, n_occ, n_respond)`: the zero-frequency response in
+         !! `cphf_solve`'s convention, taken from the frequency in
+         !! `frequencies` that is zero. An error if none is.
 
       real(dp), allocatable :: alpha(:, :, :), s_all(:, :, :, :), localized(:, :)
       real(dp), allocatable :: s(:, :), sc(:, :), w(:, :), h_loc(:, :, :)
       real(dp), allocatable :: s_loc(:, :), c_occ(:, :), c_vir(:, :), work(:, :)
-      integer :: n_ao, n_mo, n_vir, n_lmo, core, k, m, i, a, ifreq
+      integer :: n_ao, n_mo, n_vir, n_lmo, core, k, m, i, a, ifreq, izero
 
       n_ao = size(orbitals, 1)
       n_mo = size(orbitals, 2)
@@ -1955,6 +1967,18 @@ contains
          return
       end if
 
+      izero = 0
+      if (present(static_response)) then
+         do ifreq = 1, size(frequencies)
+            if (frequencies(ifreq) == 0.0_dp) izero = ifreq
+         end do
+         if (izero == 0) then
+            call error%set(ERROR_VALIDATION, "the static response was asked for, "// &
+                           "but no frequency is zero")
+            return
+         end if
+      end if
+
       call boys_localize(mol, orbitals(:, core + 1:n_occ), n_lmo, localized, &
                          centroids, error)
       if (error%has_error()) return
@@ -1965,6 +1989,11 @@ contains
                                   hessian=hessian, progress=progress, aux=aux, &
                                   route=route, allow_unconverged=allow_unconverged, batch=batch)
       if (error%has_error()) return
+      ! The solve's `S` is `-2 (A+B)^-1 h` at zero frequency; `cphf_solve`'s `U`
+      ! is `-(A+B)^-1 h`, so the block handed out is halved to match it.
+      if (present(static_response)) then
+         allocate (static_response, source=0.5_dp*s_all(:, :, :, izero))
+      end if
 
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))
       c_occ = orbitals(:, 1:n_occ)
@@ -2150,7 +2179,8 @@ contains
 
    subroutine distributed_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                          tensors, centroids, error, n_core, &
-                                         max_iter, tol, iterations, in_core, hessian)
+                                         max_iter, tol, iterations, in_core, hessian, &
+                                         response)
       !! One polarizability tensor per localized orbital, at its centroid
       !!
       !! Where in the molecule the response happens, so an induced dipole can be
@@ -2197,6 +2227,11 @@ contains
          !! response is `(A+B) U = -h`, so once the dynamic blocks have built
          !! `(A+B)` the same equation is one factorization away. A *fitted*
          !! Hessian is declined -- see `fitted` on the type.
+      real(dp), intent(in), optional :: response(:, :, :)
+         !! `(n_vir, n_occ, 3)`: the static dipole response over the whole
+         !! occupied space, already solved for -- what `distributed_dynamic_cross`
+         !! hands out as `static_response`. With it there is no solve here at
+         !! all, and `hessian`, `max_iter`, `tol` and `in_core` go unread.
 
       real(dp), allocatable :: dip(:, :, :), u(:, :, :), localized(:, :)
       real(dp), allocatable :: s(:, :), w(:, :), u_loc(:, :, :), h_loc(:, :, :)
@@ -2234,7 +2269,16 @@ contains
       ! The response over the whole occupied space -- see `n_core` above.
       dense = .false.
       if (present(hessian)) dense = hessian%ready .and. .not. hessian%fitted
-      if (dense) then
+      if (present(response)) then
+         if (size(response, 1) /= n_vir .or. size(response, 2) /= n_occ .or. &
+             size(response, 3) /= 3) then
+            call error%set(ERROR_VALIDATION, "distributed polarizability: the "// &
+                           "supplied response is the wrong shape for this reference")
+            return
+         end if
+         u = response
+         if (present(iterations)) iterations = 0
+      else if (dense) then
          call static_response_dense(hessian%aplus, dip, c_occ, c_vir, u, error)
          if (present(iterations)) iterations = 0
       else

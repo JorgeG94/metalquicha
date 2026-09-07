@@ -27,7 +27,8 @@ module test_mqc_czt_cphf
    use mqc_czt_cphf, only: cphf_solve, static_polarizability, distributed_polarizability, &
                            build_hessian, build_hessian_mo, static_response_dense, &
                            dynamic_polarizability, dynamic_response_iterative, &
-                           casimir_polder_frequencies
+                           casimir_polder_frequencies, distributed_dynamic_cross
+   use mqc_calculation_defaults, only: EFP_RESPONSE_DENSE, EFP_RESPONSE_MATRIX_FREE
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
    implicit none
@@ -88,7 +89,9 @@ contains
                   new_unittest("the_dense_static_solve_equals_the_iterative_one", &
                                test_static_dense), &
                   new_unittest("the_dense_dynamic_solve_equals_the_matrix_free_one", &
-                               test_dynamic_matrix_free) &
+                               test_dynamic_matrix_free), &
+                  new_unittest("the_static_response_rides_with_the_dynamic_solve", &
+                               test_static_rides_along) &
                   ]
    end subroutine collect_mqc_czt_cphf_tests
 
@@ -1026,6 +1029,113 @@ contains
 
       call mol%destroy()
    end subroutine test_static_dense
+
+   subroutine test_static_rides_along(error)
+      !! The static block of a potential, solved as the zero frequency of the
+      !! dynamic batch rather than on its own
+      !!
+      !! `make_efp_potential` used to solve the static response twice: once as
+      !! the zero-frequency member of the Casimir-Polder batch, and once more in
+      !! `distributed_polarizability`, which on the matrix-free route meant a
+      !! second conjugate-gradient run at the solver's own defaults rather
+      !! than at the deck's. Now `distributed_dynamic_cross` hands the
+      !! zero-frequency block out as `static_response`, in `cphf_solve`'s
+      !! convention, and `distributed_polarizability` takes it in place of a
+      !! solve. Three things are checked: the block agrees with `cphf_solve`
+      !! on both routes, since the dense one takes it off `(A+B)` and the
+      !! matrix-free one out of BiCGSTAB, and the halving between the two
+      !! conventions is the kind of factor that passes every internal check;
+      !! the distributed tensors built from it equal the ones built from an
+      !! independent solve, with no iterations spent; and asking for the block
+      !! without a zero frequency is refused rather than answered with the
+      !! wrong slice.
+      type(error_type), allocatable, intent(out) :: error
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: dip(:, :, :), u_ref(:, :, :), u_dense(:, :, :)
+      real(dp), allocatable :: u_free(:, :, :), u_none(:, :, :)
+      real(dp), allocatable :: tensors(:, :, :, :), centroids(:, :)
+      real(dp), allocatable :: pol_ref(:, :, :), pol_from(:, :, :), cen(:, :)
+      real(dp), allocatable :: nu(:), with_zero(:)
+      integer :: n_occ, iterations
+      real(dp) :: scale
+
+      call water(mol, scf, err)
+      if (err%has_error() .or. .not. scf%converged) then
+         call check(error, .false., "the reference SCF failed")
+         return
+      end if
+      n_occ = scf%n_occupied
+      nu = casimir_polder_frequencies()
+      allocate (with_zero(size(nu) + 1))
+      with_zero(1:size(nu)) = nu
+      with_zero(size(nu) + 1) = 0.0_dp
+
+      call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, err)
+      call check(error,.not. err%has_error(), "the dipole matrices failed")
+      if (allocated(error)) return
+      call cphf_solve(mol, scf%orbitals, scf%orbital_energies, n_occ, dip, u_ref, &
+                      err, tol=1.0e-13_dp, in_core=.true.)
+      call check(error,.not. err%has_error(), "the reference solve failed: "//err%get_message())
+      if (allocated(error)) return
+      scale = max(maxval(abs(u_ref)), 1.0_dp)
+
+      ! The dense route: the zero frequency is one factorization of `(A+B)`.
+      call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, n_occ, &
+                                     with_zero, dip, dip, tensors, centroids, err, &
+                                     route=EFP_RESPONSE_DENSE, static_response=u_dense)
+      call check(error,.not. err%has_error(), "the dense cross solve failed: "//err%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(u_dense), "the dense route handed nothing out")
+      if (allocated(error)) return
+      call check(error, all(shape(u_dense) == shape(u_ref)), &
+                 "the dense route's static block is the wrong shape")
+      if (allocated(error)) return
+      call check(error, maxval(abs(u_dense - u_ref)) <= 1.0e-9_dp*scale, &
+                 "the dense route's static block disagrees with cphf_solve")
+      if (allocated(error)) return
+
+      ! The matrix-free route: the zero frequency is in the BiCGSTAB batch.
+      call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, n_occ, &
+                                     with_zero, dip, dip, tensors, centroids, err, &
+                                     route=EFP_RESPONSE_MATRIX_FREE, tol=1.0e-11_dp, &
+                                     static_response=u_free)
+      call check(error,.not. err%has_error(), "the matrix-free cross solve failed: "//err%get_message())
+      if (allocated(error)) return
+      call check(error, maxval(abs(u_free - u_ref)) <= 1.0e-7_dp*scale, &
+                 "the matrix-free route's static block disagrees with cphf_solve")
+      if (allocated(error)) return
+
+      ! The distributed tensors from the handed-out block, against the ones the
+      ! routine solves for itself, and with no solve spent on them.
+      call distributed_polarizability(mol, scf%orbitals, scf%orbital_energies, n_occ, &
+                                      pol_ref, cen, err, tol=1.0e-13_dp, in_core=.true.)
+      call check(error,.not. err%has_error(), "the distributed solve failed: "//err%get_message())
+      if (allocated(error)) return
+      iterations = -1
+      call distributed_polarizability(mol, scf%orbitals, scf%orbital_energies, n_occ, &
+                                      pol_from, cen, err, response=u_free, &
+                                      iterations=iterations)
+      call check(error,.not. err%has_error(), "the distribution of the handed-out block failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      call check(error, iterations == 0, "a supplied response was solved for again")
+      if (allocated(error)) return
+      call check(error, maxval(abs(pol_from - pol_ref)) <= 1.0e-7_dp*max(maxval(abs(pol_ref)), 1.0_dp), &
+                 "the distributed tensors from the handed-out block disagree")
+      if (allocated(error)) return
+
+      ! Without a zero frequency there is no static block to hand out.
+      call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, n_occ, &
+                                     nu, dip, dip, tensors, centroids, err, &
+                                     route=EFP_RESPONSE_DENSE, static_response=u_none)
+      call check(error, err%has_error(), &
+                 "a static block was handed out with no zero frequency to take it from")
+      if (allocated(error)) return
+
+      call mol%destroy()
+   end subroutine test_static_rides_along
 
 end module test_mqc_czt_cphf
 

@@ -295,6 +295,7 @@ contains
       type(rhf_result_t) :: scf
       type(dma_result_t) :: dma
       type(response_hessian_t) :: shared_hessian
+      real(dp), allocatable :: u_static(:, :, :)
       type(screening_target_t) :: screen_target
       real(dp), allocatable :: loc(:, :), ovl(:, :), sc(:, :), w(:, :), scaled(:, :)
       real(dp), allocatable :: alpha(:)
@@ -594,23 +595,26 @@ contains
       ! so this is the one place the auxiliary basis has to reach, and an optional
       ! dummy cannot be passed conditionally from a local, hence the branch.
       !
-      ! Ahead of the static block. The static response is `(A+B) U = -h`, the same
-      ! operator these blocks build, so once it exists the static solve is a
-      ! factorization rather than a conjugate-gradient run.
+      ! Ahead of the static block, which is solved inside this call: the static
+      ! response is the zero-frequency member of the family these blocks solve,
+      ! so it rides along as one more frequency and comes back in `u_static`,
+      ! on either route. Matrix free, that is the difference between one
+      ! batched solve and two, and the second one used to run at the solver's
+      ! own defaults rather than at the deck's.
       if (present(aux_basis)) then
          call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
                                       shared_hessian, error, progress=talk, aux=aux, &
                                       max_iter=dynamic_maxiter, tol=dynamic_tol, &
                                       route=response, &
                                       allow_unconverged=allow_crap_response, &
-                                      batch=response_batch)
+                                      batch=response_batch, static_response=u_static)
       else
          call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
                                       shared_hessian, error, progress=talk, &
                                       max_iter=dynamic_maxiter, tol=dynamic_tol, &
                                       route=response, &
                                       allow_unconverged=allow_crap_response, &
-                                      batch=response_batch)
+                                      batch=response_batch, static_response=u_static)
       end if
       if (error%has_error()) then
          call mol%destroy()
@@ -624,11 +628,12 @@ contains
       end if
       if (talk) call report(stage, "all three dynamic blocks, with the Hessian build", talk)
 
-      ! The static block, solved against the Hessian the dynamic blocks just
-      ! built rather than by iterating for it again.
+      ! The static block, from the response the dynamic blocks already solved
+      ! for; only the localization and the contraction are left to do here.
       call distributed_polarizability(mol, scf%orbitals, scf%orbital_energies, &
                                       pot%n_occ, pot%static_pol, pot%centroids, &
-                                      error, n_core=core, hessian=shared_hessian)
+                                      error, n_core=core, response=u_static)
+      deallocate (u_static)
       if (error%has_error()) then
          call mol%destroy()
          return
@@ -720,7 +725,8 @@ contains
 
    subroutine dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, &
                                       pot, hessian, error, progress, aux, &
-                                      max_iter, tol, route, allow_unconverged, batch)
+                                      max_iter, tol, route, allow_unconverged, batch, &
+                                      static_response)
       !! `DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS`, ready to write
       !!
       !! Three conventions here were established by
@@ -757,8 +763,14 @@ contains
       integer, intent(in), optional :: route
       logical, intent(in), optional :: allow_unconverged
       integer, intent(in), optional :: batch
+      real(dp), allocatable, intent(out), optional :: static_response(:, :, :)
+         !! `(n_vir, n_occ, 3)`: the static dipole response over the whole
+         !! occupied space, in `cphf_solve`'s convention, solved as the
+         !! zero-frequency member of the same batch. What
+         !! `distributed_polarizability` takes as `response`.
 
       real(dp), allocatable :: dip(:, :, :), quad(:, :, :), buck(:, :, :)
+      real(dp), allocatable :: with_zero(:), u_all(:, :, :)
       real(dp), allocatable :: both(:, :, :), all_blocks(:, :, :, :)
       real(dp), allocatable :: raw(:, :, :, :), centroids(:, :), qq(:, :, :, :)
       real(dp) :: com(3), r(3), alpha(3, 3)
@@ -806,25 +818,37 @@ contains
       both(:, :, 1:3) = dip
       both(:, :, 4:n_both) = buck
 
+      ! The static response is the zero-frequency member of the same family,
+      ! so it is solved here as a thirteenth frequency, appended after the
+      ! Casimir-Polder twelve so that every slice below keeps its indexing,
+      ! and handed out through `static_response` rather than solved again.
+      n_freq = size(pot%frequencies)
+      allocate (with_zero(n_freq + 1))
+      with_zero(1:n_freq) = pot%frequencies
+      with_zero(n_freq + 1) = 0.0_dp
       ! One call rather than one per combination of present arguments: `aux` here
       ! is an optional dummy, not a local, and an absent one passed on as an actual
       ! argument arrives absent at the other end.
       call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
-                                     pot%n_occ, pot%frequencies, both, both, &
+                                     pot%n_occ, with_zero, both, both, &
                                      all_blocks, centroids, error, n_core=core, &
                                      hessian=hessian, progress=progress, aux=aux, &
                                      max_iter=max_iter, tol=tol, route=route, &
-                                     allow_unconverged=allow_unconverged, batch=batch)
+                                     allow_unconverged=allow_unconverged, batch=batch, &
+                                     static_response=u_all)
       if (error%has_error()) return
-      deallocate (both)
+      deallocate (both, with_zero)
+      if (present(static_response)) then
+         allocate (static_response, source=u_all(:, :, 1:3))
+      end if
+      deallocate (u_all)
 
-      n_freq = size(pot%frequencies)
       if (allocated(pot%centroids)) deallocate (pot%centroids)
       allocate (pot%centroids, source=centroids)
       allocate (pot%dynamic_pol(3, 3, pot%n_lmo, n_freq))
-      pot%dynamic_pol = all_blocks(1:3, 1:3, :, :)
+      pot%dynamic_pol = all_blocks(1:3, 1:3, :, 1:n_freq)
       allocate (raw(size(buck, 3), 3, pot%n_lmo, n_freq))
-      raw = all_blocks(4:n_both, 1:3, :, :)
+      raw = all_blocks(4:n_both, 1:3, :, 1:n_freq)
       allocate (pot%dipquad(3, 3, 3, pot%n_lmo, n_freq))
       allocate (pot%dipquad_pre(3, 3, 3, pot%n_lmo, n_freq))
       do f = 1, n_freq
@@ -861,7 +885,7 @@ contains
       ! not. Confirmed against GAMESS's own molecular `QUAD-QUAD POLARIZABILITY`,
       ! which `$MAKEFP MOLPOL=.TRUE.` writes with no translation applied.
       allocate (qq(size(buck, 3), size(buck, 3), pot%n_lmo, n_freq))
-      qq = all_blocks(4:n_both, 4:n_both, :, :)
+      qq = all_blocks(4:n_both, 4:n_both, :, 1:n_freq)
       deallocate (all_blocks)
 
       allocate (pot%quadquad(3, 3, 3, 3, pot%n_lmo, n_freq))
