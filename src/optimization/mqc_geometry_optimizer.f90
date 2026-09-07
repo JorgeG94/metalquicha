@@ -35,6 +35,8 @@ module mqc_geometry_optimizer
    use mqc_optimization_output, only: optimization_record_t, write_optimization_json, &
                                       write_trajectory_xyz
    use mqc_frag_utils, only: generate_mbe_term_list
+   use mqc_scf_common, only: lindep_tally_t, lindep_collect_begin, lindep_collect_end, &
+                             report_linear_dependence_tally
    implicit none
 
    real(dp), parameter :: ZERO_FREQ_CM = 10.0_dp
@@ -122,6 +124,7 @@ contains
       logical :: converged
       integer :: probe_status
       real(dp) :: final_energy
+      type(lindep_tally_t) :: lindep
       real(dp), allocatable :: coords(:, :)
       real(dp), allocatable :: endpoint_geom(:, :)
       integer, allocatable :: atomic_numbers(:)
@@ -227,6 +230,16 @@ contains
          ! leaves `active` set for the rest of the process.
          if (error%has_error()) return
 
+         ! Fold every step's linear-dependence report into one, the way a
+         ! fragmented run folds its fragments'. An optimization is one SCF per
+         ! step against eight lines apiece, and the basis is the same basis at
+         ! every step -- so the per-SCF report says the same thing tens of
+         ! times and buries the step table it is printed into.
+         !
+         ! The window opens here rather than before the probe gradient above,
+         ! because the returns between the two would leave it open for the rest
+         ! of the process and silence every later SCF.
+         call lindep_collect_begin()
          if (algorithm_needs_hessian(config%optimization%algorithm) .and. &
              is_restricted_hf(config)) then
             call dlfind_optimize(config%optimization, n_atoms, atomic_numbers, residues, &
@@ -238,7 +251,13 @@ contains
                                  coords, evaluate_energy_gradient, record_step, &
                                  final_energy, error, endpoint=endpoint_geom)
          end if
+         call lindep_collect_end(lindep)
          call logger%info("  "//repeat("-", 69))
+         ! After the table's closing rule, so the summary sits under the steps
+         ! it describes rather than interrupting them. The final single point
+         ! below is outside the window on purpose: it is one SCF on the
+         ! geometry actually kept, and worth its own full report.
+         call report_linear_dependence_tally(lindep, "optimization steps")
 
          ! Stop the workers whether or not that succeeded: a rank 0 that
          ! returned an error without sending this would leave N-1 ranks blocked

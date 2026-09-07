@@ -25,6 +25,7 @@ contains
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &
+                  new_unittest("scf_lindep_tally_nests", test_tally_nests), &
                   new_unittest("scf_orthogonalizer_diagonalizes_the_overlap", test_orth_identity), &
                   new_unittest("scf_orthogonalizer_keeps_every_mode_when_well_conditioned", test_orth_full_rank), &
                   new_unittest("scf_orthogonalizer_drops_a_null_mode", test_orth_drops_null), &
@@ -44,6 +45,54 @@ contains
                   new_unittest("scf_lindep_tally_resets_between_windows", test_tally_resets) &
                   ]
    end subroutine collect_mqc_scf_common
+
+   subroutine test_tally_nests(error)
+      !! An inner window folds into the outer one instead of closing it
+      !!
+      !! Optimizing a fragmented system opens both: the optimizer wraps every
+      !! step, and each step's `run_calculation` wraps its fragments. When the
+      !! gate was a plain logical the inner `end` closed the outer window at
+      !! the first step, so every later SCF reported individually and the
+      !! optimizer's tally came back empty -- the summary silently covered one
+      !! step out of fifty.
+      !!
+      !! The outermost window owns the tally. An inner one reports nothing of
+      !! its own, which is what keeps a fragmented step from printing a
+      !! per-step summary inside an optimization that is about to print one.
+      type(error_type), allocatable, intent(out) :: error
+      type(lindep_tally_t) :: inner, outer
+
+      call lindep_collect_begin()                                  ! optimizer
+      call report_linear_dependence(10, 10, 1.0e-6_dp, 1.0e-6_dp, .false.)
+
+      call lindep_collect_begin()                                  ! one step's fragments
+      call report_linear_dependence(10, 10, 3.0e-7_dp, 3.0e-7_dp, .false.)
+      call lindep_collect_end(inner)
+
+      ! The inner window reports nothing: an empty tally, which
+      ! `report_linear_dependence_tally` prints nothing for.
+      call check(error, inner%n_reports, 0)
+      if (allocated(error)) return
+
+      ! Still collecting, so this is folded in rather than printed.
+      call report_linear_dependence(10, 10, 2.0e-6_dp, 2.0e-6_dp, .false.)
+      call lindep_collect_end(outer)
+
+      ! All three SCFs, including the one inside the inner window.
+      call check(error, outer%n_reports, 3)
+      if (allocated(error)) return
+      call check(error, outer%n_near_scf, 3)
+      if (allocated(error)) return
+      ! The worst is the inner window's, which a closed outer window would
+      ! have lost along with everything after it.
+      call check(error, outer%worst_kept, 3.0e-7_dp, thr=1.0e-20_dp)
+      if (allocated(error)) return
+
+      ! And the window is properly shut: a report now goes straight out.
+      call lindep_collect_begin()
+      call lindep_collect_end(inner)
+      call check(error, inner%n_reports, 0)
+   end subroutine test_tally_nests
 
    subroutine test_tally_drops(error)
       !! Many SCFs that each lose functions become one tally, not many reports
