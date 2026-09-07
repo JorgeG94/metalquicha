@@ -144,7 +144,8 @@ each subproject's own `option()` sees.
 
 `CMakePresets.json` carries the configurations that are otherwise a remembered
 string of `-D` flags: `default`, `debug`, `libcint`, `xtb-only`, `serial`,
-`coverage`, `perlmutter`. Add one when a configuration has bitten someone twice.
+`coverage`, `perlmutter`, `perlmutter-cpu`. Add one when a configuration has
+bitten someone twice.
 
 ```
 cmake --preset perlmutter && cmake --build --preset perlmutter
@@ -209,3 +210,47 @@ Real verification is `validation/run_cuest_validation.sh`, which has the
 reference energies. Locally the backend can only be compile-checked -- see the
 stub-`libcuest.so` recipe, which lets CMake do the whole build rather than
 compiling files by hand in dependency order.
+
+### The `perlmutter-cpu` preset, and why it is not libsci
+
+The CPU ab initio path on a Perlmutter node, under `PrgEnv-gnu`. Its one
+setting that is not shared with the GPU preset is the BLAS, and it has to be
+spelled out because the machine's default is wrong for this program in two
+separate ways.
+
+The `ftn` wrapper adds Cray libsci to every link, and with `-fopenmp` it adds
+the threaded copy, `libsci_gnu_mp`. `-DBLAS_LIBRARIES=/opt/cray/pe/lib64/libsci_gnu.so.6`
+does not change that: the wrapper's copy is named first and binds every `dgemm`
+and `dgetrf` in the binary, whatever the cache says. Measured on one node
+(libsci 26.03, one 6475 x 6475 `dgetrf`, the response solver's operator for
+adenine in 6-311G**):
+
+| Layout | Time |
+|---|---|
+| libsci, one thread | 3.8 s |
+| libsci, 4 / 16 / 64 threads | 1.6 / 9.6 / 70 s |
+| libsci, 128 threads | did not finish in 120 s |
+| libsci, thirteen concurrent calls | segfault, or `DGETRF parameter 1 had an illegal value` |
+| MKL sequential, thirteen concurrent calls | 4.1 s for all thirteen |
+| MKL threaded, one call on 128 threads | 0.5 s |
+
+So libsci threads *backwards* -- more threads, more time -- and its LAPACK is
+not re-entrant, which is what the MakeFP segfault at 128 threads was. Neither
+knob the launcher sets reaches it: libsci ignores `OPENBLAS_NUM_THREADS` and
+reads `CRAYBLAS_NUM_THREADS`, which `tools/run.sh` now pins too. Pinned, a
+libsci build finishes, on one core per factorization.
+
+The preset therefore asks for `Intel10_64lp_seq`, the same sequential MKL the
+rest of the project assumes, and needs two things from the shell before
+`cmake --preset perlmutter-cpu`:
+
+```
+module unload cray-libsci
+export MKLROOT=/opt/intel/oneapi/mkl/2025.3      # or `module load intel`
+```
+
+The unload is not optional. Left loaded, libsci is still on the wrapper's
+link line ahead of MKL, and `MqcDependencies.cmake` refuses to configure rather
+than build a binary that silently binds to the wrong library -- the message
+names the module. MakeFP on adenine/6-311G** went from not finishing in fifteen
+minutes to 10.7 s at 128 threads on this preset.

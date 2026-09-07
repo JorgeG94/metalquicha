@@ -35,6 +35,7 @@ module mqc_czt_cphf
    use pic_lapack_interfaces, only: pic_getrf, pic_getrs
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
    use mqc_czt_integrals, only: czt_molecule_t, ket_transformed_pairs, build_df_mo_block
+   use mqc_czt_gemm_threads, only: gemm_over_columns
    use mqc_czt_multipole, only: multipole_matrices
    use mqc_czt_localize, only: boys_localize
    use mqc_czt_rhf, only: build_fock
@@ -882,8 +883,10 @@ contains
       allocate (lu(n_ov, n_ov), ipiv(n_ov))
       allocate (rhs_flat(n_ov, n_pert), h_flat(n_ov, n_pert))
       if (.not. reuse) then
+         ! Split across threads because the BLAS is sequential: on one core this
+         ! `n_ov^3` product outweighed the thirteen factorizations it feeds.
          allocate (product(n_ov, n_ov))
-         call pic_gemm(aminus, aplus, product)
+         call gemm_over_columns(aminus, aplus, product)
       end if
 
       do l = 1, n_pert
@@ -1148,7 +1151,7 @@ contains
       !! How many frequency solves may run at once
       !!
       !! One, when the BLAS threads itself -- see `MQC_SEQUENTIAL_BLAS` in the
-      !! top-level CMakeLists. Otherwise a memory question: `getrf` factorizes in
+      !! `cmake/MqcDependencies.cmake`. Otherwise a memory question: `getrf` factorizes in
       !! place, so every concurrent solve needs its own `n_ov^2` copy of the
       !! operator.
       use omp_lib, only: omp_get_max_threads
@@ -1224,7 +1227,9 @@ contains
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: progress
 
-      real(dp), allocatable :: half(:, :), pair_ov(:, :), pair_oo(:, :)
+      real(dp), allocatable, target :: pair_ov(:, :), pair_oo(:, :)
+      real(dp), pointer, contiguous :: pair_ov_ao(:, :), pair_oo_ao(:, :)
+      real(dp), allocatable :: half(:, :)
       real(dp), allocatable :: step_ov(:, :), step_oo(:, :)
       real(dp), allocatable :: coul(:, :), exch(:, :)
       integer :: n_ao, n_vir, n_occ, n_ov, j
@@ -1271,10 +1276,16 @@ contains
       if (talk) call tick(clock, 2, 3, "step")
 
       ! Three and four: the bra pair, the same way round. `step_*` holds the first
-      ! AO index transformed, with the second still in the AO basis.
+      ! AO index transformed, with the second still in the AO basis. The pair
+      ! blocks are seen as `(n_ao, n_ao * n_right)` through a pointer rather than
+      ! a `reshape`, which would copy the largest array of the build; and the
+      ! product is split across threads because the BLAS is sequential.
+      pair_ov_ao(1:n_ao, 1:n_ao*n_ov) => pair_ov
+      pair_oo_ao(1:n_ao, 1:n_ao*n_occ*n_occ) => pair_oo
       allocate (step_ov(n_vir, n_ao*n_ov), step_oo(n_vir, n_ao*n_occ*n_occ))
-      call pic_gemm(c_vir, reshape(pair_ov, [n_ao, n_ao*n_ov]), step_ov, transa="T")
-      call pic_gemm(c_vir, reshape(pair_oo, [n_ao, n_ao*n_occ*n_occ]), step_oo, transa="T")
+      call gemm_over_columns(c_vir, pair_ov_ao, step_ov, transa="T")
+      call gemm_over_columns(c_vir, pair_oo_ao, step_oo, transa="T")
+      nullify (pair_ov_ao, pair_oo_ao)
       deallocate (pair_ov, pair_oo)
 
       allocate (coul(n_ov, n_ov), exch(n_vir*n_vir, n_occ*n_occ))

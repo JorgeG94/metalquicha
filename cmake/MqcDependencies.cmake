@@ -353,39 +353,6 @@ elseif(MQC_ENABLE_CZT)
     STATUS "libcint enabled: CPU Gaussian integrals via the Fortran interface")
 endif()
 
-# Whether the BLAS underneath threads itself, which decides where the response
-# solver puts its parallelism.
-#
-# The twelve frequency solves are independent, and each is one `getrf` over the
-# whole occupied-virtual space. Under a threaded BLAS that factorization already
-# fills the machine, so the loop around it should stay serial. Under a
-# sequential one it does not, and the solves have to be threaded here or the run
-# spends its time on one core: at 8350 pairs, 175 seconds against 15.
-#
-# They do not compose. Nesting them is *slower* than a threaded BLAS alone --
-# measured at 107 s against 102 s on a glycine tripeptide -- because MKL
-# serialises a call made from inside a parallel region, leaving twelve-way
-# concurrency where there was forty-way.
-#
-# Outside the backend branches above: it belongs to the response solver, which
-# is the same code under libfint and libcint, and it once sat in the libcint
-# branch alone -- so the default build, libfint, factorized every frequency on
-# one core with the other thirty-nine idle.
-#
-# Read off the vendor rather than probed at runtime, because there is no
-# portable way to ask a BLAS how many threads it intends to use.
-#
-# An unknown vendor -- CMake's own detection, which is what CI gets -- is
-# treated as sequential, because the two mistakes do not cost the same. Guess
-# sequential wrongly and the nesting costs 5%; guess threaded wrongly and every
-# solve runs on one core, which is the 175-second case.
-if(MQC_ENABLE_CZT AND (NOT BLA_VENDOR OR BLA_VENDOR MATCHES "_seq$|_SEQ$"))
-  target_compile_definitions(${main_lib} PRIVATE MQC_SEQUENTIAL_BLAS)
-  message(STATUS "Response solver: frequencies threaded (BLAS is sequential)")
-else()
-  message(STATUS "Response solver: frequencies serial (BLAS threads itself)")
-endif()
-
 # HDF5, for checkpoints that carry derivatives. Only the C library is needed:
 # the bindings are hand-written against the C ABI precisely so that no
 # compiler-specific hdf5.mod has to exist. Optional, because a laptop build
@@ -481,10 +448,71 @@ foreach(mqc_omp_lib IN LISTS OpenMP_Fortran_LIBRARIES)
     list(APPEND mqc_libsci_mp "${mqc_omp_lib}")
   endif()
 endforeach()
+if(mqc_libsci_mp AND MQC_BLA_VENDOR)
+  # A vendor was asked for and the wrapper is still adding libsci behind it:
+  # whichever is named first wins every `dgemm` in the binary, and it would be
+  # libsci -- the one whose `dgetrf` cannot be called from two threads at once
+  # and gets slower with every thread it is given. `-DBLAS_LIBRARIES=` does not
+  # reach this either; only taking libsci off the wrapper's link line does.
+  message(
+    FATAL_ERROR
+      "BLAS vendor ${MQC_BLA_VENDOR} was requested, but the compiler wrapper "
+      "still links Cray libsci (${mqc_libsci_mp}), which would bind every BLAS "
+      "and LAPACK call instead. Run `module unload cray-libsci` and configure "
+      "again, or set MQC_BLA_VENDOR to empty to build against libsci knowingly.")
+endif()
 if(mqc_libsci_mp)
   target_link_options(${main_lib} PUBLIC ${mqc_libsci_mp})
   message(STATUS "Cray libsci: threaded copy linked first (${mqc_libsci_mp}); "
                  "the serial libsci the MPI wrapper names is not thread-safe")
+endif()
+# Whether the BLAS underneath threads itself, which decides where the response
+# solver puts its parallelism.
+#
+# The twelve frequency solves are independent, and each is one `getrf` over the
+# whole occupied-virtual space. Under a threaded BLAS that factorization already
+# fills the machine, so the loop around it should stay serial. Under a
+# sequential one it does not, and the solves have to be threaded here or the run
+# spends its time on one core: at 8350 pairs, 175 seconds against 15.
+#
+# They do not compose. Nesting them is *slower* than a threaded BLAS alone --
+# measured at 107 s against 102 s on a glycine tripeptide -- because MKL
+# serialises a call made from inside a parallel region, leaving twelve-way
+# concurrency where there was forty-way. Cray's libsci does not serialise: its
+# `dgetrf` is not re-entrant, and thirteen concurrent calls spawned thirteen
+# thousand threads and segfaulted inside `dtrsm`, or came back with "parameter
+# number 1 had an illegal value". Serial is the only layout it survives, and it
+# is slow there too -- one 6475 LU takes 3.8 s on one thread and gets slower
+# with every thread added, 70 s on 64 -- so a Perlmutter build that cares about
+# the response solve should unload cray-libsci and link MKL, where the same
+# thirteen solves take 4 s at once. Left in for the builds that link libsci
+# anyway, so that they finish rather than crash.
+#
+# Outside the backend branches above: it belongs to the response solver, which
+# is the same code under libfint and libcint, and it once sat in the libcint
+# branch alone -- so the default build, libfint, factorized every frequency on
+# one core with the other thirty-nine idle. After the Cray block above, because
+# that block is what settles which libsci the calls bind to, whatever
+# `BLAS_LIBRARIES` was set to on the command line.
+#
+# Read off the vendor rather than probed at runtime, because there is no
+# portable way to ask a BLAS how many threads it intends to use.
+#
+# An unknown vendor -- CMake's own detection, which is what CI gets -- is
+# treated as sequential, because the two mistakes do not cost the same. Guess
+# sequential wrongly and the nesting costs 5%; guess threaded wrongly and every
+# solve runs on one core, which is the 175-second case. The exception is a Cray
+# with libsci linked, whose LAPACK cannot be called from two threads at once
+# whatever the vendor string says.
+if(MQC_ENABLE_CZT)
+  if(mqc_libsci_mp)
+    message(STATUS "Response solver: frequencies serial (Cray libsci is not re-entrant)")
+  elseif(NOT BLA_VENDOR OR BLA_VENDOR MATCHES "_seq$|_SEQ$")
+    target_compile_definitions(${main_lib} PRIVATE MQC_SEQUENTIAL_BLAS)
+    message(STATUS "Response solver: frequencies threaded (BLAS is sequential)")
+  else()
+    message(STATUS "Response solver: frequencies serial (BLAS threads itself)")
+  endif()
 endif()
 unset(mqc_omp_lib)
 unset(mqc_libsci_mp)

@@ -168,6 +168,10 @@ export OMP_STACKSIZE="${OMP_STACKSIZE:-64M}"
 # AGENTS.md, "Performance". Both are overridable for a single-molecule run.
 export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
 export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
+# Cray libsci reads its own knob and ignores OPENBLAS_NUM_THREADS. Left threaded
+# it gets *slower* with every thread it is given: one 6475 LU took 3.8 s on one
+# thread, 70 s on 64 and never finished on 128 (Perlmutter, libsci 26.03).
+export CRAYBLAS_NUM_THREADS="${CRAYBLAS_NUM_THREADS:-1}"
 
 declare -a CMD
 if [[ -n ${SLURM_JOB_ID:-} ]] && command -v srun >/dev/null 2>&1; then
@@ -195,8 +199,8 @@ printf '\n# %s\n' "${CMD[*]}"
 if (( DRY_RUN )); then
     printf '# OMP_NUM_THREADS=%s OMP_PROC_BIND=%s OMP_PLACES=%s OMP_STACKSIZE=%s\n' \
         "$OMP_NUM_THREADS" "$OMP_PROC_BIND" "$OMP_PLACES" "$OMP_STACKSIZE"
-    printf '# MKL_NUM_THREADS=%s OPENBLAS_NUM_THREADS=%s\n' \
-        "$MKL_NUM_THREADS" "$OPENBLAS_NUM_THREADS"
+    printf '# MKL_NUM_THREADS=%s OPENBLAS_NUM_THREADS=%s CRAYBLAS_NUM_THREADS=%s\n' \
+        "$MKL_NUM_THREADS" "$OPENBLAS_NUM_THREADS" "$CRAYBLAS_NUM_THREADS"
     exit 0
 fi
 
