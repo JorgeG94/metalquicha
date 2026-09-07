@@ -41,6 +41,7 @@ module mqc_czt_rcc
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_diis, only: diis_state_t
    use mqc_czt_integrals, only: czt_molecule_t, build_df_mo_block
+   use mqc_czt_gemm_threads, only: gemm_over_columns
    use mqc_czt_mp2, only: transform_block
    use pic_logger, only: logger => global_logger
    use mqc_convergence_report, only: convergence_header, convergence_footer
@@ -1162,38 +1163,6 @@ contains
          end do
       end do
    end subroutine scatter_ring
-
-   subroutine gemm_over_columns(a, b, c)
-      !! C = A B, with C's columns split across threads
-      !!
-      !! For the products whose result is wide but not tall. Every operand slice
-      !! is a column range, so it is contiguous and nothing is copied: thread t
-      !! computes C(:, s0:s1) from all of A and B(:, s0:s1), and the ranges are
-      !! disjoint, so there is no reduction and no ordering question. A threaded
-      !! BLAS does not help at these shapes -- the operands are only n_occ n_vir
-      !! on a side -- so the parallelism comes from outside the call.
-      real(dp), intent(in) :: a(:, :), b(:, :)
-      real(dp), intent(inout) :: c(:, :)
-
-      integer :: n, nchunk, width, chunk, s0, s1
-
-      n = size(c, 2)
-      nchunk = omp_get_max_threads()
-      if (nchunk < 1) nchunk = 1
-      if (nchunk > n) nchunk = n
-      width = (n + nchunk - 1)/nchunk
-
-      !$omp parallel do default(none) &
-      !$omp    shared(a, b, c, n, nchunk, width) &
-      !$omp    private(chunk, s0, s1) schedule(static)
-      do chunk = 1, nchunk
-         s0 = (chunk - 1)*width + 1
-         s1 = min(chunk*width, n)
-         if (s0 > s1) cycle
-         call pic_gemm(a, b(:, s0:s1), c(:, s0:s1))
-      end do
-      !$omp end parallel do
-   end subroutine gemm_over_columns
 
    subroutine ladder_accumulate(no2, nv2, nb, tau_cols, wblk, t2n)
       !! t2n(ij, ab) += sum_cd tau(ij, cd) W(ab, cd), over one batch of (cd)

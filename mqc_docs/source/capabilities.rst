@@ -323,7 +323,13 @@ reached four ways, and each gets its own gradient:
    * - exact
      - fitted
      - ``ri-mp2``. The two-particle density stays three-index and contracts
-       against three- and two-centre derivatives
+       against three- and two-centre derivatives. The Z-vector's operator and
+       the two potentials built from the relaxed density are fitted as well,
+       whatever the reference was: the exact operator is a four-centre Fock
+       build per iteration and was most of the wall clock, and fitting it moves
+       the gradient by the fitting error only -- 4e-8 on water/6-31G under
+       cc-pVTZ-RIFIT, a few 1e-6 under the coarsest sets. The reference's own
+       two-electron derivative stays exact
    * - fitted
      - fitted
      - ``ri-mp2`` plus ``keywords.scf.density_fitting``. The response operator,

@@ -133,6 +133,8 @@ module mqc_czt_efp_potential
       integer :: n_occ = 0        !! Including the core, which `CTFOK` needs
       integer :: n_lmo = 0        !! Valence localized orbitals
       integer :: multiplicity = 1
+      logical :: quadrupole_blocks = .true.
+         !! Whether `dipquad` and `quadquad` are computed and written
       real(dp) :: vdwscl = DEFAULT_VDW_SCALE
          !! The screening grid's van der Waals scale. `fit_screening` is handed
          !! this rather than reading the default for itself, so the grid and the
@@ -214,7 +216,7 @@ contains
                                  energy_tol, density_tol, grad_tol_in, &
                                  scf_in, max_iter_in, dynamic_tol, &
                                  dynamic_maxiter, response, allow_crap_response, &
-                                 response_batch)
+                                 response_batch, quadrupole_blocks)
       !! The whole pipeline: SCF, localization, and every parameter block
       !!
       !! The order is forced by what depends on what: the SCF gives the density
@@ -236,6 +238,10 @@ contains
          !! Orbitals excluded from the localized set. Default is the standard
          !! frozen core, which is what MAKEFP uses: its polarizable points and
          !! its exchange-repulsion orbitals are valence only.
+      logical, intent(in), optional :: quadrupole_blocks
+         !! `keywords.efp.dispersion`: the dipole-quadrupole and
+         !! quadrupole-quadrupole dynamic blocks too, or the dipole-dipole one
+         !! alone. Absent is all three.
       real(dp), intent(in), optional :: vdwscl
          !! `keywords.efp.vdw_scale`. Where the innermost layer of the screening
          !! grid sits, as a fraction of a van der Waals radius, and what the
@@ -295,6 +301,8 @@ contains
       type(rhf_result_t) :: scf
       type(dma_result_t) :: dma
       type(response_hessian_t) :: shared_hessian
+      real(dp), allocatable :: u_static(:, :, :)
+      real(dp), allocatable :: b_ao(:, :)
       type(screening_target_t) :: screen_target
       real(dp), allocatable :: loc(:, :), ovl(:, :), sc(:, :), w(:, :), scaled(:, :)
       real(dp), allocatable :: alpha(:)
@@ -324,6 +332,7 @@ contains
       pot%basis_name = trim(basis_name)
       pot%n_atoms = natm
       if (present(vdwscl)) pot%vdwscl = vdwscl
+      if (present(quadrupole_blocks)) pot%quadrupole_blocks = quadrupole_blocks
 
       if (size(coordinates, 1) /= 3 .or. size(coordinates, 2) /= natm) then
          call error%set(ERROR_VALIDATION, "makefp: coordinates must be (3, natm)")
@@ -438,25 +447,15 @@ contains
       !     `sqrt(e_tol)`, so that loosening the energy loosens the run.
       !   * nothing named -- the tight pair stands.
       !
-      ! The third case is warned about rather than overridden: `sqrt(1e-6)` is
-      ! 1e-3, where the multipoles drift off their references.
+      ! The third case is not overridden. Nor is it warned about here: the
+      ! bound is where the SCF is *allowed* to stop, and with DIIS the energy
+      ! criterion binds first and the commutator lands orders below it. What
+      ! the density was actually left at is checked after the SCF, below.
       g_tol = d_tol
       if (present(grad_tol_in)) then
          g_tol = grad_tol_in
       else if (.not. present(density_tol) .and. present(energy_tol)) then
          g_tol = sqrt(e_tol)
-      end if
-      if (g_tol > MAKEFP_DENSITY_TOL) then
-         write (tol_text, "(es9.2)") g_tol
-         write (ref_text, "(es9.2)") MAKEFP_DENSITY_TOL
-         call logger%warning("  MAKEFP: the SCF will stop at a commutator of "// &
-                             trim(adjustl(tol_text))//", looser than the "// &
-                             trim(adjustl(ref_text))//" a "// &
-                             "fragment potential is fitted at. The multipoles and "// &
-                             "polarizabilities come off this density, so they will "// &
-                             "drift from their references. Name "// &
-                             "keywords.scf.density_tolerance or "// &
-                             "gradient_tolerance to set it directly.")
       end if
       ! Everything the deck said about how an SCF runs, forwarded.
       n_iter = 200
@@ -503,7 +502,7 @@ contains
                           aux=aux, grad_tol=g_tol, diis_vectors=scf_diis, &
                           level_shift=shift, linear_dependence=lindep, &
                           accelerator=accel_kind, incremental_fock=incr, &
-                          scf=echo)
+                          scf=echo, b_ao_out=b_ao)
       else
          call run_czt_rhf(mol, n_electrons, n_iter, e_tol, d_tol, &
                           talk, scf, error, guess=guess_kind, guess_density=guess_total, &
@@ -520,6 +519,20 @@ contains
          call error%set(ERROR_VALIDATION, "makefp: the SCF did not converge")
          call mol%destroy()
          return
+      end if
+      ! Judged on the commutator the SCF reached, not the one it was allowed
+      ! to stop at: the multipoles, the polarizabilities and the screening
+      ! are all fitted to this density, and its error goes as the commutator.
+      if (scf%commutator > MAKEFP_DENSITY_TOL) then
+         write (tol_text, "(es9.2)") scf%commutator
+         write (ref_text, "(es9.2)") MAKEFP_DENSITY_TOL
+         call logger%warning("  MAKEFP: the SCF stopped at a commutator of "// &
+                             trim(adjustl(tol_text))//", above the "// &
+                             trim(adjustl(ref_text))//" a "// &
+                             "fragment potential is fitted at, so the multipoles "// &
+                             "and polarizabilities may differ from a reference in "// &
+                             "their last digits. Tighten keywords.scf.tolerance, "// &
+                             "or name gradient_tolerance, to converge it further.")
       end if
       pot%n_occ = scf%n_occupied
       if (talk) call report(stage, "SCF", talk)
@@ -594,23 +607,27 @@ contains
       ! so this is the one place the auxiliary basis has to reach, and an optional
       ! dummy cannot be passed conditionally from a local, hence the branch.
       !
-      ! Ahead of the static block. The static response is `(A+B) U = -h`, the same
-      ! operator these blocks build, so once it exists the static solve is a
-      ! factorization rather than a conjugate-gradient run.
+      ! Ahead of the static block, which is solved inside this call: the static
+      ! response is the zero-frequency member of the family these blocks solve,
+      ! so it rides along as one more frequency and comes back in `u_static`,
+      ! on either route. Matrix free, that is the difference between one
+      ! batched solve and two, and the second one used to run at the solver's
+      ! own defaults rather than at the deck's.
       if (present(aux_basis)) then
          call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
                                       shared_hessian, error, progress=talk, aux=aux, &
                                       max_iter=dynamic_maxiter, tol=dynamic_tol, &
                                       route=response, &
                                       allow_unconverged=allow_crap_response, &
-                                      batch=response_batch)
+                                      batch=response_batch, static_response=u_static, &
+                                      b_ao=b_ao)
       else
          call dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, pot, &
                                       shared_hessian, error, progress=talk, &
                                       max_iter=dynamic_maxiter, tol=dynamic_tol, &
                                       route=response, &
                                       allow_unconverged=allow_crap_response, &
-                                      batch=response_batch)
+                                      batch=response_batch, static_response=u_static)
       end if
       if (error%has_error()) then
          call mol%destroy()
@@ -624,11 +641,12 @@ contains
       end if
       if (talk) call report(stage, "all three dynamic blocks, with the Hessian build", talk)
 
-      ! The static block, solved against the Hessian the dynamic blocks just
-      ! built rather than by iterating for it again.
+      ! The static block, from the response the dynamic blocks already solved
+      ! for; only the localization and the contraction are left to do here.
       call distributed_polarizability(mol, scf%orbitals, scf%orbital_energies, &
                                       pot%n_occ, pot%static_pol, pot%centroids, &
-                                      error, n_core=core, hessian=shared_hessian)
+                                      error, n_core=core, response=u_static)
+      deallocate (u_static)
       if (error%has_error()) then
          call mol%destroy()
          return
@@ -720,7 +738,8 @@ contains
 
    subroutine dipole_quadrupole_block(mol, scf, coordinates, atomic_numbers, core, &
                                       pot, hessian, error, progress, aux, &
-                                      max_iter, tol, route, allow_unconverged, batch)
+                                      max_iter, tol, route, allow_unconverged, batch, &
+                                      static_response, b_ao)
       !! `DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS`, ready to write
       !!
       !! Three conventions here were established by
@@ -757,9 +776,20 @@ contains
       integer, intent(in), optional :: route
       logical, intent(in), optional :: allow_unconverged
       integer, intent(in), optional :: batch
+      real(dp), allocatable, intent(out), optional :: static_response(:, :, :)
+         !! `(n_vir, n_occ, 3)`: the static dipole response over the whole
+         !! occupied space, in `cphf_solve`'s convention, solved as the
+         !! zero-frequency member of the same batch. What
+         !! `distributed_polarizability` takes as `response`.
+      real(dp), allocatable, intent(inout), optional :: b_ao(:, :)
+         !! The fitted SCF's AO tensor, for the response to transform rather
+         !! than rebuild. Consumed by the solve.
 
       real(dp), allocatable :: dip(:, :, :), quad(:, :, :), buck(:, :, :)
+      real(dp), allocatable :: with_zero(:), u_all(:, :, :)
       real(dp), allocatable :: both(:, :, :), all_blocks(:, :, :, :)
+      real(dp), allocatable :: drives(:, :, :), solved(:, :, :, :)
+      integer :: drive_of(N_CART_PAIR)
       real(dp), allocatable :: raw(:, :, :, :), centroids(:, :), qq(:, :, :, :)
       real(dp) :: com(3), r(3), alpha(3, 3)
       real(dp) :: mass_total, isotropic
@@ -801,30 +831,95 @@ contains
       ! `dip`, and the quadrupole one uses `buck` on both sides -- so the driving
       ! operators are `dip` and `buck` together, twelve of them, and every block
       ! is a slice of the twelve-by-twelve result.
-      n_both = 3 + size(buck, 3)
+      ! Dipole only: three operators measure and three drive, and the two
+      ! quadrupole blocks are never formed.
+      if (pot%quadrupole_blocks) then
+         n_both = 3 + size(buck, 3)
+      else
+         n_both = 3
+      end if
       allocate (both(mol%nao, mol%nao, n_both))
       both(:, :, 1:3) = dip
-      both(:, :, 4:n_both) = buck
+      if (pot%quadrupole_blocks) both(:, :, 4:n_both) = buck
 
+      ! Twelve operators measure, eight drive. The nine quadrupole slots hold
+      ! only five independent operators -- three are their own transposes and
+      ! the traceless form fixes `zz` as `-(xx + yy)` -- and a response solve is
+      ! linear in its driving operator, so the responses to the other four are
+      ! sums of responses already in hand. Solving them was a third of every
+      ! matrix-free response; `drive_of` says which solved column each of the
+      ! nine slots reads, with `zz` read as the negative of two.
+      allocate (drives(mol%nao, mol%nao, merge(8, 3, pot%quadrupole_blocks)))
+      drives(:, :, 1:3) = dip
+      if (pot%quadrupole_blocks) then
+         drives(:, :, 4) = buck(:, :, QXX)
+         drives(:, :, 5) = buck(:, :, QYY)
+         drives(:, :, 6) = buck(:, :, QXY)
+         drives(:, :, 7) = buck(:, :, QXZ)
+         drives(:, :, 8) = buck(:, :, QYZ)
+         drive_of = 0
+         drive_of(QXX) = 4
+         drive_of(QYY) = 5
+         drive_of(QXY) = 6
+         drive_of(QYX) = 6
+         drive_of(QXZ) = 7
+         drive_of(QZX) = 7
+         drive_of(QYZ) = 8
+         drive_of(QZY) = 8
+      end if
+
+      ! The static response is the zero-frequency member of the same family,
+      ! so it is solved here as a thirteenth frequency, appended after the
+      ! Casimir-Polder twelve so that every slice below keeps its indexing,
+      ! and handed out through `static_response` rather than solved again.
+      n_freq = size(pot%frequencies)
+      allocate (with_zero(n_freq + 1))
+      with_zero(1:n_freq) = pot%frequencies
+      with_zero(n_freq + 1) = 0.0_dp
       ! One call rather than one per combination of present arguments: `aux` here
       ! is an optional dummy, not a local, and an absent one passed on as an actual
       ! argument arrives absent at the other end.
       call distributed_dynamic_cross(mol, scf%orbitals, scf%orbital_energies, &
-                                     pot%n_occ, pot%frequencies, both, both, &
-                                     all_blocks, centroids, error, n_core=core, &
+                                     pot%n_occ, with_zero, both, drives, &
+                                     solved, centroids, error, n_core=core, &
                                      hessian=hessian, progress=progress, aux=aux, &
                                      max_iter=max_iter, tol=tol, route=route, &
-                                     allow_unconverged=allow_unconverged, batch=batch)
+                                     allow_unconverged=allow_unconverged, batch=batch, &
+                                     static_response=u_all, b_ao=b_ao)
       if (error%has_error()) return
-      deallocate (both)
+      deallocate (both, drives, with_zero)
 
-      n_freq = size(pot%frequencies)
+      ! The twelve-by-twelve table every slice below reads, the four dependent
+      ! drive columns filled by linearity.
+      allocate (all_blocks(n_both, n_both, size(solved, 3), size(solved, 4)))
+      all_blocks(:, 1:3, :, :) = solved(:, 1:3, :, :)
+      if (pot%quadrupole_blocks) then
+         do d = 1, 9
+            if (drive_of(d) > 0) then
+               all_blocks(:, 3 + d, :, :) = solved(:, drive_of(d), :, :)
+            else
+               all_blocks(:, 3 + d, :, :) = -solved(:, drive_of(QXX), :, :) &
+                                            - solved(:, drive_of(QYY), :, :)
+            end if
+         end do
+      end if
+      deallocate (solved)
+      if (present(static_response)) then
+         allocate (static_response, source=u_all(:, :, 1:3))
+      end if
+      deallocate (u_all)
+
       if (allocated(pot%centroids)) deallocate (pot%centroids)
       allocate (pot%centroids, source=centroids)
       allocate (pot%dynamic_pol(3, 3, pot%n_lmo, n_freq))
-      pot%dynamic_pol = all_blocks(1:3, 1:3, :, :)
+      pot%dynamic_pol = all_blocks(1:3, 1:3, :, 1:n_freq)
+      if (.not. pot%quadrupole_blocks) then
+         deallocate (all_blocks)
+         return
+      end if
+
       allocate (raw(size(buck, 3), 3, pot%n_lmo, n_freq))
-      raw = all_blocks(4:n_both, 1:3, :, :)
+      raw = all_blocks(4:n_both, 1:3, :, 1:n_freq)
       allocate (pot%dipquad(3, 3, 3, pot%n_lmo, n_freq))
       allocate (pot%dipquad_pre(3, 3, 3, pot%n_lmo, n_freq))
       do f = 1, n_freq
@@ -861,7 +956,7 @@ contains
       ! not. Confirmed against GAMESS's own molecular `QUAD-QUAD POLARIZABILITY`,
       ! which `$MAKEFP MOLPOL=.TRUE.` writes with no translation applied.
       allocate (qq(size(buck, 3), size(buck, 3), pot%n_lmo, n_freq))
-      qq = all_blocks(4:n_both, 4:n_both, :, :)
+      qq = all_blocks(4:n_both, 4:n_both, :, 1:n_freq)
       deallocate (all_blocks)
 
       allocate (pot%quadquad(3, 3, 3, 3, pot%n_lmo, n_freq))
@@ -1339,61 +1434,65 @@ contains
       end do
       write (unit, "(A)") " STOP"
 
-      ! The dipole-quadrupole block, 27 values a point. The slot order is
-      ! `(a-1)*9 + (c-1)*3 + b` -- the *first* quadrupole index runs fastest, which
-      ! is transposed from how the `DQSHIFT` source reads, and was pinned by
-      ! requiring the pre-shift tensor's symmetry in `bc` to come back.
-      write (unit, "(A)") " DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS"
-      do f = 1, size(pot%frequencies)
-         do k = 1, pot%n_lmo
-            write (label, "(A,I3)") "CT", k
-            do a = 1, 3
-               do b = 1, 3
-                  do c = 1, 3
-                     wide((a - 1)*9 + (c - 1)*3 + b) = pot%dipquad(a, b, c, k, f)
-                  end do
-               end do
-            end do
-            if (k == 1) then
-               write (unit, "(A,3F15.10,A,F9.6,A)") trim(label), &
-                  pot%centroids(:, k), " -- FOR W=", pot%frequencies(f), "I A.U."
-            else
-               write (unit, "(A,3F15.10)") trim(label), pot%centroids(:, k)
-            end if
-            call write_values(unit, wide, 16, 10, 4)
-         end do
-      end do
-      write (unit, "(A)") " STOP"
-
-      ! The quadrupole-quadrupole block, 81 values a point, written with the last
-      ! index fastest, the last of the four varying first. No
-      ! transposition here, unlike the dipole-quadrupole slots: every `QQSHIFT`
-      ! term is symmetric within each index pair, so the written values are too.
-      write (unit, "(A)") " LMOQQPOL DYNAMIC POLARIZABLE POINTS"
-      do f = 1, size(pot%frequencies)
-         do k = 1, pot%n_lmo
-            write (label, "(A,I3)") "CT", k
-            i = 0
-            do a = 1, 3
-               do b = 1, 3
-                  do c = 1, 3
-                     do e = 1, 3
-                        i = i + 1
-                        broad(i) = pot%quadquad(a, b, c, e, k, f)
+      if (allocated(pot%dipquad)) then
+         ! The dipole-quadrupole block, 27 values a point. The slot order is
+         ! `(a-1)*9 + (c-1)*3 + b` -- the *first* quadrupole index runs fastest, which
+         ! is transposed from how the `DQSHIFT` source reads, and was pinned by
+         ! requiring the pre-shift tensor's symmetry in `bc` to come back.
+         write (unit, "(A)") " DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS"
+         do f = 1, size(pot%frequencies)
+            do k = 1, pot%n_lmo
+               write (label, "(A,I3)") "CT", k
+               do a = 1, 3
+                  do b = 1, 3
+                     do c = 1, 3
+                        wide((a - 1)*9 + (c - 1)*3 + b) = pot%dipquad(a, b, c, k, f)
                      end do
                   end do
                end do
+               if (k == 1) then
+                  write (unit, "(A,3F15.10,A,F9.6,A)") trim(label), &
+                     pot%centroids(:, k), " -- FOR W=", pot%frequencies(f), "I A.U."
+               else
+                  write (unit, "(A,3F15.10)") trim(label), pot%centroids(:, k)
+               end if
+               call write_values(unit, wide, 16, 10, 4)
             end do
-            if (k == 1) then
-               write (unit, "(A,3F15.10,A,F9.6,A)") trim(label), &
-                  pot%centroids(:, k), " -- FOR W=", pot%frequencies(f), "I A.U."
-            else
-               write (unit, "(A,3F15.10)") trim(label), pot%centroids(:, k)
-            end if
-            call write_values(unit, broad, 16, 10, 4)
          end do
-      end do
-      write (unit, "(A)") " STOP"
+         write (unit, "(A)") " STOP"
+      end if
+
+      if (allocated(pot%quadquad)) then
+         ! The quadrupole-quadrupole block, 81 values a point, written with the last
+         ! index fastest, the last of the four varying first. No
+         ! transposition here, unlike the dipole-quadrupole slots: every `QQSHIFT`
+         ! term is symmetric within each index pair, so the written values are too.
+         write (unit, "(A)") " LMOQQPOL DYNAMIC POLARIZABLE POINTS"
+         do f = 1, size(pot%frequencies)
+            do k = 1, pot%n_lmo
+               write (label, "(A,I3)") "CT", k
+               i = 0
+               do a = 1, 3
+                  do b = 1, 3
+                     do c = 1, 3
+                        do e = 1, 3
+                           i = i + 1
+                           broad(i) = pot%quadquad(a, b, c, e, k, f)
+                        end do
+                     end do
+                  end do
+               end do
+               if (k == 1) then
+                  write (unit, "(A,3F15.10,A,F9.6,A)") trim(label), &
+                     pot%centroids(:, k), " -- FOR W=", pot%frequencies(f), "I A.U."
+               else
+                  write (unit, "(A,3F15.10)") trim(label), pot%centroids(:, k)
+               end if
+               call write_values(unit, broad, 16, 10, 4)
+            end do
+         end do
+         write (unit, "(A)") " STOP"
+      end if
 
       write (unit, "(A)") " PROJECTION BASIS SET"
       do i = 1, size(pot%basis_lines)

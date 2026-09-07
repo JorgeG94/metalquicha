@@ -48,6 +48,8 @@ contains
                   new_unittest("no_fragments", test_no_fragments), &
                   new_unittest("xtb_method_spelling", test_method_xtb), &
                   new_unittest("logger_level", test_log_level), &
+                  new_unittest("memory_budget", test_memory_gb), &
+                  new_unittest("efp_dispersion_blocks", test_efp_dispersion), &
                   new_unittest("hessian_settings", test_hessian), &
                   new_unittest("allow_crap_scf", test_allow_crap_scf), &
                   new_unittest("scf_tolerances_record_being_named", test_scf_tolerances), &
@@ -296,6 +298,52 @@ contains
       call check(error, config%method, METHOD_TYPE_GFN1, &
                  "the bare spelling should reach the same method")
    end subroutine test_method_xtb
+
+   subroutine test_efp_dispersion(error)
+      !! keywords.efp.dispersion switches the quadrupole blocks, defaults to all
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf"', "MakeFP", '"efp": {"dispersion": "dipole"}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%efp_quadrupole_blocks, "dipole should switch the blocks off")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf"', "MakeFP", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, config%efp_quadrupole_blocks, "the blocks should default to on")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf"', "MakeFP", '"efp": {"dispersion": "octupole"}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "an unknown dispersion word must be refused")
+   end subroutine test_efp_dispersion
+
+   subroutine test_memory_gb(error)
+      !! system.memory_gb reaches memory_gb, and stays negative when absent
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "XTB-GFN2"', "Energy", "", &
+                      '"memory_gb": 120.5', two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, abs(config%memory_gb - 120.5_dp) < 1.0e-12_dp, &
+                 "memory_gb should carry the deck's figure")
+      if (allocated(error)) return
+
+      call write_deck('"method": "XTB-GFN2"', "Energy", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, config%memory_gb < 0.0_dp, &
+                 "memory_gb should stay negative, meaning the machine decides")
+   end subroutine test_memory_gb
 
    subroutine test_log_level(error)
       !! system.logger.level reaches log_level, and defaults when absent

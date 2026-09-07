@@ -35,6 +35,10 @@ module test_mqc_czt_mp2
    real(dp), parameter :: ANG = 1.8897261254578281_dp
    real(dp), parameter :: E_TOL = 1.0e-11_dp
    real(dp), parameter :: D_TOL = 1.0e-9_dp
+   real(dp), parameter :: FITTED_RESPONSE_BOUND = 1.0e-6_dp
+      !! How far the fitted Z-vector operator may move the RI-MP2 gradient
+      !! from the exact one. Water/6-31G under cc-pVTZ-RIFIT measured 4e-8;
+      !! the bound leaves room for a coarser fitting set, not for a wrong block.
 
    ! The gradient tests' geometry, in Bohr already: the same water the PySCF
    ! reference below was computed at, so the pinned numbers mean what they say.
@@ -66,6 +70,8 @@ contains
                                test_frozen_gradient_refusal), &
                   new_unittest("ri_mp2_frozen_gradient_matches_the_numpy_reference", &
                                test_ri_frozen_gradient_reference), &
+                  new_unittest("ri_mp2_fitted_response_stays_within_the_fitting_error", &
+                               test_ri_frozen_gradient_fitted_response), &
                   new_unittest("ri_mp2_frozen_gradient_differences_the_energy", &
                                test_ri_frozen_gradient_fd), &
                   new_unittest("ri_mp2_frozen_gradient_integral_paths_agree", &
@@ -463,13 +469,18 @@ contains
                  "the gradient must refuse a core that freezes everything")
    end subroutine test_frozen_gradient_refusal
 
-   subroutine water_ri_gradient(basis, aux_basis, frozen, gradient, err, force_direct)
+   subroutine water_ri_gradient(basis, aux_basis, frozen, gradient, err, force_direct, &
+                                fit_response)
       !! One converged SCF at `WATER_B`, then the frozen-core RI-MP2 gradient
       character(len=*), intent(in) :: basis, aux_basis
       integer, intent(in) :: frozen
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: err
       logical, intent(in), optional :: force_direct
+      logical, intent(in), optional :: fit_response
+         !! Passed through. Absent is the production default, a fitted Z-vector
+         !! operator; the tests holding the gradient to an exact reference pass
+         !! `.false.`.
 
       type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
@@ -483,7 +494,7 @@ contains
       if (err%has_error()) return
       call czt_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
                                gradient, err, n_frozen=frozen, &
-                               force_direct=force_direct)
+                               force_direct=force_direct, fit_response=fit_response)
       call mol%destroy()
       call aux%destroy()
    end subroutine water_ri_gradient
@@ -510,13 +521,44 @@ contains
       real(dp), allocatable :: gradient(:, :)
       type(error_t) :: err
 
-      call water_ri_gradient("6-31g", "cc-pvtz-rifit", 1, gradient, err)
+      call water_ri_gradient("6-31g", "cc-pvtz-rifit", 1, gradient, err, &
+                             fit_response=.false.)
       call check(error,.not. err%has_error(), &
                  "the frozen-core RI gradient must run: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, maxval(abs(gradient - REFERENCE)) < 2.0e-9_dp, &
                  "the frozen-core RI-MP2 gradient must match the numpy reference")
    end subroutine test_ri_frozen_gradient_reference
+
+   subroutine test_ri_frozen_gradient_fitted_response(error)
+      !! The default, fitted Z-vector operator stays within the fitting error
+      !! of the exact one
+      !!
+      !! Production fits the Z-vector's operator and the reference potentials
+      !! whatever the reference was: the exact operator is a four-centre Fock
+      !! build per iteration and was most of an unfitted gradient's wall clock.
+      !! What that costs in the answer is the fitting error of the auxiliary
+      !! basis, bounded here against the same numpy reference the exact path
+      !! meets to 2e-9.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), parameter :: REFERENCE(3, 3) = reshape( &
+                             [0.0_dp, 0.0_dp, 9.512385746353e-03_dp, &
+                              0.0_dp, 2.247565931183e-02_dp, -4.756192873177e-03_dp, &
+                              0.0_dp, -2.247565931183e-02_dp, -4.756192873176e-03_dp], &
+                             [3, 3])
+      real(dp), allocatable :: gradient(:, :)
+      type(error_t) :: err
+
+      call water_ri_gradient("6-31g", "cc-pvtz-rifit", 1, gradient, err)
+      call check(error,.not. err%has_error(), &
+                 "the fitted-response RI gradient must run: "//err%get_full_trace())
+      if (allocated(error)) return
+      print "(A,ES10.2)", "   fitted Z-vector against the exact reference: ", &
+         maxval(abs(gradient - REFERENCE))
+      call check(error, maxval(abs(gradient - REFERENCE)) < FITTED_RESPONSE_BOUND, &
+                 "the fitted Z-vector operator must stay within the fitting error "// &
+                 "of the exact gradient")
+   end subroutine test_ri_frozen_gradient_fitted_response
 
    subroutine test_ri_frozen_gradient_fd(error)
       !! The frozen-core RI gradient differences the frozen-core RI energy
@@ -532,7 +574,8 @@ contains
       type(error_t) :: err
       integer :: iatom, comp
 
-      call water_ri_gradient("sto-3g", "cc-pvdz-rifit", 1, gradient, err)
+      call water_ri_gradient("sto-3g", "cc-pvdz-rifit", 1, gradient, err, &
+                             fit_response=.false.)
       call check(error,.not. err%has_error(), &
                  "the frozen-core RI gradient must run: "//err%get_full_trace())
       if (allocated(error)) return
@@ -609,7 +652,8 @@ contains
 !$    saved = omp_get_max_threads()
 !$    call omp_set_num_threads(1)
 
-      call water_ri_gradient("6-31g", "cc-pvdz-rifit", 1, stored, err)
+      call water_ri_gradient("6-31g", "cc-pvdz-rifit", 1, stored, err, &
+                             fit_response=.false.)
       call check(error,.not. err%has_error(), &
                  "the stored path must run: "//err%get_full_trace())
       if (allocated(error)) then
@@ -617,7 +661,7 @@ contains
          return
       end if
       call water_ri_gradient("6-31g", "cc-pvdz-rifit", 1, direct, err, &
-                             force_direct=.true.)
+                             force_direct=.true., fit_response=.false.)
       call check(error,.not. err%has_error(), &
                  "the direct path must run: "//err%get_full_trace())
       if (allocated(error)) then

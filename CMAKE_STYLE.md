@@ -144,7 +144,8 @@ each subproject's own `option()` sees.
 
 `CMakePresets.json` carries the configurations that are otherwise a remembered
 string of `-D` flags: `default`, `debug`, `libcint`, `xtb-only`, `serial`,
-`coverage`, `perlmutter`. Add one when a configuration has bitten someone twice.
+`coverage`, `perlmutter`, `perlmutter-cpu`. Add one when a configuration has
+bitten someone twice.
 
 ```
 cmake --preset perlmutter && cmake --build --preset perlmutter
@@ -209,3 +210,59 @@ Real verification is `validation/run_cuest_validation.sh`, which has the
 reference energies. Locally the backend can only be compile-checked -- see the
 stub-`libcuest.so` recipe, which lets CMake do the whole build rather than
 compiling files by hand in dependency order.
+
+### The `perlmutter-cpu` preset, and why it is not libsci
+
+The CPU ab initio path on a Perlmutter node, under `PrgEnv-gnu`. Its one
+setting that is not shared with the GPU preset is the BLAS, and it has to be
+spelled out because the machine's default is wrong for this program in two
+separate ways.
+
+The `ftn` wrapper adds Cray libsci to every link, and with `-fopenmp` it adds
+the threaded copy, `libsci_gnu_mp`. `-DBLAS_LIBRARIES=/opt/cray/pe/lib64/libsci_gnu.so.6`
+does not change that: the wrapper's copy is named first and binds every `dgemm`
+and `dgetrf` in the binary, whatever the cache says. Measured on one node
+(libsci 26.03, one 6475 x 6475 `dgetrf`, the response solver's operator for
+adenine in 6-311G**):
+
+| Layout | Time |
+|---|---|
+| libsci, one thread | 3.8 s |
+| libsci, 4 / 16 / 64 threads | 1.6 / 9.6 / 70 s |
+| libsci, 128 threads | did not finish in 120 s |
+| libsci, thirteen concurrent calls | segfault, or `DGETRF parameter 1 had an illegal value` |
+| MKL sequential, thirteen concurrent calls | 4.1 s for all thirteen |
+| MKL threaded, one call on 128 threads | 0.5 s |
+
+So libsci threads *backwards* -- more threads, more time -- and its LAPACK is
+not re-entrant, which is what the MakeFP segfault at 128 threads was. Neither
+knob the launcher sets reaches it: libsci ignores `OPENBLAS_NUM_THREADS` and
+reads `CRAYBLAS_NUM_THREADS`, which `tools/run.sh` now pins too. Pinned, a
+libsci build finishes, on one core per factorization.
+
+The preset therefore asks for `Intel10_64lp_seq`, the same sequential MKL the
+rest of the project assumes, and needs `MKLROOT` in the shell before
+`cmake --preset perlmutter-cpu`:
+
+```
+export MKLROOT=/opt/intel/oneapi/mkl/2025.3      # or `module load intel`
+```
+
+Asking is not enough on its own. libsci reaches the link line anyway, through
+`find_package(MPI)`'s probe of the wrapper and again appended by the wrapper at
+every link while the module is loaded, and the dynamic linker binds each symbol
+to the first library in the executable's dependency order that defines it. So
+`MqcDependencies.cmake` names the requested BLAS as link *options*, which puts
+it ahead of every library, and `mqc_check_blas_binding` reads the built
+executable's `DT_NEEDED` list after each link and fails the build if libsci
+still comes first. The check is there because the first version of this was a
+configure-time test, and a rebuild from a fresh shell -- module loaded again --
+relinked against libsci without a word: the "MKL" binary was running libsci's
+`dgemm`, and only a profile showing OpenBLAS kernel names gave it away. Read
+the "BLAS binding" line the build prints. `LD_DEBUG=bindings` on the executable
+is the ground truth when in doubt.
+
+MakeFP on adenine/6-311G** went from not finishing in fifteen minutes to about
+ten seconds at 128 threads on this preset; the RI-MP2 gradient on the same
+molecule in cc-pVDZ from 21 s to about 7 s, thirteen of which had been one
+five-deep loop on one core.

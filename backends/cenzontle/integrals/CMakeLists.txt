@@ -8,4 +8,5 @@ target_sources(
           mqc_czt_direct.f90
           mqc_czt_hess_ints.f90
           mqc_czt_multipole.f90
-          mqc_czt_esp.f90)
+          mqc_czt_esp.f90
+          mqc_czt_gemm_threads.f90)

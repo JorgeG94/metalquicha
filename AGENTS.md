@@ -471,6 +471,28 @@ A benchmark suite that checks them lives on `perf/benchmark-suite`.
 * **Repeat before believing a timing.** DFT energies repeat to under one per
   cent; gradients used to vary by sixteen, and a single-shot comparison across
   that produced a phantom twenty per cent regression during this work.
+* **On Perlmutter, do not let Cray libsci be the BLAS.** The `ftn` wrapper
+  links it whatever `BLAS_LIBRARIES` says; its `dgetrf` gets slower with every
+  thread (3.8 s on one, 70 s on 64) and is not re-entrant, which segfaulted
+  MakeFP at 128 threads. Use the `perlmutter-cpu` preset (sequential MKL, put
+  ahead of libsci and checked after every link); see `CMAKE_STYLE.md`. The BLAS being
+  sequential means a big GEMM on the unfragmented path has to be split over
+  threads by hand -- `gemm_over_columns` and `gemm_over_inner` in
+  `mqc_czt_gemm_threads`, and `getrf_threaded` for an LU -- or it runs on one
+  core while 127 wait. `perf record -F 49` and binning the samples per second
+  by symbol finds every such phase in minutes; `perf_event_paranoid` is 2 on
+  Perlmutter compute nodes.
+* **Memory decisions read the machine, or the deck.** `memory_budget` in
+  `mqc_memory` returns `system.memory_gb` when the deck set it, else a share of
+  MemAvailable from /proc/meminfo, else the caller's blind constant. The
+  response solver plans on `RESPONSE_BUDGET_SHARE` of the machine's figure.
+  Fixed laptop-sized limits sent a 545-function MakeFP on a 500 GB node down a
+  fourteen-hour column build when the transform it refused needed a hundred
+  gigabytes and forty seconds.
+* **`tools/run.sh` runs `build/mqc` unless told otherwise.** `-b <exe>` or
+  `MQC_BINARY` picks another. A LibSci-linked `build/mqc` segfaults in the
+  fitted Coulomb build at 956 functions, because that build calls the BLAS from
+  every thread; the same deck runs on the `perlmutter-cpu` build.
 
 ## Compiler Support
 

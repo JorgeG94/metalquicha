@@ -26,7 +26,8 @@ module mqc_czt_direct
    !! own block, so that permutation must not be counted again. Getting it wrong
    !! produces a Fock matrix wrong by a factor of two on its diagonal blocks
    !! only; `check_direct` compares against the in-core build elementwise.
-   use pic_types, only: dp, int64, int_index
+   use pic_types, only: dp, int64, int_index, default_int
+   use pic_blas_interfaces, only: pic_dgemm_x
    use pic_sorting, only: sort_index
    use pic_timer, only: timer_type
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
@@ -53,7 +54,14 @@ module mqc_czt_direct
    public :: DEFAULT_SCREEN_TOL
 
    real(dp), parameter :: DEFAULT_SCREEN_TOL = 1.0e-11_dp
-   integer, parameter :: FOCK_TILE_FUNCS = 16
+   integer, parameter :: GEMM_SETS = 16
+      !! Batches at least this wide contract each quartet through the BLAS
+      !! rather than element by element. Below it the products are too thin to
+      !! repay the call.
+   integer, parameter :: GEMM_ELEMENTS = 64
+      !! And the quartet block needs this many integrals for the same reason:
+      !! an `(ss|ss)` quartet is one number.
+   integer, parameter :: FOCK_TILE_FUNCS = 32
       !! Functions per shell tile in the batched build's quartet loop. About
       !! one heavy atom in a double-zeta basis; the twelve blocks a tile
       !! quartet touches are `12 * FOCK_TILE_FUNCS**2 * n_set` doubles.
@@ -620,7 +628,8 @@ contains
    end subroutine build_fock_direct
 
    subroutine build_fock_direct_many(mol, h, densities, bounds, focks, stats, error, &
-                                     screen_tol, k_scale, j_scale, omega, density_screen)
+                                     screen_tol, k_scale, j_scale, omega, density_screen, &
+                                     antisymmetric)
       !! F = H + J - K/2 for many densities, over one pass of the integrals
       !!
       !! In a direct scheme the integral evaluation dominates and the contractions
@@ -642,13 +651,20 @@ contains
       !! densities, the accumulator and the result, three copies of
       !! `n_set * n^2`, whatever the thread count.
       !!
-      !! **Symmetric densities only.** The six updates below assume `D` is
-      !! symmetric in two places: the factor of two for `s1 /= s2` stands in for
-      !! the `mu <-> nu` permutation without ever adding `D(nu,mu)`, and likewise
-      !! for `s3 /= s4`. Hand this an antisymmetric density and those
-      !! permutations double where they should cancel, so the Coulomb term comes
-      !! back at twice its value instead of at zero, and nothing here detects it.
-      !! Use `build_fock_direct_nosym` for that case.
+      !! **Symmetric densities, or antisymmetric ones if said so.** The six
+      !! updates below assume `D` is symmetric in two places: the factor of two
+      !! for `s1 /= s2` stands in for the `mu <-> nu` permutation without ever
+      !! adding `D(nu,mu)`, and likewise for `s3 /= s4`. Hand this an
+      !! antisymmetric density unannounced and those permutations double where
+      !! they should cancel, so the Coulomb term comes back at twice its value
+      !! instead of at zero, and nothing here detects it. Announced through
+      !! `antisymmetric`, the same accumulation is exact: the Coulomb term is
+      !! left out, since it vanishes, and the pair-swapped tuples the final
+      !! symmetrisation stands in for carry the opposite sign for an
+      !! antisymmetric `D`, so the result is antisymmetrised instead. Every set
+      !! in the batch has the one symmetry. `build_fock_direct_nosym` writes the
+      !! permutations out and needs neither assumption, at several times the
+      !! cost.
 !$    use omp_lib, only: omp_lock_kind, omp_init_lock, omp_set_lock, omp_unset_lock, omp_destroy_lock
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: h(:, :)          !! Core Hamiltonian, added to every set
@@ -667,6 +683,8 @@ contains
          !! passes zero: the full-range pass has already supplied it.
       real(dp), intent(in), optional :: omega
          !! Range separation, through `env(PTR_RANGE_OMEGA)`.
+      logical, intent(in), optional :: antisymmetric
+         !! Every density in the batch is antisymmetric. Off by default.
       logical, intent(in), optional :: density_screen
          !! Also skip a quartet when the largest density element it multiplies,
          !! over every set, makes its contribution negligible. Off by default,
@@ -688,8 +706,12 @@ contains
       integer :: na, ia, p12, p34, p13, p24, p14, p23
       real(dp), allocatable :: dd12(:, :), dd34(:, :), dd13(:, :), dd24(:, :), dd14(:, :), dd23(:, :)
       real(dp), allocatable :: gg12(:, :), gg34(:, :), gg13(:, :), gg24(:, :), gg14(:, :), gg23(:, :)
-      real(dp) :: qq, kq
-      logical :: weight_density
+      real(dp), allocatable :: v1234(:, :), v2413(:, :), v2314(:, :)
+      integer :: n12, n34, n13, n24, n14, n23
+      integer(default_int) :: bm, ldv
+      integer :: w12(4), w34(4), w13(4), w24(4), w14(4), w23(4)
+      real(dp) :: qq, kq, fold
+      logical :: weight_density, anti
       type(eri_shell_table_t) :: tab
       type(c_ptr) :: opt
       integer :: s1, s2, s3, s4
@@ -795,6 +817,13 @@ contains
       if (present(k_scale)) kx = k_scale
       jxm = 1.0_dp
       if (present(j_scale)) jxm = j_scale
+      anti = .false.
+      if (present(antisymmetric)) anti = antisymmetric
+      fold = 1.0_dp
+      if (anti) then
+         jxm = 0.0_dp
+         fold = -1.0_dp
+      end if
       do iset = 1, n_set
          d_half(iset, :, :) = 0.5_dp*densities(:, :, iset)
       end do
@@ -865,14 +894,16 @@ contains
 !$    end do
 
       !$omp parallel default(none) &
-      !$omp    shared(kx, jxm, env_many, mol, tab, bq, dsh, weight_density, d_half, g, dims, offs, &
+      !$omp    shared(kx, jxm, fold, env_many, mol, tab, bq, dsh, weight_density, d_half, g, dims, offs, &
       !$omp           tile_first, tile_last, tp_p, tp_q, tp_r, ntp, tol, opt, n, block_max, n_set, &
       !$omp           focks, h, dsh_all, kq, locks, fo, tw, tw_max) &
       !$omp    private(itask, ij, kl, tp, tq, tr, ts, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, &
       !$omp            jscaled, kscaled, buf, iset, active, na, ia, qq, &
       !$omp            p12, p34, p13, p24, p14, p23, dd12, dd34, dd13, dd24, dd14, dd23, &
-      !$omp            gg12, gg34, gg13, gg24, gg14, gg23, &
+      !$omp            gg12, gg34, gg13, gg24, gg14, gg23, v1234, v2413, v2314, &
+      !$omp            n12, n34, n13, n24, n14, n23, bm, ldv, &
+      !$omp            w12, w34, w13, w24, w14, w23, &
       !$omp            l12, l34, l13, l24, l14, l23, hits, hit_ts, hit_task, all_ts, all_task, nhit, &
       !$omp            fp, fq, fr, fs, wp, wq, wr, ws) &
       !$omp    reduction(+:n_total, n_computed, n_screened)
@@ -882,7 +913,20 @@ contains
                 dd24(n_set, block_max**2), dd14(n_set, block_max**2), dd23(n_set, block_max**2))
       allocate (gg12(n_set, block_max**2), gg34(n_set, block_max**2), gg13(n_set, block_max**2), &
                 gg24(n_set, block_max**2), gg14(n_set, block_max**2), gg23(n_set, block_max**2))
+      allocate (v1234(block_max**2, block_max**2), v2413(block_max**2, block_max**2), &
+                v2314(block_max**2, block_max**2))
       ! The six tile-local blocks, zero on entry and left zero by every flush.
+      ! The window of each tile block a computed quartet has written into,
+      ! `[a_lo, a_hi, b_lo, b_hi]` in tile-local functions. A flush adds and
+      ! zeroes that window alone: with 94 per cent of the quartets screened
+      ! away a tile pair often computes a handful of them, and flushing the
+      ! whole block for each was a fifth of a pass.
+      call reset_window(w12)
+      call reset_window(w34)
+      call reset_window(w13)
+      call reset_window(w24)
+      call reset_window(w14)
+      call reset_window(w23)
       allocate (l12(n_set, tw_max, tw_max), l34(n_set, tw_max, tw_max), l13(n_set, tw_max, tw_max), &
                 l24(n_set, tw_max, tw_max), l14(n_set, tw_max, tw_max), l23(n_set, tw_max, tw_max))
       l12 = 0.0_dp
@@ -962,6 +1006,12 @@ contains
                            cycle
                         end if
                         n_computed = n_computed + 1_int64
+                        call grow_window(w12, o1 - fp, d1, o2 - fq, d2)
+                        call grow_window(w34, o3 - fr, d3, o4 - fs, d4)
+                        call grow_window(w13, o1 - fp, d1, o3 - fr, d3)
+                        call grow_window(w24, o2 - fq, d2, o4 - fs, d4)
+                        call grow_window(w14, o1 - fp, d1, o4 - fs, d4)
+                        call grow_window(w23, o2 - fq, d2, o3 - fr, d3)
 
                         ! Which sets this quartet can touch above the tolerance: the same
                         ! bound as the quartet screen, per set. A response density is
@@ -1003,6 +1053,135 @@ contains
                               hit_ts(active(ia)) = .true.
                               hit_task(active(ia)) = .true.
                            end do
+                        end if
+                        ! A wide batch on a quartet worth it: the six updates as six
+                        ! matrix products. Gather the six density blocks of every set,
+                        ! `(n_set, d_a d_b)`; lay the integral block out in the three
+                        ! index groupings the products need -- `(f1 f2, f3 f4)` is `buf`
+                        ! as it is, the other two are permuted copies of a few hundred
+                        ! numbers; then
+                        !
+                        !     gg12 += j (dd34 V1234^T)    gg34 += j (dd12 V1234)
+                        !     gg13 -= k (dd24 V2413)      gg24 -= k (dd13 V2413^T)
+                        !     gg14 -= k (dd23 V2314)      gg23 -= k (dd14 V2314^T)
+                        !
+                        ! each `(n_set x d d) (d d x d d)`, and scatter the six output
+                        ! blocks to the tiles. Elementwise, a 104-set batch spent 70 per
+                        ! cent of a pass in these updates; as products the BLAS runs them.
+                        if (na == n_set .and. n_set >= GEMM_SETS .and. d1*d2*d3*d4 >= GEMM_ELEMENTS) then
+                           n12 = d1*d2
+                           n34 = d3*d4
+                           n13 = d1*d3
+                           n24 = d2*d4
+                           n14 = d1*d4
+                           n23 = d2*d3
+                           do f2 = 1, d2
+                              do f1 = 1, d1
+                                 dd12(:, f1 + (f2 - 1)*d1) = d_half(:, o1 + f1, o2 + f2)
+                              end do
+                           end do
+                           do f4 = 1, d4
+                              do f3 = 1, d3
+                                 dd34(:, f3 + (f4 - 1)*d3) = d_half(:, o3 + f3, o4 + f4)
+                              end do
+                           end do
+                           do f3 = 1, d3
+                              do f1 = 1, d1
+                                 dd13(:, f1 + (f3 - 1)*d1) = d_half(:, o1 + f1, o3 + f3)
+                              end do
+                           end do
+                           do f4 = 1, d4
+                              do f2 = 1, d2
+                                 dd24(:, f2 + (f4 - 1)*d2) = d_half(:, o2 + f2, o4 + f4)
+                              end do
+                           end do
+                           do f4 = 1, d4
+                              do f1 = 1, d1
+                                 dd14(:, f1 + (f4 - 1)*d1) = d_half(:, o1 + f1, o4 + f4)
+                              end do
+                           end do
+                           do f3 = 1, d3
+                              do f2 = 1, d2
+                                 dd23(:, f2 + (f3 - 1)*d2) = d_half(:, o2 + f2, o3 + f3)
+                              end do
+                           end do
+                           do f4 = 1, d4
+                              do f3 = 1, d3
+                                 p34 = f3 + (f4 - 1)*d3
+                                 do f2 = 1, d2
+                                    p24 = f2 + (f4 - 1)*d2
+                                    p23 = f2 + (f3 - 1)*d2
+                                    do f1 = 1, d1
+                                       idx = f1 + (f2 - 1)*d1 + (f3 - 1)*d1*d2 + (f4 - 1)*d1*d2*d3
+                                       value = buf(idx)
+                                       v1234(f1 + (f2 - 1)*d1, p34) = value
+                                       v2413(p24, f1 + (f3 - 1)*d1) = value
+                                       v2314(p23, f1 + (f4 - 1)*d1) = value
+                                    end do
+                                 end do
+                              end do
+                           end do
+                           ! Through the leading dimensions rather than sections: the
+                           ! integral blocks sit in arrays wider than the block, and a
+                           ! section of one is copied on every call. Each output block is
+                           ! written by exactly one product, so `beta` is zero and nothing
+                           ! is zeroed beforehand.
+                           bm = int(n_set, default_int)
+                           ldv = int(block_max**2, default_int)
+                           if (jxm /= 0.0_dp) then
+                              call pic_dgemm_x("N", "T", bm, int(n12, default_int), int(n34, default_int), &
+                                               jxm*deg, dd34, bm, v1234, ldv, 0.0_dp, gg12, bm)
+                              call pic_dgemm_x("N", "N", bm, int(n34, default_int), int(n12, default_int), &
+                                               jxm*deg, dd12, bm, v1234, ldv, 0.0_dp, gg34, bm)
+                           else
+                              gg12(:, 1:n12) = 0.0_dp
+                              gg34(:, 1:n34) = 0.0_dp
+                           end if
+                           call pic_dgemm_x("N", "N", bm, int(n13, default_int), int(n24, default_int), &
+                                            -kq*deg, dd24, bm, v2413, ldv, 0.0_dp, gg13, bm)
+                           call pic_dgemm_x("N", "T", bm, int(n24, default_int), int(n13, default_int), &
+                                            -kq*deg, dd13, bm, v2413, ldv, 0.0_dp, gg24, bm)
+                           call pic_dgemm_x("N", "N", bm, int(n14, default_int), int(n23, default_int), &
+                                            -kq*deg, dd23, bm, v2314, ldv, 0.0_dp, gg14, bm)
+                           call pic_dgemm_x("N", "T", bm, int(n23, default_int), int(n14, default_int), &
+                                            -kq*deg, dd14, bm, v2314, ldv, 0.0_dp, gg23, bm)
+                           do f2 = 1, d2
+                              do f1 = 1, d1
+                                 l12(:, o1 + f1 - fp, o2 + f2 - fq) = l12(:, o1 + f1 - fp, o2 + f2 - fq) &
+                                                                      + gg12(:, f1 + (f2 - 1)*d1)
+                              end do
+                           end do
+                           do f4 = 1, d4
+                              do f3 = 1, d3
+                                 l34(:, o3 + f3 - fr, o4 + f4 - fs) = l34(:, o3 + f3 - fr, o4 + f4 - fs) &
+                                                                      + gg34(:, f3 + (f4 - 1)*d3)
+                              end do
+                           end do
+                           do f3 = 1, d3
+                              do f1 = 1, d1
+                                 l13(:, o1 + f1 - fp, o3 + f3 - fr) = l13(:, o1 + f1 - fp, o3 + f3 - fr) &
+                                                                      + gg13(:, f1 + (f3 - 1)*d1)
+                              end do
+                           end do
+                           do f4 = 1, d4
+                              do f2 = 1, d2
+                                 l24(:, o2 + f2 - fq, o4 + f4 - fs) = l24(:, o2 + f2 - fq, o4 + f4 - fs) &
+                                                                      + gg24(:, f2 + (f4 - 1)*d2)
+                              end do
+                           end do
+                           do f4 = 1, d4
+                              do f1 = 1, d1
+                                 l14(:, o1 + f1 - fp, o4 + f4 - fs) = l14(:, o1 + f1 - fp, o4 + f4 - fs) &
+                                                                      + gg14(:, f1 + (f4 - 1)*d1)
+                              end do
+                           end do
+                           do f3 = 1, d3
+                              do f2 = 1, d2
+                                 l23(:, o2 + f2 - fq, o3 + f3 - fr) = l23(:, o2 + f2 - fq, o3 + f3 - fr) &
+                                                                      + gg23(:, f2 + (f3 - 1)*d2)
+                              end do
+                           end do
+                           cycle
                         end if
                         if (na == n_set .or. d1*d2*d3*d4 < 32) then
                            do f4 = 1, d4
@@ -1220,13 +1399,13 @@ contains
             call touched_sets(all_ts, hit_ts, hits, nhit)
             if (nhit > 0) then
 !$             call omp_set_lock(locks(tr, ts))
-               call add_tile_block(g, l34, wr, ws, fr, fs, nhit, hits)
+               call add_tile_block(g, l34, w34, fr, fs, nhit, hits)
 !$             call omp_unset_lock(locks(tr, ts))
 !$             call omp_set_lock(locks(tq, ts))
-               call add_tile_block(g, l24, wq, ws, fq, fs, nhit, hits)
+               call add_tile_block(g, l24, w24, fq, fs, nhit, hits)
 !$             call omp_unset_lock(locks(tq, ts))
 !$             call omp_set_lock(locks(tp, ts))
-               call add_tile_block(g, l14, wp, ws, fp, fs, nhit, hits)
+               call add_tile_block(g, l14, w14, fp, fs, nhit, hits)
 !$             call omp_unset_lock(locks(tp, ts))
             end if
          end do
@@ -1235,13 +1414,13 @@ contains
          call touched_sets(all_task, hit_task, hits, nhit)
          if (nhit > 0) then
 !$          call omp_set_lock(locks(tp, tq))
-            call add_tile_block(g, l12, wp, wq, fp, fq, nhit, hits)
+            call add_tile_block(g, l12, w12, fp, fq, nhit, hits)
 !$          call omp_unset_lock(locks(tp, tq))
 !$          call omp_set_lock(locks(tp, tr))
-            call add_tile_block(g, l13, wp, wr, fp, fr, nhit, hits)
+            call add_tile_block(g, l13, w13, fp, fr, nhit, hits)
 !$          call omp_unset_lock(locks(tp, tr))
 !$          call omp_set_lock(locks(tq, tr))
-            call add_tile_block(g, l23, wq, wr, fq, fr, nhit, hits)
+            call add_tile_block(g, l23, w23, fq, fr, nhit, hits)
 !$          call omp_unset_lock(locks(tq, tr))
          end if
       end do
@@ -1253,14 +1432,15 @@ contains
       do b2 = 1, n
          do iset = 1, n_set
             do b1 = 1, n
-               focks(b1, b2, iset) = h(b1, b2) + 0.5_dp*(g(iset, b1, b2) + g(iset, b2, b1))
+               focks(b1, b2, iset) = h(b1, b2) + 0.5_dp*(g(iset, b1, b2) + fold*g(iset, b2, b1))
             end do
          end do
       end do
       !$omp end do
 
       deallocate (buf, active, hits, hit_ts, hit_task, dd12, dd34, dd13, dd24, dd14, dd23, &
-                  gg12, gg34, gg13, gg24, gg14, gg23, l12, l34, l13, l24, l14, l23)
+                  gg12, gg34, gg13, gg24, gg14, gg23, l12, l34, l13, l24, l14, l23, &
+                  v1234, v2413, v2314)
       !$omp end parallel
 
       stats%quartets_total = n_total
@@ -1303,31 +1483,32 @@ contains
       end do
    end subroutine touched_sets
 
-   subroutine add_tile_block(g, blk, wa, wb, fa, fb, nhit, hits)
-      !! Adds a tile-local block into the shared accumulator and clears it
+   subroutine add_tile_block(g, blk, w, fa, fb, nhit, hits)
+      !! Add the touched window of a tile block into the accumulator and zero it
       !!
-      !! `blk(:, 1:wa, 1:wb)` lands at `g(:, fa+1:fa+wa, fb+1:fb+wb)`. Only the
-      !! `nhit` sets in `hits` are added and zeroed -- the rest were never
-      !! written and are zero already -- and `nhit == size(g, 1)` means every
-      !! set, contiguously, without reading `hits`. The caller holds the lock
-      !! of the tile pair `(fa, fb)` belongs to.
+      !! `w` is `[a_lo, a_hi, b_lo, b_hi]` in tile-local functions, from
+      !! `grow_window`; untouched a block is left alone. Every set, or the
+      !! `nhit` sets listed in `hits`. Reset on the way out, so the caller's
+      !! next quartet starts a fresh window.
       real(dp), intent(inout) :: g(:, :, :)
       real(dp), intent(inout) :: blk(:, :, :)
-      integer, intent(in) :: wa, wb, fa, fb, nhit
+      integer, intent(inout) :: w(4)
+      integer, intent(in) :: fa, fb, nhit
       integer, intent(in) :: hits(:)
 
       integer :: a, b, ih, iset
 
+      if (w(2) < w(1)) return
       if (nhit == size(g, 1)) then
-         do b = 1, wb
-            do a = 1, wa
+         do b = w(3), w(4)
+            do a = w(1), w(2)
                g(:, fa + a, fb + b) = g(:, fa + a, fb + b) + blk(:, a, b)
                blk(:, a, b) = 0.0_dp
             end do
          end do
       else
-         do b = 1, wb
-            do a = 1, wa
+         do b = w(3), w(4)
+            do a = w(1), w(2)
                do ih = 1, nhit
                   iset = hits(ih)
                   g(iset, fa + a, fb + b) = g(iset, fa + a, fb + b) + blk(iset, a, b)
@@ -1336,7 +1517,24 @@ contains
             end do
          end do
       end if
+      call reset_window(w)
    end subroutine add_tile_block
+
+   pure subroutine reset_window(w)
+      !! An empty window: high below low, so `add_tile_block` does nothing
+      integer, intent(out) :: w(4)
+      w = [huge(1), 0, huge(1), 0]
+   end subroutine reset_window
+
+   pure subroutine grow_window(w, a0, da, b0, db)
+      !! Widen a window to cover the block `a0+1 : a0+da` by `b0+1 : b0+db`
+      integer, intent(inout) :: w(4)
+      integer, intent(in) :: a0, da, b0, db
+      w(1) = min(w(1), a0 + 1)
+      w(2) = max(w(2), a0 + da)
+      w(3) = min(w(3), b0 + 1)
+      w(4) = max(w(4), b0 + db)
+   end subroutine grow_window
 
    subroutine build_fock_direct_nosym(mol, h, densities, bounds, focks, stats, error, &
                                       screen_tol)
@@ -1383,7 +1581,7 @@ contains
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: screen_tol
 
-      real(dp), allocatable :: buf(:), g(:, :, :), g_local(:, :, :)
+      real(dp), allocatable :: buf(:), g(:, :, :), g_local(:, :, :), dens_t(:, :, :)
       real(dp), allocatable :: bq(:, :)
       type(eri_shell_table_t) :: tab
       type(c_ptr) :: opt
@@ -1391,7 +1589,10 @@ contains
       integer :: d1, d2, d3, d4, o1, o2, o3, o4
       integer :: shls(4)
       integer :: f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, block_max, n, iset, n_set
-      integer :: ij, kl, npair, ipair, i1, i2, i3, pp, qq, rr, ss, tmp
+      integer :: ij, kl, npair, ipair, i1, i2, i3, pp, qq, rr, ss
+      integer, parameter :: N_PERM = 8   ! quartet index permutations a shell quartet stands for
+      integer :: nperm, iperm
+      integer :: slot(4, N_PERM), bb(4)
       integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:), order(:)
       integer :: itask
       integer(int64) :: n_total, n_computed, n_screened
@@ -1437,8 +1638,18 @@ contains
       end do
       call pair_work_order(pair_i, pair_j, dims, order)
 
-      allocate (g(n, n, n_set))
+      ! Set-major throughout the contraction: the accumulator and the density
+      ! both hold the sets innermost, so that the updates one integral makes to
+      ! every set are one contiguous vector rather than `n_set` locations
+      ! `n^2` apart. With twelve sets and 841 functions the old layout was a
+      ! cache miss per update, and this contraction took six times the
+      ! integrals it consumed -- 84 per cent of a response pass.
+      allocate (g(n_set, n, n))
       g = 0.0_dp
+      allocate (dens_t(n_set, n, n))
+      do iset = 1, n_set
+         dens_t(iset, :, :) = densities(:, :, iset)
+      end do
 
       opt = c_null_ptr
       call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, tab%bas, &
@@ -1449,15 +1660,15 @@ contains
       n_screened = 0_int64
 
       !$omp parallel default(none) &
-      !$omp    shared(mol, tab, bq, densities, g, dims, offs, pair_i, pair_j, order, npair, tol, &
+      !$omp    shared(mol, tab, bq, dens_t, g, dims, offs, pair_i, pair_j, order, npair, tol, &
       !$omp           opt, n, block_max, n_set) &
       !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, value, &
-      !$omp            buf, g_local, iset, i1, i2, i3, pp, qq, rr, ss, tmp, &
-      !$omp            swap_bra, swap_ket, swap_pairs) &
+      !$omp            buf, g_local, iset, i1, i2, i3, pp, qq, rr, ss, &
+      !$omp            nperm, iperm, slot, bb, swap_bra, swap_ket, swap_pairs) &
       !$omp    reduction(+:n_total, n_computed, n_screened)
       allocate (buf(block_max**4))
-      allocate (g_local(n, n, n_set))
+      allocate (g_local(n_set, n, n))
       g_local = 0.0_dp
 
       !$omp do schedule(dynamic)
@@ -1494,14 +1705,29 @@ contains
             end if
             n_computed = n_computed + 1_int64
 
-            ! Which permutations the block enumeration leaves uncovered. Shell
-            ! equality, not function equality: a block with s1 == s2 already runs
-            ! over both orderings of its function pair as separate elements, so
-            ! generating the swap as well would count it twice. These are the same
-            ! three conditions that produce `deg` in `build_fock_direct_many`.
+            ! The distinct index tuples this quartet stands for -- the ones the
+            ! block enumeration does not already cover -- listed once per
+            ! quartet rather than rebuilt per element: `slot(k, iperm)` says
+            ! which of the four block indices lands in position `k` of `(pq|rs)`.
             swap_bra = s1 /= s2
             swap_ket = s3 /= s4
             swap_pairs = .not. (s1 == s3 .and. s2 == s4)
+            nperm = 0
+            do i1 = 1, 2
+               if (i1 == 2 .and. .not. swap_bra) cycle
+               do i2 = 1, 2
+                  if (i2 == 2 .and. .not. swap_ket) cycle
+                  do i3 = 1, 2
+                     if (i3 == 2 .and. .not. swap_pairs) cycle
+                     nperm = nperm + 1
+                     slot(:, nperm) = [1, 2, 3, 4]
+                     if (i1 == 2) slot(1:2, nperm) = [2, 1]
+                     if (i2 == 2) slot(3:4, nperm) = [4, 3]
+                     if (i3 == 2) slot(:, nperm) = [slot(3, nperm), slot(4, nperm), &
+                                                    slot(1, nperm), slot(2, nperm)]
+                  end do
+               end do
+            end do
 
             do f4 = 1, d4
                b4 = o4 + f4
@@ -1511,51 +1737,17 @@ contains
                      b2 = o2 + f2
                      do f1 = 1, d1
                         b1 = o1 + f1
-
                         idx = f1 + (f2 - 1)*d1 + (f3 - 1)*d1*d2 + (f4 - 1)*d1*d2*d3
                         value = buf(idx)
-
-                        ! The orbit, generated by three independent swaps. Skipping
-                        ! a swap when its shells coincide is what keeps each
-                        ! distinct tuple appearing exactly once.
-                        do i1 = 1, 2
-                           if (i1 == 2 .and. .not. swap_bra) cycle
-                           do i2 = 1, 2
-                              if (i2 == 2 .and. .not. swap_ket) cycle
-                              do i3 = 1, 2
-                                 if (i3 == 2 .and. .not. swap_pairs) cycle
-
-                                 pp = b1
-                                 qq = b2
-                                 rr = b3
-                                 ss = b4
-                                 if (i1 == 2) then
-                                    tmp = pp
-                                    pp = qq
-                                    qq = tmp
-                                 end if
-                                 if (i2 == 2) then
-                                    tmp = rr
-                                    rr = ss
-                                    ss = tmp
-                                 end if
-                                 if (i3 == 2) then
-                                    tmp = pp
-                                    pp = rr
-                                    rr = tmp
-                                    tmp = qq
-                                    qq = ss
-                                    ss = tmp
-                                 end if
-
-                                 do iset = 1, n_set
-                                    g_local(pp, qq, iset) = g_local(pp, qq, iset) &
-                                                            + densities(rr, ss, iset)*value
-                                    g_local(pp, rr, iset) = g_local(pp, rr, iset) &
-                                                            - 0.5_dp*densities(qq, ss, iset)*value
-                                 end do
-                              end do
-                           end do
+                        bb = [b1, b2, b3, b4]
+                        do iperm = 1, nperm
+                           pp = bb(slot(1, iperm))
+                           qq = bb(slot(2, iperm))
+                           rr = bb(slot(3, iperm))
+                           ss = bb(slot(4, iperm))
+                           g_local(:, pp, qq) = g_local(:, pp, qq) + dens_t(:, rr, ss)*value
+                           g_local(:, pp, rr) = g_local(:, pp, rr) &
+                                                - 0.5_dp*dens_t(:, qq, ss)*value
                         end do
                      end do
                   end do
@@ -1581,10 +1773,10 @@ contains
       ! No symmetrisation. See the note at the top: for an antisymmetric density
       ! the result is antisymmetric, and symmetrising would return zero.
       do iset = 1, n_set
-         focks(:, :, iset) = h + g(:, :, iset)
+         focks(:, :, iset) = h + g(iset, :, :)
       end do
 
-      deallocate (g, dims, offs, pair_i, pair_j)
+      deallocate (g, dens_t, dims, offs, pair_i, pair_j)
    end subroutine build_fock_direct_nosym
 
    subroutine build_fock_direct_uhf(mol, h, d_alpha, d_beta, bounds, fock_a, fock_b, stats, error, &

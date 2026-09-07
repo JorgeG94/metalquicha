@@ -83,6 +83,22 @@
       "environment": {
         "CUEST_ROOT": "$penv{CUEST_ROOT}"
       }
+    },
+    {
+      "name": "perlmutter-cpu",
+      "inherits": "base",
+      "displayName": "Perlmutter CPU (NERSC)",
+      "description": "CPU ab initio on a Perlmutter node under PrgEnv-gnu, with sequential MKL rather than Cray libsci. Point MKLROOT at oneAPI's mkl. MKL is put ahead of the libsci the ftn wrapper adds, and every link of mqc is checked for it. See CMAKE_STYLE.md.",
+      "cacheVariables": {
+        "MQC_ENABLE_TBLITE": "OFF",
+        "MQC_ENABLE_DLFIND": "ON",
+        "PIC_USE_LEGACY_MPI": "ON",
+        "PIC_MPICH_PERLMUTTER": "ON",
+        "MQC_BLA_VENDOR": "Intel10_64lp_seq"
+      },
+      "environment": {
+        "MKLROOT": "$penv{MKLROOT}"
+      }
     }
   ],
   "buildPresets": [
@@ -113,6 +129,10 @@
     {
       "name": "perlmutter",
       "configurePreset": "perlmutter"
+    },
+    {
+      "name": "perlmutter-cpu",
+      "configurePreset": "perlmutter-cpu"
     }
   ],
   "testPresets": [

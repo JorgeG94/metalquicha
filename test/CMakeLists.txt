@@ -300,6 +300,10 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_neo)
   target_link_libraries(test_mqc_czt_neo PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The linear algebra threaded from outside the sequential BLAS -- the split
+  # products and the blocked LU -- against the single BLAS call each replaces.
+  addtest(mqc_czt_gemm_threads)
+
   # Ghost centres and the superposition error they expose. Everything a
   # counterpoise-corrected expansion rests on, checked before any expansion is
   # assembled: that a ghost drops its nucleus and keeps its functions, that the

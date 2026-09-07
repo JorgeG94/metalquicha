@@ -34,7 +34,10 @@ module mqc_czt_cphf
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_getrf, pic_getrs
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
-   use mqc_czt_integrals, only: czt_molecule_t, ket_transformed_pairs, build_df_mo_block
+   use mqc_memory, only: memory_budget
+   use mqc_czt_integrals, only: czt_molecule_t, ket_transformed_pairs, build_df_mo_block, &
+                                build_df_tensor
+   use mqc_czt_gemm_threads, only: gemm_over_columns, gemm_over_inner, getrf_threaded
    use mqc_czt_multipole, only: multipole_matrices
    use mqc_czt_localize, only: boys_localize
    use mqc_czt_rhf, only: build_fock
@@ -60,6 +63,7 @@ module mqc_czt_cphf
    public :: distributed_dynamic_cross
    public :: casimir_polder_frequencies
    public :: build_hessian, build_hessian_df, build_hessian_mo
+   public :: fitted_response_t, build_fitted_response
    public :: dynamic_response_iterative
    public :: static_response_dense
    public :: fitted_potential_general
@@ -68,6 +72,23 @@ module mqc_czt_cphf
    ! `dynamic_response_iterative`, `response_operator_minus` and all three
    ! Hessian builds -- has no kernel at all, so a Kohn-Sham reference gets its
    ! Hartree-Fock response there with nothing in the output to say so.
+
+   type :: fitted_response_t
+      !! The three fitted MO blocks the response operator is applied through
+      !!
+      !! What `build_hessian_df` contracts into `(A+B)` and `(A-B)` -- `n_ov^2`
+      !! each -- kept uncontracted instead, so the operator can be applied to a
+      !! vector without ever forming it: `(ai|bj) u_bj` is `B_ov (B_ov^T u)`, the
+      !! two exchange terms one product with `B_vv` and `B_oo` and one with `B_ov`
+      !! twice, per auxiliary function. `n_ov n_aux` storage against `n_ov^2`,
+      !! which is what lets a 176k-pair fragment fit at all.
+      real(dp), allocatable :: bov(:, :)   !! `B^P_ai`, `((a,i), P)` with `a` fastest
+      real(dp), allocatable :: bvv(:, :)   !! `B^P_ab`, `((a,b), P)`
+      real(dp), allocatable :: boo(:, :)   !! `B^P_ij`, `((i,j), P)`
+      integer :: n_vir = 0
+      integer :: n_occ = 0
+      integer :: naux = 0
+   end type fitted_response_t
 
    type :: response_hessian_t
       !! A built response Hessian, so several blocks can share one build
@@ -95,19 +116,34 @@ module mqc_czt_cphf
       !! Columns of the Hessian built per pass over the integrals. At 115
       !! orbitals, 64 of them is 60 MB of densities.
 
+   real(dp), parameter :: RESPONSE_BUDGET_SHARE = 0.6_dp
+      !! The share of the machine's available memory the response solver may
+      !! plan on, for whichever of its three decisions is being made: whether
+      !! the Hessian is built by transformation or column by column, whether
+      !! the operator is formed at all, and how many frequencies factorize at
+      !! once. Read from the machine because the fixed figures below, sized for
+      !! a laptop, sent a 545-function MakeFP on a 500 GB node down a
+      !! fourteen-hour column build when the transform it refused needed a
+      !! hundred gigabytes. Below one because the caller holds the reference,
+      !! the integrals' screening tables and the fitted blocks alongside. A
+      !! deck overrides the whole figure with `system.memory_gb`.
+
    integer(int64), parameter :: SOLVE_BATCH_BYTES = 8_int64*1024_int64**3
-      !! What the concurrent frequency solves may take, in bytes.
+      !! What the concurrent frequency solves may take, in bytes, where the
+      !! machine's memory cannot be read.
 
    real(dp), parameter :: MO_TRANSFORM_LIMIT = 16.0e9_dp
-      !! What the exact MO transform may take at its peak, in bytes. Not
-      !! comparable to `IN_CORE_LIMIT`: that one bounds a tensor kept for a
-      !! whole solve, this one a few arrays held across one transform.
+      !! What the exact MO transform may take at its peak, in bytes, where the
+      !! machine's memory cannot be read. Not comparable to `IN_CORE_LIMIT`:
+      !! that one bounds a tensor kept for a whole solve, this one a few arrays
+      !! held across one transform.
 
    real(dp), parameter :: DENSE_OPERATOR_LIMIT = 8.0e9_dp
       !! Above this many bytes the operator is never formed at all, whatever
-      !! route would fill it, and `dynamic_response_iterative` takes over.
-      !! `(A+B)`, `(A-B)` and their product are three `n_ov^2` matrices, and
-      !! `n_ov` is the *product* of the occupied and virtual counts.
+      !! route would fill it, and `dynamic_response_iterative` takes over --
+      !! where the machine's memory cannot be read. `(A+B)`, `(A-B)` and their
+      !! product are three `n_ov^2` matrices, and `n_ov` is the *product* of
+      !! the occupied and virtual counts.
 
    integer, parameter :: IN_CORE_MAX_ORBITALS = 40
       !! Above this many orbitals, recompute the integrals rather than store
@@ -485,7 +521,8 @@ contains
       real(dp), intent(in), optional :: k_scale
          !! The exchange fraction the reference kept. Absent is all of it.
 
-      real(dp), allocatable :: coul(:, :), exch(:, :), bx(:, :), bc(:, :)
+      real(dp), allocatable :: coul(:, :), exch(:, :), bx(:, :), bc(:, :), b_p(:, :)
+      real(dp), allocatable :: coul_t(:, :), exch_t(:, :)
       real(dp) :: c_p, kf
       integer :: n, n_occ, naux, p
 
@@ -495,20 +532,35 @@ contains
       n = size(c_occ, 1)
       n_occ = size(c_occ, 2)
       naux = size(b, 2)
-      allocate (coul(n, n), exch(n, n), bx(n, n_occ), bc(n, n_occ))
+      allocate (coul(n, n), exch(n, n))
 
       coul = 0.0_dp
       exch = 0.0_dp
+      ! Threaded over the auxiliary functions, each thread with its own pair of
+      ! `n^2` accumulators, because the BLAS is sequential: the Z-vector
+      ! iterations of a fitted-reference gradient ran on one core for 36 s here.
+      !$omp parallel default(none) shared(b, x, c_occ, dtilde, coul, exch, n, n_occ, naux) &
+      !$omp    private(p, c_p, b_p, bx, bc, coul_t, exch_t)
+      allocate (b_p(n, n), bx(n, n_occ), bc(n, n_occ), coul_t(n, n), exch_t(n, n))
+      coul_t = 0.0_dp
+      exch_t = 0.0_dp
+      !$omp do schedule(static)
       do p = 1, naux
-         associate (b_p => reshape(b(:, p), [n, n]))
-            c_p = sum(b_p*dtilde)
-            coul = coul + c_p*b_p
-            call pic_gemm(b_p, x, bx)
-            call pic_gemm(b_p, c_occ, bc)
-            call pic_gemm(bx, bc, exch, transb="T", alpha=1.0_dp, beta=1.0_dp)
-            call pic_gemm(bc, bx, exch, transb="T", alpha=1.0_dp, beta=1.0_dp)
-         end associate
+         b_p = reshape(b(:, p), [n, n])
+         c_p = sum(b_p*dtilde)
+         coul_t = coul_t + c_p*b_p
+         call pic_gemm(b_p, x, bx)
+         call pic_gemm(b_p, c_occ, bc)
+         call pic_gemm(bx, bc, exch_t, transb="T", alpha=1.0_dp, beta=1.0_dp)
+         call pic_gemm(bc, bx, exch_t, transb="T", alpha=1.0_dp, beta=1.0_dp)
       end do
+      !$omp end do
+      !$omp critical
+      coul = coul + coul_t
+      exch = exch + exch_t
+      !$omp end critical
+      deallocate (b_p, bx, bc, coul_t, exch_t)
+      !$omp end parallel
 
       g = coul - 0.5_dp*kf*exch
    end subroutine response_operator_df
@@ -530,7 +582,8 @@ contains
       real(dp), intent(in), optional :: k_scale
          !! How much exact exchange the reference kept. Absent is all of it.
 
-      real(dp), allocatable :: coul(:, :), exch(:, :), bd(:, :)
+      real(dp), allocatable :: coul(:, :), exch(:, :), bd(:, :), b_p(:, :)
+      real(dp), allocatable :: coul_t(:, :), exch_t(:, :)
       real(dp) :: c_p, kf
       integer :: n, naux, p
 
@@ -539,17 +592,34 @@ contains
 
       n = size(dens, 1)
       naux = size(b, 2)
-      allocate (coul(n, n), exch(n, n), bd(n, n))
+      allocate (coul(n, n), exch(n, n))
       coul = 0.0_dp
       exch = 0.0_dp
+      ! The auxiliary functions are independent, so they are threaded over with
+      ! a pair of `n^2` accumulators per thread, summed once at the end. The
+      ! BLAS is sequential, so this is where the parallelism has to come from:
+      ! serial, the two builds of a Z-vector right-hand side were most of a
+      ! fitted-reference gradient.
+      !$omp parallel default(none) shared(b, dens, coul, exch, n, naux) &
+      !$omp    private(p, c_p, b_p, bd, coul_t, exch_t)
+      allocate (b_p(n, n), bd(n, n), coul_t(n, n), exch_t(n, n))
+      coul_t = 0.0_dp
+      exch_t = 0.0_dp
+      !$omp do schedule(static)
       do p = 1, naux
-         associate (b_p => reshape(b(:, p), [n, n]))
-            c_p = sum(b_p*dens)
-            coul = coul + c_p*b_p
-            call pic_gemm(b_p, dens, bd)
-            call pic_gemm(bd, b_p, exch, alpha=1.0_dp, beta=1.0_dp)
-         end associate
+         b_p = reshape(b(:, p), [n, n])
+         c_p = sum(b_p*dens)
+         coul_t = coul_t + c_p*b_p
+         call pic_gemm(b_p, dens, bd)
+         call pic_gemm(bd, b_p, exch_t, alpha=1.0_dp, beta=1.0_dp)
       end do
+      !$omp end do
+      !$omp critical
+      coul = coul + coul_t
+      exch = exch + exch_t
+      !$omp end critical
+      deallocate (b_p, bd, coul_t, exch_t)
+      !$omp end parallel
 
       g = coul - 0.5_dp*kf*exch
    end subroutine fitted_potential_general
@@ -638,7 +708,7 @@ contains
    subroutine dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                      frequencies, alpha, error, max_iter, tol, &
                                      response, perturbations, in_core, hessian, &
-                                     progress, aux, route, allow_unconverged, batch)
+                                     progress, aux, route, allow_unconverged, batch, b_ao)
       !! `alpha(i nu)` at each imaginary frequency
       !!
       !! On the imaginary axis the time-dependent equations are real and positive
@@ -656,6 +726,7 @@ contains
       !! `alpha_kl(i nu) = -2 sum_ai h^k_ai S^l_ai`, which at `nu = 0` reduces to
       !! the static `-4 sum h U` because `S = 2U` there, and so must reproduce
       !! `static_polarizability` exactly.
+      use omp_lib, only: omp_get_max_threads, omp_set_max_active_levels
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)
       real(dp), intent(in) :: orbital_energies(:)
@@ -703,6 +774,11 @@ contains
          !! instead of raising. The answer is wrong.
       integer, intent(in), optional :: batch
          !! Densities per integral pass, `keywords.efp.response_batch`.
+      real(dp), allocatable, intent(inout), optional :: b_ao(:, :)
+         !! `(nao*nao, naux)`, the fitted AO tensor a density-fitted SCF
+         !! already built, so the fitted routes here transform it instead of
+         !! building it again. Consumed: deallocated once the MO blocks are
+         !! formed. Absent or unallocated, the tensor is built here.
 
       real(dp), allocatable :: dip(:, :, :), bounds(:, :), zero_h(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :), h(:, :, :)
@@ -710,10 +786,11 @@ contains
       logical :: direct
       logical :: reuse, iterate
       integer :: take
+      type(fitted_response_t) :: fit
       real(dp), allocatable :: aplus(:, :), aminus(:, :), product(:, :), lu(:, :)
       real(dp), allocatable :: rhs_flat(:, :), h_flat(:, :), solution(:, :)
       integer, allocatable :: ipiv(:), infos(:)
-      integer :: n_ov, j, info, n_freq, concurrent
+      integer :: n_ov, j, info, n_freq, concurrent, inner
       real(dp), allocatable :: operators(:, :, :)
       real(dp) :: nu, rz, rz_new, pap, step, target_norm, use_tol
       integer :: n_ao, n_mo, n_vir, k, l, i, a, ifreq, iter, limit, n_pert
@@ -809,11 +886,11 @@ contains
       ! `n_ov`, and an already-built Hessian because the expensive part is
       ! behind it. `dense` builds the operator whatever the size rule says;
       ! `matrix_free` declines to build it even where it would fit, and declines
-      ! the auxiliary basis and any Hessian on hand with it.
+      ! any Hessian on hand with it; an auxiliary basis it keeps, applying the
+      ! operator through the fitted blocks.
       iterate = .false.
       if (.not. reuse) then
-         iterate = .not. present(aux) .and. &
-                   3.0_dp*real(n_ov, dp)**2*8.0_dp > DENSE_OPERATOR_LIMIT
+         iterate = 3.0_dp*real(n_ov, dp)**2*8.0_dp > response_budget(DENSE_OPERATOR_LIMIT)
       end if
       select case (take)
       case (EFP_RESPONSE_AUTO)
@@ -832,21 +909,43 @@ contains
       if (talk .and. take /= EFP_RESPONSE_AUTO) then
          if (iterate) then
             call logger%large_info("        response route: matrix free, by keywords.efp.response")
-            if (present(aux)) call logger%large_info("          the auxiliary basis fits a Hessian "// &
-                                                     "this route never builds, so it goes unused")
-            if (reuse) call logger%large_info("          a built Hessian was on hand and goes unused too")
+            if (reuse) call logger%large_info("          a built Hessian was on hand and goes unused")
          else
             call logger%large_info("        response route: dense, by keywords.efp.response")
          end if
       end if
 
       if (iterate) then
-         call dynamic_response_iterative(mol, direct, eri0, bounds, zero_h, c_occ, &
-                                         c_vir, gaps, h, frequencies, alpha, error, &
-                                         max_iter=max_iter, tol=tol, &
-                                         response=response, progress=talk, &
-                                         allow_unconverged=allow_unconverged, &
-                                         batch=batch)
+         ! With an auxiliary basis the operator is applied through the fitted MO
+         ! blocks, `n_ov n_aux` of storage, where the exact route is an integral
+         ! pass per application. Only where those blocks fit; a 176k-pair
+         ! fragment's do at a few gigabytes each.
+         if (present(aux)) then
+            if ((real(n_ov, dp) + real(n_vir, dp)**2 + real(n_occ, dp)**2)*real(aux%nao, dp) &
+                *8.0_dp <= response_budget(DENSE_OPERATOR_LIMIT)) then
+               call build_fitted_response(mol, aux, c_occ, c_vir, fit, error, progress=talk, &
+                                          b_ao_in=b_ao)
+               if (error%has_error()) return
+            else if (talk) then
+               call logger%large_info("        the fitted blocks would not fit either; "// &
+                                      "exact integrals per application")
+            end if
+         end if
+         if (allocated(fit%bov)) then
+            call dynamic_response_iterative(mol, direct, eri0, bounds, zero_h, c_occ, &
+                                            c_vir, gaps, h, frequencies, alpha, error, &
+                                            max_iter=max_iter, tol=tol, &
+                                            response=response, progress=talk, &
+                                            allow_unconverged=allow_unconverged, &
+                                            batch=batch, fit=fit)
+         else
+            call dynamic_response_iterative(mol, direct, eri0, bounds, zero_h, c_occ, &
+                                            c_vir, gaps, h, frequencies, alpha, error, &
+                                            max_iter=max_iter, tol=tol, &
+                                            response=response, progress=talk, &
+                                            allow_unconverged=allow_unconverged, &
+                                            batch=batch)
+         end if
          return
       end if
       if (reuse) then
@@ -866,7 +965,7 @@ contains
          continue
       else if (present(aux)) then
          call build_hessian_df(mol, aux, c_occ, c_vir, gaps, aplus, aminus, error, &
-                               progress=talk)
+                               progress=talk, b_ao_in=b_ao)
          if (present(hessian)) hessian%fitted = .true.
       else if (mo_transform_fits(mol%nao, n_occ, n_vir, direct)) then
          ! Exact integrals, assembled the way the fitted build assembles them.
@@ -882,8 +981,10 @@ contains
       allocate (lu(n_ov, n_ov), ipiv(n_ov))
       allocate (rhs_flat(n_ov, n_pert), h_flat(n_ov, n_pert))
       if (.not. reuse) then
+         ! Split across threads because the BLAS is sequential: on one core this
+         ! `n_ov^3` product outweighed the thirteen factorizations it feeds.
          allocate (product(n_ov, n_ov))
-         call pic_gemm(aminus, aplus, product)
+         call gemm_over_columns(aminus, aplus, product)
       end if
 
       do l = 1, n_pert
@@ -901,12 +1002,23 @@ contains
       allocate (solution(n_ov, n_pert))
 
       ! The frequencies are independent -- each its own shifted factorization of
-      ! the same matrix -- so they are threaded over rather than inside the
-      ! factorization, which keeps the sequential BLAS sequential and needs no
-      ! threaded LAPACK. How many at once is a memory question and nothing else:
-      ! `getrf` factorizes in place, so each carries its own copy of the operator.
+      ! the same matrix -- so they are threaded over, and each factorization is
+      ! threaded inside as well, by `getrf_threaded`'s own column split rather
+      ! than by the BLAS: thirteen concurrent factorizations on one thread each
+      ! left 115 cores idle for 72 s at 17710 pairs. The threads are shared out
+      ! between the two levels, and nesting has to be allowed explicitly. How
+      ! many run at once is a memory question: each carries its own copy of
+      ! the operator.
       n_freq = size(frequencies)
       concurrent = concurrent_solves(n_ov, n_freq)
+#ifdef MQC_SEQUENTIAL_BLAS
+      inner = max(1, omp_get_max_threads()/max(concurrent, 1))
+#else
+      ! A BLAS that threads itself, or one that is not re-entrant, is not to be
+      ! called from a column split: LAPACK's own factorization runs instead.
+      inner = 1
+#endif
+      call omp_set_max_active_levels(2)
       allocate (infos(n_freq))
       infos = 0
       if (talk) then
@@ -921,7 +1033,7 @@ contains
       !$omp parallel do default(none) num_threads(concurrent) schedule(dynamic) &
       !$omp    private(ifreq, lu, ipiv, solution, j, k, l, info) &
       !$omp    shared(n_freq, n_ov, n_pert, n_vir, n_occ, reuse, hessian, product, &
-      !$omp           aplus, frequencies, rhs_flat, h_flat, alpha, response, infos)
+      !$omp           aplus, frequencies, rhs_flat, h_flat, alpha, response, infos, inner)
       do ifreq = 1, n_freq
          allocate (lu(n_ov, n_ov), ipiv(n_ov), solution(n_ov, n_pert))
          if (frequencies(ifreq) == 0.0_dp) then
@@ -945,7 +1057,11 @@ contains
             end do
             solution = rhs_flat
          end if
-         call pic_getrf(lu, ipiv, info)
+         if (inner > 1) then
+            call getrf_threaded(n_ov, lu, ipiv, info, threads=inner)
+         else
+            call pic_getrf(lu, ipiv, info)
+         end if
          if (info /= 0) then
             infos(ifreq) = 1
          else
@@ -1073,7 +1189,7 @@ contains
    end subroutine build_hessian
 
    subroutine build_hessian_df(orb, aux, c_occ, c_vir, gaps, aplus, aminus, error, &
-                               progress)
+                               progress, b_ao_in)
       !! `(A+B)` and `(A-B)` from fitted integrals instead of from Fock builds
       !!
       !! The operators are, written out,
@@ -1098,11 +1214,14 @@ contains
       real(dp), allocatable, intent(out) :: aplus(:, :), aminus(:, :)
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: progress
+      real(dp), allocatable, intent(inout), optional :: b_ao_in(:, :)
+         !! A built `(nao*nao, naux)` tensor to transform instead of building
+         !! one. Consumed: unallocated on return.
 
       ! TODO(mqc): `gap_flat`, `term_abij`, `term_ajib`, `row`, `col`, `a`, `i`,
       ! `b` and `j` are never read here -- leftovers from before
       ! `assemble_hessian` was factored out of this routine and `build_hessian_mo`.
-      real(dp), allocatable :: bov(:, :), bvv(:, :), boo(:, :)
+      real(dp), allocatable :: bov(:, :), bvv(:, :), boo(:, :), b_ao(:, :)
       real(dp), allocatable :: coul(:, :), exch(:, :), gap_flat(:)
       real(dp) :: term_abij, term_ajib
       integer :: n_vir, n_occ, n_ov, naux, row, col, a, i, b, j
@@ -1118,12 +1237,18 @@ contains
       n_ov = n_vir*n_occ
       if (talk) call clock%start()
 
-      call build_df_mo_block(orb, aux, c_vir, c_occ, bov, error)
+      ! One AO tensor for the three blocks, and the SCF's when it has one:
+      ! built per block, the metric and the three-centre integrals were done
+      ! three times over.
+      call take_or_build_df_tensor(orb, aux, b_ao, error, b_ao_in)
       if (error%has_error()) return
-      call build_df_mo_block(orb, aux, c_vir, c_vir, bvv, error)
+      call build_df_mo_block(orb, aux, c_vir, c_occ, bov, error, b_ao_in=b_ao)
       if (error%has_error()) return
-      call build_df_mo_block(orb, aux, c_occ, c_occ, boo, error)
+      call build_df_mo_block(orb, aux, c_vir, c_vir, bvv, error, b_ao_in=b_ao)
       if (error%has_error()) return
+      call build_df_mo_block(orb, aux, c_occ, c_occ, boo, error, b_ao_in=b_ao)
+      if (error%has_error()) return
+      deallocate (b_ao)
       naux = size(bov, 2)
       if (talk) then
          write (line, "(A,I0,A,I0,A,F0.1,A)") "        fitted Hessian: ", n_ov, " pairs, ", naux, &
@@ -1132,10 +1257,13 @@ contains
          call tick(clock, 1, 3, "step")
       end if
 
+      ! Split across threads because the BLAS is sequential: at 17710 pairs and
+      ! 1700 auxiliary functions each of these is a teraflop, half a minute on
+      ! one core, and the two were the whole of the fitted build's wall clock.
       allocate (coul(n_ov, n_ov))
-      call pic_gemm(bov, bov, coul, transb="T")
+      call gemm_over_columns(bov, bov, coul, transb="T")
       allocate (exch(n_vir*n_vir, n_occ*n_occ))
-      call pic_gemm(bvv, boo, exch, transb="T")
+      call gemm_over_columns(bvv, boo, exch, transb="T")
       deallocate (bov, bvv, boo)
       if (talk) call tick(clock, 2, 3, "step")
 
@@ -1148,7 +1276,7 @@ contains
       !! How many frequency solves may run at once
       !!
       !! One, when the BLAS threads itself -- see `MQC_SEQUENTIAL_BLAS` in the
-      !! top-level CMakeLists. Otherwise a memory question: `getrf` factorizes in
+      !! `cmake/MqcDependencies.cmake`. Otherwise a memory question: `getrf` factorizes in
       !! place, so every concurrent solve needs its own `n_ov^2` copy of the
       !! operator.
       use omp_lib, only: omp_get_max_threads
@@ -1156,7 +1284,7 @@ contains
       integer, intent(in) :: n_freq
       integer :: concurrent
 
-      integer(int64) :: per_solve
+      integer(int64) :: per_solve, batch
 
 #ifndef MQC_SEQUENTIAL_BLAS
       ! A threaded BLAS already fills the machine inside each factorization, and
@@ -1165,10 +1293,25 @@ contains
       concurrent = 1
       return
 #endif
+      ! The operator pair and their product are already resident when the
+      ! solves start, so they come off the budget before it is divided.
       per_solve = int(n_ov, int64)**2*8_int64
-      concurrent = int(max(1_int64, SOLVE_BATCH_BYTES/max(per_solve, 1_int64)))
+      batch = int(response_budget(real(SOLVE_BATCH_BYTES, dp)), int64) - 3_int64*per_solve
+      concurrent = int(max(1_int64, batch/max(per_solve, 1_int64)))
       concurrent = min(concurrent, n_freq, omp_get_max_threads())
    end function concurrent_solves
+
+   function response_budget(blind) result(budget)
+      !! Bytes one response-solver decision may plan on
+      !!
+      !! What the deck fixed with `system.memory_gb`, else
+      !! `RESPONSE_BUDGET_SHARE` of what the machine reports available, else
+      !! `blind` where it reports nothing.
+      real(dp), intent(in) :: blind
+      real(dp) :: budget
+
+      budget = memory_budget(blind, RESPONSE_BUDGET_SHARE)
+   end function response_budget
 
    function mo_transform_fits(n_ao, n_occ, n_vir, direct) result(fits)
       !! Can the whole Hessian be had by transformation rather than column by column
@@ -1196,7 +1339,7 @@ contains
       peak = real(n_ao, dp)**2*right + real(n_vir, dp)*real(n_ao, dp)*right &
              + 4.0_dp*(real(n_vir, dp)*real(n_occ, dp))**2 &
              + (real(n_vir, dp)*real(n_occ, dp))**2
-      fits = peak*8.0_dp <= MO_TRANSFORM_LIMIT
+      fits = peak*8.0_dp <= response_budget(MO_TRANSFORM_LIMIT)
    end function mo_transform_fits
 
    subroutine build_hessian_mo(mol, eri_in, c_occ, c_vir, gaps, aplus, aminus, error, &
@@ -1224,7 +1367,9 @@ contains
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: progress
 
-      real(dp), allocatable :: half(:, :), pair_ov(:, :), pair_oo(:, :)
+      real(dp), allocatable, target :: pair_ov(:, :), pair_oo(:, :)
+      real(dp), pointer, contiguous :: pair_ov_ao(:, :), pair_oo_ao(:, :)
+      real(dp), allocatable :: half(:, :)
       real(dp), allocatable :: step_ov(:, :), step_oo(:, :)
       real(dp), allocatable :: coul(:, :), exch(:, :)
       integer :: n_ao, n_vir, n_occ, n_ov, j
@@ -1271,10 +1416,16 @@ contains
       if (talk) call tick(clock, 2, 3, "step")
 
       ! Three and four: the bra pair, the same way round. `step_*` holds the first
-      ! AO index transformed, with the second still in the AO basis.
+      ! AO index transformed, with the second still in the AO basis. The pair
+      ! blocks are seen as `(n_ao, n_ao * n_right)` through a pointer rather than
+      ! a `reshape`, which would copy the largest array of the build; and the
+      ! product is split across threads because the BLAS is sequential.
+      pair_ov_ao(1:n_ao, 1:n_ao*n_ov) => pair_ov
+      pair_oo_ao(1:n_ao, 1:n_ao*n_occ*n_occ) => pair_oo
       allocate (step_ov(n_vir, n_ao*n_ov), step_oo(n_vir, n_ao*n_occ*n_occ))
-      call pic_gemm(c_vir, reshape(pair_ov, [n_ao, n_ao*n_ov]), step_ov, transa="T")
-      call pic_gemm(c_vir, reshape(pair_oo, [n_ao, n_ao*n_occ*n_occ]), step_oo, transa="T")
+      call gemm_over_columns(c_vir, pair_ov_ao, step_ov, transa="T")
+      call gemm_over_columns(c_vir, pair_oo_ao, step_oo, transa="T")
+      nullify (pair_ov_ao, pair_oo_ao)
       deallocate (pair_ov, pair_oo)
 
       allocate (coul(n_ov, n_ov), exch(n_vir*n_vir, n_occ*n_occ))
@@ -1393,7 +1544,7 @@ contains
    subroutine dynamic_response_iterative(mol, direct, eri, bounds, zero_h, c_occ, &
                                          c_vir, gaps, h, frequencies, alpha, error, &
                                          max_iter, tol, response, progress, &
-                                         allow_unconverged, batch)
+                                         allow_unconverged, batch, fit)
       !! The frequency-dependent response without ever forming its operator
       !!
       !! For the sizes where `2 n_ov^2` of storage and an `n_ov^3` factorisation
@@ -1426,6 +1577,7 @@ contains
       !! Density screening was tried and loses: a trial vector here is
       !! `C_vir U C_occ^T`, delocalised even when the density that generated it
       !! is not, so the test finds nothing negligible and only costs.
+      use omp_lib, only: omp_get_max_threads
       use pic_blas_interfaces, only: pic_gemm
       type(czt_molecule_t), intent(in) :: mol
       logical, intent(in) :: direct
@@ -1447,17 +1599,21 @@ contains
          !! Densities per integral pass. The right value is a property of the
          !! machine and the basis, not of the physics -- see
          !! `efp_config_t%response_batch`.
+      type(fitted_response_t), intent(in), optional :: fit
+         !! Apply the operator through these fitted blocks instead of through
+         !! integral passes. `eri`, `bounds` and `zero_h` go unread then.
 
       real(dp), allocatable :: x(:, :, :), r(:, :, :), r0(:, :, :), p(:, :, :)
       real(dp), allocatable :: v(:, :, :), s(:, :, :), t(:, :, :), rhs(:, :, :)
       real(dp), allocatable :: ph(:, :, :), sh(:, :, :), precon(:, :, :)
       real(dp), allocatable :: rho(:), rho_old(:), omega(:), alpha_bi(:), beta(:)
       real(dp), allocatable :: nu2(:), rnorm(:), bnorm(:)
-      integer, allocatable :: pert_of(:), freq_of(:), live(:), nonzero(:)
+      integer, allocatable :: pert_of(:), freq_of(:), live(:), nonzero(:), each_pert(:)
       logical, allocatable :: done(:)
+      real(dp), allocatable :: amh(:, :, :)
       integer :: n_vir, n_occ, n_pert, n_freq, n_sys, m, k, l, it, cycles, eff_batch
       integer :: nlive, nnz
-      real(dp) :: threshold, worst
+      real(dp) :: threshold, worst, per_set
       logical :: talk
       type(timer_type) :: clock
       character(len=MAX_LINE_LENGTH) :: line
@@ -1494,18 +1650,29 @@ contains
          end do
       end do
 
-      ! Resolved once so the banner reports the same width the passes use.
-      eff_batch = DEFAULT_RESPONSE_BATCH
-      if (present(batch)) then
-         if (batch > 0) eff_batch = batch
+      ! The batch width, resolved once so the banner reports the width the
+      ! passes use. A deck's figure is taken as given. Otherwise as wide as the
+      ! memory allows, up to every system at once: the integrals are the cost of
+      ! a pass once the contraction is set-major, so the fewer passes the better
+      ! -- 36 a BiCGSTAB iteration at width 12 on a 104-system fragment, 4 at
+      ! full width, 273 s against 113 s. Per set a pass holds the density, the
+      ! accumulator and the result, `n_ao^2` each, and every thread six tile
+      ! blocks of it.
+      eff_batch = 0
+      if (present(batch)) eff_batch = batch
+      if (eff_batch <= 0) then
+         per_set = (3.0_dp*real(size(c_occ, 1), dp)**2 &
+                    + 6.0_dp*real(omp_get_max_threads(), dp)*64.0_dp**2)*8.0_dp
+         eff_batch = int(min(real(n_sys, dp), max(real(DEFAULT_RESPONSE_BATCH, dp), &
+                                                  response_budget(real(SOLVE_BATCH_BYTES, dp)) &
+                                                  /per_set)))
       end if
 
       ! The right-hand side. `-2 (A-B) h` at every nonzero frequency, `-2 h` at
-      ! zero -- one batched application of `(A-B)` covers all of them, because
-      ! the zero-frequency systems simply are not in the mask.
-      do m = 1, n_sys
-         rhs(:, :, m) = h(:, :, pert_of(m))
-      end do
+      ! zero. `h` depends on the perturbation and not on the frequency, so
+      ! `(A-B)` is applied once per perturbation and the result copied to each
+      ! frequency's system -- twelve integral passes became one on a 123-atom
+      ! fragment, where the per-system version had spent five minutes here.
       nnz = 0
       do m = 1, n_sys
          if (nu2(m) /= 0.0_dp) then
@@ -1522,27 +1689,51 @@ contains
             " frequencies x ", n_pert, " perturbations over ", n_vir*n_occ, &
             " pairs, matrix free"
          call logger%large_info(trim(line))
-         write (line, "(A,I0,A,I0,A,F0.2,A)") "          ", n_sys, &
-            " systems in flight, ", 4*((n_sys + eff_batch - 1)/eff_batch), &
-            " integral passes per iteration, ", &
-            11.0_dp*real(n_vir*n_occ, dp)*real(n_sys, dp)*8.0_dp/1.0e9_dp, " GB of vectors"
-         call logger%large_info(trim(line))
-         write (line, "(A,I0,A)") "          building the right-hand side, ", &
-            (nnz + 11)/12, " integral passes"
+         if (present(fit)) then
+            write (line, "(A,I0,A)") "          operator applied through the fitted blocks, ", &
+               fit%naux, " auxiliary functions"
+            call logger%large_info(trim(line))
+         end if
+         if (present(fit)) then
+            write (line, "(A,I0,A,I0,A,F0.2,A)") "          ", n_sys, &
+               " systems in flight, ", 4*((n_sys + eff_batch - 1)/eff_batch), &
+               " batched applications per iteration, ", &
+               11.0_dp*real(n_vir*n_occ, dp)*real(n_sys, dp)*8.0_dp/1.0e9_dp, " GB of vectors"
+            call logger%large_info(trim(line))
+            write (line, "(A,I0,A)") "          building the right-hand side, ", &
+               (n_pert + eff_batch - 1)/eff_batch, " batched applications"
+         else
+            write (line, "(A,I0,A,I0,A,F0.2,A)") "          ", n_sys, &
+               " systems in flight, ", 4*((n_sys + eff_batch - 1)/eff_batch), &
+               " integral passes per iteration, ", &
+               11.0_dp*real(n_vir*n_occ, dp)*real(n_sys, dp)*8.0_dp/1.0e9_dp, " GB of vectors"
+            call logger%large_info(trim(line))
+            write (line, "(A,I0,A)") "          building the right-hand side, ", &
+               (n_pert + eff_batch - 1)/eff_batch, " integral passes"
+         end if
          call logger%large_info(trim(line))
          flush (output_unit)
          call clock%start()
       end if
 
-      ! Chunked like every other pass: handing all the systems to one call is a
-      ! density block and a per-thread `n_ao^2` accumulator of tens of gigabytes.
+      do m = 1, n_sys
+         rhs(:, :, m) = h(:, :, pert_of(m))
+      end do
       if (nnz > 0) then
+         allocate (amh(n_vir, n_occ, n_pert), each_pert(n_pert))
+         do l = 1, n_pert
+            each_pert(l) = l
+         end do
+         amh = h
+         ! Chunked like every other pass: handing all the systems to one call is a
+         ! density block and a per-thread `n_ao^2` accumulator of tens of gigabytes.
          call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                                rhs, nonzero, nnz, .true., t, error, batch)
+                                h, each_pert, n_pert, .true., amh, error, eff_batch, fit)
          if (error%has_error()) return
          do m = 1, nnz
-            rhs(:, :, nonzero(m)) = t(:, :, nonzero(m))
+            rhs(:, :, nonzero(m)) = amh(:, :, pert_of(nonzero(m)))
          end do
+         deallocate (amh, each_pert)
       end if
       rhs = -2.0_dp*rhs
 
@@ -1606,7 +1797,7 @@ contains
          end do
 
          call apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                            ph, live, nlive, nu2, v, error, batch)
+                            ph, live, nlive, nu2, v, error, eff_batch, fit)
          if (error%has_error()) return
 
          do m = 1, nlive
@@ -1622,7 +1813,7 @@ contains
          end do
 
          call apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                            sh, live, nlive, nu2, t, error, batch)
+                            sh, live, nlive, nu2, t, error, eff_batch, fit)
          if (error%has_error()) return
 
          do m = 1, nlive
@@ -1703,7 +1894,7 @@ contains
    end subroutine dynamic_response_iterative
 
    subroutine apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                            u, live, nlive, nu2, au, error, width)
+                            u, live, nlive, nu2, au, error, width, fit)
       !! `[(A-B)(A+B) + nu^2] u`, or `(A+B) u` where the frequency is zero
       !!
       !! Two passes over the integrals for the whole batch, which is the point.
@@ -1722,6 +1913,7 @@ contains
       real(dp), intent(inout) :: au(:, :, :)
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: width
+      type(fitted_response_t), intent(in), optional :: fit
 
       real(dp), allocatable :: q1(:, :, :)
       integer, allocatable :: shifted(:)
@@ -1732,7 +1924,7 @@ contains
       q1 = 0.0_dp
 
       call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                             u, live, nlive, .false., q1, error, width)
+                             u, live, nlive, .false., q1, error, width, fit)
       if (error%has_error()) return
 
       allocate (shifted(nlive))
@@ -1749,7 +1941,7 @@ contains
 
       if (nshift > 0) then
          call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                                q1, shifted, nshift, .true., au, error, width)
+                                q1, shifted, nshift, .true., au, error, width, fit)
          if (error%has_error()) return
          do m = 1, nshift
             k = shifted(m)
@@ -1759,7 +1951,7 @@ contains
    end subroutine apply_dynamic
 
    subroutine batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                                u, idx, nact, minus, au, error, width)
+                                u, idx, nact, minus, au, error, width, fit)
       !! `response_batch`, a dozen densities at a time rather than all of them
       !!
       !! **More is not better past about twelve, and it is worse.** The batched
@@ -1783,6 +1975,11 @@ contains
          !! Densities per integral pass. Absent or non-positive takes the
          !! built-in default; `keywords.efp.response_batch` overrides it.
 
+      type(fitted_response_t), intent(in), optional :: fit
+         !! Apply through the fitted blocks rather than an integral pass. The
+         !! chunking is kept: the per-thread accumulators of the fitted
+         !! application are `n_ov` per vector too.
+
       integer :: max_batch
 
       integer :: first, last
@@ -1794,12 +1991,220 @@ contains
       first = 1
       do while (first <= nact)
          last = min(first + max_batch - 1, nact)
-         call response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                             u, idx(first:last), last - first + 1, minus, au, error)
-         if (error%has_error()) return
+         if (present(fit)) then
+            call apply_fitted_batch(fit, gaps, u, idx(first:last), last - first + 1, minus, au)
+         else
+            call response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
+                                u, idx(first:last), last - first + 1, minus, au, error)
+            if (error%has_error()) return
+         end if
          first = last + 1
       end do
    end subroutine batched_in_chunks
+
+   subroutine take_or_build_df_tensor(orb, aux, b_ao, error, b_ao_in)
+      !! `b_ao` is `b_ao_in` moved out of its owner when one was handed over
+      !! and allocated, and a freshly built `(nao*nao, naux)` tensor otherwise
+      type(czt_molecule_t), intent(in) :: orb, aux
+      real(dp), allocatable, intent(out) :: b_ao(:, :)
+      type(error_t), intent(inout) :: error
+      real(dp), allocatable, intent(inout), optional :: b_ao_in(:, :)
+
+      if (present(b_ao_in)) then
+         if (allocated(b_ao_in)) then
+            call move_alloc(b_ao_in, b_ao)
+            return
+         end if
+      end if
+      call build_df_tensor(orb, aux, b_ao, error)
+   end subroutine take_or_build_df_tensor
+
+   subroutine build_fitted_response(orb, aux, c_occ, c_vir, fit, error, progress, b_ao_in)
+      !! The three fitted MO blocks, the way `build_hessian_df` builds them
+      type(czt_molecule_t), intent(in) :: orb, aux
+      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
+      type(fitted_response_t), intent(out) :: fit
+      type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: progress
+      real(dp), allocatable, intent(inout), optional :: b_ao_in(:, :)
+         !! A built `(nao*nao, naux)` tensor to transform instead of building
+         !! one. Consumed: unallocated on return.
+
+      real(dp), allocatable :: b_ao(:, :)
+      logical :: talk
+      type(timer_type) :: clock
+      character(len=MAX_LINE_LENGTH) :: line
+
+      talk = .false.
+      if (present(progress)) talk = progress
+      if (talk) call clock%start()
+      fit%n_vir = size(c_vir, 2)
+      fit%n_occ = size(c_occ, 2)
+      ! The AO tensor once, and three transforms of it: built per block, the
+      ! metric and the three-centre integrals were done three times over, 188 s
+      ! of a fragment's 6036 auxiliary functions where one build is a third of
+      ! that. Any metric factor serves, since every contraction below pairs a
+      ! block with another block of the same tensor.
+      call take_or_build_df_tensor(orb, aux, b_ao, error, b_ao_in)
+      if (error%has_error()) return
+      call build_df_mo_block(orb, aux, c_vir, c_occ, fit%bov, error, b_ao_in=b_ao)
+      if (error%has_error()) return
+      call build_df_mo_block(orb, aux, c_vir, c_vir, fit%bvv, error, b_ao_in=b_ao)
+      if (error%has_error()) return
+      call build_df_mo_block(orb, aux, c_occ, c_occ, fit%boo, error, b_ao_in=b_ao)
+      if (error%has_error()) return
+      deallocate (b_ao)
+      fit%naux = size(fit%bov, 2)
+      if (talk) then
+         write (line, "(A,I0,A,F0.1,A,F0.1,A)") "        fitted response blocks: ", fit%naux, &
+            " auxiliary functions, ", &
+            (real(size(fit%bov), dp) + real(size(fit%bvv), dp) + real(size(fit%boo), dp)) &
+            *8.0_dp/1.0e9_dp, " GB, built in ", clock%get_elapsed_time(), " s"
+         call logger%large_info(trim(line))
+      end if
+   end subroutine build_fitted_response
+
+   subroutine apply_fitted_batch(fit, gaps, u, idx, nact, minus, au)
+      !! `(A+B) u` or `(A-B) u` for a batch of vectors, through the fitted blocks
+      !!
+      !!     [(A+B) u]_ai = Deps u_ai + 4 J_ai - K1_ai - K2_ai
+      !!     [(A-B) u]_ai = Deps u_ai        - K1_ai + K2_ai
+      !!
+      !! with, per auxiliary function `P`,
+      !!
+      !!     J  = B_ov (B_ov^T u)                 the Coulomb term, (ai|bj) u_bj
+      !!     K1 = sum_P B^P_vv  U  B^P_oo^T       (ab|ij) u_bj
+      !!     K2 = sum_P B^P_ov  U^T B^P_ov        (aj|ib) u_bj
+      !!
+      !! where `U` is the vector as its `(n_vir, n_occ)` matrix and `B^P` the
+      !! `P`th column of a block as its matrix.
+      !!
+      !! The batch is contracted whole. With the vectors stacked along rows,
+      !! `U` as `(a m, j)` and `U^T` as `(j m, b)`, the first GEMM of each term
+      !! covers every vector and leaves its result as `(x m, i)`, which read
+      !! as `(x, m i)` is the right-hand operand of the second. So each `P` is
+      !! four GEMMs with an `n_vir n_occ nact` output instead of four per
+      !! vector, and the block is packed once rather than `nact` times --
+      !! which was a third of the time at 104 vectors. The Coulomb term is two
+      !! GEMMs over all `P` outside the loop. Threaded over `P`, each thread
+      !! accumulating into its own slab, reduced across threads in parallel
+      !! afterwards; the BLAS is sequential. `2 n_aux n_ov (n_vir + 3 n_occ)`
+      !! flops per vector, GEMMs throughout, against an integral pass per
+      !! batch on the exact route.
+      use omp_lib, only: omp_get_thread_num, omp_get_num_threads, omp_get_max_threads
+      type(fitted_response_t), intent(in), target :: fit
+      real(dp), intent(in) :: gaps(:, :)
+      real(dp), intent(in) :: u(:, :, :)
+      integer, intent(in) :: idx(:)
+      integer, intent(in) :: nact
+      logical, intent(in) :: minus
+      real(dp), intent(inout) :: au(:, :, :)
+
+      ! `ubatch(a, i, m)` is the batch gathered; `ustack(a, m, i)` the vectors
+      ! stacked along rows and `utrans(i, m, a)` their transposes likewise.
+      ! `k1_part(a, m i, t)` and `k2_part(a, m i, t)` are thread `t`'s partial
+      ! sums, in the layout the GEMMs produce.
+      real(dp), allocatable, target :: ubatch(:, :, :), ustack(:, :, :), utrans(:, :, :)
+      real(dp), allocatable, target :: k1_part(:, :, :), k2_part(:, :, :), coul(:, :)
+      real(dp), allocatable, target :: y(:, :), w(:, :)
+      real(dp), allocatable :: coef(:, :)
+      real(dp), pointer, contiguous :: bvv_p(:, :), boo_p(:, :), bov_p(:, :)
+      real(dp), pointer, contiguous :: ustack_rows(:, :), utrans_rows(:, :), uflat(:, :)
+      real(dp), pointer, contiguous :: y_rows(:, :), y_cols(:, :), w_rows(:, :), w_cols(:, :)
+      real(dp), pointer, contiguous :: k1_t(:, :), k2_t(:, :)
+      real(dp), pointer, contiguous :: k1(:, :, :), k2(:, :, :), coul_m(:, :, :)
+      integer :: n_vir, n_occ, n_ov, naux, m, i, j, p, c, t, nthr, tid, used
+
+      n_vir = fit%n_vir
+      n_occ = fit%n_occ
+      n_ov = n_vir*n_occ
+      naux = fit%naux
+
+      allocate (ubatch(n_vir, n_occ, nact), ustack(n_vir, nact, n_occ), utrans(n_occ, nact, n_vir))
+      do m = 1, nact
+         ubatch(:, :, m) = u(:, :, idx(m))
+      end do
+      do i = 1, n_occ
+         ustack(:, :, i) = ubatch(:, i, :)
+      end do
+      do m = 1, nact
+         utrans(:, m, :) = transpose(ubatch(:, :, m))
+      end do
+      ustack_rows(1:n_vir*nact, 1:n_occ) => ustack
+      utrans_rows(1:n_occ*nact, 1:n_vir) => utrans
+
+      ! The Coulomb term for the whole batch: `c_Pm = B^P_ai u^m_ai` with the
+      ! long index inner, then `J^m = B c^m` over the columns.
+      if (.not. minus) then
+         uflat(1:n_ov, 1:nact) => ubatch
+         allocate (coef(naux, nact), coul(n_ov, nact))
+         call gemm_over_inner(fit%bov, uflat, coef)
+         call gemm_over_columns(fit%bov, coef, coul)
+         deallocate (coef)
+      end if
+
+      nthr = omp_get_max_threads()
+      allocate (k1_part(n_vir, nact*n_occ, nthr), k2_part(n_vir, nact*n_occ, nthr))
+      used = 1
+      !$omp parallel default(none) &
+      !$omp    shared(fit, nact, n_vir, n_occ, naux, nthr, used, ustack_rows, utrans_rows, &
+      !$omp           k1_part, k2_part) &
+      !$omp    private(p, c, t, tid, bvv_p, boo_p, bov_p, y, w, y_rows, y_cols, w_rows, w_cols, &
+      !$omp            k1_t, k2_t)
+      tid = omp_get_thread_num() + 1
+      !$omp single
+      used = omp_get_num_threads()
+      !$omp end single
+      ! Each thread zeroes its own slab, so the pages land on its socket.
+      k1_t => k1_part(:, :, tid)
+      k2_t => k2_part(:, :, tid)
+      k1_t = 0.0_dp
+      k2_t = 0.0_dp
+      allocate (y(n_vir*nact, n_occ), w(n_occ*nact, n_occ))
+      y_rows(1:n_vir*nact, 1:n_occ) => y
+      y_cols(1:n_vir, 1:nact*n_occ) => y
+      w_rows(1:n_occ*nact, 1:n_occ) => w
+      w_cols(1:n_occ, 1:nact*n_occ) => w
+      !$omp do schedule(dynamic, 4)
+      do p = 1, naux
+         bvv_p(1:n_vir, 1:n_vir) => fit%bvv(:, p)
+         boo_p(1:n_occ, 1:n_occ) => fit%boo(:, p)
+         bov_p(1:n_vir, 1:n_occ) => fit%bov(:, p)
+         ! Y(a m, i) = sum_j U_m(a, j) B_oo(i, j), every vector at once
+         call pic_gemm(ustack_rows, boo_p, y_rows, transb="T")
+         ! K1(a, m i) += sum_b B_vv(a, b) Y(b, m i)
+         call pic_gemm(bvv_p, y_cols, k1_t, alpha=1.0_dp, beta=1.0_dp)
+         ! W(j m, i) = sum_b U_m(b, j) B_ov(b, i), every vector at once
+         call pic_gemm(utrans_rows, bov_p, w_rows)
+         ! K2(a, m i) += sum_j B_ov(a, j) W(j, m i)
+         call pic_gemm(bov_p, w_cols, k2_t, alpha=1.0_dp, beta=1.0_dp)
+      end do
+      !$omp end do
+      deallocate (y, w)
+      ! The reduction across threads, into slab 1, split over columns so it
+      ! runs at the machine's bandwidth rather than one core's.
+      !$omp do schedule(static)
+      do c = 1, nact*n_occ
+         do t = 2, used
+            k1_part(:, c, 1) = k1_part(:, c, 1) + k1_part(:, c, t)
+            k2_part(:, c, 1) = k2_part(:, c, 1) + k2_part(:, c, t)
+         end do
+      end do
+      !$omp end do
+      !$omp end parallel
+
+      k1(1:n_vir, 1:nact, 1:n_occ) => k1_part(:, :, 1)
+      k2(1:n_vir, 1:nact, 1:n_occ) => k2_part(:, :, 1)
+      if (.not. minus) coul_m(1:n_vir, 1:n_occ, 1:nact) => coul
+      do m = 1, nact
+         j = idx(m)
+         if (minus) then
+            au(:, :, j) = gaps*u(:, :, j) - k1(:, m, :) + k2(:, m, :)
+         else
+            au(:, :, j) = gaps*u(:, :, j) + 4.0_dp*coul_m(:, :, m) - k1(:, m, :) - k2(:, m, :)
+         end if
+      end do
+   end subroutine apply_fitted_batch
 
    subroutine response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
                              u, idx, nact, minus, au, error)
@@ -1855,11 +2260,12 @@ contains
       t0 = t1
 
       if (direct) then
-         if (minus) then
-            call build_fock_direct_nosym(mol, zero_h, dens, bounds, g, stats, error)
-         else
-            call build_fock_direct_many(mol, zero_h, dens, bounds, g, stats, error)
-         end if
+         ! Both symmetries through the fast build: announced antisymmetric, its
+         ! folded accumulation is exact. The routine that writes the
+         ! permutations out cost several times more per pass and was most of
+         ! a matrix-free iteration.
+         call build_fock_direct_many(mol, zero_h, dens, bounds, g, stats, error, &
+                                     antisymmetric=minus)
          if (error%has_error()) return
       else
          allocate (g(n_ao, n_ao, nact))
@@ -1887,7 +2293,8 @@ contains
    subroutine distributed_dynamic_cross(mol, orbitals, orbital_energies, n_occ, &
                                         frequencies, measure, respond, tensors, &
                                         centroids, error, n_core, max_iter, tol, hessian, &
-                                        progress, aux, route, allow_unconverged, batch)
+                                        progress, aux, route, allow_unconverged, batch, &
+                                        static_response, b_ao)
       !! Mixed-multipole dynamic response, per localized orbital and frequency
       !!
       !!     alpha^(i)_{km}(i nu) = -2 sum_a h^{measure,k}_{ai} S^{respond,m}_{ai}
@@ -1912,6 +2319,13 @@ contains
       !!
       !! Phase conventions do not enter: each component is quadratic in its
       !! localized orbital, so flipping an orbital's sign leaves it unchanged.
+      !!
+      !! **The static response comes out of the same solve** when a zero
+      !! frequency is among `frequencies` and `static_response` is asked for.
+      !! It is the canonical-orbital response `U` that `cphf_solve` returns,
+      !! `(A+B) U = -h`, for every `respond` operator, so a caller that also
+      !! wants the static block over the whole occupied space does not solve
+      !! for it a second time.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)
       real(dp), intent(in) :: orbital_energies(:)
@@ -1938,11 +2352,17 @@ contains
          !! Take an unconverged response rather than refusing it.
       integer, intent(in), optional :: batch
          !! Passed straight through: densities per integral pass.
+      real(dp), allocatable, intent(out), optional :: static_response(:, :, :)
+         !! `(n_vir, n_occ, n_respond)`: the zero-frequency response in
+         !! `cphf_solve`'s convention, taken from the frequency in
+         !! `frequencies` that is zero. An error if none is.
+      real(dp), allocatable, intent(inout), optional :: b_ao(:, :)
+         !! Passed straight through: a fitted SCF's AO tensor, consumed.
 
       real(dp), allocatable :: alpha(:, :, :), s_all(:, :, :, :), localized(:, :)
       real(dp), allocatable :: s(:, :), sc(:, :), w(:, :), h_loc(:, :, :)
       real(dp), allocatable :: s_loc(:, :), c_occ(:, :), c_vir(:, :), work(:, :)
-      integer :: n_ao, n_mo, n_vir, n_lmo, core, k, m, i, a, ifreq
+      integer :: n_ao, n_mo, n_vir, n_lmo, core, k, m, i, a, ifreq, izero
 
       n_ao = size(orbitals, 1)
       n_mo = size(orbitals, 2)
@@ -1955,6 +2375,18 @@ contains
          return
       end if
 
+      izero = 0
+      if (present(static_response)) then
+         do ifreq = 1, size(frequencies)
+            if (frequencies(ifreq) == 0.0_dp) izero = ifreq
+         end do
+         if (izero == 0) then
+            call error%set(ERROR_VALIDATION, "the static response was asked for, "// &
+                           "but no frequency is zero")
+            return
+         end if
+      end if
+
       call boys_localize(mol, orbitals(:, core + 1:n_occ), n_lmo, localized, &
                          centroids, error)
       if (error%has_error()) return
@@ -1963,8 +2395,14 @@ contains
                                   alpha, error, max_iter=max_iter, tol=tol, &
                                   response=s_all, perturbations=respond, &
                                   hessian=hessian, progress=progress, aux=aux, &
-                                  route=route, allow_unconverged=allow_unconverged, batch=batch)
+                                  route=route, allow_unconverged=allow_unconverged, batch=batch, &
+                                  b_ao=b_ao)
       if (error%has_error()) return
+      ! The solve's `S` is `-2 (A+B)^-1 h` at zero frequency; `cphf_solve`'s `U`
+      ! is `-(A+B)^-1 h`, so the block handed out is halved to match it.
+      if (present(static_response)) then
+         allocate (static_response, source=0.5_dp*s_all(:, :, :, izero))
+      end if
 
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))
       c_occ = orbitals(:, 1:n_occ)
@@ -2150,7 +2588,8 @@ contains
 
    subroutine distributed_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                          tensors, centroids, error, n_core, &
-                                         max_iter, tol, iterations, in_core, hessian)
+                                         max_iter, tol, iterations, in_core, hessian, &
+                                         response)
       !! One polarizability tensor per localized orbital, at its centroid
       !!
       !! Where in the molecule the response happens, so an induced dipole can be
@@ -2197,6 +2636,11 @@ contains
          !! response is `(A+B) U = -h`, so once the dynamic blocks have built
          !! `(A+B)` the same equation is one factorization away. A *fitted*
          !! Hessian is declined -- see `fitted` on the type.
+      real(dp), intent(in), optional :: response(:, :, :)
+         !! `(n_vir, n_occ, 3)`: the static dipole response over the whole
+         !! occupied space, already solved for -- what `distributed_dynamic_cross`
+         !! hands out as `static_response`. With it there is no solve here at
+         !! all, and `hessian`, `max_iter`, `tol` and `in_core` go unread.
 
       real(dp), allocatable :: dip(:, :, :), u(:, :, :), localized(:, :)
       real(dp), allocatable :: s(:, :), w(:, :), u_loc(:, :, :), h_loc(:, :, :)
@@ -2234,7 +2678,16 @@ contains
       ! The response over the whole occupied space -- see `n_core` above.
       dense = .false.
       if (present(hessian)) dense = hessian%ready .and. .not. hessian%fitted
-      if (dense) then
+      if (present(response)) then
+         if (size(response, 1) /= n_vir .or. size(response, 2) /= n_occ .or. &
+             size(response, 3) /= 3) then
+            call error%set(ERROR_VALIDATION, "distributed polarizability: the "// &
+                           "supplied response is the wrong shape for this reference")
+            return
+         end if
+         u = response
+         if (present(iterations)) iterations = 0
+      else if (dense) then
          call static_response_dense(hessian%aplus, dip, c_occ, c_vir, u, error)
          if (present(iterations)) iterations = 0
       else

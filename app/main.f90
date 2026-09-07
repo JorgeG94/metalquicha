@@ -24,6 +24,8 @@ program main
    use mqc_version, only: print_version
    use pic_timer, only: timer_type
    use mqc_error, only: error_t
+   use mqc_memory, only: set_memory_budget
+   use pic_types, only: dp
    use pic_knowledge, only: get_knowledge
    use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
@@ -37,6 +39,7 @@ program main
    integer :: stat                   !! Status code for file I/O
    character(len=:), allocatable :: errmsg  !! Error messages for file I/O
    character(len=256) :: input_file  !! Input file name
+   character(len=64) :: memory_text  !! The deck's memory budget, for the log
 
    ! Initialize MPI
    ! pic-mpi will call mpi_init_thread when needed
@@ -110,6 +113,16 @@ program main
       call logger%configure(get_logger_level(mqc_config%log_level))
       if (resources%mpi_comms%world_comm%rank() == 0) then
          call logger%info("Logger verbosity set to: "//trim(mqc_config%log_level))
+      end if
+   end if
+
+   ! The memory this run may plan on. Set once, here, and read by whichever
+   ! decision trades memory for time; absent, each of those asks the machine.
+   if (mqc_config%memory_gb > 0.0_dp) then
+      call set_memory_budget(mqc_config%memory_gb)
+      if (resources%mpi_comms%world_comm%rank() == 0) then
+         write (memory_text, "(A,F0.1,A)") "Memory budget set to ", mqc_config%memory_gb, " GB"
+         call logger%info(trim(memory_text))
       end if
    end if
 

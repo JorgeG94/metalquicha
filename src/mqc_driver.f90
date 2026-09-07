@@ -1361,6 +1361,7 @@ contains
                              grad_tol=named_grad_tol, &
                              scf_in=makefp_scf, max_iter_in=named_max_iter, &
                              vdwscl=config%method_config%efp%vdw_scale, &
+                             quadrupole_blocks=config%method_config%efp%quadrupole_blocks, &
                              dynamic_tol=config%method_config%efp%dynamic_tolerance, &
                              dynamic_maxiter=config%method_config%efp%dynamic_maxiter, &
                              response=config%method_config%efp%response, &
@@ -1376,6 +1377,7 @@ contains
                              grad_tol=named_grad_tol, &
                              scf_in=makefp_scf, max_iter_in=named_max_iter, &
                              vdwscl=config%method_config%efp%vdw_scale, &
+                             quadrupole_blocks=config%method_config%efp%quadrupole_blocks, &
                              dynamic_tol=config%method_config%efp%dynamic_tolerance, &
                              dynamic_maxiter=config%method_config%efp%dynamic_maxiter, &
                              response=config%method_config%efp%response, &

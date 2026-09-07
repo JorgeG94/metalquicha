@@ -19,6 +19,7 @@ module mqc_czt_bridge
                                scf_not_converged_message
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_number_to_symbol
+   use mqc_memory, only: available_memory_bytes
    use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN, MAX_LINE_LENGTH, &
                                  ERI_CORE_BUDGET_CAP, ERI_CORE_BUDGET_SHARE, &
                                  ERI_CORE_BUDGET_BLIND, SAPT_CORE_BUDGET_SHARE
@@ -186,32 +187,6 @@ contains
 
       fits = 8.0_dp*real(nao, dp)**4 <= budget
    end function eri_fits_in_core
-
-   function available_memory_bytes() result(bytes)
-      !! MemAvailable from /proc/meminfo, or zero where that does not exist
-      !!
-      !! MemAvailable rather than MemFree: free memory on a warm machine is
-      !! almost nothing, because the kernel has spent it on page cache it will
-      !! hand back on demand.
-      real(dp) :: bytes
-      integer :: unit, stat
-      character(len=MAX_LINE_LENGTH) :: line
-      real(dp) :: kb
-
-      bytes = 0.0_dp
-      open (newunit=unit, file="/proc/meminfo", status="old", action="read", iostat=stat)
-      if (stat /= 0) return
-      do
-         read (unit, "(a)", iostat=stat) line
-         if (stat /= 0) exit
-         if (line(1:13) == "MemAvailable:") then
-            read (line(14:), *, iostat=stat) kb
-            if (stat == 0) bytes = kb*1024.0_dp
-            exit
-         end if
-      end do
-      close (unit)
-   end function available_memory_bytes
 
    pure function czt_backend_available() result(available)
       !! Whether this build can run an SCF on the CPU
@@ -449,7 +424,7 @@ contains
                              aux_basis, guess, energy_tol, density_tol, grad_tol, &
                              scf_in, max_iter_in, &
                              vdwscl, dynamic_tol, dynamic_maxiter, response, &
-                             allow_crap_response, response_batch)
+                             allow_crap_response, response_batch, quadrupole_blocks)
       !! Build an effective fragment potential and write it
       !!
       !! Here rather than in the driver so the driver needs no knowledge of
@@ -485,8 +460,9 @@ contains
          !! `keywords.scf.gradient_tolerance`, present only when the deck named
          !! it.
       real(dp), intent(in), optional :: vdwscl
-         !! The screening grid's van der Waals scale. This and the three below
+         !! The screening grid's van der Waals scale. This and the ones below
          !! are the `keywords.efp` group: forwarded, not read here.
+      logical, intent(in), optional :: quadrupole_blocks
       real(dp), intent(in), optional :: dynamic_tol
          !! Tolerance of the dynamic response solve.
       integer, intent(in), optional :: dynamic_maxiter
@@ -512,7 +488,7 @@ contains
                               max_iter_in=max_iter_in, &
                               vdwscl=vdwscl, dynamic_tol=dynamic_tol, &
                             dynamic_maxiter=dynamic_maxiter, response=response, allow_crap_response=allow_crap_response, &
-                              response_batch=response_batch)
+                              response_batch=response_batch, quadrupole_blocks=quadrupole_blocks)
       if (error%has_error()) return
       call write_efp_potential(pot, path, error)
       call pot%destroy()

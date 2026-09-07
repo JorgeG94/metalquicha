@@ -189,7 +189,7 @@ contains
                              aux_basis, guess, energy_tol, density_tol, grad_tol, &
                              scf_in, max_iter_in, &
                              vdwscl, dynamic_tol, dynamic_maxiter, response, &
-                             allow_crap_response, response_batch)
+                             allow_crap_response, response_batch, quadrupole_blocks)
       !! No-op stand-in: an effective fragment potential needs the CPU backend
       use pic_types, only: dp
       use mqc_error, only: error_t
@@ -209,6 +209,7 @@ contains
       real(dp), intent(in), optional :: vdwscl, dynamic_tol
       integer, intent(in), optional :: dynamic_maxiter, response
       logical, intent(in), optional :: allow_crap_response
+      logical, intent(in), optional :: quadrupole_blocks
       integer, intent(in), optional :: response_batch
 
       call error%set(ERROR_VALIDATION, &

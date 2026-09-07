@@ -2637,23 +2637,34 @@ contains
       if (present(omega)) env(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
       allocate (deriv(orb%nao, orb%nao, aux%nao, 3))
-      deriv = 0.0_dp
 
       mx = max(max_block(orb), max_block(aux))
 
-      ! Threaded over the first orbital shell. Each (ish, jsh, ksh) writes its
+      ! Threaded over the orbital shell pair. Each (ish, jsh, ksh) writes its
       ! own block of `deriv` and reads nothing another writes, so no reduction
-      ! is needed; `buf` is the one genuinely private object.
+      ! is needed; `buf` is the one genuinely private object. The pair rather
+      ! than the first shell alone because the work per shell varies with its
+      ! angular momentum, and with one shell per iteration the last f shells
+      ! ran alone while the rest of the node waited. The zeroing is threaded
+      ! too: this array is 5.6 GB for adenine in cc-pVTZ, and it also spreads
+      ! the pages over the threads that go on to write them.
       !$omp parallel default(none) &
       !$omp    shared(deriv, orb, aux, bas, env, dummy, nbas_orb, nbas_aux, mx, which) &
       !$omp    private(ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, comp, ret, idx, &
       !$omp            shls, buf)
+      !$omp do collapse(2) schedule(static)
+      do comp = 1, 3
+         do k = 1, aux%nao
+            deriv(:, :, k, comp) = 0.0_dp
+         end do
+      end do
+      !$omp end do
       allocate (buf(mx**3*3))
-      !$omp do schedule(dynamic)
+      !$omp do collapse(2) schedule(dynamic)
       do ish = 1, nbas_orb
-         di = shell_dim(orb%cartesian, ish - 1, bas)
-         io = orb%shell_offset(ish)
          do jsh = 1, nbas_orb
+            di = shell_dim(orb%cartesian, ish - 1, bas)
+            io = orb%shell_offset(ish)
             dj = shell_dim(orb%cartesian, jsh - 1, bas)
             jo = orb%shell_offset(jsh)
             do ksh = 1, nbas_aux

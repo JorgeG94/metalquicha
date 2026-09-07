@@ -723,6 +723,38 @@ GRADIENT_RI_MP2_CASES = [
     ("water", "6-31g", "cc-pvdz-rifit", 1),
 ]
 
+# Looser than `GRADIENT_TOLERANCE` for the four above, and the reason is a
+# deliberate difference between the two sides rather than an error on either.
+# `ri_mp2_gradient.py` solves its Z-vector with the *exact* orbital Hessian --
+# `solve_z_vector` builds it from four-centre integrals -- while the program
+# fits the Z-vector's operator and the two reference potentials whatever the
+# reference was (`fit_response` in `czt_ri_mp2_gradient`): the exact operator is
+# a four-centre Fock build per iteration and was most of an adenine gradient's
+# wall clock, and fitting it moves the answer by the fitting error only.
+# Measured against these references: 3.3e-8 for water/6-31G under
+# cc-pVDZ-RIFIT, 2.7e-7 for water/cc-pVDZ, 1.2e-6 for NH3/def2-SVP and 3.2e-6
+# for water/STO-3G -- the coarser the orbital basis relative to its fitting set,
+# the larger. The bound leaves a factor of three on the worst of those and
+# still catches a wrong block, which is 1e-3 or worse. A reference that fits its
+# Z-vector too would restore the 1e-8 bound; until then the four are a check on
+# the derivative terms and the fitted case below is the exact pin.
+GRADIENT_RI_MP2_TOLERANCE = 1.0e-5
+
+# One RI-MP2 gradient pinned to this program's *own* output, as (molecule,
+# basis, aux, frozen, energy, gradient). The only case in the suite whose
+# reference is not independent, and it exists because nothing independent
+# computes what production computes: the Z-vector operator fitted over an exact
+# reference. So it is held at `GRADIENT_TOLERANCE`, where the four above cannot
+# be, and what it detects is change -- a fitted response operator, a threaded
+# GEMM or a contraction that stops agreeing with itself to 1e-8. The numbers
+# were taken at 1 and 128 threads, which agree to 1.3e-14, and sum to 1e-14 per
+# direction; the deck is what a default deck computes, one carbon core frozen.
+GRADIENT_RI_MP2_SELF_CASES = [
+    ("ch4", "cc-pvdz", "cc-pvdz-rifit", 1, -40.359711209586,
+     [[0.0, 0.0, 0.0], [-0.005108365064, -0.005108365064, -0.005108365064], [-0.005108365064, 0.005108365064, 0.005108365064], [0.005108365064, -0.005108365064, 0.005108365064], [0.005108365064, 0.005108365064, -0.005108365064]]),
+]
+GRADIENT_RI_MP2_SELF_NOTE = ("reference is this program's own gradient (build_mkl, Perlmutter, 2026-09-07), the Z-vector operator and reference potentials fitted as production does; 1 and 128 threads agree to 1.3e-14 and the components sum to 1e-14 per direction. A regression pin, not an independent check: the exact-operator cases above are the independent ones")
+
 # The same, with the *reference* fitted as well -- as (molecule, basis, aux).
 # A different energy from the three above and not a cheaper route to one of
 # them: the response operator, both potentials built from the relaxed density,
@@ -3133,13 +3165,40 @@ def main():
             "input": deck,
             "expected_energy": round(energy, 12),
             "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
-            "gradient_tolerance": GRADIENT_TOLERANCE,
+            "gradient_tolerance": GRADIENT_RI_MP2_TOLERANCE,
             "check_translation": True,
             "type": "unfragmented",
         })
         norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
         print(f"{mol.label:6s} {basis:12s} {'RI-MP2':8s} grad |g|={norm:.10f} "
               f"frozen={frozen} nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, aux, frozen, energy, gradient in GRADIENT_RI_MP2_SELF_CASES:
+        mol = MOLECULES[name]
+        stem = f"cpu_{name}_{normalize_basis_name(basis)}_rimp2"
+        if frozen:
+            stem += f"_f{frozen}"
+        deck = deck_for(f"{CPU_MQC}/gradient", stem + "_grad")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, aux=aux, method="ri-mp2",
+                          correlation={"freeze_core": frozen > 0,
+                                       "n_frozen_core": frozen}, aux_only=True)
+            d["driver"] = "Gradient"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"RI-MP2 gradient, fitted response {mol.label} {basis}/{aux} "
+                    f"frozen {frozen} (CPU)",
+            "input": deck,
+            "expected_energy": energy,
+            "expected_gradient": gradient,
+            "gradient_tolerance": GRADIENT_TOLERANCE,
+            "check_translation": True,
+            "type": "unfragmented",
+            "reference_note": GRADIENT_RI_MP2_SELF_NOTE,
+        })
+        print(f"{mol.label:6s} {basis:12s} {'RI-MP2':8s} grad pinned to own output "
+              f"frozen={frozen} E={energy:.12f}", flush=True)
 
     for name, basis, aux in GRADIENT_DF_REF_CASES:
         mol = MOLECULES[name]

@@ -29,6 +29,7 @@ module mqc_czt_ri_mp2_gradient
    ! operator the conventional assembly uses.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
+   use mqc_czt_gemm_threads, only: gemm_over_columns, gemm_over_inner
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks, &
                                 build_df_mo_tensor, three_centre, two_centre, &
@@ -53,7 +54,8 @@ contains
 
    subroutine czt_ri_mp2_gradient(mol, aux, coeff, orbital_energies, n_occ, &
                                   gradient, error, n_frozen, force_direct, &
-                                  fitted_reference, xc, scf_density, pt2_scale)
+                                  fitted_reference, xc, scf_density, pt2_scale, &
+                                  fit_response)
       !! dE(RI-MP2)/dR for a closed-shell reference, in Hartree/Bohr
       type(czt_molecule_t), intent(in) :: mol
       type(czt_molecule_t), intent(in) :: aux   !! Auxiliary basis, same atoms
@@ -102,6 +104,14 @@ contains
          !! The functional's PT2 coefficient, applied once and after the
          !! Z-vector solve -- scaling a linear system's right-hand side and
          !! scaling its solution are the same thing.
+      logical, intent(in), optional :: fit_response
+         !! Build the Z-vector's operator and the reference potentials from the
+         !! fitted tensor whatever the reference was. Absent is `.true.`: the
+         !! exact operator costs a four-centre Fock build per iteration and is
+         !! the bulk of an unfitted gradient's wall clock, while the fitted one
+         !! moves the result by the fitting error, below what the RI-MP2 energy
+         !! itself carries. `.false.` is for the tests that hold this gradient
+         !! to a machine-precision exact reference.
 
       real(dp), allocatable :: bmat(:, :), bia_raw(:, :, :), metric(:, :), jm12(:, :)
       real(dp), allocatable :: ovov(:, :), xm(:, :)
@@ -110,6 +120,7 @@ contains
       real(dp), allocatable :: doo(:, :), dvv(:, :), dm1mo(:, :), zeta(:, :)
       real(dp), allocatable :: imat(:, :), im1(:, :), im1_t(:, :)
       real(dp), allocatable :: lag_o(:, :), lag_v(:, :), pq_p(:, :, :)
+      real(dp), allocatable :: slab_qp(:, :), slab_pa(:, :), part_o(:, :), part_v(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :), c_act(:, :)
       real(dp), allocatable :: hf_density(:, :), dm1(:, :), dm1_total(:, :), dm1p(:, :)
       real(dp), allocatable :: veff(:, :), xvo(:, :, :), zvec(:, :, :)
@@ -127,7 +138,7 @@ contains
       integer :: n_ao, n_mo, n_o, n_oa, n_v, n_aux, n_ov, frozen
       integer :: i, j, a, b, p, q, iatom, comp, p0, p1
       real(dp) :: denom, kf, cscale
-      logical :: dense, fitted, dh
+      logical :: dense, fitted, dh, fit_z
 
       if (ecp_refuses_derivatives(mol%core_electrons, "RI-MP2 gradient", error)) return
 
@@ -172,12 +183,20 @@ contains
          return
       end if
 
-      ! Stored or recomputed, for the *reference* integrals only -- the ones the
-      ! Z-vector's operator and the reference potential are built from. Those
-      ! stay exact whatever the correlation is fitted with, since an `ri-mp2`
-      ! energy fits nothing in its SCF.
+      ! `fitted` says what the reference was, and governs the reference's own
+      ! derivative terms below: exact four-centre derivatives for an exact SCF,
+      ! fitted ones for a fitted SCF. `fit_z` says what the Z-vector's operator
+      ! and the two reference potentials are built from, and is fitted by
+      ! default whatever the reference -- the exact operator is a four-centre
+      ! Fock build per iteration, which was most of the wall clock of an
+      ! unfitted adenine gradient, and fitting it moves the gradient by the
+      ! fitting error only. Stored or recomputed integrals matter only when the
+      ! operator is exact.
       fitted = .false.
       if (present(fitted_reference)) fitted = fitted_reference
+      fit_z = .true.
+      if (present(fit_response)) fit_z = fit_response
+      fit_z = fit_z .or. fitted
 
       ! The double hybrid's three settings, and the ordinary RI-MP2 values that
       ! make every expression below reduce to what it was.
@@ -200,9 +219,9 @@ contains
       if (present(force_direct)) then
          if (force_direct) dense = .false.
       end if
-      ! With the reference fitted there are no four-centre integrals in the
+      ! With the operator fitted there are no four-centre integrals in the
       ! whole routine, so neither branch of the storage decision applies.
-      if (fitted) dense = .false.
+      if (fit_z) dense = .false.
 
       ! Two occupied spaces from here on: the full one, `c_occ`, for the
       ! reference density, the response and every one-particle quantity; the
@@ -221,11 +240,13 @@ contains
       n_aux = size(bia_raw, 2)
       n_ov = n_oa*n_v
       allocate (bmat(n_ov, n_aux))
+      !$omp parallel do default(none) shared(bmat, bia_raw, n_aux, n_oa, n_ov) private(p, i)
       do p = 1, n_aux
          do i = 1, n_oa
             bmat(i:n_ov:n_oa, p) = bia_raw(:, p, i)
          end do
       end do
+      !$omp end parallel do
       deallocate (bia_raw)
 
       call two_centre(aux, metric)
@@ -236,11 +257,11 @@ contains
       ! transforms them to `(pq|P)`, and a fitted reference needs them again --
       ! undoubled and unfitted -- for its own derivative term.
       call three_centre(mol, aux, three_ao)
-      if (fitted) then
-         ! `B(mu nu, P)`, the same tensor the SCF built, formed from the
-         ! integrals and metric already in hand.
+      if (fit_z) then
+         ! `B(mu nu, P)`, the tensor a fitted SCF builds, formed from the
+         ! integrals and metric already in hand. The Z-vector's operator.
          allocate (bref(n_ao*n_ao, n_aux))
-         call pic_gemm(three_ao, jm12, bref)
+         call gemm_over_columns(three_ao, jm12, bref)
       else
          allocate (bref(0, 0))
       end if
@@ -249,13 +270,16 @@ contains
       ! matrix in the compound `(i,a)` index, which is the shape the repack
       ! above produces.
       allocate (ovov(n_ov, n_ov))
-      call pic_gemm(bmat, bmat, ovov, transb="T")
+      call gemm_over_columns(bmat, bmat, ovov, transb="T")
 
       ! `i` and `j` count *active* occupied orbitals, which is why their
       ! energies are read at `frozen + i`: the fitted tensor already dropped
       ! the core, and the denominators have to drop the same orbitals or every
       ! amplitude divides by the wrong gap.
       allocate (t2(n_oa, n_oa, n_v, n_v))
+      !$omp parallel do default(none) collapse(2) &
+      !$omp    shared(t2, ovov, orbital_energies, n_v, n_oa, frozen, n_occ) &
+      !$omp    private(a, b, i, j, denom)
       do b = 1, n_v
          do a = 1, n_v
             do j = 1, n_oa
@@ -267,12 +291,14 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
       deallocate (ovov)
 
       ! ---- the three- and two-index densities (eqs 8, 10) ------------------
       ! `2 X^ab_ij - X^ba_ij`, in the two compound indices, so that eq 8 is a
       ! gemm rather than the five-deep loop it reads as.
       allocate (xm(n_ov, n_ov))
+      !$omp parallel do default(none) collapse(2) shared(xm, t2, n_v, n_oa) private(a, b, i, j)
       do b = 1, n_v
          do a = 1, n_v
             do j = 1, n_oa
@@ -283,6 +309,7 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
 
       call build_gamma(xm, bmat, jm12, n_oa, n_v, n_aux, gamma)
       call build_gamma_metric(gamma, bmat, jm12, n_oa, n_v, n_aux, gamma_pq)
@@ -313,23 +340,42 @@ contains
       ! Lagrangian has active rows and its `(iq|P)` reads at `frozen + i` --
       ! while the free index `q` still runs over every molecular orbital,
       ! which is where the occupied-frozen rows of `imat` come from.
+      ! Both are products over the auxiliary index once a slab of `(pq|P)` is
+      ! gathered contiguous: for each virtual `a`, `L_o += 2 Gamma(:, :, a)^T
+      ! (q, n_o+a | :)^T`; for each active `i`, `L_v += 2 Gamma(:, i, :)^T
+      ! (frozen+i, q | :)^T`. As strided element-wise sums on one core this
+      ! took 8 s of a 56 s adenine/cc-pVTZ gradient.
       allocate (lag_o(n_oa, n_mo), lag_v(n_v, n_mo))
       lag_o = 0.0_dp
       lag_v = 0.0_dp
-      do q = 1, n_mo
-         do a = 1, n_v
-            do i = 1, n_oa
-               lag_o(i, q) = lag_o(i, q) &
-                             + 2.0_dp*sum(gamma(:, i, a)*pq_p(q, n_o + a, :))
-            end do
-         end do
-         do a = 1, n_v
-            do i = 1, n_oa
-               lag_v(a, q) = lag_v(a, q) &
-                             + 2.0_dp*sum(gamma(:, i, a)*pq_p(frozen + i, q, :))
-            end do
-         end do
+      !$omp parallel default(none) &
+      !$omp    shared(gamma, pq_p, lag_o, lag_v, n_mo, n_v, n_oa, n_o, n_aux, frozen) &
+      !$omp    private(a, i, slab_qp, slab_pa, part_o, part_v)
+      allocate (slab_qp(n_mo, n_aux), part_o(n_oa, n_mo), part_v(n_v, n_mo))
+      part_o = 0.0_dp
+      part_v = 0.0_dp
+      !$omp do schedule(dynamic)
+      do a = 1, n_v
+         slab_qp = pq_p(:, n_o + a, :)
+         call pic_gemm(gamma(:, :, a), slab_qp, part_o, transa="T", transb="T", &
+                       alpha=2.0_dp, beta=1.0_dp)
       end do
+      !$omp end do nowait
+      allocate (slab_pa(n_aux, n_v))
+      !$omp do schedule(dynamic)
+      do i = 1, n_oa
+         slab_qp = pq_p(frozen + i, :, :)
+         slab_pa = gamma(:, i, :)
+         call pic_gemm(slab_pa, slab_qp, part_v, transa="T", transb="T", &
+                       alpha=2.0_dp, beta=1.0_dp)
+      end do
+      !$omp end do
+      !$omp critical
+      lag_o = lag_o + part_o
+      lag_v = lag_v + part_v
+      !$omp end critical
+      deallocate (slab_qp, slab_pa, part_o, part_v)
+      !$omp end parallel
       deallocate (pq_p)
 
       ! Transposed into the slot: the paper indexes the Lagrangian's own index
@@ -372,7 +418,7 @@ contains
 
       allocate (dm1(n_ao, n_ao))
       dm1 = matmul(coeff, matmul(dm1mo, transpose(coeff)))
-      call reference_response(fitted, bref, dense, mol, eri, bounds, zero_h, dm1, &
+      call reference_response(fit_z, bref, dense, mol, eri, bounds, zero_h, dm1, &
                               veff, error, kf, dh, xc, scf_density)
       if (error%has_error()) return
       veff = 2.0_dp*veff
@@ -393,9 +439,9 @@ contains
       ! `eri`. `xc` makes it the Kohn-Sham operator rather than the
       ! Hartree-Fock one.
       bref_arg => null()
-      if (fitted) bref_arg => bref
+      if (fit_z) bref_arg => bref
       eri_arg => null()
-      if (dense .and. .not. fitted) eri_arg => eri
+      if (dense .and. .not. fit_z) eri_arg => eri
       if (dh) then
          call cphf_solve(mol, coeff, orbital_energies, n_occ, response=zvec, &
                          error=error, mo_rhs=xvo, tol=1.0e-12_dp, max_iter=200, &
@@ -435,7 +481,7 @@ contains
       dm1 = matmul(coeff, matmul(dm1mo, transpose(coeff)))
       allocate (p_occ(n_ao, n_ao))
       p_occ = matmul(c_occ, transpose(c_occ))
-      call reference_response(fitted, bref, dense, mol, eri, bounds, zero_h, &
+      call reference_response(fit_z, bref, dense, mol, eri, bounds, zero_h, &
                               dm1 + transpose(dm1), veff, error, kf, dh, xc, &
                               scf_density)
       if (error%has_error()) return
@@ -612,8 +658,8 @@ contains
 
       n_ov = n_o*n_v
       allocate (half(n_ov, n_aux), gm(n_ov, n_aux))
-      call pic_gemm(xm, bmat, half)
-      call pic_gemm(half, jm12, gm, transb="T")
+      call gemm_over_columns(xm, bmat, half)
+      call gemm_over_columns(half, jm12, gm, transb="T")
       deallocate (half)
 
       ! Back to `(P, i, a)`, the layout the Lagrangian and the AO
@@ -650,8 +696,8 @@ contains
             end do
          end do
       end do
-      call pic_gemm(gflat, bmat, half, transa="T")
-      call pic_gemm(half, jm12, gamma_pq, transb="T")
+      call gemm_over_inner(gflat, bmat, half)
+      call gemm_over_columns(half, jm12, gamma_pq, transb="T")
       deallocate (half, gflat)
    end subroutine build_gamma_metric
 
@@ -714,6 +760,12 @@ contains
       call atom_ao_blocks(aux, aux_offsets, aux_counts)
 
       call three_centre_deriv(mol, aux, 1, ip1)
+      ! Each atom's block is its own, so the atoms are threaded over and each
+      ! writes its own column of the gradient. Serial, the three passes over
+      ! these derivative arrays -- 5.6 GB each for adenine in cc-pVTZ -- were
+      ! the tail of the gradient.
+      !$omp parallel do default(none) shared(ip1, gamma_ao, gradient, mol, offsets, counts) &
+      !$omp    private(iatom, comp, p0, p1, gt) schedule(dynamic)
       do iatom = 1, mol%natm
          p0 = offsets(iatom) + 1
          p1 = offsets(iatom) + counts(iatom)
@@ -731,9 +783,12 @@ contains
          end do
          deallocate (gt)
       end do
+      !$omp end parallel do
       deallocate (ip1)
 
       call three_centre_deriv(mol, aux, 2, ip2)
+      !$omp parallel do default(none) shared(ip2, gamma_ao, gradient, aux, aux_offsets, aux_counts) &
+      !$omp    private(iatom, comp, q0, q1) schedule(dynamic)
       do iatom = 1, aux%natm
          q0 = aux_offsets(iatom) + 1
          q1 = aux_offsets(iatom) + aux_counts(iatom)
@@ -744,6 +799,7 @@ contains
                                                  *gamma_ao(:, :, q0:q1))
          end do
       end do
+      !$omp end parallel do
       deallocate (ip2)
 
       call two_centre_deriv(aux, j1)
