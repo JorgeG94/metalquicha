@@ -127,6 +127,8 @@ contains
       real(dp), intent(in), optional :: spacing, head_space
 
       real(dp), allocatable :: keep(:, :), radii(:)
+
+      integer, allocatable :: elements(:)
       real(dp) :: lo(3), hi(3), r(3)
       real(dp) :: h, margin, d, dmin
       integer :: nx(3)
@@ -140,12 +142,19 @@ contains
       h = h*ANGSTROM_TO_BOHR
       margin = margin*ANGSTROM_TO_BOHR
 
-      allocate (radii(mol%natm))
+      ! The element, not the charge it presents: a ghost has charge zero and
+      ! still excludes the region its basis functions fill.
+      allocate (radii(mol%natm), elements(mol%natm))
+      if (allocated(mol%atomic_numbers)) then
+         elements = mol%atomic_numbers
+      else
+         elements = nint(mol%charges) + mol%core_electrons
+      end if
       do iatom = 1, mol%natm
-         radii(iatom) = element_vdw_radius(nint(mol%charges(iatom)))*ANGSTROM_TO_BOHR
+         radii(iatom) = element_vdw_radius(elements(iatom))*ANGSTROM_TO_BOHR
          if (radii(iatom) <= 0.0_dp) then
             call error%set(ERROR_VALIDATION, "chelpg: no van der Waals radius for element "// &
-                           to_char(nint(mol%charges(iatom)))//", so the excluded region "// &
+                           to_char(elements(iatom))//", so the excluded region "// &
                            "around it is undefined")
             return
          end if

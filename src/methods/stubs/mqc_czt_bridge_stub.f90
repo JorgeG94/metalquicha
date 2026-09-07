@@ -252,7 +252,7 @@ contains
                      "keywords.neo needs the CPU integral backend; build with "// &
                      "-DMQC_ENABLE_CZT=ON")
       if (size(atomic_numbers) < 0 .or. size(coordinates) < 0 .or. size(quantum) < 0) return
-      if (len_trim(element_symbols(1)) < 0 .or. charge < -huge(charge)) return
+      if (size(element_symbols) < 0 .or. charge < -huge(charge)) return
       if (len_trim(basis_name)*len_trim(nuclear_basis) < 0) return
       if (present(verbose) .or. present(energy_tol)) return
       if (present(density_tol) .or. present(max_iter)) return

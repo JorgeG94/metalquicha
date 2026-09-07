@@ -70,6 +70,7 @@ module mqc_czt_neo
    use mqc_czt_xc, only: xc_context_t, xc_context_create
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid
    use mqc_program_limits, only: MAX_LINE_LENGTH
+   use pic_io, only: to_char
    implicit none
    private
 
@@ -94,7 +95,8 @@ module mqc_czt_neo
       !! steps
    real(dp), parameter :: MIX_START = 1.0_dp
       !! How much of a proton's new density enters between cycles, with a
-      !! functional; halved whenever the residual grows
+      !! functional; halved whenever the residual grows and grown back by
+      !! half as much whenever it shrinks
    real(dp), parameter :: MIX_FLOOR = 0.05_dp
 
    type :: neo_result_t
@@ -184,8 +186,9 @@ contains
       real(dp), allocatable :: rho_e(:), rho_p(:), v_grid(:), v_epc_e(:, :), v_epc_p(:, :, :)
       real(dp), allocatable :: ao_one(:, :), f_fixed(:, :), d_mix(:, :)
       integer :: inner
+      logical :: inner_converged
       real(dp) :: e_dummy, mix, dd_prev
-      integer :: natm, nq, nao_e, nao_p, nao_c, p, q, it, i, lo, hi, qlo, qhi, n_sel, level, g
+      integer :: natm, nq, nao_e, nao_p, nao_c, p, q, it, i, lo, hi, n_sel, level, g, macro_cap
       real(dp) :: e_total, e_prev, dd, dd_max, e_p1, e_pp, e_ep
       character(len=MAX_LINE_LENGTH) :: line
 
@@ -208,7 +211,7 @@ contains
             which(q) = i
             if (atomic_numbers(i) /= 1) then
                call error%set(ERROR_VALIDATION, "NEO: only hydrogen can be quantised "// &
-                              "for now; atom "//trim(itoa(i))//" is "// &
+                              "for now; atom "//to_char(i)//" is "// &
                               trim(element_symbols(i)))
                return
             end if
@@ -252,6 +255,16 @@ contains
                               mol_e, error, force_cartesian=force_cartesian, ghost=quantum)
       if (error%has_error()) return
       result%cartesian = mol_e%cartesian
+      ! An effective core potential would have to reach the proton with the
+      ! opposite sign and the electron count would have to lose the cores;
+      ! neither is done, so it is refused rather than run wrong.
+      if (allocated(mol_e%core_electrons)) then
+         if (any(mol_e%core_electrons > 0)) then
+            call error%set(ERROR_VALIDATION, "NEO: effective core potentials are not "// &
+                           "supported with quantum nuclei; use an all-electron basis")
+            return
+         end if
+      end if
 
       call find_basis_file(basis_name, e_path, read_error)
       if (read_error%has_error()) then
@@ -411,7 +424,8 @@ contains
       end if
 
       if (verbose) then
-         write (line, "(A,I0,A,A,I0,A,I0,A)") "  NEO-HF: ", nq, " quantum nucle", &
+         write (line, "(A,I0,A,A,I0,A,I0,A)") "  NEO-"//trim(merge("DFT", "HF ", kohn_sham))// &
+            ": ", nq, " quantum nucle", &
             trim(merge("us", "i ", nq == 1))//"; ", nao_e, " electronic and ", nao_p, &
             " proton functions each"
          call logger%info(trim(line))
@@ -425,7 +439,10 @@ contains
       mix = MIX_START
       dd_prev = huge(1.0_dp)
       result%converged = .false.
-      do it = 1, MAX_MACRO
+      ! A deck asking for more SCF iterations than the default gets as many
+      ! macro-iterations; the constant is a floor, not a ceiling it cannot lift.
+      macro_cap = max(MAX_MACRO, max_iter)
+      do it = 1, macro_cap
          ! Pass A: the Coulomb field of every proton, on the combined basis.
          dens = 0.0_dp
          do p = 1, nq
@@ -461,20 +478,23 @@ contains
             e_p1 = e_p1 + sum(d_p(:, :, p)*h_p(:, :, p))
             lo = offset(p) + 1
             hi = offset(p) + nao_p
+            ! `D_q`'s potential in `p`'s block, once per pair
             do q = p + 1, nq
                e_pp = e_pp + sum(d_p(:, :, p)*j_p(lo:hi, lo:hi, q))
             end do
          end do
 
          ! The electrons, in that field. Warm-started after the first cycle:
-         ! `d_e_prev` is unallocated on the first and so absent.
+         ! `d_e_prev` is unallocated on the first and `xc_arg` is null without
+         ! a functional, and both arrive as absent optionals -- the Fortran
+         ! 2008 rule for a non-allocatable, non-pointer optional dummy.
          call run_czt_rhf(mol_e, nelec, max_iter, energy_tol, density_tol, .false., &
                           result%electrons, error, h_extra=h_extra, in_core=in_core, &
                           guess_density=d_e_prev, xc=xc_arg, scf=scf)
          if (error%has_error()) return
          if (.not. result%electrons%converged) then
             call error%set(ERROR_VALIDATION, "NEO: the electronic SCF did not converge "// &
-                           "in macro-iteration "//trim(itoa(it)))
+                           "in macro-iteration "//to_char(it))
             return
          end if
          d_e_prev = result%electrons%density
@@ -496,42 +516,44 @@ contains
          e_total = result%electrons%energy - sum(result%electrons%density*v_epc_e) &
                    + e_epc + e_p1 + e_pp
 
-         ! Pass B: the electrons' Coulomb field on the proton blocks.
-         deallocate (dens)
-         allocate (dens(nao_c, nao_c, 1))
-         dens = 0.0_dp
+         ! Pass B: the electrons' Coulomb field on the proton blocks, through
+         ! the first slot of the same block array.
+         dens(:, :, 1) = 0.0_dp
          dens(1:nao_e, 1:nao_e, 1) = result%electrons%density
-         call build_fock_direct_many(mol_c, zero_h, dens, bounds, j_e, stats, error, &
+         call build_fock_direct_many(mol_c, zero_h, dens(:, :, 1:1), bounds, j_e, stats, error, &
                                      k_scale=0.0_dp, density_screen=.true.)
          if (error%has_error()) return
-         deallocate (dens)
-         allocate (dens(nao_c, nao_c, nq))
 
          ! Every proton, in the field of the new electrons and the other protons.
          ! With a correlation functional the proton's own potential depends on
          ! its density, and one diagonalisation per cycle overshoots -- the
          ! macro-iteration then flips between two states forever -- so each
          ! proton is taken to self-consistency at fixed electrons first, with
-         ! the density mixed half and half between steps.
+         ! a fifth of its new density admitted per step (`INNER_MIX`).
          dd_max = 0.0_dp
          do p = 1, nq
             lo = offset(p) + 1
             hi = offset(p) + nao_p
             f_fixed = h_p(:, :, p) - j_e(lo:hi, lo:hi, 1)
+            ! The field of every other proton's density, read in *this*
+            ! proton's block: `j_p(:, :, q)` is the Coulomb potential of `D_q`
+            ! over the whole combined basis.
             do q = 1, nq
                if (q == p) cycle
-               qlo = offset(p) + 1
-               qhi = offset(p) + nao_p
-               f_fixed = f_fixed + j_p(qlo:qhi, qlo:qhi, q)
+               f_fixed = f_fixed + j_p(lo:hi, lo:hi, q)
             end do
             d_mix = d_p(:, :, p)
+            inner_converged = .not. use_epc
             do inner = 1, MAX_INNER
                f_p = f_fixed + v_epc_p(:, :, p)
                call lowest_state(f_p, x_p(:, :, p), c_p(:, :, p), eps_p(:, p), work, error)
                if (error%has_error()) return
                if (.not. use_epc) exit
                dd = maxval(abs(work - d_mix))
-               if (dd < density_tol) exit
+               if (dd < density_tol) then
+                  inner_converged = .true.
+                  exit
+               end if
                d_mix = (1.0_dp - INNER_MIX)*d_mix + INNER_MIX*work
                call eval_rho(ao_p(:, :, p), d_mix, rho_p)
                rho_p = max(rho_p, 0.0_dp)
@@ -539,6 +561,12 @@ contains
                call epc17_proton_terms(epc_a, epc_b, epc_c, rho_e, rho_p, w_sel, v_grid, e_dummy)
                call grid_matrix(ao_p(:, :, p), w_sel*v_grid, v_epc_p(:, :, p))
             end do
+            if (.not. inner_converged) then
+               call error%set(ERROR_VALIDATION, "NEO: proton "//to_char(p)//" did not reach "// &
+                              "self-consistency with the correlation functional in "// &
+                              to_char(MAX_INNER)//" steps")
+               return
+            end if
             dd = maxval(abs(work - d_p(:, :, p)))
             dd_max = max(dd_max, dd)
             ! Damped between cycles with a functional when the residual grows:
@@ -552,7 +580,11 @@ contains
             end if
          end do
          if (use_epc .and. it > 1) then
-            if (dd_max > dd_prev) mix = max(0.5_dp*mix, MIX_FLOOR)
+            if (dd_max > dd_prev) then
+               mix = max(0.5_dp*mix, MIX_FLOOR)
+            else
+               mix = min(1.5_dp*mix, 1.0_dp)
+            end if
          end if
          dd_prev = dd_max
 
@@ -575,7 +607,7 @@ contains
       end if
       if (.not. result%converged) then
          call error%set(ERROR_VALIDATION, "NEO: the macro-iteration did not converge in "// &
-                        trim(itoa(MAX_MACRO))//" cycles")
+                        to_char(macro_cap)//" cycles")
          return
       end if
 
@@ -592,7 +624,8 @@ contains
       call move_alloc(s_p, result%nuclear_overlaps)
 
       if (verbose) then
-         write (line, "(A,F20.10)") "  NEO-HF energy      ", result%energy
+         write (line, "(A,F20.10)") "  NEO-"//trim(merge("DFT", "HF ", kohn_sham))// &
+            " energy     ", result%energy
          call logger%info(trim(line))
          write (line, "(A,F20.10)") "    electrons + classical nuclei + e-p ", result%electronic
          call logger%info(trim(line))
@@ -742,11 +775,5 @@ contains
       call pic_gemm(x, f_ortho, c)
       call pic_gemm(c(:, 1:1), c(:, 1:1), d, transb="T")
    end subroutine lowest_state
-
-   function itoa(i) result(s)
-      integer, intent(in) :: i
-      character(len=16) :: s
-      write (s, "(I0)") i
-   end function itoa
 
 end module mqc_czt_neo

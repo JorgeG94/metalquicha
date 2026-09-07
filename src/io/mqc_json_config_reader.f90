@@ -729,6 +729,11 @@ contains
       if (.not. found) return
       call optional_string(json, "keywords.neo.nuclear_basis", text)
       if (allocated(text)) then
+         if (len_trim(adjustl(text)) > len(config%neo_nuclear_basis)) then
+            call error%set(ERROR_VALIDATION, "keywords.neo.nuclear_basis is longer than "// &
+                           int_to_key(len(config%neo_nuclear_basis))//" characters")
+            return
+         end if
          config%neo_nuclear_basis = trim(adjustl(text))
          deallocate (text)
       end if

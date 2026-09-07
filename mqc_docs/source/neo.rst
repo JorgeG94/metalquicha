@@ -57,7 +57,7 @@ points a proton density reaches.
 ``epc`` with ``model.method hf`` is refused: it is a correlation functional and
 needs a Kohn-Sham electron.
 
-The energy reported is the NEO-HF total: electrons and classical nuclei, the
+The energy reported is the NEO total: electrons and classical nuclei, the
 quantum nuclei's kinetic and potential energy, and every coupling between them.
 With the logger at ``info`` the run prints the macro-iteration table and the
 energy broken into those pieces, together with each proton's orbital energy.
@@ -83,14 +83,15 @@ current proton densities, then every proton is re-solved in the field of the
 new electrons -- until the total energy and the proton densities stop moving.
 
 The proton mass follows PySCF-NEO: the most common isotope's atomic mass less
-one electron, 1836.15265 electron masses.
+one electron, 1836.1526 electron masses.
 
 Limits, for now
 ---------------
 
 * Closed-shell electrons only, as Hartree-Fock or Kohn-Sham; other methods are
   refused.
-* Only hydrogen can be quantised. Naming a heavier atom is refused.
+* Only hydrogen can be quantised. Naming a heavier atom is refused, and so
+  is an effective core potential on any atom.
 * Energies only: no gradients yet.
 * epc17 only; the epc18 and epc19 forms are not implemented.
 * The calculation is whole-system; fragmentation keywords are ignored.
