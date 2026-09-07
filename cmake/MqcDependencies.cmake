@@ -468,6 +468,16 @@ elseif(mqc_libsci_mp)
   target_link_options(${main_lib} PUBLIC ${mqc_libsci_mp})
   message(STATUS "Cray libsci: threaded copy linked first (${mqc_libsci_mp}); "
                  "the serial libsci the MPI wrapper names is not thread-safe")
+  if(MQC_ENABLE_CZT)
+    # The CPU backend calls the BLAS from inside its own parallel regions --
+    # the fitted Coulomb build, the ESP grid, every split GEMM -- and libsci,
+    # threaded copy included, is not re-entrant under that: a 956-function
+    # fitted SCF segfaulted in `B = (mn|Q) J^-1/2` where the MKL build ran.
+    message(WARNING "Cray libsci is the BLAS of a CPU ab initio build. It is not "
+                    "re-entrant and its LAPACK slows down with every thread; expect "
+                    "segfaults in threaded fitted builds. Use the perlmutter-cpu "
+                    "preset (MKLROOT set, MQC_BLA_VENDOR=Intel10_64lp_seq) instead.")
+  endif()
 endif()
 
 # Attach the post-link check to an executable. A no-op off a Cray or without a

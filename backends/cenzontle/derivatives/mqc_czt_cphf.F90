@@ -34,7 +34,7 @@ module mqc_czt_cphf
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_getrf, pic_getrs
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
-   use mqc_memory, only: available_memory_bytes
+   use mqc_memory, only: memory_budget
    use mqc_czt_integrals, only: czt_molecule_t, ket_transformed_pairs, build_df_mo_block
    use mqc_czt_gemm_threads, only: gemm_over_columns, getrf_threaded
    use mqc_czt_multipole, only: multipole_matrices
@@ -106,7 +106,8 @@ module mqc_czt_cphf
       !! a laptop, sent a 545-function MakeFP on a 500 GB node down a
       !! fourteen-hour column build when the transform it refused needed a
       !! hundred gigabytes. Below one because the caller holds the reference,
-      !! the integrals' screening tables and the fitted blocks alongside.
+      !! the integrals' screening tables and the fitted blocks alongside. A
+      !! deck overrides the whole figure with `system.memory_gb`.
 
    integer(int64), parameter :: SOLVE_BATCH_BYTES = 8_int64*1024_int64**3
       !! What the concurrent frequency solves may take, in bytes, where the
@@ -1244,19 +1245,13 @@ contains
    function response_budget(blind) result(budget)
       !! Bytes one response-solver decision may plan on
       !!
-      !! `RESPONSE_BUDGET_SHARE` of what the machine reports available, or
+      !! What the deck fixed with `system.memory_gb`, else
+      !! `RESPONSE_BUDGET_SHARE` of what the machine reports available, else
       !! `blind` where it reports nothing.
       real(dp), intent(in) :: blind
       real(dp) :: budget
 
-      real(dp) :: available
-
-      available = available_memory_bytes()
-      if (available > 0.0_dp) then
-         budget = RESPONSE_BUDGET_SHARE*available
-      else
-         budget = blind
-      end if
+      budget = memory_budget(blind, RESPONSE_BUDGET_SHARE)
    end function response_budget
 
    function mo_transform_fits(n_ao, n_occ, n_vir, direct) result(fits)

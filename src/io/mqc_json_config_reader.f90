@@ -233,6 +233,7 @@ contains
       ! whenever one is absent, since `optional_string` leaves its target alone
       ! rather than clearing it.
       call optional_string(json, "system.logger.level", config%log_level)
+      call optional_real(json, "system.memory_gb", config%memory_gb)
       call optional_logical_seen(json, "system.gpu", config%gpu, config%gpu_set)
       call optional_logical(json, "system.skip_json_output", config%skip_json_output)
       call optional_logical(json, "system.unchecked_input", config%unchecked_input)

@@ -202,6 +202,7 @@ contains
    function system_keys() result(keys)
       type(key_set_t) :: keys
       call allow(keys, "logger")
+      call allow(keys, "memory_gb")
       call allow(keys, "gpu")
       call allow(keys, "skip_json_output")
       call allow(keys, "unchecked_input")

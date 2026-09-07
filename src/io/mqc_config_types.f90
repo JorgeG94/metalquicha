@@ -527,6 +527,13 @@ module mqc_config_types
       ! Logger settings (kept for compatibility)
       character(len=:), allocatable :: log_level
 
+      real(dp) :: memory_gb = -1.0_dp
+         !! `system.memory_gb`: what this run may plan on, in gigabytes, for
+         !! the decisions that trade memory for time -- which route builds the
+         !! response Hessian, whether an operator is formed at all, how many
+         !! frequencies factorize at once. Negative, the default, means the
+         !! machine decides: a share of what it reports available.
+
       ! Output control
       logical :: skip_json_output = .false.  !! Skip JSON output for large calculations
       character(len=:), allocatable :: checkpoint_file

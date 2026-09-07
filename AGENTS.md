@@ -482,11 +482,17 @@ A benchmark suite that checks them lives on `perf/benchmark-suite`.
   core while 127 wait. `perf record -F 49` and binning the samples per second
   by symbol finds every such phase in minutes; `perf_event_paranoid` is 2 on
   Perlmutter compute nodes.
-* **Memory decisions read the machine.** `available_memory_bytes` in
-  `mqc_memory` is MemAvailable from /proc/meminfo; the response solver plans on
-  `RESPONSE_BUDGET_SHARE` of it. Fixed laptop-sized limits sent a 545-function
-  MakeFP on a 500 GB node down a fourteen-hour column build when the transform
-  it refused needed a hundred gigabytes and forty seconds.
+* **Memory decisions read the machine, or the deck.** `memory_budget` in
+  `mqc_memory` returns `system.memory_gb` when the deck set it, else a share of
+  MemAvailable from /proc/meminfo, else the caller's blind constant. The
+  response solver plans on `RESPONSE_BUDGET_SHARE` of the machine's figure.
+  Fixed laptop-sized limits sent a 545-function MakeFP on a 500 GB node down a
+  fourteen-hour column build when the transform it refused needed a hundred
+  gigabytes and forty seconds.
+* **`tools/run.sh` runs `build/mqc` unless told otherwise.** `-b <exe>` or
+  `MQC_BINARY` picks another. A LibSci-linked `build/mqc` segfaults in the
+  fitted Coulomb build at 956 functions, because that build calls the BLAS from
+  every thread; the same deck runs on the `perlmutter-cpu` build.
 
 ## Compiler Support
 
