@@ -71,9 +71,17 @@ module mqc_czt_integrals
    integer, parameter, public :: ERI_PATH_RYS = 1
       !! Every four-centre quartet through the Rys path, `libcint_2e_*`.
    integer, parameter, public :: ERI_PATH_ROTAXIS = 2
-      !! Quartets of s, p and L shells through the rotated-axis
-      !! McMurchie-Davidson path, `libcint_2e_rotaxis_*`; anything with a d
-      !! shell or above stays on Rys, which is the only path that has it.
+      !! Quartets of shells up to `ROTAXIS_MAX_L` through the rotated-axis
+      !! McMurchie-Davidson path, `libcint_2e_rotaxis_*`; anything above
+      !! stays on Rys, which is the only path that has it.
+   integer, parameter, public :: ROTAXIS_MAX_L = 1
+      !! The highest angular momentum sent down the rotated-axis path: s, p
+      !! and L. libfint's kernels go to d, but measured on a 123-atom silica
+      !! slice in 6-31G* at 16 threads the d classes cost 2.5x what Rys does
+      !! for the same quartets (118 s against 47 s per Fock build) while the
+      !! s/p/L classes cost 0.63x, so d stays on Rys until the kernels change.
+      !! May never exceed what `rotaxis_supported` covers, which
+      !! `test_mqc_czt_direct` checks; may be less, which is this.
    integer, protected, public :: eri_path = ERI_PATH_RYS
       !! Which path `two_electron_block` takes, for the whole run. Set once
       !! by `set_eri_path`, before any quartet is evaluated, and read from
@@ -89,7 +97,8 @@ module mqc_czt_integrals
    public :: czt_molecule_t
    public :: set_eri_path
    public :: eri_path_name
-   public :: quartet_is_sp
+   public :: quartet_on_rotaxis
+   public :: rotaxis_libfint_covers
    public :: build_czt_molecule
    public :: build_df_tensor
    public :: build_df_mo_tensor
@@ -284,11 +293,12 @@ contains
       integer :: ret
 
 #ifdef MQC_WITH_LIBFINT
-      ! The rotated-axis path covers s, p and L shells and error-stops on
-      ! anything else rather than falling back, so the choice is made here,
-      ! per quartet, from the angular momenta alone. It ignores `opt`.
+      ! The rotated-axis path covers shells up to `ROTAXIS_MAX_L` and
+      ! error-stops on anything else rather than falling back, so the choice
+      ! is made here, per quartet, from the angular momenta alone. It ignores
+      ! `opt`.
       if (eri_path == ERI_PATH_ROTAXIS) then
-         if (quartet_is_sp(shls, bas)) then
+         if (quartet_on_rotaxis(shls, bas)) then
             if (cartesian) then
                ret = libcint_2e_rotaxis_cart(buf, shls, atm, natm, bas, nbas, env)
             else
@@ -313,25 +323,44 @@ contains
       end if
    end function two_electron_block
 
-   pure function quartet_is_sp(shls, bas) result(sp)
-      !! Whether every shell of a quartet is s, p or L
+   pure function quartet_on_rotaxis(shls, bas) result(covered)
+      !! Whether every shell of a quartet is within `ROTAXIS_MAX_L`
       !!
       !! What the rotated-axis path covers. An L shell carries `ANG_OF` 1 in
       !! the fused view (`build_sp_view`), so the test is the same for it.
       !! `shls` is 0-based, as libcint counts.
       integer, intent(in) :: shls(4)
       integer, intent(in) :: bas(:, :)
-      logical :: sp
+      logical :: covered
 
-      sp = all(bas(LIBCINT_ANG_OF, shls + 1) <= 1)
-   end function quartet_is_sp
+      covered = all(bas(LIBCINT_ANG_OF, shls + 1) <= ROTAXIS_MAX_L)
+   end function quartet_on_rotaxis
+
+   function rotaxis_libfint_covers(shls, bas, nbas) result(covered)
+      !! libfint's own answer to whether a quartet is on the rotated-axis path
+      !!
+      !! For the test that holds `ROTAXIS_MAX_L` to it; the dispatch itself
+      !! never asks, since the per-call cost is a copy of the whole shell
+      !! table. Always false on a libcint build.
+      integer, intent(in) :: shls(4)
+      integer, intent(in) :: bas(:, :)
+      integer, intent(in) :: nbas
+      logical :: covered
+
+#ifdef MQC_WITH_LIBFINT
+      covered = libcint_rotaxis_supported(shls, bas, nbas)
+#else
+      covered = .false.
+      if (.false.) covered = size(bas) + nbas + sum(shls) > 0
+#endif
+   end function rotaxis_libfint_covers
 
    subroutine set_eri_path(name, error)
       !! Choose the four-centre integral path for the run, by name
       !!
       !! 'rys' is the default and the only path a libcint build has;
-      !! 'rotaxis' takes the rotated-axis path on every s/p/L quartet and Rys
-      !! on the rest; 'auto' is 'rotaxis' where the build has it and 'rys'
+      !! 'rotaxis' takes the rotated-axis path on every quartet within
+      !! `ROTAXIS_MAX_L` and Rys on the rest; 'auto' is 'rotaxis' where the build has it and 'rys'
       !! otherwise. Case-insensitive. Refuses 'rotaxis' on a build without it
       !! rather than quietly running Rys under that name.
       character(len=*), intent(in) :: name
