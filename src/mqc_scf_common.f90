@@ -57,7 +57,14 @@ module mqc_scf_common
       real(dp) :: worst_kept = 0.0_dp     !! smallest surviving eigenvalue seen
    end type lindep_tally_t
 
-   logical, save :: collecting = .false.
+   integer, save :: collect_depth = 0
+      !! Nesting depth of open collect windows, not a flag: a fragmented
+      !! calculation opens one per `run_calculation`, and a geometry
+      !! optimization opens one around every step -- so optimizing a fragmented
+      !! system nests them. A plain logical let the inner `end` close the outer
+      !! window at the first step, after which every later SCF reported
+      !! individually and the outer tally came back empty. The outermost window
+      !! owns the tally; inner ones fold into it and report nothing of their own.
       !! Set while a caller is running many SCFs and wants one report, not
       !! many. Module state because the report is raised deep inside
       !! `run_czt_rhf`, which is reached from the fragment bridge, SAPT,
@@ -75,14 +82,28 @@ contains
 
    subroutine lindep_collect_begin()
       !! Start folding linear-dependence reports into a tally
-      collecting = .true.
-      tally = lindep_tally_t()
+      !!
+      !! Nests: only the outermost window resets the tally, so an inner one
+      !! cannot discard what an outer one has already gathered.
+      collect_depth = collect_depth + 1
+      if (collect_depth == 1) tally = lindep_tally_t()
    end subroutine lindep_collect_begin
 
    subroutine lindep_collect_end(result)
-      !! Stop collecting and hand back what was seen
+      !! Close one window and hand back what it saw
+      !!
+      !! An inner window hands back nothing -- `report_linear_dependence_tally`
+      !! says nothing for an empty tally -- and leaves the accumulation running
+      !! for the window outside it, which is the one that reports.
       type(lindep_tally_t), intent(out) :: result
-      collecting = .false.
+
+      if (collect_depth > 1) then
+         collect_depth = collect_depth - 1
+         result = lindep_tally_t()
+         return
+      end if
+
+      collect_depth = 0
       result = tally
       tally = lindep_tally_t()
    end subroutine lindep_collect_end
@@ -183,7 +204,7 @@ contains
       ! Collecting: fold this SCF into the tally and say nothing. One
       ! fragmented run is thousands of SCFs against eight to twelve lines
       ! apiece. See `report_linear_dependence_tally`.
-      if (collecting) then
+      if (collect_depth > 0) then
          if (n_dropped > 0) then
             tally%n_reports = tally%n_reports + 1
             tally%n_dropped_scf = tally%n_dropped_scf + 1

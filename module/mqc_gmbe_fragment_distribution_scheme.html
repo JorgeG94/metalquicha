@@ -196,25 +196,25 @@ PIE-based MPI coordinator</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_group_batching.html'>mqc_group_batching</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_work_queue.html'>mqc_work_queue</a></li>
+                  <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_group_shard_io.html'>mqc_group_shard_io</a></li>
                   <li class="list-inline-item">pic_timer</li>
                   <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
-                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
-                  <li class="list-inline-item"><a href='mqc_work_queue.html'>mqc_work_queue</a></li>
-                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
                   <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
+                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
                   <li class="list-inline-item"><a href='mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></li>
-                  <li class="list-inline-item"><a href='mqc_group_batching.html'>mqc_group_batching</a></li>
                   <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item"><a href='mqc_group_shard_io.html'>mqc_group_shard_io</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -2656,7 +2656,7 @@ atom list, displacement code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~8"></span>
+              <span class="anchor" id="variable-resources~6"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2726,7 +2726,7 @@ atom list, displacement code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~3"></span>
+              <span class="anchor" id="variable-resources"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2741,7 +2741,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~5"></span>
+              <span class="anchor" id="variable-pie_atom_sets~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2756,7 +2756,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~2"></span>
+              <span class="anchor" id="variable-pie_coefficients~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2771,7 +2771,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~4"></span>
+              <span class="anchor" id="variable-n_pie_terms~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2861,7 +2861,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~38"></span>
+              <span class="anchor" id="variable-sys_geom~16"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2876,7 +2876,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~6"></span>
+              <span class="anchor" id="variable-method_config~3"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2891,7 +2891,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~8"></span>
+              <span class="anchor" id="variable-calc_type~3"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -2906,7 +2906,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~14"></span>
+              <span class="anchor" id="variable-json_data~8"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2946,7 +2946,7 @@ atom list, displacement code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets"></span>
+              <span class="anchor" id="variable-pie_atom_sets~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2961,7 +2961,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients"></span>
+              <span class="anchor" id="variable-pie_coefficients~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2976,7 +2976,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms"></span>
+              <span class="anchor" id="variable-n_pie_terms~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2991,7 +2991,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~34"></span>
+              <span class="anchor" id="variable-sys_geom~12"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3006,7 +3006,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~5"></span>
+              <span class="anchor" id="variable-method_config~2"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3021,7 +3021,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~7"></span>
+              <span class="anchor" id="variable-calc_type~2"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -3036,7 +3036,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~13"></span>
+              <span class="anchor" id="variable-json_data~7"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3076,7 +3076,7 @@ atom list, displacement code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-t~5"></span>
+              <span class="anchor" id="variable-t~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3091,7 +3091,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~3"></span>
+              <span class="anchor" id="variable-pie_atom_sets~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3106,7 +3106,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~36"></span>
+              <span class="anchor" id="variable-sys_geom~14"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3181,7 +3181,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~15"></span>
+              <span class="anchor" id="variable-world_comm~10"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3221,7 +3221,7 @@ atom list, displacement code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~2"></span>
+              <span class="anchor" id="variable-pie_atom_sets~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3236,7 +3236,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~2"></span>
+              <span class="anchor" id="variable-n_pie_terms~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3251,7 +3251,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~35"></span>
+              <span class="anchor" id="variable-sys_geom~13"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3341,7 +3341,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~14"></span>
+              <span class="anchor" id="variable-world_comm~9"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3381,7 +3381,7 @@ atom list, displacement code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~4"></span>
+              <span class="anchor" id="variable-pie_atom_sets~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3396,7 +3396,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~3"></span>
+              <span class="anchor" id="variable-n_pie_terms~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3411,7 +3411,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~37"></span>
+              <span class="anchor" id="variable-sys_geom~15"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3516,7 +3516,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~16"></span>
+              <span class="anchor" id="variable-world_comm~11"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3556,7 +3556,7 @@ atom list, displacement code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~6"></span>
+              <span class="anchor" id="variable-resources~4"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3656,7 +3656,7 @@ atom list, displacement code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~7"></span>
+              <span class="anchor" id="variable-resources~5"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3771,7 +3771,7 @@ atom list, displacement code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~4"></span>
+              <span class="anchor" id="variable-resources~2"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3801,7 +3801,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~7"></span>
+              <span class="anchor" id="variable-results~6"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3831,7 +3831,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~7"></span>
+              <span class="anchor" id="variable-coord_timer~6"></span>
               type(timer_type),
             </td>
 <td>intent(in)</td>
@@ -3846,7 +3846,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~5"></span>
+              <span class="anchor" id="variable-n_pie_terms~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3886,7 +3886,7 @@ atom list, displacement code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~5"></span>
+              <span class="anchor" id="variable-resources~3"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3901,7 +3901,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~8"></span>
+              <span class="anchor" id="variable-results~7"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3931,7 +3931,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~8"></span>
+              <span class="anchor" id="variable-coord_timer~7"></span>
               type(timer_type),
             </td>
 <td>intent(in)</td>
@@ -3946,7 +3946,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~6"></span>
+              <span class="anchor" id="variable-n_pie_terms~7"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3986,7 +3986,7 @@ atom list, displacement code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~2"></span>
+              <span class="anchor" id="variable-comm~6"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -4046,7 +4046,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest_rank~3"></span>
+              <span class="anchor" id="variable-dest_rank~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -4089,7 +4089,7 @@ atom list, displacement code.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-07 04:20 +0000             </p>
+ on 2026-09-07 04:31 +0000             </p>
           </div>
         </div>
         <br>
