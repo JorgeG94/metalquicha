@@ -52,6 +52,7 @@ contains
                   new_unittest("allow_crap_scf", test_allow_crap_scf), &
                   new_unittest("scf_tolerances_record_being_named", test_scf_tolerances), &
                   new_unittest("efp_keywords", test_efp_keywords), &
+                  new_unittest("neo_keywords", test_neo_keywords), &
                   new_unittest("hessian_defaults", test_hessian_defaults), &
                   new_unittest("aimd_settings", test_aimd), &
                   new_unittest("fragmentation_settings", test_fragmentation), &
@@ -495,6 +496,78 @@ contains
                  "the refusal must name the spellings that would have worked: "// &
                  parse_error%get_message())
    end subroutine test_efp_keywords
+
+   subroutine test_neo_keywords(error)
+      !! `keywords.neo`: absent, by index, by symbol, and the block that names nothing
+      !!
+      !! The indices are 0-based in the deck and 1-based in the config, which is
+      !! the convention every other atom list here follows; the test pins the
+      !! shift so a deck's `[0]` can never quietly mean the second atom.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", &
+                      '"scf": {"maxiter": 40}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%neo_active, "a deck with no neo block quantised something")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", &
+                      '"neo": {"quantum_nuclei": [1], "nuclear_basis": "pb5-d"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%neo_active, "neo.quantum_nuclei by index was not read")
+      if (allocated(error)) return
+      call check(error, allocated(config%neo_quantum_indices), "the index list is missing")
+      if (allocated(error)) return
+      call check(error, size(config%neo_quantum_indices) == 1 .and. &
+                 config%neo_quantum_indices(1) == 2, "deck index 1 must be the second atom")
+      if (allocated(error)) return
+      call check(error, trim(config%neo_nuclear_basis) == "pb5-d", "neo.nuclear_basis was not read")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", &
+                      '"neo": {"quantum_nuclei": ["H"]}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%neo_quantum_symbols), "the symbol list is missing")
+      if (allocated(error)) return
+      call check(error, trim(config%neo_quantum_symbols(1)) == "H", "the symbol was not read")
+      if (allocated(error)) return
+      call check(error, trim(config%neo_nuclear_basis) == "pb4-d", &
+                 "a silent nuclear_basis must be PB4-D")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", &
+                      '"neo": {"nuclear_basis": "pb4-d"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "a neo block naming no nucleus was accepted")
+      if (allocated(error)) return
+
+      call write_deck('"method": "dft", "basis": "6-31g", "functional": "b3lyp"', "Energy", &
+                      '"neo": {"quantum_nuclei": ["H"], "epc": "17-2"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%neo_epc) == "17-2", "neo.epc was not read")
+      if (allocated(error)) return
+
+      call write_deck('"method": "dft", "basis": "6-31g", "functional": "b3lyp"', "Energy", &
+                      '"neo": {"quantum_nuclei": ["H"], "epc": "19"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "an unknown epc functional was accepted")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", &
+                      '"neo": {"quantum_nuclei": [0], "nuclear_bases": "pb4-d"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "a misspelt neo key was accepted")
+   end subroutine test_neo_keywords
 
    subroutine test_hessian(error)
       type(error_type), allocatable, intent(out) :: error

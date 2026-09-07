@@ -1,0 +1,295 @@
+{
+ "molssi_bse_schema": {
+  "schema_type": "component",
+  "schema_version": "0.1"
+ },
+ "name": "pb6-f",
+ "description": "Nuclear (proton) basis pb6-f: PB6-F basis from J. Chem. Phys. 152, 244123 (2020)",
+ "role": "orbital",
+ "family": "neo",
+ "function_types": [
+  "gto"
+ ],
+ "elements": {
+  "1": {
+   "electron_shells": [
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      0
+     ],
+     "exponents": [
+      "2.8120000000E+00"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      0
+     ],
+     "exponents": [
+      "5.7030000000E+00"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      0
+     ],
+     "exponents": [
+      "1.0202000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      0
+     ],
+     "exponents": [
+      "1.5450000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      0
+     ],
+     "exponents": [
+      "2.9135000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      0
+     ],
+     "exponents": [
+      "3.9753000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      1
+     ],
+     "exponents": [
+      "1.4170000000E+00"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      1
+     ],
+     "exponents": [
+      "6.8840000000E+00"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      1
+     ],
+     "exponents": [
+      "1.0450000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      1
+     ],
+     "exponents": [
+      "1.6187000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      1
+     ],
+     "exponents": [
+      "2.6447000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      2
+     ],
+     "exponents": [
+      "4.4830000000E+00"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      2
+     ],
+     "exponents": [
+      "9.8700000000E+00"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      2
+     ],
+     "exponents": [
+      "1.8313000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      2
+     ],
+     "exponents": [
+      "2.5347000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      3
+     ],
+     "exponents": [
+      "6.0010000000E+00"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      3
+     ],
+     "exponents": [
+      "1.0322000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      3
+     ],
+     "exponents": [
+      "2.4409000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    }
+   ],
+   "references": [
+    {
+     "reference_description": "J. Chem. Phys. 152, 244123 (2020); file from pyscf/neo",
+     "reference_keys": []
+    }
+   ]
+  }
+ }
+}

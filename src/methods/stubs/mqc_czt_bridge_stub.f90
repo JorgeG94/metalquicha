@@ -15,6 +15,7 @@ module mqc_czt_bridge
    public :: run_czt_mcscf
    public :: run_czt_fmo
    public :: run_czt_makefp
+   public :: run_czt_neo
    public :: run_czt_charges
    public :: run_czt_efp
    public :: run_czt_sapt0
@@ -223,6 +224,41 @@ contains
       if (present(dynamic_maxiter) .or. present(response)) return
       if (present(allow_crap_response) .or. present(response_batch)) return
    end subroutine run_czt_makefp
+
+   subroutine run_czt_neo(atomic_numbers, element_symbols, coordinates, basis_name, &
+                          nuclear_basis, quantum, charge, energy, error, verbose, &
+                          energy_tol, density_tol, max_iter, functional, grid_level, epc, &
+                          scf_in)
+      !! No-op stand-in: quantum nuclei need the CPU backend
+      use pic_types, only: dp
+      use mqc_error, only: error_t
+      use mqc_scf_types, only: scf_numerics_t
+      integer, intent(in) :: atomic_numbers(:)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: coordinates(:, :)
+      character(len=*), intent(in) :: basis_name, nuclear_basis
+      logical, intent(in) :: quantum(:)
+      integer, intent(in) :: charge
+      real(dp), intent(out) :: energy
+      type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: verbose
+      real(dp), intent(in), optional :: energy_tol, density_tol
+      integer, intent(in), optional :: max_iter
+      character(len=*), intent(in), optional :: functional, epc
+      integer, intent(in), optional :: grid_level
+      type(scf_numerics_t), intent(in), optional :: scf_in
+      energy = 0.0_dp
+      call error%set(ERROR_VALIDATION, &
+                     "keywords.neo needs the CPU integral backend; build with "// &
+                     "-DMQC_ENABLE_CZT=ON")
+      if (size(atomic_numbers) < 0 .or. size(coordinates) < 0 .or. size(quantum) < 0) return
+      if (size(element_symbols) < 0 .or. charge < -huge(charge)) return
+      if (len_trim(basis_name)*len_trim(nuclear_basis) < 0) return
+      if (present(verbose) .or. present(energy_tol)) return
+      if (present(density_tol) .or. present(max_iter)) return
+      if (present(functional) .or. present(grid_level) .or. present(epc)) return
+      if (present(scf_in)) return
+   end subroutine run_czt_neo
 
    subroutine run_czt_hf(settings, fragment, result, want_gradient, want_hessian)
       !! No-op stand-in: report the missing backend, compute nothing

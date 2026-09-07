@@ -233,6 +233,12 @@ libcint:
   `model.functional`. LDA through double hybrid, including range-separated
   hybrids, whose long-range exchange needs the direct build
 - `MP2`, `SCS-MP2`, `SOS-MP2`, `RI-MP2` - RHF reference only
+- `NEO-HF` - nuclear-electronic orbital Hartree-Fock: `keywords.neo` with
+  `quantum_nuclei` (0-based indices or symbols) and `nuclear_basis` (default
+  `pb4-d`, from `basis_sets/neo/`) gives the named protons orbitals of their
+  own; closed-shell HF or DFT, with `epc` (`17-1`/`17-2`) adding the
+  electron-proton correlation functional. Validated against PySCF-NEO
+  (github.com/theorychemyang/pyscf); see `mqc_docs/source/neo.rst`
 - `CCSD`, `CCSD(T)`, `RI-CCSD`, `RI-CCSD(T)` - RHF reference, spin-adapted
   (spatial orbitals) by default. `keywords.cc.spin_adapted: false` selects the
   spin-orbital formulation instead; the two are exact for a closed shell and

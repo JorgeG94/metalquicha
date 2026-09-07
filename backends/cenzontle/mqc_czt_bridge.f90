@@ -66,6 +66,7 @@ module mqc_czt_bridge
    public :: run_czt_mcscf
    public :: run_czt_fmo
    public :: run_czt_makefp
+   public :: run_czt_neo
    public :: run_czt_charges
    public :: run_czt_efp
    public :: run_czt_sapt0
@@ -516,6 +517,64 @@ contains
       call write_efp_potential(pot, path, error)
       call pot%destroy()
    end subroutine run_czt_makefp
+
+   subroutine run_czt_neo(atomic_numbers, element_symbols, coordinates, basis_name, &
+                          nuclear_basis, quantum, charge, energy, error, verbose, &
+                          energy_tol, density_tol, max_iter, functional, grid_level, epc, &
+                          scf_in)
+      !! A nuclear-electronic orbital energy for the whole system, HF or DFT
+      !!
+      !! See `mqc_czt_neo`. Closed-shell electrons only, and only protons are
+      !! quantised so far; both are refused by name rather than run.
+      use mqc_czt_neo, only: neo_result_t, run_czt_neo_hf
+      use mqc_scf_types, only: scf_numerics_t
+      integer, intent(in) :: atomic_numbers(:)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: coordinates(:, :)     !! (3, natm), Bohr
+      character(len=*), intent(in) :: basis_name
+      character(len=*), intent(in) :: nuclear_basis
+      logical, intent(in) :: quantum(:)             !! Which atoms get orbitals
+      integer, intent(in) :: charge
+      real(dp), intent(out) :: energy
+      type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: verbose
+      real(dp), intent(in), optional :: energy_tol, density_tol
+      integer, intent(in), optional :: max_iter
+      character(len=*), intent(in), optional :: functional  !! Empty or absent is HF
+      integer, intent(in), optional :: grid_level
+      character(len=*), intent(in), optional :: epc         !! "17-1", "17-2", or none
+      type(scf_numerics_t), intent(in), optional :: scf_in  !! How the electronic SCFs run
+      integer, parameter :: DEFAULT_MAX_ITER = 100
+      real(dp), parameter :: DEFAULT_ENERGY_TOL = 1.0e-9_dp
+      real(dp), parameter :: DEFAULT_DENSITY_TOL = 1.0e-7_dp
+      type(neo_result_t) :: result
+      integer :: nelec, iterations
+      real(dp) :: e_tol, d_tol
+      logical :: talk
+
+      energy = 0.0_dp
+      talk = .false.
+      if (present(verbose)) talk = verbose
+      iterations = DEFAULT_MAX_ITER
+      if (present(max_iter)) iterations = max_iter
+      e_tol = DEFAULT_ENERGY_TOL
+      if (present(energy_tol)) e_tol = energy_tol
+      d_tol = DEFAULT_DENSITY_TOL
+      if (present(density_tol)) d_tol = density_tol
+
+      nelec = sum(atomic_numbers) - charge
+      if (mod(nelec, 2) /= 0) then
+         call error%set(ERROR_VALIDATION, "NEO-HF is closed-shell for now: this system "// &
+                        "has an odd number of electrons")
+         return
+      end if
+      call run_czt_neo_hf(atomic_numbers, element_symbols, coordinates, basis_name, &
+                          nuclear_basis, quantum, nelec, iterations, e_tol, d_tol, talk, &
+                          result, error, functional=functional, grid_level=grid_level, &
+                          epc=epc, scf=scf_in)
+      if (error%has_error()) return
+      energy = result%energy
+   end subroutine run_czt_neo
 
    subroutine run_czt_fmo(atomic_numbers, element_symbols, coordinates, owner, &
                           basis_name, esp, expansion, far_field, resppc, &

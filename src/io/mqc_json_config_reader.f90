@@ -279,6 +279,8 @@ contains
       call optional_real(json, "keywords.efp.vdw_scale", config%efp_vdw_scale)
       call read_efp_response(json, config, error)
       if (error%has_error()) return
+      call read_neo(json, config, error)
+      if (error%has_error()) return
       call optional_logical(json, "keywords.correlation.freeze_core", &
                             config%corr_freeze_core)
       call optional_int(json, "keywords.correlation.n_frozen_core", &
@@ -705,6 +707,95 @@ contains
                         "'. Accepted: auto, dense, matrix_free")
       end select
    end subroutine read_efp_response
+
+   subroutine read_neo(json, config, error)
+      !! `keywords.neo`: which nuclei get orbitals of their own, and in what basis
+      !!
+      !! `quantum_nuclei` is either a list of 0-based atom indices or a list of
+      !! element symbols; the first entry decides which, and the two are not
+      !! mixed. A `neo` block without it is refused rather than read as "none":
+      !! a deck that opened the block meant to quantise something.
+      use json_module, only: json_integer, json_string
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+      character(len=*), parameter :: path = "keywords.neo.quantum_nuclei"
+      character(len=:), allocatable :: text
+      integer, allocatable :: indices(:)
+      logical :: found
+      integer :: n, i, kind
+
+      call json%info("keywords.neo", found=found)
+      if (.not. found) return
+      call optional_string(json, "keywords.neo.nuclear_basis", text)
+      if (allocated(text)) then
+         if (len_trim(adjustl(text)) > len(config%neo_nuclear_basis)) then
+            call error%set(ERROR_VALIDATION, "keywords.neo.nuclear_basis is longer than "// &
+                           int_to_key(len(config%neo_nuclear_basis))//" characters")
+            return
+         end if
+         config%neo_nuclear_basis = trim(adjustl(text))
+         deallocate (text)
+      end if
+      call optional_string(json, "keywords.neo.epc", text)
+      if (allocated(text)) then
+         select case (trim(adjustl(text)))
+         case ("17-1", "epc17-1")
+            config%neo_epc = "17-1"
+         case ("17-2", "epc17-2")
+            config%neo_epc = "17-2"
+         case ("", "none")
+            config%neo_epc = ""
+         case default
+            call error%set(ERROR_VALIDATION, "unknown keywords.neo.epc '"//trim(text)// &
+                           "'. Accepted: 17-1, 17-2, none")
+            return
+         end select
+         deallocate (text)
+      end if
+      call json%info(path, found=found, n_children=n)
+      if (.not. found) then
+         call error%set(ERROR_VALIDATION, "keywords.neo needs quantum_nuclei: a list of "// &
+                        '0-based atom indices, or of element symbols such as ["H"]')
+         return
+      end if
+      if (n < 1) then
+         call error%set(ERROR_VALIDATION, "keywords.neo.quantum_nuclei is empty")
+         return
+      end if
+      call json%info(path//"(1)", found=found, var_type=kind)
+      select case (kind)
+      case (json_integer)
+         call json%get(path, indices, found)
+         if (.not. found) then
+            call error%set(ERROR_VALIDATION, "keywords.neo.quantum_nuclei could not be read "// &
+                           "as a list of integers")
+            return
+         end if
+         if (any(indices < 0)) then
+            call error%set(ERROR_VALIDATION, "keywords.neo.quantum_nuclei: atom indices "// &
+                           "are 0-based and cannot be negative")
+            return
+         end if
+         config%neo_quantum_indices = indices + 1
+      case (json_string)
+         allocate (config%neo_quantum_symbols(n))
+         do i = 1, n
+            call json%get(path//"("//int_to_key(i)//")", text, found)
+            if (.not. found .or. len_trim(text) == 0) then
+               call error%set(ERROR_VALIDATION, "keywords.neo.quantum_nuclei: entry "// &
+                              int_to_key(i)//" is not an element symbol")
+               return
+            end if
+            config%neo_quantum_symbols(i) = trim(adjustl(text))
+         end do
+      case default
+         call error%set(ERROR_VALIDATION, "keywords.neo.quantum_nuclei must be a list of "// &
+                        "0-based atom indices or a list of element symbols")
+         return
+      end select
+      config%neo_active = .true.
+   end subroutine read_neo
 
    subroutine read_frozen_atoms(json, config, error)
       !! `keywords.optimization.frozen_atoms`, a flat list of atom indices

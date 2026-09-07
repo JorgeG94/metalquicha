@@ -21,6 +21,7 @@ module mqc_method_config
    public :: scf_numerics_t, deltascf_options_t  !! Re-exported from mqc_config_types
    public :: correlation_config_t, cc_config_t, f12_config_t
    public :: efp_config_t
+   public :: neo_config_t
    public :: pcm_config_t
    public :: properties_config_t
 
@@ -162,6 +163,24 @@ module mqc_method_config
          !! Innermost layer of the charge-penetration screening grid, as a
          !! fraction of a van der Waals radius. GAMESS's `VDWSCL`.
    end type efp_config_t
+
+   type :: neo_config_t
+      !! What `keywords.neo` carries: which nuclei get orbitals, and in what basis
+      !!
+      !! Nuclear-electronic orbital theory. Absent from the deck, every nucleus
+      !! is classical and the rest of this is never read.
+      logical :: active = .false.
+      character(len=64) :: nuclear_basis = "pb4-d"
+         !! The proton basis, resolved through the ordinary basis lookup from
+         !! `basis_sets/neo/`
+      integer, allocatable :: quantum_indices(:)
+         !! Atoms to quantise, 1-based here; the deck writes them 0-based
+      character(len=8), allocatable :: quantum_symbols(:)
+         !! Or every atom of these elements, e.g. ["H"]
+      character(len=8) :: epc = ""
+         !! Electron-proton correlation functional for NEO-DFT: "17-1",
+         !! "17-2", or empty for none
+   end type neo_config_t
 
    !============================================================================
    ! XTB Configuration (GFN1, GFN2)
@@ -558,6 +577,8 @@ module mqc_method_config
          !! F12 explicitly correlated settings
       type(efp_config_t) :: efp
          !! MAKEFP settings: the response solve and the screening grid
+      type(neo_config_t) :: neo
+         !! Quantum nuclei, from `keywords.neo`
 
    contains
       procedure :: reset => config_reset

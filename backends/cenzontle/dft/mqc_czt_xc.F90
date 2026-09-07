@@ -251,7 +251,16 @@ contains
       ! charge builds iodine's grid as though it were manganese, 53 - 28 = 25.
       ! `core_electrons` is zero for an all-electron atom and for a ghost, so
       ! this is the identity everywhere an ECP is not involved.
-      numbers = nint(mol%charges) + mol%core_electrons
+      ! The element itself, when the molecule recorded it: `charges` is zero
+      ! on a ghost atom -- a counterpoise partner, or a nucleus quantised by
+      ! NEO -- and a grid built for "element 0" there integrates a density
+      ! that is anything but empty. The charge-plus-core sum is the fallback
+      ! for a molecule assembled without the record.
+      if (allocated(mol%atomic_numbers)) then
+         numbers = mol%atomic_numbers
+      else
+         numbers = nint(mol%charges) + mol%core_electrons
+      end if
       if (grid_level < 0) then
          if (.not. (present(n_radial) .and. present(n_angular))) then
             call error%set(ERROR_VALIDATION, "xc_context_create: a negative grid level "// &
@@ -2926,7 +2935,16 @@ contains
       if (ctx%nlc_grid%n_points > 0) return
       allocate (numbers(mol%natm))
       ! The *element*, not the charge it presents -- see the exchange grid above.
-      numbers = nint(mol%charges) + mol%core_electrons
+      ! The element itself, when the molecule recorded it: `charges` is zero
+      ! on a ghost atom -- a counterpoise partner, or a nucleus quantised by
+      ! NEO -- and a grid built for "element 0" there integrates a density
+      ! that is anything but empty. The charge-plus-core sum is the fallback
+      ! for a molecule assembled without the record.
+      if (allocated(mol%atomic_numbers)) then
+         numbers = mol%atomic_numbers
+      else
+         numbers = nint(mol%charges) + mol%core_electrons
+      end if
       call build_dft_grid(mol%coords, numbers, ctx%nlc_grid, error, &
                           level=ctx%nlc_grid_level)
       deallocate (numbers)
