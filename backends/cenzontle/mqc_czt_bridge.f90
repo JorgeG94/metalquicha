@@ -2204,9 +2204,64 @@ contains
          end if
       end if
 
+      ! Said here, once, for every reason above that left the request unmet:
+      ! the caller takes a false `has_hessian` as a cue to difference the
+      ! gradient, and a deck that asked for a Hessian and gets 6N gradient
+      ! evaluations should be told why before they start.
+      if (do_hessian .and. .not. result%has_hessian .and. .not. result%has_error) then
+         call logger%warning("no analytic Hessian for this run: "// &
+                             hessian_decline_reason(settings, unrestricted, kohn_sham, xc, &
+                                                    fragment%n_caps))
+         call logger%warning("  taking it by central differences of the analytic gradient instead")
+      end if
+
       if (kohn_sham) call xc%destroy()
       call mol%destroy()
    end subroutine run_czt_hf
+
+   function hessian_decline_reason(settings, unrestricted, kohn_sham, xc, n_caps) result(reason)
+      !! Why `run_czt_hf` left a requested Hessian uncomputed, in a few words
+      !!
+      !! Mirrors the two gates in `run_czt_hf` -- the reference's and the MP2
+      !! one -- and names the first condition that fails. A change to either
+      !! gate wants the same change here, or the message names the wrong thing.
+      type(cuest_scf_settings_t), intent(in) :: settings
+      logical, intent(in) :: unrestricted
+      logical, intent(in) :: kohn_sham
+      type(xc_context_t), intent(in) :: xc
+      integer, intent(in) :: n_caps
+      character(len=:), allocatable :: reason
+
+      logical :: double_hybrid
+
+      double_hybrid = kohn_sham .and. xc%pt2_fraction /= 0.0_dp
+      if (unrestricted) then
+         reason = "unrestricted reference"
+      else if (settings%run_cc) then
+         reason = "coupled cluster"
+      else if (settings%density_fitting) then
+         reason = "density-fitted reference"
+      else if (settings%run_mp2 .and. settings%corr_density_fitting) then
+         reason = "density-fitted correlation (RI-MP2)"
+      else if (settings%pcm%enabled) then
+         reason = "continuum solvation"
+      else if (n_caps > 0) then
+         reason = "hydrogen caps on the fragment"
+      else if (settings%run_mp2 .and. &
+               (settings%scs_ss /= 1.0_dp .or. settings%scs_os /= 1.0_dp)) then
+         reason = "spin-scaled MP2"
+      else if (double_hybrid .and. xc%any_mgga) then
+         reason = "meta-GGA double hybrid"
+      else if (double_hybrid .and. xc%range_separated) then
+         reason = "range-separated double hybrid"
+      else if (double_hybrid .and. (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp)) then
+         reason = "VV10 in a double hybrid"
+      else if (double_hybrid .and. settings%freeze_core) then
+         reason = "frozen core in a double hybrid"
+      else
+         reason = "not on the analytic list"
+      end if
+   end function hessian_decline_reason
 
    subroutine frontier_summary(scf)
       !! HOMO, LUMO and the gap in eV, one row per spin the SCF carried
