@@ -732,6 +732,22 @@ contains
          config%neo_nuclear_basis = trim(adjustl(text))
          deallocate (text)
       end if
+      call optional_string(json, "keywords.neo.epc", text)
+      if (allocated(text)) then
+         select case (trim(adjustl(text)))
+         case ("17-1", "epc17-1")
+            config%neo_epc = "17-1"
+         case ("17-2", "epc17-2")
+            config%neo_epc = "17-2"
+         case ("", "none")
+            config%neo_epc = ""
+         case default
+            call error%set(ERROR_VALIDATION, "unknown keywords.neo.epc '"//trim(text)// &
+                           "'. Accepted: 17-1, 17-2, none")
+            return
+         end select
+         deallocate (text)
+      end if
       call json%info(path, found=found, n_children=n)
       if (.not. found) then
          call error%set(ERROR_VALIDATION, "keywords.neo needs quantum_nuclei: a list of "// &

@@ -37,6 +37,26 @@ quantises every atom of those elements, or a list of 0-based atom indices.
 sets of Yu, Pavosevic and Hammes-Schiffer (J. Chem. Phys. 152, 244123, 2020)
 ship under ``basis_sets/neo/`` and PB4-D is the default.
 
+NEO-DFT
+-------
+
+With ``"model": {"method": "dft", "functional": "b3lyp"}`` the electrons run as
+Kohn-Sham, and ``keywords.neo.epc`` adds the electron-proton correlation
+functional of Yang, Brorsen, Culpitt, Pak and Hammes-Schiffer (J. Chem. Phys.
+147, 114113, 2017): ``"17-2"`` (the usual choice) or ``"17-1"``. Without
+``epc`` the electrons and the proton are coupled by Coulomb alone, which
+overlocalises the proton badly; the functional is what makes NEO-DFT useful.
+It is integrated on the electronic grid (``keywords.dft.grid_level``), on the
+points a proton density reaches.
+
+.. code-block:: json
+
+   "model": {"method": "dft", "basis": "cc-pvdz", "functional": "b3lyp"},
+   "keywords": {"neo": {"quantum_nuclei": ["H"], "epc": "17-2"}}
+
+``epc`` with ``model.method hf`` is refused: it is a correlation functional and
+needs a Kohn-Sham electron.
+
 The energy reported is the NEO-HF total: electrons and classical nuclei, the
 quantum nuclei's kinetic and potential energy, and every coupling between them.
 With the logger at ``info`` the run prints the macro-iteration table and the
@@ -68,10 +88,11 @@ one electron, 1836.15265 electron masses.
 Limits, for now
 ---------------
 
-* Closed-shell Hartree-Fock only. ``model.method`` other than ``hf`` is refused.
+* Closed-shell electrons only, as Hartree-Fock or Kohn-Sham; other methods are
+  refused.
 * Only hydrogen can be quantised. Naming a heavier atom is refused.
-* Energies only: no gradients, and no NEO-DFT electron-proton correlation
-  functional yet.
+* Energies only: no gradients yet.
+* epc17 only; the epc18 and epc19 forms are not implemented.
 * The calculation is whole-system; fragmentation keywords are ignored.
 
 Validation
@@ -79,5 +100,6 @@ Validation
 
 HCN with the proton quantised, cc-pVDZ and PB4-D, reproduces PySCF-NEO's
 ``test_hf.py`` energy of -92.8437063566 Hartree to 1e-9, and the proton's
-orbital energy and one-body energy to 1e-7. The unit test
-``test_mqc_czt_neo`` pins this.
+orbital energy and one-body energy to 1e-7. With B3LYP5 electrons the NEO-DFT
+energy matches PySCF-NEO to the grid difference, with and without epc17-2.
+The unit test ``test_mqc_czt_neo`` pins all of this.

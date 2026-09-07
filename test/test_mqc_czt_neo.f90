@@ -26,22 +26,96 @@ contains
       testsuite = [ &
                   new_unittest("hcn_with_a_quantum_proton_matches_pyscf_neo", test_hcn), &
                   new_unittest("the_proton_density_is_one_particle", test_normalisation), &
+                  new_unittest("neo_dft_without_epc_matches_pyscf_neo", test_hcn_ks), &
+                  new_unittest("epc17_2_matches_pyscf_neo", test_hcn_epc), &
+                  new_unittest("epc_needs_a_functional", test_epc_needs_dft), &
                   new_unittest("a_heavy_atom_is_refused_for_now", test_refusal) &
                   ]
    end subroutine collect_mqc_czt_neo_tests
 
-   subroutine hcn(result, err, quantum)
+   subroutine hcn(result, err, quantum, functional, epc)
       !! HCN as PySCF-NEO's test has it: H at the origin, C and N on z, in Angstrom
+      !!
+      !! Grid level 6 when a functional is named: PySCF-NEO's own level 3 and
+      !! level 6 differ by 1e-6 on this molecule, so a comparison at the
+      !! microhartree needs both codes on a fine grid.
       type(neo_result_t), intent(out) :: result
       type(error_t), intent(inout) :: err
       logical, intent(in) :: quantum(3)
+      character(len=*), intent(in), optional :: functional, epc
       real(dp) :: c(3, 3)
       c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
                    0.0_dp, 0.0_dp, 1.064_dp*ANG, &
                    0.0_dp, 0.0_dp, 2.220_dp*ANG], [3, 3])
       call run_czt_neo_hf([1, 6, 7], ["H ", "C ", "N "], c, "cc-pvdz", "pb4-d", quantum, &
-                          14, 200, 1.0e-10_dp, 1.0e-8_dp, .false., result, err, in_core=.true.)
+                          14, 200, 1.0e-10_dp, 1.0e-8_dp, .false., result, err, in_core=.true., &
+                          functional=functional, grid_level=6, epc=epc)
    end subroutine hcn
+
+   subroutine test_hcn_ks(error)
+      !! NEO-DFT with B3LYP5 electrons and no electron-proton functional
+      !!
+      !! Pins the Kohn-Sham coupling on its own: `-93.3393563855` (spherical)
+      !! and `-93.3413901484` (Cartesian) from PySCF-NEO, `xc='b3lyp5'`, grid
+      !! level 6. libxc's `hyb_gga_xc_b3lyp5` is what PySCF's `b3lyp5` names.
+      type(error_type), allocatable, intent(out) :: error
+      type(neo_result_t) :: result
+      type(error_t) :: err
+      real(dp) :: reference
+
+      call hcn(result, err, [.true., .false., .false.], functional="hyb_gga_xc_b3lyp5")
+      call check(error,.not. err%has_error(), "NEO-DFT failed: "//err%get_message())
+      if (allocated(error)) return
+      if (result%cartesian) then
+         reference = -93.3413901484_dp
+      else
+         reference = -93.3393563855_dp
+      end if
+      call check(error, abs(result%energy - reference) < 2.0e-6_dp, &
+                 "the NEO-DFT energy disagrees with PySCF-NEO")
+      if (allocated(error)) return
+      call check(error, result%kohn_sham, "the electrons did not run as Kohn-Sham")
+   end subroutine test_hcn_ks
+
+   subroutine test_hcn_epc(error)
+      !! epc17-2 on top of B3LYP5: `-93.3670509407` (spherical) and
+      !! `-93.3694593587` (Cartesian) from PySCF-NEO at grid level 6
+      !!
+      !! The functional is integrated on the electronic grid where the proton
+      !! density lives, its electronic potential rides frozen through each
+      !! macro-iteration, and its energy replaces the frozen `Tr(D V)` the SCF
+      !! counted. Each of those is a place to be wrong by a few millihartree,
+      !! which is also the size of the whole correction here.
+      type(error_type), allocatable, intent(out) :: error
+      type(neo_result_t) :: result
+      type(error_t) :: err
+      real(dp) :: reference
+
+      call hcn(result, err, [.true., .false., .false.], functional="hyb_gga_xc_b3lyp5", &
+               epc="17-2")
+      call check(error,.not. err%has_error(), "NEO-DFT with epc failed: "//err%get_message())
+      if (allocated(error)) return
+      if (result%cartesian) then
+         reference = -93.3694593587_dp
+      else
+         reference = -93.3670509407_dp
+      end if
+      call check(error, abs(result%energy - reference) < 2.0e-6_dp, &
+                 "the epc17-2 energy disagrees with PySCF-NEO")
+      if (allocated(error)) return
+      call check(error, result%epc_energy < -0.01_dp .and. result%epc_energy > -0.1_dp, &
+                 "the electron-proton correlation energy is not a few tens of millihartree")
+   end subroutine test_hcn_epc
+
+   subroutine test_epc_needs_dft(error)
+      !! A correlation functional on a Hartree-Fock electron is refused
+      type(error_type), allocatable, intent(out) :: error
+      type(neo_result_t) :: result
+      type(error_t) :: err
+
+      call hcn(result, err, [.true., .false., .false.], epc="17-2")
+      call check(error, err%has_error(), "epc on Hartree-Fock electrons was accepted")
+   end subroutine test_epc_needs_dft
 
    subroutine test_hcn(error)
       !! The energy PySCF-NEO gives for the same molecule, basis and proton basis

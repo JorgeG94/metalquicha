@@ -549,6 +549,20 @@ contains
       call check(error, parse_error%has_error(), "a neo block naming no nucleus was accepted")
       if (allocated(error)) return
 
+      call write_deck('"method": "dft", "basis": "6-31g", "functional": "b3lyp"', "Energy", &
+                      '"neo": {"quantum_nuclei": ["H"], "epc": "17-2"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%neo_epc) == "17-2", "neo.epc was not read")
+      if (allocated(error)) return
+
+      call write_deck('"method": "dft", "basis": "6-31g", "functional": "b3lyp"', "Energy", &
+                      '"neo": {"quantum_nuclei": ["H"], "epc": "19"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "an unknown epc functional was accepted")
+      if (allocated(error)) return
+
       call write_deck('"method": "hf", "basis": "6-31g"', "Energy", &
                       '"neo": {"quantum_nuclei": [0], "nuclear_bases": "pb4-d"}', "", two_atoms())
       call read_deck(config, parse_error)

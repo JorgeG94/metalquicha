@@ -318,6 +318,7 @@ contains
       ! Quantum nuclei. The two lists are exclusive and one of them is absent.
       driver_config%method_config%neo%active = mqc_config%neo_active
       driver_config%method_config%neo%nuclear_basis = mqc_config%neo_nuclear_basis
+      driver_config%method_config%neo%epc = mqc_config%neo_epc
       if (allocated(mqc_config%neo_quantum_indices)) then
          driver_config%method_config%neo%quantum_indices = mqc_config%neo_quantum_indices
       end if

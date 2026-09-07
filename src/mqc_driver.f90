@@ -1397,7 +1397,7 @@ contains
       !! unfragmented path applies -- a quantised proton is solved with every
       !! electron of the system, and there is one energy at the end.
       use mqc_czt_bridge, only: run_czt_neo
-      use mqc_method_types, only: METHOD_TYPE_HF
+      use mqc_method_types, only: METHOD_TYPE_HF, METHOD_TYPE_DFT
       use mqc_elements, only: element_number_to_symbol
       use mqc_json_output_types, only: OUTPUT_MODE_UNFRAGMENTED
       use mqc_program_limits, only: MAX_LINE_LENGTH
@@ -1416,13 +1416,24 @@ contains
       real(dp) :: energy
       integer :: i, k
       character(len=MAX_LINE_LENGTH) :: line
+      character(len=:), allocatable :: functional
 
       if (rank /= 0) return
-      if (config%method_config%method_type /= METHOD_TYPE_HF) then
+      select case (config%method_config%method_type)
+      case (METHOD_TYPE_HF)
+         functional = ""
+         if (len_trim(config%method_config%neo%epc) > 0) then
+            call refuse(result_out, "keywords.neo.epc is an electron-proton correlation "// &
+                        "functional and needs model.method dft")
+            return
+         end if
+      case (METHOD_TYPE_DFT)
+         functional = trim(config%method_config%dft%functional)
+      case default
          call refuse(result_out, "keywords.neo: quantum nuclei are implemented for "// &
-                     "model.method hf only so far")
+                     "model.method hf and dft only so far")
          return
-      end if
+      end select
 
       allocate (symbols(sys_geom%total_atoms), quantum(sys_geom%total_atoms))
       do i = 1, sys_geom%total_atoms
@@ -1456,9 +1467,19 @@ contains
          return
       end if
 
-      write (line, "(A,I0,A,A)") "Nuclear-electronic orbital Hartree-Fock: ", count(quantum), &
+      write (line, "(A,I0,A,A)") "Nuclear-electronic orbital "// &
+         trim(merge("DFT         ", "Hartree-Fock", len(functional) > 0))//": ", count(quantum), &
          " quantum nucleus/nuclei in the ", trim(config%method_config%neo%nuclear_basis)
       call logger%info(trim(line)//" basis")
+      if (len(functional) > 0) then
+         line = "  functional "//functional
+         if (len_trim(config%method_config%neo%epc) > 0) then
+            line = trim(line)//", electron-proton correlation epc"//trim(config%method_config%neo%epc)
+         else
+            line = trim(line)//", no electron-proton correlation functional"
+         end if
+         call logger%info(trim(line))
+      end if
 
       if (config%method_config%scf%energy_convergence_set) then
          named_energy_tol = config%method_config%scf%energy_convergence
@@ -1474,13 +1495,16 @@ contains
                        trim(config%method_config%neo%nuclear_basis), quantum, &
                        sys_geom%charge, energy, err, verbose=.true., &
                        energy_tol=named_energy_tol, density_tol=named_density_tol, &
-                       max_iter=named_max_iter)
+                       max_iter=named_max_iter, functional=functional, &
+                       grid_level=config%method_config%dft%grid_level, &
+                       epc=trim(config%method_config%neo%epc))
       if (err%has_error()) then
          call refuse(result_out, "NEO failed: "//err%get_message())
          return
       end if
 
-      write (line, "(A,F20.10)") "NEO-HF total energy: ", energy
+      write (line, "(A,F20.10)") "NEO"//trim(merge("-DFT", "-HF ", len(functional) > 0))// &
+         " total energy: ", energy
       call logger%info(trim(line))
       if (present(result_out)) then
          result_out%energy%scf = energy

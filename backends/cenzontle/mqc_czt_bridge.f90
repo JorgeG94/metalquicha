@@ -520,8 +520,8 @@ contains
 
    subroutine run_czt_neo(atomic_numbers, element_symbols, coordinates, basis_name, &
                           nuclear_basis, quantum, charge, energy, error, verbose, &
-                          energy_tol, density_tol, max_iter)
-      !! A nuclear-electronic orbital Hartree-Fock energy for the whole system
+                          energy_tol, density_tol, max_iter, functional, grid_level, epc)
+      !! A nuclear-electronic orbital energy for the whole system, HF or DFT
       !!
       !! See `mqc_czt_neo`. Closed-shell electrons only, and only protons are
       !! quantised so far; both are refused by name rather than run.
@@ -538,6 +538,9 @@ contains
       logical, intent(in), optional :: verbose
       real(dp), intent(in), optional :: energy_tol, density_tol
       integer, intent(in), optional :: max_iter
+      character(len=*), intent(in), optional :: functional  !! Empty or absent is HF
+      integer, intent(in), optional :: grid_level
+      character(len=*), intent(in), optional :: epc         !! "17-1", "17-2", or none
       integer, parameter :: DEFAULT_MAX_ITER = 100
       real(dp), parameter :: DEFAULT_ENERGY_TOL = 1.0e-9_dp
       real(dp), parameter :: DEFAULT_DENSITY_TOL = 1.0e-7_dp
@@ -564,7 +567,8 @@ contains
       end if
       call run_czt_neo_hf(atomic_numbers, element_symbols, coordinates, basis_name, &
                           nuclear_basis, quantum, nelec, iterations, e_tol, d_tol, talk, &
-                          result, error)
+                          result, error, functional=functional, grid_level=grid_level, &
+                          epc=epc)
       if (error%has_error()) return
       energy = result%energy
    end subroutine run_czt_neo

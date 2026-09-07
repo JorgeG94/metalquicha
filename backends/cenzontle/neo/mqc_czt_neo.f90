@@ -37,6 +37,19 @@ module mqc_czt_neo
    !! PySCF-NEO runs one DIIS over all components at once, which is the upgrade
    !! if a case ever needs it.
    !!
+   !! **NEO-DFT** runs the electrons as Kohn-Sham through the same SCF, and adds
+   !! the electron-proton correlation functional of Yang, Brorsen, Culpitt, Pak
+   !! and Hammes-Schiffer (epc17), a local functional of the two densities on
+   !! the electronic grid, restricted to the points a proton basis reaches:
+   !!
+   !!     E_epc = -int rho_e rho_p / (a - b sqrt(rho_e rho_p) + c rho_e rho_p)
+   !!
+   !! Its electronic potential rides in `h_extra` with the proton Coulomb term,
+   !! frozen for one electronic SCF and refreshed every macro-iteration -- the
+   !! fixed point is the same as a full Kohn-Sham treatment, only reached from
+   !! outside -- and the energy replaces the frozen `Tr(D_e V_epc)` the SCF
+   !! counted by the functional itself.
+   !!
    !! The reference implementation is the `pyscf/neo` module of Yang Yang's
    !! PySCF fork (github.com/theorychemyang/pyscf); its mass convention, its
    !! proton basis sets (`basis_sets/neo/`) and its HCN test energies are what
@@ -52,6 +65,9 @@ module mqc_czt_neo
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_direct, only: build_fock_direct_many, schwarz_bounds, direct_stats_t
+   use mqc_czt_ao, only: eval_ao_block, eval_rho
+   use mqc_czt_xc, only: xc_context_t, xc_context_create
+   use mqc_dft_grid, only: dft_grid_t, build_dft_grid
    use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
@@ -66,8 +82,19 @@ module mqc_czt_neo
       !! mass. CODATA's m_p/m_e is 1836.15267343; the difference moves a
       !! proton's kinetic energy in the eighth decimal.
 
-   integer, parameter :: MAX_MACRO = 100
-      !! Macro-iterations before giving up; NEO-HF takes ten or twenty.
+   integer, parameter :: MAX_MACRO = 200
+      !! Macro-iterations before giving up; NEO-HF takes ten or twenty, NEO-DFT
+      !! with epc several times that
+   integer, parameter :: MAX_INNER = 500
+      !! Proton self-consistency steps per macro-iteration, with a functional
+   real(dp), parameter :: INNER_MIX = 0.2_dp
+      !! The proton's own map under epc17 is far from contractive -- half and
+      !! half oscillates -- so it is mixed this gently and takes a hundred cheap
+      !! steps
+   real(dp), parameter :: MIX_START = 1.0_dp
+      !! How much of a proton's new density enters between cycles, with a
+      !! functional; halved whenever the residual grows
+   real(dp), parameter :: MIX_FLOOR = 0.05_dp
 
    type :: neo_result_t
       real(dp) :: energy = 0.0_dp
@@ -81,6 +108,9 @@ module mqc_czt_neo
          !! `-sum_p J(D_e, D_p)`, already inside `electronic`; reported apart
       real(dp) :: nucleus_nucleus = 0.0_dp
          !! `sum_{p<q} J(D_p, D_q)`, zero with one quantum nucleus
+      real(dp) :: epc_energy = 0.0_dp
+         !! The electron-proton correlation energy, zero without a functional
+      logical :: kohn_sham = .false.       !! Whether the electrons ran as DFT
       integer :: n_quantum = 0
       integer :: iterations = 0                !! Macro-iterations run
       logical :: converged = .false.
@@ -96,8 +126,9 @@ contains
 
    subroutine run_czt_neo_hf(atomic_numbers, element_symbols, coordinates, basis_name, &
                              nuclear_basis, quantum, nelec, max_iter, energy_tol, &
-                             density_tol, verbose, result, error, force_cartesian, in_core)
-      !! NEO-HF for a closed-shell electronic structure and any number of quantum protons
+                             density_tol, verbose, result, error, force_cartesian, in_core, &
+                             functional, grid_level, epc)
+      !! NEO-HF, or NEO-DFT, for a closed-shell electronic structure and any number of quantum protons
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in) :: coordinates(:, :)     !! (3, natm), Bohr
@@ -115,6 +146,15 @@ contains
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: force_cartesian
       logical, intent(in), optional :: in_core
+      character(len=*), intent(in), optional :: functional
+         !! An exchange-correlation functional for the electrons; absent or
+         !! empty is Hartree-Fock
+      integer, intent(in), optional :: grid_level
+         !! The DFT grid level, for the functional and for the epc integration
+      character(len=*), intent(in), optional :: epc
+         !! Electron-proton correlation: "17-1", "17-2", or empty for none.
+         !! Needs a functional: a Hartree-Fock electron with a correlation
+         !! functional bolted on is refused.
 
       type(czt_molecule_t) :: mol_e, mol_c
       type(czt_molecule_t), allocatable :: mol_p(:)
@@ -130,7 +170,18 @@ contains
       real(dp), allocatable :: d_e_prev(:, :), t_p(:, :), hc_p(:, :)
       type(direct_stats_t) :: stats
       type(error_t) :: read_error
-      integer :: natm, nq, nao_e, nao_p, nao_c, p, q, it, i, lo, hi, qlo, qhi
+      type(xc_context_t), target :: xc
+      type(xc_context_t), pointer :: xc_arg
+      type(dft_grid_t) :: grid
+      logical :: kohn_sham, use_epc
+      real(dp) :: epc_a, epc_b, epc_c, alpha_min, r_cut, e_epc
+      integer, allocatable :: sel(:)
+      real(dp), allocatable :: pts(:, :), w_sel(:), ao_e(:, :), ao_p(:, :, :)
+      real(dp), allocatable :: rho_e(:), rho_p(:), v_grid(:), v_epc_e(:, :), v_epc_p(:, :, :)
+      real(dp), allocatable :: ao_one(:, :), f_fixed(:, :), d_mix(:, :)
+      integer :: inner
+      real(dp) :: e_dummy, mix, dd_prev
+      integer :: natm, nq, nao_e, nao_p, nao_c, p, q, it, i, lo, hi, qlo, qhi, n_sel, level, g
       real(dp) :: e_total, e_prev, dd, dd_max, e_p1, e_pp, e_ep
       character(len=MAX_LINE_LENGTH) :: line
 
@@ -159,6 +210,35 @@ contains
             end if
          end if
       end do
+
+      kohn_sham = .false.
+      if (present(functional)) kohn_sham = len_trim(functional) > 0
+      use_epc = .false.
+      if (present(epc)) use_epc = len_trim(epc) > 0
+      if (use_epc .and. .not. kohn_sham) then
+         call error%set(ERROR_VALIDATION, "NEO: the electron-proton correlation functional "// &
+                        "needs a Kohn-Sham electron; name a functional or drop epc")
+         return
+      end if
+      if (use_epc) then
+         select case (trim(adjustl(epc)))
+         case ("17-1")
+            epc_a = 2.35_dp
+            epc_b = 2.4_dp
+            epc_c = 3.2_dp
+         case ("17-2")
+            epc_a = 2.35_dp
+            epc_b = 2.4_dp
+            epc_c = 6.6_dp
+         case default
+            call error%set(ERROR_VALIDATION, "NEO: unknown electron-proton correlation "// &
+                           "functional '"//trim(epc)//"'. Accepted: 17-1, 17-2")
+            return
+         end select
+      end if
+      level = 3
+      if (present(grid_level)) level = grid_level
+      result%kohn_sham = kohn_sham
 
       ! --- the molecules ------------------------------------------------------
       ! Electrons: every atom with its basis, the quantum ones ghosted, which
@@ -195,6 +275,12 @@ contains
       ! The proton basis says nothing about its angular form; it takes the
       ! electronic one so that every molecule below is built the same way.
       n_basis%angular_form = e_basis%angular_form
+      ! Its most diffuse exponent bounds how far a proton density reaches,
+      ! which is how far the epc integration has to look from the centre.
+      alpha_min = huge(1.0_dp)
+      do i = 1, n_basis%elements(1)%nshells
+         alpha_min = min(alpha_min, minval(n_basis%elements(1)%shells(i)%exponents))
+      end do
 
       ! One molecule per proton for its one-body terms: every atom present,
       ! for the classical potential, and the proton shells on the quantum
@@ -253,6 +339,7 @@ contains
       allocate (s_p(nao_p, nao_p, nq), h_p(nao_p, nao_p, nq), x_p(nao_p, nao_p, nq))
       allocate (d_p(nao_p, nao_p, nq), c_p(nao_p, nao_p, nq), eps_p(nao_p, nq))
       allocate (t_p(nao_p, nao_p), hc_p(nao_p, nao_p), f_p(nao_p, nao_p))
+      allocate (f_fixed(nao_p, nao_p), d_mix(nao_p, nao_p))
       do p = 1, nq
          call mol_p(p)%overlap(work)
          s_p(:, :, p) = work
@@ -272,6 +359,53 @@ contains
       allocate (zero_h(nao_c, nao_c), h_extra(nao_e, nao_e), dens(nao_c, nao_c, nq))
       zero_h = 0.0_dp
 
+      ! --- Kohn-Sham, and the epc grid ----------------------------------------
+      xc_arg => null()
+      if (kohn_sham) then
+         call xc_context_create(mol_e, trim(functional), xc, error, level=level)
+         if (error%has_error()) return
+         xc_arg => xc
+      end if
+      allocate (v_epc_e(nao_e, nao_e), v_epc_p(nao_p, nao_p, nq))
+      v_epc_e = 0.0_dp
+      v_epc_p = 0.0_dp
+      e_epc = 0.0_dp
+      n_sel = 0
+      if (use_epc) then
+         ! The electronic grid, kept only where a proton density is not
+         ! negligible: exp(-2 alpha r^2) at `r_cut` is below 1e-11 for the most
+         ! diffuse proton function, and everything else decays faster.
+         call build_dft_grid(coordinates, atomic_numbers, grid, error, level=level)
+         if (error%has_error()) return
+         r_cut = sqrt(25.0_dp/alpha_min)
+         allocate (sel(grid%n_points))
+         do g = 1, grid%n_points
+            do p = 1, nq
+               if (norm2(grid%coords(:, g) - coordinates(:, which(p))) <= r_cut) then
+                  n_sel = n_sel + 1
+                  sel(n_sel) = g
+                  exit
+               end if
+            end do
+         end do
+         if (n_sel == 0) then
+            call error%set(ERROR_VALIDATION, "NEO: the epc grid has no points near a proton")
+            return
+         end if
+         allocate (pts(3, n_sel), w_sel(n_sel))
+         pts = grid%coords(:, sel(1:n_sel))
+         w_sel = grid%weights(sel(1:n_sel))
+         call eval_ao_block(mol_e, pts, ao_e, error)
+         if (error%has_error()) return
+         allocate (ao_p(n_sel, nao_p, nq), rho_p(n_sel), v_grid(n_sel))
+         do p = 1, nq
+            call eval_ao_block(mol_p(p), pts, ao_one, error)
+            if (error%has_error()) return
+            ao_p(:, :, p) = ao_one
+         end do
+         call grid%destroy()
+      end if
+
       if (verbose) then
          write (line, "(A,I0,A,A,I0,A,I0,A)") "  NEO-HF: ", nq, " quantum nucle", &
             trim(merge("us", "i ", nq == 1))//"; ", nao_e, " electronic and ", nao_p, &
@@ -284,6 +418,8 @@ contains
 
       e_prev = 0.0_dp
       e_total = 0.0_dp
+      mix = MIX_START
+      dd_prev = huge(1.0_dp)
       result%converged = .false.
       do it = 1, MAX_MACRO
          ! Pass A: the Coulomb field of every proton, on the combined basis.
@@ -300,6 +436,21 @@ contains
          do p = 1, nq
             h_extra = h_extra - j_p(1:nao_e, 1:nao_e, p)
          end do
+         ! The epc potential on the electrons, from the last electronic density;
+         ! there is none to build it from on the first cycle.
+         v_epc_e = 0.0_dp
+         if (use_epc .and. it > 1) then
+            call eval_rho(ao_e, d_e_prev, rho_e)
+            rho_e = max(rho_e, 0.0_dp)
+            v_grid = 0.0_dp
+            do p = 1, nq
+               call eval_rho(ao_p(:, :, p), d_p(:, :, p), rho_p)
+               rho_p = max(rho_p, 0.0_dp)
+               call epc17_electron_potential(epc_a, epc_b, epc_c, rho_e, rho_p, v_grid)
+            end do
+            call grid_matrix(ao_e, w_sel*v_grid, v_epc_e)
+            h_extra = h_extra + v_epc_e
+         end if
          e_p1 = 0.0_dp
          e_pp = 0.0_dp
          do p = 1, nq
@@ -311,15 +462,11 @@ contains
             end do
          end do
 
-         ! The electrons, in that field. Warm-started after the first cycle.
-         if (it == 1) then
-            call run_czt_rhf(mol_e, nelec, max_iter, energy_tol, density_tol, .false., &
-                             result%electrons, error, h_extra=h_extra, in_core=in_core)
-         else
-            call run_czt_rhf(mol_e, nelec, max_iter, energy_tol, density_tol, .false., &
-                             result%electrons, error, h_extra=h_extra, in_core=in_core, &
-                             guess_density=d_e_prev)
-         end if
+         ! The electrons, in that field. Warm-started after the first cycle:
+         ! `d_e_prev` is unallocated on the first and so absent.
+         call run_czt_rhf(mol_e, nelec, max_iter, energy_tol, density_tol, .false., &
+                          result%electrons, error, h_extra=h_extra, in_core=in_core, &
+                          guess_density=d_e_prev, xc=xc_arg)
          if (error%has_error()) return
          if (.not. result%electrons%converged) then
             call error%set(ERROR_VALIDATION, "NEO: the electronic SCF did not converge "// &
@@ -327,8 +474,23 @@ contains
             return
          end if
          d_e_prev = result%electrons%density
-         e_ep = sum(result%electrons%density*h_extra)
-         e_total = result%electrons%energy + e_p1 + e_pp
+         e_ep = sum(result%electrons%density*(h_extra - v_epc_e))
+         ! The functional's energy replaces the frozen potential's `Tr(D V)`
+         ! that the SCF counted, and the proton potentials come off the new
+         ! electronic density.
+         e_epc = 0.0_dp
+         if (use_epc) then
+            call eval_rho(ao_e, result%electrons%density, rho_e)
+            rho_e = max(rho_e, 0.0_dp)
+            do p = 1, nq
+               call eval_rho(ao_p(:, :, p), d_p(:, :, p), rho_p)
+               rho_p = max(rho_p, 0.0_dp)
+               call epc17_proton_terms(epc_a, epc_b, epc_c, rho_e, rho_p, w_sel, v_grid, e_epc)
+               call grid_matrix(ao_p(:, :, p), w_sel*v_grid, v_epc_p(:, :, p))
+            end do
+         end if
+         e_total = result%electrons%energy - sum(result%electrons%density*v_epc_e) &
+                   + e_epc + e_p1 + e_pp
 
          ! Pass B: the electrons' Coulomb field on the proton blocks.
          deallocate (dens)
@@ -342,23 +504,53 @@ contains
          allocate (dens(nao_c, nao_c, nq))
 
          ! Every proton, in the field of the new electrons and the other protons.
+         ! With a correlation functional the proton's own potential depends on
+         ! its density, and one diagonalisation per cycle overshoots -- the
+         ! macro-iteration then flips between two states forever -- so each
+         ! proton is taken to self-consistency at fixed electrons first, with
+         ! the density mixed half and half between steps.
          dd_max = 0.0_dp
          do p = 1, nq
             lo = offset(p) + 1
             hi = offset(p) + nao_p
-            f_p = h_p(:, :, p) - j_e(lo:hi, lo:hi, 1)
+            f_fixed = h_p(:, :, p) - j_e(lo:hi, lo:hi, 1)
             do q = 1, nq
                if (q == p) cycle
                qlo = offset(p) + 1
                qhi = offset(p) + nao_p
-               f_p = f_p + j_p(qlo:qhi, qlo:qhi, q)
+               f_fixed = f_fixed + j_p(qlo:qhi, qlo:qhi, q)
             end do
-            call lowest_state(f_p, x_p(:, :, p), c_p(:, :, p), eps_p(:, p), work, error)
-            if (error%has_error()) return
+            d_mix = d_p(:, :, p)
+            do inner = 1, MAX_INNER
+               f_p = f_fixed + v_epc_p(:, :, p)
+               call lowest_state(f_p, x_p(:, :, p), c_p(:, :, p), eps_p(:, p), work, error)
+               if (error%has_error()) return
+               if (.not. use_epc) exit
+               dd = maxval(abs(work - d_mix))
+               if (dd < density_tol) exit
+               d_mix = (1.0_dp - INNER_MIX)*d_mix + INNER_MIX*work
+               call eval_rho(ao_p(:, :, p), d_mix, rho_p)
+               rho_p = max(rho_p, 0.0_dp)
+               e_dummy = 0.0_dp
+               call epc17_proton_terms(epc_a, epc_b, epc_c, rho_e, rho_p, w_sel, v_grid, e_dummy)
+               call grid_matrix(ao_p(:, :, p), w_sel*v_grid, v_epc_p(:, :, p))
+            end do
             dd = maxval(abs(work - d_p(:, :, p)))
             dd_max = max(dd_max, dd)
-            d_p(:, :, p) = work
+            ! Damped between cycles with a functional when the residual grows:
+            ! the electrons answer the proton's move and the proton answers
+            ! back, and a step that is too long sends the two around a limit
+            ! cycle at a few tenths in the density.
+            if (use_epc) then
+               d_p(:, :, p) = (1.0_dp - mix)*d_p(:, :, p) + mix*work
+            else
+               d_p(:, :, p) = work
+            end if
          end do
+         if (use_epc .and. it > 1) then
+            if (dd_max > dd_prev) mix = max(0.5_dp*mix, MIX_FLOOR)
+         end if
+         dd_prev = dd_max
 
          if (verbose) then
             write (line, "(I10,F24.12,2ES12.3,I6)") it, e_total, e_total - e_prev, dd_max, &
@@ -388,6 +580,7 @@ contains
       result%nuclear_one_body = e_p1
       result%electron_nucleus = e_ep
       result%nucleus_nucleus = e_pp
+      result%epc_energy = e_epc
       result%n_quantum = nq
       call move_alloc(eps_p, result%nuclear_orbital_energies)
       call move_alloc(c_p, result%nuclear_orbitals)
@@ -407,6 +600,10 @@ contains
             write (line, "(A,F20.10)") "    proton-proton                      ", result%nucleus_nucleus
             call logger%info(trim(line))
          end if
+         if (use_epc) then
+            write (line, "(A,F20.10)") "    electron-proton correlation (epc)  ", result%epc_energy
+            call logger%info(trim(line))
+         end if
          do p = 1, nq
             write (line, "(A,I0,A,F14.8)") "    proton ", p, " orbital energy ", &
                result%nuclear_orbital_energies(1, p)
@@ -419,7 +616,59 @@ contains
       end do
       call mol_c%destroy()
       call mol_e%destroy()
+      if (kohn_sham) call xc%destroy()
    end subroutine run_czt_neo_hf
+
+   subroutine epc17_electron_potential(a, b, c, rho_e, rho_p, v)
+      !! `dE_epc/drho_e` at every point, **added** to `v`, one proton at a time
+      !!
+      !!     E_epc = -int rho_e rho_p / (a - b sqrt(rho_e rho_p) + c rho_e rho_p)
+      !!
+      !! epc17 of Yang, Brorsen, Culpitt, Pak and Hammes-Schiffer, J. Chem.
+      !! Phys. 147, 114113 (2017), in the form PySCF-NEO evaluates it.
+      real(dp), intent(in) :: a, b, c
+      real(dp), intent(in) :: rho_e(:), rho_p(:)
+      real(dp), intent(inout) :: v(:)
+      real(dp) :: prod, root, denom
+      integer :: g
+      do g = 1, size(rho_e)
+         prod = rho_e(g)*rho_p(g)
+         root = sqrt(prod)
+         denom = a - b*root + c*prod
+         v(g) = v(g) + (-a*rho_p(g) + 0.5_dp*b*rho_p(g)*root)/denom**2
+      end do
+   end subroutine epc17_electron_potential
+
+   subroutine epc17_proton_terms(a, b, c, rho_e, rho_p, w, v, energy)
+      !! `dE_epc/drho_p` at every point, and the energy **added** to `energy`
+      real(dp), intent(in) :: a, b, c
+      real(dp), intent(in) :: rho_e(:), rho_p(:), w(:)
+      real(dp), intent(out) :: v(:)
+      real(dp), intent(inout) :: energy
+      real(dp) :: prod, root, denom
+      integer :: g
+      do g = 1, size(rho_e)
+         prod = rho_e(g)*rho_p(g)
+         root = sqrt(prod)
+         denom = a - b*root + c*prod
+         v(g) = (-a*rho_e(g) + 0.5_dp*b*rho_e(g)*root)/denom**2
+         energy = energy - w(g)*prod/denom
+      end do
+   end subroutine epc17_proton_terms
+
+   subroutine grid_matrix(ao, wv, v)
+      !! `V_uv = sum_g chi_u(g) wv(g) chi_v(g)`, a potential on the grid as a matrix
+      real(dp), intent(in) :: ao(:, :)     !! (n_points, n_ao)
+      real(dp), intent(in) :: wv(:)        !! weight times potential per point
+      real(dp), intent(out) :: v(:, :)
+      real(dp), allocatable :: scaled(:, :)
+      integer :: mu
+      allocate (scaled(size(ao, 1), size(ao, 2)))
+      do mu = 1, size(ao, 2)
+         scaled(:, mu) = ao(:, mu)*wv
+      end do
+      call pic_gemm(ao, scaled, v, transa="T")
+   end subroutine grid_matrix
 
    subroutine basis_on_one_atom(element_symbols, atom, shells, basis)
       !! A molecular basis with `shells` on `atom` and nothing anywhere else

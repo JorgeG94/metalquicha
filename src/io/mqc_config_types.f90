@@ -400,6 +400,7 @@ module mqc_config_types
       character(len=64) :: neo_nuclear_basis = "pb4-d"
       integer, allocatable :: neo_quantum_indices(:)   !! 1-based, from a 0-based deck
       character(len=8), allocatable :: neo_quantum_symbols(:)
+      character(len=8) :: neo_epc = ""   !! "17-1" or "17-2"; empty is none
 
       ! Hessian settings
       real(dp) :: hessian_displacement = DEFAULT_DISPLACEMENT  !! Finite difference displacement (Bohr)

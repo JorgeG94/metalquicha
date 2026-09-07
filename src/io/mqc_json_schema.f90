@@ -402,6 +402,7 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "quantum_nuclei")
       call allow(keys, "nuclear_basis")
+      call allow(keys, "epc")
    end function neo_keys
 
    function correlation_keys() result(keys)

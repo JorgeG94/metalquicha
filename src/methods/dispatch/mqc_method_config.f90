@@ -177,6 +177,9 @@ module mqc_method_config
          !! Atoms to quantise, 1-based here; the deck writes them 0-based
       character(len=8), allocatable :: quantum_symbols(:)
          !! Or every atom of these elements, e.g. ["H"]
+      character(len=8) :: epc = ""
+         !! Electron-proton correlation functional for NEO-DFT: "17-1",
+         !! "17-2", or empty for none
    end type neo_config_t
 
    !============================================================================

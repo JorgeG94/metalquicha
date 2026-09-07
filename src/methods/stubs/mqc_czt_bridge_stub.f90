@@ -227,7 +227,7 @@ contains
 
    subroutine run_czt_neo(atomic_numbers, element_symbols, coordinates, basis_name, &
                           nuclear_basis, quantum, charge, energy, error, verbose, &
-                          energy_tol, density_tol, max_iter)
+                          energy_tol, density_tol, max_iter, functional, grid_level, epc)
       !! No-op stand-in: quantum nuclei need the CPU backend
       use pic_types, only: dp
       use mqc_error, only: error_t
@@ -242,6 +242,8 @@ contains
       logical, intent(in), optional :: verbose
       real(dp), intent(in), optional :: energy_tol, density_tol
       integer, intent(in), optional :: max_iter
+      character(len=*), intent(in), optional :: functional, epc
+      integer, intent(in), optional :: grid_level
       energy = 0.0_dp
       call error%set(ERROR_VALIDATION, &
                      "keywords.neo needs the CPU integral backend; build with "// &
@@ -251,6 +253,7 @@ contains
       if (len_trim(basis_name)*len_trim(nuclear_basis) < 0) return
       if (present(verbose) .or. present(energy_tol)) return
       if (present(density_tol) .or. present(max_iter)) return
+      if (present(functional) .or. present(grid_level) .or. present(epc)) return
    end subroutine run_czt_neo
 
    subroutine run_czt_hf(settings, fragment, result, want_gradient, want_hessian)
