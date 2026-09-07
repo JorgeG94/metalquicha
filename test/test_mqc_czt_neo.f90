@@ -17,6 +17,7 @@ module test_mqc_czt_neo
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_czt_neo, only: neo_result_t, run_czt_neo_hf
+   use mqc_czt_xc, only: xc_available
    implicit none
    private
    public :: collect_mqc_czt_neo_tests
@@ -156,6 +157,8 @@ contains
       type(error_t) :: err
       real(dp) :: reference
 
+      ! A build without libxc has no Kohn-Sham to couple; the HF cases cover it.
+      if (.not. xc_available()) return
       call hcn(result, err, [.true., .false., .false.], basis="6-31g", &
                functional="hyb_gga_xc_b3lyp5")
       call check(error,.not. err%has_error(), "NEO-DFT failed: "//err%get_message())
@@ -185,6 +188,7 @@ contains
       type(error_t) :: err
       real(dp) :: reference
 
+      if (.not. xc_available()) return
       call hcn(result, err, [.true., .false., .false.], functional="hyb_gga_xc_b3lyp5", &
                epc="17-2")
       call check(error,.not. err%has_error(), "NEO-DFT with epc failed: "//err%get_message())
