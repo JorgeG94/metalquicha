@@ -133,6 +133,7 @@ module mqc_czt_integrals
          !! First split shell of each view shell, 1-based, with an (nbas_sp+1)
          !! sentinel -- the map `eri_schwarz_collapse` re-blocks bounds through
       real(dp), allocatable :: charges(:)      !! Nuclear charges, for repulsion
+      integer, allocatable :: atomic_numbers(:)  !! The elements, whatever charge they present
       real(dp), allocatable :: coords(:, :)    !! (3, natm), Bohr
 
       ! ---- effective core potentials ------------------------------------
@@ -554,6 +555,8 @@ contains
       allocate (this%env(env_size))
       allocate (this%shell_offset(this%nbas + 1))
       allocate (this%charges(this%natm))
+      if (allocated(this%atomic_numbers)) deallocate (this%atomic_numbers)
+      this%atomic_numbers = atomic_numbers
       allocate (this%coords(3, this%natm))
 
       ! Zeroed rather than merely filled: libcint reads slots nothing here sets
@@ -2369,6 +2372,7 @@ contains
       atom_mol%atm(LIBCINT_CHARGE_OF, 1) = this%atm(LIBCINT_CHARGE_OF, iatom)
       atom_mol%atm(LIBCINT_PTR_COORD, 1) = LIBCINT_PTR_ENV_START
       atom_mol%charges(1) = this%charges(iatom)
+      if (allocated(this%atomic_numbers)) atom_mol%atomic_numbers = [this%atomic_numbers(iatom)]
       atom_mol%coords = 0.0_dp
 
       off = LIBCINT_PTR_ENV_START + 3
@@ -2510,6 +2514,7 @@ contains
       if (allocated(this%shell_offset_sp)) deallocate (this%shell_offset_sp)
       if (allocated(this%sp_split_first)) deallocate (this%sp_split_first)
       if (allocated(this%charges)) deallocate (this%charges)
+      if (allocated(this%atomic_numbers)) deallocate (this%atomic_numbers)
       if (allocated(this%coords)) deallocate (this%coords)
       if (allocated(this%bas_with_ecp)) deallocate (this%bas_with_ecp)
       if (allocated(this%core_electrons)) deallocate (this%core_electrons)
