@@ -1201,10 +1201,13 @@ contains
          call tick(clock, 1, 3, "step")
       end if
 
+      ! Split across threads because the BLAS is sequential: at 17710 pairs and
+      ! 1700 auxiliary functions each of these is a teraflop, half a minute on
+      ! one core, and the two were the whole of the fitted build's wall clock.
       allocate (coul(n_ov, n_ov))
-      call pic_gemm(bov, bov, coul, transb="T")
+      call gemm_over_columns(bov, bov, coul, transb="T")
       allocate (exch(n_vir*n_vir, n_occ*n_occ))
-      call pic_gemm(bvv, boo, exch, transb="T")
+      call gemm_over_columns(bvv, boo, exch, transb="T")
       deallocate (bov, bvv, boo)
       if (talk) call tick(clock, 2, 3, "step")
 
