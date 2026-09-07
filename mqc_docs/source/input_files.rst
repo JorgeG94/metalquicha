@@ -1173,6 +1173,41 @@ them -- a deck asking for either is refused rather than quietly given a
 ground-state energy. Derivatives are refused for the same reason: there is no
 CASSCF gradient here, analytic or numerical.
 
+Hessian Options
+^^^^^^^^^^^^^^^
+
+Settings for second derivatives, whichever path produces them:
+
+.. code-block:: json
+
+   "hessian": {
+     "displacement": 0.005,
+     "response_batch": 12,
+     "response_tolerance": 1e-9,
+     "response_max_iter": 50,
+     "temperature": 298.15,
+     "pressure": 1.0
+   }
+
+- ``displacement`` (default: 0.005 Bohr): the finite-difference step, used only
+  on the semi-numerical path. ``finite_difference_displacement`` is accepted as
+  a longer spelling of the same key.
+- ``response_batch`` (default: 12): perturbation densities carried through one
+  pass over the integrals in the coupled-perturbed solve. Analytic path only.
+  Raising it trades memory for integral passes.
+- ``response_tolerance`` (default: 1e-9) and ``response_max_iter`` (default:
+  50): convergence and iteration cap for that solve.
+- ``temperature`` (default: 298.15 K) and ``pressure`` (default: 1.0 atm): the
+  conditions the thermochemistry is reported at. They do not affect the Hessian
+  itself.
+
+The three ``response_*`` keys act on the analytic Hessian and are ignored where
+a deck falls back to central differences; see :doc:`analytic_hessians` for which
+methods take which path, and for what ``response_batch`` costs in memory.
+
+Note that ``keywords.efp`` carries its own ``response_batch``, driving the EFP
+polarization response. They are different keys on different groups.
+
 Fragmentation Options
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -1208,6 +1243,7 @@ Fragmentation Options
 
 - ``level``: Maximum fragment size (1=monomers only, 2=up to dimers, 3=up to trimers, etc.)
 - ``max_intersection_level``: For GMBE only - maximum k-way intersection depth (default: level + 1)
+
 .. note::
 
    ``expansion`` and ``allow_overlapping_fragments`` were two further ways to
