@@ -789,7 +789,7 @@ contains
       real(dp), allocatable :: with_zero(:), u_all(:, :, :)
       real(dp), allocatable :: both(:, :, :), all_blocks(:, :, :, :)
       real(dp), allocatable :: drives(:, :, :), solved(:, :, :, :)
-      integer :: drive_of(9)
+      integer :: drive_of(N_CART_PAIR)
       real(dp), allocatable :: raw(:, :, :, :), centroids(:, :), qq(:, :, :, :)
       real(dp) :: com(3), r(3), alpha(3, 3)
       real(dp) :: mass_total, isotropic

@@ -1590,7 +1590,9 @@ contains
       integer :: shls(4)
       integer :: f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, block_max, n, iset, n_set
       integer :: ij, kl, npair, ipair, i1, i2, i3, pp, qq, rr, ss
-      integer :: nperm, iperm, slot(4, 8), bb(4)
+      integer, parameter :: N_PERM = 8   ! quartet index permutations a shell quartet stands for
+      integer :: nperm, iperm
+      integer :: slot(4, N_PERM), bb(4)
       integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:), order(:)
       integer :: itask
       integer(int64) :: n_total, n_computed, n_screened
