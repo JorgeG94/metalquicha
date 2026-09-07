@@ -1413,6 +1413,7 @@ contains
       logical, allocatable :: quantum(:)
       real(dp), allocatable :: named_energy_tol, named_density_tol
       integer, allocatable :: named_max_iter
+      type(scf_numerics_t) :: neo_scf  !! How every electronic SCF in the run is driven
       real(dp) :: energy
       integer :: i, k
       character(len=MAX_LINE_LENGTH) :: line
@@ -1490,6 +1491,14 @@ contains
       if (config%method_config%scf%max_iter_set) then
          named_max_iter = config%method_config%scf%max_iter
       end if
+      ! Everything else about how the SCF runs goes down whole, as MAKEFP does
+      ! it: a deck could set these and otherwise watch them do nothing.
+      neo_scf%level_shift = config%method_config%scf%level_shift
+      neo_scf%linear_dependence = config%method_config%scf%linear_dependence
+      neo_scf%use_diis = config%method_config%scf%use_diis
+      neo_scf%diis_size = config%method_config%scf%diis_size
+      neo_scf%incremental_fock = config%method_config%scf%incremental_fock
+      neo_scf%accelerator = config%method_config%scf%accelerator
       call run_czt_neo(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
                        config%method_config%basis_set, &
                        trim(config%method_config%neo%nuclear_basis), quantum, &
@@ -1497,7 +1506,7 @@ contains
                        energy_tol=named_energy_tol, density_tol=named_density_tol, &
                        max_iter=named_max_iter, functional=functional, &
                        grid_level=config%method_config%dft%grid_level, &
-                       epc=trim(config%method_config%neo%epc))
+                       epc=trim(config%method_config%neo%epc), scf_in=neo_scf)
       if (err%has_error()) then
          call refuse(result_out, "NEO failed: "//err%get_message())
          return

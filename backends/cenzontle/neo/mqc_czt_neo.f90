@@ -64,6 +64,7 @@ module mqc_czt_neo
    use mqc_json_basis_reader, only: build_molecular_basis_json
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_scf_types, only: scf_numerics_t
    use mqc_czt_direct, only: build_fock_direct_many, schwarz_bounds, direct_stats_t
    use mqc_czt_ao, only: eval_ao_block, eval_rho
    use mqc_czt_xc, only: xc_context_t, xc_context_create
@@ -127,7 +128,7 @@ contains
    subroutine run_czt_neo_hf(atomic_numbers, element_symbols, coordinates, basis_name, &
                              nuclear_basis, quantum, nelec, max_iter, energy_tol, &
                              density_tol, verbose, result, error, force_cartesian, in_core, &
-                             functional, grid_level, epc)
+                             functional, grid_level, epc, scf)
       !! NEO-HF, or NEO-DFT, for a closed-shell electronic structure and any number of quantum protons
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
@@ -155,6 +156,9 @@ contains
          !! Electron-proton correlation: "17-1", "17-2", or empty for none.
          !! Needs a functional: a Hartree-Fock electron with a correlation
          !! functional bolted on is refused.
+      type(scf_numerics_t), intent(in), optional :: scf
+         !! How the electronic SCFs are driven -- level shift, DIIS, the
+         !! accelerator -- passed through whole to every one of them
 
       type(czt_molecule_t) :: mol_e, mol_c
       type(czt_molecule_t), allocatable :: mol_p(:)
@@ -466,7 +470,7 @@ contains
          ! `d_e_prev` is unallocated on the first and so absent.
          call run_czt_rhf(mol_e, nelec, max_iter, energy_tol, density_tol, .false., &
                           result%electrons, error, h_extra=h_extra, in_core=in_core, &
-                          guess_density=d_e_prev, xc=xc_arg)
+                          guess_density=d_e_prev, xc=xc_arg, scf=scf)
          if (error%has_error()) return
          if (.not. result%electrons%converged) then
             call error%set(ERROR_VALIDATION, "NEO: the electronic SCF did not converge "// &
