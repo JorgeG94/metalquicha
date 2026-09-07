@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">37 statements</a>
+                 title=" 0.2% of total for procedures.">41 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -141,9 +141,9 @@
             <a class="list-group-item" href="../proc/basis_search_path.html#variable-colon">colon</a>
             <a class="list-group-item" href="../proc/basis_search_path.html#variable-env_length">env_length</a>
             <a class="list-group-item" href="../proc/basis_search_path.html#variable-env_value">env_value</a>
-            <a class="list-group-item" href="../proc/basis_search_path.html#variable-n~22">n</a>
-            <a class="list-group-item" href="../proc/basis_search_path.html#variable-start">start</a>
-            <a class="list-group-item" href="../proc/basis_search_path.html#variable-status~9">status</a>
+            <a class="list-group-item" href="../proc/basis_search_path.html#variable-n~57">n</a>
+            <a class="list-group-item" href="../proc/basis_search_path.html#variable-start~2">start</a>
+            <a class="list-group-item" href="../proc/basis_search_path.html#variable-status~25">status</a>
         </div>
       </div>
     </div>
@@ -190,6 +190,8 @@
 <li>the basis_sets/ of the tree this binary was configured from, absent
    in an fpm build, which has no configure step to learn it</li>
 </ol>
+<p>2 and 3 each bring their <code>neo/</code> subdirectory along, where the nuclear
+basis sets live.</p>
 
 
     <h3>Arguments</h3>
@@ -485,7 +487,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~22"></span>
+              <span class="anchor" id="variable-n~57"></span>
               integer,
             </td>
               <td>private</td>
@@ -502,7 +504,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-start"></span>
+              <span class="anchor" id="variable-start~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -519,7 +521,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~9"></span>
+              <span class="anchor" id="variable-status~25"></span>
               integer,
             </td>
               <td>private</td>
@@ -557,6 +559,9 @@ parameter
 <span class="w">      </span><span class="c">!! 2. ./basis_sets, so a run from the source tree works with no setup</span>
 <span class="w">      </span><span class="c">!! 3. the basis_sets/ of the tree this binary was configured from, absent</span>
 <span class="w">      </span><span class="c">!!    in an fpm build, which has no configure step to learn it</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! 2 and 3 each bring their `neo/` subdirectory along, where the nuclear</span>
+<span class="w">      </span><span class="c">!! basis sets live.</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">directories</span><span class="p">(:)</span>
 
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="n">MAX_PATH</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">env_value</span>
@@ -569,7 +574,7 @@ parameter
 <span class="w">      </span><span class="k">call </span><span class="nb">get_environment_variable</span><span class="p">(</span><span class="n">BASIS_PATH_VARIABLE</span><span class="p">,</span><span class="w"> </span><span class="n">env_value</span><span class="p">,</span><span class="w"> </span><span class="n">env_length</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">env_length</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">         </span><span class="k">do while</span><span class="w"> </span><span class="p">(</span><span class="n">start</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">env_length</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">collected</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w">         </span><span class="k">do while</span><span class="w"> </span><span class="p">(</span><span class="n">start</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">env_length</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">collected</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span>
 <span class="w">            </span><span class="n">colon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">env_value</span><span class="p">(</span><span class="n">start</span><span class="p">:</span><span class="n">env_length</span><span class="p">),</span><span class="w"> </span><span class="s2">":"</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">colon</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">env_value</span><span class="p">(</span><span class="n">start</span><span class="p">:</span><span class="n">env_length</span><span class="p">))</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -588,12 +593,19 @@ parameter
 <span class="w">         </span><span class="k">end do</span>
 <span class="k">      end if</span>
 
-<span class="k">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">      </span><span class="c">! `neo/` holds the nuclear basis sets for quantum protons. They are</span>
+<span class="w">      </span><span class="c">! tracked files, unlike the Basis Set Exchange bundle unpacked beside</span>
+<span class="w">      </span><span class="c">! them, and a deck names them the way it names any other basis.</span>
+<span class="w">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">      </span><span class="n">collected</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"basis_sets"</span>
+<span class="w">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">      </span><span class="n">collected</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"basis_sets/neo"</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">MQC_DEFAULT_BASIS_DIR</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">         </span><span class="n">collected</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_DEFAULT_BASIS_DIR</span>
+<span class="w">         </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="n">collected</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_DEFAULT_BASIS_DIR</span><span class="o">//</span><span class="s2">"/neo"</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="k">      allocate</span><span class="w"> </span><span class="p">(</span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="n">MAX_PATH</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">directories</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
@@ -622,7 +634,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-07 06:54 +0000             </p>
+ on 2026-09-07 12:14 +0000             </p>
           </div>
         </div>
         <br>

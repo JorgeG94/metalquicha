@@ -2404,15 +2404,15 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -2422,27 +2422,27 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from local workers and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -2452,15 +2452,15 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -3378,6 +3378,12 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><p>Whether this method has to be run on one thread</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/neo_keys.html'>neo_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td><p>Quantum nuclei: which, and in what basis</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/next_combination.html'>next_combination</a></td>
                  <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
                  <td>Function</td>
@@ -4008,6 +4014,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><p>Either an xyz file reference or inline symbols plus a flat coordinate list</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/read_neo.html'>read_neo</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>keywords.neo</code>: which nuclei get orbitals of their own, and in what basis</p><a href="../proc/read_neo.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/read_ormas_partition.html'>read_ormas_partition</a></td>
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Subroutine</td>
@@ -4358,6 +4370,12 @@ Sends SCF energy (non-blocking) and other components (blocking)</p></td>
                  <td><p>No-op stand-in: CASSCF and CASCI need the CPU integral backend</p><a href="../proc/run_czt_mcscf.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/run_czt_neo.html'>run_czt_neo</a></td>
+                 <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: quantum nuclei need the CPU backend</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/run_czt_sapt0.html'>run_czt_sapt0</a></td>
                  <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
                  <td>Subroutine</td>
@@ -4407,6 +4425,12 @@ Sends SCF energy (non-blocking) and other components (blocking)</p></td>
 Each molecule is independent, so assign one molecule per rank</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/run_neo.html'>run_neo</a></td>
+                 <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
+                 <td>Subroutine</td>
+                 <td><p>A nuclear-electronic orbital energy for the whole system</p><a href="../proc/run_neo.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/run_sapt.html'>run_sapt</a></td>
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
@@ -4441,6 +4465,12 @@ Each molecule is independent, so assign one molecule per rank</p></td>
                  <td><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></td>
                  <td>Function</td>
                  <td><p>Name a saddle-search method, for the log</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/same_symbol.html'>same_symbol</a></td>
+                 <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
+                 <td>Function</td>
+                 <td><p>Element symbols compared without regard to case or padding</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/scatter_restricted_ci.html'>scatter_restricted_ci</a></td>
@@ -5141,7 +5171,7 @@ a solvent or dielectric was given without one</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-07 06:54 +0000             </p>
+ on 2026-09-07 12:14 +0000             </p>
           </div>
         </div>
         <br>
