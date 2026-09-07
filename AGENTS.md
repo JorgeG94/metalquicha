@@ -474,8 +474,8 @@ A benchmark suite that checks them lives on `perf/benchmark-suite`.
 * **On Perlmutter, do not let Cray libsci be the BLAS.** The `ftn` wrapper
   links it whatever `BLAS_LIBRARIES` says; its `dgetrf` gets slower with every
   thread (3.8 s on one, 70 s on 64) and is not re-entrant, which segfaulted
-  MakeFP at 128 threads. `module unload cray-libsci` and use the
-  `perlmutter-cpu` preset (sequential MKL); see `CMAKE_STYLE.md`. The BLAS being
+  MakeFP at 128 threads. Use the `perlmutter-cpu` preset (sequential MKL, put
+  ahead of libsci and checked after every link); see `CMAKE_STYLE.md`. The BLAS being
   sequential means a big GEMM on the unfragmented path has to be split over
   threads by hand -- `gemm_over_columns` in `mqc_czt_gemm_threads` -- or it
   runs on one core while 127 wait.

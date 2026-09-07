@@ -410,62 +410,81 @@ if(MQC_ENABLE_DLFIND)
   message(STATUS "DL-FIND enabled: geometry optimization via libdlfind")
 endif()
 
-# Cray: put the threaded libsci ahead of the serial one the MPI wrapper drags
-# in.
+# Cray: settle which BLAS the binary binds to, because the wrapper does not.
 #
 # `find_package(MPI)` learns what to link by asking the `ftn` wrapper for its
-# link line, and it asks *without* `-fopenmp`. What comes back therefore names
-# the serial libsci -- `libsci_gnu`, `libsci_gnu_mpi` -- while
-# `find_package(OpenMP)` asks with the flag and gets the threaded pair,
-# `libsci_gnu_mp` and `libsci_gnu_mpi_mp`. Both end up on the link line, and the
-# one listed first is the one every BLAS and LAPACK call in the binary resolves
-# to. Reordering `libraries_to_link` does not settle it: CMake sorts the link
-# line by dependency, and every static library that uses OpenMP has to precede
-# it, so MPI's copy comes first whatever order is written here. Rewriting MPI's
-# imported target does not reach it either -- `MPI::MPI_Fortran` is created in
-# pic-mpi's directory and is not visible from this one.
+# link line, and that line names libsci -- `libsci_gnu`, `libsci_gnu_mpi` --
+# whenever the cray-libsci module is loaded. `find_package(OpenMP)` asks with
+# `-fopenmp` and gets the threaded pair, `libsci_gnu_mp` and `libsci_gnu_mpi_mp`.
+# The wrapper also appends libsci to every link it performs itself. So libsci
+# reaches the link line however the BLAS was chosen, `-DBLAS_LIBRARIES=` does
+# not keep it out, and the dynamic linker then binds each `dgemm` and `dgetrf`
+# to whichever BLAS-bearing library comes first in the executable's DT_NEEDED
+# order. Reordering `libraries_to_link` does not settle that: CMake sorts the
+# link line by dependency and MPI's copy lands first whatever order is written
+# here. Rewriting MPI's imported target does not reach it either --
+# `MPI::MPI_Fortran` is created in pic-mpi's directory and is not visible from
+# this one.
 #
-# Link options are emitted before any library, so naming the threaded pair here
-# is what puts it first, and the dynamic linker then binds every `dsygvd` and
-# `dgemm` to it.
+# Link options are emitted before any library, so naming a BLAS there is what
+# puts it first. Two cases:
 #
-# This is a correctness fix, not a performance one. Cray's serial libsci is not
+# A vendor was requested (`MQC_BLA_VENDOR`, defaulted to sequential MKL when
+# MKLROOT is set): that BLAS goes first. libsci may still be loaded for MPI's
+# sake, but nothing binds to it. This is what the `perlmutter-cpu` preset
+# relies on, and it holds whether or not the module is loaded when a rebuild
+# relinks -- which is what broke the previous version of this block, a
+# configure-time check of the OpenMP libraries that a later relink in another
+# shell walked straight past. `mqc_check_blas_binding` reads the built
+# executable to make sure.
+#
+# No vendor: libsci it is, and the threaded copy goes first. That is a
+# correctness fix, not a performance one. Cray's serial libsci is not
 # re-entrant and it fails quietly: two threads inside `dsygvd` at once corrupt
 # each other's workspace, and on Perlmutter 190 of 200 concurrent calls on one
 # matrix came back with different eigenvalues, the rest with `info` in the
 # forties. Downstream that reads as an SCF that will not converge, or an
 # eigensolver failing on a perfectly ordinary structure -- never as a threading
-# problem, and never in a traceback naming the BLAS. It is what made a conformer
-# search sampling on eight threads lose every metadynamics run it started, while
-# the same tblite in a binary without the serial libsci was fine.
-#
-# Taken from what `find_package(OpenMP)` already resolved, so no path is
-# guessed. Nowhere but a Cray has an entry that matches, and the loop then adds
-# nothing.
+# problem, and never in a traceback naming the BLAS. The threaded copy is
+# re-entrant only when called from one thread at a time, and it is no faster:
+# see the response-solver block below.
 set(mqc_libsci_mp)
 foreach(mqc_omp_lib IN LISTS OpenMP_Fortran_LIBRARIES)
   if(mqc_omp_lib MATCHES "/libsci_[A-Za-z0-9_]*_mp\\.so")
     list(APPEND mqc_libsci_mp "${mqc_omp_lib}")
   endif()
 endforeach()
-if(mqc_libsci_mp AND MQC_BLA_VENDOR)
-  # A vendor was asked for and the wrapper is still adding libsci behind it:
-  # whichever is named first wins every `dgemm` in the binary, and it would be
-  # libsci -- the one whose `dgetrf` cannot be called from two threads at once
-  # and gets slower with every thread it is given. `-DBLAS_LIBRARIES=` does not
-  # reach this either; only taking libsci off the wrapper's link line does.
-  message(
-    FATAL_ERROR
-      "BLAS vendor ${MQC_BLA_VENDOR} was requested, but the compiler wrapper "
-      "still links Cray libsci (${mqc_libsci_mp}), which would bind every BLAS "
-      "and LAPACK call instead. Run `module unload cray-libsci` and configure "
-      "again, or set MQC_BLA_VENDOR to empty to build against libsci knowingly.")
-endif()
-if(mqc_libsci_mp)
+set(mqc_blas_first)
+if(MQC_BLA_VENDOR AND CMAKE_Fortran_COMPILER_WRAPPER STREQUAL "CrayPrgEnv")
+  # The same answer pic-blas already got; FindBLAS caches it.
+  find_package(BLAS REQUIRED)
+  find_package(LAPACK REQUIRED)
+  set(mqc_blas_first ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+  list(REMOVE_DUPLICATES mqc_blas_first)
+  target_link_options(${main_lib} PUBLIC ${mqc_blas_first})
+  message(STATUS "Cray: ${BLA_VENDOR} linked ahead of libsci; the built executable "
+                 "is checked for it")
+elseif(mqc_libsci_mp)
   target_link_options(${main_lib} PUBLIC ${mqc_libsci_mp})
   message(STATUS "Cray libsci: threaded copy linked first (${mqc_libsci_mp}); "
                  "the serial libsci the MPI wrapper names is not thread-safe")
 endif()
+
+# Attach the post-link check to an executable. A no-op off a Cray or without a
+# requested vendor, so every other platform's build is untouched.
+function(mqc_check_blas_binding target)
+  if(NOT (MQC_BLA_VENDOR AND CMAKE_Fortran_COMPILER_WRAPPER STREQUAL "CrayPrgEnv"))
+    return()
+  endif()
+  add_custom_command(
+    TARGET ${target}
+    POST_BUILD
+    COMMAND
+      ${CMAKE_COMMAND} -DBINARY=$<TARGET_FILE:${target}> -DVENDOR=${MQC_BLA_VENDOR}
+      -P ${PROJECT_SOURCE_DIR}/cmake/MqcCheckBlasBinding.cmake
+    VERBATIM)
+endfunction()
+
 # Whether the BLAS underneath threads itself, which decides where the response
 # solver puts its parallelism.
 #
@@ -502,10 +521,10 @@ endif()
 # treated as sequential, because the two mistakes do not cost the same. Guess
 # sequential wrongly and the nesting costs 5%; guess threaded wrongly and every
 # solve runs on one core, which is the 175-second case. The exception is a Cray
-# with libsci linked, whose LAPACK cannot be called from two threads at once
+# that binds to libsci, whose LAPACK cannot be called from two threads at once
 # whatever the vendor string says.
 if(MQC_ENABLE_CZT)
-  if(mqc_libsci_mp)
+  if(mqc_libsci_mp AND NOT mqc_blas_first)
     message(STATUS "Response solver: frequencies serial (Cray libsci is not re-entrant)")
   elseif(NOT BLA_VENDOR OR BLA_VENDOR MATCHES "_seq$|_SEQ$")
     target_compile_definitions(${main_lib} PRIVATE MQC_SEQUENTIAL_BLAS)
@@ -516,6 +535,7 @@ if(MQC_ENABLE_CZT)
 endif()
 unset(mqc_omp_lib)
 unset(mqc_libsci_mp)
+unset(mqc_blas_first)
 
 target_link_libraries(${main_lib} PUBLIC ${libraries_to_link})
 

@@ -486,7 +486,8 @@ contains
       real(dp), intent(in), optional :: k_scale
          !! The exchange fraction the reference kept. Absent is all of it.
 
-      real(dp), allocatable :: coul(:, :), exch(:, :), bx(:, :), bc(:, :)
+      real(dp), allocatable :: coul(:, :), exch(:, :), bx(:, :), bc(:, :), b_p(:, :)
+      real(dp), allocatable :: coul_t(:, :), exch_t(:, :)
       real(dp) :: c_p, kf
       integer :: n, n_occ, naux, p
 
@@ -496,20 +497,35 @@ contains
       n = size(c_occ, 1)
       n_occ = size(c_occ, 2)
       naux = size(b, 2)
-      allocate (coul(n, n), exch(n, n), bx(n, n_occ), bc(n, n_occ))
+      allocate (coul(n, n), exch(n, n))
 
       coul = 0.0_dp
       exch = 0.0_dp
+      ! Threaded over the auxiliary functions, each thread with its own pair of
+      ! `n^2` accumulators, because the BLAS is sequential: the Z-vector
+      ! iterations of a fitted-reference gradient ran on one core for 36 s here.
+      !$omp parallel default(none) shared(b, x, c_occ, dtilde, coul, exch, n, n_occ, naux) &
+      !$omp    private(p, c_p, b_p, bx, bc, coul_t, exch_t)
+      allocate (b_p(n, n), bx(n, n_occ), bc(n, n_occ), coul_t(n, n), exch_t(n, n))
+      coul_t = 0.0_dp
+      exch_t = 0.0_dp
+      !$omp do schedule(static)
       do p = 1, naux
-         associate (b_p => reshape(b(:, p), [n, n]))
-            c_p = sum(b_p*dtilde)
-            coul = coul + c_p*b_p
-            call pic_gemm(b_p, x, bx)
-            call pic_gemm(b_p, c_occ, bc)
-            call pic_gemm(bx, bc, exch, transb="T", alpha=1.0_dp, beta=1.0_dp)
-            call pic_gemm(bc, bx, exch, transb="T", alpha=1.0_dp, beta=1.0_dp)
-         end associate
+         b_p = reshape(b(:, p), [n, n])
+         c_p = sum(b_p*dtilde)
+         coul_t = coul_t + c_p*b_p
+         call pic_gemm(b_p, x, bx)
+         call pic_gemm(b_p, c_occ, bc)
+         call pic_gemm(bx, bc, exch_t, transb="T", alpha=1.0_dp, beta=1.0_dp)
+         call pic_gemm(bc, bx, exch_t, transb="T", alpha=1.0_dp, beta=1.0_dp)
       end do
+      !$omp end do
+      !$omp critical
+      coul = coul + coul_t
+      exch = exch + exch_t
+      !$omp end critical
+      deallocate (b_p, bx, bc, coul_t, exch_t)
+      !$omp end parallel
 
       g = coul - 0.5_dp*kf*exch
    end subroutine response_operator_df
@@ -531,7 +547,8 @@ contains
       real(dp), intent(in), optional :: k_scale
          !! How much exact exchange the reference kept. Absent is all of it.
 
-      real(dp), allocatable :: coul(:, :), exch(:, :), bd(:, :)
+      real(dp), allocatable :: coul(:, :), exch(:, :), bd(:, :), b_p(:, :)
+      real(dp), allocatable :: coul_t(:, :), exch_t(:, :)
       real(dp) :: c_p, kf
       integer :: n, naux, p
 
@@ -540,17 +557,34 @@ contains
 
       n = size(dens, 1)
       naux = size(b, 2)
-      allocate (coul(n, n), exch(n, n), bd(n, n))
+      allocate (coul(n, n), exch(n, n))
       coul = 0.0_dp
       exch = 0.0_dp
+      ! The auxiliary functions are independent, so they are threaded over with
+      ! a pair of `n^2` accumulators per thread, summed once at the end. The
+      ! BLAS is sequential, so this is where the parallelism has to come from:
+      ! serial, the two builds of a Z-vector right-hand side were most of a
+      ! fitted-reference gradient.
+      !$omp parallel default(none) shared(b, dens, coul, exch, n, naux) &
+      !$omp    private(p, c_p, b_p, bd, coul_t, exch_t)
+      allocate (b_p(n, n), bd(n, n), coul_t(n, n), exch_t(n, n))
+      coul_t = 0.0_dp
+      exch_t = 0.0_dp
+      !$omp do schedule(static)
       do p = 1, naux
-         associate (b_p => reshape(b(:, p), [n, n]))
-            c_p = sum(b_p*dens)
-            coul = coul + c_p*b_p
-            call pic_gemm(b_p, dens, bd)
-            call pic_gemm(bd, b_p, exch, alpha=1.0_dp, beta=1.0_dp)
-         end associate
+         b_p = reshape(b(:, p), [n, n])
+         c_p = sum(b_p*dens)
+         coul_t = coul_t + c_p*b_p
+         call pic_gemm(b_p, dens, bd)
+         call pic_gemm(bd, b_p, exch_t, alpha=1.0_dp, beta=1.0_dp)
       end do
+      !$omp end do
+      !$omp critical
+      coul = coul + coul_t
+      exch = exch + exch_t
+      !$omp end critical
+      deallocate (b_p, bd, coul_t, exch_t)
+      !$omp end parallel
 
       g = coul - 0.5_dp*kf*exch
    end subroutine fitted_potential_general

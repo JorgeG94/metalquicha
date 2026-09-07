@@ -132,6 +132,7 @@ include(MqcDependencies)
 add_executable(${exe_name} ${PROJECT_SOURCE_DIR}/app/main.f90)
 target_include_directories(${exe_name} PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(${exe_name} PRIVATE ${main_lib})
+mqc_check_blas_binding(${exe_name})
 
 # The backend-independent validation programs. The ones that need CPU integrals
 # are registered by backends/cenzontle/validation.cmake instead, which the

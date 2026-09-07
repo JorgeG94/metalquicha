@@ -24,6 +24,7 @@ module mqc_czt_mp2_gradient
    use mqc_czt_rhf, only: build_fock
    use mqc_czt_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
    use pic_blas_interfaces, only: pic_gemm
+   use mqc_czt_gemm_threads, only: gemm_over_inner
    use mqc_czt_gradient, only: nuclear_repulsion_gradient, one_electron_deriv, &
                                iprinv_deriv_at, xc_potential_gradient, &
                                fitted_reference_gradient, &
@@ -583,47 +584,76 @@ contains
       !!
       !! Both are the amplitudes contracted with themselves, once directly and
       !! once with the two virtual indices exchanged -- the same two spin cases
-      !! the energy expression separates.
-      real(dp), intent(in) :: t2(:, :, :, :)
+      !! the energy expression separates:
+      !!
+      !!     D_ij = - sum_{kab} (2 t_ki^ab - t_ki^ba) t_kj^ab
+      !!     D_ba =   sum_{ijc} (2 t_ij^ca t_ij^cb - t_ij^ca t_ij^bc)
+      !!
+      !! Each is a sum of matrix products over slabs of `t2` that are already
+      !! contiguous in memory, so nothing is permuted or copied: the occupied
+      !! block over `(a,b)` slabs `t2(:, :, a, b)`, the first virtual term as one
+      !! product over the flattened `(i,j,c)` index, the second over `c` slabs.
+      !! Threaded here because the BLAS is not: as five nested loops on one
+      !! core this took 13 s of a 19 s adenine gradient.
+      real(dp), intent(in), target, contiguous :: t2(:, :, :, :)   !! `(i, j, a, b)`
       integer, intent(in) :: n_o, n_v
       real(dp), allocatable, intent(out) :: doo(:, :), dvv(:, :)
 
-      integer :: i, j, k, a, b, c
-      real(dp) :: acc
+      real(dp), pointer, contiguous :: t_ijc_a(:, :), t_ij_c_a(:, :, :)
+      real(dp), allocatable :: slab(:, :), part(:, :), tc(:, :), direct(:, :)
+      integer :: a, b, c
 
       allocate (doo(n_o, n_o), dvv(n_v, n_v))
       doo = 0.0_dp
       dvv = 0.0_dp
 
-      do j = 1, n_o
-         do i = 1, n_o
-            acc = 0.0_dp
-            do k = 1, n_o
-               do b = 1, n_v
-                  do a = 1, n_v
-                     acc = acc + 2.0_dp*t2(k, i, a, b)*t2(k, j, a, b) &
-                           - t2(k, i, a, b)*t2(k, j, b, a)
-                  end do
-               end do
-            end do
-            doo(i, j) = -acc
-         end do
-      end do
-
+      ! D_ij: for each (a,b), the slab (2 t_ki^ab - t_ki^ba) transposed against
+      ! t_kj^ab. Each thread accumulates its own n_o^2 block and the blocks are
+      ! summed once at the end.
+      !$omp parallel default(none) shared(t2, n_o, n_v, doo) private(a, b, slab, part)
+      allocate (slab(n_o, n_o), part(n_o, n_o))
+      part = 0.0_dp
+      !$omp do collapse(2) schedule(static)
       do b = 1, n_v
          do a = 1, n_v
-            acc = 0.0_dp
-            do i = 1, n_o
-               do j = 1, n_o
-                  do c = 1, n_v
-                     acc = acc + 2.0_dp*t2(i, j, c, a)*t2(i, j, c, b) &
-                           - t2(i, j, c, a)*t2(i, j, b, c)
-                  end do
-               end do
-            end do
-            dvv(b, a) = acc
+            slab = 2.0_dp*t2(:, :, a, b) - t2(:, :, b, a)
+            call pic_gemm(slab, t2(:, :, a, b), part, transa="T", beta=1.0_dp)
          end do
       end do
+      !$omp end do
+      !$omp critical
+      doo = doo - part
+      !$omp end critical
+      deallocate (slab, part)
+      !$omp end parallel
+
+      ! D_ba, direct term: t2 seen as ((i,j,c), a), one product over the long
+      ! index, split across threads along it.
+      t_ijc_a(1:n_o*n_o*n_v, 1:n_v) => t2
+      allocate (direct(n_v, n_v))
+      call gemm_over_inner(t_ijc_a, t_ijc_a, direct)
+
+      ! D_ba, exchange term: t2 seen as ((i,j), c, a); for each c the slab
+      ! t_ij^bc transposed against t_ij^ca, the latter gathered per c.
+      t_ij_c_a(1:n_o*n_o, 1:n_v, 1:n_v) => t2
+      !$omp parallel default(none) shared(t_ij_c_a, n_o, n_v, dvv) private(c, tc, part)
+      allocate (tc(n_o*n_o, n_v), part(n_v, n_v))
+      part = 0.0_dp
+      !$omp do schedule(static)
+      do c = 1, n_v
+         tc = t_ij_c_a(:, c, :)
+         call pic_gemm(t_ij_c_a(:, :, c), tc, part, transa="T", beta=1.0_dp)
+      end do
+      !$omp end do
+      !$omp critical
+      dvv = dvv - part
+      !$omp end critical
+      deallocate (tc, part)
+      !$omp end parallel
+
+      dvv = dvv + 2.0_dp*direct
+      deallocate (direct)
+      nullify (t_ijc_a, t_ij_c_a)
    end subroutine gamma1_intermediates
 
    subroutine reference_potential(dense, mol, eri, bounds, zero_h, density, &

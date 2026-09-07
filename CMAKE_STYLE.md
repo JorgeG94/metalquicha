@@ -241,16 +241,28 @@ reads `CRAYBLAS_NUM_THREADS`, which `tools/run.sh` now pins too. Pinned, a
 libsci build finishes, on one core per factorization.
 
 The preset therefore asks for `Intel10_64lp_seq`, the same sequential MKL the
-rest of the project assumes, and needs two things from the shell before
+rest of the project assumes, and needs `MKLROOT` in the shell before
 `cmake --preset perlmutter-cpu`:
 
 ```
-module unload cray-libsci
 export MKLROOT=/opt/intel/oneapi/mkl/2025.3      # or `module load intel`
 ```
 
-The unload is not optional. Left loaded, libsci is still on the wrapper's
-link line ahead of MKL, and `MqcDependencies.cmake` refuses to configure rather
-than build a binary that silently binds to the wrong library -- the message
-names the module. MakeFP on adenine/6-311G** went from not finishing in fifteen
-minutes to 10.7 s at 128 threads on this preset.
+Asking is not enough on its own. libsci reaches the link line anyway, through
+`find_package(MPI)`'s probe of the wrapper and again appended by the wrapper at
+every link while the module is loaded, and the dynamic linker binds each symbol
+to the first library in the executable's dependency order that defines it. So
+`MqcDependencies.cmake` names the requested BLAS as link *options*, which puts
+it ahead of every library, and `mqc_check_blas_binding` reads the built
+executable's `DT_NEEDED` list after each link and fails the build if libsci
+still comes first. The check is there because the first version of this was a
+configure-time test, and a rebuild from a fresh shell -- module loaded again --
+relinked against libsci without a word: the "MKL" binary was running libsci's
+`dgemm`, and only a profile showing OpenBLAS kernel names gave it away. Read
+the "BLAS binding" line the build prints. `LD_DEBUG=bindings` on the executable
+is the ground truth when in doubt.
+
+MakeFP on adenine/6-311G** went from not finishing in fifteen minutes to about
+ten seconds at 128 threads on this preset; the RI-MP2 gradient on the same
+molecule in cc-pVDZ from 21 s to about 7 s, thirteen of which had been one
+five-deep loop on one core.

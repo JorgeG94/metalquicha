@@ -88,7 +88,7 @@
       "name": "perlmutter-cpu",
       "inherits": "base",
       "displayName": "Perlmutter CPU (NERSC)",
-      "description": "CPU ab initio on a Perlmutter node under PrgEnv-gnu, with MKL rather than Cray libsci. Run `module unload cray-libsci` first and point MKLROOT at oneAPI's mkl; the configure refuses a build where libsci is still on the link line. See CMAKE_STYLE.md.",
+      "description": "CPU ab initio on a Perlmutter node under PrgEnv-gnu, with sequential MKL rather than Cray libsci. Point MKLROOT at oneAPI's mkl. MKL is put ahead of the libsci the ftn wrapper adds, and every link of mqc is checked for it. See CMAKE_STYLE.md.",
       "cacheVariables": {
         "MQC_ENABLE_TBLITE": "OFF",
         "MQC_ENABLE_DLFIND": "ON",
