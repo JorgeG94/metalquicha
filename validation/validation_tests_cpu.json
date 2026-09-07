@@ -4461,6 +4461,36 @@
             "requires": "libxc"
         },
         {
+            "name": "NEO-HF H2 cc-pvdz PB4-D, 2 quantum protons (CPU)",
+            "input": "inputs/cpu/mqc/neo/cpu_h2_cc-pvdz_neo.json",
+            "expected_energy": -1.050784743607,
+            "tolerance": 1e-08,
+            "type": "unfragmented"
+        },
+        {
+            "name": "NEO-HF HCN cc-pvdz PB4-D, 1 quantum proton (CPU)",
+            "input": "inputs/cpu/mqc/neo/cpu_hcn_cc-pvdz_neo.json",
+            "expected_energy": -92.843706356583,
+            "tolerance": 1e-08,
+            "type": "unfragmented"
+        },
+        {
+            "name": "NEO-DFT HYB_GGA_XC_B3LYP5 HCN cc-pvdz PB4-D, 1 quantum proton (CPU)",
+            "input": "inputs/cpu/mqc/neo/cpu_hcn_cc-pvdz_neo_b3lyp5.json",
+            "expected_energy": -93.339356183784,
+            "tolerance": 5e-06,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "NEO-DFT HYB_GGA_XC_B3LYP5 epc17-2 HCN cc-pvdz PB4-D, 1 quantum proton (CPU)",
+            "input": "inputs/cpu/mqc/neo/cpu_hcn_cc-pvdz_neo_b3lyp5_epc172.json",
+            "expected_energy": -93.367049913633,
+            "tolerance": 5e-06,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
             "name": "UKS SVWN CH3 cc-pvdz grid 3 (CPU)",
             "input": "inputs/cpu/mqc/udft/cpu_ch3_cc-pvdz_svwn.json",
             "expected_energy": -39.421122039737,
