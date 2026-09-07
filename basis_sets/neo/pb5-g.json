@@ -1,0 +1,250 @@
+{
+ "molssi_bse_schema": {
+  "schema_type": "component",
+  "schema_version": "0.1"
+ },
+ "name": "pb5-g",
+ "description": "Nuclear (proton) basis pb5-g: PB5-G basis from J. Chem. Phys. 152, 244123 (2020)",
+ "role": "orbital",
+ "family": "neo",
+ "function_types": [
+  "gto"
+ ],
+ "elements": {
+  "1": {
+   "electron_shells": [
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      0
+     ],
+     "exponents": [
+      "3.2830000000E+00"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      0
+     ],
+     "exponents": [
+      "7.6130000000E+00"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      0
+     ],
+     "exponents": [
+      "1.6077000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      0
+     ],
+     "exponents": [
+      "2.0457000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      0
+     ],
+     "exponents": [
+      "4.7011000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      1
+     ],
+     "exponents": [
+      "3.1670000000E+00"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      1
+     ],
+     "exponents": [
+      "7.7850000000E+00"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      1
+     ],
+     "exponents": [
+      "1.8985000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      1
+     ],
+     "exponents": [
+      "2.9425000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      2
+     ],
+     "exponents": [
+      "1.0239000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      2
+     ],
+     "exponents": [
+      "1.7298000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      2
+     ],
+     "exponents": [
+      "2.0682000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      3
+     ],
+     "exponents": [
+      "1.0930000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      3
+     ],
+     "exponents": [
+      "2.5972000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    },
+    {
+     "function_type": "gto",
+     "region": "",
+     "angular_momentum": [
+      4
+     ],
+     "exponents": [
+      "1.0513000000E+01"
+     ],
+     "coefficients": [
+      [
+       "1.0000000000E+00"
+      ]
+     ]
+    }
+   ],
+   "references": [
+    {
+     "reference_description": "J. Chem. Phys. 152, 244123 (2020); file from pyscf/neo",
+     "reference_keys": []
+    }
+   ]
+  }
+ }
+}

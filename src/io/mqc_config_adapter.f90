@@ -315,6 +315,15 @@ contains
       driver_config%method_config%efp%response_batch = mqc_config%efp_response_batch
       driver_config%method_config%efp%response = mqc_config%efp_response
       driver_config%method_config%efp%vdw_scale = mqc_config%efp_vdw_scale
+      ! Quantum nuclei. The two lists are exclusive and one of them is absent.
+      driver_config%method_config%neo%active = mqc_config%neo_active
+      driver_config%method_config%neo%nuclear_basis = mqc_config%neo_nuclear_basis
+      if (allocated(mqc_config%neo_quantum_indices)) then
+         driver_config%method_config%neo%quantum_indices = mqc_config%neo_quantum_indices
+      end if
+      if (allocated(mqc_config%neo_quantum_symbols)) then
+         driver_config%method_config%neo%quantum_symbols = mqc_config%neo_quantum_symbols
+      end if
       if (allocated(mqc_config%checkpoint_file)) then
          driver_config%checkpoint_file = mqc_config%checkpoint_file
       end if

@@ -394,6 +394,13 @@ module mqc_config_types
          !! reader is the only place that knows the three words it can take.
       real(dp) :: efp_vdw_scale = DEFAULT_VDW_SCALE
 
+      ! Quantum nuclei, read from `keywords.neo`. Absent means every nucleus is
+      ! classical and nothing below is looked at.
+      logical :: neo_active = .false.
+      character(len=64) :: neo_nuclear_basis = "pb4-d"
+      integer, allocatable :: neo_quantum_indices(:)   !! 1-based, from a 0-based deck
+      character(len=8), allocatable :: neo_quantum_symbols(:)
+
       ! Hessian settings
       real(dp) :: hessian_displacement = DEFAULT_DISPLACEMENT  !! Finite difference displacement (Bohr)
       real(dp) :: hessian_temperature = DEFAULT_TEMPERATURE    !! Temperature for thermochemistry (K)

@@ -183,6 +183,14 @@ contains
          return
       end if
 
+      ! Quantum nuclei take neither path either: a proton's orbital is solved
+      ! with every electron of the system, so there is nothing to fragment.
+      if (config%method_config%neo%active) then
+         call run_neo(config, sys_geom, resources%mpi_comms%world_comm%rank(), &
+                      wants_output, result_out)
+         return
+      end if
+
       ! EFP takes neither path either: the fragments already carry their
       ! wavefunctions, so there is no SCF to fragment and nothing for a
       ! many-body expansion to expand.
@@ -1380,5 +1388,130 @@ contains
       end if
       call logger%info("Wrote "//trim(path))
    end subroutine run_makefp
+
+   subroutine run_neo(config, sys_geom, rank, write_output, result_out)
+      !! A nuclear-electronic orbital energy for the whole system
+      !!
+      !! Rank zero only, like MAKEFP: the work is a few coupled SCFs, all
+      !! threaded inside the integral backend. Neither the fragmented nor the
+      !! unfragmented path applies -- a quantised proton is solved with every
+      !! electron of the system, and there is one energy at the end.
+      use mqc_czt_bridge, only: run_czt_neo
+      use mqc_method_types, only: METHOD_TYPE_HF
+      use mqc_elements, only: element_number_to_symbol
+      use mqc_json_output_types, only: OUTPUT_MODE_UNFRAGMENTED
+      use mqc_program_limits, only: MAX_LINE_LENGTH
+      type(driver_config_t), intent(in) :: config
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: rank
+      logical, intent(in) :: write_output
+      type(calculation_result_t), intent(out), optional :: result_out
+
+      type(error_t) :: err
+      type(json_output_data_t) :: json_data
+      character(len=8), allocatable :: symbols(:)
+      logical, allocatable :: quantum(:)
+      real(dp), allocatable :: named_energy_tol, named_density_tol
+      integer, allocatable :: named_max_iter
+      real(dp) :: energy
+      integer :: i, k
+      character(len=MAX_LINE_LENGTH) :: line
+
+      if (rank /= 0) return
+      if (config%method_config%method_type /= METHOD_TYPE_HF) then
+         call refuse(result_out, "keywords.neo: quantum nuclei are implemented for "// &
+                     "model.method hf only so far")
+         return
+      end if
+
+      allocate (symbols(sys_geom%total_atoms), quantum(sys_geom%total_atoms))
+      do i = 1, sys_geom%total_atoms
+         symbols(i) = element_number_to_symbol(sys_geom%element_numbers(i))
+      end do
+      quantum = .false.
+      if (allocated(config%method_config%neo%quantum_indices)) then
+         do k = 1, size(config%method_config%neo%quantum_indices)
+            i = config%method_config%neo%quantum_indices(k)
+            if (i < 1 .or. i > sys_geom%total_atoms) then
+               write (line, "(A,I0,A,I0,A)") "keywords.neo.quantum_nuclei: atom index ", &
+                  i - 1, " is outside this system's ", sys_geom%total_atoms, &
+                  " atoms (indices are 0-based)"
+               call refuse(result_out, trim(line))
+               return
+            end if
+            quantum(i) = .true.
+         end do
+      end if
+      if (allocated(config%method_config%neo%quantum_symbols)) then
+         do k = 1, size(config%method_config%neo%quantum_symbols)
+            do i = 1, sys_geom%total_atoms
+               if (same_symbol(symbols(i), config%method_config%neo%quantum_symbols(k))) then
+                  quantum(i) = .true.
+               end if
+            end do
+         end do
+      end if
+      if (count(quantum) == 0) then
+         call refuse(result_out, "keywords.neo.quantum_nuclei names no atom of this system")
+         return
+      end if
+
+      write (line, "(A,I0,A,A)") "Nuclear-electronic orbital Hartree-Fock: ", count(quantum), &
+         " quantum nucleus/nuclei in the ", trim(config%method_config%neo%nuclear_basis)
+      call logger%info(trim(line)//" basis")
+
+      if (config%method_config%scf%energy_convergence_set) then
+         named_energy_tol = config%method_config%scf%energy_convergence
+      end if
+      if (config%method_config%scf%density_convergence_set) then
+         named_density_tol = config%method_config%scf%density_convergence
+      end if
+      if (config%method_config%scf%max_iter_set) then
+         named_max_iter = config%method_config%scf%max_iter
+      end if
+      call run_czt_neo(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
+                       config%method_config%basis_set, &
+                       trim(config%method_config%neo%nuclear_basis), quantum, &
+                       sys_geom%charge, energy, err, verbose=.true., &
+                       energy_tol=named_energy_tol, density_tol=named_density_tol, &
+                       max_iter=named_max_iter)
+      if (err%has_error()) then
+         call refuse(result_out, "NEO failed: "//err%get_message())
+         return
+      end if
+
+      write (line, "(A,F20.10)") "NEO-HF total energy: ", energy
+      call logger%info(trim(line))
+      if (present(result_out)) then
+         result_out%energy%scf = energy
+         result_out%has_energy = .true.
+      end if
+      if (write_output .and. .not. config%skip_json_output) then
+         json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
+         json_data%total_energy = energy
+         json_data%has_energy = .true.
+         json_data%fragment_breakdown = config%fragment_breakdown
+         call write_json_output(json_data)
+         call json_data%destroy()
+      end if
+   end subroutine run_neo
+
+   pure function same_symbol(a, b) result(same)
+      !! Element symbols compared without regard to case or padding
+      character(len=*), intent(in) :: a, b
+      logical :: same
+      character(len=len(a)) :: la
+      character(len=len(b)) :: lb
+      integer :: i
+      la = a
+      lb = b
+      do i = 1, len(la)
+         if (la(i:i) >= "A" .and. la(i:i) <= "Z") la(i:i) = achar(iachar(la(i:i)) + 32)
+      end do
+      do i = 1, len(lb)
+         if (lb(i:i) >= "A" .and. lb(i:i) <= "Z") lb(i:i) = achar(iachar(lb(i:i)) + 32)
+      end do
+      same = trim(adjustl(la)) == trim(adjustl(lb))
+   end function same_symbol
 
 end module mqc_driver
