@@ -3,6 +3,14 @@ channels:
   - conda-forge
 dependencies:
   - python=3.12
+  # The OpenMP build, not the default pthreads one. mqc calls the BLAS from
+  # inside its own OpenMP regions -- the threaded LU, the column-split GEMMs,
+  # FMO and AFO fragment loops -- and a pthreads OpenBLAS entered from an
+  # OpenMP thread prints "Detect OpenMP Loop and this application may hang"
+  # and is not guaranteed to be right; the gemm-threads and AFO tests flaked
+  # under it. The OpenMP variant sees it is inside a parallel region and runs
+  # that call on the calling thread.
+  - libopenblas=*=*openmp*
   - openblas
   - openmpi
   # The C library only. mqc binds the HDF5 C entry points by hand rather than
