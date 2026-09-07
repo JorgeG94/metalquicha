@@ -326,33 +326,6 @@ elseif(MQC_ENABLE_CZT)
   find_package(libcint REQUIRED)
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBCINT)
 
-  # Whether the BLAS underneath threads itself, which decides where the response
-  # solver puts its parallelism.
-  #
-  # The twelve frequency solves are independent, and each is one `getrf` over
-  # the whole occupied-virtual space. Under a threaded BLAS that factorization
-  # already fills the machine, so the loop around it should stay serial. Under a
-  # sequential one it does not, and the solves have to be threaded here or the
-  # run spends its time on one core: at 8350 pairs, 175 seconds against 15.
-  #
-  # They do not compose. Nesting them is *slower* than a threaded BLAS alone --
-  # measured at 107 s against 102 s on a glycine tripeptide -- because MKL
-  # serialises a call made from inside a parallel region, leaving twelve-way
-  # concurrency where there was forty-way.
-  #
-  # Read off the vendor rather than probed at runtime, because there is no
-  # portable way to ask a BLAS how many threads it intends to use.
-  #
-  # An unknown vendor -- CMake's own detection, which is what CI gets -- is
-  # treated as sequential, because the two mistakes do not cost the same. Guess
-  # sequential wrongly and the nesting costs 5%; guess threaded wrongly and
-  # every solve runs on one core, which is the 175-second case.
-  if(NOT BLA_VENDOR OR BLA_VENDOR MATCHES "_seq$|_SEQ$")
-    target_compile_definitions(${main_lib} PRIVATE MQC_SEQUENTIAL_BLAS)
-    message(STATUS "Response solver: frequencies threaded (BLAS is sequential)")
-  else()
-    message(STATUS "Response solver: frequencies serial (BLAS threads itself)")
-  endif()
   # BUILD_INTERFACE, not just PRIVATE: a static library records even its private
   # dependencies in its interface as $<LINK_ONLY:...>, so CMake wants them in
   # this project's export set -- which a fetched third-party library is never
@@ -378,6 +351,39 @@ elseif(MQC_ENABLE_CZT)
   add_subdirectory(backends/cenzontle)
   message(
     STATUS "libcint enabled: CPU Gaussian integrals via the Fortran interface")
+endif()
+
+# Whether the BLAS underneath threads itself, which decides where the response
+# solver puts its parallelism.
+#
+# The twelve frequency solves are independent, and each is one `getrf` over the
+# whole occupied-virtual space. Under a threaded BLAS that factorization already
+# fills the machine, so the loop around it should stay serial. Under a
+# sequential one it does not, and the solves have to be threaded here or the run
+# spends its time on one core: at 8350 pairs, 175 seconds against 15.
+#
+# They do not compose. Nesting them is *slower* than a threaded BLAS alone --
+# measured at 107 s against 102 s on a glycine tripeptide -- because MKL
+# serialises a call made from inside a parallel region, leaving twelve-way
+# concurrency where there was forty-way.
+#
+# Outside the backend branches above: it belongs to the response solver, which
+# is the same code under libfint and libcint, and it once sat in the libcint
+# branch alone -- so the default build, libfint, factorized every frequency on
+# one core with the other thirty-nine idle.
+#
+# Read off the vendor rather than probed at runtime, because there is no
+# portable way to ask a BLAS how many threads it intends to use.
+#
+# An unknown vendor -- CMake's own detection, which is what CI gets -- is
+# treated as sequential, because the two mistakes do not cost the same. Guess
+# sequential wrongly and the nesting costs 5%; guess threaded wrongly and every
+# solve runs on one core, which is the 175-second case.
+if(MQC_ENABLE_CZT AND (NOT BLA_VENDOR OR BLA_VENDOR MATCHES "_seq$|_SEQ$"))
+  target_compile_definitions(${main_lib} PRIVATE MQC_SEQUENTIAL_BLAS)
+  message(STATUS "Response solver: frequencies threaded (BLAS is sequential)")
+else()
+  message(STATUS "Response solver: frequencies serial (BLAS threads itself)")
 endif()
 
 # HDF5, for checkpoints that carry derivatives. Only the C library is needed:
