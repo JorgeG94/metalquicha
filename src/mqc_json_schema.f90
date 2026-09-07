@@ -202,6 +202,7 @@ contains
    function system_keys() result(keys)
       type(key_set_t) :: keys
       call allow(keys, "logger")
+      call allow(keys, "memory_gb")
       call allow(keys, "gpu")
       call allow(keys, "skip_json_output")
       call allow(keys, "unchecked_input")
@@ -395,6 +396,7 @@ contains
       call allow(keys, "response_batch")
       call allow(keys, "response")
       call allow(keys, "vdw_scale")
+      call allow(keys, "dispersion")
    end function efp_keys
 
    function neo_keys() result(keys)

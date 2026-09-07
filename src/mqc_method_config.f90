@@ -162,6 +162,11 @@ module mqc_method_config
       real(dp) :: vdw_scale = DEFAULT_VDW_SCALE
          !! Innermost layer of the charge-penetration screening grid, as a
          !! fraction of a van der Waals radius. GAMESS's `VDWSCL`.
+      logical :: quadrupole_blocks = .true.
+         !! Write the dipole-quadrupole and quadrupole-quadrupole dynamic
+         !! blocks, which cost the response solve five quadrupole-driven
+         !! perturbations on top of the three dipole ones. GAMESS's `DISP7` and
+         !! `DISP8`, both on by default there too.
    end type efp_config_t
 
    type :: neo_config_t

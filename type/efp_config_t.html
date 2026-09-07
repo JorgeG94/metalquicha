@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 0.6% of total for derived types.</p>Including implementation: 8 statements,  0.2% of total for derived types.">8 statements</a>
+                 title="<p> 0.6% of total for derived types.</p>Including implementation: 9 statements,  0.2% of total for derived types.">9 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -139,6 +139,7 @@
             <a class="list-group-item" href="../type/efp_config_t.html#variable-allow_crap_response~2">allow_crap_response</a>
             <a class="list-group-item" href="../type/efp_config_t.html#variable-dynamic_maxiter~2">dynamic_maxiter</a>
             <a class="list-group-item" href="../type/efp_config_t.html#variable-dynamic_tolerance">dynamic_tolerance</a>
+            <a class="list-group-item" href="../type/efp_config_t.html#variable-quadrupole_blocks~2">quadrupole_blocks</a>
             <a class="list-group-item" href="../type/efp_config_t.html#variable-response~2">response</a>
             <a class="list-group-item" href="../type/efp_config_t.html#variable-response_batch~2">response_batch</a>
             <a class="list-group-item" href="../type/efp_config_t.html#variable-vdw_scale">vdw_scale</a>
@@ -270,7 +271,7 @@ response solve and the screening fit.</p>
 </g>
 </g>
 <!-- type~fmo_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~efp_config_t~~InheritedByGraph_edge7" class="edge">
+<g id="type~~efp_config_t~~InheritedByGraph_edge5" class="edge">
 <title>type~fmo_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#00ffff" d="M719.74,-83.84C714.59,-81.29 709.49,-78.33 705,-75 695.13,-67.67 699.29,-54 687,-54"/>
 </g>
@@ -284,7 +285,7 @@ response solve and the screening fit.</p>
 </g>
 </g>
 <!-- type~gmbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~efp_config_t~~InheritedByGraph_edge5" class="edge">
+<g id="type~~efp_config_t~~InheritedByGraph_edge6" class="edge">
 <title>type~gmbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#00ffff" d="M704.92,-54C698.89,-54 692.8,-54 687,-54"/>
 </g>
@@ -298,7 +299,7 @@ response solve and the screening fit.</p>
 </g>
 </g>
 <!-- type~mbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~efp_config_t~~InheritedByGraph_edge6" class="edge">
+<g id="type~~efp_config_t~~InheritedByGraph_edge7" class="edge">
 <title>type~mbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#00ffff" d="M719.74,-24.16C714.59,-26.71 709.49,-29.67 705,-33 695.13,-40.33 699.29,-54 687,-54"/>
 <path fill="none" stroke="#00ffff" d="M686,-54C683.46,-54 680.88,-54 678.27,-54"/>
@@ -436,6 +437,26 @@ downstream, are converged to this and no further.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-quadrupole_blocks~2"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>quadrupole_blocks</strong></td>
+<td> =</td>
+                <td>.true.</td>
+            <td>
+                <p>Write the dipole-quadrupole and quadrupole-quadrupole dynamic
+blocks, which cost the response solve five quadrupole-driven
+perturbations on top of the three dipole ones. GAMESS&rsquo;s <code>DISP7</code> and
+<code>DISP8</code>, both on by default there too.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-response~2"></span>
               integer,
             </td>
@@ -529,6 +550,11 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">vdw_scale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_VDW_SCALE</span>
 <span class="w">         </span><span class="c">!! Innermost layer of the charge-penetration screening grid, as a</span>
 <span class="w">         </span><span class="c">!! fraction of a van der Waals radius. GAMESS's `VDWSCL`.</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">quadrupole_blocks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="c">!! Write the dipole-quadrupole and quadrupole-quadrupole dynamic</span>
+<span class="w">         </span><span class="c">!! blocks, which cost the response solve five quadrupole-driven</span>
+<span class="w">         </span><span class="c">!! perturbations on top of the three dipole ones. GAMESS's `DISP7` and</span>
+<span class="w">         </span><span class="c">!! `DISP8`, both on by default there too.</span>
 <span class="w">   </span><span class="k">end type </span><span class="n">efp_config_t</span>
 </pre></div>
 
@@ -552,7 +578,7 @@ fraction of a van der Waals radius. GAMESS&rsquo;s <code>VDWSCL</code>.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-07 12:14 +0000             </p>
+ on 2026-09-07 22:29 +0000             </p>
           </div>
         </div>
         <br>

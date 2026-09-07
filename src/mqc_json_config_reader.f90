@@ -233,6 +233,7 @@ contains
       ! whenever one is absent, since `optional_string` leaves its target alone
       ! rather than clearing it.
       call optional_string(json, "system.logger.level", config%log_level)
+      call optional_real(json, "system.memory_gb", config%memory_gb)
       call optional_logical_seen(json, "system.gpu", config%gpu, config%gpu_set)
       call optional_logical(json, "system.skip_json_output", config%skip_json_output)
       call optional_logical(json, "system.unchecked_input", config%unchecked_input)
@@ -278,6 +279,8 @@ contains
       call optional_int(json, "keywords.efp.response_batch", config%efp_response_batch)
       call optional_real(json, "keywords.efp.vdw_scale", config%efp_vdw_scale)
       call read_efp_response(json, config, error)
+      if (error%has_error()) return
+      call read_efp_dispersion(json, config, error)
       if (error%has_error()) return
       call read_neo(json, config, error)
       if (error%has_error()) return
@@ -669,6 +672,37 @@ contains
          ! instead, for the callers that cannot survive an `ERROR STOP`.
       end select
    end subroutine check_method_supported
+
+   subroutine read_efp_dispersion(json, config, error)
+      !! `keywords.efp.dispersion`: "all" or "dipole", or a refusal
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: text
+      character(len=:), allocatable :: lowered
+      integer :: i
+
+      call optional_string(json, "keywords.efp.dispersion", text)
+      if (.not. allocated(text)) return
+
+      lowered = trim(adjustl(text))
+      do i = 1, len(lowered)
+         if (lowered(i:i) >= "A" .and. lowered(i:i) <= "Z") then
+            lowered(i:i) = achar(iachar(lowered(i:i)) + 32)
+         end if
+      end do
+
+      select case (lowered)
+      case ("all")
+         config%efp_quadrupole_blocks = .true.
+      case ("dipole")
+         config%efp_quadrupole_blocks = .false.
+      case default
+         call error%set(ERROR_VALIDATION, "unknown keywords.efp.dispersion '"//trim(text)// &
+                        "'. Accepted: all, dipole")
+      end select
+   end subroutine read_efp_dispersion
 
    subroutine read_efp_response(json, config, error)
       !! `keywords.efp.response`, as a code, or a refusal
