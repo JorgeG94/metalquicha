@@ -323,6 +323,58 @@ have it by asking for something the analytic path declines -- density fitting,
 say -- but that is a side effect rather than a control, and if a real need for
 one appears it should be a keyword rather than a trick.
 
+What a deck can tune
+====================
+
+The coupled-perturbed solve behind the analytic Hessian takes three settings,
+all under ``keywords.hessian``:
+
+.. code-block:: json
+
+   "keywords": {
+     "hessian": {
+       "response_batch": 12,
+       "response_tolerance": 1e-9,
+       "response_max_iter": 50
+     }
+   }
+
+.. list-table::
+   :header-rows: 1
+   :widths: 24 12 64
+
+   * - Key
+     - Default
+     - What it does
+   * - ``response_batch``
+     - 12
+     - Perturbation densities carried through one pass over the integrals.
+       The response equations are ``n_ov`` applications of one operator, and
+       batching lets a single integral pass serve that many right-hand sides
+       instead of one. Raising it trades memory for passes: every density in
+       a batch is resident at once, so the ceiling is what fits rather than
+       what is fastest in principle.
+   * - ``response_tolerance``
+     - 1e-9
+     - Convergence of the coupled-perturbed solve.
+   * - ``response_max_iter``
+     - 50
+     - Iteration cap for that solve. A solve that hits it is reported rather
+       than quietly returning its last iterate.
+
+Two things worth knowing before reaching for these.
+
+``keywords.efp`` has its own ``response_batch``, a different key on a different
+group driving the EFP polarization response. Setting one and watching the other
+is the easy mistake.
+
+And ``response_batch`` is a **performance dial, not an accuracy one** -- with
+one exception worth naming. Changing it reorders floating-point accumulation,
+which moves a double-hybrid derivative by around 5e-10. That is the noise floor
+those quantities already carry rather than anything the batch introduces, so
+varying this is a way to *measure* that scatter when chasing a small
+discrepancy, and not a way to remove it.
+
 Accuracy on larger bases
 ========================
 
