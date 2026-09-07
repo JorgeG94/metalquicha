@@ -1,0 +1,1390 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_terco_bridge &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_terco_bridge
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.1% of total for modules and submodules.">24 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_terco_bridge_stub.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_terco_bridge_stub.f90.html'>mqc_terco_bridge_stub.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_terco_bridge</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#funcs-0"
+         aria-expanded="false" aria-controls="funcs-0">
+         <h4 class="card-header bg-primary text-white">Functions</h4>
+      </a>
+      <div id="funcs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_terco_bridge.html#proc-terco_backend_available">terco_backend_available</a>
+        </div>
+      </div>
+    </div>
+
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_terco_bridge.html#proc-run_terco_scf">run_terco_scf</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>The fpm build, and any CMake build with MQC_ENABLE_TERCO=OFF, compiles
+this. It reports that the backend was asked for and is not present rather
+than computing anything. The real implementation, compiled only by CMake
+with the backend, lives in <code>backends/terco/backend/mqc_terco_bridge.f90</code>
+and provides the same module and the same <code>run_terco_scf</code> interface.</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_terco_bridge~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_terco_bridgeUsesGraph" width="641pt" height="594pt"
+ viewBox="0.00 0.00 641.00 593.64" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_terco_bridge~~UsesGraph" class="graph" transform="scale(0.85 0.85) rotate(0) translate(4 690.58)">
+<title>module~~mqc_terco_bridge~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-690.58 746,-690.58 746,4 -4,4"/>
+<!-- module~mqc_terco_bridge -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node1" class="node">
+<title>module~mqc_terco_bridge</title>
+<polygon fill="none" stroke="black" points="742,-246 634,-246 634,-222 742,-222 742,-246"/>
+<text text-anchor="middle" x="688" y="-231.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_terco_bridge</text>
+</g>
+<!-- module~mqc_cuest_iface -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node2" class="node">
+<title>module~mqc_cuest_iface</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node2"><a xlink:href="../module/mqc_cuest_iface.html" xlink:title="mqc_cuest_iface">
+<polygon fill="#337ab7" stroke="#337ab7" points="579,-546 478,-546 478,-522 579,-522 579,-546"/>
+<text text-anchor="middle" x="528.5" y="-531.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cuest_iface</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_terco_bridge&#45;&gt;module~mqc_cuest_iface -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge1" class="edge">
+<title>module~mqc_terco_bridge&#45;&gt;module~mqc_cuest_iface</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M680.63,-246.13C656.64,-291.83 571.52,-453.96 540.73,-512.62"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="537.5,-511.24 535.95,-521.72 543.7,-514.49 537.5,-511.24"/>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node3" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node3"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="205.5,-104 138.5,-104 138.5,-80 205.5,-80 205.5,-104"/>
+<text text-anchor="middle" x="172" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_terco_bridge&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge2" class="edge">
+<title>module~mqc_terco_bridge&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M527.5,-134C455.32,-106.24 428.38,-153.34 353.5,-134"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M351.5,-134C305.35,-122.08 252.13,-109.74 215.89,-101.54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="216.2,-98.03 205.68,-99.24 214.66,-104.86 216.2,-98.03"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node4" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node4"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="598,-246 459,-246 459,-222 598,-222 598,-246"/>
+<text text-anchor="middle" x="528.5" y="-231.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_terco_bridge&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge3" class="edge">
+<title>module~mqc_terco_bridge&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M633.68,-234C625.47,-234 616.84,-234 608.22,-234"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="608.12,-230.5 598.12,-234 608.12,-237.5 608.12,-230.5"/>
+</g>
+<!-- module~mqc_result_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node5" class="node">
+<title>module~mqc_result_types</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node5"><a xlink:href="../module/mqc_result_types.html" xlink:title="mqc_result_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="404.5,-84 300.5,-84 300.5,-60 404.5,-60 404.5,-84"/>
+<text text-anchor="middle" x="352.5" y="-69.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_terco_bridge&#45;&gt;module~mqc_result_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge4" class="edge">
+<title>module~mqc_terco_bridge&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M672.45,-221.89C645.87,-200.48 586.94,-156.09 529.5,-134"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M527.5,-134C484,-117.27 433.81,-99.55 398.55,-87.36"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="399.61,-84.03 389.01,-84.07 397.33,-90.64 399.61,-84.03"/>
+</g>
+<!-- module~mqc_method_config -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node9" class="node">
+<title>module~mqc_method_config</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node9"><a xlink:href="../module/mqc_method_config.html" xlink:title="mqc_method_config">
+<polygon fill="#337ab7" stroke="#337ab7" points="413,-546 292,-546 292,-522 413,-522 413,-546"/>
+<text text-anchor="middle" x="352.5" y="-531.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_config</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_cuest_iface&#45;&gt;module~mqc_method_config -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge5" class="edge">
+<title>module~mqc_cuest_iface&#45;&gt;module~mqc_method_config</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M477.64,-534C460.77,-534 441.61,-534 423.48,-534"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="423.24,-530.5 413.24,-534 423.24,-537.5 423.24,-530.5"/>
+</g>
+<!-- module~mqc_scf_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node12" class="node">
+<title>module~mqc_scf_types</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node12"><a xlink:href="../module/mqc_scf_types.html" xlink:title="mqc_scf_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="217,-630 127,-630 127,-606 217,-606 217,-630"/>
+<text text-anchor="middle" x="172" y="-615.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_scf_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_cuest_iface&#45;&gt;module~mqc_scf_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge6" class="edge">
+<title>module~mqc_cuest_iface&#45;&gt;module~mqc_scf_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M516.86,-546.14C491.79,-573.58 425.71,-639.43 353.5,-658"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M351.5,-658C326.77,-664.36 262.65,-646.94 218.41,-633.11"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="219.32,-629.73 208.73,-630.05 217.21,-636.4 219.32,-629.73"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node15" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-386 0,-386 0,-362 62,-362 62,-386"/>
+<text text-anchor="middle" x="31" y="-371.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_cuest_iface&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge7" class="edge">
+<title>module~mqc_cuest_iface&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M351.5,-658C242.08,-686.14 184.36,-711.85 98,-639 60.55,-607.41 40.55,-454.1 34.24,-396.2"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="37.72,-395.83 33.18,-386.25 30.75,-396.57 37.72,-395.83"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge10" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M515.42,-222C497.02,-204.37 460.17,-171.56 423,-153 394.35,-138.69 384.51,-142.01 353.5,-134"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node6" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node6"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="384.5,-377 320.5,-377 320.5,-353 384.5,-353 384.5,-377"/>
+<text text-anchor="middle" x="352.5" y="-362.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge8" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M515.35,-246.24C496.57,-264.79 458.89,-300.56 423,-326 411.78,-333.95 398.79,-341.61 387.1,-348.01"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="385.23,-345.04 378.06,-352.84 388.53,-351.21 385.23,-345.04"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node7" class="node">
+<title>module~mqc_elements</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node7"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="398,-317 307,-317 307,-293 398,-293 398,-317"/>
+<text text-anchor="middle" x="352.5" y="-302.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge9" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M497.98,-246.04C468.99,-257.88 424.57,-276 392.64,-289.03"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="391.1,-285.88 383.16,-292.9 393.74,-292.36 391.1,-285.88"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node8" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node8"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="218.5,-226 125.5,-226 125.5,-202 218.5,-202 218.5,-226"/>
+<text text-anchor="middle" x="172" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge11" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M458.73,-230.12C391.59,-226.33 290.72,-220.64 228.52,-217.13"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="228.69,-213.64 218.51,-216.57 228.29,-220.63 228.69,-213.64"/>
+</g>
+<!-- module~mqc_physical_constants -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node10" class="node">
+<title>module~mqc_physical_constants</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node10"><a xlink:href="../module/mqc_physical_constants.html" xlink:title="mqc_physical_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="423,-266 282,-266 282,-242 423,-242 423,-266"/>
+<text text-anchor="middle" x="352.5" y="-251.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge12" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M458.73,-241.9C450.33,-242.87 441.7,-243.86 433.16,-244.84"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="432.73,-241.37 423.2,-245.99 433.53,-248.32 432.73,-241.37"/>
+</g>
+<!-- module~mqc_program_limits -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node11" class="node">
+<title>module~mqc_program_limits</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node11"><a xlink:href="../module/mqc_program_limits.html" xlink:title="mqc_program_limits">
+<polygon fill="#337ab7" stroke="#337ab7" points="232.5,-466 111.5,-466 111.5,-442 232.5,-442 232.5,-466"/>
+<text text-anchor="middle" x="172" y="-451.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_program_limits</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_program_limits -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge13" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_program_limits</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M351.5,-414C317.59,-430.53 276.72,-440.33 242.65,-446.09"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="242.09,-442.63 232.77,-447.68 243.2,-449.54 242.09,-442.63"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node13" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node13"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="402,-186 303,-186 303,-162 402,-162 402,-186"/>
+<text text-anchor="middle" x="352.5" y="-171.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge14" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M492.29,-221.86C465.08,-212.47 427.24,-199.43 397.94,-189.32"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="398.96,-185.97 388.36,-186.02 396.67,-192.59 398.96,-185.97"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge15" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M522.25,-246.04C509.36,-274.29 473.47,-345.54 423,-386 397.02,-406.83 383.44,-399.41 353.5,-414"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M351.5,-414C280.19,-448.76 252.13,-419.61 173,-414"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge16" class="edge">
+<title>module~mqc_result_types&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M300.35,-77.73C273.55,-80.73 241.1,-84.37 215.67,-87.22"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="215.14,-83.76 205.59,-88.35 215.92,-90.71 215.14,-83.76"/>
+</g>
+<!-- pic_mpi_lib -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node14" class="node">
+<title>pic_mpi_lib</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="208,-24 136,-24 136,0 208,0 208,-24"/>
+<text text-anchor="middle" x="172" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_lib</text>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_mpi_lib -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge17" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M315.38,-59.86C287.28,-50.41 248.14,-37.26 218,-27.13"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="218.75,-23.69 208.16,-23.82 216.52,-30.32 218.75,-23.69"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge18" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M318.02,-59.89C264.99,-43.06 161.23,-20.06 98,-71 54,-106.45 37.78,-287.46 33.37,-351.51"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="29.86,-351.51 32.7,-361.72 36.85,-351.97 29.86,-351.51"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge19" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M327.78,-377C294.07,-392.77 230.06,-418.04 173,-414"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M171,-414C135.98,-411.52 97.74,-399.81 70.26,-389.7"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="71.23,-386.33 60.64,-386.07 68.76,-392.88 71.23,-386.33"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge22" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M306.72,-311.8C255.79,-319.92 170.31,-334.72 98,-353 89.45,-355.16 80.39,-357.81 71.8,-360.48"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="70.47,-357.23 62.01,-363.61 72.6,-363.9 70.47,-357.23"/>
+</g>
+<!-- module~mqc_atomic_radii -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node16" class="node">
+<title>module~mqc_atomic_radii</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node16"><a xlink:href="../module/mqc_atomic_radii.html" xlink:title="mqc_atomic_radii">
+<polygon fill="#337ab7" stroke="#337ab7" points="225.5,-306 118.5,-306 118.5,-282 225.5,-282 225.5,-306"/>
+<text text-anchor="middle" x="172" y="-291.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_atomic_radii</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_elements&#45;&gt;module~mqc_atomic_radii -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge20" class="edge">
+<title>module~mqc_elements&#45;&gt;module~mqc_atomic_radii</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M306.92,-302.25C285.42,-300.93 259.26,-299.32 235.79,-297.87"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="235.77,-294.36 225.57,-297.24 235.33,-301.35 235.77,-294.36"/>
+</g>
+<!-- pic_ascii -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node20" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="201,-386 143,-386 143,-362 201,-362 201,-386"/>
+<text text-anchor="middle" x="172" y="-371.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge21" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M322.98,-317.03C301.83,-325.85 272.24,-337.99 246,-348 234.63,-352.34 222.17,-356.86 210.82,-360.89"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="209.45,-357.66 201.19,-364.29 211.78,-364.27 209.45,-357.66"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge23" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M125.19,-224.25C115.42,-228.01 105.74,-233.11 98,-240 63.85,-270.42 45.43,-322.51 37.27,-351.99"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="33.87,-351.18 34.72,-361.74 40.64,-352.95 33.87,-351.18"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_program_limits -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge26" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_program_limits</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M330.08,-521.98C309.04,-510.44 275.85,-492.89 246,-480 237.47,-476.32 228.24,-472.73 219.29,-469.46"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="220.35,-466.12 209.75,-466.04 217.98,-472.71 220.35,-466.12"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_scf_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge27" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_scf_types</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M334.33,-546.16C314.04,-560.06 278.88,-582.74 246,-597 239.9,-599.64 233.38,-602.06 226.83,-604.24"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="225.75,-600.91 217.27,-607.25 227.86,-607.58 225.75,-600.91"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge28" class="edge">
+<title>module~mqc_method_config&#45;&gt;pic_types</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M295.09,-521.99C222.91,-506.45 106.15,-480.7 98,-475 69.59,-455.13 50.33,-418.74 40.26,-395.49"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="43.45,-394.04 36.4,-386.13 36.98,-396.71 43.45,-394.04"/>
+</g>
+<!-- module~mqc_calculation_defaults -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node17" class="node">
+<title>module~mqc_calculation_defaults</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node17"><a xlink:href="../module/mqc_calculation_defaults.html" xlink:title="mqc_calculation_defaults">
+<polygon fill="#337ab7" stroke="#337ab7" points="246,-588 98,-588 98,-564 246,-564 246,-588"/>
+<text text-anchor="middle" x="172" y="-573.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calculation_defaults</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_calculation_defaults -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge24" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_calculation_defaults</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M300.35,-546.04C279.62,-550.91 255.52,-556.58 233.9,-561.67"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="233.09,-558.27 224.16,-563.96 234.69,-565.08 233.09,-558.27"/>
+</g>
+<!-- module~mqc_method_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node18" class="node">
+<title>module~mqc_method_types</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node18"><a xlink:href="../module/mqc_method_types.html" xlink:title="mqc_method_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="230,-546 114,-546 114,-522 230,-522 230,-546"/>
+<text text-anchor="middle" x="172" y="-531.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_method_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge25" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M291.57,-534C275.13,-534 257.19,-534 240.37,-534"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="240.06,-530.5 230.06,-534 240.06,-537.5 240.06,-530.5"/>
+</g>
+<!-- module~mqc_physical_constants&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge29" class="edge">
+<title>module~mqc_physical_constants&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M281.77,-243.34C227.88,-238.67 153.39,-240.29 98,-273 67.99,-290.72 49.11,-328.07 39.57,-352.05"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="36.18,-351.11 35.94,-361.71 42.73,-353.58 36.18,-351.11"/>
+</g>
+<!-- module~mqc_program_limits&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge30" class="edge">
+<title>module~mqc_program_limits&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M129.37,-441.95C118.82,-438.15 107.72,-433.49 98,-428 81.08,-418.45 64.16,-404.5 51.69,-393.17"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="53.88,-390.43 44.18,-386.17 49.11,-395.55 53.88,-390.43"/>
+</g>
+<!-- module~mqc_scf_types&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge31" class="edge">
+<title>module~mqc_scf_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M126.69,-612.75C116.17,-609.63 105.77,-604.71 98,-597 41.99,-541.42 33.03,-440.73 31.93,-396.2"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="35.43,-396.11 31.79,-386.16 28.43,-396.2 35.43,-396.11"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge32" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#3200ff" stroke-dasharray="5,2" d="M310.83,-161.99C301.01,-158.24 290.82,-153.58 282,-148 263.15,-136.06 265.3,-124.2 246,-113 236.66,-107.58 225.84,-103.48 215.42,-100.41"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="216.2,-97 205.63,-97.77 214.38,-103.76 216.2,-97"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge33" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#3200ff" stroke-dasharray="5,2" d="M302.72,-184.93C279.78,-190.07 252.31,-196.23 228.57,-201.55"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="227.64,-198.17 218.65,-203.77 229.17,-205 227.64,-198.17"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge35" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#3200ff" stroke-dasharray="5,2" d="M302.69,-163.24C247.28,-154.02 156.94,-148.38 98,-193 47.41,-231.3 35.55,-312.24 32.81,-351.59"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="29.3,-351.55 32.24,-361.73 36.29,-351.94 29.3,-351.55"/>
+</g>
+<!-- module~mqc_string_utils -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_node19" class="node">
+<title>module~mqc_string_utils</title>
+<g id="a_module~~mqc_terco_bridge~~UsesGraph_node19"><a xlink:href="../module/mqc_string_utils.html" xlink:title="mqc_string_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="221,-146 123,-146 123,-122 221,-122 221,-146"/>
+<text text-anchor="middle" x="172" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_string_utils</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_string_utils -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge34" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_string_utils</title>
+<path fill="none" stroke="#3200ff" stroke-dasharray="5,2" d="M302.72,-163.07C280.6,-158.11 254.28,-152.21 231.14,-147.03"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="231.62,-143.55 221.1,-144.78 230.09,-150.38 231.62,-143.55"/>
+</g>
+<!-- module~mqc_atomic_radii&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge36" class="edge">
+<title>module~mqc_atomic_radii&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M129.37,-306.05C118.82,-309.85 107.72,-314.51 98,-320 81.08,-329.55 64.16,-343.5 51.69,-354.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="49.11,-352.45 44.18,-361.83 53.88,-357.57 49.11,-352.45"/>
+</g>
+<!-- module~mqc_calculation_defaults&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge37" class="edge">
+<title>module~mqc_calculation_defaults&#45;&gt;pic_types</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M110.67,-563.88C106.07,-561.43 101.76,-558.51 98,-555 51.92,-512.02 37.92,-434.27 33.74,-396.2"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="37.21,-395.78 32.76,-386.16 30.24,-396.46 37.21,-395.78"/>
+</g>
+<!-- module~mqc_method_types&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge38" class="edge">
+<title>module~mqc_method_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M120.63,-521.89C112.45,-518.36 104.53,-513.82 98,-508 63.85,-477.58 45.43,-425.49 37.27,-396.01"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="40.64,-395.05 34.72,-386.26 33.87,-396.82 40.64,-395.05"/>
+</g>
+<!-- module~mqc_string_utils&#45;&gt;pic_types -->
+<g id="module~~mqc_terco_bridge~~UsesGraph_edge39" class="edge">
+<title>module~mqc_string_utils&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M122.84,-143.99C113.65,-147.75 104.79,-152.91 98,-160 45.91,-214.38 34.86,-308.98 32.57,-351.8"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="29.06,-351.84 32.14,-361.98 36.06,-352.13 29.06,-351.84"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_terco_bridgeUsesGraph = svgPanZoom('#modulemqc_terco_bridgeUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+          <div class="card">
+      <h3 class="card-header card-title bg-light">Used by</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_terco_bridge~~UsedByGraph Pages: 1 -->
+<svg id="modulemqc_terco_bridgeUsedByGraph" width="641pt" height="200pt"
+ viewBox="0.00 0.00 641.00 199.98" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_terco_bridge~~UsedByGraph" class="graph" transform="scale(0.43 0.43) rotate(0) translate(4 458.98)">
+<title>module~~mqc_terco_bridge~~UsedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-458.98 1480,-458.98 1480,4 -4,4"/>
+<!-- module~mqc_terco_bridge -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node1" class="node">
+<title>module~mqc_terco_bridge</title>
+<polygon fill="none" stroke="black" points="108,-311.98 0,-311.98 0,-287.98 108,-287.98 108,-311.98"/>
+<text text-anchor="middle" x="54" y="-297.58" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_terco_bridge</text>
+</g>
+<!-- module~mqc_json_config_reader -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node2" class="node">
+<title>module~mqc_json_config_reader</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node2"><a xlink:href="../module/mqc_json_config_reader.html" xlink:title="mqc_json_config_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="901.5,-454.98 759.5,-454.98 759.5,-430.98 901.5,-430.98 901.5,-454.98"/>
+<text text-anchor="middle" x="830.5" y="-440.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_config_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_json_config_reader&#45;&gt;module~mqc_terco_bridge -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge1" class="edge">
+<title>module~mqc_json_config_reader&#45;&gt;module~mqc_terco_bridge</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M759.19,-431.79C634.75,-411.7 367.73,-367.25 144,-320.98 134.21,-318.96 123.84,-316.66 113.78,-314.34"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="114.39,-310.89 103.86,-312.03 112.8,-317.7 114.39,-310.89"/>
+</g>
+<!-- module~mqc_method_dft -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node3" class="node">
+<title>module~mqc_method_dft</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node3"><a xlink:href="../module/mqc_method_dft.html" xlink:title="mqc_method_dft">
+<polygon fill="#337ab7" stroke="#337ab7" points="246,-311.98 144,-311.98 144,-287.98 246,-287.98 246,-311.98"/>
+<text text-anchor="middle" x="195" y="-297.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_dft</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_dft&#45;&gt;module~mqc_terco_bridge -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge2" class="edge">
+<title>module~mqc_method_dft&#45;&gt;module~mqc_terco_bridge</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M143.82,-299.98C135.64,-299.98 127.07,-299.98 118.61,-299.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="118.39,-296.48 108.39,-299.98 118.39,-303.48 118.39,-296.48"/>
+</g>
+<!-- module~mqc_method_hf -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node4" class="node">
+<title>module~mqc_method_hf</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node4"><a xlink:href="../module/mqc_method_hf.html" xlink:title="mqc_method_hf">
+<polygon fill="#337ab7" stroke="#337ab7" points="244,-269.98 146,-269.98 146,-245.98 244,-245.98 244,-269.98"/>
+<text text-anchor="middle" x="195" y="-255.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_hf</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_hf&#45;&gt;module~mqc_terco_bridge -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge3" class="edge">
+<title>module~mqc_method_hf&#45;&gt;module~mqc_terco_bridge</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M154.17,-270.02C138.76,-274.67 120.95,-280.06 104.71,-284.96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="103.4,-281.7 94.84,-287.94 105.42,-288.4 103.4,-281.7"/>
+</g>
+<!-- module~mqc_method_factory -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node5" class="node">
+<title>module~mqc_method_factory</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node5"><a xlink:href="../module/mqc_method_factory.html" xlink:title="mqc_method_factory">
+<polygon fill="#337ab7" stroke="#337ab7" points="407,-269.98 282,-269.98 282,-245.98 407,-245.98 407,-269.98"/>
+<text text-anchor="middle" x="344.5" y="-255.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_factory</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_factory&#45;&gt;module~mqc_method_dft -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge6" class="edge">
+<title>module~mqc_method_factory&#45;&gt;module~mqc_method_dft</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M301.23,-270.02C284.72,-274.72 265.62,-280.16 248.26,-285.1"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="246.93,-281.84 238.27,-287.94 248.85,-288.57 246.93,-281.84"/>
+</g>
+<!-- module~mqc_method_factory&#45;&gt;module~mqc_method_hf -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge7" class="edge">
+<title>module~mqc_method_factory&#45;&gt;module~mqc_method_hf</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M281.8,-257.98C272.84,-257.98 263.63,-257.98 254.72,-257.98"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="254.44,-254.48 244.44,-257.98 254.44,-261.48 254.44,-254.48"/>
+</g>
+<!-- module~mqc_session -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node6" class="node">
+<title>module~mqc_session</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node6"><a xlink:href="../module/mqc_session.html" xlink:title="mqc_session">
+<polygon fill="#337ab7" stroke="#337ab7" points="1137.5,-412.98 1057.5,-412.98 1057.5,-388.98 1137.5,-388.98 1137.5,-412.98"/>
+<text text-anchor="middle" x="1097.5" y="-398.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_session&#45;&gt;module~mqc_json_config_reader -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge4" class="edge">
+<title>module~mqc_session&#45;&gt;module~mqc_json_config_reader</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1057.4,-407.18C1019.23,-413.23 960.01,-422.61 911.78,-430.26"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="911,-426.84 901.67,-431.86 912.09,-433.75 911,-426.84"/>
+</g>
+<!-- module~mqc_session&#45;&gt;module~mqc_method_factory -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge9" class="edge">
+<title>module~mqc_session&#45;&gt;module~mqc_method_factory</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1057.29,-402.58C987.19,-404.71 836.04,-405.95 711,-383.98 588.06,-362.38 560.03,-343.4 443,-299.98 422.1,-292.23 399.2,-282.43 380.84,-274.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="382.24,-271.04 371.69,-270.13 379.37,-277.43 382.24,-271.04"/>
+</g>
+<!-- module~mqc_driver -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node15" class="node">
+<title>module~mqc_driver</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node15"><a xlink:href="../module/mqc_driver.html" xlink:title="mqc_driver">
+<polygon fill="#337ab7" stroke="#337ab7" points="867,-248.98 794,-248.98 794,-224.98 867,-224.98 867,-248.98"/>
+<text text-anchor="middle" x="830.5" y="-234.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_driver</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_session&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge25" class="edge">
+<title>module~mqc_session&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1057.43,-395.46C1033.94,-390.24 1005.01,-380.2 986,-360.98 951.9,-326.5 986.93,-289.41 950,-257.98 930.09,-241.04 901.33,-235.64 877.13,-234.55"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="877.16,-231.05 867.08,-234.33 877,-238.05 877.16,-231.05"/>
+</g>
+<!-- program~main -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node7" class="node">
+<title>program~main</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node7"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1124.5,-454.98 1070.5,-454.98 1070.5,-430.98 1124.5,-430.98 1124.5,-454.98"/>
+<text text-anchor="middle" x="1097.5" y="-440.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;module~mqc_json_config_reader -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge5" class="edge">
+<title>program~main&#45;&gt;module~mqc_json_config_reader</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1070.12,-442.98C1033.53,-442.98 965.79,-442.98 911.8,-442.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="911.55,-439.48 901.55,-442.98 911.55,-446.48 911.55,-439.48"/>
+</g>
+<!-- program~main&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge31" class="edge">
+<title>program~main&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1070.04,-445.56C1045.03,-446.45 1008.12,-443.49 986,-421.98 932.49,-369.97 1003.83,-309.66 950,-257.98 931.01,-239.75 902.01,-234.38 877.45,-233.62"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="877.26,-230.12 867.24,-233.56 877.21,-237.12 877.26,-230.12"/>
+</g>
+<!-- module~mqc_capi_run -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node8" class="node">
+<title>module~mqc_capi_run</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node8"><a xlink:href="../module/mqc_capi_run.html" xlink:title="mqc_capi_run">
+<polygon fill="#337ab7" stroke="#337ab7" points="1476,-412.98 1389,-412.98 1389,-388.98 1476,-388.98 1476,-412.98"/>
+<text text-anchor="middle" x="1432.5" y="-398.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_run</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_run&#45;&gt;module~mqc_session -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge13" class="edge">
+<title>module~mqc_capi_run&#45;&gt;module~mqc_session</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M1388.72,-401.63C1377.13,-401.77 1364.58,-401.91 1353,-401.98 1281.7,-402.44 1199.15,-401.92 1147.88,-401.48"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1147.77,-397.98 1137.74,-401.39 1147.71,-404.98 1147.77,-397.98"/>
+</g>
+<!-- module~mqc_capi_session -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node9" class="node">
+<title>module~mqc_capi_session</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node9"><a xlink:href="../module/mqc_capi_session.html" xlink:title="mqc_capi_session">
+<polygon fill="#337ab7" stroke="#337ab7" points="1353,-392.98 1245,-392.98 1245,-368.98 1353,-368.98 1353,-392.98"/>
+<text text-anchor="middle" x="1299" y="-378.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_session</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_run&#45;&gt;module~mqc_capi_session -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge15" class="edge">
+<title>module~mqc_capi_run&#45;&gt;module~mqc_capi_session</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M1388.81,-394.49C1380.61,-393.24 1371.87,-391.91 1363.19,-390.59"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="1363.48,-387.1 1353.07,-389.05 1362.43,-394.02 1363.48,-387.1"/>
+</g>
+<!-- module~mqc_capi_session&#45;&gt;module~mqc_session -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge14" class="edge">
+<title>module~mqc_capi_session&#45;&gt;module~mqc_session</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M1244.8,-386.32C1214.65,-389.34 1177.19,-393.09 1147.72,-396.05"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1147.25,-392.58 1137.65,-397.06 1147.95,-399.54 1147.25,-392.58"/>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node10" class="node">
+<title>module~mqc_mbe_fragment_distribution_scheme</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node10"><a xlink:href="../module/mqc_mbe_fragment_distribution_scheme.html" xlink:title="mqc_mbe_fragment_distribution_scheme">
+<polygon fill="#337ab7" stroke="#337ab7" points="675,-248.98 443,-248.98 443,-224.98 675,-224.98 675,-248.98"/>
+<text text-anchor="middle" x="559" y="-234.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_fragment_distribution_scheme</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme&#45;&gt;module~mqc_method_factory -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge8" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme&#45;&gt;module~mqc_method_factory</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M442.73,-248.37C433.99,-249.24 425.33,-250.09 417,-250.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="416.61,-247.44 407,-251.9 417.3,-254.4 416.61,-247.44"/>
+</g>
+<!-- proc~hessian_coordinator -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node11" class="node">
+<title>proc~hessian_coordinator</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node11"><a xlink:href="../proc/hessian_coordinator.html" xlink:title="hessian_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="619.5,-206.98 498.5,-206.98 498.5,-182.98 619.5,-182.98 619.5,-206.98"/>
+<text text-anchor="middle" x="559" y="-192.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;module~mqc_method_factory -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge10" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;module~mqc_method_factory</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M498.29,-203.24C480.32,-206.44 460.68,-210.64 443,-215.98 420.92,-222.66 397.12,-232.85 378.56,-241.52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="376.9,-238.43 369.37,-245.89 379.91,-244.76 376.9,-238.43"/>
+</g>
+<!-- proc~hessian_worker -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node12" class="node">
+<title>proc~hessian_worker</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node12"><a xlink:href="../proc/hessian_worker.html" xlink:title="hessian_worker">
+<polygon fill="#d9534f" stroke="#d9534f" points="606.5,-164.98 511.5,-164.98 511.5,-140.98 606.5,-140.98 606.5,-164.98"/>
+<text text-anchor="middle" x="559" y="-150.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_worker</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_worker&#45;&gt;module~mqc_method_factory -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge11" class="edge">
+<title>proc~hessian_worker&#45;&gt;module~mqc_method_factory</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M511.5,-155.84C489.84,-158.57 464.24,-163.83 443,-173.98 410.58,-189.48 380.41,-218.66 362.46,-238.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="359.83,-235.9 355.76,-245.69 365.04,-240.58 359.83,-235.9"/>
+</g>
+<!-- proc~print_version -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node13" class="node">
+<title>proc~print_version</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node13"><a xlink:href="../proc/print_version.html" xlink:title="print_version">
+<polygon fill="#d9534f" stroke="#d9534f" points="600,-290.98 518,-290.98 518,-266.98 600,-266.98 600,-290.98"/>
+<text text-anchor="middle" x="559" y="-276.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_version</text>
+</a>
+</g>
+</g>
+<!-- proc~print_version&#45;&gt;module~mqc_method_factory -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge12" class="edge">
+<title>proc~print_version&#45;&gt;module~mqc_method_factory</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M517.78,-275.01C489.54,-272.22 450.98,-268.41 417.51,-265.1"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="417.59,-261.59 407.3,-264.09 416.91,-268.56 417.59,-261.59"/>
+</g>
+<!-- module~mpi_fragment_work_smod -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node14" class="node">
+<title>module~mpi_fragment_work_smod</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node14"><a xlink:href="../module/mpi_fragment_work_smod.html" xlink:title="mpi_fragment_work_smod">
+<polygon fill="#5bc0de" stroke="#5bc0de" points="907,-290.98 754,-290.98 754,-266.98 907,-266.98 907,-290.98"/>
+<text text-anchor="middle" x="830.5" y="-276.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mpi_fragment_work_smod</text>
+</a>
+</g>
+</g>
+<!-- module~mpi_fragment_work_smod&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge21" class="edge">
+<title>module~mpi_fragment_work_smod&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" d="M753.71,-267.17C720.55,-262 681.46,-255.91 647.11,-250.56"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="647.51,-247.08 637.09,-249 646.43,-253.99 647.51,-247.08"/>
+</g>
+<!-- module~mqc_driver&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge16" class="edge">
+<title>module~mqc_driver&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M793.99,-236.98C765.92,-236.98 724.97,-236.98 685.14,-236.98"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="685.05,-233.48 675.05,-236.98 685.05,-240.48 685.05,-233.48"/>
+</g>
+<!-- module~mqc_gmbe_fragment_distribution_scheme -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node16" class="node">
+<title>module~mqc_gmbe_fragment_distribution_scheme</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node16"><a xlink:href="../module/mqc_gmbe_fragment_distribution_scheme.html" xlink:title="mqc_gmbe_fragment_distribution_scheme">
+<polygon fill="#337ab7" stroke="#337ab7" points="950,-206.98 711,-206.98 711,-182.98 950,-182.98 950,-206.98"/>
+<text text-anchor="middle" x="830.5" y="-192.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_fragment_distribution_scheme</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_gmbe_fragment_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge17" class="edge">
+<title>module~mqc_gmbe_fragment_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M752.27,-207.02C719.43,-212.14 680.97,-218.13 647.12,-223.4"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="646.58,-219.95 637.24,-224.94 647.66,-226.86 646.58,-219.95"/>
+</g>
+<!-- module~mqc_hessian_distribution_scheme -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node17" class="node">
+<title>module~mqc_hessian_distribution_scheme</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node17"><a xlink:href="../module/mqc_hessian_distribution_scheme.html" xlink:title="mqc_hessian_distribution_scheme">
+<polygon fill="#5bc0de" stroke="#5bc0de" points="927.5,-164.98 733.5,-164.98 733.5,-140.98 927.5,-140.98 927.5,-164.98"/>
+<text text-anchor="middle" x="830.5" y="-150.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_hessian_distribution_scheme</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_hessian_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge22" class="edge">
+<title>module~mqc_hessian_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" d="M733.36,-164.06C725.55,-166.73 717.99,-169.99 711,-173.98 689.65,-186.17 696.32,-203.74 675,-215.98 671.73,-217.86 668.32,-219.58 664.83,-221.15"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="663.33,-217.98 655.37,-224.96 665.95,-224.47 663.33,-217.98"/>
+</g>
+<!-- module~mqc_serial_fragment_processor -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node18" class="node">
+<title>module~mqc_serial_fragment_processor</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node18"><a xlink:href="../module/mqc_serial_fragment_processor.html" xlink:title="mqc_serial_fragment_processor">
+<polygon fill="#5bc0de" stroke="#5bc0de" points="921.5,-122.98 739.5,-122.98 739.5,-98.98 921.5,-98.98 921.5,-122.98"/>
+<text text-anchor="middle" x="830.5" y="-108.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_serial_fragment_processor&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge23" class="edge">
+<title>module~mqc_serial_fragment_processor&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" d="M739.29,-117.07C729.07,-120.54 719.35,-125.36 711,-131.98 679.18,-157.23 706.75,-190.66 675,-215.98 673.36,-217.29 671.67,-218.52 669.93,-219.69"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="667.75,-216.91 660.88,-224.97 671.28,-222.96 667.75,-216.91"/>
+</g>
+<!-- module~mqc_unfragmented_workflow -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node19" class="node">
+<title>module~mqc_unfragmented_workflow</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node19"><a xlink:href="../module/mqc_unfragmented_workflow.html" xlink:title="mqc_unfragmented_workflow">
+<polygon fill="#5bc0de" stroke="#5bc0de" points="915.5,-80.98 745.5,-80.98 745.5,-56.98 915.5,-56.98 915.5,-80.98"/>
+<text text-anchor="middle" x="830.5" y="-66.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_unfragmented_workflow</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_unfragmented_workflow&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge24" class="edge">
+<title>module~mqc_unfragmented_workflow&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" d="M745.36,-71.85C732.72,-75.51 720.7,-81.24 711,-89.98 667.75,-128.99 718.14,-176.86 675,-215.98 673.83,-217.05 672.62,-218.07 671.37,-219.04"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="669.07,-216.37 662.74,-224.87 672.99,-222.17 669.07,-216.37"/>
+</g>
+<!-- proc~gmbe_run_distributed -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node20" class="node">
+<title>proc~gmbe_run_distributed</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node20"><a xlink:href="../proc/gmbe_run_distributed.html" xlink:title="gmbe_context_t%gmbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="1209,-60.98 986,-60.98 986,-36.98 1209,-36.98 1209,-60.98"/>
+<text text-anchor="middle" x="1097.5" y="-46.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge18" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M1064.71,-36.97C992.72,-12.02 815.35,36.38 711,-47.98 651.62,-95.99 729.81,-162.82 675,-215.98 674.02,-216.94 673.01,-217.85 671.97,-218.74"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="669.58,-216.15 663.54,-224.86 673.69,-221.81 669.58,-216.15"/>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge32" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M1063.62,-60.99C1039.82,-70.97 1008.09,-87.08 986,-108.98 962.55,-132.24 976.87,-154.79 950,-173.98 947.88,-175.5 945.69,-176.91 943.43,-178.24"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="941.7,-175.19 934.44,-182.9 944.93,-181.4 941.7,-175.19"/>
+</g>
+<!-- proc~mbe_run_distributed -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node21" class="node">
+<title>proc~mbe_run_distributed</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node21"><a xlink:href="../proc/mbe_run_distributed.html" xlink:title="mbe_context_t%mbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="935,-374.98 726,-374.98 726,-350.98 935,-350.98 935,-374.98"/>
+<text text-anchor="middle" x="830.5" y="-360.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_distributed&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge19" class="edge">
+<title>proc~mbe_run_distributed&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M725.85,-351.33C720.58,-348.71 715.58,-345.62 711,-341.98 679.18,-316.74 706.75,-283.31 675,-257.98 673.36,-256.68 671.67,-255.44 669.93,-254.28"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="671.28,-251.01 660.88,-248.99 667.75,-257.05 671.28,-251.01"/>
+</g>
+<!-- proc~mbe_run_serial -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node22" class="node">
+<title>proc~mbe_run_serial</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node22"><a xlink:href="../proc/mbe_run_serial.html" xlink:title="mbe_context_t%mbe_run_serial">
+<polygon fill="#d9534f" stroke="#d9534f" points="921,-332.98 740,-332.98 740,-308.98 921,-308.98 921,-332.98"/>
+<text text-anchor="middle" x="830.5" y="-318.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_serial</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_serial&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge20" class="edge">
+<title>proc~mbe_run_serial&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M739.8,-311.95C729.72,-308.96 719.89,-305.06 711,-299.98 689.65,-287.79 696.32,-270.23 675,-257.98 671.73,-256.1 668.32,-254.38 664.83,-252.82"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="665.95,-249.5 655.37,-249 663.33,-255.99 665.95,-249.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node23" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node23"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="1180.5,-183.98 1014.5,-183.98 1014.5,-159.98 1180.5,-159.98 1180.5,-183.98"/>
+<text text-anchor="middle" x="1097.5" y="-169.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge26" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1014.33,-183.96C1004.62,-186.44 994.98,-189.41 986,-192.98 968.35,-199.99 967.69,-209.08 950,-215.98 926.88,-225 899.69,-230.17 877.2,-233.13"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="876.73,-229.66 867.22,-234.33 877.57,-236.61 876.73,-229.66"/>
+</g>
+<!-- proc~evaluate_energy_gradient -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node24" class="node">
+<title>proc~evaluate_energy_gradient</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node24"><a xlink:href="../proc/evaluate_energy_gradient.html" xlink:title="evaluate_energy_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="1173.5,-351.98 1021.5,-351.98 1021.5,-327.98 1173.5,-327.98 1173.5,-351.98"/>
+<text text-anchor="middle" x="1097.5" y="-337.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">evaluate_energy_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge27" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1021.38,-334.62C1008.81,-331.3 996.46,-326.34 986,-318.98 960.25,-300.88 975.87,-275.93 950,-257.98 928.91,-243.35 900.78,-237.93 877.22,-236.24"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="877.27,-232.74 867.1,-235.72 876.91,-239.73 877.27,-232.74"/>
+</g>
+<!-- proc~gmbe_run_serial -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node25" class="node">
+<title>proc~gmbe_run_serial</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node25"><a xlink:href="../proc/gmbe_run_serial.html" xlink:title="gmbe_context_t%gmbe_run_serial">
+<polygon fill="#d9534f" stroke="#d9534f" points="1195,-141.98 1000,-141.98 1000,-117.98 1195,-117.98 1195,-141.98"/>
+<text text-anchor="middle" x="1097.5" y="-127.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_serial</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_serial&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge33" class="edge">
+<title>proc~gmbe_run_serial&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M1014.04,-142.04C1004.43,-144.5 994.89,-147.45 986,-150.98 968.35,-157.99 967.69,-167.08 950,-173.98 943.85,-176.38 937.42,-178.51 930.86,-180.39"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="929.94,-177.01 921.19,-182.98 931.76,-183.77 929.94,-177.01"/>
+</g>
+<!-- proc~run_step -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node26" class="node">
+<title>proc~run_step</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node26"><a xlink:href="../proc/run_step.html" xlink:title="run_step">
+<polygon fill="#d9534f" stroke="#d9534f" points="1126.5,-309.98 1068.5,-309.98 1068.5,-285.98 1126.5,-285.98 1126.5,-309.98"/>
+<text text-anchor="middle" x="1097.5" y="-295.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_step</text>
+</a>
+</g>
+</g>
+<!-- proc~run_step&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge28" class="edge">
+<title>proc~run_step&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1068.2,-294.96C1045.51,-291.98 1013.09,-286.47 986,-276.98 968.92,-271 967.11,-263.85 950,-257.98 926.61,-249.96 899.51,-244.86 877.14,-241.71"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="877.6,-238.24 867.22,-240.39 876.67,-245.17 877.6,-238.24"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node27" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node27"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="1136.5,-267.98 1058.5,-267.98 1058.5,-243.98 1136.5,-243.98 1136.5,-267.98"/>
+<text text-anchor="middle" x="1097.5" y="-253.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge29" class="edge">
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1058.25,-253.24C1010.38,-249.81 928.47,-243.93 877.31,-240.27"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="877.42,-236.77 867.19,-239.54 876.92,-243.75 877.42,-236.77"/>
+</g>
+<!-- proc~write_final_single_point -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_node28" class="node">
+<title>proc~write_final_single_point</title>
+<g id="a_module~~mqc_terco_bridge~~UsedByGraph_node28"><a xlink:href="../proc/write_final_single_point.html" xlink:title="write_final_single_point">
+<polygon fill="#d9534f" stroke="#d9534f" points="1165.5,-225.98 1029.5,-225.98 1029.5,-201.98 1165.5,-201.98 1165.5,-225.98"/>
+<text text-anchor="middle" x="1097.5" y="-211.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_final_single_point</text>
+</a>
+</g>
+</g>
+<!-- proc~write_final_single_point&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_terco_bridge~~UsedByGraph_edge30" class="edge">
+<title>proc~write_final_single_point&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1029.29,-219.82C981.79,-223.94 919.37,-229.36 877.47,-232.99"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="876.94,-229.52 867.28,-233.88 877.55,-236.5 876.94,-229.52"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_terco_bridgeUsedByGraph = svgPanZoom('#modulemqc_terco_bridgeUsedByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsedByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsedByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      <br>
+
+
+
+
+
+
+
+        <section>
+          <h2>Functions</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-terco_backend_available"></span> <h3>public pure function <a href='../proc/terco_backend_available.html'>terco_backend_available</a>() result(available)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>.false. &ndash; this build has no terco</p><a href="../proc/terco_backend_available.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+    <em>None</em>
+    <h4>
+    Return Value
+    <small>logical</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-run_terco_scf"></span> <h3>public  subroutine <a href='../proc/run_terco_scf.html'>run_terco_scf</a>(settings, fragment, result, want_gradient)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>No-op stand-in: report the missing backend, compute nothing</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-settings"></span>
+              type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>settings</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment~2"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~6"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-want_gradient"></span>
+              logical,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>want_gradient</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-09-07 00:08 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
