@@ -4478,7 +4478,7 @@
             "name": "NEO-DFT HYB_GGA_XC_B3LYP5 HCN cc-pvdz PB4-D, 1 quantum proton (CPU)",
             "input": "inputs/cpu/mqc/neo/cpu_hcn_cc-pvdz_neo_b3lyp5.json",
             "expected_energy": -93.339356183784,
-            "tolerance": 5e-06,
+            "tolerance": 1e-07,
             "type": "unfragmented",
             "requires": "libxc"
         },
@@ -4486,7 +4486,7 @@
             "name": "NEO-DFT HYB_GGA_XC_B3LYP5 epc17-2 HCN cc-pvdz PB4-D, 1 quantum proton (CPU)",
             "input": "inputs/cpu/mqc/neo/cpu_hcn_cc-pvdz_neo_b3lyp5_epc172.json",
             "expected_energy": -93.367049913633,
-            "tolerance": 5e-06,
+            "tolerance": 1e-07,
             "type": "unfragmented",
             "requires": "libxc"
         },

@@ -547,9 +547,9 @@ DH_TOLERANCE = 5.0e-5
 # cc-pVDZ.
 #
 # H2 with both protons quantised is the one case that reaches the other-proton
-# terms. The Kohn-Sham pair is at grid level 3 on both sides; the two codes'
-# level-3 grids are not the same grid, which is what the looser tolerance is
-# for -- at level 6 they agree to 1e-9, see test_mqc_czt_neo.
+# terms. The Kohn-Sham pair is at grid level 3 on both sides and lands within
+# 1e-9 of the reference; the tolerance is looser than the HF one only because
+# a grid is in the loop.
 NEO_CASES = [
     ("h2", "cc-pvdz", [0, 1], None, None, None, -1.050784743607),
     ("hcn", "cc-pvdz", [0], None, None, None, -92.843706356583),
@@ -557,7 +557,7 @@ NEO_CASES = [
     ("hcn", "cc-pvdz", [0], "hyb_gga_xc_b3lyp5", "17-2", 3, -93.367049913633),
 ]
 NEO_HF_TOLERANCE = 1.0e-8
-NEO_KS_TOLERANCE = 5.0e-6
+NEO_KS_TOLERANCE = 1.0e-7
 
 # Double hybrid gradients, as (molecule, basis, functional). Three entries and
 # not a sweep, because each one costs four converged SCF-plus-MP2 runs per
