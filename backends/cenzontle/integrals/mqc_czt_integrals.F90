@@ -76,12 +76,12 @@ module mqc_czt_integrals
       !! stays on Rys, which is the only path that has it.
    integer, parameter, public :: ROTAXIS_MAX_L = 1
       !! The highest angular momentum sent down the rotated-axis path: s, p
-      !! and L. libfint's kernels go to d, but measured on a 123-atom silica
-      !! slice in 6-31G* at 16 threads the d classes cost 2.5x what Rys does
-      !! for the same quartets (118 s against 47 s per Fock build) while the
-      !! s/p/L classes cost 0.63x, so d stays on Rys until the kernels change.
-      !! May never exceed what `rotaxis_supported` covers, which
-      !! `test_mqc_czt_direct` checks; may be less, which is this.
+      !! and L, which is also all libfint's kernels cover. A d set was
+      !! generated once and measured on a 123-atom silica slice in 6-31G* at
+      !! 16 threads: 2.5x what Rys costs for the same quartets (118 s against
+      !! 47 s per Fock build), against 0.63x for the s/p/L classes, so it was
+      !! dropped. May never exceed what `rotaxis_supported` covers, which
+      !! `test_mqc_czt_direct` checks; if the kernels grow, raise this.
    integer, protected, public :: eri_path = ERI_PATH_RYS
       !! Which path `two_electron_block` takes, for the whole run. Set once
       !! by `set_eri_path`, before any quartet is evaluated, and read from
