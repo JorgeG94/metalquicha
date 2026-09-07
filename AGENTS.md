@@ -477,8 +477,16 @@ A benchmark suite that checks them lives on `perf/benchmark-suite`.
   MakeFP at 128 threads. Use the `perlmutter-cpu` preset (sequential MKL, put
   ahead of libsci and checked after every link); see `CMAKE_STYLE.md`. The BLAS being
   sequential means a big GEMM on the unfragmented path has to be split over
-  threads by hand -- `gemm_over_columns` in `mqc_czt_gemm_threads` -- or it
-  runs on one core while 127 wait.
+  threads by hand -- `gemm_over_columns` and `gemm_over_inner` in
+  `mqc_czt_gemm_threads`, and `getrf_threaded` for an LU -- or it runs on one
+  core while 127 wait. `perf record -F 49` and binning the samples per second
+  by symbol finds every such phase in minutes; `perf_event_paranoid` is 2 on
+  Perlmutter compute nodes.
+* **Memory decisions read the machine.** `available_memory_bytes` in
+  `mqc_memory` is MemAvailable from /proc/meminfo; the response solver plans on
+  `RESPONSE_BUDGET_SHARE` of it. Fixed laptop-sized limits sent a 545-function
+  MakeFP on a 500 GB node down a fourteen-hour column build when the transform
+  it refused needed a hundred gigabytes and forty seconds.
 
 ## Compiler Support
 

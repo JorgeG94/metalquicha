@@ -77,6 +77,13 @@ module mqc_czt_screening
    ! Sweeps of the minimizer, and the bracket it stops refining at.
    integer, parameter :: MAX_SWEEPS = 12
    real(dp), parameter :: ALPHA_TOL = 1.0e-7_dp
+   ! TODO(mqc): the bond-midpoint exponents that end near ALPHA_MAX are not
+   ! reproducible between runs -- adenine/6-311G** moved twelve of them by up to
+   ! 0.9 between two runs whose multipoles agree to 1e-10 and whose fit misses
+   ! agree to four decimals -- because the objective is flat there and the
+   ! threaded reductions below associate in a different order each run. Harmless
+   ! to the potential (the fit quality is identical) but it defeats a
+   ! file-level comparison of two .efp outputs.
 
 contains
 

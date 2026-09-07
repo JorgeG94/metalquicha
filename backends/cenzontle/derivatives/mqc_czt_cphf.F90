@@ -34,8 +34,9 @@ module mqc_czt_cphf
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_getrf, pic_getrs
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
+   use mqc_memory, only: available_memory_bytes
    use mqc_czt_integrals, only: czt_molecule_t, ket_transformed_pairs, build_df_mo_block
-   use mqc_czt_gemm_threads, only: gemm_over_columns
+   use mqc_czt_gemm_threads, only: gemm_over_columns, getrf_threaded
    use mqc_czt_multipole, only: multipole_matrices
    use mqc_czt_localize, only: boys_localize
    use mqc_czt_rhf, only: build_fock
@@ -96,19 +97,33 @@ module mqc_czt_cphf
       !! Columns of the Hessian built per pass over the integrals. At 115
       !! orbitals, 64 of them is 60 MB of densities.
 
+   real(dp), parameter :: RESPONSE_BUDGET_SHARE = 0.6_dp
+      !! The share of the machine's available memory the response solver may
+      !! plan on, for whichever of its three decisions is being made: whether
+      !! the Hessian is built by transformation or column by column, whether
+      !! the operator is formed at all, and how many frequencies factorize at
+      !! once. Read from the machine because the fixed figures below, sized for
+      !! a laptop, sent a 545-function MakeFP on a 500 GB node down a
+      !! fourteen-hour column build when the transform it refused needed a
+      !! hundred gigabytes. Below one because the caller holds the reference,
+      !! the integrals' screening tables and the fitted blocks alongside.
+
    integer(int64), parameter :: SOLVE_BATCH_BYTES = 8_int64*1024_int64**3
-      !! What the concurrent frequency solves may take, in bytes.
+      !! What the concurrent frequency solves may take, in bytes, where the
+      !! machine's memory cannot be read.
 
    real(dp), parameter :: MO_TRANSFORM_LIMIT = 16.0e9_dp
-      !! What the exact MO transform may take at its peak, in bytes. Not
-      !! comparable to `IN_CORE_LIMIT`: that one bounds a tensor kept for a
-      !! whole solve, this one a few arrays held across one transform.
+      !! What the exact MO transform may take at its peak, in bytes, where the
+      !! machine's memory cannot be read. Not comparable to `IN_CORE_LIMIT`:
+      !! that one bounds a tensor kept for a whole solve, this one a few arrays
+      !! held across one transform.
 
    real(dp), parameter :: DENSE_OPERATOR_LIMIT = 8.0e9_dp
       !! Above this many bytes the operator is never formed at all, whatever
-      !! route would fill it, and `dynamic_response_iterative` takes over.
-      !! `(A+B)`, `(A-B)` and their product are three `n_ov^2` matrices, and
-      !! `n_ov` is the *product* of the occupied and virtual counts.
+      !! route would fill it, and `dynamic_response_iterative` takes over --
+      !! where the machine's memory cannot be read. `(A+B)`, `(A-B)` and their
+      !! product are three `n_ov^2` matrices, and `n_ov` is the *product* of
+      !! the occupied and virtual counts.
 
    integer, parameter :: IN_CORE_MAX_ORBITALS = 40
       !! Above this many orbitals, recompute the integrals rather than store
@@ -691,6 +706,7 @@ contains
       !! `alpha_kl(i nu) = -2 sum_ai h^k_ai S^l_ai`, which at `nu = 0` reduces to
       !! the static `-4 sum h U` because `S = 2U` there, and so must reproduce
       !! `static_polarizability` exactly.
+      use omp_lib, only: omp_get_max_threads, omp_set_max_active_levels
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)
       real(dp), intent(in) :: orbital_energies(:)
@@ -748,7 +764,7 @@ contains
       real(dp), allocatable :: aplus(:, :), aminus(:, :), product(:, :), lu(:, :)
       real(dp), allocatable :: rhs_flat(:, :), h_flat(:, :), solution(:, :)
       integer, allocatable :: ipiv(:), infos(:)
-      integer :: n_ov, j, info, n_freq, concurrent
+      integer :: n_ov, j, info, n_freq, concurrent, inner
       real(dp), allocatable :: operators(:, :, :)
       real(dp) :: nu, rz, rz_new, pap, step, target_norm, use_tol
       integer :: n_ao, n_mo, n_vir, k, l, i, a, ifreq, iter, limit, n_pert
@@ -848,7 +864,7 @@ contains
       iterate = .false.
       if (.not. reuse) then
          iterate = .not. present(aux) .and. &
-                   3.0_dp*real(n_ov, dp)**2*8.0_dp > DENSE_OPERATOR_LIMIT
+                   3.0_dp*real(n_ov, dp)**2*8.0_dp > response_budget(DENSE_OPERATOR_LIMIT)
       end if
       select case (take)
       case (EFP_RESPONSE_AUTO)
@@ -938,12 +954,23 @@ contains
       allocate (solution(n_ov, n_pert))
 
       ! The frequencies are independent -- each its own shifted factorization of
-      ! the same matrix -- so they are threaded over rather than inside the
-      ! factorization, which keeps the sequential BLAS sequential and needs no
-      ! threaded LAPACK. How many at once is a memory question and nothing else:
-      ! `getrf` factorizes in place, so each carries its own copy of the operator.
+      ! the same matrix -- so they are threaded over, and each factorization is
+      ! threaded inside as well, by `getrf_threaded`'s own column split rather
+      ! than by the BLAS: thirteen concurrent factorizations on one thread each
+      ! left 115 cores idle for 72 s at 17710 pairs. The threads are shared out
+      ! between the two levels, and nesting has to be allowed explicitly. How
+      ! many run at once is a memory question: each carries its own copy of
+      ! the operator.
       n_freq = size(frequencies)
       concurrent = concurrent_solves(n_ov, n_freq)
+#ifdef MQC_SEQUENTIAL_BLAS
+      inner = max(1, omp_get_max_threads()/max(concurrent, 1))
+#else
+      ! A BLAS that threads itself, or one that is not re-entrant, is not to be
+      ! called from a column split: LAPACK's own factorization runs instead.
+      inner = 1
+#endif
+      call omp_set_max_active_levels(2)
       allocate (infos(n_freq))
       infos = 0
       if (talk) then
@@ -958,7 +985,7 @@ contains
       !$omp parallel do default(none) num_threads(concurrent) schedule(dynamic) &
       !$omp    private(ifreq, lu, ipiv, solution, j, k, l, info) &
       !$omp    shared(n_freq, n_ov, n_pert, n_vir, n_occ, reuse, hessian, product, &
-      !$omp           aplus, frequencies, rhs_flat, h_flat, alpha, response, infos)
+      !$omp           aplus, frequencies, rhs_flat, h_flat, alpha, response, infos, inner)
       do ifreq = 1, n_freq
          allocate (lu(n_ov, n_ov), ipiv(n_ov), solution(n_ov, n_pert))
          if (frequencies(ifreq) == 0.0_dp) then
@@ -982,7 +1009,11 @@ contains
             end do
             solution = rhs_flat
          end if
-         call pic_getrf(lu, ipiv, info)
+         if (inner > 1) then
+            call getrf_threaded(n_ov, lu, ipiv, info, threads=inner)
+         else
+            call pic_getrf(lu, ipiv, info)
+         end if
          if (info /= 0) then
             infos(ifreq) = 1
          else
@@ -1193,7 +1224,7 @@ contains
       integer, intent(in) :: n_freq
       integer :: concurrent
 
-      integer(int64) :: per_solve
+      integer(int64) :: per_solve, batch
 
 #ifndef MQC_SEQUENTIAL_BLAS
       ! A threaded BLAS already fills the machine inside each factorization, and
@@ -1202,10 +1233,31 @@ contains
       concurrent = 1
       return
 #endif
+      ! The operator pair and their product are already resident when the
+      ! solves start, so they come off the budget before it is divided.
       per_solve = int(n_ov, int64)**2*8_int64
-      concurrent = int(max(1_int64, SOLVE_BATCH_BYTES/max(per_solve, 1_int64)))
+      batch = int(response_budget(real(SOLVE_BATCH_BYTES, dp)), int64) - 3_int64*per_solve
+      concurrent = int(max(1_int64, batch/max(per_solve, 1_int64)))
       concurrent = min(concurrent, n_freq, omp_get_max_threads())
    end function concurrent_solves
+
+   function response_budget(blind) result(budget)
+      !! Bytes one response-solver decision may plan on
+      !!
+      !! `RESPONSE_BUDGET_SHARE` of what the machine reports available, or
+      !! `blind` where it reports nothing.
+      real(dp), intent(in) :: blind
+      real(dp) :: budget
+
+      real(dp) :: available
+
+      available = available_memory_bytes()
+      if (available > 0.0_dp) then
+         budget = RESPONSE_BUDGET_SHARE*available
+      else
+         budget = blind
+      end if
+   end function response_budget
 
    function mo_transform_fits(n_ao, n_occ, n_vir, direct) result(fits)
       !! Can the whole Hessian be had by transformation rather than column by column
@@ -1233,7 +1285,7 @@ contains
       peak = real(n_ao, dp)**2*right + real(n_vir, dp)*real(n_ao, dp)*right &
              + 4.0_dp*(real(n_vir, dp)*real(n_occ, dp))**2 &
              + (real(n_vir, dp)*real(n_occ, dp))**2
-      fits = peak*8.0_dp <= MO_TRANSFORM_LIMIT
+      fits = peak*8.0_dp <= response_budget(MO_TRANSFORM_LIMIT)
    end function mo_transform_fits
 
    subroutine build_hessian_mo(mol, eri_in, c_occ, c_vir, gaps, aplus, aminus, error, &

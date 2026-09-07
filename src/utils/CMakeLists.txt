@@ -6,4 +6,5 @@ target_sources(
           mqc_finite_differences.f90
           mqc_timing.f90
           mqc_convergence_report.f90
-          mqc_verbosity.f90)
+          mqc_verbosity.f90
+          mqc_memory.f90)
