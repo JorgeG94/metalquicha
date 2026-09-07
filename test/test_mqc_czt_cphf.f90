@@ -27,7 +27,8 @@ module test_mqc_czt_cphf
    use mqc_czt_cphf, only: cphf_solve, static_polarizability, distributed_polarizability, &
                            build_hessian, build_hessian_mo, static_response_dense, &
                            dynamic_polarizability, dynamic_response_iterative, &
-                           casimir_polder_frequencies, distributed_dynamic_cross
+                           casimir_polder_frequencies, distributed_dynamic_cross, &
+                           fitted_response_t, build_fitted_response
    use mqc_calculation_defaults, only: EFP_RESPONSE_DENSE, EFP_RESPONSE_MATRIX_FREE
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
@@ -88,6 +89,8 @@ contains
                                test_hessian_transform), &
                   new_unittest("the_dense_static_solve_equals_the_iterative_one", &
                                test_static_dense), &
+                  new_unittest("the_fitted_matrix_free_solve_equals_the_fitted_dense_one", &
+                               test_dynamic_matrix_free_fitted), &
                   new_unittest("the_dense_dynamic_solve_equals_the_matrix_free_one", &
                                test_dynamic_matrix_free), &
                   new_unittest("the_static_response_rides_with_the_dynamic_solve", &
@@ -880,6 +883,90 @@ contains
 
       call mol%destroy()
    end subroutine test_hessian_transform
+
+   subroutine test_dynamic_matrix_free_fitted(error)
+      !! The fitted operator applied to a vector equals the fitted operator formed
+      !!
+      !! `build_hessian_df` contracts the three fitted MO blocks into `(A+B)` and
+      !! `(A-B)` and the dense route factorizes them; `apply_fitted_batch`
+      !! contracts the same three blocks with a vector instead and BiCGSTAB
+      !! iterates on that. Same integrals, same fit, two contractions that share
+      !! no code -- a sign or an index slipped in either the Coulomb or the two
+      !! exchange terms of the applied form moves this and nothing else.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      type(fitted_response_t) :: fit
+      real(dp), allocatable :: dip(:, :, :), alpha_dense(:, :, :), alpha_free(:, :, :)
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :), h(:, :, :), work(:, :)
+      real(dp), allocatable :: eri(:, :, :, :), zero_h(:, :), bounds(:, :), nu(:)
+      real(dp) :: c(3, 3), worst, scale
+      integer :: n_ao, n_mo, n_occ, n_vir, a, i, k
+
+      call water(mol, scf, err)
+      if (err%has_error() .or. .not. scf%converged) then
+         call check(error, .false., "the reference SCF failed")
+         return
+      end if
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
+                   0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "cc-pvdz-rifit", aux, err)
+      call check(error,.not. err%has_error(), "the auxiliary basis failed")
+      if (allocated(error)) return
+      n_ao = mol%nao
+      n_mo = size(scf%orbitals, 2)
+      n_occ = scf%n_occupied
+      n_vir = n_mo - n_occ
+      nu = casimir_polder_frequencies()
+
+      call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, err)
+      call check(error,.not. err%has_error(), "the dipole matrices failed")
+      if (allocated(error)) return
+
+      call dynamic_polarizability(mol, scf%orbitals, scf%orbital_energies, n_occ, &
+                                  nu, alpha_dense, err, perturbations=dip, in_core=.true., &
+                                  aux=aux)
+      call check(error,.not. err%has_error(), "the fitted dense solve failed: "//err%get_message())
+      if (allocated(error)) return
+
+      allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir), gaps(n_vir, n_occ))
+      allocate (zero_h(n_ao, n_ao), work(n_ao, n_occ), h(n_vir, n_occ, size(dip, 3)))
+      c_occ = scf%orbitals(:, 1:n_occ)
+      c_vir = scf%orbitals(:, n_occ + 1:n_mo)
+      zero_h = 0.0_dp
+      do i = 1, n_occ
+         do a = 1, n_vir
+            gaps(a, i) = scf%orbital_energies(n_occ + a) - scf%orbital_energies(i)
+         end do
+      end do
+      do k = 1, size(dip, 3)
+         call pic_gemm(dip(:, :, k), c_occ, work)
+         call pic_gemm(c_vir, work, h(:, :, k), transa="T")
+      end do
+      ! Never read on the fitted path; sized to nothing so that a read would fail.
+      allocate (eri(0, 0, 0, 0), bounds(0, 0))
+
+      call build_fitted_response(mol, aux, c_occ, c_vir, fit, err)
+      call check(error,.not. err%has_error(), "the fitted blocks failed: "//err%get_message())
+      if (allocated(error)) return
+      call dynamic_response_iterative(mol, .true., eri, bounds, zero_h, c_occ, c_vir, &
+                                      gaps, h, nu, alpha_free, err, tol=1.0e-11_dp, fit=fit)
+      call check(error,.not. err%has_error(), "the fitted matrix-free solve failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      worst = maxval(abs(alpha_dense - alpha_free))
+      scale = maxval(abs(alpha_dense))
+      call check(error, scale > 1.0_dp, "the polarizability is empty")
+      if (allocated(error)) return
+      call check(error, worst < 1.0e-7_dp*scale, &
+                 "the fitted matrix-free response disagrees with the fitted dense one")
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine test_dynamic_matrix_free_fitted
 
    subroutine test_dynamic_matrix_free(error)
       !! The frequency-dependent response, built two ways that share no code

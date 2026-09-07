@@ -396,6 +396,7 @@ contains
       call allow(keys, "response_batch")
       call allow(keys, "response")
       call allow(keys, "vdw_scale")
+      call allow(keys, "dispersion")
    end function efp_keys
 
    function neo_keys() result(keys)

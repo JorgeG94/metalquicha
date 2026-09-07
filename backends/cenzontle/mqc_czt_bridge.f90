@@ -424,7 +424,7 @@ contains
                              aux_basis, guess, energy_tol, density_tol, grad_tol, &
                              scf_in, max_iter_in, &
                              vdwscl, dynamic_tol, dynamic_maxiter, response, &
-                             allow_crap_response, response_batch)
+                             allow_crap_response, response_batch, quadrupole_blocks)
       !! Build an effective fragment potential and write it
       !!
       !! Here rather than in the driver so the driver needs no knowledge of
@@ -460,8 +460,9 @@ contains
          !! `keywords.scf.gradient_tolerance`, present only when the deck named
          !! it.
       real(dp), intent(in), optional :: vdwscl
-         !! The screening grid's van der Waals scale. This and the three below
+         !! The screening grid's van der Waals scale. This and the ones below
          !! are the `keywords.efp` group: forwarded, not read here.
+      logical, intent(in), optional :: quadrupole_blocks
       real(dp), intent(in), optional :: dynamic_tol
          !! Tolerance of the dynamic response solve.
       integer, intent(in), optional :: dynamic_maxiter
@@ -487,7 +488,7 @@ contains
                               max_iter_in=max_iter_in, &
                               vdwscl=vdwscl, dynamic_tol=dynamic_tol, &
                             dynamic_maxiter=dynamic_maxiter, response=response, allow_crap_response=allow_crap_response, &
-                              response_batch=response_batch)
+                              response_batch=response_batch, quadrupole_blocks=quadrupole_blocks)
       if (error%has_error()) return
       call write_efp_potential(pot, path, error)
       call pot%destroy()

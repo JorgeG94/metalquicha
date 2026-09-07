@@ -76,7 +76,18 @@ Density fitting
 
 The dynamic response is what a potential costs: building its Hessian exactly takes
 one Fock build per occupied-virtual pair. Fitting the integrals replaces that with
-two matrix products, which at cc-pVQZ is 268 seconds against 0.074.
+two matrix products, which at cc-pVQZ is 268 seconds against 0.074. On the
+matrix-free route the fitted three-index blocks are kept instead and the operator
+is applied through them, so an iteration is matrix products rather than a pass
+over the integrals. The SCF's fitted tensor is handed to the response rather than
+built again.
+
+Whether the fit pays on the matrix-free route depends on the basis. An application
+costs about ``2 n_aux n_ov (n_vir + 3 n_occ)`` flops per vector whatever the
+functions are, where an exact pass is cheap for an s/p basis and dear for one with
+d and f functions. On a 123-atom fragment in 6-31G with a fitting set seven times
+the orbital basis the exact pass is the faster of the two; on adenine in
+6-311++G(3df,3pd) the fit halves the run.
 
 It reuses the SCF's own keywords, meaning the same thing here as there:
 
@@ -135,6 +146,21 @@ there is deliberately no second spelling of a tolerance in this group.
    * - ``response``
      - ``"auto"``
      - ``"auto"``, ``"dense"`` or ``"matrix_free"``; how that solve is carried out
+   * - ``response_batch``
+     - as wide as memory allows
+     - Densities contracted against one pass over the integrals when the solve is
+       matrix free. Absent, every system in flight goes through one pass when the
+       memory budget (``system.memory_gb``, or the machine) holds it; the integrals
+       are the cost of a pass, so the fewer passes the better -- a 104-system
+       fragment took 273 s an iteration at a width of 12 and 113 s at full width
+   * - ``dispersion``
+     - ``"all"``
+     - ``"all"`` writes the dipole-quadrupole and quadrupole-quadrupole dynamic
+       blocks as well as the dipole-dipole one, as GAMESS does by default
+       (``DISP7``, ``DISP8``); ``"dipole"`` writes the dipole-dipole block alone.
+       The two higher blocks cost the response solve five quadrupole-driven
+       perturbations on top of the three dipole ones, so a dipole-only run is
+       what to time against a code that solves the dipole equations only
    * - ``vdw_scale``
      - ``0.7``
      - Innermost layer of the charge-penetration screening grid, as a fraction of a
@@ -160,9 +186,8 @@ ways and timed. On water in ``6-31g`` the two routes agree to ``1.8e-07`` on eve
 dynamic block and leave every other section of the file bit-identical, which is
 what a comparison of the two should look like.
 
-A forced ``"matrix_free"`` declines the auxiliary basis along with the operator:
-there is no Hessian for it to fit. The run says so rather than fitting nothing
-quietly.
+A forced ``"matrix_free"`` with an auxiliary basis applies the operator through
+the fitted blocks, as above, when they fit in memory; the run says which it did.
 
 Agreement with GAMESS
 ---------------------

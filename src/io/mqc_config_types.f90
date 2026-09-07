@@ -388,11 +388,21 @@ module mqc_config_types
       real(dp) :: efp_dynamic_tolerance = DEFAULT_DYNAMIC_TOL
       integer :: efp_dynamic_maxiter = DEFAULT_DYNAMIC_MAXITER
       logical :: efp_allow_crap_response = .false.
-      integer :: efp_response_batch = DEFAULT_RESPONSE_BATCH
+      integer :: efp_response_batch = 0
+         !! `keywords.efp.response_batch`: densities per integral pass in the
+         !! matrix-free response. Zero, the default, is as wide as the memory
+         !! budget allows, up to every system at once; a positive figure is
+         !! taken as given.
       integer :: efp_response = EFP_RESPONSE_AUTO
          !! Held as a code rather than as the spelling, like `calc_type`; the
          !! reader is the only place that knows the three words it can take.
       real(dp) :: efp_vdw_scale = DEFAULT_VDW_SCALE
+      logical :: efp_quadrupole_blocks = .true.
+         !! `keywords.efp.dispersion`: "all" writes the dipole-quadrupole and
+         !! quadrupole-quadrupole dynamic blocks as well as the dipole-dipole
+         !! one, which is what GAMESS does by default (`DISP7`, `DISP8`);
+         !! "dipole" writes the dipole-dipole block alone and solves the
+         !! response for the three dipole operators only.
 
       ! Quantum nuclei, read from `keywords.neo`. Absent means every nucleus is
       ! classical and nothing below is looked at.

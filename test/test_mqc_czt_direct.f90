@@ -64,6 +64,10 @@ contains
                                test_nosym_symmetric), &
                   new_unittest("nosym_handles_an_antisymmetric_density", &
                                test_nosym_antisymmetric), &
+                  new_unittest("the_fast_build_announced_antisymmetric_is_exact", &
+                               test_fast_build_antisymmetric), &
+                  new_unittest("a_wide_batch_contracts_through_the_blas_exactly", &
+                               test_wide_batch), &
                   new_unittest("coulomb_vanishes_for_an_antisymmetric_density", &
                                test_coulomb_vanishes), &
                   new_unittest("the_fast_build_is_wrong_on_an_antisymmetric_density", &
@@ -198,6 +202,135 @@ contains
                  < 1.0e-11_dp, &
                  "G of an antisymmetric density came back with a symmetric part")
    end subroutine test_nosym_antisymmetric
+
+   subroutine test_fast_build_antisymmetric(error)
+      !! `build_fock_direct_many(antisymmetric=.true.)` matches the n^4 contraction
+      !!
+      !! The fast build's six updates fold the pair-swapped tuples into a final
+      !! symmetrisation; announced antisymmetric it drops the Coulomb term and
+      !! antisymmetrises instead. Held to the unpermuted reference and to
+      !! `build_fock_direct_nosym`, on one density and on a batch that mixes
+      !! magnitudes, since a batch is what the response solver hands it.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: eri(:, :, :, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: sym(:, :), anti(:, :), reference(:, :), fast(:, :, :)
+      real(dp), allocatable :: general(:, :, :), batch(:, :, :)
+      real(dp) :: worst
+
+      call setup(mol, eri, bounds, zero_h, sym, anti, err)
+      if (err%has_error()) then
+         call check(error, .false., "setup failed: "//err%get_message())
+         return
+      end if
+
+      allocate (reference(mol%nao, mol%nao), batch(mol%nao, mol%nao, 3))
+      batch(:, :, 1) = anti
+      batch(:, :, 2) = 0.37_dp*anti
+      batch(:, :, 3) = -2.5_dp*anti
+      call build_fock(zero_h, eri, anti, reference)
+      call build_fock_direct_many(mol, zero_h, batch, bounds, fast, stats, err, &
+                                  screen_tol=NO_SCREENING, antisymmetric=.true.)
+      if (err%has_error()) then
+         call check(error, .false., "the fast build failed: "//err%get_message())
+         call mol%destroy()
+         return
+      end if
+      call build_fock_direct_nosym(mol, zero_h, batch, bounds, general, stats, err, &
+                                   screen_tol=NO_SCREENING)
+      call mol%destroy()
+      if (err%has_error()) then
+         call check(error, .false., "the general build failed: "//err%get_message())
+         return
+      end if
+
+      worst = maxval(abs(fast(:, :, 1) - reference))
+      call check(error, worst < 1.0e-11_dp, &
+                 "the fast build announced antisymmetric does not reproduce the "// &
+                 "unpermuted contraction")
+      if (allocated(error)) return
+      worst = max(maxval(abs(fast(:, :, 2) - 0.37_dp*reference)), &
+                  maxval(abs(fast(:, :, 3) + 2.5_dp*reference)))
+      call check(error, worst < 1.0e-10_dp, &
+                 "the fast build announced antisymmetric is wrong on a batch")
+      if (allocated(error)) return
+      worst = maxval(abs(fast - general))
+      call check(error, worst < 1.0e-10_dp, &
+                 "the fast and the general build disagree on an antisymmetric batch")
+      if (allocated(error)) return
+      call check(error, maxval(abs(fast(:, :, 1) + transpose(fast(:, :, 1)))) < 1.0e-11_dp, &
+                 "G of an antisymmetric density came back with a symmetric part")
+   end subroutine test_fast_build_antisymmetric
+
+   subroutine test_wide_batch(error)
+      !! A batch wide enough for the matrix-product contraction, both symmetries
+      !!
+      !! Below `GEMM_SETS` densities the fast build updates element by element;
+      !! at or above it each quartet goes through six matrix products. The two
+      !! must agree to rounding with each other and with the unpermuted
+      !! reference, on a batch of scaled copies so that every set is distinct.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: WIDE = 24
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: eri(:, :, :, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: sym(:, :), anti(:, :), ref_sym(:, :), ref_anti(:, :)
+      real(dp), allocatable :: batch(:, :, :), fast(:, :, :)
+      real(dp) :: worst, scale
+      integer :: m
+
+      call setup(mol, eri, bounds, zero_h, sym, anti, err)
+      if (err%has_error()) then
+         call check(error, .false., "setup failed: "//err%get_message())
+         return
+      end if
+      allocate (ref_sym(mol%nao, mol%nao), ref_anti(mol%nao, mol%nao), batch(mol%nao, mol%nao, WIDE))
+      call build_fock(zero_h, eri, sym, ref_sym)
+      call build_fock(zero_h, eri, anti, ref_anti)
+
+      do m = 1, WIDE
+         batch(:, :, m) = (0.1_dp*m - 1.3_dp)*sym
+      end do
+      call build_fock_direct_many(mol, zero_h, batch, bounds, fast, stats, err, &
+                                  screen_tol=NO_SCREENING)
+      if (err%has_error()) then
+         call check(error, .false., "the wide symmetric build failed: "//err%get_message())
+         call mol%destroy()
+         return
+      end if
+      worst = 0.0_dp
+      do m = 1, WIDE
+         scale = 0.1_dp*m - 1.3_dp
+         worst = max(worst, maxval(abs(fast(:, :, m) - scale*ref_sym)))
+      end do
+      call check(error, worst < 1.0e-10_dp, "a wide symmetric batch through the BLAS is wrong")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      do m = 1, WIDE
+         batch(:, :, m) = (0.1_dp*m - 1.3_dp)*anti
+      end do
+      call build_fock_direct_many(mol, zero_h, batch, bounds, fast, stats, err, &
+                                  screen_tol=NO_SCREENING, antisymmetric=.true.)
+      call mol%destroy()
+      if (err%has_error()) then
+         call check(error, .false., "the wide antisymmetric build failed: "//err%get_message())
+         return
+      end if
+      worst = 0.0_dp
+      do m = 1, WIDE
+         scale = 0.1_dp*m - 1.3_dp
+         worst = max(worst, maxval(abs(fast(:, :, m) - scale*ref_anti)))
+      end do
+      call check(error, worst < 1.0e-10_dp, "a wide antisymmetric batch through the BLAS is wrong")
+   end subroutine test_wide_batch
 
    subroutine test_coulomb_vanishes(error)
       !! The Coulomb term cancels by itself, and is not special-cased

@@ -315,6 +315,7 @@ contains
       driver_config%method_config%efp%response_batch = mqc_config%efp_response_batch
       driver_config%method_config%efp%response = mqc_config%efp_response
       driver_config%method_config%efp%vdw_scale = mqc_config%efp_vdw_scale
+      driver_config%method_config%efp%quadrupole_blocks = mqc_config%efp_quadrupole_blocks
       ! Quantum nuclei. The two lists are exclusive and one of them is absent.
       driver_config%method_config%neo%active = mqc_config%neo_active
       driver_config%method_config%neo%nuclear_basis = mqc_config%neo_nuclear_basis

@@ -240,62 +240,11 @@ contains
       !$omp end parallel do
    end subroutine precompute
 
-   function objective(base, monopole, argument, alpha) result(rms)
-      !! Root-mean-square miss of the damped classical potential, kcal/mol
-      real(dp), intent(in) :: base(:), monopole(:, :), argument(:, :), alpha(:)
-      real(dp) :: rms
-      real(dp) :: total, residual
-      integer :: g, k
-
-      rms = 0.0_dp
-      !$omp parallel do default(shared) private(g, k, total, residual) reduction(+:rms)
-      do g = 1, size(base)
-         total = base(g)
-         do k = 1, size(alpha)
-            total = total + monopole(g, k)*(1.0_dp - exp(-alpha(k)*argument(g, k)))
-         end do
-         residual = total*HARTREE_TO_KCALMOL
-         rms = rms + residual*residual
-      end do
-      !$omp end parallel do
-      rms = sqrt(rms/real(size(base), dp))
-   end function objective
-
-   subroutine hold_others(base, monopole, argument, alpha, skip, rest)
-      !! The damped potential with one centre's contribution left out
-      !!
-      !! A line search moves one exponent and leaves the rest where they are, so
-      !! everything but that centre is constant across the whole bracket. Summed
-      !! once here, the search costs one exponential per grid point instead of one
-      !! per point per centre.
-      !!
-      !! Summed rather than subtracted from a running total: the total is a
-      !! residual the fit drives toward zero, so a subtraction cancels worse
-      !! exactly as the search converges.
-      real(dp), intent(in) :: base(:), monopole(:, :), argument(:, :), alpha(:)
-      integer, intent(in) :: skip
-      real(dp), intent(out) :: rest(:)
-
-      real(dp) :: total
-      integer :: g, k
-
-      !$omp parallel do default(shared) private(g, k, total)
-      do g = 1, size(base)
-         total = base(g)
-         do k = 1, size(alpha)
-            if (k == skip) cycle
-            total = total + monopole(g, k)*(1.0_dp - exp(-alpha(k)*argument(g, k)))
-         end do
-         rest(g) = total
-      end do
-      !$omp end parallel do
-   end subroutine hold_others
-
    function objective_one(rest, monopole, argument, alpha) result(rms)
       !! The objective with every other centre already summed into `rest`
       !!
       !! Identical to `objective` term for term, except that every other centre's
-      !! exponential was evaluated once by `hold_others` rather than again for
+      !! exponential was evaluated once, into `rest`, rather than again for
       !! every probe of the bracket.
       real(dp), intent(in) :: rest(:), monopole(:), argument(:)
       real(dp), intent(in) :: alpha
@@ -350,6 +299,7 @@ contains
 
       real(dp), allocatable :: grid(:, :), potential(:, :, :), quantum(:)
       real(dp), allocatable :: base(:), monopole(:, :), argument(:, :), rest(:)
+      real(dp), allocatable :: total(:), term(:)
       real(dp) :: best, trial, low, high, mid, value_low, value_high, keep
       integer :: n_centre, i, sweep, step, g
       logical :: shared
@@ -395,25 +345,32 @@ contains
       end do
 
       call precompute(dma, grid, quantum, base, monopole, argument, kind)
-      allocate (rest(size(base)))
-      best = objective(base, monopole, argument, alpha)
+      allocate (rest(size(base)), total(size(base)), term(size(base)))
+      ! The same sweep as before -- each centre's exponent bracketed with every
+      ! other centre held at its current value, centres in order -- carried as a
+      ! running total rather than re-summed. Summing the other centres afresh
+      ! for each one made every sweep quadratic in the centres, `n_centre^2`
+      ! exponentials per grid point, and that was most of the fit at 250
+      ! centres and a hundred thousand points. Now it is one subtraction per
+      ! centre, and the total is rebuilt once a sweep so nothing accumulates.
+      call accumulate(base, monopole, argument, alpha, total)
+      best = rms_of(total)
       do sweep = 1, MAX_SWEEPS
+         if (sweep > 1) call accumulate(base, monopole, argument, alpha, total)
          keep = best
          do i = 1, n_centre
-            ! Everything but centre `i` is fixed for the whole bracket below, so
-            ! it is summed once here and each probe that follows costs a single
-            ! exponential per grid point.
-            call hold_others(base, monopole, argument, alpha, i, rest)
-
-            ! Golden-section on one exponent, inside the bounds.
+            call centre_term(monopole(:, i), argument(:, i), alpha(i), term)
+            rest = total - term
+            ! Golden-section on one exponent, inside the bounds; the two probes
+            ! of a step share one pass over the grid.
             low = ALPHA_MIN
             high = ALPHA_MAX
             do step = 1, 30
                if (high - low < ALPHA_TOL) exit
                mid = low + 0.381966_dp*(high - low)
                trial = high - 0.381966_dp*(high - low)
-               value_low = objective_one(rest, monopole(:, i), argument(:, i), mid)
-               value_high = objective_one(rest, monopole(:, i), argument(:, i), trial)
+               call objective_two(rest, monopole(:, i), argument(:, i), mid, trial, &
+                                  value_low, value_high)
                if (value_low < value_high) then
                   high = trial
                else
@@ -425,14 +382,88 @@ contains
             if (trial < best) then
                best = trial
                alpha(i) = mid
+               call centre_term(monopole(:, i), argument(:, i), mid, term)
+               total = rest + term
             end if
          end do
          if (keep - best < 1.0e-10_dp) exit
       end do
-
       if (present(residual)) residual = best
       if (present(grid_size)) grid_size = size(grid, 2)
-      deallocate (grid, quantum, base, monopole, argument, rest)
+      deallocate (grid, quantum, base, monopole, argument, rest, total, term)
    end subroutine fit_screening
+
+   subroutine accumulate(base, monopole, argument, alpha, total)
+      !! The classical potential less the quantum one, every centre in, per grid point
+      real(dp), intent(in) :: base(:), monopole(:, :), argument(:, :), alpha(:)
+      real(dp), intent(out) :: total(:)
+
+      real(dp) :: acc
+      integer :: g, k
+
+      !$omp parallel do default(shared) private(g, k, acc)
+      do g = 1, size(base)
+         acc = base(g)
+         do k = 1, size(alpha)
+            acc = acc + monopole(g, k)*(1.0_dp - exp(-alpha(k)*argument(g, k)))
+         end do
+         total(g) = acc
+      end do
+      !$omp end parallel do
+   end subroutine accumulate
+
+   subroutine centre_term(monopole, argument, alpha, term)
+      !! One centre's screened monopole at every grid point
+      real(dp), intent(in) :: monopole(:), argument(:)
+      real(dp), intent(in) :: alpha
+      real(dp), intent(out) :: term(:)
+
+      integer :: g
+
+      !$omp parallel do default(shared) private(g)
+      do g = 1, size(term)
+         term(g) = monopole(g)*(1.0_dp - exp(-alpha*argument(g)))
+      end do
+      !$omp end parallel do
+   end subroutine centre_term
+
+   function rms_of(total) result(rms)
+      !! The fit's measure, root mean square of the residual in kcal/mol
+      real(dp), intent(in) :: total(:)
+      real(dp) :: rms
+
+      integer :: g
+
+      rms = 0.0_dp
+      !$omp parallel do default(shared) private(g) reduction(+:rms)
+      do g = 1, size(total)
+         rms = rms + (total(g)*HARTREE_TO_KCALMOL)**2
+      end do
+      !$omp end parallel do
+      rms = sqrt(rms/real(size(total), dp))
+   end function rms_of
+
+   subroutine objective_two(rest, monopole, argument, alpha_a, alpha_b, rms_a, rms_b)
+      !! `objective_one` at two exponents in one pass over the grid
+      real(dp), intent(in) :: rest(:), monopole(:), argument(:)
+      real(dp), intent(in) :: alpha_a, alpha_b
+      real(dp), intent(out) :: rms_a, rms_b
+
+      real(dp) :: ra, rb
+      integer :: g
+
+      rms_a = 0.0_dp
+      rms_b = 0.0_dp
+      !$omp parallel do default(shared) private(g, ra, rb) reduction(+:rms_a, rms_b)
+      do g = 1, size(rest)
+         ra = (rest(g) + monopole(g)*(1.0_dp - exp(-alpha_a*argument(g))))*HARTREE_TO_KCALMOL
+         rb = (rest(g) + monopole(g)*(1.0_dp - exp(-alpha_b*argument(g))))*HARTREE_TO_KCALMOL
+         rms_a = rms_a + ra*ra
+         rms_b = rms_b + rb*rb
+      end do
+      !$omp end parallel do
+      rms_a = sqrt(rms_a/real(size(rest), dp))
+      rms_b = sqrt(rms_b/real(size(rest), dp))
+   end subroutine objective_two
 
 end module mqc_czt_screening

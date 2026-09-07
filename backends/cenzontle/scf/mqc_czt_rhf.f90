@@ -122,6 +122,10 @@ module mqc_czt_rhf
          !! Fock matrices built from the density change. Zero when
          !! `incremental_fock` is off.
       logical :: converged = .false.
+      real(dp) :: commutator = huge(1.0_dp)
+         !! `max|FDS - SDF|` at the last iteration, in the orthogonal basis.
+         !! The density's error scales with this, so a consumer of the density
+         !! reads it rather than the threshold it was asked to stop at.
       real(dp), allocatable :: orbital_energies(:)
       real(dp), allocatable :: orbitals(:, :)
       real(dp), allocatable :: density(:, :)
@@ -932,6 +936,7 @@ contains
 
       st%e_old = st%e_elec
       result%iterations = iter
+      result%commutator = gnorm
       result%full_fock_builds = st%incr%full_builds
       result%incremental_updates = st%incr%updates
       ! `shift_now` is part of the test below rather than checked
@@ -1393,6 +1398,7 @@ contains
 
          e_old = e_elec
          result%iterations = iter
+         result%commutator = gnorm
          result%full_fock_builds = incr%full_builds
          result%incremental_updates = incr%updates
          drms_prev = drms
