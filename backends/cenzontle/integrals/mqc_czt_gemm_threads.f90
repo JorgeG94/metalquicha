@@ -211,7 +211,7 @@ contains
                           side="L", uplo="L", transa="N", diag="U")
             bn = int(j1 - j0 + 1, default_int)
             call pic_dgemm_x("N", "N", bm, bn, bk, -1.0_dp, a(k + kb, k), lda, &
-                            a(k, j0), lda, 1.0_dp, a(k + kb, j0), lda)
+                             a(k, j0), lda, 1.0_dp, a(k + kb, j0), lda)
          end do
          !$omp end parallel do
       end do

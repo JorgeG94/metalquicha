@@ -852,20 +852,20 @@ contains
       allocate (drives(mol%nao, mol%nao, merge(8, 3, pot%quadrupole_blocks)))
       drives(:, :, 1:3) = dip
       if (pot%quadrupole_blocks) then
-      drives(:, :, 4) = buck(:, :, QXX)
-      drives(:, :, 5) = buck(:, :, QYY)
-      drives(:, :, 6) = buck(:, :, QXY)
-      drives(:, :, 7) = buck(:, :, QXZ)
-      drives(:, :, 8) = buck(:, :, QYZ)
-      drive_of = 0
-      drive_of(QXX) = 4
-      drive_of(QYY) = 5
-      drive_of(QXY) = 6
-      drive_of(QYX) = 6
-      drive_of(QXZ) = 7
-      drive_of(QZX) = 7
-      drive_of(QYZ) = 8
-      drive_of(QZY) = 8
+         drives(:, :, 4) = buck(:, :, QXX)
+         drives(:, :, 5) = buck(:, :, QYY)
+         drives(:, :, 6) = buck(:, :, QXY)
+         drives(:, :, 7) = buck(:, :, QXZ)
+         drives(:, :, 8) = buck(:, :, QYZ)
+         drive_of = 0
+         drive_of(QXX) = 4
+         drive_of(QYY) = 5
+         drive_of(QXY) = 6
+         drive_of(QYX) = 6
+         drive_of(QXZ) = 7
+         drive_of(QZX) = 7
+         drive_of(QYZ) = 8
+         drive_of(QZY) = 8
       end if
 
       ! The static response is the zero-frequency member of the same family,
@@ -1435,63 +1435,63 @@ contains
       write (unit, "(A)") " STOP"
 
       if (allocated(pot%dipquad)) then
-      ! The dipole-quadrupole block, 27 values a point. The slot order is
-      ! `(a-1)*9 + (c-1)*3 + b` -- the *first* quadrupole index runs fastest, which
-      ! is transposed from how the `DQSHIFT` source reads, and was pinned by
-      ! requiring the pre-shift tensor's symmetry in `bc` to come back.
-      write (unit, "(A)") " DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS"
-      do f = 1, size(pot%frequencies)
-         do k = 1, pot%n_lmo
-            write (label, "(A,I3)") "CT", k
-            do a = 1, 3
-               do b = 1, 3
-                  do c = 1, 3
-                     wide((a - 1)*9 + (c - 1)*3 + b) = pot%dipquad(a, b, c, k, f)
-                  end do
-               end do
-            end do
-            if (k == 1) then
-               write (unit, "(A,3F15.10,A,F9.6,A)") trim(label), &
-                  pot%centroids(:, k), " -- FOR W=", pot%frequencies(f), "I A.U."
-            else
-               write (unit, "(A,3F15.10)") trim(label), pot%centroids(:, k)
-            end if
-            call write_values(unit, wide, 16, 10, 4)
-         end do
-      end do
-      write (unit, "(A)") " STOP"
-      end if
-
-      if (allocated(pot%quadquad)) then
-      ! The quadrupole-quadrupole block, 81 values a point, written with the last
-      ! index fastest, the last of the four varying first. No
-      ! transposition here, unlike the dipole-quadrupole slots: every `QQSHIFT`
-      ! term is symmetric within each index pair, so the written values are too.
-      write (unit, "(A)") " LMOQQPOL DYNAMIC POLARIZABLE POINTS"
-      do f = 1, size(pot%frequencies)
-         do k = 1, pot%n_lmo
-            write (label, "(A,I3)") "CT", k
-            i = 0
-            do a = 1, 3
-               do b = 1, 3
-                  do c = 1, 3
-                     do e = 1, 3
-                        i = i + 1
-                        broad(i) = pot%quadquad(a, b, c, e, k, f)
+         ! The dipole-quadrupole block, 27 values a point. The slot order is
+         ! `(a-1)*9 + (c-1)*3 + b` -- the *first* quadrupole index runs fastest, which
+         ! is transposed from how the `DQSHIFT` source reads, and was pinned by
+         ! requiring the pre-shift tensor's symmetry in `bc` to come back.
+         write (unit, "(A)") " DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS"
+         do f = 1, size(pot%frequencies)
+            do k = 1, pot%n_lmo
+               write (label, "(A,I3)") "CT", k
+               do a = 1, 3
+                  do b = 1, 3
+                     do c = 1, 3
+                        wide((a - 1)*9 + (c - 1)*3 + b) = pot%dipquad(a, b, c, k, f)
                      end do
                   end do
                end do
+               if (k == 1) then
+                  write (unit, "(A,3F15.10,A,F9.6,A)") trim(label), &
+                     pot%centroids(:, k), " -- FOR W=", pot%frequencies(f), "I A.U."
+               else
+                  write (unit, "(A,3F15.10)") trim(label), pot%centroids(:, k)
+               end if
+               call write_values(unit, wide, 16, 10, 4)
             end do
-            if (k == 1) then
-               write (unit, "(A,3F15.10,A,F9.6,A)") trim(label), &
-                  pot%centroids(:, k), " -- FOR W=", pot%frequencies(f), "I A.U."
-            else
-               write (unit, "(A,3F15.10)") trim(label), pot%centroids(:, k)
-            end if
-            call write_values(unit, broad, 16, 10, 4)
          end do
-      end do
-      write (unit, "(A)") " STOP"
+         write (unit, "(A)") " STOP"
+      end if
+
+      if (allocated(pot%quadquad)) then
+         ! The quadrupole-quadrupole block, 81 values a point, written with the last
+         ! index fastest, the last of the four varying first. No
+         ! transposition here, unlike the dipole-quadrupole slots: every `QQSHIFT`
+         ! term is symmetric within each index pair, so the written values are too.
+         write (unit, "(A)") " LMOQQPOL DYNAMIC POLARIZABLE POINTS"
+         do f = 1, size(pot%frequencies)
+            do k = 1, pot%n_lmo
+               write (label, "(A,I3)") "CT", k
+               i = 0
+               do a = 1, 3
+                  do b = 1, 3
+                     do c = 1, 3
+                        do e = 1, 3
+                           i = i + 1
+                           broad(i) = pot%quadquad(a, b, c, e, k, f)
+                        end do
+                     end do
+                  end do
+               end do
+               if (k == 1) then
+                  write (unit, "(A,3F15.10,A,F9.6,A)") trim(label), &
+                     pot%centroids(:, k), " -- FOR W=", pot%frequencies(f), "I A.U."
+               else
+                  write (unit, "(A,3F15.10)") trim(label), pot%centroids(:, k)
+               end if
+               call write_values(unit, broad, 16, 10, 4)
+            end do
+         end do
+         write (unit, "(A)") " STOP"
       end if
 
       write (unit, "(A)") " PROJECTION BASIS SET"

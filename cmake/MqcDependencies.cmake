@@ -415,39 +415,38 @@ endif()
 # `find_package(MPI)` learns what to link by asking the `ftn` wrapper for its
 # link line, and that line names libsci -- `libsci_gnu`, `libsci_gnu_mpi` --
 # whenever the cray-libsci module is loaded. `find_package(OpenMP)` asks with
-# `-fopenmp` and gets the threaded pair, `libsci_gnu_mp` and `libsci_gnu_mpi_mp`.
-# The wrapper also appends libsci to every link it performs itself. So libsci
-# reaches the link line however the BLAS was chosen, `-DBLAS_LIBRARIES=` does
-# not keep it out, and the dynamic linker then binds each `dgemm` and `dgetrf`
-# to whichever BLAS-bearing library comes first in the executable's DT_NEEDED
-# order. Reordering `libraries_to_link` does not settle that: CMake sorts the
-# link line by dependency and MPI's copy lands first whatever order is written
-# here. Rewriting MPI's imported target does not reach it either --
-# `MPI::MPI_Fortran` is created in pic-mpi's directory and is not visible from
-# this one.
+# `-fopenmp` and gets the threaded pair, `libsci_gnu_mp` and
+# `libsci_gnu_mpi_mp`. The wrapper also appends libsci to every link it performs
+# itself. So libsci reaches the link line however the BLAS was chosen,
+# `-DBLAS_LIBRARIES=` does not keep it out, and the dynamic linker then binds
+# each `dgemm` and `dgetrf` to whichever BLAS-bearing library comes first in the
+# executable's DT_NEEDED order. Reordering `libraries_to_link` does not settle
+# that: CMake sorts the link line by dependency and MPI's copy lands first
+# whatever order is written here. Rewriting MPI's imported target does not reach
+# it either -- `MPI::MPI_Fortran` is created in pic-mpi's directory and is not
+# visible from this one.
 #
 # Link options are emitted before any library, so naming a BLAS there is what
 # puts it first. Two cases:
 #
 # A vendor was requested (`MQC_BLA_VENDOR`, defaulted to sequential MKL when
 # MKLROOT is set): that BLAS goes first. libsci may still be loaded for MPI's
-# sake, but nothing binds to it. This is what the `perlmutter-cpu` preset
-# relies on, and it holds whether or not the module is loaded when a rebuild
-# relinks -- which is what broke the previous version of this block, a
-# configure-time check of the OpenMP libraries that a later relink in another
-# shell walked straight past. `mqc_check_blas_binding` reads the built
-# executable to make sure.
+# sake, but nothing binds to it. This is what the `perlmutter-cpu` preset relies
+# on, and it holds whether or not the module is loaded when a rebuild relinks --
+# which is what broke the previous version of this block, a configure-time check
+# of the OpenMP libraries that a later relink in another shell walked straight
+# past. `mqc_check_blas_binding` reads the built executable to make sure.
 #
 # No vendor: libsci it is, and the threaded copy goes first. That is a
-# correctness fix, not a performance one. Cray's serial libsci is not
-# re-entrant and it fails quietly: two threads inside `dsygvd` at once corrupt
-# each other's workspace, and on Perlmutter 190 of 200 concurrent calls on one
-# matrix came back with different eigenvalues, the rest with `info` in the
-# forties. Downstream that reads as an SCF that will not converge, or an
-# eigensolver failing on a perfectly ordinary structure -- never as a threading
-# problem, and never in a traceback naming the BLAS. The threaded copy is
-# re-entrant only when called from one thread at a time, and it is no faster:
-# see the response-solver block below.
+# correctness fix, not a performance one. Cray's serial libsci is not re-entrant
+# and it fails quietly: two threads inside `dsygvd` at once corrupt each other's
+# workspace, and on Perlmutter 190 of 200 concurrent calls on one matrix came
+# back with different eigenvalues, the rest with `info` in the forties.
+# Downstream that reads as an SCF that will not converge, or an eigensolver
+# failing on a perfectly ordinary structure -- never as a threading problem, and
+# never in a traceback naming the BLAS. The threaded copy is re-entrant only
+# when called from one thread at a time, and it is no faster: see the
+# response-solver block below.
 set(mqc_libsci_mp)
 foreach(mqc_omp_lib IN LISTS OpenMP_Fortran_LIBRARIES)
   if(mqc_omp_lib MATCHES "/libsci_[A-Za-z0-9_]*_mp\\.so")
@@ -462,36 +461,40 @@ if(MQC_BLA_VENDOR AND CMAKE_Fortran_COMPILER_WRAPPER STREQUAL "CrayPrgEnv")
   set(mqc_blas_first ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
   list(REMOVE_DUPLICATES mqc_blas_first)
   target_link_options(${main_lib} PUBLIC ${mqc_blas_first})
-  message(STATUS "Cray: ${BLA_VENDOR} linked ahead of libsci; the built executable "
-                 "is checked for it")
+  message(
+    STATUS "Cray: ${BLA_VENDOR} linked ahead of libsci; the built executable "
+           "is checked for it")
 elseif(mqc_libsci_mp)
   target_link_options(${main_lib} PUBLIC ${mqc_libsci_mp})
   message(STATUS "Cray libsci: threaded copy linked first (${mqc_libsci_mp}); "
                  "the serial libsci the MPI wrapper names is not thread-safe")
   if(MQC_ENABLE_CZT)
-    # The CPU backend calls the BLAS from inside its own parallel regions --
-    # the fitted Coulomb build, the ESP grid, every split GEMM -- and libsci,
+    # The CPU backend calls the BLAS from inside its own parallel regions -- the
+    # fitted Coulomb build, the ESP grid, every split GEMM -- and libsci,
     # threaded copy included, is not re-entrant under that: a 956-function
     # fitted SCF segfaulted in `B = (mn|Q) J^-1/2` where the MKL build ran.
-    message(WARNING "Cray libsci is the BLAS of a CPU ab initio build. It is not "
-                    "re-entrant and its LAPACK slows down with every thread; expect "
-                    "segfaults in threaded fitted builds. Use the perlmutter-cpu "
-                    "preset (MKLROOT set, MQC_BLA_VENDOR=Intel10_64lp_seq) instead.")
+    message(
+      WARNING "Cray libsci is the BLAS of a CPU ab initio build. It is not "
+              "re-entrant and its LAPACK slows down with every thread; expect "
+              "segfaults in threaded fitted builds. Use the perlmutter-cpu "
+              "preset (MKLROOT set, MQC_BLA_VENDOR=Intel10_64lp_seq) instead.")
   endif()
 endif()
 
 # Attach the post-link check to an executable. A no-op off a Cray or without a
 # requested vendor, so every other platform's build is untouched.
 function(mqc_check_blas_binding target)
-  if(NOT (MQC_BLA_VENDOR AND CMAKE_Fortran_COMPILER_WRAPPER STREQUAL "CrayPrgEnv"))
+  if(NOT (MQC_BLA_VENDOR AND CMAKE_Fortran_COMPILER_WRAPPER STREQUAL
+                             "CrayPrgEnv"))
     return()
   endif()
   add_custom_command(
     TARGET ${target}
     POST_BUILD
     COMMAND
-      ${CMAKE_COMMAND} -DBINARY=$<TARGET_FILE:${target}> -DVENDOR=${MQC_BLA_VENDOR}
-      -P ${PROJECT_SOURCE_DIR}/cmake/MqcCheckBlasBinding.cmake
+      ${CMAKE_COMMAND} -DBINARY=$<TARGET_FILE:${target}>
+      -DVENDOR=${MQC_BLA_VENDOR} -P
+      ${PROJECT_SOURCE_DIR}/cmake/MqcCheckBlasBinding.cmake
     VERBATIM)
 endfunction()
 
@@ -535,7 +538,9 @@ endfunction()
 # whatever the vendor string says.
 if(MQC_ENABLE_CZT)
   if(mqc_libsci_mp AND NOT mqc_blas_first)
-    message(STATUS "Response solver: frequencies serial (Cray libsci is not re-entrant)")
+    message(
+      STATUS
+        "Response solver: frequencies serial (Cray libsci is not re-entrant)")
   elseif(NOT BLA_VENDOR OR BLA_VENDOR MATCHES "_seq$|_SEQ$")
     target_compile_definitions(${main_lib} PRIVATE MQC_SEQUENTIAL_BLAS)
     message(STATUS "Response solver: frequencies threaded (BLAS is sequential)")

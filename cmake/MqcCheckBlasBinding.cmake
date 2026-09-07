@@ -11,7 +11,8 @@
 # loaded, and that can differ between the configure and any later rebuild.
 find_program(MQC_READELF readelf)
 if(NOT MQC_READELF)
-  message(STATUS "readelf not found; the BLAS binding of ${BINARY} was not checked")
+  message(
+    STATUS "readelf not found; the BLAS binding of ${BINARY} was not checked")
   return()
 endif()
 execute_process(
@@ -20,13 +21,17 @@ execute_process(
   RESULT_VARIABLE mqc_status
   ERROR_QUIET)
 if(NOT mqc_status EQUAL 0)
-  message(STATUS "readelf failed on ${BINARY}; the BLAS binding was not checked")
+  message(
+    STATUS "readelf failed on ${BINARY}; the BLAS binding was not checked")
   return()
 endif()
 string(REGEX MATCHALL "NEEDED[^\n]*\\[[^]]*\\]" mqc_needed "${mqc_dynamic}")
 set(mqc_first "")
 foreach(mqc_entry IN LISTS mqc_needed)
-  if(mqc_entry MATCHES "\\[(libsci[^]]*|libmkl[^]]*|libopenblas[^]]*|libblas[^]]*|libflexiblas[^]]*)\\]")
+  if(mqc_entry
+     MATCHES
+     "\\[(libsci[^]]*|libmkl[^]]*|libopenblas[^]]*|libblas[^]]*|libflexiblas[^]]*)\\]"
+  )
     set(mqc_first "${CMAKE_MATCH_1}")
     break()
   endif()

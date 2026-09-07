@@ -1664,8 +1664,8 @@ contains
          per_set = (3.0_dp*real(size(c_occ, 1), dp)**2 &
                     + 6.0_dp*real(omp_get_max_threads(), dp)*64.0_dp**2)*8.0_dp
          eff_batch = int(min(real(n_sys, dp), max(real(DEFAULT_RESPONSE_BATCH, dp), &
-                                                    response_budget(real(SOLVE_BATCH_BYTES, dp)) &
-                                                    /per_set)))
+                                                  response_budget(real(SOLVE_BATCH_BYTES, dp)) &
+                                                  /per_set)))
       end if
 
       ! The right-hand side. `-2 (A-B) h` at every nonzero frequency, `-2 h` at
@@ -1892,7 +1892,6 @@ contains
          if (present(response)) response(:, :, l, k) = x(:, :, m)
       end do
    end subroutine dynamic_response_iterative
-
 
    subroutine apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
                             u, live, nlive, nu2, au, error, width, fit)
