@@ -177,6 +177,9 @@ module mqc_config_types
          !! 'ediis'. The energy-based pair runs only while the error is large
          !! and hands over to DIIS below `ACCEL_SWITCH`, so naming one asks for
          !! a different opening, not a different endgame.
+      character(len=:), allocatable :: scf_eri_path
+         !! `keywords.scf.eri_path`: 'rys', 'rotaxis' or 'auto'. Unallocated
+         !! when the deck says nothing, which leaves the backend's default.
       character(len=:), allocatable :: scf_guess
          !! Initial guess name from `keywords.scf.guess`.
          !!

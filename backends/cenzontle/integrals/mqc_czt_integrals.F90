@@ -50,6 +50,10 @@ module mqc_czt_integrals
                               LIBCINT_ATOM_OF, LIBCINT_ANG_OF, LIBCINT_NPRIM_OF, &
                               LIBCINT_NCTR_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_COEFF, &
                               LIBCINT_PTR_ENV_START, LIBCINT_KAPPA_OF
+#ifdef MQC_WITH_LIBFINT
+   use libcint_fortran, only: libcint_2e_rotaxis_sph, libcint_2e_rotaxis_cart, &
+                              libcint_rotaxis_supported
+#endif
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    implicit none
    private
@@ -64,7 +68,28 @@ module mqc_czt_integrals
       !! under MQC_WITH_SP_SHELLS. libcint would read a 64 there as a real kappa
       !! and act on it.
 
+   integer, parameter, public :: ERI_PATH_RYS = 1
+      !! Every four-centre quartet through the Rys path, `libcint_2e_*`.
+   integer, parameter, public :: ERI_PATH_ROTAXIS = 2
+      !! Quartets of s, p and L shells through the rotated-axis
+      !! McMurchie-Davidson path, `libcint_2e_rotaxis_*`; anything with a d
+      !! shell or above stays on Rys, which is the only path that has it.
+   integer, protected, public :: eri_path = ERI_PATH_RYS
+      !! Which path `two_electron_block` takes, for the whole run. Set once
+      !! by `set_eri_path`, before any quartet is evaluated, and read from
+      !! inside the threaded quartet loops after; never written there.
+#ifdef MQC_WITH_LIBFINT
+   logical, parameter, public :: ROTAXIS_AVAILABLE = .true.
+#else
+   logical, parameter, public :: ROTAXIS_AVAILABLE = .false.
+      !! libcint has no rotated-axis path, so a build against it has one
+      !! path and `set_eri_path` refuses the other.
+#endif
+
    public :: czt_molecule_t
+   public :: set_eri_path
+   public :: eri_path_name
+   public :: quartet_is_sp
    public :: build_czt_molecule
    public :: build_df_tensor
    public :: build_df_mo_tensor
@@ -258,6 +283,21 @@ contains
       type(c_ptr), intent(in), optional :: opt
       integer :: ret
 
+#ifdef MQC_WITH_LIBFINT
+      ! The rotated-axis path covers s, p and L shells and error-stops on
+      ! anything else rather than falling back, so the choice is made here,
+      ! per quartet, from the angular momenta alone. It ignores `opt`.
+      if (eri_path == ERI_PATH_ROTAXIS) then
+         if (quartet_is_sp(shls, bas)) then
+            if (cartesian) then
+               ret = libcint_2e_rotaxis_cart(buf, shls, atm, natm, bas, nbas, env)
+            else
+               ret = libcint_2e_rotaxis_sph(buf, shls, atm, natm, bas, nbas, env)
+            end if
+            return
+         end if
+      end if
+#endif
       if (cartesian) then
          if (present(opt)) then
             ret = libcint_2e_cart(buf, shls, atm, natm, bas, nbas, env, opt)
@@ -272,6 +312,74 @@ contains
          end if
       end if
    end function two_electron_block
+
+   pure function quartet_is_sp(shls, bas) result(sp)
+      !! Whether every shell of a quartet is s, p or L
+      !!
+      !! What the rotated-axis path covers. An L shell carries `ANG_OF` 1 in
+      !! the fused view (`build_sp_view`), so the test is the same for it.
+      !! `shls` is 0-based, as libcint counts.
+      integer, intent(in) :: shls(4)
+      integer, intent(in) :: bas(:, :)
+      logical :: sp
+
+      sp = all(bas(LIBCINT_ANG_OF, shls + 1) <= 1)
+   end function quartet_is_sp
+
+   subroutine set_eri_path(name, error)
+      !! Choose the four-centre integral path for the run, by name
+      !!
+      !! 'rys' is the default and the only path a libcint build has;
+      !! 'rotaxis' takes the rotated-axis path on every s/p/L quartet and Rys
+      !! on the rest; 'auto' is 'rotaxis' where the build has it and 'rys'
+      !! otherwise. Case-insensitive. Refuses 'rotaxis' on a build without it
+      !! rather than quietly running Rys under that name.
+      character(len=*), intent(in) :: name
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: lowered
+      integer :: i
+
+      lowered = trim(adjustl(name))
+      do i = 1, len(lowered)
+         if (lowered(i:i) >= "A" .and. lowered(i:i) <= "Z") then
+            lowered(i:i) = achar(iachar(lowered(i:i)) + 32)
+         end if
+      end do
+
+      select case (lowered)
+      case ("rys")
+         eri_path = ERI_PATH_RYS
+      case ("rotaxis")
+         if (.not. ROTAXIS_AVAILABLE) then
+            call error%set(ERROR_VALIDATION, "keywords.scf.eri_path 'rotaxis' needs a "// &
+                           "build against libfint; this one links libcint, which has "// &
+                           "only the Rys path")
+            return
+         end if
+         eri_path = ERI_PATH_ROTAXIS
+      case ("auto")
+         if (ROTAXIS_AVAILABLE) then
+            eri_path = ERI_PATH_ROTAXIS
+         else
+            eri_path = ERI_PATH_RYS
+         end if
+      case default
+         call error%set(ERROR_VALIDATION, "unknown keywords.scf.eri_path '"//trim(name)// &
+                        "'. Accepted: rys, rotaxis, auto")
+      end select
+   end subroutine set_eri_path
+
+   pure function eri_path_name() result(name)
+      !! The path in force, spelled as the keyword spells it
+      character(len=:), allocatable :: name
+
+      if (eri_path == ERI_PATH_ROTAXIS) then
+         name = "rotaxis"
+      else
+         name = "rys"
+      end if
+   end function eri_path_name
 
    subroutine two_electron_optimizer(cartesian, opt, atm, natm, bas, nbas, env)
       !! The per-shell-pair precomputation, for the matching convention

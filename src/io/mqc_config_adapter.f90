@@ -445,6 +445,9 @@ contains
       if (allocated(mqc_config%guess_steps)) then
          driver_config%method_config%scf%guess_steps = mqc_config%guess_steps
       end if
+      if (allocated(mqc_config%scf_eri_path)) then
+         driver_config%method_config%scf%eri_path = mqc_config%scf_eri_path
+      end if
 
       ! Output control
       driver_config%skip_json_output = mqc_config%skip_json_output

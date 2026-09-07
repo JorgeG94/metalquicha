@@ -841,6 +841,12 @@ SCF Options
   only while the error is large and hand over to DIIS for the endgame, so naming
   one asks for a different opening and not a different endgame. See
   :ref:`accelerators` for when that is worth doing and how to tell it happened.
+- ``eri_path``: Which four-centre integral path the CPU backend takes
+  (default: ``rys``). ``rotaxis`` evaluates every quartet of s, p and L shells
+  by the rotated-axis McMurchie-Davidson path libfint carries and the rest by
+  Rys; ``auto`` is ``rotaxis`` on a libfint build and ``rys`` on a libcint
+  one. The two paths agree to about 1e-12 scaled and are not bit-identical.
+  A libcint build refuses ``rotaxis``.
 - ``density_fitting``: Fit J and K in the reference (default: false). Asked for
   explicitly rather than inferred from ``aux_basis`` being present.
 - ``level_shift``: Hartree added to the virtual orbitals before each
