@@ -61,9 +61,23 @@ The distance comparison also survives, restricted to the through-space terms,
 because a distance screen keeps the covalently bonded pairs for free (they are
 1.5 Angstrom apart) and comparing the two screens on terms both of them keep
 would flatter the cutoff for a reason that has nothing to do with screening.
+
+--dump-terms TAU answers the question the table raises but cannot show: *which*
+terms. It writes one row per interaction term at that threshold -- kept or
+dropped, protected or not, both deltas, and their difference -- and prints the
+ten largest of each to the screen. The column to read is `correction_ha`,
+delta_high - delta_low: the amount the low level misjudged that interaction by.
+That, and not delta_high, is what a dropped term costs. E(tau) leaves a dropped
+term at its low-level delta and the reference carries its high-level one, so the
+error is the sum of the corrections over the dropped terms alone. On a covalent
+partition the `protected` column is the one to read next to it: a protected term
+is kept whatever its delta, so its correction never reaches the error, and how
+large those corrections are is the price the policy would have paid had the
+screen been left to decide. TAU need not be one of --thresholds.
 """
 
 import argparse
+import csv
 import itertools
 import json
 import os
@@ -107,6 +121,15 @@ def parse_args(argv):
         action="store_true",
         help="screen the through-bond terms too, on delta alone -- the experiment "
              "that prices the protection rather than assuming it",
+    )
+    p.add_argument(
+        "--dump-terms",
+        type=float,
+        default=None,
+        metavar="TAU",
+        help="write the per-term corrections at this threshold to "
+             "screening_terms_tau<TAU>.csv, and print the largest of them. "
+             "Needs no run of its own and need not be one of --thresholds.",
     )
     p.add_argument(
         "--verify",
@@ -425,6 +448,11 @@ def main(args):
         "  through-bond terms this expansion cannot drop."
     )
 
+    # ---- optional: which terms, and what did dropping them cost? ---------
+    if args.dump_terms is not None:
+        term_dump(system, args, low_rows, high_rows, low_result, high_result,
+                  bonded_terms)
+
     # ---- the comparison the script exists for ----------------------------
     distance_table(system, args, low_rows, high_rows, low_result, high_result,
                    rows, bonded_terms)
@@ -585,6 +613,139 @@ def verify(system, args, low_result, low_rows, high_rows, high_result, high_kwar
         f"  error vs reference: "
         f"{(actual - high_result.energy) * HARTREE_TO_KCAL:+.6f} kcal/mol"
     )
+
+
+# ---------------------------------------------------------------------------
+#  which terms, and what the dropped ones cost
+# ---------------------------------------------------------------------------
+
+DUMP_PREAMBLE = (
+    "# Per-term corrections at one screening threshold.",
+    "# The screen keeps an interaction on |delta_low| > tau, and unless",
+    "# --screen-bonded was given it keeps every through-bond term as well",
+    "# (protected=1 below: a connected piece of the cut-bond graph, whose n-body",
+    "# term repairs a bond the partition broke rather than describing an",
+    "# interaction that could be neglected).",
+    "# The error of E(tau) against the full high-level reference is NOT the sum of",
+    "# the delta_high of the dropped terms: a dropped term is not missing from",
+    "# E(tau), it is still there at its low-level delta, and only the reference",
+    "# carries it at the high level. So each term's contribution to the error is",
+    "# correction = delta_high - delta_low, and E(tau) - E_ref = -sum over the",
+    "# DROPPED terms of correction.",
+    "# Sorted by |correction| descending: the top of the dropped rows is where the",
+    "# low level misjudged an interaction, which is the only place a screen can",
+    "# lose accuracy, and the protected rows are what the policy is buying.",
+    "# Monomers are not listed -- they are in every kept set, so their correction",
+    "# never reaches the error, and being the difference of two methods' absolute",
+    "# energies (caps included) they would head the sort and mean nothing by it.",
+)
+
+DUMP_COLUMNS = (
+    "monomers", "level", "distance", "kept", "protected",
+    "delta_low_ha", "delta_high_ha", "correction_ha", "correction_kcal",
+)
+
+
+def dump_terms(low_rows, high_rows, closed, tau, protected=frozenset()):
+    """Write one row per interaction term at `tau`, and return what was dropped.
+
+    `protected` is the through-bond set from `connected`, reported rather than
+    re-derived here -- the policy has one definition and this is not a second
+    one. Returns the path written and the sum of `correction` over the dropped
+    terms, in Hartree. Its negation is the error of E(tau) against the
+    reference, which the caller checks against the recombined total: the two are
+    the same quantity by two routes.
+    """
+    path = f"screening_terms_tau{tau:g}.csv"
+    entries = []
+    for key, low in low_rows.items():
+        if low.level < 2:
+            continue
+        high = high_rows[key]
+        entries.append((key, low, high, high.delta - low.delta))
+    entries.sort(key=lambda entry: -abs(entry[3]))
+
+    with open(path, "w", newline="") as handle:
+        for line in DUMP_PREAMBLE:
+            handle.write(line + "\n")
+        writer = csv.writer(handle)
+        writer.writerow(DUMP_COLUMNS)
+        for key, low, high, correction in entries:
+            writer.writerow([
+                "-".join(str(m) for m in key),
+                low.level,
+                "" if low.distance is None else f"{low.distance:.6f}",
+                1 if key in closed else 0,
+                1 if key in protected else 0,
+                f"{low.delta:.12e}",
+                f"{high.delta:.12e}",
+                f"{correction:.12e}",
+                f"{correction * HARTREE_TO_KCAL:.8f}",
+            ])
+
+    dropped = sum(e[3] for e in entries if e[0] not in closed)
+    print(f"\n  wrote {path}: {len(entries)} interaction terms, "
+          f"{sum(1 for e in entries if e[0] in closed)} kept "
+          f"({sum(1 for e in entries if e[0] in protected)} of them through-bond), "
+          f"{sum(1 for e in entries if e[0] not in closed)} dropped")
+    top_corrections(" largest corrections among the KEPT terms",
+                    [e for e in entries if e[0] in closed], protected)
+    top_corrections(" largest corrections among the DROPPED terms -- the error",
+                    [e for e in entries if e[0] not in closed], protected)
+    print(f"\n  dropped corrections sum to {dropped:+.10f} Ha "
+          f"({-dropped * HARTREE_TO_KCAL:+.6f} kcal/mol of error, sign flipped "
+          "because\n  a dropped term keeps its low-level delta rather than "
+          "vanishing)")
+    return path, dropped
+
+
+def top_corrections(title, entries, protected, limit=10):
+    """The head of one half of the dump, or a line saying that half is empty."""
+    print(f"\n {title}:")
+    if not entries:
+        print("    (none)")
+        return
+    print("    monomers      lvl  bond   delta_low       delta_high      "
+          "correction [kcal/mol]")
+    for key, low, high, correction in entries[:limit]:
+        print(f"    {'-'.join(str(m) for m in key):<12s}  {low.level:>3d}  "
+              f"{'yes' if key in protected else ' no':>4s}   "
+              f"{low.delta:+.6e}  {high.delta:+.6e}  "
+              f"{correction * HARTREE_TO_KCAL:+14.6f}")
+    if len(entries) > limit:
+        print(f"    ... and {len(entries) - limit} more")
+
+
+def term_dump(system, args, low_rows, high_rows, low_result, high_result,
+              bonded_terms):
+    """The dump at --dump-terms, and the identity it has to satisfy."""
+    tau = args.dump_terms
+    passed = {t.monomers for t in low_rows.values() if t.level > 1 and abs(t.delta) > tau}
+    # The same policy as the table above, taken from the same set rather than
+    # recomputed: through-bond terms are kept whatever their delta unless
+    # --screen-bonded says otherwise.
+    kept = passed if args.screen_bonded else passed | bonded_terms
+    # Closed here rather than looked up, so the threshold dumped need not be one
+    # of the ones tabulated above: closing a kept set costs nothing.
+    closed = close(system, args.level, kept)
+    print(f"\n[dump] tau={tau:g}: {len(closed)} terms kept (closed under subsets)"
+          f"{'' if args.screen_bonded else ', through-bond terms protected'}")
+    _path, dropped = dump_terms(low_rows, high_rows, closed, tau, bonded_terms)
+
+    total = recombine(low_result.energy, low_rows, high_rows, closed)
+    err = total - high_result.energy
+    # An identity, not a measurement: the same two breakdowns reached by two
+    # routes. Anything above rounding here is a bug in this script -- most
+    # likely a kept set that the dump and the recombination disagree about --
+    # and nothing to do with the screen, the caps or the chemistry.
+    print(f"  E(tau) - E_ref  = {err * HARTREE_TO_KCAL:+.6f} kcal/mol; "
+          f"identity residual {(err + dropped) * HARTREE_TO_KCAL:+.3e} kcal/mol")
+    # 1e-9 Ha rather than zero only because both sides are sums of thousands of
+    # doubles taken in different orders; a real disagreement is many orders above
+    # it, and nothing physical lives down there.
+    if abs(err + dropped) > 1e-9:
+        print("  WARNING: those two disagree. The dump and the recombination are "
+              "reading different kept sets; the dump is wrong, not the screen.")
 
 
 def report_unconverged(result, label):
