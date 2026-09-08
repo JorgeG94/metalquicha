@@ -141,10 +141,67 @@ if(NOT TARGET "jsonfortran::jsonfortran")
   list(APPEND libraries_to_link jsonfortran::jsonfortran)
 endif()
 
-find_package(
-  OpenMP
-  COMPONENTS Fortran
-  REQUIRED)
+# LFortran: answer FindOpenMP's questions, because it does not know how to ask.
+#
+# CMake's FindOpenMP carries a table of per-compiler OpenMP flags and has no
+# entry for LFortran, so the flag search comes back empty and the REQUIRED find
+# below fails before anything is compiled. LFortran does support OpenMP -- the
+# flag is `--openmp` -- so the fix is to fill in the row rather than to make
+# OpenMP optional: `omp_lib` is used in twenty-odd modules here and the `!$omp`
+# directives are not decoration.
+#
+# The runtime is the other half. `--openmp` makes LFortran's driver link
+# `-lomp`, LLVM's runtime, which the conda toolchain does not ship; libgomp is
+# what is there, and it resolves the same symbols. So the flag is attached to
+# compilation only and the library is named explicitly, which is exactly the
+# shape FindOpenMP already uses for every other compiler:
+# `OpenMP_Fortran_LIB_NAMES` plus one `OpenMP_<name>_LIBRARY` per entry. Set
+# them as cache variables and FindOpenMP skips its own detection and believes
+# these.
+#
+# Override `OpenMP_Fortran_FLAGS` or `OpenMP_omp_LIBRARY` on the command line
+# for an LFortran built against LLVM's runtime instead.
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran" AND NOT MQC_ENABLE_SERIAL)
+  if(NOT DEFINED OpenMP_Fortran_FLAGS)
+    set(OpenMP_Fortran_FLAGS
+        "--openmp"
+        CACHE STRING "Fortran compiler flags for OpenMP parallelization")
+  endif()
+  find_library(
+    OpenMP_gomp_LIBRARY
+    NAMES gomp omp
+    HINTS ENV CONDA_PREFIX
+    PATH_SUFFIXES lib lib64
+    DOC "OpenMP runtime linked into LFortran builds")
+  if(NOT DEFINED OpenMP_Fortran_LIB_NAMES)
+    set(OpenMP_Fortran_LIB_NAMES
+        "gomp"
+        CACHE STRING "Fortran compiler libraries for OpenMP parallelization")
+  endif()
+  # Told, not detected: the version-probe program FindOpenMP would compile to
+  # decide these does not survive LFortran, and `use omp_lib` does work.
+  set(OpenMP_Fortran_HAVE_OMPLIB_MODULE
+      TRUE
+      CACHE BOOL INTERNAL "")
+  set(OpenMP_Fortran_HAVE_OMPLIB_HEADER
+      FALSE
+      CACHE BOOL INTERNAL "")
+  mark_as_advanced(OpenMP_Fortran_FLAGS OpenMP_Fortran_LIB_NAMES
+                   OpenMP_gomp_LIBRARY)
+endif()
+
+if(MQC_ENABLE_SERIAL)
+  # No OpenMP at all -- not even the search, which is REQUIRED and would stop a
+  # configure on a toolchain that has none. `compat/` supplies the `omp_lib` the
+  # sources still `use`, so nothing under src/ or backends/ changes; see
+  # compat/omp_lib_serial.f90.
+  add_subdirectory(compat)
+else()
+  find_package(
+    OpenMP
+    COMPONENTS Fortran
+    REQUIRED)
+endif()
 
 add_subdirectory(src)
 
@@ -198,8 +255,10 @@ endif()
 set_target_properties(${main_lib} PROPERTIES Fortran_MODULE_DIRECTORY
                                              ${CMAKE_BINARY_DIR}/modules)
 
-list(APPEND libraries_to_link pic::pic pic-mpi::pic-mpi pic-blas::pic-blas
-     OpenMP::OpenMP_Fortran)
+list(APPEND libraries_to_link pic::pic pic-mpi::pic-mpi pic-blas::pic-blas)
+if(NOT MQC_ENABLE_SERIAL)
+  list(APPEND libraries_to_link OpenMP::OpenMP_Fortran)
+endif()
 
 if(MQC_ENABLE_TBLITE)
   list(APPEND libraries_to_link tblite::tblite)
