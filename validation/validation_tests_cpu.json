@@ -4727,6 +4727,14 @@
             "reference_note": "reference is this program's own EFMO total, same 1e-12 build and same tolerance reasoning as the prism case. rcut 2.0 puts all fifteen pairs in the quantum list, so this case pins the fragment sum, the dimer corrections and the induction with no effective-fragment term at all -- the complement of the prism deck. GAMESS gives -456.000949506, 1.56e-4 Ha away, all of it the induction damping described there. That last clause is Phase 3's attribution and Phase 4 showed it to be only partly right; see efmo_prism_rcut1_damped."
         },
         {
+            "name": "EFMO/RI-MP2 water trimer 6-31G rcut 2.0 (CPU)",
+            "input": "inputs/cpu/mqc/efmo/efmo_w3_rimp2.json",
+            "expected_energy": -228.354320154232,
+            "tolerance": 1e-08,
+            "type": "fragmented",
+            "reference_note": "reference is this program's own EFMO/RI-MP2 total. No other code computes this number: GAMESS's EFMO/RI-MP2 uses its own fitting basis handling and PySCF has no EFMO, so what pins it is the pair of identities in test_mqc_czt_efmo, which are exact by construction -- on two fragments EFMO/RI-MP2 equals the dimer's own in-vacuo RI-MP2 energy, and with every pair quantum it equals the RI-MP2 many-body pair sum plus the induction no pair holds, each against an independently driven SCF and fitted MP2. The deck is the water trimer of w3.xyz at rcut 2.0, which splits 2 quantum / 1 effective, so both halves of eq 6 carry something and the correlated half is only the quantum one: the fragment potentials, the far pair and the induction are Hartree-Fock constructions and do not move when model.method changes. Of the total, -0.383415520 is monomer correlation and -0.000528358 the correlation in the quantum dimer correction. The Hartree-Fock energy of the same deck is -227.970376276."
+        },
+        {
             "name": "EFP2 water dimer 6-31G* (CPU)",
             "input": "inputs/cpu/mqc/efp/water_dimer_efp.json",
             "expected_energy": 0.0030795778,

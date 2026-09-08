@@ -18,7 +18,7 @@ module mqc_czt_bridge
    use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED, &
                                scf_not_converged_message
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_elements, only: element_number_to_symbol
+   use mqc_elements, only: element_number_to_symbol, core_orbital_count
    use mqc_memory, only: available_memory_bytes
    use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN, MAX_LINE_LENGTH, &
                                  ERI_CORE_BUDGET_CAP, ERI_CORE_BUDGET_SHARE, &
@@ -63,7 +63,7 @@ module mqc_czt_bridge
    private
 
    public :: run_czt_hf
-   public :: core_orbital_count   !! the terco backend counts its frozen core the same way
+   public :: core_orbital_count   !! the terco backend counts its frozen core the same way, and EFMO its fragments'
    public :: run_czt_mcscf
    public :: run_czt_fmo
    public :: run_czt_efmo
@@ -645,7 +645,8 @@ contains
                            scf_grad_tol, guess, energy, terms, n_qm_pairs, n_efp_pairs, &
                            error, verbose, aux_basis, vdwscl, quadrupole_blocks, &
                            dynamic_tol, dynamic_maxiter, response, &
-                           allow_crap_response, response_batch)
+                           allow_crap_response, response_batch, &
+                           correlation, corr_aux_basis, freeze_core, n_frozen_core)
       !! One effective fragment molecular orbital energy, with its breakdown
       !!
       !! Options arrive as plain scalars rather than the backend's own type, so
@@ -699,6 +700,14 @@ contains
       integer, intent(in), optional :: response
       logical, intent(in), optional :: allow_crap_response
       integer, intent(in), optional :: response_batch
+      integer, intent(in), optional :: correlation
+         !! `EFMO_CORR_NONE`, `EFMO_CORR_MP2` or `EFMO_CORR_RI_MP2`: what runs
+         !! on top of every monomer and near-dimer Hartree-Fock reference.
+         !! Absent is none, which is the Phase 3 energy exactly.
+      character(len=*), intent(in), optional :: corr_aux_basis
+         !! `model.aux_basis`, the fitting set `EFMO_CORR_RI_MP2` needs.
+      logical, intent(in), optional :: freeze_core
+      integer, intent(in), optional :: n_frozen_core
 
       type(efmo_options_t) :: opts
       type(efmo_result_t) :: res
@@ -734,6 +743,10 @@ contains
       if (present(response)) opts%response = response
       if (present(allow_crap_response)) opts%allow_crap_response = allow_crap_response
       if (present(response_batch)) opts%response_batch = response_batch
+      if (present(correlation)) opts%correlation = correlation
+      if (present(corr_aux_basis)) opts%corr_aux_basis = corr_aux_basis
+      if (present(freeze_core)) opts%freeze_core = freeze_core
+      if (present(n_frozen_core)) opts%n_frozen_core = n_frozen_core
 
       call run_efmo(atomic_numbers, symbols, coordinates, owner, fragment_charges, &
                     opts, res, error)
@@ -3099,35 +3112,6 @@ contains
                               ghost=ghost_of(fragment), &
                               force_cartesian=settings%cartesian)
    end subroutine correlation_aux_basis
-
-   pure function core_orbital_count(atomic_numbers) result(n_core)
-      !! How many orbitals a frozen core leaves out, summed over the atoms
-      !!
-      !! The count per element is the number of filled shells below the valence
-      !! one: none for H and He, the 1s for Li through Ne, and so on -- the same
-      !! convention PySCF and most others use by default. An energy computed
-      !! with a different core is not comparable to a published one.
-      integer, intent(in) :: atomic_numbers(:)
-      integer :: n_core
-
-      integer :: i, z
-
-      n_core = 0
-      do i = 1, size(atomic_numbers)
-         z = atomic_numbers(i)
-         if (z <= 10) then
-            if (z > 2) n_core = n_core + 1   ! 1s, and nothing at all for H and He
-         else if (z <= 18) then
-            n_core = n_core + 5        ! 1s 2s 2p
-         else if (z <= 36) then
-            n_core = n_core + 9        ! + 3s 3p
-         else if (z <= 54) then
-            n_core = n_core + 18       ! + 3d 4s 4p
-         else
-            n_core = n_core + 27       ! + 4d 5s 5p
-         end if
-      end do
-   end function core_orbital_count
 
    pure function ghost_of(fragment) result(ghost)
       !! A fragment's ghost mask, or all-false when it has none

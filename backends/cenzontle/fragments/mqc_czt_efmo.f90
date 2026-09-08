@@ -69,9 +69,13 @@ module mqc_czt_efmo
                                  pair_polarization_energy
    use mqc_czt_efp_interaction, only: efp_system_t, build_efp_system, polarization_energy
    use mqc_czt_efmo_pairs, only: efmo_split_pairs, efmo_pair_distance
+   use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2
+   use mqc_elements, only: core_orbital_count
+   use mqc_program_limits, only: EFMO_CORR_NONE, EFMO_CORR_MP2, EFMO_CORR_RI_MP2
    implicit none
    private
 
+   public :: EFMO_CORR_NONE, EFMO_CORR_MP2, EFMO_CORR_RI_MP2
    public :: efmo_options_t
    public :: efmo_pair_t
    public :: efmo_result_t
@@ -100,6 +104,28 @@ module mqc_czt_efmo
          !! the two are the same solver on different systems and damping one
          !! without the other would leave the difference in the many-body
          !! remainder.
+      integer :: correlation = EFMO_CORR_NONE
+         !! `model.method`: `hf` leaves this alone, `mp2` and `ri-mp2` set it.
+         !!
+         !! **The whole of what a correlated EFMO is.** Eq 6 says nothing about
+         !! the level of theory: `E_I^0` and `E_IJ^0` are in-vacuo energies of
+         !! whatever model, so running MP2 after each of those SCFs turns the
+         !! fragment sum and every near-dimer correction correlated and leaves
+         !! the effective-fragment half exactly as it was. The far pairs and
+         !! the induction come from the potentials, which are built from the
+         !! Hartree-Fock density either way -- that is the method, not an
+         !! approximation taken here: MAKEFP is a Hartree-Fock construction.
+      character(len=64) :: corr_aux_basis = ""
+         !! `model.aux_basis`, the fitting set `EFMO_CORR_RI_MP2` uses. Distinct
+         !! from `aux_basis` above, which fits MAKEFP's response Hessian: one is
+         !! a correlation-fitting set and the other a Coulomb-fitting one, and
+         !! a run may want both or neither.
+      logical :: freeze_core = .true.
+      integer :: n_frozen_core = -1
+         !! `keywords.correlation`. A negative count is derived per fragment
+         !! from its elements, which makes the dimer's core the sum of its two
+         !! monomers' -- so `E_IJ - E_I - E_J` differences the same set of
+         !! correlated orbitals on both sides.
       character(len=32) :: guess = "auto"
          !! Initial guess for every SCF here, monomer and dimer alike.
       character(len=64) :: aux_basis = ""
@@ -170,6 +196,12 @@ module mqc_czt_efmo
          !! The four EFP terms, summed over the effective dimers
       real(dp) :: polarization_total = 0.0_dp
          !! `E_pol^total`, induction over every fragment at once
+      real(dp) :: monomer_correlation = 0.0_dp
+      real(dp) :: dimer_correlation = 0.0_dp
+         !! How much of `monomer_sum` and `dimer_correction` above is
+         !! correlation rather than Hartree-Fock. Reported, not summed: the two
+         !! sums already hold them, because a correlated `E_I^0` *is* the
+         !! monomer energy of eq 6. Zero on a Hartree-Fock run.
       real(dp), allocatable :: monomer_energy(:)   !! `E_I^0`
       type(efmo_pair_t), allocatable :: pairs(:)
          !! Every pair, quantum ones first, each carrying its `R_IJ`
@@ -203,6 +235,7 @@ contains
       integer, allocatable :: qm_pairs(:, :), efp_pairs(:, :)
       integer, allocatable :: idx_i(:), idx_j(:)
       integer, allocatable :: count_of(:)
+      real(dp), allocatable :: monomer_corr(:)
       integer :: n_atoms, n_frag, k, p
 
       n_atoms = size(atomic_numbers)
@@ -232,6 +265,7 @@ contains
       if (error%has_error()) return
 
       allocate (res%monomer_energy(n_frag), source=0.0_dp)
+      allocate (monomer_corr(n_frag), source=0.0_dp)
       allocate (frags(n_frag), shifts(3, n_frag))
       ! Every potential is built at the geometry it is used at, so no fragment
       ! is placed and no rigid transform is looked for. That is why
@@ -239,9 +273,11 @@ contains
       shifts = 0.0_dp
 
       call build_potentials(atomic_numbers, symbols, coordinates, owner, count_of, &
-                            fragment_charges, opts, frags, res%monomer_energy, error)
+                            fragment_charges, opts, frags, res%monomer_energy, &
+                            monomer_corr, error)
       if (error%has_error()) return
       res%monomer_sum = sum(res%monomer_energy)
+      res%monomer_correlation = sum(monomer_corr)
 
       call efmo_split_pairs(owner, atomic_numbers, coordinates, opts%rcut, &
                             qm_pairs, efp_pairs, error)
@@ -251,7 +287,8 @@ contains
       allocate (res%pairs(res%n_qm_pairs + res%n_efp_pairs))
 
       call quantum_dimers(atomic_numbers, symbols, coordinates, owner, &
-                          fragment_charges, qm_pairs, frags, shifts, opts, res, error)
+                          fragment_charges, qm_pairs, frags, shifts, opts, &
+                          monomer_corr, res, error)
       if (error%has_error()) return
 
       ! The far half. `efp_pair_terms` takes the pair list directly, so the near
@@ -338,7 +375,7 @@ contains
    end function gather
 
    subroutine build_potentials(z, symbols, xyz, owner, count_of, charges, opts, &
-                               frags, monomer_energy, error)
+                               frags, monomer_energy, correlation, error)
       !! One MAKEFP per fragment, and `E_I^0` off the same SCF
       !!
       !! **The whole cost of an EFMO run is here.** A potential is an SCF, a
@@ -352,13 +389,20 @@ contains
       type(efmo_options_t), intent(in) :: opts
       type(efp_fragment_t), intent(out) :: frags(:)
       real(dp), intent(out) :: monomer_energy(:)
+      real(dp), intent(out) :: correlation(:)
+         !! How much of each `monomer_energy` is correlation. Reported, and
+         !! differenced out of each dimer's so the dimer correction can be
+         !! reported the same way.
       type(error_t), intent(inout) :: error
 
       type(efp_potential_t) :: pot
+      type(rhf_result_t) :: scf
       integer, allocatable :: idx(:)
       character(len=:), allocatable :: aux
+      real(dp) :: e_corr
       integer :: k
 
+      correlation = 0.0_dp
       do k = 1, size(count_of)
          idx = gather(owner, k)
          call logger%verbose("  efmo: fragment "//to_char(k)//" of "// &
@@ -381,7 +425,7 @@ contains
                                     dynamic_maxiter=opts%dynamic_maxiter, &
                                     response=opts%response, &
                                     allow_crap_response=opts%allow_crap_response, &
-                                    response_batch=opts%response_batch)
+                                    response_batch=opts%response_batch, scf_out=scf)
          else
             call make_efp_potential(z(idx), symbols(idx), xyz(:, idx), trim(opts%basis), &
                                     "FRAG"//to_char(k), pot, error, charge=charges(k), &
@@ -396,7 +440,7 @@ contains
                                     dynamic_maxiter=opts%dynamic_maxiter, &
                                     response=opts%response, &
                                     allow_crap_response=opts%allow_crap_response, &
-                                    response_batch=opts%response_batch)
+                                    response_batch=opts%response_batch, scf_out=scf)
          end if
          if (error%has_error()) return
 
@@ -406,11 +450,92 @@ contains
          call potential_to_fragment(pot, frags(k), error)
          call pot%destroy()
          if (error%has_error()) return
+
+         ! And the correlation on those same orbitals, when the deck asked for
+         ! it. **On the SCF MAKEFP already ran**, which is why `scf_out` exists:
+         ! a second SCF here would converge to the same place and cost as much
+         ! as everything after it.
+         if (opts%correlation /= EFMO_CORR_NONE) then
+            call fragment_correlation(z(idx), symbols(idx), xyz(:, idx), &
+                                      sum(z(idx)) - charges(k), scf, opts, &
+                                      e_corr, error)
+            if (error%has_error()) return
+            monomer_energy(k) = monomer_energy(k) + e_corr
+            correlation(k) = e_corr
+         end if
       end do
    end subroutine build_potentials
 
+   subroutine fragment_correlation(z, symbols, xyz, nelec, scf, opts, energy, error)
+      !! One fragment's MP2 correlation energy, on orbitals already converged
+      !!
+      !! The molecule is rebuilt rather than passed in, because the two callers
+      !! get theirs from different places -- `make_efp_potential` builds and
+      !! destroys its own -- and rebuilding it is a basis-set lookup against an
+      !! SCF. **Cartesian**, the same as every SCF in this module and for the
+      !! same reason: these orbitals came from a Cartesian molecule and an MO
+      !! transform against a spherical one would be nonsense rather than a
+      !! small error.
+      integer, intent(in) :: z(:)
+      character(len=2), intent(in) :: symbols(:)
+      real(dp), intent(in) :: xyz(:, :)
+      integer, intent(in) :: nelec
+      type(rhf_result_t), intent(in) :: scf
+      type(efmo_options_t), intent(in) :: opts
+      real(dp), intent(out) :: energy
+      type(error_t), intent(inout) :: error
+
+      type(czt_molecule_t) :: mol, aux
+      type(mp2_result_t) :: mp2
+      integer :: frozen
+
+      energy = 0.0_dp
+      if (opts%correlation == EFMO_CORR_NONE) return
+
+      frozen = opts%n_frozen_core
+      if (frozen < 0) frozen = core_orbital_count(z)
+      if (.not. opts%freeze_core) frozen = 0
+
+      call build_czt_molecule(z, symbols, xyz, trim(opts%basis), mol, error, &
+                              force_cartesian=.true.)
+      if (error%has_error()) return
+
+      if (opts%correlation == EFMO_CORR_RI_MP2) then
+         if (len_trim(opts%corr_aux_basis) == 0) then
+            call error%set(ERROR_VALIDATION, "efmo: a fitted correlation needs an "// &
+                           "auxiliary basis. Set model.aux_basis, or ask for 'mp2' "// &
+                           "rather than 'ri-mp2'.")
+            call mol%destroy()
+            return
+         end if
+         ! The fitting set in the orbital basis's angular form, as everywhere
+         ! else here: libcint builds all three centres of a fitting integral in
+         ! one form, and the orbital basis is Cartesian because MAKEFP's is.
+         call build_czt_molecule(z, symbols, xyz, trim(opts%corr_aux_basis), aux, &
+                                 error, force_cartesian=.true.)
+         if (error%has_error()) then
+            call mol%destroy()
+            return
+         end if
+         call run_czt_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, &
+                             nelec/2, scf%energy, mp2, error, n_frozen=frozen)
+         call aux%destroy()
+      else
+         call run_czt_mp2(mol, scf%orbitals, scf%orbital_energies, &
+                          nelec/2, scf%energy, mp2, error, n_frozen=frozen)
+      end if
+      call mol%destroy()
+      if (error%has_error()) return
+
+      ! `same_spin + opposite_spin`, unscaled. Spin-component scaling is not
+      ! offered: SCS-MP2 fragment energies would be a different method and the
+      ! deck names it separately, so a run that asked for it is refused above
+      ! rather than silently given plain MP2.
+      energy = mp2%same_spin + mp2%opposite_spin
+   end subroutine fragment_correlation
+
    subroutine quantum_dimers(z, symbols, xyz, owner, charges, qm_pairs, &
-                             frags, shifts, opts, res, error)
+                             frags, shifts, opts, monomer_corr, res, error)
       !! Every near pair: one in-vacuo dimer SCF, and its pair induction
       integer, intent(in) :: z(:)
       character(len=2), intent(in) :: symbols(:)
@@ -420,11 +545,14 @@ contains
       type(efp_fragment_t), intent(in) :: frags(:)
       real(dp), intent(in) :: shifts(:, :)
       type(efmo_options_t), intent(in) :: opts
+      real(dp), intent(in) :: monomer_corr(:)
+         !! Each `E_I^0`'s correlation part, so the dimer correction's own can
+         !! be reported beside it.
       type(efmo_result_t), intent(inout) :: res
       type(error_t), intent(inout) :: error
 
       integer, allocatable :: idx_i(:), idx_j(:), idx(:)
-      real(dp) :: e_dimer, e_pol
+      real(dp) :: e_dimer, e_pol, e_corr
       integer :: k, a, b
 
       do k = 1, size(qm_pairs, 2)
@@ -444,8 +572,10 @@ contains
          call logger%verbose("  efmo: dimer "//to_char(a)//"-"//to_char(b)// &
                              ", "//to_char(size(idx))//" atoms")
          call dimer_energy(z(idx), symbols(idx), xyz(:, idx), charges(a) + charges(b), &
-                           opts, e_dimer, error)
+                           opts, e_dimer, e_corr, error)
          if (error%has_error()) return
+         res%dimer_correlation = res%dimer_correlation + e_corr &
+                                 - monomer_corr(a) - monomer_corr(b)
 
          ! The same induction solver on the two fragments alone -- the same
          ! screening, the same static field rank, the same tolerance as the
@@ -464,7 +594,7 @@ contains
       end do
    end subroutine quantum_dimers
 
-   subroutine dimer_energy(z, symbols, xyz, charge, opts, energy, error)
+   subroutine dimer_energy(z, symbols, xyz, charge, opts, energy, correlation, error)
       !! One dimer's restricted Hartree-Fock energy, in vacuo
       !!
       !! Cartesian, to match the monomer SCFs `make_efp_potential` ran; see the
@@ -477,6 +607,9 @@ contains
       integer, intent(in) :: charge
       type(efmo_options_t), intent(in) :: opts
       real(dp), intent(out) :: energy
+      real(dp), intent(out) :: correlation
+         !! The correlation part of `energy`, which already holds it. Zero on a
+         !! Hartree-Fock run.
       type(error_t), intent(inout) :: error
 
       type(czt_molecule_t) :: mol
@@ -485,6 +618,7 @@ contains
       integer :: guess_kind, nelec
 
       energy = 0.0_dp
+      correlation = 0.0_dp
       nelec = sum(z) - charge
       if (nelec < 2 .or. mod(nelec, 2) /= 0) then
          call error%set(ERROR_VALIDATION, "efmo: a dimer with "//to_char(nelec)// &
@@ -516,6 +650,14 @@ contains
          return
       end if
       energy = scf%energy
+
+      ! The same correlation step the monomers got, on the dimer's own
+      ! orbitals. `E_IJ^0 - E_I^0 - E_J^0` is then a difference of three
+      ! energies of one model, which is the only reading under which it is an
+      ! interaction energy.
+      call fragment_correlation(z, symbols, xyz, nelec, scf, opts, correlation, error)
+      if (error%has_error()) return
+      energy = energy + correlation
    end subroutine dimer_energy
 
    subroutine total_polarization(frags, shifts, damping, energy, error)
@@ -587,6 +729,14 @@ contains
       call logger%info("  EFP dimers          exchange rep.    "//to_char(res%far_exchange_repulsion))
       call logger%info("  EFP dimers          charge transfer  "//to_char(res%far_charge_transfer))
       call logger%info("  all fragments       E_pol^total      "//to_char(res%polarization_total))
+      if (opts%correlation /= EFMO_CORR_NONE) then
+         ! Inside the two sums above, not beside them: a correlated `E_I^0` is
+         ! the monomer energy of eq 6 and not a term added to it.
+         call logger%info("    of which correlation, monomers  "// &
+                          to_char(res%monomer_correlation))
+         call logger%info("    of which correlation, QM dimers "// &
+                          to_char(res%dimer_correlation))
+      end if
       call logger%info("------------------------------------------------------------")
       call logger%info("  QM dimers "//to_char(res%n_qm_pairs)//", EFP dimers "// &
                        to_char(res%n_efp_pairs))

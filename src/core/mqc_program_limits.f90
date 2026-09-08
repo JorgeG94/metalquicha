@@ -14,6 +14,19 @@ module mqc_program_limits
    !! Maximum MBE truncation order (1-body, 2-body, ..., N-body)
    !! Higher orders require factorial growth in fragment combinations
 
+   integer, parameter, public :: EFMO_CORR_NONE = 0
+   integer, parameter, public :: EFMO_CORR_MP2 = 1
+   integer, parameter, public :: EFMO_CORR_RI_MP2 = 2
+   !! What an EFMO run puts on top of every fragment's Hartree-Fock reference.
+   !!
+   !! Here rather than in the backend because the driver has to choose one from
+   !! `model.method` and hand it across, and the driver compiles against the
+   !! stub bridge as readily as against the real one.
+   !!
+   !! **The choice is per run and not per fragment.** `E_IJ^0 - E_I^0 - E_J^0`
+   !! is a difference of three energies, and is an interaction energy only if
+   !! all three are the same model.
+
    integer, parameter, public :: N_EFP_TERMS = 6
    !! Terms in an EFP2 interaction energy: electrostatics, polarization,
    !! exchange repulsion, dispersion, charge transfer, and their total.

@@ -129,6 +129,24 @@ Keywords
        again, which is GAMESS's own guard. **The default is off rather than
        0.6** -- see the induction paragraph under *Against GAMESS*, which
        measures what the key does and what it does not.
+   * - ``model.method``
+     - --
+     - ``"hf"``, ``"mp2"`` or ``"ri-mp2"``. The correlation runs on the
+       orbitals each monomer and each quantum dimer already converged to, so
+       :math:`E_I^0` and :math:`E_{IJ}^0` become correlated energies and
+       nothing else in eq 6 moves: the fragment potentials, the far pairs and
+       the induction are Hartree-Fock constructions, MAKEFP being one. A
+       Kohn-Sham or coupled-cluster method is refused by name.
+   * - ``model.aux_basis``
+     - --
+     - The correlation-fitting (RIFIT) set ``"ri-mp2"`` needs. Required with
+       that method and unread otherwise.
+   * - ``keywords.correlation.freeze_core``
+     - ``true``
+     - Whether each fragment's core orbitals sit out the MP2. The count is
+       derived per fragment from its elements, so a dimer's core is the sum of
+       its two monomers' and :math:`E_{IJ} - E_I - E_J` differences the same
+       set of correlated orbitals on both sides.
    * - ``keywords.efp.*``
      - --
      - The MAKEFP settings -- the response solve and the screening grid -- passed
@@ -147,6 +165,30 @@ a whole-system run and is not settable: the near-dimer correction is
 :math:`E_{IJ}^0 - E_I^0 - E_J^0`, four orders smaller than any of the three, so a
 looser convergence leaves it with no significant figures. A looser EFMO would not
 be a cheaper one either -- the cost is MAKEFP.
+
+Correlated fragments
+--------------------
+
+``model.method: "ri-mp2"`` (or ``"mp2"``) runs the correlation on every
+monomer's and every quantum dimer's converged orbitals, which is the
+EFMO/RI-MP2 of the 2024 paper. The monomer's MP2 uses the SCF
+``make_efp_potential`` already ran -- there is no second determinant -- and the
+dimer's uses its own. What comes back is eq 6 with correlated :math:`E_I^0` and
+:math:`E_{IJ}^0` and every other term unchanged:
+
+.. code-block:: json
+
+   "model": {"method": "ri-mp2", "basis": "6-31g", "aux_basis": "cc-pvdz-rifit"}
+
+Two identities pin it, both exact rather than approximate and both in
+``test/test_mqc_czt_efmo.f90``: on two fragments EFMO/RI-MP2 is the dimer's own
+in-vacuo RI-MP2 energy, and with every pair quantum it is the RI-MP2 many-body
+pair sum plus the induction no pair holds. Switching the correlation off
+reproduces the Hartree-Fock total exactly.
+
+The run reports how much of the fragment sum and of the dimer correction is
+correlation. Those are reported *inside* the two sums and not beside them: a
+correlated :math:`E_I^0` is the monomer energy of eq 6, not a term added to it.
 
 Output
 ------
@@ -269,9 +311,11 @@ What is not here yet
 
 * **One rank.** The monomers and dimers are not distributed; MAKEFP is the
   monomer's cost and is what a parallel version would balance.
-* **Restricted Hartree-Fock fragments only.** A correlated :math:`E_I^0` runs on
-  the same orbitals afterwards and is not implemented; any other ``model.method``
-  is refused by name rather than silently run as Hartree-Fock.
+* **Kohn-Sham fragments.** MAKEFP is a Hartree-Fock construction, so a
+  density-functional :math:`E_I^0` would need a potential built from a
+  different density; refused by name. So is coupled cluster, and so is
+  spin-component-scaled MP2, which would be a different method from the one
+  the paper runs.
 * **Whole molecules only.** A partition that cuts a covalent bond is refused: a
   hydrogen cap's multipoles would act on the partner across the cut, and the
   adjusted frozen orbital route FMO uses is not wired in here.

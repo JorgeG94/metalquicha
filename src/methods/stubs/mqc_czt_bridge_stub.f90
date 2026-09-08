@@ -204,7 +204,8 @@ contains
                            scf_grad_tol, guess, energy, terms, n_qm_pairs, n_efp_pairs, &
                            error, verbose, aux_basis, vdwscl, quadrupole_blocks, &
                            dynamic_tol, dynamic_maxiter, response, &
-                           allow_crap_response, response_batch)
+                           allow_crap_response, response_batch, &
+                           correlation, corr_aux_basis, freeze_core, n_frozen_core)
       !! No-op stand-in: EFMO needs the CPU integral backend
       !!
       !! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from
@@ -241,6 +242,14 @@ contains
       integer, intent(in), optional :: response
       logical, intent(in), optional :: allow_crap_response
       integer, intent(in), optional :: response_batch
+      integer, intent(in), optional :: correlation
+         !! `EFMO_CORR_NONE`, `EFMO_CORR_MP2` or `EFMO_CORR_RI_MP2`: what runs
+         !! on top of every monomer and near-dimer Hartree-Fock reference.
+         !! Absent is none, which is the Phase 3 energy exactly.
+      character(len=*), intent(in), optional :: corr_aux_basis
+         !! `model.aux_basis`, the fitting set `EFMO_CORR_RI_MP2` needs.
+      logical, intent(in), optional :: freeze_core
+      integer, intent(in), optional :: n_frozen_core
 
       energy = 0.0_dp
       terms = 0.0_dp
@@ -262,6 +271,8 @@ contains
       if (present(quadrupole_blocks) .or. present(dynamic_tol)) return
       if (present(dynamic_maxiter) .or. present(response)) return
       if (present(allow_crap_response) .or. present(response_batch)) return
+      if (present(correlation) .or. present(freeze_core)) return
+      if (present(corr_aux_basis) .or. present(n_frozen_core)) return
    end subroutine run_czt_efmo
 
    subroutine run_czt_makefp(atomic_numbers, element_symbols, coordinates, &
