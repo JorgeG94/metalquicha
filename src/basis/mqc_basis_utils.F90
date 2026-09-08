@@ -71,8 +71,8 @@ contains
       !! 3. the basis_sets/ of the tree this binary was configured from, absent
       !!    in an fpm build, which has no configure step to learn it
       !!
-      !! 2 and 3 each bring their `neo/` subdirectory along, where the nuclear
-      !! basis sets live.
+      !! 2 and 3 each bring their `neo/` and `pople/` subdirectories along:
+      !! the nuclear basis sets, and the Pople sets the BSE lacks.
       character(len=:), allocatable :: directories(:)
 
       character(len=MAX_PATH) :: env_value
@@ -85,7 +85,7 @@ contains
       call get_environment_variable(BASIS_PATH_VARIABLE, env_value, env_length, status)
       if (status == 0 .and. env_length > 0) then
          start = 1
-         do while (start <= env_length .and. n < size(collected) - 4)
+         do while (start <= env_length .and. n < size(collected) - 6)
             colon = index(env_value(start:env_length), ":")
             if (colon == 0) then
                if (len_trim(env_value(start:env_length)) > 0) then
@@ -107,16 +107,25 @@ contains
       ! `neo/` holds the nuclear basis sets for quantum protons. They are
       ! tracked files, unlike the Basis Set Exchange bundle unpacked beside
       ! them, and a deck names them the way it names any other basis.
+      ! `neo/` holds the nuclear basis sets for quantum protons and `pople/`
+      ! the Pople sets the Basis Set Exchange does not carry (6-311++G(3df,2p),
+      ! the EFP-recommended basis, assembled by tools/basis/). Both are
+      ! tracked files, unlike the bundle unpacked beside them, and a deck
+      ! names them the way it names any other basis.
       n = n + 1
       collected(n) = "basis_sets"
       n = n + 1
       collected(n) = "basis_sets/neo"
+      n = n + 1
+      collected(n) = "basis_sets/pople"
 
       if (len(MQC_DEFAULT_BASIS_DIR) > 0) then
          n = n + 1
          collected(n) = MQC_DEFAULT_BASIS_DIR
          n = n + 1
          collected(n) = MQC_DEFAULT_BASIS_DIR//"/neo"
+         n = n + 1
+         collected(n) = MQC_DEFAULT_BASIS_DIR//"/pople"
       end if
 
       allocate (character(len=MAX_PATH) :: directories(n))

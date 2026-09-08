@@ -31,6 +31,10 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 BASIS_DIR = REPO / "basis_sets"
+#: Where a basis file may live: the BSE bundle unpacked into basis_sets/, or
+#: one of the tracked subdirectories -- `pople/` for the Pople sets the BSE
+#: lacks, `neo/` for nuclear basis sets. The same order the code searches.
+BASIS_SUBDIRS = ("", "pople", "neo")
 VALIDATION = REPO / "validation"
 INPUTS = VALIDATION / "inputs"
 XYZ_DIR = INPUTS / "sample_inputs"
@@ -223,6 +227,12 @@ SWEEPS = [
     ("cc-pvtz", ["h2", "lih", "beh2", "bh3", "nh3", "water", "hf", "ne", "ar"]),
     # diffuse functions
     ("aug-cc-pvdz", ["h2", "ch4", "nh3", "water", "hf", "ne", "h2s", "hcl"]),
+    # The EFP-recommended basis, which the Basis Set Exchange does not carry:
+    # assembled by tools/basis/make_6-311ppg_3df_2p.py and tracked under
+    # basis_sets/pople/. Diffuse s and sp, three d and an f on the heavy atoms,
+    # two p on hydrogen. Two molecules keep the f shells and the hydrogen
+    # (2p) in the suite without a sweep over every element.
+    ("6-311++g(3df,2p)", ["water", "nh3"]),
     # Karlsruhe contraction pattern, through d
     ("def2-svp", POLAR),
     # Karlsruhe, f shells on B-Ne and Al-Ar, and far cheaper than cc-pVTZ
@@ -1182,6 +1192,15 @@ def normalize_basis_name(name):
     """Mirror normalize_basis_name in src/basis/mqc_basis_utils.F90."""
     return name.lower().replace("*", "_st_").replace(" ", "")
 
+def basis_file(basis):
+    """The JSON file for a basis name, from the bundle or a tracked subdirectory."""
+    for sub in BASIS_SUBDIRS:
+        path = BASIS_DIR / sub / f"{normalize_basis_name(basis)}.json"
+        if path.exists():
+            return path
+    return BASIS_DIR / f"{normalize_basis_name(basis)}.json"
+
+
 
 #: the three angular forms, mirroring mqc_cgto.f90
 UNSET, SPHERICAL, CARTESIAN = "unset", "spherical", "cartesian"
@@ -1211,7 +1230,7 @@ def element_form(basis, symbol):
     """The angular form of one element, or UNSET if it has no shell above p."""
     from pyscf import gto
 
-    path = BASIS_DIR / f"{normalize_basis_name(basis)}.json"
+    path = basis_file(basis)
     with open(path) as fh:
         data = json.load(fh)
     shells = data["elements"][str(gto.charge(symbol))]["electron_shells"]
@@ -1248,7 +1267,7 @@ def bse_to_pyscf(basis, symbol):
     from pyscf import gto
 
     z = gto.charge(symbol)
-    path = BASIS_DIR / f"{normalize_basis_name(basis)}.json"
+    path = basis_file(basis)
     if not path.exists():
         raise SystemExit(f"missing basis file {path}; configure CMake to extract it")
     with open(path) as fh:

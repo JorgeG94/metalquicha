@@ -513,6 +513,18 @@
             "type": "unfragmented"
         },
         {
+            "name": "RHF H2O 6-311++g(3df,2p) (CPU)",
+            "input": "inputs/cpu/mqc/rhf/cpu_water_6-311++g(3df,2p).json",
+            "expected_energy": -76.05752003081,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RHF NH3 6-311++g(3df,2p) (CPU)",
+            "input": "inputs/cpu/mqc/rhf/cpu_nh3_6-311++g(3df,2p).json",
+            "expected_energy": -56.218537159454,
+            "type": "unfragmented"
+        },
+        {
             "name": "RHF H2 def2-svp (CPU)",
             "input": "inputs/cpu/mqc/rhf/cpu_h2_def2-svp.json",
             "expected_energy": -1.128906378489,
