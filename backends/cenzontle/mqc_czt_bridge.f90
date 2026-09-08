@@ -75,6 +75,7 @@ module mqc_czt_bridge
    public :: czt_backend_available
    public :: xc_available
    public :: ecp_backend_available
+   public :: czt_set_eri_path
       !! Re-exported so a caller that cannot see `mqc_czt_xc` can still ask
       !! whether a functional can be evaluated.
 
@@ -187,6 +188,20 @@ contains
 
       fits = 8.0_dp*real(nao, dp)**4 <= budget
    end function eri_fits_in_core
+
+   subroutine czt_set_eri_path(name, error)
+      !! Choose the four-centre integral path for the run; see `set_eri_path`
+      !!
+      !! Called once by the driver, on every rank, before any quartet is
+      !! evaluated. The choice is global to the backend rather than carried on
+      !! a settings object because every entry point here -- SCF, MakeFP,
+      !! SAPT, EFP -- builds Fock matrices through the one shim.
+      use mqc_czt_integrals, only: set_eri_path
+      character(len=*), intent(in) :: name
+      type(error_t), intent(inout) :: error
+
+      call set_eri_path(name, error)
+   end subroutine czt_set_eri_path
 
    pure function czt_backend_available() result(available)
       !! Whether this build can run an SCF on the CPU

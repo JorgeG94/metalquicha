@@ -43,6 +43,8 @@ contains
 
       testsuite = [ &
                   new_unittest("minimal_deck", test_minimal), &
+                  new_unittest("scf_eri_path_is_read_and_a_misspelling_refused", &
+                               test_scf_eri_path), &
                   new_unittest("fragments", test_fragments), &
                   new_unittest("connectivity_marks_broken_bonds", test_connectivity), &
                   new_unittest("no_fragments", test_no_fragments), &
@@ -143,6 +145,43 @@ contains
       text = '"symbols": ["H", "H"], "geometry": [0.0, 0.0, 0.0, 0.7, 0.0, 0.0], '// &
              '"molecular_charge": 0, "molecular_multiplicity": 1'
    end function two_atoms
+
+   subroutine test_scf_eri_path(error)
+      !! `keywords.scf.eri_path`: absent leaves it unset, a spelling is kept
+      !! lowercase, and anything else is refused at read time
+      type(error_type), allocatable, intent(out) :: error
+
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. allocated(config%scf_eri_path), &
+                 "a deck that says nothing must leave eri_path to the backend")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", &
+                      '"scf": {"eri_path": "RotAxis"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%scf_eri_path), "scf.eri_path was not read")
+      if (allocated(error)) return
+      call check(error, config%scf_eri_path == "rotaxis", &
+                 "scf.eri_path must be stored lowercase, got '"//config%scf_eri_path//"'")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", &
+                      '"scf": {"eri_path": "rotated"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a misspelled eri_path must be refused when the deck is read")
+      if (allocated(error)) return
+      call check(error, index(parse_error%get_message(), "eri_path") > 0, &
+                 "the refusal must name the key")
+   end subroutine test_scf_eri_path
 
    subroutine read_deck(config, parse_error)
       !! Read the scratch deck back

@@ -255,6 +255,8 @@ contains
       call named(json, "keywords.scf.density_tolerance", config%scf_density_tolerance_set)
       call optional_string(json, "keywords.scf.guess", config%scf_guess)
       call optional_string(json, "keywords.scf.accelerator", config%scf_accelerator)
+      call read_scf_eri_path(json, config, error)
+      if (error%has_error()) return
       call optional_string(json, "keywords.scf.convergence_metric", &
                            config%scf_convergence_metric)
       call optional_logical(json, "keywords.scf.incremental_fock", config%scf_incremental_fock)
@@ -703,6 +705,40 @@ contains
                         "'. Accepted: all, dipole")
       end select
    end subroutine read_efp_dispersion
+
+   subroutine read_scf_eri_path(json, config, error)
+      !! `keywords.scf.eri_path`, checked for spelling, or a refusal
+      !!
+      !! Refused here rather than where the path is chosen, so a typo is
+      !! reported before any integral is computed. Whether the build *has*
+      !! the path named is not asked here: reading a deck must mean the same
+      !! thing whatever was linked. The backend refuses that one.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: text
+      character(len=:), allocatable :: lowered
+      integer :: i
+
+      call optional_string(json, "keywords.scf.eri_path", text)
+      if (.not. allocated(text)) return
+
+      lowered = trim(adjustl(text))
+      do i = 1, len(lowered)
+         if (lowered(i:i) >= "A" .and. lowered(i:i) <= "Z") then
+            lowered(i:i) = achar(iachar(lowered(i:i)) + 32)
+         end if
+      end do
+
+      select case (lowered)
+      case ("rys", "rotaxis", "auto")
+         config%scf_eri_path = lowered
+      case default
+         call error%set(ERROR_VALIDATION, "unknown keywords.scf.eri_path '"//trim(text)// &
+                        "'. Accepted: rys, rotaxis, auto")
+      end select
+   end subroutine read_scf_eri_path
 
    subroutine read_efp_response(json, config, error)
       !! `keywords.efp.response`, as a code, or a refusal

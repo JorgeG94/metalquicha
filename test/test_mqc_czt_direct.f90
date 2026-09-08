@@ -18,7 +18,9 @@ module test_mqc_czt_direct
    !! threaded builds are measured against.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, set_eri_path, &
+                                eri_path_name, ROTAXIS_AVAILABLE, quartet_on_rotaxis, &
+                                rotaxis_libfint_covers
    use mqc_czt_rhf, only: build_fock
    use mqc_czt_direct, only: build_fock_direct, build_fock_direct_many, &
                              build_fock_direct_nosym, schwarz_bounds, &
@@ -62,6 +64,10 @@ contains
       testsuite = [ &
                   new_unittest("nosym_matches_the_fast_build_on_a_symmetric_density", &
                                test_nosym_symmetric), &
+                  new_unittest("the_rotated_axis_path_builds_the_same_fock_matrix", &
+                               test_rotaxis_fock), &
+                  new_unittest("the_dispatch_agrees_with_libfint_on_what_the_path_covers", &
+                               test_rotaxis_coverage), &
                   new_unittest("nosym_handles_an_antisymmetric_density", &
                                test_nosym_antisymmetric), &
                   new_unittest("the_fast_build_announced_antisymmetric_is_exact", &
@@ -116,6 +122,125 @@ contains
       anti = m - transpose(m)
       deallocate (m)
    end subroutine setup
+
+   subroutine test_rotaxis_coverage(error)
+      !! `ROTAXIS_MAX_L` never sends libfint a quartet it does not cover
+      !!
+      !! Over every (i, j, i, j) quartet of water in cc-pVTZ, which has s, p,
+      !! d and f shells. The dispatch may route *less* than the kernels cover
+      !! -- it does, since the d classes measured slower than Rys -- but a
+      !! quartet it routes that libfint refuses is an error stop in the middle
+      !! of a Fock build, so that direction is held exactly.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp) :: c(3, 3)
+      integer :: ish, jsh, n_on, n_off
+      logical :: ours, theirs
+
+      if (.not. ROTAXIS_AVAILABLE) then
+         call check(error, .true.)
+         return
+      end if
+
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.4_dp, 1.1_dp, 0.0_dp, -1.4_dp, 1.1_dp], [3, 3])
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "cc-pvtz", mol, err)
+      if (err%has_error()) then
+         call check(error, .false., "setup failed: "//err%get_message())
+         return
+      end if
+
+      n_on = 0
+      n_off = 0
+      do ish = 1, mol%nbas
+         do jsh = 1, mol%nbas
+            ours = quartet_on_rotaxis([ish - 1, jsh - 1, ish - 1, jsh - 1], mol%bas)
+            theirs = rotaxis_libfint_covers([ish - 1, jsh - 1, ish - 1, jsh - 1], mol%bas, mol%nbas)
+            if (ours .and. .not. theirs) then
+               call check(error, .false., "the dispatch routes a quartet libfint does not cover")
+               call mol%destroy()
+               return
+            end if
+            if (ours) then
+               n_on = n_on + 1
+            else
+               n_off = n_off + 1
+            end if
+         end do
+      end do
+      call check(error, n_on > 0 .and. n_off > 0, &
+                 "cc-pVTZ water must have quartets on both sides of the limit")
+      ! And the limit is what it says: an s/p pair is routed, a d one is not.
+      if (.not. allocated(error)) then
+         call check(error, quartet_on_rotaxis([0, 0, 0, 0], mol%bas) .and. &
+                    .not. quartet_on_rotaxis([mol%nbas - 1, 0, mol%nbas - 1, 0], mol%bas), &
+                    "the first shell of O must be routed and its last (f) must not")
+      end if
+      call mol%destroy()
+   end subroutine test_rotaxis_coverage
+
+   subroutine test_rotaxis_fock(error)
+      !! The rotated-axis quartets agree with the Rys ones through a Fock build
+      !!
+      !! Water/6-31G is s, p and L shells, so every quartet takes the
+      !! rotated-axis path when it is selected. A different algorithm, so not
+      !! bit-identical: libfint holds the integrals to 1e-12 scaled, and the
+      !! Fock matrix is a contraction over them. Skipped on a libcint build,
+      !! which has the one path.
+      !!
+      !! `ROTAXIS_MAX_L` is checked against libfint's own answer for a d
+      !! quartet and an f one, so the two ends of that agreement cannot drift
+      !! apart silently: a wrong constant here would send a quartet the kernels
+      !! lack into an error stop, or leave one they have on Rys.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: eri(:, :, :, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: sym(:, :), anti(:, :), rys(:, :), rotaxis(:, :)
+
+      if (.not. ROTAXIS_AVAILABLE) then
+         call set_eri_path("rotaxis", err)
+         call check(error, err%has_error(), &
+                    "a build without the path must refuse to be asked for it")
+         return
+      end if
+
+      call setup(mol, eri, bounds, zero_h, sym, anti, err)
+      if (err%has_error()) then
+         call check(error, .false., "setup failed: "//err%get_message())
+         return
+      end if
+
+      allocate (rys(mol%nao, mol%nao), rotaxis(mol%nao, mol%nao))
+      call set_eri_path("rys", err)
+      call build_fock_direct(mol, zero_h, sym, bounds, rys, stats, err, &
+                             screen_tol=NO_SCREENING)
+      if (.not. err%has_error()) then
+         call set_eri_path("rotaxis", err)
+         call check(error, eri_path_name() == "rotaxis", "the path did not switch")
+         if (.not. allocated(error)) then
+            call build_fock_direct(mol, zero_h, sym, bounds, rotaxis, stats, err, &
+                                   screen_tol=NO_SCREENING)
+         end if
+      end if
+      ! Back to the default whatever happened, for the tests after this one.
+      block
+         type(error_t) :: reset
+         call set_eri_path("rys", reset)
+      end block
+      call mol%destroy()
+      if (allocated(error)) return
+      if (err%has_error()) then
+         call check(error, .false., "a build failed: "//err%get_message())
+         return
+      end if
+
+      call check(error, maxval(abs(rotaxis - rys)) < 1.0e-10_dp, &
+                 "the rotated-axis and Rys Fock matrices disagree")
+   end subroutine test_rotaxis_fock
 
    subroutine test_nosym_symmetric(error)
       !! On a symmetric density the general build reduces to the fast one

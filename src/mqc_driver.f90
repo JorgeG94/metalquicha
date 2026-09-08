@@ -36,6 +36,7 @@ module mqc_driver
    use mqc_scf_common, only: lindep_tally_t, lindep_collect_begin, lindep_collect_end, &
                              report_linear_dependence_tally
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_czt_bridge, only: czt_set_eri_path
    use mqc_fingerprint, only: calculation_fingerprint
    use mqc_checkpoint, only: checkpoint_t
    use mqc_io_helpers, only: set_molecule_suffix, get_output_json_filename
@@ -107,6 +108,20 @@ contains
       if (resources%mpi_comms%world_comm%rank() == 0) then
          call config%method_config%log_settings()
       end if
+
+      ! The four-centre integral path, chosen once for every quartet of the
+      ! run and on every rank, since the workers build their own Fock
+      ! matrices. Refused here, before any integral, if the build lacks it.
+      block
+         type(error_t) :: path_error
+         call czt_set_eri_path(config%method_config%scf%eri_path, path_error)
+         if (path_error%has_error()) then
+            if (resources%mpi_comms%world_comm%rank() == 0) then
+               call logger%error(path_error%get_message())
+            end if
+            call abort_comm(resources%mpi_comms%world_comm, 1)
+         end if
+      end block
 
       if (resources%mpi_comms%world_comm%rank() == 0 .and. max_level > 0) then
          call logger%info("============================================")
