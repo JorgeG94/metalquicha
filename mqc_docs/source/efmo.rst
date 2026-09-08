@@ -190,6 +190,33 @@ The run reports how much of the fragment sum and of the dimer correction is
 correlation. Those are reported *inside* the two sums and not beside them: a
 correlated :math:`E_I^0` is the monomer energy of eq 6, not a term added to it.
 
+Running it on several ranks
+---------------------------
+
+.. code-block:: bash
+
+   mpirun -np 4 ./mqc efmo_prism.json
+
+The monomers and the quantum dimers are handed out round robin. **The balance
+is struck on the monomers**, because a monomer is a MAKEFP -- an SCF, a
+localization and twelve frequency-dependent response solves -- against one SCF
+for a dimer. Every rank then needs every fragment's potential, since the far
+pairs and the one induction over all fragments are not decomposable by owner,
+so each potential is flattened into a pair of buffers and summed across ranks.
+That transfer is exact rather than nearly: what crosses is the bits, not the
+eight decimals a written ``.efp`` would carry.
+
+The far pairs and the induction stay replicated. They are milliseconds beside a
+potential, and replicating them means every rank reaches the same total without
+a second reduction -- so any rank could write the output file, and the leader
+does.
+
+**One rank and four are bit-identical**, measured on the water prism at
+:math:`R_{\rm cut}` 1.0 and 2.0 and on the EFMO/RI-MP2 trimer, at one thread.
+Across thread counts the usual OpenMP reduction-order scatter of about
+2 :math:`\times` 10\ :sup:`-12` applies, and it is a thread effect and not a
+rank one.
+
 Output
 ------
 
@@ -309,8 +336,6 @@ different isomers against each other with that in mind.
 What is not here yet
 --------------------
 
-* **One rank.** The monomers and dimers are not distributed; MAKEFP is the
-  monomer's cost and is what a parallel version would balance.
 * **Kohn-Sham fragments.** MAKEFP is a Hartree-Fock construction, so a
   density-functional :math:`E_I^0` would need a potential built from a
   different density; refused by name. So is coupled cluster, and so is

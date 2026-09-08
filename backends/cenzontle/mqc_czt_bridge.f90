@@ -646,7 +646,8 @@ contains
                            error, verbose, aux_basis, vdwscl, quadrupole_blocks, &
                            dynamic_tol, dynamic_maxiter, response, &
                            allow_crap_response, response_batch, &
-                           correlation, corr_aux_basis, freeze_core, n_frozen_core)
+                           correlation, corr_aux_basis, freeze_core, n_frozen_core, &
+                           comm)
       !! One effective fragment molecular orbital energy, with its breakdown
       !!
       !! Options arrive as plain scalars rather than the backend's own type, so
@@ -661,6 +662,7 @@ contains
       !! it rather than as this routine re-adds it.
       use mqc_czt_efmo, only: efmo_options_t, efmo_result_t, run_efmo
       use mqc_program_limits, only: N_EFMO_TERMS
+      use pic_mpi_lib, only: comm_t
       use pic_types, only: dp
       use mqc_error, only: error_t
       integer, intent(in) :: atomic_numbers(:)
@@ -708,6 +710,9 @@ contains
          !! `model.aux_basis`, the fitting set `EFMO_CORR_RI_MP2` needs.
       logical, intent(in), optional :: freeze_core
       integer, intent(in), optional :: n_frozen_core
+      type(comm_t), intent(in), optional :: comm
+         !! Present means spread the monomers and the quantum dimers over this
+         !! communicator. Every rank gets the same total back.
 
       type(efmo_options_t) :: opts
       type(efmo_result_t) :: res
@@ -748,8 +753,13 @@ contains
       if (present(freeze_core)) opts%freeze_core = freeze_core
       if (present(n_frozen_core)) opts%n_frozen_core = n_frozen_core
 
-      call run_efmo(atomic_numbers, symbols, coordinates, owner, fragment_charges, &
-                    opts, res, error)
+      if (present(comm)) then
+         call run_efmo(atomic_numbers, symbols, coordinates, owner, fragment_charges, &
+                       opts, res, error, comm=comm)
+      else
+         call run_efmo(atomic_numbers, symbols, coordinates, owner, fragment_charges, &
+                       opts, res, error)
+      end if
       if (error%has_error()) return
 
       energy = res%energy

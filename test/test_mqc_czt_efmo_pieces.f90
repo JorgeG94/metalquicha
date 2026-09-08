@@ -31,6 +31,8 @@ module test_mqc_czt_efmo_pieces
                                  vdw_scaled_distance
    use mqc_czt_efp_interaction, only: efp_system_t, build_efp_system, &
                                       polarization_energy, induction_damping_factor
+   use mqc_czt_efp_serialize, only: EFP_HEADER_INTS, fragment_header, &
+                                    fragment_buffer_sizes, fragment_pack, fragment_unpack
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_atomic_guess, only: build_restricted_guess
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
@@ -42,6 +44,11 @@ module test_mqc_czt_efmo_pieces
    private
 
    public :: collect_mqc_czt_efmo_pieces_tests
+
+   interface same_reals
+      !! One name for the four ranks the fragment's arrays come in
+      module procedure same_reals_1d, same_reals_2d, same_reals_3d, same_reals_4d
+   end interface same_reals
 
    real(dp), parameter :: ANG = ANGSTROM_TO_BOHR
       !! Angstrom to Bohr, so the geometries below can be written the way they
@@ -75,7 +82,9 @@ contains
                   new_unittest("efmo_pair_distance_and_split", test_split), &
                   new_unittest("efmo_pair_terms_sum_to_the_all_pairs_energy", test_pair_terms), &
                   new_unittest("efmo_induction_damping_is_the_same_in_pair_and_total", &
-                               test_induction_damping) &
+                               test_induction_damping), &
+                  new_unittest("efmo_fragment_survives_a_flat_buffer_round_trip", &
+                               test_serialize) &
                   ]
    end subroutine collect_mqc_czt_efmo_pieces_tests
 
@@ -559,6 +568,205 @@ contains
                  message="the damped pair induction is not the damped two-fragment "// &
                  "total, so eq 6 would subtract two different quantities")
    end subroutine test_induction_damping
+
+   subroutine test_serialize(error)
+      !! A fragment flattened into two buffers and rebuilt is the same fragment
+      !!
+      !! **What MPI distribution rests on.** A rank builds a third of the
+      !! potentials and needs all of them, so each one is packed into an
+      !! integer and a real buffer, summed across ranks, and unpacked on the
+      !! ranks that did not build it. Every field has to survive that, and a
+      !! field that quietly does not would not show up as a crash: it would
+      !! show up as a four-rank energy differing from a one-rank energy in some
+      !! digit, on some system, later.
+      !!
+      !! So this checks the round trip **bit for bit**, not to a tolerance --
+      !! there is no arithmetic in a memory copy -- and it checks the
+      !! `allocated` state of every array as well as its contents, because a
+      !! block the potential does not carry has to come back absent rather than
+      !! present and zero: `build_efp_system` and the dispersion sum both
+      !! branch on exactly those flags.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_fragment_t) :: frag, copy
+      type(error_t) :: err
+      integer :: header(EFP_HEADER_INTS)
+      integer, allocatable :: ibuf(:)
+      real(dp), allocatable :: rbuf(:)
+      integer :: n_ints, n_reals
+
+      call water_fragment(frag, err)
+      call check(error,.not. err%has_error(), "building the fragment failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      call fragment_header(frag, header)
+      call fragment_buffer_sizes(header, n_ints, n_reals)
+      call check(error, n_reals > 0, "a water potential packed to no reals at all")
+      if (allocated(error)) return
+      allocate (ibuf(max(n_ints, 1)), source=0)
+      allocate (rbuf(max(n_reals, 1)), source=0.0_dp)
+
+      call fragment_pack(frag, header, ibuf(1:n_ints), rbuf(1:n_reals), err)
+      call check(error,.not. err%has_error(), "packing failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call fragment_unpack(header, ibuf(1:n_ints), rbuf(1:n_reals), copy, err)
+      call check(error,.not. err%has_error(), "unpacking failed: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, copy%n_points, frag%n_points, message="n_points")
+      if (allocated(error)) return
+      call check(error, copy%n_atoms, frag%n_atoms, message="n_atoms")
+      if (allocated(error)) return
+      call check(error, copy%n_lmo, frag%n_lmo, message="n_lmo")
+      if (allocated(error)) return
+      call check(error, copy%n_freq, frag%n_freq, message="n_freq")
+      if (allocated(error)) return
+      call check(error, copy%n_pol, frag%n_pol, message="n_pol")
+      if (allocated(error)) return
+      call check(error, copy%n_shells, frag%n_shells, message="n_shells")
+      if (allocated(error)) return
+      call check(error, copy%nao_proj, frag%nao_proj, message="nao_proj")
+      if (allocated(error)) return
+      call check(error, copy%n_lmo_proj, frag%n_lmo_proj, message="n_lmo_proj")
+      if (allocated(error)) return
+      call check(error, copy%n_mo_ct, frag%n_mo_ct, message="n_mo_ct")
+      if (allocated(error)) return
+      call check(error, copy%name == frag%name, "the fragment name did not survive")
+      if (allocated(error)) return
+      call check(error, all(copy%labels == frag%labels), "the point labels did not survive")
+      if (allocated(error)) return
+
+      ! The presence flags, which decide whether a term is computed at all.
+      call check(error, copy%has_screen2 .eqv. frag%has_screen2, "has_screen2")
+      if (allocated(error)) return
+      call check(error, copy%has_dynamic .eqv. frag%has_dynamic, "has_dynamic")
+      if (allocated(error)) return
+      call check(error, copy%has_static_pol .eqv. frag%has_static_pol, "has_static_pol")
+      if (allocated(error)) return
+      call check(error, copy%has_basis .eqv. frag%has_basis, "has_basis")
+      if (allocated(error)) return
+      call check(error, copy%has_lmo .eqv. frag%has_lmo, "has_lmo")
+      if (allocated(error)) return
+      call check(error, copy%has_fock .eqv. frag%has_fock, "has_fock")
+      if (allocated(error)) return
+      call check(error, copy%has_ctvec .eqv. frag%has_ctvec, "has_ctvec")
+      if (allocated(error)) return
+      call check(error, copy%has_dipquad .eqv. frag%has_dipquad, "has_dipquad")
+      if (allocated(error)) return
+      call check(error, copy%has_quadquad .eqv. frag%has_quadquad, "has_quadquad")
+      if (allocated(error)) return
+
+      call same_reals(error, copy%points, frag%points, "points")
+      if (allocated(error)) return
+      call same_reals(error, copy%q_elec, frag%q_elec, "q_elec")
+      if (allocated(error)) return
+      call same_reals(error, copy%q_nuc, frag%q_nuc, "q_nuc")
+      if (allocated(error)) return
+      call same_reals(error, copy%charge, frag%charge, "charge")
+      if (allocated(error)) return
+      call same_reals(error, copy%mass, frag%mass, "mass")
+      if (allocated(error)) return
+      call same_reals(error, copy%dipole, frag%dipole, "dipole")
+      if (allocated(error)) return
+      call same_reals(error, copy%quadrupole, frag%quadrupole, "quadrupole")
+      if (allocated(error)) return
+      call same_reals(error, copy%octopole, frag%octopole, "octopole")
+      if (allocated(error)) return
+      call same_reals(error, copy%screen2, frag%screen2, "screen2")
+      if (allocated(error)) return
+      call same_reals(error, copy%dyn_pol, frag%dyn_pol, "dyn_pol")
+      if (allocated(error)) return
+      call same_reals(error, copy%centroids, frag%centroids, "centroids")
+      if (allocated(error)) return
+      call same_reals(error, copy%frequencies, frag%frequencies, "frequencies")
+      if (allocated(error)) return
+      call same_reals(error, copy%static_pol, frag%static_pol, "static_pol")
+      if (allocated(error)) return
+      call same_reals(error, copy%pol_points, frag%pol_points, "pol_points")
+      if (allocated(error)) return
+      call same_reals(error, copy%dipquad, frag%dipquad, "dipquad")
+      if (allocated(error)) return
+      call same_reals(error, copy%quadquad, frag%quadquad, "quadquad")
+      if (allocated(error)) return
+      call same_reals(error, copy%prim_expo, frag%prim_expo, "prim_expo")
+      if (allocated(error)) return
+      call same_reals(error, copy%prim_coef, frag%prim_coef, "prim_coef")
+      if (allocated(error)) return
+      call same_reals(error, copy%lmo_gamess, frag%lmo_gamess, "lmo_gamess")
+      if (allocated(error)) return
+      call same_reals(error, copy%fock_lmo, frag%fock_lmo, "fock_lmo")
+      if (allocated(error)) return
+      call same_reals(error, copy%ctvec_gamess, frag%ctvec_gamess, "ctvec_gamess")
+      if (allocated(error)) return
+      call same_reals(error, copy%eps_occ, frag%eps_occ, "eps_occ")
+      if (allocated(error)) return
+
+      call check(error, all(copy%shell_atom == frag%shell_atom), "shell_atom")
+      if (allocated(error)) return
+      call check(error, all(copy%shell_l == frag%shell_l), "shell_l")
+      if (allocated(error)) return
+      call check(error, all(copy%shell_first == frag%shell_first), "shell_first")
+      if (allocated(error)) return
+      call check(error, all(copy%shell_nprim == frag%shell_nprim), "shell_nprim")
+   end subroutine test_serialize
+
+   subroutine same_reals_1d(error, got, want, name)
+      !! Two real arrays, equal bit for bit, both allocated or both not
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable, intent(in) :: got(:), want(:)
+      character(len=*), intent(in) :: name
+
+      call check(error, allocated(got) .eqv. allocated(want), &
+                 name//": one side is allocated and the other is not")
+      if (allocated(error)) return
+      if (.not. allocated(want)) return
+      call check(error, size(got) == size(want), name//": the sizes differ")
+      if (allocated(error)) return
+      call check(error, all(got == want), name//": a value did not survive the round trip")
+   end subroutine same_reals_1d
+
+   subroutine same_reals_2d(error, got, want, name)
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable, intent(in) :: got(:, :), want(:, :)
+      character(len=*), intent(in) :: name
+
+      call check(error, allocated(got) .eqv. allocated(want), &
+                 name//": one side is allocated and the other is not")
+      if (allocated(error)) return
+      if (.not. allocated(want)) return
+      call check(error, all(shape(got) == shape(want)), name//": the shapes differ")
+      if (allocated(error)) return
+      call check(error, all(got == want), name//": a value did not survive the round trip")
+   end subroutine same_reals_2d
+
+   subroutine same_reals_3d(error, got, want, name)
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable, intent(in) :: got(:, :, :), want(:, :, :)
+      character(len=*), intent(in) :: name
+
+      call check(error, allocated(got) .eqv. allocated(want), &
+                 name//": one side is allocated and the other is not")
+      if (allocated(error)) return
+      if (.not. allocated(want)) return
+      call check(error, all(shape(got) == shape(want)), name//": the shapes differ")
+      if (allocated(error)) return
+      call check(error, all(got == want), name//": a value did not survive the round trip")
+   end subroutine same_reals_3d
+
+   subroutine same_reals_4d(error, got, want, name)
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable, intent(in) :: got(:, :, :, :), want(:, :, :, :)
+      character(len=*), intent(in) :: name
+
+      call check(error, allocated(got) .eqv. allocated(want), &
+                 name//": one side is allocated and the other is not")
+      if (allocated(error)) return
+      if (.not. allocated(want)) return
+      call check(error, all(shape(got) == shape(want)), name//": the shapes differ")
+      if (allocated(error)) return
+      call check(error, all(got == want), name//": a value did not survive the round trip")
+   end subroutine same_reals_4d
 
    subroutine test_three_body(error)
       !! What the pair subtraction leaves behind is three-body induction

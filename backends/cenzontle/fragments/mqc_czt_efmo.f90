@@ -72,6 +72,10 @@ module mqc_czt_efmo
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2
    use mqc_elements, only: core_orbital_count
    use mqc_program_limits, only: EFMO_CORR_NONE, EFMO_CORR_MP2, EFMO_CORR_RI_MP2
+   use mqc_czt_efp_serialize, only: EFP_HEADER_INTS, fragment_header, &
+                                    fragment_buffer_sizes, fragment_pack, fragment_unpack
+   use pic_mpi_lib, only: comm_t, allreduce, MPI_SUM
+   use mqc_timing, only: timing_report_t
    implicit none
    private
 
@@ -212,7 +216,7 @@ module mqc_czt_efmo
 contains
 
    subroutine run_efmo(atomic_numbers, symbols, coordinates, owner, fragment_charges, &
-                       opts, res, error)
+                       opts, res, error, comm)
       !! One EFMO energy, from a system already partitioned into fragments
       !!
       !! `owner(i)` is the fragment of atom `i`, numbered from one with no gaps
@@ -228,6 +232,18 @@ contains
       type(efmo_options_t), intent(in) :: opts
       type(efmo_result_t), intent(out) :: res
       type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
+         !! Spread the monomers and the quantum dimers over these ranks. Every
+         !! rank runs this same routine on the same geometry and comes out with
+         !! the same total; nothing is gathered to a leader.
+         !!
+         !! **What is distributed is what costs.** A monomer is a MAKEFP -- an
+         !! SCF, a localization and twelve frequency-dependent response solves
+         !! -- against one SCF for a dimer, so the monomer loop is what the
+         !! balance is struck on, exactly as `run_fmo2` balances on its
+         !! fragments. The far pairs and the induction stay replicated: they are
+         !! milliseconds beside a potential, and replicating them means every
+         !! rank reaches the same total without a second reduction.
 
       type(efp_fragment_t), allocatable :: frags(:)
       type(efp_pair_energy_t), allocatable :: far(:)
@@ -236,6 +252,11 @@ contains
       integer, allocatable :: idx_i(:), idx_j(:)
       integer, allocatable :: count_of(:)
       real(dp), allocatable :: monomer_corr(:)
+      type(timing_report_t) :: clk
+         !! Where an EFMO run's wall time goes, stage by stage. The paper's Fig
+         !! 7 makes the same split and the claim it supports -- that the
+         !! effective-fragment half is free beside the quantum half -- is one a
+         !! run should be able to check on its own system rather than take.
       integer :: n_atoms, n_frag, k, p
 
       n_atoms = size(atomic_numbers)
@@ -272,9 +293,12 @@ contains
       ! `place_fragment` never appears here.
       shifts = 0.0_dp
 
+      call clk%start()
+      call clk%begin("monomers (MAKEFP)")
       call build_potentials(atomic_numbers, symbols, coordinates, owner, count_of, &
                             fragment_charges, opts, frags, res%monomer_energy, &
-                            monomer_corr, error)
+                            monomer_corr, error, comm)
+      call clk%lap("monomers (MAKEFP)")
       if (error%has_error()) return
       res%monomer_sum = sum(res%monomer_energy)
       res%monomer_correlation = sum(monomer_corr)
@@ -286,14 +310,17 @@ contains
       res%n_efp_pairs = size(efp_pairs, 2)
       allocate (res%pairs(res%n_qm_pairs + res%n_efp_pairs))
 
+      call clk%begin("quantum dimers")
       call quantum_dimers(atomic_numbers, symbols, coordinates, owner, &
                           fragment_charges, qm_pairs, frags, shifts, opts, &
-                          monomer_corr, res, error)
+                          monomer_corr, res, error, comm)
+      call clk%lap("quantum dimers")
       if (error%has_error()) return
 
       ! The far half. `efp_pair_terms` takes the pair list directly, so the near
       ! pairs contribute nothing here -- which is the point, since their
       ! electrostatics, exchange and dispersion are inside their dimer SCF.
+      call clk%begin("effective-fragment pairs")
       far = efp_pair_terms(frags, shifts, efp_pairs, error, &
                            charge_transfer_on=opts%charge_transfer)
       if (error%has_error()) return
@@ -317,9 +344,13 @@ contains
       res%far_dispersion = sum(far%dispersion)
       res%far_exchange_repulsion = sum(far%exchange_repulsion)
       res%far_charge_transfer = sum(far%charge_transfer)
+      call clk%lap("effective-fragment pairs")
 
+      call clk%begin("induction over all fragments")
       call total_polarization(frags, shifts, opts%induction_damping, &
                               res%polarization_total, error)
+      call clk%lap("induction over all fragments")
+      call clk%finish()
       if (error%has_error()) return
 
       res%energy = res%monomer_sum + res%dimer_correction - res%pair_polarization &
@@ -327,8 +358,160 @@ contains
                    + res%far_exchange_repulsion + res%far_charge_transfer &
                    + res%polarization_total
 
-      call report(res, opts)
+      if (is_leader(comm)) then
+         call report(res, opts)
+         call clk%report("EFMO")
+      end if
    end subroutine run_efmo
+
+   function spread_over(comm) result(many)
+      !! Whether there is more than one rank to spread over
+      type(comm_t), intent(in), optional :: comm
+      logical :: many
+
+      many = .false.
+      if (.not. present(comm)) return
+      many = comm%size() > 1
+   end function spread_over
+
+   function mine(task, comm) result(owned)
+      !! Whether this rank owns a task, round robin
+      !!
+      !! The same rule `run_fmo2` uses. Round robin rather than blocked because
+      !! the tasks here are near enough equal in cost -- one potential is one
+      !! potential -- and a contiguous split would leave the last rank short
+      !! whenever the count is not a multiple of the rank count.
+      integer, intent(in) :: task
+      type(comm_t), intent(in), optional :: comm
+      logical :: owned
+
+      owned = .true.
+      if (.not. spread_over(comm)) return
+      owned = mod(task - 1, comm%size()) == comm%rank()
+   end function mine
+
+   function is_leader(comm) result(leads)
+      !! Whether this rank writes the run's shared log lines
+      type(comm_t), intent(in), optional :: comm
+      logical :: leads
+
+      leads = .true.
+      if (.not. spread_over(comm)) return
+      leads = comm%rank() == 0
+   end function is_leader
+
+   subroutine share_failure(error, comm)
+      !! Make an error on any rank an error on every rank
+      !!
+      !! Without this the first rank to fail returns while the others block in
+      !! the next reduction, and the run hangs rather than stops. The message
+      !! is not shared -- it exists only where it was raised -- so a rank that
+      !! was fine is told which of its neighbours was not and to look there.
+      type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
+
+      integer :: status(1)
+
+      if (.not. spread_over(comm)) return
+      status = 0
+      if (error%has_error()) status = 1
+      call allreduce(comm, status, 1, MPI_SUM)
+      if (status(1) == 0 .or. error%has_error()) return
+      call error%set(ERROR_VALIDATION, "efmo: "//to_char(status(1))//" of "// &
+                     to_char(comm%size())//" ranks failed on the fragments they "// &
+                     "own. The message is on those ranks; this one had no error "// &
+                     "of its own and stops so that the run does not hang in the "// &
+                     "next reduction.")
+   end subroutine share_failure
+
+   subroutine exchange_potentials(frags, opts, error, comm)
+      !! Give every rank every fragment's potential
+      !!
+      !! A rank built a third of the potentials and needs all of them: the far
+      !! pairs and the one induction over every fragment are not decomposable
+      !! by owner. So each potential is flattened into an integer and a real
+      !! buffer that is zero where this rank computed nothing, the buffers are
+      !! summed across ranks, and the fragments this rank does not own are
+      !! rebuilt from the sum. Bit for bit what the owning rank had, which is
+      !! what makes one rank and four agree to the last digit rather than to
+      !! the eight decimals a written `.efp` would carry.
+      !!
+      !! Two reductions, because the *layout* has to be known before the
+      !! contents can be: a fixed-size header of counts and flags first, then a
+      !! body whose length every rank works out from the reduced headers.
+      type(efp_fragment_t), intent(inout) :: frags(:)
+      type(efmo_options_t), intent(in) :: opts
+      type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
+
+      integer, allocatable :: headers(:), ibuf(:)
+      integer, allocatable :: ni(:), nr(:), ioff(:), roff(:)
+      real(dp), allocatable :: rbuf(:)
+      integer :: n_frag, k, total_i, total_r
+
+      if (.not. spread_over(comm)) return
+      n_frag = size(frags)
+
+      ! One flat vector rather than a matrix: `allreduce` takes rank-one
+      ! buffers, and a header is a fixed stride, so fragment `k`'s slice is
+      ! arithmetic.
+      allocate (headers(EFP_HEADER_INTS*n_frag), source=0)
+      do k = 1, n_frag
+         if (mine(k, comm)) then
+            call fragment_header(frags(k), headers(head_at(k):head_at(k) + EFP_HEADER_INTS - 1))
+         end if
+      end do
+      call allreduce(comm, headers, size(headers), MPI_SUM)
+
+      allocate (ni(n_frag), nr(n_frag), ioff(n_frag), roff(n_frag))
+      total_i = 0
+      total_r = 0
+      do k = 1, n_frag
+         call fragment_buffer_sizes(headers(head_at(k):head_at(k) + EFP_HEADER_INTS - 1), &
+                                    ni(k), nr(k))
+         ioff(k) = total_i
+         roff(k) = total_r
+         total_i = total_i + ni(k)
+         total_r = total_r + nr(k)
+      end do
+      if (total_r == 0) return
+
+      allocate (ibuf(max(total_i, 1)), source=0)
+      allocate (rbuf(max(total_r, 1)), source=0.0_dp)
+      do k = 1, n_frag
+         if (.not. mine(k, comm)) cycle
+         call fragment_pack(frags(k), headers(head_at(k):head_at(k) + EFP_HEADER_INTS - 1), &
+                            ibuf(ioff(k) + 1:ioff(k) + ni(k)), &
+                            rbuf(roff(k) + 1:roff(k) + nr(k)), error)
+         if (error%has_error()) exit
+      end do
+      call share_failure(error, comm)
+      if (error%has_error()) return
+
+      if (total_i > 0) call allreduce(comm, ibuf, total_i, MPI_SUM)
+      call allreduce(comm, rbuf, total_r, MPI_SUM)
+
+      do k = 1, n_frag
+         if (mine(k, comm)) cycle
+         call fragment_unpack(headers(head_at(k):head_at(k) + EFP_HEADER_INTS - 1), &
+                              ibuf(ioff(k) + 1:ioff(k) + ni(k)), &
+                              rbuf(roff(k) + 1:roff(k) + nr(k)), frags(k), error)
+         if (error%has_error()) return
+      end do
+      if (opts%verbose .and. is_leader(comm)) then
+         call logger%verbose("  efmo: shared "//to_char(n_frag)//" potentials over "// &
+                             to_char(comm%size())//" ranks, "//to_char(total_r)// &
+                             " reals")
+      end if
+   end subroutine exchange_potentials
+
+   pure function head_at(k) result(at)
+      !! Where fragment `k`'s header starts in the flat header vector
+      integer, intent(in) :: k
+      integer :: at
+
+      at = (k - 1)*EFP_HEADER_INTS + 1
+   end function head_at
 
    subroutine fragment_counts(owner, n_frag, count_of, error)
       !! How many atoms each fragment holds
@@ -375,7 +558,7 @@ contains
    end function gather
 
    subroutine build_potentials(z, symbols, xyz, owner, count_of, charges, opts, &
-                               frags, monomer_energy, correlation, error)
+                               frags, monomer_energy, correlation, error, comm)
       !! One MAKEFP per fragment, and `E_I^0` off the same SCF
       !!
       !! **The whole cost of an EFMO run is here.** A potential is an SCF, a
@@ -394,6 +577,7 @@ contains
          !! differenced out of each dimer's so the dimer correction can be
          !! reported the same way.
       type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
 
       type(efp_potential_t) :: pot
       type(rhf_result_t) :: scf
@@ -403,7 +587,11 @@ contains
       integer :: k
 
       correlation = 0.0_dp
+      monomer_energy = 0.0_dp
       do k = 1, size(count_of)
+         ! Round robin, so a rank does every `size()`th potential. What is left
+         ! at zero here is filled by the reduction below rather than left out.
+         if (.not. mine(k, comm)) cycle
          idx = gather(owner, k)
          call logger%verbose("  efmo: fragment "//to_char(k)//" of "// &
                              to_char(size(count_of))//", "//to_char(size(idx))//" atoms")
@@ -464,6 +652,14 @@ contains
             correlation(k) = e_corr
          end if
       end do
+      call share_failure(error, comm)
+      if (error%has_error()) return
+
+      if (spread_over(comm)) then
+         call allreduce(comm, monomer_energy, size(monomer_energy), MPI_SUM)
+         call allreduce(comm, correlation, size(correlation), MPI_SUM)
+      end if
+      call exchange_potentials(frags, opts, error, comm)
    end subroutine build_potentials
 
    subroutine fragment_correlation(z, symbols, xyz, nelec, scf, opts, energy, error)
@@ -535,7 +731,7 @@ contains
    end subroutine fragment_correlation
 
    subroutine quantum_dimers(z, symbols, xyz, owner, charges, qm_pairs, &
-                             frags, shifts, opts, monomer_corr, res, error)
+                             frags, shifts, opts, monomer_corr, res, error, comm)
       !! Every near pair: one in-vacuo dimer SCF, and its pair induction
       integer, intent(in) :: z(:)
       character(len=2), intent(in) :: symbols(:)
@@ -550,18 +746,23 @@ contains
          !! be reported beside it.
       type(efmo_result_t), intent(inout) :: res
       type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
 
       integer, allocatable :: idx_i(:), idx_j(:), idx(:)
-      real(dp) :: e_dimer, e_pol, e_corr
-      integer :: k, a, b
+      real(dp), allocatable :: e_dimer(:), e_pol(:), e_corr(:)
+      integer :: k, a, b, n_pairs
 
-      do k = 1, size(qm_pairs, 2)
+      n_pairs = size(qm_pairs, 2)
+      allocate (e_dimer(n_pairs), e_pol(n_pairs), e_corr(n_pairs), source=0.0_dp)
+
+      do k = 1, n_pairs
          a = qm_pairs(1, k)
          b = qm_pairs(2, k)
          idx_i = gather(owner, a)
          idx_j = gather(owner, b)
-         idx = [idx_i, idx_j]
 
+         ! Filled on every rank: it is a distance, not a calculation, and it
+         ! keeps the pair table below identical everywhere without a reduction.
          res%pairs(k)%i = a
          res%pairs(k)%j = b
          res%pairs(k)%qm = .true.
@@ -569,28 +770,46 @@ contains
                                  res%pairs(k)%r, error)
          if (error%has_error()) return
 
+         if (.not. mine(k, comm)) cycle
+         idx = [idx_i, idx_j]
          call logger%verbose("  efmo: dimer "//to_char(a)//"-"//to_char(b)// &
                              ", "//to_char(size(idx))//" atoms")
          call dimer_energy(z(idx), symbols(idx), xyz(:, idx), charges(a) + charges(b), &
-                           opts, e_dimer, e_corr, error)
-         if (error%has_error()) return
-         res%dimer_correlation = res%dimer_correlation + e_corr &
-                                 - monomer_corr(a) - monomer_corr(b)
+                           opts, e_dimer(k), e_corr(k), error)
+         if (error%has_error()) exit
 
          ! The same induction solver on the two fragments alone -- the same
          ! screening, the same static field rank, the same tolerance as the
          ! total below. A pair solved any other way would leave a residue in
          ! `E_pol^total - sum E_IJ^pol` that looks like three-body induction.
-         e_pol = pair_polarization_energy(frags(a), frags(b), shifts(:, a), &
-                                          shifts(:, b), error, &
-                                          damping=opts%induction_damping)
-         if (error%has_error()) return
+         e_pol(k) = pair_polarization_energy(frags(a), frags(b), shifts(:, a), &
+                                             shifts(:, b), error, &
+                                             damping=opts%induction_damping)
+         if (error%has_error()) exit
+      end do
+      call share_failure(error, comm)
+      if (error%has_error()) return
 
-         res%pairs(k)%e_dimer = e_dimer
-         res%pairs(k)%e_pair_pol = e_pol
-         res%dimer_correction = res%dimer_correction + e_dimer &
+      ! Each rank filled only its own pairs and left the rest at zero, so a sum
+      ! gathers them. Summed *before* they are accumulated, not after, so the
+      ! order the terms are added in does not depend on the rank count and one
+      ! rank against four is an identity rather than a rounding question.
+      if (spread_over(comm)) then
+         call allreduce(comm, e_dimer, n_pairs, MPI_SUM)
+         call allreduce(comm, e_pol, n_pairs, MPI_SUM)
+         call allreduce(comm, e_corr, n_pairs, MPI_SUM)
+      end if
+
+      do k = 1, n_pairs
+         a = qm_pairs(1, k)
+         b = qm_pairs(2, k)
+         res%pairs(k)%e_dimer = e_dimer(k)
+         res%pairs(k)%e_pair_pol = e_pol(k)
+         res%dimer_correction = res%dimer_correction + e_dimer(k) &
                                 - res%monomer_energy(a) - res%monomer_energy(b)
-         res%pair_polarization = res%pair_polarization + e_pol
+         res%pair_polarization = res%pair_polarization + e_pol(k)
+         res%dimer_correlation = res%dimer_correlation + e_corr(k) &
+                                 - monomer_corr(a) - monomer_corr(b)
       end do
    end subroutine quantum_dimers
 

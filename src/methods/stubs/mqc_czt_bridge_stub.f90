@@ -205,7 +205,8 @@ contains
                            error, verbose, aux_basis, vdwscl, quadrupole_blocks, &
                            dynamic_tol, dynamic_maxiter, response, &
                            allow_crap_response, response_batch, &
-                           correlation, corr_aux_basis, freeze_core, n_frozen_core)
+                           correlation, corr_aux_basis, freeze_core, n_frozen_core, &
+                           comm)
       !! No-op stand-in: EFMO needs the CPU integral backend
       !!
       !! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from
@@ -213,6 +214,7 @@ contains
       use pic_types, only: dp
       use mqc_error, only: error_t
       use mqc_scf_types, only: scf_numerics_t
+      use pic_mpi_lib, only: comm_t
       use mqc_program_limits, only: N_EFMO_TERMS
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
@@ -250,6 +252,9 @@ contains
          !! `model.aux_basis`, the fitting set `EFMO_CORR_RI_MP2` needs.
       logical, intent(in), optional :: freeze_core
       integer, intent(in), optional :: n_frozen_core
+      type(comm_t), intent(in), optional :: comm
+         !! Present means spread the monomers and the quantum dimers over this
+         !! communicator. Every rank gets the same total back.
 
       energy = 0.0_dp
       terms = 0.0_dp
@@ -273,6 +278,7 @@ contains
       if (present(allow_crap_response) .or. present(response_batch)) return
       if (present(correlation) .or. present(freeze_core)) return
       if (present(corr_aux_basis) .or. present(n_frozen_core)) return
+      if (present(comm)) return
    end subroutine run_czt_efmo
 
    subroutine run_czt_makefp(atomic_numbers, element_symbols, coordinates, &
