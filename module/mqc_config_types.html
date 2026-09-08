@@ -195,12 +195,12 @@ Re-exported so consumers need only this module</p>
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
                   <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1591,7 +1591,7 @@ atom indices</p><a href="../type/input_fragment_t.html" class="pull-right"><emph
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~3"></span>
+              <span class="anchor" id="variable-charge~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -1608,7 +1608,7 @@ atom indices</p><a href="../type/input_fragment_t.html" class="pull-right"><emph
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~4"></span>
+              <span class="anchor" id="variable-indices~5"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1671,7 +1671,7 @@ resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/input_fragment_t.html#boundprocedure-destroy~16'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/input_fragment_destroy.html'>input_fragment_destroy</a></td>
+  <strong><a href='../type/input_fragment_t.html#boundprocedure-destroy~12'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/input_fragment_destroy.html'>input_fragment_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1721,7 +1721,7 @@ resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~4"></span>
+              <span class="anchor" id="variable-charge~6"></span>
               integer,
             </td>
               <td>public</td>
@@ -1755,7 +1755,7 @@ resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geometry~2"></span>
+              <span class="anchor" id="variable-geometry"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
               <td>public</td>
@@ -1789,7 +1789,7 @@ resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~20"></span>
+              <span class="anchor" id="variable-name~32"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -1886,7 +1886,7 @@ size, so a deck claiming uniformity without it is refused.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/molecule_t.html#boundprocedure-destroy~17'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecule_destroy.html'>molecule_destroy</a></td>
+  <strong><a href='../type/molecule_t.html#boundprocedure-destroy~13'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecule_destroy.html'>molecule_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1987,7 +1987,7 @@ size, so a deck claiming uniformity without it is refused.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~4"></span>
+              <span class="anchor" id="variable-allow_crap_scf~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -2008,7 +2008,7 @@ table.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis"></span>
+              <span class="anchor" id="variable-aux_basis~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2025,7 +2025,7 @@ table.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~3"></span>
+              <span class="anchor" id="variable-backend"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -2042,7 +2042,7 @@ table.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~4"></span>
+              <span class="anchor" id="variable-basis"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2212,7 +2212,7 @@ counted and then not printed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~10"></span>
+              <span class="anchor" id="variable-calc_type~4"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -2280,7 +2280,7 @@ counted and then not printed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_diis_size~2"></span>
+              <span class="anchor" id="variable-cc_diis_size"></span>
               integer,
             </td>
               <td>public</td>
@@ -2314,7 +2314,7 @@ counted and then not printed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_spin_adapted~2"></span>
+              <span class="anchor" id="variable-cc_spin_adapted"></span>
               logical,
             </td>
               <td>public</td>
@@ -2327,12 +2327,12 @@ counted and then not printed.</p>
                 <td>.true.</td>
             <td>
 <p>Which coupled-cluster formulation runs: spin-adapted (spatial
-orbitals) when true, spin orbitals when false.</p><a href="../type/mqc_config_t.html#variable-cc_spin_adapted~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+orbitals) when true, spin orbitals when false.</p><a href="../type/mqc_config_t.html#variable-cc_spin_adapted" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_tolerance~2"></span>
+              <span class="anchor" id="variable-cc_tolerance"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2349,7 +2349,7 @@ orbitals) when true, spin orbitals when false.</p><a href="../type/mqc_config_t.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_triples~2"></span>
+              <span class="anchor" id="variable-cc_triples"></span>
               logical,
             </td>
               <td>public</td>
@@ -2386,7 +2386,7 @@ absent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~5"></span>
+              <span class="anchor" id="variable-charge~7"></span>
               integer,
             </td>
               <td>public</td>
@@ -2441,7 +2441,7 @@ fingerprint disagrees with this run is refused, not overwritten.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-corr_density_fitting~2"></span>
+              <span class="anchor" id="variable-corr_density_fitting"></span>
               logical,
             </td>
               <td>public</td>
@@ -3190,7 +3190,7 @@ it &ndash; <code>properties: {"fukui": {}}</code> is a valid request.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~2"></span>
+              <span class="anchor" id="variable-functional~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3207,7 +3207,7 @@ it &ndash; <code>properties: {"fukui": {}}</code> is a valid request.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geometry~3"></span>
+              <span class="anchor" id="variable-geometry~2"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
               <td>public</td>
@@ -3224,7 +3224,7 @@ it &ndash; <code>properties: {"fukui": {}}</code> is a valid request.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~3"></span>
+              <span class="anchor" id="variable-global_groups"></span>
               integer,
             </td>
               <td>public</td>
@@ -3276,7 +3276,7 @@ told apart: absent leaves <code>backend</code> alone, false pins it to the CPU.<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~2"></span>
+              <span class="anchor" id="variable-guess_steps"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -3288,7 +3288,7 @@ told apart: absent leaves <code>backend</code> alone, false pins it to the CPU.<
                 <td></td>
                 <td></td>
             <td>
-<p>The projection ladder, from <code>keywords.guess.subscf.steps</code>.</p><a href="../type/mqc_config_t.html#variable-guess_steps~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>The projection ladder, from <code>keywords.guess.subscf.steps</code>.</p><a href="../type/mqc_config_t.html#variable-guess_steps" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -3446,7 +3446,7 @@ told apart: absent leaves <code>backend</code> alone, false pins it to the CPU.<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_intersection_level~3"></span>
+              <span class="anchor" id="variable-max_intersection_level"></span>
               integer,
             </td>
               <td>public</td>
@@ -3697,7 +3697,7 @@ machine decides: a share of what it reports available.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~10"></span>
+              <span class="anchor" id="variable-method~4"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -3884,7 +3884,7 @@ machine decides: a share of what it reports available.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nmol"></span>
+              <span class="anchor" id="variable-nmol~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -3901,7 +3901,7 @@ machine decides: a share of what it reports available.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~2"></span>
+              <span class="anchor" id="variable-nodes_per_group"></span>
               integer,
             </td>
               <td>public</td>
@@ -5103,7 +5103,7 @@ hiding a problem, not a way to run one.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mqc_config_t.html#boundprocedure-destroy~18'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a></td>
+  <strong><a href='../type/mqc_config_t.html#boundprocedure-destroy~14'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -5137,7 +5137,7 @@ hiding a problem, not a way to run one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~84"></span>
+              <span class="anchor" id="variable-this~52"></span>
               class(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5177,7 +5177,7 @@ hiding a problem, not a way to run one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~85"></span>
+              <span class="anchor" id="variable-this~53"></span>
               class(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5217,7 +5217,7 @@ hiding a problem, not a way to run one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~83"></span>
+              <span class="anchor" id="variable-this~51"></span>
               class(<a href='../type/molecule_t.html'>molecule_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5260,7 +5260,7 @@ hiding a problem, not a way to run one.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-08 13:10 +0000             </p>
+ on 2026-09-08 13:11 +0000             </p>
           </div>
         </div>
         <br>
